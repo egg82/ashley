@@ -80,7 +80,7 @@ export function RoutesPanel() {
       {!r && !spendRoutesFailed.value && <span class="meta">Reading the model choices…</span>}
       {r && (
         <div role="table" aria-label="Model per task">
-          {r.tasks.map((t) => (t.household ? <Choice key={t.task} t={t} /> : <Judge key={t.task} t={t} />))}
+          {r.choices.map((t) => (t.household ? <Choice key={t.task} t={t} /> : <Judge key={t.task} t={t} />))}
         </div>
       )}
       <Said />

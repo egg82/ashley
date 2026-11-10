@@ -31,10 +31,10 @@ class TaskRoutes(BaseModel):
 
 
 class SpendRoutesResponse(BaseModel):
-    """Every task the household may choose for, in task order, then `action_judge`. A choice reaches every reply within
-    `refresh_s` seconds."""
+    """`choices`: every task the household may choose for, in task order, then `action_judge`. A choice reaches every
+    reply within `refresh_s` seconds."""
 
-    tasks: list[TaskRoutes]
+    choices: list[TaskRoutes]
     refresh_s: int
 
 

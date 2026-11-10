@@ -57,7 +57,7 @@ async def _read(household_id: int) -> SpendRoutesResponse | JSONResponse:
         found = await services.get(HouseholdRoutes).choices(household_id)
     except RoutesUnavailable:
         return _unavailable()
-    return SpendRoutesResponse(tasks=[_task(t) for t in found], refresh_s=round(REFRESH_S))
+    return SpendRoutesResponse(choices=[_task(t) for t in found], refresh_s=round(REFRESH_S))
 
 
 _DETAIL: dict[Literal["not_household", "not_offered", "unwired"], str] = {

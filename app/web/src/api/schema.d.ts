@@ -4928,12 +4928,12 @@ export interface components {
         };
         /**
          * SpendRoutesResponse
-         * @description Every task the household may choose for, in task order, then `action_judge`. A choice reaches every reply within
-         *     `refresh_s` seconds.
+         * @description `choices`: every task the household may choose for, in task order, then `action_judge`. A choice reaches every
+         *     reply within `refresh_s` seconds.
          */
         SpendRoutesResponse: {
-            /** Tasks */
-            tasks: components["schemas"]["TaskRoutes"][];
+            /** Choices */
+            choices: components["schemas"]["TaskRoutes"][];
             /** Refresh S */
             refresh_s: number;
         };
