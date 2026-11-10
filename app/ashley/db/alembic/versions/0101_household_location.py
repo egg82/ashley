@@ -4,7 +4,7 @@ both set or both null. A household starts with none."""
 from alembic import op
 
 revision: str = "0101"
-down_revision: str | None = "0099"
+down_revision: str | None = "0100"
 
 
 def upgrade() -> None:
