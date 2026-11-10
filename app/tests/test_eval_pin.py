@@ -9,11 +9,11 @@ from ashley.db.pool import PoolDatabase
 from ashley.evals import memory_write
 from ashley.evals.__main__ import main, pinned
 from ashley.inference import routes
+from ashley.inference.routes import without_fallback
 from ashley.inference.model import TaskName, Usage
 from ashley.inference.postgres import PostgresSpendLedger, Spent, SpentBy, last_call_id, spent_by_after
 from ashley.inference.spend import Call, Outcome
 from ashley.memory.eval import write
-from ashley.wiring import app_routes
 
 SHIPPED = routes.load({})
 
@@ -51,7 +51,7 @@ def test_pinned_narrows_the_writer_and_the_judge_independently() -> None:
 
 
 def test_the_app_writes_memory_on_the_first_route_only_and_leaves_the_rest() -> None:
-    app = app_routes(SHIPPED)
+    app = without_fallback(SHIPPED)
     assert app.by_task["memory_write"] == SHIPPED.by_task["memory_write"][:1]
     assert providers_of(app, "memory_write") == ["anthropic"], "the write job waits for Sonnet, never the fallback"
     assert len(SHIPPED.by_task["memory_write"]) > 1, "the fallback stays shipped for the eval to pin"
