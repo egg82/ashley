@@ -668,6 +668,9 @@ talking with nothing guessed. She keeps no passwords of her own.
 - **Her web address is public from the start** (Cloudflare tunnel and the anycast gateway), so every route
   beyond `/api/health`, `/api/ready` and the page shell requires a signed-in person or device (below) from the day
   it is added, even before the web app has sign-in: an unauthenticated request gets 401, never data.
+- **The provider is any OIDC one.** Authentik is the household's; CI signs in against a real Dex
+  (`app/tests/test_signin_dex.py`) as the second, so nothing in sign-in is Authentik-specific. The account's username is
+  `preferred_username`, else `name`.
 - **Who may sign in is the IdM group `ashley_users`**, synced to the provider; the provider's application admits that
   group only. There is no admin group: what belongs to one person (their memory, their Claude Code sessions) keys on
   the person an account maps to. An `ashley_admins` group is for the day something needs a role several people
