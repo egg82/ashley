@@ -17,12 +17,13 @@ the same policy that lets the captions fetch reach public HTTPS (and nothing pri
 import json
 from typing import Any
 
+from ..runs.labels import PREFIX
 from ..runs.media_pod import FETCH_LABEL
 from .config import LooksConfig
 from .shooter import PORT
 
-LABEL = "ashley.yggdrasil.pub/look"
-WARM_LABEL = "ashley.yggdrasil.pub/look-warm"
+LABEL = PREFIX + "look"
+WARM_LABEL = PREFIX + "look-warm"
 WARM_SERVICE = "ashley-look-warm"
 NOBODY = 65534
 

@@ -13,11 +13,12 @@ carries `LABEL`, which the cluster repo's Service and network policy select on."
 
 from typing import Any
 
+from ..runs.labels import PREFIX
 from . import proton_tls
 from .config import MailConfig
 
-LABEL = "ashley.yggdrasil.pub/mail-bridge"
-EPOCH_LABEL = "ashley.yggdrasil.pub/mail-bridge-epoch"
+LABEL = PREFIX + "mail-bridge"
+EPOCH_LABEL = PREFIX + "mail-bridge-epoch"
 CONTROL_PORT = 8080
 IMAP_PORT = 2143
 SMTP_PORT = 2025

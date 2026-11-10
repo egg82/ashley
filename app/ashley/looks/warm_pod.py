@@ -16,13 +16,14 @@ from typing import Any
 
 from .. import logs
 from ..runs.kube_api import KubeApi, KubeError
+from ..runs.labels import PREFIX
 from ..runs.loose import as_object
 from .config import LooksConfig
 from .pod_spec import warm_manifest
 
 log = logging.getLogger("ashley.looks")
 NAME = "look-warm"
-SPEC_ANNOTATION = "ashley.yggdrasil.pub/look-spec"
+SPEC_ANNOTATION = PREFIX + "look-spec"
 RECHECK_S = 1.0
 """How soon to look again after deleting the pod, to make its replacement."""
 
