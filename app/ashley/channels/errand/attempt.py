@@ -8,7 +8,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from ... import services
-from .. import prompt, tool_loop
+from .. import prompt, taste, tool_loop
 from ..limits import Limits
 from ...conversations.conversations import Conversations
 from ...inference.model import Message, SystemPrompt
@@ -47,7 +47,7 @@ async def attempt(errand: Errand, catalogue: Catalogue, config: ErrandsConfig, n
         raise Unrunnable("the ask is not in the conversation")
     messages = prompt.messages(through[:-1], through[-1], household)
     system = persona.system(household, asker, errand.source, catalogue.instructions, catalogue.unreachable,
-                            now.astimezone(ZoneInfo(household.timezone)))
+                            now.astimezone(ZoneInfo(household.timezone)), await taste.overrides(household.id))
     limits = Limits(config.max_tool_rounds, config.max_tool_result_chars, config.context_turns, 0)
     got = await _answer(system, messages, catalogue, limits, errand.conversation_id)
     return Ran(got.reply.text, got.calls, got.reply.owed)

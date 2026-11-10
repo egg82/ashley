@@ -40,7 +40,7 @@ from ..inference.reply import Reply
 from ..people.people import PeopleUnavailable
 from ..workshop.model import thread_of
 from . import (aloud, answering, bench_after, continued, history, history_runs, inflight, inflight_config, keep, limits, owed, person_turn, prompt,
-               recall, settled, speaker, steering, storing, to_phone, tool_loop, unprompted, unsaid)
+               recall, settled, speaker, steering, storing, taste, to_phone, tool_loop, unprompted, unsaid)
 from .checkpoint import Checkpoint
 from .offered import fields as offered_fields
 from .landing import Landing
@@ -91,7 +91,7 @@ async def respond(inbound: Inbound) -> Outbound:
        handed in before is the turn stored then, in its own conversation) and who could hear it
        (`history.heard`: private to the speaker on an owner-only channel, else shared). If the conversation closes between the two
        (ConversationClosed), `for_thread` is asked once more and the turn added there.
-    3. The system prompt is `persona.system(kind, ...)` with the household's local time. Tools are the catalogue of
+    3. The system prompt is `persona.system(kind, ...)` with the household's local time and persona overrides (`taste.overrides`). Tools are the catalogue of
        `turn_tools.for_turn(inbound)`, the locator's `Tools` plus what this turn's fields offer; ToolsUnavailable means no tools and `tools_reachable` False, and the reply goes on. What she
        remembers is `Memory.profile` (standing facts) and `Memory.recall` on the message's text for the speaker,
        owner-only when the channel's audience is `owner`, read alongside the catalogue; MemoryUnavailable means she
@@ -177,16 +177,16 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
     """`respond` from step 3 for the person turn `said`, already stored, its work begun by `begin` with the first
     checkpoint (which raises ValueError when the turn is answered elsewhere)."""
     source = Landing(inbound, (conversation.id, said.id), LIMITS)
-    catalogue, remembered, phone, page_open, carried, away = await asyncio.gather(
+    catalogue, remembered, phone, page_open, carried, away, overrides = await asyncio.gather(
         tool_loop.offered(source), recall.remembered(inbound, who), to_phone.reachable(inbound, who.speaker),
         to_phone.looking(inbound, who.speaker), history.carried(inbound, who.speaker, conversation.id, said, LIMITS[inbound.kind]),
-        owed.untold(inbound, who.speaker))
+        owed.untold(inbound, who.speaker), taste.overrides(inbound.household_id))
     logs.info(log, "respond.offered", conversation=conversation.id, **offered_fields(catalogue))
     system = prompt.system(inbound.kind, who, inbound.place, catalogue, remembered.recalled,
                            remembered.standing or (), phone=phone is not None,
                            page_open=page_open if phone is not None else None, aloud=aloud.offered(inbound),
                            said_before=prompt.said_before(carried.relevant, who.household),
-                           while_away=owed.lines(away, who.household))
+                           while_away=owed.lines(away, who.household), overrides=overrides)
     ran = await history_runs.carried(inbound.household_id, carried.recent, said, LIMITS[inbound.kind])
     messages = prompt.messages(carried.recent, said, who.household, ran, inbound.note, carried.places)
     offered = recall.offered_ids(remembered.standing, remembered.recalled)
