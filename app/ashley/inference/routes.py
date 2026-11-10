@@ -70,9 +70,32 @@ def without_fallback(routes: Routes) -> Routes:
                                     for task, r in routes.by_task.items()})
 
 
-def load(providers: Mapping[str, Wired]) -> Routes:
-    """The routes shipped in `routes.json` beside this module, checked against `providers` (`parse`)."""
-    return parse(json.loads(resources.files("ashley.inference").joinpath("routes.json").read_text()), providers)
+def load(providers: Mapping[str, Wired], routes_file: str = "") -> Routes:
+    """The routes shipped in `routes.json` beside this module, checked against `providers` (`parse`). A non-empty
+    `routes_file` is the operator's overlay of them (`overlay`); anything wrong with it, or with the routes it makes,
+    is a ValueError naming ROUTES_FILE."""
+    shipped = json.loads(resources.files("ashley.inference").joinpath("routes.json").read_text())
+    if not routes_file:
+        return parse(shipped, providers)
+    try:
+        with open(routes_file) as f:
+            return parse(overlay(shipped, json.load(f)), providers)
+    except (OSError, ValueError) as e:
+        raise ValueError(f"ROUTES_FILE {routes_file}: {e}") from e
+
+
+def overlay(shipped: Mapping[str, object], operator: object) -> dict[str, object]:
+    """The shipped routes data with an operator's over it: `{"cooldown_s"?: n, "tasks"?: {...}}`. Each task in
+    the overlay replaces that task's whole entry; tasks it leaves out, and an absent `cooldown_s`, stay shipped.
+    Neither input is changed, and the result is checked by `parse`, not here."""
+    fields = _object(operator)
+    if fields is None or not set(fields) <= {"cooldown_s", "tasks"}:
+        raise ValueError('routes overlay: expected an object with only "cooldown_s" and "tasks"')
+    tasks = _object(fields.get("tasks", {}))
+    if tasks is None:
+        raise ValueError("routes overlay: tasks is an object with an entry per task to replace")
+    kept = _object(shipped["tasks"]) or {}
+    return {"cooldown_s": fields.get("cooldown_s", shipped["cooldown_s"]), "tasks": {**kept, **tasks}}
 
 
 def parse(data: object, providers: Mapping[str, Wired]) -> Routes:

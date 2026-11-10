@@ -87,6 +87,31 @@ each test, so no test is charged a full collection pass for the cycles its prede
 Two suites at once on one shared runner push tests that take about 1 s past 2 s; hosted runners give each job its
 own machine, so `ci.yml` needs no lock between pipelines.
 
+## Choosing models
+
+Which model carries which task is `app/ashley/inference/routes.json`. To change it without rebuilding the image, set
+`ROUTES_FILE` to a JSON file that overlays it: each task in the file replaces that task's whole route list, a task
+it leaves out keeps the shipped list, and `cooldown_s` is replaced only if given. The result is validated exactly as
+the shipped file is, so a mistake stops start-up naming `ROUTES_FILE`. This sends `chat` to an OpenAI model and
+`errand` to a local OpenAI-compatible server (`provider: "local"`, wired by `LOCAL_LLM_URL`):
+
+```json
+{
+  "tasks": {
+    "chat": [
+      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 30, "params": {"max_completion_tokens": 2048}}
+    ],
+    "errand": [
+      {"provider": "local", "model": "qwen3-32b", "timeout_s": 60, "params": {"max_completion_tokens": 2048}}
+    ]
+  }
+}
+```
+
+A task whose entry is `{"routes": [...], "fallback": false}` (`memory_write` ships so) runs on its first route only; an
+overlay that gives it a plain list gives it a fallback. `action_judge` is a safety judge: pointing it at a weaker model
+weakens a check, not a convenience.
+
 ## Patterns
 
 The aim behind every rule: **make bugs hard to create and easy to find.** A system many places call (memory,
