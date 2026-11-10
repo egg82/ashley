@@ -9,7 +9,7 @@ from functools import partial
 from ashley.files import sweep
 from ashley.files.mirror import MirroredStore
 from ashley import services
-from ashley.files.store import ObjectStore
+from ashley.files.store import NullStore, ObjectStore
 from ashley.referee.etcd_lease import EtcdLease
 from ashley.referee.lease import Body, Lease
 from ashley.settings import Settings
@@ -115,5 +115,9 @@ def test_the_app_starts_the_sweep_under_the_lease_when_the_store_spans_sites() -
     assert names.count(sweep.NAME) == 1
 
 
-def test_the_app_does_not_start_the_sweep_without_a_mirrored_store() -> None:
-    assert sweep.NAME not in _wired(Site(Clock()))
+def test_the_app_does_not_start_the_sweep_without_a_store() -> None:
+    assert sweep.NAME not in _wired(NullStore())
+
+
+def test_the_app_starts_the_sweep_for_a_single_store() -> None:
+    assert _wired(Site(Clock())).count(sweep.NAME) == 1

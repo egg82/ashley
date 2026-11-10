@@ -23,7 +23,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **Units from the household** in persona and tools (no shipped "degrees Fahrenheit"). Fits into: Persona, Tools.
     - **Sandbox namespace and runtime class as settings** (`app/ashley/runs/runs.json`), and one constant for the
       pod label prefix. Fits into: Code runs, Looks.
-    - **A plain object store**: one endpoint runs without the mirror's repair and sweep. Fits into: Object store.
     - **Place coordinates without Home Assistant**: a household home location that place search reads. Fits into:
       Homes, Tools.
     - **Advertise only configured features**: hide the herdr and Proton connection kinds when their settings are

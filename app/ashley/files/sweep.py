@@ -1,4 +1,4 @@
-"""The sweep singleton: every `sweep_interval_s`, under the etcd lease, delete from each site's store the bytes no piece
+"""The sweep singleton: every `sweep_interval_s`, under the etcd lease, delete from each site's store (the one store, when there is one site) the bytes no piece
 names. The store is listed first and the references read after, so a piece committed during the pass is seen.
 
 A key is deleted only when it is unreferenced, was last written at least `sweep_grace_s` ago on every site that holds
@@ -44,6 +44,11 @@ class Swept:
     deleted: int
 
 
+def _sites(store: ObjectStore) -> tuple[ObjectStore, ...]:
+    """The stores one pass visits: each site's of a mirror, otherwise the store itself."""
+    return store.stores if isinstance(store, MirroredStore) else (store,)
+
+
 async def _listed(stores: tuple[ObjectStore, ...]) -> dict[int, Mapping[str, datetime]]:
     """Each site's listing; a site that cannot be listed is logged and left out."""
     found: dict[int, Mapping[str, datetime]] = {}
@@ -80,9 +85,9 @@ async def _delete_from(index: int, store: ObjectStore, keys: list[str]) -> froze
     return frozenset(done)
 
 
-async def _pass(store: MirroredStore, referenced: Referenced, candidates: Candidates, config: FilesConfig,
+async def _pass(store: ObjectStore, referenced: Referenced, candidates: Candidates, config: FilesConfig,
                 now: datetime) -> Swept | None:
-    stores = store.stores
+    stores = _sites(store)
     listings = await _listed(stores)
     if not listings:
         return None
@@ -103,7 +108,7 @@ async def _pass(store: MirroredStore, referenced: Referenced, candidates: Candid
     return Swept(len(newest), len(newest.keys() - named), deleted)
 
 
-async def run_once(store: MirroredStore, referenced: Referenced, candidates: Candidates, config: FilesConfig,
+async def run_once(store: ObjectStore, referenced: Referenced, candidates: Candidates, config: FilesConfig,
                    clock: Callable[[], datetime] = lambda: datetime.now(UTC)) -> Swept | None:
     """One pass; None when nothing could be judged (no site listed, or the references or candidates could not be
     read or kept: a failure is logged with its frames and nothing is deleted). Logs `files.sweep_started`, one
@@ -121,7 +126,7 @@ async def run_once(store: MirroredStore, referenced: Referenced, candidates: Can
     return swept
 
 
-async def run(store: MirroredStore, referenced: Referenced, candidates: Candidates, config: FilesConfig,
+async def run(store: ObjectStore, referenced: Referenced, candidates: Candidates, config: FilesConfig,
               sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
     """Pass, wait, repeat, until cancelled."""
     while True:

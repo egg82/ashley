@@ -27,7 +27,7 @@ def _wired(endpoints: str) -> tuple[ObjectStore, list[str]]:
                         files_link_key="k" * 32)
     leases = NamedLeases()
     services.register(Lease, leases)
-    closer = wiring._wire_files(settings)
+    closer = wiring.wire_files(settings)
     try:
         store = services.get(ObjectStore)
         for coroutine in singletons(settings):
@@ -46,3 +46,9 @@ def test_two_endpoints_are_one_mirrored_store_kept_whole_and_swept() -> None:
     assert repair.NAME in names
     assert sweep.NAME in names
 
+
+def test_one_endpoint_is_that_store_swept_with_no_repair() -> None:
+    store, names = _wired("http://a.invalid")
+    assert isinstance(store, S3Store)
+    assert repair.NAME not in names
+    assert names.count(sweep.NAME) == 1
