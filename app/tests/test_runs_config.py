@@ -49,7 +49,7 @@ def test_a_bad_shared_key_is_refused(change: dict[str, object]) -> None:
 
 def test_a_missing_key_is_refused() -> None:
     data = shipped()
-    del data["namespace"]
+    del data["poll_s"]
     with pytest.raises(ValueError):
         config.parse(data)
 

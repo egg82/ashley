@@ -138,9 +138,9 @@ def test_the_budget_is_shared_by_the_artifacts_and_their_count_is_max_files() ->
 
 def test_a_binary_profile_pod_is_given_the_budget_and_the_python_pod_is_not() -> None:
     shipped = config.load().with_image("build123d", "r.test/cad@sha256:" + "c" * 64)
-    env = {e["name"]: e["value"] for e in manifest(Job("run-1", "build123d", "x"), shipped, "r")["spec"]["containers"][0]["env"]}
+    env = {e["name"]: e["value"] for e in manifest(Job("run-1", "build123d", "x"), shipped, "r", "gvisor")["spec"]["containers"][0]["env"]}
     assert json.loads(env["ASHLEY_LIMITS"])["artifact_bytes"] == shipped.languages["build123d"].artifact_bytes
-    py = {e["name"]: e["value"] for e in manifest(Job("run-1", "python", "x"), shipped, "r")["spec"]["containers"][0]["env"]}
+    py = {e["name"]: e["value"] for e in manifest(Job("run-1", "python", "x"), shipped, "r", "gvisor")["spec"]["containers"][0]["env"]}
     assert "artifact_bytes" not in json.loads(py["ASHLEY_LIMITS"])
 
 

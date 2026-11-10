@@ -13,7 +13,7 @@ PROFILE: dict[str, Any] = {
     "image": PYTHON.image, "script_timeout_s": 10, "pod_deadline_s": 30, "cpu": "500m", "cpu_request": "250m",
     "memory": "256Mi", "work_mib": 32, "log_bytes": 4096}
 GOOD: dict[str, Any] = {
-    "namespace": "ashley-sandbox", "runtime_class": "gvisor", "max_script_chars": 100, "max_stdin_chars": 100,
+    "max_script_chars": 100, "max_stdin_chars": 100,
     "output_chars": 50, "file_chars": 40, "max_files": 2, "poll_s": 0.5, "languages": {"python": PROFILE}}
 
 
@@ -21,9 +21,8 @@ def python(**change: Any) -> dict[str, Any]:
     return {**GOOD, "languages": {"python": {**PROFILE, **change}}}
 
 
-def test_the_shipped_tunables_load_pinned_and_in_the_sandbox_namespace() -> None:
+def test_the_shipped_tunables_load_pinned() -> None:
     shipped = load()
-    assert shipped.namespace == "ashley-sandbox" and shipped.runtime_class == "gvisor"
     python = shipped.languages["python"]
     assert "@sha256:" in python.image and python.pod_deadline_s > python.script_timeout_s
 

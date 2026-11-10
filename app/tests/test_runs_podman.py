@@ -13,7 +13,7 @@ IMAGE = "registry.example/cad@sha256:" + "0" * 64
 def test_the_container_is_cut_off_and_its_variables_are_named_not_valued() -> None:
     runs = config.load().with_image("build123d", IMAGE)
     job = Job("run-7", "build123d", "print('secret-ish script')", inputs={"piece-7.stl": b"solid x"})
-    container = manifest(job, runs, RUNNER)["spec"]["containers"][0]
+    container = manifest(job, runs, RUNNER, "gvisor")["spec"]["containers"][0]
     env = {str(e["name"]): str(e["value"]) for e in container["env"]}
     profile = runs.profile("build123d")
     assert profile is not None

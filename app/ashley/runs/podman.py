@@ -43,7 +43,7 @@ class PodmanSandbox(Sandbox):
         profile = self._config.profile(job.language)
         if profile is None:
             raise SandboxUnavailable(f"{job.language} is not run")
-        container = manifest(job, self._config, RUNNER)["spec"]["containers"][0]
+        container = manifest(job, self._config, RUNNER, runtime_class="")["spec"]["containers"][0]
         env = {str(e["name"]): str(e["value"]) for e in container["env"]}
         name = f"ashley-{job.name}-{uuid.uuid4().hex[:8]}"
         output = await self._ran(name, self.arguments(name, profile, env, container["command"]), env, profile)

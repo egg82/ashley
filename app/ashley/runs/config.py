@@ -1,6 +1,5 @@
-"""The sandbox's tunables, data in `runs.json` beside this module. What every run shares is top level: where a pod goes
-(`namespace`, `runtime_class`), the longest script and input taken (`max_script_chars`, `max_stdin_chars`), how much of
-each output stream and each file comes back (`output_chars`, `file_chars`, `max_files`, one reply shape for every
+"""The sandbox's tunables, data in `runs.json` beside this module. What every run shares is top level: the longest
+script and input taken (`max_script_chars`, `max_stdin_chars`), how much of each output stream and each file comes back (`output_chars`, `file_chars`, `max_files`, one reply shape for every
 language), and how often the pod is asked whether it has finished (`poll_s`).
 
 Each language is one `Profile` under `languages`, and Python's is required: how long the script may run
@@ -47,8 +46,6 @@ class Profile:
 
 @dataclass(frozen=True)
 class RunsConfig:
-    namespace: str
-    runtime_class: str
     max_script_chars: int
     max_stdin_chars: int
     output_chars: int

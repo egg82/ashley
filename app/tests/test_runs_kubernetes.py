@@ -22,7 +22,7 @@ JOB = Job("run-7", "python", SECRET, stdin="the input", files={"data.csv": "a,b\
 
 def sandbox(fake: FakeKube, clock: Clock | None = None) -> KubernetesSandbox:
     clock = clock or Clock()
-    return KubernetesSandbox(fake.api(), CONFIG, sleep=clock.sleep, clock=clock)
+    return KubernetesSandbox(fake.api(), CONFIG, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock)
 
 
 def ran(fake: FakeKube, job: Job = JOB) -> Output:
@@ -161,7 +161,7 @@ def test_the_api_unreachable_is_unavailable(tmp_path: Path) -> None:
     token.write_text("t")
     api = KubeApi(httpx2.AsyncClient(base_url="https://kube.test", transport=httpx2.MockTransport(down)), str(token))
     with pytest.raises(SandboxUnavailable):
-        asyncio.run(KubernetesSandbox(api, CONFIG, sleep=Clock().sleep, clock=Clock()).run(JOB))
+        asyncio.run(KubernetesSandbox(api, CONFIG, "ashley-sandbox", "gvisor", sleep=Clock().sleep, clock=Clock()).run(JOB))
 
 
 # --- what comes back ---

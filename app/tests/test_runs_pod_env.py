@@ -13,7 +13,7 @@ NAMES = st.text(st.characters(blacklist_characters="\x00/", blacklist_categories
 
 
 def env_of(job: Job) -> dict[str, str]:
-    env = manifest(job, CONFIG, "")["spec"]["containers"][0]["env"]
+    env = manifest(job, CONFIG, "", "gvisor")["spec"]["containers"][0]["env"]
     return {e["name"]: e["value"] for e in env}
 
 

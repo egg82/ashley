@@ -23,7 +23,7 @@ def fake(tmp_path: Path) -> FakeKube:
 
 
 def test_the_runner_is_told_the_configured_limits() -> None:
-    env = {e["name"]: e["value"] for e in manifest(JOB, CONFIG, "")["spec"]["containers"][0]["env"]}
+    env = {e["name"]: e["value"] for e in manifest(JOB, CONFIG, "", "gvisor")["spec"]["containers"][0]["env"]}
     assert json.loads(env["ASHLEY_LIMITS"]) == {
         "timeout_s": PYTHON.script_timeout_s, "output_chars": CONFIG.output_chars, "file_chars": CONFIG.file_chars,
         "max_files": CONFIG.max_files, "log_bytes": PYTHON.log_bytes}
@@ -38,7 +38,7 @@ def test_the_log_is_read_up_to_the_configured_bytes_and_polled_at_the_configured
 
     fake.fail = record
     clock = Clock()
-    asyncio.run(KubernetesSandbox(fake.api(), CONFIG, sleep=clock.sleep, clock=clock).run(JOB))
+    asyncio.run(KubernetesSandbox(fake.api(), CONFIG, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock).run(JOB))
     assert asked == [str(PYTHON.log_bytes)]
     assert clock.now == 2 * CONFIG.poll_s
 
@@ -53,5 +53,5 @@ def test_a_leftover_pod_is_swept_only_past_twice_the_pod_deadline(fake: FakeKube
     fake.leftover("run-2", age(2.5 * PYTHON.pod_deadline_s))
     fake.script = Script()
     clock = Clock()
-    asyncio.run(KubernetesSandbox(fake.api(), CONFIG, sleep=clock.sleep, clock=clock).run(JOB))
+    asyncio.run(KubernetesSandbox(fake.api(), CONFIG, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock).run(JOB))
     assert "run-2" in fake.deleted and "run-1" not in fake.deleted

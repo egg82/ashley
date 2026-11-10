@@ -45,28 +45,28 @@ def test_the_address_comes_from_the_environment_without_a_trailing_slash() -> No
 
 def test_with_an_address_the_looker_is_the_warm_one_and_its_client_is_closed_on_shutdown(api: KubeApi) -> None:
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    wiring_sandbox.wire_looker(Settings(look_warm_url=WARM, **BASE, **ETCD), api, "ashley-sandbox", "gvisor", closers)
+    wiring_sandbox.wire_looker(Settings(look_warm_url=WARM, **BASE, **ETCD), api, closers)
     assert isinstance(services.get(Looker), WarmLooker) and len(closers) == 1
     asyncio.run(closers[0]())
 
 
 def test_without_an_address_every_look_has_a_pod_of_its_own(api: KubeApi) -> None:
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    wiring_sandbox.wire_looker(Settings(**BASE), api, "ashley-sandbox", "gvisor", closers)
+    wiring_sandbox.wire_looker(Settings(**BASE), api, closers)
     assert isinstance(services.get(Looker), KubernetesLooker) and closers == []
 
 
 def test_a_floating_look_image_is_refused_with_or_without_the_warm_pod(api: KubeApi) -> None:
     loose = Settings(**{**BASE, "look_image": "registry.example/look:latest"})
     with pytest.raises(ValueError, match="pinned"):
-        wiring_sandbox.wire_looker(loose, api, "ashley-sandbox", "gvisor", [])
+        wiring_sandbox.wire_looker(loose, api, [])
 
 
 @pytest.mark.parametrize(("warm", "extra"), [(WARM, 1), ("", 0)])
 def test_a_singleton_keeps_the_warm_pod_only_when_the_looker_is_the_warm_one(api: KubeApi, warm: str, extra: int) -> None:
     settings = Settings(look_warm_url=warm, **BASE, **ETCD)
     bare = wiring_singletons.singletons(Settings(database_url="x", build_version="t", **ETCD))
-    wiring_sandbox.wire_looker(settings, api, "ashley-sandbox", "gvisor", [])
+    wiring_sandbox.wire_looker(settings, api, [])
     running = wiring_singletons.singletons(settings)
     for coroutine in [*bare, *running]:
         coroutine.close()

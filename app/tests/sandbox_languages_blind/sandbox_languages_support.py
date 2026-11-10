@@ -97,13 +97,17 @@ def work_size_limit(manifest: dict[str, Any]) -> str:
     return str(found[0])
 
 
+NAMESPACE = "ashley-sandbox"
+RUNTIME = "gvisor"
+
+
 def check_isolated(manifest: dict[str, Any], cfg: RunsConfig, language: Language) -> None:
     """The isolation properties of the contract and the profile's own image, deadline and limits, read from the pod."""
     profile = cfg.profile(language)
     assert profile is not None
     assert manifest["kind"] == "Pod"
     spec = manifest["spec"]
-    assert spec["runtimeClassName"] == cfg.runtime_class
+    assert spec["runtimeClassName"] == RUNTIME
     assert spec["automountServiceAccountToken"] is False
     for key in ("hostNetwork", "hostPID", "hostIPC", "shareProcessNamespace"):
         assert not spec.get(key, False), key
@@ -165,7 +169,7 @@ class Rig:
     sandbox: KubernetesSandbox = field(init=False)
 
     def __post_init__(self) -> None:
-        self.sandbox = KubernetesSandbox(self.kube.api(), self.cfg, self.clock.sleep, self.clock)
+        self.sandbox = KubernetesSandbox(self.kube.api(), self.cfg, NAMESPACE, RUNTIME, self.clock.sleep, self.clock)
 
 
 def rig(tmp_path: Path, script: Script | None = None, cfg: RunsConfig | None = None) -> Rig:

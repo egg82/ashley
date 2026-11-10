@@ -12,7 +12,7 @@ from ashley.runs.model import Output
 from ashley.runs.sandbox import SandboxUnavailable
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from rcb_support import check_isolated, job, rig, run, skeleton
+from rcb_support import NAMESPACE, RUNTIME, check_isolated, job, rig, run, skeleton
 from sandbox_support import CONFIG, PYTHON, Script, envelope_line
 
 DONE = ["Pending", "Running", "Succeeded"]
@@ -179,7 +179,7 @@ def test_a_cancelled_run_deletes_its_pod(tmp_path: Path) -> None:
         waiting.set()
         await asyncio.Event().wait()
 
-    sandbox = KubernetesSandbox(world.kube.api(), CONFIG, stuck, world.clock)
+    sandbox = KubernetesSandbox(world.kube.api(), CONFIG, NAMESPACE, RUNTIME, stuck, world.clock)
 
     async def cancelled() -> None:
         task = asyncio.ensure_future(sandbox.run(job()))

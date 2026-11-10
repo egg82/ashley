@@ -1,9 +1,13 @@
 """Process configuration, read once from the environment."""
 
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
+
+DNS_LABEL = re.compile(r"[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?")
+DNS_NAME = re.compile(r"[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?")
 
 
 @dataclass(frozen=True)
@@ -45,6 +49,8 @@ class Settings:
     `sandbox_token_file` is where the app's ServiceAccount token for the sandbox is projected, and `sandbox_ca_file`
     the cluster's CA beside it; set, code runs in pods in the sandbox namespace (`ashley.runs.kubernetes`) through the
     API server at `sandbox_api_url`. Unset, she runs no code. The token file needs its CA (ValueError).
+    `sandbox_namespace` is the namespace every sandbox, look and media pod is made in and `sandbox_runtime_class` the
+    RuntimeClass they run under (gVisor); a Kubernetes name each, as the API takes it (ValueError).
     `look_image` (a browser image with Playwright for Python, pinned by digest) and `look_app_url` (where a pod in the
     sandbox namespace reaches the app, `http://host:port`) let her take screenshots of a bench in pods of that namespace
     (`ashley.looks.kubernetes`); both or neither, and they need the sandbox settings and the download-link key
@@ -117,6 +123,8 @@ class Settings:
     sandbox_token_file: str = ""
     sandbox_ca_file: str = ""
     sandbox_api_url: str = "https://kubernetes.default.svc"
+    sandbox_namespace: str = "ashley-sandbox"
+    sandbox_runtime_class: str = "gvisor"
     look_image: str = ""
     cad_image: str = ""
     look_app_url: str = ""
@@ -173,6 +181,10 @@ class Settings:
                              "must be set together")
         if self.files_link_key and len(self.files_link_key) < 32:
             raise ValueError("FILES_LINK_KEY must be at least 32 characters")
+        if not DNS_LABEL.fullmatch(self.sandbox_namespace):
+            raise ValueError("SANDBOX_NAMESPACE must be a Kubernetes namespace name (lowercase letters, digits and '-')")
+        if not DNS_NAME.fullmatch(self.sandbox_runtime_class):
+            raise ValueError("SANDBOX_RUNTIME_CLASS must be a Kubernetes name (lowercase letters, digits, '-' and '.')")
         if self.sandbox_token_file and not self.sandbox_ca_file:
             raise ValueError("SANDBOX_TOKEN_FILE needs SANDBOX_CA_FILE")
         if bool(self.look_image) != bool(self.look_app_url):
@@ -230,6 +242,8 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     sandbox_token_file=env.get("SANDBOX_TOKEN_FILE", ""),
                     sandbox_ca_file=env.get("SANDBOX_CA_FILE", ""),
                     sandbox_api_url=env.get("SANDBOX_API_URL", Settings.sandbox_api_url).rstrip("/"),
+                    sandbox_namespace=env.get("SANDBOX_NAMESPACE", Settings.sandbox_namespace).strip(),
+                    sandbox_runtime_class=env.get("SANDBOX_RUNTIME_CLASS", Settings.sandbox_runtime_class).strip(),
                     media_image=env.get("MEDIA_IMAGE", "").strip(),
                     media_app_url=env.get("MEDIA_APP_URL", "").strip().rstrip("/"),
                     look_image=env.get("LOOK_IMAGE", "").strip(), cad_image=env.get("CAD_IMAGE", "").strip(),

@@ -28,11 +28,13 @@ START_GRACE_S = 15
 
 
 class KubernetesSandbox(Sandbox):
-    def __init__(self, api: KubeApi, config: RunsConfig,
+    def __init__(self, api: KubeApi, config: RunsConfig, namespace: str, runtime_class: str,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
                  clock: Callable[[], float] = time.monotonic) -> None:
         self._api = api
         self._config = config
+        self._namespace = namespace
+        self._runtime_class = runtime_class
         self._sleep = sleep
         self._clock = clock
 
@@ -53,7 +55,7 @@ class KubernetesSandbox(Sandbox):
             raise SandboxUnavailable(f"{job.language} is not run")
         await self._sweep()
         try:
-            await self._api.create_pod(self._config.namespace, manifest(job, self._config, RUNNER))
+            await self._api.create_pod(self._namespace, manifest(job, self._config, RUNNER, self._runtime_class))
             output = await self._finished(job.name, started, profile)
         except KubeError as e:
             logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", error=str(e),
@@ -70,7 +72,7 @@ class KubernetesSandbox(Sandbox):
         phase: object = None
         while True:
             try:
-                pod = await self._api.pod(self._config.namespace, name)
+                pod = await self._api.pod(self._namespace, name)
             except KubeError as e:
                 logs.info(log, "runs.poll_failed", pod=name, error=str(e))
             else:
@@ -87,7 +89,7 @@ class KubernetesSandbox(Sandbox):
 
     async def _read(self, name: str, pod: dict[str, Any], profile: Profile) -> Output:
         try:
-            text: str | None = await self._api.log(self._config.namespace, name, profile.log_bytes)
+            text: str | None = await self._api.log(self._namespace, name, profile.log_bytes)
         except KubeError as e:
             logs.info(log, "runs.log_failed", pod=name, error=str(e))
             text = None
@@ -104,14 +106,14 @@ class KubernetesSandbox(Sandbox):
 
     async def _delete(self, name: str) -> None:
         try:
-            await self._api.delete_pod(self._config.namespace, name)
+            await self._api.delete_pod(self._namespace, name)
         except KubeError as e:
             logs.warning(log, "runs.pod_left", pod=name, error=str(e))
 
     async def _sweep(self) -> None:
         """Delete this app's run pods older than twice the longest pod deadline of any language; a failure is logged and the run goes on."""
         try:
-            pods = await self._api.pods(self._config.namespace, f"{LABEL}=true")
+            pods = await self._api.pods(self._namespace, f"{LABEL}=true")
         except KubeError as e:
             logs.warning(log, "runs.sweep_failed", error=str(e))
             return

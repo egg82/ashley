@@ -23,7 +23,7 @@ CAD_JOB = Job("run-8", "build123d", "show(Box(1, 1, 1))")
 def made(tmp_path: Path, job: Job) -> dict[str, Any]:
     fake, clock = FakeKube(tmp_path / "token"), Clock()
     runs = replace(CONFIG, languages={"python": PYTHON, "build123d": BUILD123D})
-    asyncio.run(KubernetesSandbox(fake.api(), runs, sleep=clock.sleep, clock=clock).run(job))
+    asyncio.run(KubernetesSandbox(fake.api(), runs, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock).run(job))
     assert len(fake.created) == 1
     return fake.created[0]
 

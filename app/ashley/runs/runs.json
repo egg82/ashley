@@ -1,6 +1,4 @@
 {
-  "namespace": "ashley-sandbox",
-  "runtime_class": "gvisor",
   "max_script_chars": 20000,
   "max_stdin_chars": 20000,
   "output_chars": 8000,

@@ -16,7 +16,7 @@ from ashley.runs.runner import MARK
 TOKEN = "token-one"
 PYTHON = Profile(image="docker.io/library/python:3.13.18-alpine3.24@sha256:" + "a" * 64, script_timeout_s=10,
                  pod_deadline_s=30, cpu="500m", cpu_request="250m", memory="256Mi", work_mib=32, log_bytes=4096)
-CONFIG = RunsConfig(namespace="ashley-sandbox", runtime_class="gvisor", max_script_chars=200, max_stdin_chars=200,
+CONFIG = RunsConfig(max_script_chars=200, max_stdin_chars=200,
                     output_chars=50, file_chars=40, max_files=2, poll_s=0.5, languages={"python": PYTHON})
 
 
