@@ -2,6 +2,7 @@
 a locked section is refused whatever the route, and what is stored is what a reply's prompt is given."""
 
 from collections.abc import Generator
+from typing import Any
 
 import pytest
 from ashley import services
@@ -38,7 +39,7 @@ def revert(client: TestClient, section: str, to: int, base: int) -> Response:
                        headers=ORIGIN)
 
 
-def section(page: Response, section_id: str) -> dict[str, object]:
+def section(page: Response, section_id: str) -> dict[str, Any]:
     return next(s for s in page.json()["sections"] if s["section"] == section_id)
 
 
@@ -63,8 +64,7 @@ def test_a_change_is_stored_reverted_and_given_to_her_prompt(client: TestClient,
     assert back.status_code == 200, back.text
     wit = section(back, "wit")
     assert (wit["override"], wit["persona_version"]) == (None, 2)
-    changelog = wit["history"]
-    assert isinstance(changelog, list) and [c["person_id"] for c in changelog] == [people.sam, people.alana]
+    assert [c["person_id"] for c in wit["history"]] == [people.sam, people.alana]
 
 
 def test_what_is_stored_reaches_the_prompt_and_only_this_household(client: TestClient, people: People) -> None:
