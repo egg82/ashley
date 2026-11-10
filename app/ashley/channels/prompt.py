@@ -21,11 +21,13 @@ def system(kind: Kind, who: Who, place: str | None, catalogue: Catalogue | None,
            remembered: tuple[Recalled, ...] | None,
            standing: tuple[Recalled, ...] = (), phone: bool = False,
            page_open: bool | None = None, said_before: tuple[str, ...] = (),
-           while_away: tuple[str, ...] = (), aloud: bool = False) -> Mapping[str, SystemPrompt]:
+           while_away: tuple[str, ...] = (), aloud: bool = False,
+           overrides: Mapping[str, str] = persona.NO_OVERRIDES) -> Mapping[str, SystemPrompt]:
     """`persona.system` for this moment in the household's local time; `catalogue` None when tools are unreachable,
     `remembered` None when memory is, and `standing` is then empty; `phone`, whether `text` may go to the speaker's
     phone, and `page_open` whether they have a page open, told on a turn she was woken for; `said_before`, the relevant older turns as `said_before` renders them; `while_away`, the errand results to tell
-    (`channels.owed.lines`); `aloud`, whether she may answer aloud (`channels.aloud.offered`)."""
+    (`channels.owed.lines`); `aloud`, whether she may answer aloud (`channels.aloud.offered`); `overrides`, the
+    household's persona overrides (`channels.taste.overrides`)."""
     context = persona.Context(
         now=datetime.now(ZoneInfo(who.household.timezone)),
         household=who.household,
@@ -43,6 +45,7 @@ def system(kind: Kind, who: Who, place: str | None, catalogue: Catalogue | None,
         aloud=aloud,
         said_before=said_before,
         while_away=while_away,
+        overrides=overrides,
     )
     return persona.system(kind, context)
 
