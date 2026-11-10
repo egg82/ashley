@@ -1,16 +1,22 @@
-"""Nothing she does on her own can widen what she trusts: the modules that write a connection's settings
-(`ashley.connections.settings_write` and the Postgres writer) are imported only by the member route and the wiring that
-registers them, so no tool, channel or model call can reach `SettingsWriter` (`decisions.md`, "A connection has settings
-its person sets"). An import of either by any other module fails here, whatever package it is in."""
+"""Nothing she does on her own can widen what she trusts or reset what her household set: the modules that write a
+connection's settings (`ashley.connections.settings_write` and the Postgres writer) and a household's own fields
+(`ashley.people.household_write` and its Postgres writer) are imported only by their person route and the wiring that
+registers them, so no tool, channel or model call can reach `SettingsWriter` or `HouseholdWriter` (`decisions.md`, "A
+connection has settings its person sets"). An import of any by another module fails here, whatever package it is in."""
 
 import ast
 from pathlib import Path
 
+import pytest
 from source_tree import Parsed
 from test_boundaries import PKG, dotted, package
 
-WRITERS = {"ashley.connections.settings_write", "ashley.connections.settings_write_postgres"}
-MAY_IMPORT = {"ashley.api.connection_settings", "ashley.wiring", "ashley.connections.settings_write_postgres"}
+GUARDED: dict[str, tuple[set[str], set[str]]] = {
+    "settings": ({"ashley.connections.settings_write", "ashley.connections.settings_write_postgres"},
+                 {"ashley.api.connection_settings", "ashley.wiring", "ashley.connections.settings_write_postgres"}),
+    "household": ({"ashley.people.household_write", "ashley.people.postgres_household_write"},
+                  {"ashley.api.household", "ashley.wiring", "ashley.people.postgres_household_write"}),
+}
 
 
 def imported(tree: ast.Module, module: str) -> set[str]:
@@ -28,28 +34,35 @@ def imported(tree: ast.Module, module: str) -> set[str]:
     return out
 
 
-def writers_imported_by(modules: dict[str, ast.Module]) -> dict[str, set[str]]:
-    return {m: found for m, tree in modules.items() if (found := imported(tree, m) & WRITERS)}
+def writers_imported_by(modules: dict[str, ast.Module], writers: set[str]) -> dict[str, set[str]]:
+    return {m: found for m, tree in modules.items() if (found := imported(tree, m) & writers)}
 
 
-def test_only_the_member_route_and_the_wiring_import_the_settings_writer(python_tree: dict[Path, Parsed]) -> None:
+@pytest.mark.parametrize("guarded", sorted(GUARDED))
+def test_only_the_person_route_and_the_wiring_import_a_writer(python_tree: dict[Path, Parsed], guarded: str) -> None:
+    writers, may_import = GUARDED[guarded]
     modules = {dotted(p): file.tree for p, file in package(python_tree).items()}
-    found = writers_imported_by(modules)
+    found = writers_imported_by(modules, writers)
     assert found, "the gate saw no importer of the writer: it would pass on nothing"
-    assert set(found) == MAY_IMPORT, f"importers of the settings writer: {sorted(found)}, allowed {sorted(MAY_IMPORT)}"
+    assert set(found) == may_import, f"importers of the {guarded} writer: {sorted(found)}, allowed {sorted(may_import)}"
 
 
-def test_the_gate_catches_a_tool_a_channel_or_a_model_call_importing_the_writer() -> None:
+def test_the_gate_catches_a_tool_a_channel_or_a_model_call_importing_a_writer() -> None:
     planted = {
         "ashley.tools.planted": "from ..connections.settings_write import SettingsWriter\n",
         "ashley.channels.planted": "from ..connections import settings_write\n",
         "ashley.inference.planted": "import ashley.connections.settings_write_postgres\n",
         "ashley.tools.deep.planted": "from ...connections.settings_write_postgres import PostgresSettingsWriter\n",
-        "ashley.tools.clean": "from ..connections.settings_read import SettingsReader\n"}
-    found = writers_imported_by({m: ast.parse(src) for m, src in planted.items()})
-    assert set(found) == set(planted) - {"ashley.tools.clean"}, found
+        "ashley.tools.household": "from ..people.household_write import HouseholdWriter\n",
+        "ashley.persona.household": "from ..people import postgres_household_write\n",
+        "ashley.tools.clean": "from ..connections.settings_read import SettingsReader\n",
+        "ashley.tools.reads": "from ..people.people import People\n"}
+    writers = {name for names, _ in GUARDED.values() for name in names}
+    found = writers_imported_by({m: ast.parse(src) for m, src in planted.items()}, writers)
+    assert set(found) == set(planted) - {"ashley.tools.clean", "ashley.tools.reads"}, found
 
 
 def test_the_writer_modules_exist_where_the_gate_names_them() -> None:
-    for name in WRITERS:
-        assert (PKG.parent / (name.replace(".", "/") + ".py")).is_file(), name
+    for writers, _ in GUARDED.values():
+        for name in writers:
+            assert (PKG.parent / (name.replace(".", "/") + ".py")).is_file(), name
