@@ -1,7 +1,7 @@
 // The signed-in person's household as last read, and what the last save came to. Reading or saving it also sets how
 // every page writes dates, times and numbers (`format.ts`).
 import { signal } from '@preact/signals';
-import { getHousehold, putHousehold } from '../api/client';
+import { getHousehold, putHousehold } from '../api/household';
 import type { Household, HouseholdRefused, HouseholdRequest } from '../api/types';
 import { writing } from './format';
 
