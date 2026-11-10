@@ -1,7 +1,7 @@
 """Proton as a connection kind: a person's own Proton account, logged in once from the room through Bridge
 (`ashley.api.mail_bridge_login`). Its sealed secret is the password Bridge issued for the account, with which the IMAP
-adapter signs in; the address is fixed, since every account is reached through the one Bridge. Registered only where Bridge is
-wired (`ashley.wiring_bridge`), so no Proton kind is offered where nothing could connect it."""
+adapter signs in; the address is fixed, since every account is reached through the one Bridge. `configured` only where Bridge is
+wired (`ashley.wiring`), so no Proton kind is offered where nothing could connect it."""
 
 from .. import services
 from ..connections.kinds import BridgeLogin, ConnectionKind, Refusal, ResourcesUnavailable

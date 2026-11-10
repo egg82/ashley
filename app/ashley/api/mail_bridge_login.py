@@ -67,7 +67,8 @@ def _unavailable() -> JSONResponse:
 
 
 def _set_up() -> bool:
-    return services.get(ConnectionKinds).get(NAME) is not None and services.get(Connections).can_open()
+    kind = services.get(ConnectionKinds).get(NAME)
+    return kind is not None and kind.configured and services.get(Connections).can_open()
 
 
 async def _store(signed_in: Person, label: str, done: Done) -> int | Literal["label_taken", "too_many"]:

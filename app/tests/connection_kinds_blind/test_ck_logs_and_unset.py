@@ -29,7 +29,7 @@ def test_without_the_key_nothing_is_connected_and_the_kinds_are_still_offered(ke
     assert got.status_code == 200
     body = ConnectionsResponse.model_validate(got.json())
     assert body.can_connect is False and body.connections == []
-    assert [o.name for o in body.offered] == [k.name for k in CONNECTION_KINDS]
+    assert [o.name for o in body.offered] == [k.name for k in CONNECTION_KINDS if k.name != "herdr"]
 
 
 @pytest.mark.parametrize("kind", KIND_NAMES)

@@ -86,7 +86,10 @@ class ConnectionKind:
     (`ashley.connections.settings`), none for a kind with nothing to set; `catalogue` lists what the service has for
     the settings to pick from. A `deployment` kind configures the whole deployment rather than one household (a model
     provider's key, which pays for every household's calls), so only `FIRST_HOUSEHOLD` holds it: it is offered to no
-    other household and no other can add one (`ConnectionKinds.offered`)."""
+    other household and no other can add one (`ConnectionKinds.offered`). A kind not `configured` needs something the
+    deployment lacks (the herdr client certificate, Proton Mail Bridge): it stays registered, so a row already stored
+    is still listed and removable, but it is offered to no household, no connection can be added, and no port opens one
+    (`ConnectionKinds.of_port`)."""
 
     name: str
     title: str
@@ -111,6 +114,7 @@ class ConnectionKind:
     settings: tuple[Setting, ...] = ()
     catalogue: Catalogue | None = None
     deployment: bool = False
+    configured: bool = True
 
     def __post_init__(self) -> None:
         if self.most < 1:
@@ -148,16 +152,17 @@ class ConnectionKinds(Service):
         return tuple(self._kinds.values())
 
     def of_port(self, port: Port) -> tuple[ConnectionKind, ...]:
-        """The registered kinds that implement `port`, in registration order."""
-        return tuple(k for k in self._kinds.values() if port in k.ports)
+        """The registered, configured kinds that implement `port`, in registration order."""
+        return tuple(k for k in self._kinds.values() if k.configured and port in k.ports)
 
     def get(self, name: str) -> ConnectionKind | None:
         return self._kinds.get(name)
 
     def offered(self, household_id: int) -> tuple[ConnectionKind, ...]:
-        """The registered kinds `household_id` may connect, in registration order: every kind, less the `deployment`
-        kinds for any household but `FIRST_HOUSEHOLD`."""
-        return tuple(k for k in self._kinds.values() if not k.deployment or household_id == FIRST_HOUSEHOLD)
+        """The registered kinds `household_id` may connect, in registration order: every configured kind, less the
+        `deployment` kinds for any household but `FIRST_HOUSEHOLD`."""
+        return tuple(k for k in self._kinds.values()
+                     if k.configured and (not k.deployment or household_id == FIRST_HOUSEHOLD))
 
     def is_personal(self, name: str) -> bool:
         """Whether a connection of this kind made without saying who holds it is a person's own."""

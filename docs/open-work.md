@@ -16,8 +16,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **The household's language beyond formats**: its locale's language as the speech-to-text language
       (`transcribe` in `app/ashley/inference/routes.json`) and the language she replies in. Fits into: Inference,
       Persona.
-    - **Advertise only configured features**: hide the herdr and Proton connection kinds when their settings are
-      absent. Fits into: Connections.
     - **The warm look pod and Proton Bridge without etcd**: their settings still refuse to start without it. Fits
       into: Failover referee.
     - **A sandbox without Kubernetes**, as an opt-in for one owner who trusts the code (`app/ashley/runs/podman.py`
