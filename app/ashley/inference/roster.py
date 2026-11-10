@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping
 from datetime import UTC, date, datetime
 
 from .. import logs
+from .keyed_providers import KeyedProviders
 from .model import Route, TaskName, Usage
 from .prices import Prices
 from .provider import ProviderFailed, Wired
@@ -22,12 +23,14 @@ def utc_today() -> date:
 
 class Roster:
     def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, prices: Prices,
-                 clock: Callable[[], float] = time.monotonic, today: Callable[[], date] = utc_today) -> None:
+                 clock: Callable[[], float] = time.monotonic, today: Callable[[], date] = utc_today,
+                 keyed: KeyedProviders | None = None) -> None:
         self._providers: dict[str, Wired] = {}
         for provider in providers:
-            if provider.name in self._providers:
+            if provider.name in self._providers or (keyed is not None and provider.name in keyed.names()):
                 raise ValueError(f"two providers are named {provider.name!r}")
             self._providers[provider.name] = provider
+        self._keyed = keyed
         self._routes = routes
         self._ledger = ledger
         self._prices = prices
@@ -35,12 +38,22 @@ class Roster:
         self._today = today
         self._resting_until: dict[str, float] = {}
 
+    async def refresh(self) -> None:
+        """The keyed providers brought up to date (`KeyedProviders.refresh`); one whose build changed stops resting."""
+        if self._keyed is not None:
+            for name in await self._keyed.refresh():
+                self._resting_until.pop(name, None)
+
+    def _provider(self, name: str) -> Wired | None:
+        found = self._providers.get(name)
+        return found if found is not None or self._keyed is None else self._keyed.current().get(name)
+
     def candidates[W: Wired](self, task: TaskName, kind: type[W]) -> Iterator[tuple[Route, W]]:
         """The task's routes in order whose provider is wired, can do `kind`'s work and is not resting; each route
         passed over is logged `inference.route_skipped`. A provider that rests during the walk is skipped when
         reached."""
         for route in self._routes.for_task(task):
-            provider = self._providers.get(route.provider)
+            provider = self._provider(route.provider)
             if isinstance(provider, kind) and self._clock_ok(route):
                 yield route, provider
                 continue

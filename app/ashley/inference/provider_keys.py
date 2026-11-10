@@ -9,7 +9,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 
-from ..connections.connections import Connections
+from ..connections import ports
+from ..connections.connections import Connections, ConnectionsUnavailable
+from ..connections.kinds import FIRST_HOUSEHOLD
 
 
 @dataclass(frozen=True)
@@ -52,4 +54,19 @@ class ConnectionProviderKeys(ProviderKeys):
         self._env = dict(env)
 
     async def in_force(self) -> Mapping[str, KeyInForce]:
-        raise NotImplementedError
+        keys = {kind: KeyInForce(kind, secret, None) for kind, secret in self._env.items()
+                if secret and kind in self._kinds}
+        connections = self._connections()
+        if not connections.can_open():
+            return keys
+        try:
+            stored = await ports.opened_all(connections, "inference", FIRST_HOUSEHOLD)
+        except ConnectionsUnavailable as e:
+            raise KeysUnavailable("the stored keys could not be read") from e
+        rows: set[str] = set()
+        for opened in stored:
+            kind = opened.connection.kind
+            if kind in self._kinds and kind not in rows:
+                rows.add(kind)
+                keys[kind] = KeyInForce(kind, opened.secret, opened.connection.id)
+        return keys

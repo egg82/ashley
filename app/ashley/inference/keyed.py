@@ -32,3 +32,12 @@ class KeyedProvider:
     kind: ConnectionKind
     names: frozenset[str]
     build: Callable[[str], Built]
+
+    def __post_init__(self) -> None:
+        if self.kind.fixed_address is None or not self.kind.deployment or "inference" not in self.kind.ports:
+            raise ValueError("a keyed provider's kind is a deployment kind of the inference port at a fixed address")
+
+    @property
+    def address(self) -> str:
+        """The provider's one API address, its kind's `fixed_address`."""
+        return self.kind.fixed_address or ""

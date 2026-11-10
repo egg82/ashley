@@ -50,20 +50,22 @@ class RoutedInference(Inference):
         call's duration; `today` is the UTC date a call is priced on; `image_cap` is what limits pictures, none meaning
         none may be drawn. Which providers are resting is held in this process only: a restarted pod tries each once
         again, which costs one failed call."""
-        self._roster = Roster(routes, providers, ledger, prices, clock, today)
-        self._keyed = keyed
+        self._roster = Roster(routes, providers, ledger, prices, clock, today, keyed)
         self._speech = SpeechCalls(self._roster)
         self._embedding = EmbedCalls(self._roster)
         self._voiceprints = VoiceprintCalls(self._roster)
         self._images = ImageCalls(self._roster, image_cap)
 
     async def transcribe(self, task: SpeechTask, heard: Heard, *, conversation_id: int | None = None) -> Transcript:
+        await self._roster.refresh()
         return await self._speech.transcribe(task, heard, conversation_id)
 
     async def speak(self, task: SpeechTask, text: str, *, conversation_id: int | None = None) -> Speech:
+        await self._roster.refresh()
         return await self._speech.speak(task, text, conversation_id)
 
     async def warm(self, task: SpeechTask | EmbedTask | VoiceprintTask) -> None:
+        await self._roster.refresh()
         if task == "embed":
             await self._embedding.warm()
         elif task == "voiceprint":
@@ -72,12 +74,15 @@ class RoutedInference(Inference):
             await self._speech.warm(task)
 
     async def make_image(self, prompt: str, aspect: Aspect, *, household_id: int, conversation_id: int) -> Imaged:
+        await self._roster.refresh()
         return await self._images.make(prompt, aspect, household_id, conversation_id)
 
     async def embed(self, texts: Sequence[str], role: EmbedRole, *, conversation_id: int | None = None) -> Embedded:
+        await self._roster.refresh()
         return await self._embedding.embed(texts, role, conversation_id)
 
     async def voiceprint(self, format: AudioFormat, pcm: bytes, *, conversation_id: int | None = None) -> Voiceprint:
+        await self._roster.refresh()
         return await self._voiceprints.voiceprint(format, pcm, conversation_id)
 
     async def step(self, task: Task, prompt: Prompt, output: type[T], *,
@@ -98,6 +103,7 @@ class RoutedInference(Inference):
         """The first answer from the task's routes in order, skipping unwired and resting ones. Raises
         InferenceRejected when every route called failed `error`, InferenceCutOff when a reply was cut off at the token
         limit, else InferenceUnavailable."""
+        await self._roster.refresh()
         failures = Failed()
         for route, provider in self._roster.candidates(task, Provider):
             answer = await self._attempt(task, route, provider, prompt, output, conversation_id, failures)
