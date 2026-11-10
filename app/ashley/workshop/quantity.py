@@ -117,8 +117,9 @@ def number_text(value: float, unit: Unit | None) -> str:
     return name if whole == 0 else f"{whole} {name}"
 
 
-def scaled_line(line: str, amount: Amount, factor: float) -> str:
-    """`line` with its amount multiplied by `factor` and written back in its unit, the rest of the line as it was."""
+def scaled_line(line: str, amount: Amount, factor: float, metric_first: bool = False) -> str:
+    """`line` with its amount multiplied by `factor` and written back in its unit, the rest of the line as it was.
+    `metric_first`: a line that carries a metric equivalent leads with it and brackets the page's own amount."""
     low = amount.low * factor
     text = number_text(low, amount.unit)
     if amount.high is not None:
@@ -128,7 +129,8 @@ def scaled_line(line: str, amount: Amount, factor: float) -> str:
         text += " " + (amount.unit.many if many else amount.unit.one)
     if amount.equivalent is not None:
         value, unit = amount.equivalent
-        text += f" ({number_text(value * factor, unit)}{unit.one})"
+        metric = f"{number_text(value * factor, unit)}{unit.one}"
+        text = f"{metric} ({text})" if metric_first else f"{text} ({metric})"
     rest = line[amount.end:]
     return text + (rest if not rest or rest[0] in " ,;)" else " " + rest)
 

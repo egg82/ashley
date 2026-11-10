@@ -134,3 +134,21 @@ def test_the_exact_scaled_number_stays_in_the_data() -> None:
 def test_her_read_states_the_exact_factor() -> None:
     text = recipe.text_of(dataclasses.replace(_recipe(MASH, 9), yield_text="16"))
     assert "multiplied by 0.5625" in text
+
+
+@pytest.mark.parametrize(("metric_first", "shown"), [
+    (False, "2 1/2 cups (500g) granulated sugar, divided"),
+    (True, "500g (2 1/2 cups) granulated sugar, divided"),
+])
+def test_a_metric_equivalent_leads_the_line_when_asked(metric_first: bool, shown: str) -> None:
+    line = "1 and 1/4 cups (250g) granulated sugar, divided"
+    found = quantity.amount_of(line)
+    assert found is not None
+    assert quantity.scaled_line(line, found, 2, metric_first) == shown
+
+
+def test_a_line_without_a_metric_equivalent_is_scaled_alike_either_way() -> None:
+    line = "1 1/2 cups heavy cream, warm"
+    found = quantity.amount_of(line)
+    assert found is not None
+    assert quantity.scaled_line(line, found, 2, True) == quantity.scaled_line(line, found, 2) == "3 cups heavy cream, warm"

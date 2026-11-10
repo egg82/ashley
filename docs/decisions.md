@@ -1609,6 +1609,13 @@ treats the symptom.
 
 ## A household may override her taste, never her contract
 
+- **Units follow `Household.unit_system` by field, in three places.** The persona's locked text carries
+  `{thermostat_step}`, written by code as the size of a thermostat change she asks before making (`ashley.persona.facts.in_units`;
+  five degrees imperial, three metric); the `# This household` section says the units. The house tools' description names
+  the temperature's shape and no number, since the specs are built once for every household and a quoted number becomes
+  the template. A recipe piece's amounts lead with a line's metric equivalent for a metric household
+  (`ashley.people.units.metric_of`, `workshop.recipe.scaled`), a line without one being scaled as it was written.
+
 - **The persona's taste is the household's; its contract ships.** The shipped register, wit and examples are one
   household's taste, so a household replaces them from the Devices room's persona panel. Which sections are taste is
   an explicit field on each section's marker line in `app/ashley/persona/ashley.md`
