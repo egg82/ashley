@@ -9,10 +9,11 @@ environment and nowhere else."""
 import json
 from typing import Any
 
+from .labels import PREFIX
 from .media_config import MediaConfig
 
-LABEL = "ashley.yggdrasil.pub/media"
-FETCH_LABEL = "ashley.yggdrasil.pub/fetch"
+LABEL = PREFIX + "media"
+FETCH_LABEL = PREFIX + "fetch"
 NOBODY = 65534
 
 

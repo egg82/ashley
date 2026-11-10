@@ -11,9 +11,10 @@ from collections.abc import Mapping
 from typing import Any
 
 from .config import Profile, RunsConfig
+from .labels import PREFIX
 from .model import Job
 
-LABEL = "ashley.yggdrasil.pub/run"
+LABEL = PREFIX + "run"
 NOBODY = 65534
 
 
