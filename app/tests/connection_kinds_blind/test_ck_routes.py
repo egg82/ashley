@@ -43,7 +43,7 @@ def made(client: TestClient, kind: str) -> HouseholdConnection:
 
 def test_the_listing_offers_every_registered_kind_in_the_registry_order(client: TestClient) -> None:
     got = listing(client)
-    assert [o.name for o in got.offered] == [k.name for k in CONNECTION_KINDS]
+    assert [o.name for o in got.offered] == [k.name for k in CONNECTION_KINDS if k.name != "herdr"]
     assert got.can_connect and got.connections == []
 
 

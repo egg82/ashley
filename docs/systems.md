@@ -413,6 +413,9 @@ A thing is a system only if all four hold:
     at start and again from Homes until household 1's row is seen
   - Inference (above), which opens the first household's `inference` connections for the model providers' keys; their
     kinds are `deployment` kinds (`ashley.connections.kinds.ConnectionKinds.offered`), offered to that household alone
+  - a kind whose deployment-side setting is absent is not `configured` (`ashley.wiring._configured_kinds`: herdr's client
+    certificate, `MAIL_BRIDGE_IMAGE` for Proton): it stays registered, so a stored row is still listed and removable, but
+    it is not offered, cannot be added and opens through no port
 
 ### Ledger
 
