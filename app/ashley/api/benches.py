@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from .. import services
+from ..people.units import metric_of
 from ..runs import config as runs_config
 from ..runs.model import Run
 from ..runs.runs import Runs, RunsUnavailable
@@ -77,7 +78,7 @@ def summary(bench: Bench) -> BenchSummary:
 
 
 def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[int, InstallRecord],
-           link_key: bytes = b"") -> BenchPiece:
+           link_key: bytes = b"", metric: bool = False) -> BenchPiece:
     change: Change = view.changes[piece.id]
     kind = RULES.kinds.get(piece.kind)
     automation = (automation_of(view.proposals.get(piece.id), installs.get(piece.id))
@@ -89,7 +90,7 @@ def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[in
                       automation=automation, video=_video(piece, kind), reader=_reader(piece, kind),
                       pointer=_pointer(piece, view),
                       file=piece_file(view.bench.household_id, piece.text.body, kind, link_key),
-                      site=_site(piece, kind, view), recipe=recipe_of(piece, kind))
+                      site=_site(piece, kind, view), recipe=recipe_of(piece, kind, metric))
 
 
 def _video(piece: Piece, kind: Kind | None) -> PieceVideo | None:
@@ -206,9 +207,10 @@ async def detail_of(owner: Owner, bench_id: int, key: bytes, origin: str | None 
         measure_in_background(owner, view, RULES, origin)
     runs = await services.get(Runs).last_on_bench(owner.household_id, bench_id)
     installs = await services.get(Installs).latest_on_bench(owner.household_id, bench_id)
-    return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, key) for p in view.pieces],
+    metric = await metric_of(owner.household_id)
+    return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, key, metric) for p in view.pieces],
                        recent=[_logged(r) for r in view.recent], undo_next=view.undo_next,
-                       shelf=[_piece(p, view, runs.get(p.id), installs, key) for p in view.shelf])
+                       shelf=[_piece(p, view, runs.get(p.id), installs, key, metric) for p in view.shelf])
 
 
 @router.post("/api/benches/{bench_id}/close", response_model=BenchSummary, responses={**WRITE_ERRORS, **BENCH_ERRORS})

@@ -10,6 +10,7 @@ import time
 from collections.abc import Iterable
 
 from .. import services
+from ..people.units import metric_of
 from ..people.zone import zone_of
 from ..inference.model import ToolCall, ToolResult
 from ..workshop import rules as workshop_rules
@@ -118,7 +119,8 @@ class BenchTools(Tools):
         limit = self._config.read_body_chars
         self._saw(view.pieces, limit)
         zone = await zone_of(self._owner.household_id)
-        body = bench_view.overview(view, self._rules, limit, self._config.recent_commands, zone)
+        body = bench_view.overview(view, self._rules, limit, self._config.recent_commands, zone,
+                                  await metric_of(self._owner.household_id))
         checks = await to_check(services.get(Tidy), self._bench, view.pieces, TIDY)
         body = {**body, "to_check": checks} if checks else body
         shows = self._rules.shows_outside(p.kind for p in view.pieces) or any(p.outside for p in view.pieces)
@@ -141,7 +143,8 @@ class BenchTools(Tools):
         text = await bench_file_text.text_of(self._owner.household_id, found[0], files_config.load())
         shown = bench_view.piece(
             found[0], self._rules, self._config.piece_chars, offset,
-            bench_view.changed_at(view, found[0], await zone_of(self._owner.household_id)), text)
+            bench_view.changed_at(view, found[0], await zone_of(self._owner.household_id)), text,
+            await metric_of(self._owner.household_id))
         if bench_page.address_of(found[0], self._rules) is not None:
             shown = {**shown, **bench_view.page_of(await bench_page.page_text(
                 found[0], self._rules, self._numbered, LOOK_UP, self._config.piece_chars))}

@@ -20,7 +20,7 @@ from ashley.workshop.decide import Accepted, BenchState, decide
 from ashley.workshop.model import Owner, Piece, Place, Text
 from ashley.workshop.workshop import Applied, Workshop
 from bench_tools_support import FakeWorkshop
-from recipe_support import MASH, page_of
+from recipe_support import MASH, PIE, page_of
 
 OWNER = Owner(10, 1)
 URL = "https://recipes.example/recipes/mash"
@@ -120,3 +120,17 @@ def test_an_edit_changes_the_headcount_alone_and_her_read_is_the_scaled_text(sho
 def test_a_recipe_piece_is_an_outside_kind() -> None:
     kind = workshop_rules.load().kinds["recipe"]
     assert (kind.format, kind.family, kind.outside) == ("recipe", "stored", True)
+
+
+def test_her_read_of_a_recipe_piece_follows_the_household_units(shop: Deciding) -> None:
+    from test_people_units import wire
+    found = recipe_ld.recipe_in(page_of(PIE), URL)
+    assert found is not None
+    body = recipe.body_of(dataclasses.replace(found, serves=2 * (recipe.makes_of(found.yield_text) or 1)))
+    shop.pieces = (Piece(1, "recipe", Text("Pie", body), 1, Place(0, "medium"), 1),)
+    read = {}
+    for units in ("imperial", "metric"):
+        wire(units, OWNER.household_id)
+        read[units] = json.loads(call(tools(), "bench_read_piece", piece_id=1).content)["body"]
+    assert "2 1/2 cups (500g) granulated sugar" in read["imperial"]
+    assert "500g (2 1/2 cups) granulated sugar" in read["metric"]

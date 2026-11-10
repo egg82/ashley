@@ -12,12 +12,13 @@ from ..workshop.rules import Rules
 from ..workshop.workshop import BenchView, Logged
 
 
-def overview(view: BenchView, rules: Rules, body_chars: int, recent: int, zone: tzinfo | None) -> dict[str, object]:
+def overview(view: BenchView, rules: Rules, body_chars: int, recent: int, zone: tzinfo | None,
+             metric: bool = False) -> dict[str, object]:
     """The bench, every piece with its body cut to `body_chars`, its latest `recent` commands oldest first,
     each with when it was decided (`at`) and each piece with when it last changed (`changed_at`), both stamped in
-    `zone` (left out when `zone` is None); how many pieces its shelf holds (`bench_shelf` lists them), and the kinds a piece may be, with each one's longest body."""
+    `zone` (left out when `zone` is None); a recipe piece's amounts metric first when `metric`; how many pieces its shelf holds (`bench_shelf` lists them), and the kinds a piece may be, with each one's longest body."""
     return {"bench": view.bench.id, "title": view.bench.title, "closed": view.bench.closed_at is not None,
-            "pieces": [{**piece(p, rules, body_chars, changed_at=changed_at(view, p, zone)), "last_changed_by": last_changed_by(view, p)} for p in view.pieces],
+            "pieces": [{**piece(p, rules, body_chars, changed_at=changed_at(view, p, zone), metric=metric), "last_changed_by": last_changed_by(view, p)} for p in view.pieces],
             "recent": [_logged(row, zone) for row in view.recent[-recent:]], "undo_next": view.undo_next,
             "shelved": len(view.shelf),
             "kinds": {k.name: {"label": k.label, "max_chars": k.max_chars} for k in rules.kinds.values()}}
@@ -31,13 +32,13 @@ def last_changed_by(view: BenchView, p: Piece) -> str:
 
 
 def piece(p: Piece, rules: Rules, body_chars: int, offset: int = 0, changed_at: str | None = None,
-          text: str | None = None) -> dict[str, object]:
+          text: str | None = None, metric: bool = False) -> dict[str, object]:
     """One piece, the window of its body from character `offset` of at most `body_chars`; `body_chars` is how long the
     whole body is and `body_cut` whether more of it follows the window. A reader piece's body is the page's text, with
     its `url` and the page's `page_title` beside it. A recipe piece's body is its recipe as text, scaled for its
-    headcount in code (`workshop.recipe.text_of`). An image or file piece's body is its name, size and media type; `text`,
+    headcount in code (`workshop.recipe.text_of`, its amounts metric first when `metric`). An image or file piece's body is its name, size and media type; `text`,
     when given, is the text of a text file piece, which replaces it. `changed_at`, when given, is when it last changed."""
-    body, page = _shown(p, rules)
+    body, page = _shown(p, rules, metric)
     body = body if text is None else text
     return {"id": p.id, "kind": p.kind, "title": p.text.title, "version": p.version, "order": p.place.order,
             "size": p.place.size, "body": body[offset:offset + body_chars], "offset": offset,
@@ -52,14 +53,14 @@ def page_of(read: tuple[int, str] | None) -> dict[str, object]:
     return {"page_unavailable": True} if read is None else {"result": read[0], "page_text": read[1]}
 
 
-def _shown(p: Piece, rules: Rules) -> tuple[str, reader.Page | None]:
+def _shown(p: Piece, rules: Rules, metric: bool) -> tuple[str, reader.Page | None]:
     """The body she reads for `p`, and the page it came from when `p` is a reader piece holding one."""
     kind = rules.kinds.get(p.kind)
     if kind is not None and kind.family == "large":
         return _described(p.text.body), None
     found = recipe.recipe_of(p.text.body) if kind is not None and kind.format == "recipe" else None
     if found is not None:
-        return recipe.text_of(found), None
+        return recipe.text_of(found, metric), None
     page = reader.page_of(p.text.body) if kind is not None and kind.format == "reader" else None
     return (p.text.body if page is None else page.text), page
 

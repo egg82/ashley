@@ -8,7 +8,7 @@ from ashley.tools import recipe_ld
 from ashley.workshop import recipe
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.model import Piece, Place, Text
-from recipe_support import MASH, page_of
+from recipe_support import MASH, PIE, page_of
 
 KINDS = workshop_rules.load().kinds
 URL = "https://recipes.example/recipes/mash"
@@ -48,3 +48,15 @@ def test_any_other_piece_or_body_has_none() -> None:
     assert recipe_of(piece("note", mashed(6)), KINDS["note"]) is None
     assert recipe_of(piece("recipe", ""), KINDS["recipe"]) is None
     assert recipe_of(piece("recipe", mashed(6)), None) is None
+
+
+def test_a_metric_household_is_served_the_metric_amount_first() -> None:
+    found = recipe_ld.recipe_in(page_of(PIE), URL)
+    assert found is not None
+    body = recipe.body_of(dataclasses.replace(found, serves=2 * (recipe.makes_of(found.yield_text) or 1)))
+    both = {metric: recipe_of(piece("recipe", body), KINDS["recipe"], metric) for metric in (False, True)}
+    assert both[False] is not None and both[True] is not None
+    sugar = next(i for i, line in enumerate(both[False].ingredients) if "(250g)" in line.text)
+    assert both[False].ingredients[sugar].shown == "2 1/2 cups (500g) granulated sugar, divided"
+    assert both[True].ingredients[sugar].shown == "500g (2 1/2 cups) granulated sugar, divided"
+    assert both[True].ingredients[sugar].text == both[False].ingredients[sugar].text

@@ -112,17 +112,17 @@ def makes_of(yield_text: str) -> int | None:
     return None
 
 
-def scaled(recipe: Recipe) -> Scaled:
-    """`recipe` with its ingredient amounts multiplied for its `serves`."""
+def scaled(recipe: Recipe, metric_first: bool = False) -> Scaled:
+    """`recipe` with its ingredient amounts multiplied for its `serves`; `metric_first` as `quantity.scaled_line`."""
     makes = makes_of(recipe.yield_text)
     factor = None if recipe.serves is None or makes is None else recipe.serves / makes
-    return Scaled(recipe, makes, factor, tuple(_line(text, factor) for text in recipe.ingredients))
+    return Scaled(recipe, makes, factor, tuple(_line(text, factor, metric_first) for text in recipe.ingredients))
 
 
-def text_of(recipe: Recipe) -> str:
+def text_of(recipe: Recipe, metric_first: bool = False) -> str:
     """The recipe as she reads it: name, source, how much it makes and for whom, times, the ingredients scaled (an
-    unscaled line marked), then the steps as the page wrote them."""
-    view = scaled(recipe)
+    unscaled line marked; `metric_first` as `quantity.scaled_line`), then the steps as the page wrote them."""
+    view = scaled(recipe, metric_first)
     head = [recipe.name, f"Source: {recipe.url}", f"Makes (as the page says): {recipe.yield_text or 'not given'}"]
     if view.factor is not None:
         head.append(f"Scaled for {recipe.serves} from {view.makes}: every amount multiplied by "
@@ -140,14 +140,14 @@ def text_of(recipe: Recipe) -> str:
     return "\n".join([*head, "", "Ingredients:", *ingredients, "", f"Steps{note}:", *steps])
 
 
-def _line(text: str, factor: float | None) -> Line:
+def _line(text: str, factor: float | None, metric_first: bool) -> Line:
     found = amount_of(text)
     if found is None:
         return Line(text, text, None, None, None, False)
     unit = None if found.unit is None else found.unit.key
     if factor is None:
         return Line(text, text, found.low, found.high, unit, False)
-    return Line(text, scaled_line(text, found, factor), found.low, found.high, unit, True)
+    return Line(text, scaled_line(text, found, factor, metric_first), found.low, found.high, unit, True)
 
 
 def _lines(raw: object, most: int) -> tuple[str, ...] | None:
