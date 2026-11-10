@@ -24,12 +24,8 @@ WORD = re.compile(r"[a-z0-9]+")
 
 # Per-file counts of held names a file may still carry; may only go down.
 KEPT: dict[str, int] = {
-    "app/ashley/looks/pod_spec.py": 2,
-    "app/ashley/looks/warm_pod.py": 1,
-    "app/ashley/mail/proton_pod.py": 2,
     "app/ashley/referee/failback.json": 1,
-    "app/ashley/runs/media_pod.py": 2,
-    "app/ashley/runs/pod_spec.py": 1,
+    "app/ashley/runs/labels.py": 1,
     "app/tests/bench_look_blind/test_bl_images.py": 1,
     "app/tests/runs_pod_specs_main.json": 2,
     "app/tests/sandbox_support.py": 1,
