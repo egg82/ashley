@@ -16,8 +16,12 @@ from abc import abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 
 from ..services import Service
+
+PersonaRefusal = Literal["locked", "bad_body", "bad_note", "unchanged", "stale", "no_such_version"]
+"""Why `persona_write.PersonaWriter` refused a change (`persona_write.PersonaRefused`)."""
 
 
 class PersonaUnavailable(Exception):

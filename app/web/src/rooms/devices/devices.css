@@ -52,4 +52,7 @@
 .hh-form select:focus, .hh-form textarea:focus { outline: none; border-color: var(--blue); }
 .hh-sample { margin: 0; overflow-wrap: anywhere; }
 .hh-count { justify-self: end; }
+/* The persona panel's changelog, under each section's form. */
+.hh-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.hh-log li { display: flex; gap: 8px; align-items: center; justify-content: space-between; overflow-wrap: anywhere; }
 @media (max-width: 900px) { .hh-grid { grid-template-columns: 1fr; } }

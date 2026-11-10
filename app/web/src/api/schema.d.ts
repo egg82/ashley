@@ -948,6 +948,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/persona": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Persona
+         * @description 200 `PersonaDetail`; 401 `unauthorized`; 503 `unavailable`.
+         */
+        get: operations["read_persona"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/persona/{section}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Edit Persona
+         * @description 200 `PersonaDetail` after the change; 401 `unauthorized`; 403 `forbidden`; 409 `PersonaRefusalBody`; 503
+         *     `unavailable`.
+         */
+        put: operations["edit_persona"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/persona/{section}/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert Persona
+         * @description 200 `PersonaDetail` after the change; 401 `unauthorized`; 403 `forbidden`; 409 `PersonaRefusalBody`; 503
+         *     `unavailable`.
+         */
+        post: operations["revert_persona"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/messages": {
         parameters: {
             query?: never;
@@ -3667,6 +3729,115 @@ export interface components {
             household_id: number;
             /** Name */
             name: string;
+        };
+        /**
+         * PersonaChange
+         * @description One entry of a section's changelog. `body` is the household's text it made, null for "back to the shipped
+         *     text". `what` names the kind of change; `why` is the person's note; `restored_from` is the version a revert copied
+         *     (0: the shipped text), else null; `person_id` who made it.
+         */
+        PersonaChange: {
+            /** Persona Version */
+            persona_version: number;
+            /** Body */
+            body: string | null;
+            /** What */
+            what: string;
+            /** Why */
+            why: string;
+            /** Base Version */
+            base_version: number;
+            /** Restored From */
+            restored_from: number | null;
+            /** Person Id */
+            person_id: number;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+        };
+        /**
+         * PersonaDetail
+         * @description Every overridable section in the shipped persona's order. The sections not listed (her reply's fields and
+         *     their rules, and the rules that hold whatever anyone asks) are locked and no route changes them. `orphaned` names
+         *     sections the household changed that this release no longer lets it override (renamed, removed or locked): their
+         *     text is kept but not used. `body_limit` and `note_limit` are the longest `body` and `why`.
+         */
+        PersonaDetail: {
+            /** Sections */
+            sections: components["schemas"]["PersonaSection"][];
+            /** Orphaned */
+            orphaned: string[];
+            /** Body Limit */
+            body_limit: number;
+            /** Note Limit */
+            note_limit: number;
+        };
+        /**
+         * PersonaEditRequest
+         * @description The household's whole new text for the section, made from `base_version`, with a line of why.
+         */
+        PersonaEditRequest: {
+            /** Body */
+            body: string;
+            /** Why */
+            why: string;
+            /** Base Version */
+            base_version: number;
+        };
+        /**
+         * PersonaRefusalBody
+         * @description A change was refused and nothing changed. `reason` is a stable word a client branches on: `stale` (the section
+         *     moved on: read it again), `unchanged`, `no_such_version`, `bad_body`, `bad_note`, `locked` (not a section a
+         *     household may override).
+         */
+        PersonaRefusalBody: {
+            /**
+             * Code
+             * @constant
+             */
+            code: "refused";
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "locked" | "bad_body" | "bad_note" | "unchanged" | "stale" | "no_such_version";
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * PersonaRevertRequest
+         * @description Bring back the text of version `to_version` as a new version; 0 goes back to the shipped text.
+         */
+        PersonaRevertRequest: {
+            /** To Version */
+            to_version: number;
+            /** Why */
+            why: string;
+            /** Base Version */
+            base_version: number;
+        };
+        /**
+         * PersonaSection
+         * @description One section of her persona a household may override. `shipped` is the text that ships now. `override` is the
+         *     household's text in force, null when she uses `shipped`. `persona_version` is the section's newest version (0:
+         *     never changed), the `base_version` a change is made against. `history` is the latest entries of its changelog,
+         *     newest first. `section` is the id a change names.
+         */
+        PersonaSection: {
+            /** Section */
+            section: string;
+            /** Label */
+            label: string;
+            /** Shipped */
+            shipped: string;
+            /** Override */
+            override: string | null;
+            /** Persona Version */
+            persona_version: number;
+            /** History */
+            history: components["schemas"]["PersonaChange"][];
         };
         /**
          * PieceAutomation
@@ -7848,6 +8019,186 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseholdRefused"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_persona: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaDetail"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    edit_persona: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonaEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaDetail"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`, with the reason; nothing changed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaRefusalBody"];
+                };
+            };
+            /** @description a path or body outside its model gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    revert_persona: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonaRevertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaDetail"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`, with the reason; nothing changed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaRefusalBody"];
+                };
+            };
+            /** @description a path or body outside its model gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description `unavailable`: the database could not be reached */

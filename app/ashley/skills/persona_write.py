@@ -8,12 +8,9 @@ household's section for the transaction, so versions are numbered one after the 
 Logs `persona.changed` with ids, the section, the version, the kind of change and a length, never the text."""
 
 from abc import abstractmethod
-from typing import Literal
 
 from ..services import Service
-from .persona import PersonaUnavailable
-
-PersonaRefusal = Literal["locked", "bad_body", "bad_note", "unchanged", "stale", "no_such_version"]
+from .persona import PersonaRefusal, PersonaUnavailable
 
 
 class PersonaRefused(Exception):

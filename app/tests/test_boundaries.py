@@ -22,7 +22,7 @@ PKG = ROOT / "ashley"  # the package directory (its name is the import root)
 # cut edges deliberately.
 ALLOWED: dict[str, set[str]] = {
     "api": {"channels", "connections", "conversations", "db", "files", "live", "logs", "looks", "mail", "memory", "people",
-            "runs", "senses", "services", "settings", "signin", "skills", "text", "workshop"},
+            "persona", "runs", "senses", "services", "settings", "signin", "skills", "text", "workshop"},
     "channels": {"stamp", "codehost", "connections", "conversations", "db", "errands", "inference", "initiative", "live", "logs", "memory",
                  "people", "persona", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "watches",
                  "workshop"},
