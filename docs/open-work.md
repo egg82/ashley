@@ -8,19 +8,22 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
 
 42. **Others run her, with their own keys.** Anyone can stand her up from the published image and change what a
     household would want to change from the web; env vars stay for the basics (database, `CONNECTIONS_KEY`, sign-in,
-    public URL). The single-machine lease, `ROUTES_FILE`, `deploy/compose` and generic OIDC naming are built; what is
-    left, by how soon a new household meets it:
+    public URL). The single-machine lease, `ROUTES_FILE`, `deploy/compose`, generic OIDC naming and the household
+    panel are built; what is left, by how soon a new household meets it:
     - **Sign-in checked with a second OIDC provider** end to end (it is built against Authentik), and others (Entra,
       …) added through an OIDC library when asked. Fits into: Sign-in.
-    - **A household page: timezone, profile, language, units, 12/24 h.** Today only the CLI sets timezone and
-      profile. Fits into: People (Household), in the Devices room beside the lexicon.
     - **Provider keys as connections.** An `inference_provider` connection kind with sealed keys; env keys seed the
       first row. Fits into: Connections.
     - **Route overrides per household** over the shipped and operator routes, for chat-facing tasks; `action_judge`
       written only by a person. Fits into: Inference, edited from the Spend room.
     - **Persona sections as household overrides**, versioned like skills, the output contract locked. The shipped
       persona's register and examples are one household's taste. Fits into: Skills with Persona.
-    - **Units from the household** in persona and tools (no shipped "degrees Fahrenheit"). Fits into: Persona, Tools.
+    - **Units from the household** past the persona's unit line: the ask-first "more than five degrees" in
+      `ashley.md`, the `{"temperature": 70}` example in `app/ashley/tools/house_act.py`, and which unit family recipe
+      scaling prefers (`app/ashley/workshop/recipe.json`). Fits into: Persona, Tools, Workshop.
+    - **The household's language beyond formats**: its locale's language as the speech-to-text language
+      (`transcribe` in `app/ashley/inference/routes.json`) and the language she replies in. Fits into: Inference,
+      Persona.
     - **Sandbox namespace and runtime class as settings** (`app/ashley/runs/runs.json`), and one constant for the
       pod label prefix. Fits into: Code runs, Looks.
     - **Place coordinates without Home Assistant**: a household home location that place search reads. Fits into:
@@ -417,7 +420,8 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     there, `etcdctl member update <witness member> --peer-urls=https://<new-ip>:2380`, and issue a cert for the new IP.
 19. **Retire the `households.profile` column into standing facts**, once real standing facts exist to check the
     result against: who lives there, pronouns and pets become facts people can see and correct, written once
-    through `Memory.apply` from the column's text; then the column and `set-profile` go.
+    through `Memory.apply` from the column's text; then the column, `set-profile` and the household panel's profile
+    field go.
     - Fits into: Memory.
 20. **Surfaces she composes.** She decides what a surface shows, setting the whole page by what she
     thinks matters most, placing building blocks as Homarr does with its widgets and integrations,
