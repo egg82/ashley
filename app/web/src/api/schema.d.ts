@@ -2808,7 +2808,8 @@ export interface components {
          *     household's local time for anything said about the time of day. `profile` is what she always knows about the
          *     household, as prose (empty when none is set), at most `profile_limit` characters. `locale` is a BCP 47 tag (`en-US`)
          *     for how dates and numbers are written; `unit_system` the units she speaks in; `clock` whether times are written on
-         *     a 12- or 24-hour clock. `name` is set by the admin and only read here.
+         *     a 12- or 24-hour clock. `latitude` and `longitude` are the house's own location in degrees, both null until a person
+         *     sets one; place search reads it before Home Assistant's. `name` is set by the admin and only read here.
          */
         Household: {
             /** Id */
@@ -2833,6 +2834,10 @@ export interface components {
              * @enum {string}
              */
             clock: "12h" | "24h";
+            /** Latitude */
+            latitude: number | null;
+            /** Longitude */
+            longitude: number | null;
         };
         /**
          * HouseholdConnection
@@ -2901,14 +2906,15 @@ export interface components {
         /**
          * HouseholdRefused
          * @description Why nothing was stored: `invalid` names the field that is not one she can use, `timezone` (not an IANA zone
-         *     name) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`).
+         *     name) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`) or `location` (one of
+         *     latitude and longitude set without the other).
          */
         HouseholdRefused: {
             /**
              * Invalid
              * @enum {string}
              */
-            invalid: "timezone" | "locale";
+            invalid: "timezone" | "locale" | "location";
             /** Detail */
             detail: string;
         };
@@ -2933,6 +2939,16 @@ export interface components {
              * @enum {string}
              */
             clock: "12h" | "24h";
+            /**
+             * Latitude
+             * @description Degrees north; null clears the location
+             */
+            latitude: number | null;
+            /**
+             * Longitude
+             * @description Degrees east; null clears the location
+             */
+            longitude: number | null;
         };
         /**
          * InstallPieceRequest
@@ -8012,7 +8028,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description a timezone or locale she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            /** @description a timezone, locale or location she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
             422: {
                 headers: {
                     [name: string]: unknown;

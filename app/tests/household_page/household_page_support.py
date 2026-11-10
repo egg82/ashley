@@ -19,7 +19,8 @@ BASE = "/api/household"
 PUBLIC = "https://ashley.test"
 ORIGIN = {"origin": PUBLIC}
 METRIC = {"timezone": "Europe/London", "profile": "Two cats, Mochi and Nuuk.", "locale": "en-GB",
-          "unit_system": "metric", "clock": "12h"}
+          "unit_system": "metric", "clock": "12h", "latitude": None, "longitude": None}
+LOCATED = {**METRIC, "latitude": 51.507222, "longitude": -0.1275}
 
 
 @dataclass(frozen=True)
@@ -68,10 +69,10 @@ def put(client: TestClient, body: dict[str, Any]) -> Response:
     return client.put(BASE, json=body, headers=ORIGIN)
 
 
-def stored(db_url: str, household: int) -> tuple[str, str, str, str, str]:
-    """The household's (timezone, profile, locale, unit_system, clock) as the database holds them."""
+def stored(db_url: str, household: int) -> tuple[str, str, str, str, str, float | None, float | None]:
+    """The household's (timezone, profile, locale, unit_system, clock, latitude, longitude) as the database holds them."""
     with psycopg.connect(db_url) as conn:
-        row = conn.execute("SELECT timezone, profile, locale, unit_system, clock FROM households WHERE id = %s",
-                           (household,)).fetchone()
+        row = conn.execute("SELECT timezone, profile, locale, unit_system, clock, latitude, longitude "
+                           "FROM households WHERE id = %s", (household,)).fetchone()
     assert row is not None
-    return row[0], row[1], row[2], row[3], row[4]
+    return row[0], row[1], row[2], row[3], row[4], row[5], row[6]

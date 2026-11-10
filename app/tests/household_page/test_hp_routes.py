@@ -1,5 +1,5 @@
 """`GET|PUT /api/household`: a signed-in person reads and sets their own household's timezone, profile, locale, unit
-system and clock; no route reaches another household's; a value she cannot use is refused with nothing stored; and
+system, clock and location; no route reaches another household's; a value she cannot use is refused with nothing stored; and
 what is set is what People hands the persona."""
 
 from collections.abc import Generator
@@ -11,9 +11,9 @@ from ashley.people.postgres import PostgresPeople
 from ashley.persona import facts
 from contract.conversations_support import run
 from fastapi.testclient import TestClient
-from household_page_support import BASE, METRIC, People, app_client, as_, people_in, put, stored
+from household_page_support import BASE, LOCATED, METRIC, People, app_client, as_, people_in, put, stored
 
-DEFAULTS = ("America/Denver", "", "en-US", "imperial", "24h")
+DEFAULTS = ("America/Denver", "", "en-US", "imperial", "24h", None, None)
 
 
 @pytest.fixture
@@ -32,7 +32,8 @@ def test_a_new_household_reads_what_the_code_assumed(client: TestClient, people:
     got = client.get(BASE)
     assert got.status_code == 200, got.text
     assert got.json() == {"id": people.home, "name": "home", "timezone": "America/Denver", "profile": "",
-                          "profile_limit": PROFILE_MAX, "locale": "en-US", "unit_system": "imperial", "clock": "24h"}
+                          "profile_limit": PROFILE_MAX, "locale": "en-US", "unit_system": "imperial", "clock": "24h",
+                          "latitude": None, "longitude": None}
 
 
 def test_what_is_put_is_stored_and_read_back(client: TestClient, people: People, db_url: str) -> None:
@@ -66,7 +67,8 @@ def test_a_timezone_or_locale_she_cannot_use_is_refused_by_name(client: TestClie
 
 
 @pytest.mark.parametrize("body", [
-    {**METRIC, "unit_system": "kelvin"}, {**METRIC, "clock": "13h"}, {**METRIC, "profile": "x" * (PROFILE_MAX + 1)},
+    {**METRIC, "unit_system": "kelvin"}, {**METRIC, "clock": "13h"}, {**METRIC, "latitude": 91.0, "longitude": 0.0},
+    {**METRIC, "latitude": 0.0, "longitude": -180.5}, {k: v for k, v in LOCATED.items() if k != "latitude"}, {**METRIC, "profile": "x" * (PROFILE_MAX + 1)},
     {k: v for k, v in METRIC.items() if k != "clock"}, {**METRIC, "name": "renamed"}])
 def test_a_body_outside_the_schema_is_422_and_stores_nothing(client: TestClient, people: People, db_url: str,
                                                             body: dict[str, str]) -> None:
@@ -92,7 +94,7 @@ def test_the_write_logs_which_fields_changed_never_their_values(client: TestClie
                                                                 capsys: pytest.CaptureFixture[str]) -> None:
     capsys.readouterr()
     put(client, {"timezone": "America/Denver", "profile": "Mochi the cat.", "locale": "en-US",
-                 "unit_system": "metric", "clock": "24h"})
+                 "unit_system": "metric", "clock": "24h", "latitude": None, "longitude": None})
     out = capsys.readouterr().out
     [line] = [x for x in out.splitlines() if "people.household.changed" in x]
     assert "changed=profile,unit_system" in line and "fields=2" in line
@@ -114,3 +116,39 @@ def test_what_is_set_is_what_the_persona_hears(client: TestClient, people: Peopl
                                             + METRIC["profile"])
 
     run(scenario())
+
+
+def test_a_location_is_stored_read_back_and_cleared_by_null(client: TestClient, people: People, db_url: str) -> None:
+    got = put(client, LOCATED)
+    assert got.status_code == 200, got.text
+    assert (got.json()["latitude"], got.json()["longitude"]) == (LOCATED["latitude"], LOCATED["longitude"])
+    assert client.get(BASE).json() == got.json()
+    assert stored(db_url, people.home)[5:] == (LOCATED["latitude"], LOCATED["longitude"])
+    cleared = put(client, METRIC)
+    assert (cleared.json()["latitude"], cleared.json()["longitude"]) == (None, None)
+    assert stored(db_url, people.home)[5:] == (None, None)
+
+
+@pytest.mark.parametrize("body", [{**METRIC, "latitude": 51.5}, {**METRIC, "longitude": -0.12}])
+def test_one_coordinate_without_the_other_is_refused_as_a_location(client: TestClient, people: People, db_url: str,
+                                                                  body: dict[str, object]) -> None:
+    got = put(client, body)
+    assert got.status_code == 422, got.text
+    assert got.json()["invalid"] == "location"
+    assert stored(db_url, people.home) == DEFAULTS
+
+
+def test_a_location_belongs_to_the_household_that_set_it(client: TestClient, people: People, db_url: str) -> None:
+    put(client, LOCATED)
+    assert stored(db_url, people.other)[5:] == (None, None)
+    as_(client, people, "kim")
+    assert client.get(BASE).json()["latitude"] is None
+
+
+def test_the_write_never_logs_a_coordinate(client: TestClient, capsys: pytest.CaptureFixture[str]) -> None:
+    capsys.readouterr()
+    put(client, LOCATED)
+    out = capsys.readouterr().out
+    [line] = [x for x in out.splitlines() if "people.household.changed" in x]
+    assert "latitude,longitude" in line
+    assert "51.507" not in out and "0.1275" not in out

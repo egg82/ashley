@@ -80,6 +80,23 @@ def test_a_household_without_a_house_gets_the_locators_tools(house: ByHousehold)
     assert asyncio.run(everyday.of(3)) is services.get(Tools) and over == []
 
 
+def test_a_household_without_a_house_gets_its_own_bare_tools_once_and_a_house_replaces_them(house: ByHousehold) -> None:
+    made: list[int] = []
+
+    def bare(household_id: int) -> Tools:
+        made.append(household_id)
+        return Named(f"bare{household_id}")
+
+    everyday = HomesEveryday(lambda home: Named("house"), bare)
+    first = asyncio.run(everyday.of(3))
+    assert names(first) == ["bare3"] and asyncio.run(everyday.of(3)) is first and made == [3]
+    assert asyncio.run(everyday.of(4)) is not first and made == [3, 4]
+    house.give(3, "http://three.test")
+    assert names(asyncio.run(everyday.of(3))) == ["house"]
+    house.homes.pop(3)
+    assert asyncio.run(everyday.of(3)) is not first and made == [3, 4, 3]
+
+
 def test_a_house_unreadable_is_unavailable(house: ByHousehold) -> None:
     everyday, _ = built()
     house.down = True

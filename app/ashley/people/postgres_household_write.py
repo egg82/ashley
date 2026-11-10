@@ -14,9 +14,10 @@ log = logging.getLogger("ashley.people")
 _FIELDS = tuple(f.name for f in fields(HouseholdEdit))
 _PUT = (
     "UPDATE households SET timezone = %(timezone)s, profile = %(profile)s, locale = %(locale)s, "
-    "unit_system = %(unit_system)s, clock = %(clock)s WHERE id = %(id)s "
+    "unit_system = %(unit_system)s, clock = %(clock)s, latitude = %(latitude)s, longitude = %(longitude)s "
+    "WHERE id = %(id)s "
     "RETURNING new.name, old.timezone, new.timezone, old.profile, new.profile, old.locale, new.locale, "
-    "old.unit_system, new.unit_system, old.clock, new.clock"
+    "old.unit_system, new.unit_system, old.clock, new.clock, old.latitude, new.latitude, old.longitude, new.longitude"
 )
 
 
@@ -38,4 +39,4 @@ class PostgresHouseholdWriter(HouseholdWriter):
         logs.info(log, "people.household.changed", household=household_id, person=person_id, fields=len(changed),
                   changed=",".join(changed))
         return Household(household_id, row[0], edit.timezone, edit.profile, people, edit.locale, edit.unit_system,
-                         edit.clock)
+                         edit.clock, edit.latitude, edit.longitude)
