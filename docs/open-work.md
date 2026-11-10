@@ -10,8 +10,7 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     household would want to change from the web; env vars stay for the basics (database, `CONNECTIONS_KEY`, sign-in,
     public URL). The single-machine lease, `ROUTES_FILE`, `deploy/compose`, generic OIDC naming and the household
     panel are built; what is left, by how soon a new household meets it:
-    - **Sign-in checked with a second OIDC provider** end to end (it is built against Authentik), and others (Entra,
-      …) added through an OIDC library when asked. Fits into: Sign-in.
+    - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
     - **Provider keys as connections.** An `inference_provider` connection kind with sealed keys; env keys seed the
       first row. Fits into: Connections.
     - **Route overrides per household** over the shipped and operator routes, for chat-facing tasks; `action_judge`
