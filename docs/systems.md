@@ -27,6 +27,9 @@ A thing is a system only if all four hold:
   - every singleton runs under `ashley.referee.lease.Lease` (`app/ashley/referee/`), only on the site whose Patroni
     member leads (`ashley.referee.active_site.ActiveSite`); what lives in one site's cluster, like the warm look pod,
     runs under `Lease.run_on_site`, held on each site at once
+  - without etcd (one machine, or replicas sharing one Postgres) the `Lease` is
+    `ashley.referee.postgres_lease.PostgresLease`, a Postgres session advisory lock per singleton, with no notion of a
+    site; every singleton but fail-back runs under it
   - its first singleton, `ashley.referee.failback.FailBack`, reads and drives Patroni through
     `ashley.referee.patroni.Patroni`
 
