@@ -6,9 +6,9 @@ longer jobs at a shared "bench". She is her own service, and Home Assistant is o
 
 She was built for one household and is published so others can run her for theirs. The author runs her across
 two Kubernetes clusters, and she keeps running if either one goes down. One machine with Postgres and a model API
-key gets you conversations, tools, memory recall and the web app; the work she does unprompted (reminders,
-Discord, voice satellites) still needs the two-site setup. [Running your own](#running-your-own) shows how, and
-what each extra setting turns on.
+key runs everything except the pieces that launch Kubernetes pods (code sandbox, screenshots, media, Proton
+Bridge). [Running your own](#running-your-own) shows how, and what each extra setting turns on; a compose file
+for it is in [`deploy/compose`](deploy/compose).
 
 ## What she does
 
@@ -35,10 +35,11 @@ what each extra setting turns on.
 
 ## Running your own
 
-**What a single machine gets.** Conversations, tools, memory recall and the web app all work. Her background
-work does not: writing memories from finished conversations, reminders, Discord, voice satellites, web push,
-watches and bench jobs. Each of those must run in exactly one process, and today the only lock that guarantees it
-lives in etcd and follows the Postgres primary (see [How she is built](#how-she-is-built)).
+**What a single machine gets.** Everything but the Kubernetes-only pieces. Her background work (writing
+memories, reminders, Discord, voice satellites, web push, watches, bench jobs) must run in exactly one process;
+without etcd each job holds a Postgres advisory lock, so one app container or several share it safely. The
+docker-compose setup in [`deploy/compose`](deploy/compose) is the quickest start; the commands below are the same
+steps by hand.
 
 ### You need
 
@@ -87,8 +88,7 @@ reports the running build, and `/api/ready` answers 200 once she can serve.
 
 Each feature stays off until its settings are present, and the app starts without it. Settings are environment
 variables, read in [`app/ashley/settings.py`](app/ashley/settings.py). Settings that only work together stop the
-app at start-up when one of them is missing. Discord, voice satellites and web push run as background work, so
-today they also need the last-but-one row.
+app at start-up when one of them is missing.
 
 | Feature | Settings |
 |---|---|
@@ -104,7 +104,7 @@ today they also need the last-but-one row.
 | Web push | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` |
 | Privacy and terms pages | `OPERATOR_NAME`, `OPERATOR_CONTACT` |
 | Log detail | `LOG_LEVEL` (default `info`); logs are one `key=value` line per event |
-| Background work, two sites | `ETCD_URL` (with `ETCD_CA_FILE`, `ETCD_CERT_FILE`, `ETCD_KEY_FILE`), `SITE`, `PATRONI_RESTAPI_PASSWORD` |
+| Two sites | `ETCD_URL` (with `ETCD_CA_FILE`, `ETCD_CERT_FILE`, `ETCD_KEY_FILE`), `SITE`, `PATRONI_RESTAPI_PASSWORD` |
 | Code sandbox, screenshots, media, Proton Bridge (Kubernetes only) | `SANDBOX_*`, `CAD_IMAGE`, `LOOK_*`, `MEDIA_*`, `MAIL_BRIDGE_*` |
 
 ## How she is built
