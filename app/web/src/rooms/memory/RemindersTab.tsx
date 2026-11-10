@@ -11,8 +11,8 @@ const UNIT: Record<NonNullable<Reminder['repeat']>, [string, string]> = {
   daily: ['day', 'days'], weekly: ['week', 'weeks'], monthly: ['month', 'months'], yearly: ['year', 'years'],
 };
 
-/** "Sat 1 Nov, 09:00" (on the household's clock and locale) from the household's wall-clock `YYYY-MM-DDTHH:MM`, read as written, never shifted by the
- * browser's own zone. */
+/** "Sat 1 Nov, 09:00" from the household's wall-clock `YYYY-MM-DDTHH:MM`, read as written, never shifted by the
+ * browser's own zone, in the household's locale and clock. */
 export function when(localAt: string): string {
   const [date = '', time = ''] = localAt.split('T');
   const [y, m, d] = date.split('-').map(Number);
