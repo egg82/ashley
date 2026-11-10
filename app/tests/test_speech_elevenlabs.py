@@ -14,7 +14,7 @@ from ashley.inference.elevenlabs_tts import ElevenLabsSpeaker, wav_header
 from ashley.inference.provider import ProviderFailed
 from speech_support import run
 
-VOICE = "DlbsiZVVCoinytYA5J3d"
+VOICE = "Xb7hH8MSUJpSbSDYk0k2"
 PARAMS: dict[str, object] = {"voice_id": VOICE, "output_format": "mp3_44100_64"}
 
 
