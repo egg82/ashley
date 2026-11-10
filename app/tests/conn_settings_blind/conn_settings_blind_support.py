@@ -341,7 +341,7 @@ async def ask(home: Home, action: str, ids: list[str], tool: str = "house_ask", 
               data: str | None = None) -> tuple[str | None, str]:
     """One tool call in a fresh turn over the tools built for `home`: (the turn's taint after it, the reply text)."""
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    _, over = wiring.tools(closers, "https://search.test")
+    _, over, _ = wiring.tools(closers, "https://search.test")
     outside = Outside(await over(home).for_turn(), Standing(home.household_id, 7, private=True, agreeing=True), (CONVERSATION, TURN),
                       NO_STEPS, tainted)
     arguments: dict[str, object] = {"action": action, "ids": ids, **({} if data is None else {"data": data})}

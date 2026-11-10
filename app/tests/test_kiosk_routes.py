@@ -30,6 +30,7 @@ from ashley.people.people import People
 from ashley.runs.runs import NullRuns, Runs
 from ashley.senses.presence import Presence
 from ashley.settings import Settings
+from ashley.tools.everyday import Everyday
 from ashley.tools.tools import Tools
 from ashley.workshop.workshop import Workshop
 from fastapi.testclient import TestClient
@@ -96,7 +97,7 @@ def _app(wired: Fakes, devices: FakeDevices, cookie: str | None = TOKEN, live: F
     for interface, fake in ((People, wired.people), (Presence, wired.presence), (Conversations, wired.conversations),
                             (Inference, wired.inference), (Tools, wired.tools), (Devices, devices),
                             (Workshop, FakeScreenControls({(DEVICE.id, DEVICE.household_id): (LIGHT,)})),
-                            (InFlight, InFlight.null()), (Runs, NullRuns())):
+                            (InFlight, InFlight.null()), (Runs, NullRuns()), (Everyday, Everyday.null())):
         services.register(interface, fake)
     client = TestClient(app, base_url=PUBLIC, headers={"origin": PUBLIC})
     if cookie is not None:

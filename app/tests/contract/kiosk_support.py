@@ -25,6 +25,7 @@ from ashley.people.people import People, PeopleUnavailable
 from ashley.senses.presence import Presence
 from ashley.settings import Settings
 from ashley.signin.sessions import Sessions
+from ashley.tools.everyday import Everyday
 from ashley.tools.tools import Catalogue, Tools
 from ashley.workshop.workshop import Workshop
 from device_controls_support import FakeScreenControls
@@ -175,7 +176,7 @@ def kiosk(monkeypatch: pytest.MonkeyPatch) -> Generator[Kiosk]:
     services.register(Live, FakeLive())   # a feed with nothing to say, ending on its own
     for service, fake in ((Devices, world.devices), (Workshop, world.device_controls), (Sessions, sessions), (Conversations, world.conversations),
                           (Outbox, FakeOutbox()), (Tools, world.tools), (Presence, world.presence),
-                          (People, world.people), (Runs, NullRuns()), (InFlight, InFlight.null())):
+                          (People, world.people), (Runs, NullRuns()), (InFlight, InFlight.null()), (Everyday, Everyday.null())):
         services.register(service, fake)
     original = respond_module.respond
     for module in list(sys.modules.values()):   # wherever the route bound the turn loop, it now reaches the fake
@@ -184,7 +185,7 @@ def kiosk(monkeypatch: pytest.MonkeyPatch) -> Generator[Kiosk]:
     try:
         yield world
     finally:
-        for service in (Devices, Workshop, Sessions, Conversations, Outbox, Tools, Presence, People, Live, Runs, InFlight):
+        for service in (Devices, Workshop, Sessions, Conversations, Outbox, Tools, Presence, People, Live, Runs, InFlight, Everyday):
             services.unregister(service)
 
 

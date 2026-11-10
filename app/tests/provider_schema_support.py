@@ -99,7 +99,7 @@ TURNS: tuple[Inbound, ...] = (
 def offered() -> list[ToolSpec]:
     """Every tool the app offers across `TURNS`, from `turn_tools.for_turn` over the wired shared tools, a household
     with Sure, GitLab and GitHub connected, a sandbox, a house, and a money-rule proposal waiting."""
-    shared, _ = wiring.tools([], "https://search.test")
+    shared, *_ = wiring.tools([], "https://search.test")
     connections = HeldConnections()
     for kind in ("sure", "gitlab", "github", "herdr"):
         connections.connect(HOUSEHOLD, kind=kind, person_id=ALANA if kind != "sure" else None)
