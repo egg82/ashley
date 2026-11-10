@@ -38,6 +38,15 @@ class Client:
     redirect_uri: str
 
 
+def _username(claims: dict[str, Any]) -> str:
+    """`preferred_username`, else `name`: Dex's password users carry only the latter."""
+    for claim in ("preferred_username", "name"):
+        value = claims.get(claim)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
 class OidcProvider(Oidc):
     """`client` is the confidential client it signs in as."""
 
@@ -65,8 +74,7 @@ class OidcProvider(Oidc):
         if not isinstance(id_token, str):
             raise SignInFailed("no id_token in the token answer")
         claims = await self._verify(id_token, meta["issuer"], nonce)
-        username = claims.get("preferred_username")
-        return Identity(claims["sub"], username if isinstance(username, str) else "")
+        return Identity(claims["sub"], _username(claims))
 
     async def _discovery(self) -> dict[str, Any]:
         async with self._lock:
