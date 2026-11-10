@@ -4,11 +4,12 @@ This directory starts Ashley on one machine: Postgres, the database migration, a
 compose profiles you switch on when you want them. Running her on two sites at once is the Kubernetes deployment,
 described in `docs/engineering.md`; there is no etcd, Patroni or failover here.
 
-## What this setup does not run
+## What runs here
 
-Without etcd she answers messages but runs nothing on her own initiative: no memory writing, reminders, resuming
-interrupted turns, Discord, voice satellites or web push. Code running, bench screenshots, media and Proton Mail
-launch pods in Kubernetes and are not available either.
+Her background work (memory writing, reminders, Discord, voice satellites, web push) runs here under a Postgres
+lock, so one app container or several share it safely. Handing the database back to a preferred site after a
+failover needs the two-site deployment. Code running, bench screenshots, media and Proton Mail launch pods in
+Kubernetes and are not available here.
 
 ## Start
 
