@@ -45,3 +45,18 @@ def test_the_shipped_persona_names_no_unit_system() -> None:
     for path in shipped.rglob("*.md"):
         text = path.read_text(encoding="utf-8")
         assert "Fahrenheit" not in text and "Celsius" not in text, path
+
+
+THRESHOLD = {"imperial": "more than five degrees", "metric": "more than three degrees"}
+
+
+@pytest.mark.parametrize("units", ["imperial", "metric"])
+def test_the_ask_first_thermostat_threshold_follows_the_units(units: UnitSystem) -> None:
+    household = replace(HOME, unit_system=units)
+    prompts = [system(kind, replace(CONTEXT, household=household))["default"].text for kind in ("chat", "command")]
+    prompts.append(errand.system(household, ALANA, "the house", None, (), NOW)["default"].text)
+    for prompt in prompts:
+        assert f"a thermostat change of {THRESHOLD[units]}" in prompt
+        assert facts.STEP_TOKEN not in prompt
+        other = THRESHOLD["metric" if units == "imperial" else "imperial"]
+        assert other not in prompt
