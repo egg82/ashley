@@ -272,3 +272,13 @@ def test_a_call_logs_the_tool_outcome_and_counts_but_no_name_id_or_state(caplog:
     assert [(f["tool"], f["outcome"]) for f in lines] == [("house_do", "ok"), ("house_find", "ok")]
     assert lines[0]["named"] == 1 and lines[1]["matched"] == 1 and lines[1]["kind"] == "device"
     assert not any(w in str(lines) for w in ("porch", "Porch", "atom", "Atom", "light.front"))
+
+
+def test_the_tool_description_gives_no_temperature_number_to_copy() -> None:
+    """The specs are built once for every household, so a number in the temperature example would be one unit
+    system's and become the template for all."""
+    from ashley.tools.house_act import ASK_SPEC, DO_SPEC
+    for spec in (DO_SPEC, ASK_SPEC):
+        data = spec.parameters["properties"]["data"]["description"]
+        assert '"temperature": <' in data
+        assert not any(ch.isdigit() for ch in data[data.index('"temperature"'):data.index("climate.set_temperature")])
