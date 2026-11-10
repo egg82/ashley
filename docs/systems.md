@@ -223,7 +223,10 @@ A thing is a system only if all four hold:
 - **Where:**
   - `app/ashley/inference/`
   - routes and prices are data, `app/ashley/inference/routes.json` and `app/ashley/inference/prices.json`; a task may
-    take another's route list (`{"like": "<task>"}`), as `escalated` takes `brainstorm`'s
+    take another's route list (`{"like": "<task>"}`), as `escalated` takes `brainstorm`'s, or wait for its first route
+    (`{"routes": [...], "fallback": false}`, `ashley.inference.routes.without_fallback`), as `memory_write` does
+  - an operator overlays them from the file `ROUTES_FILE` names (`ashley.inference.routes.overlay`, applied by
+    `ashley.inference.routes.load`): a task in the file replaces that task's whole entry
 - **Pattern:**
   - Service behind the locator, Postgres-ledgered implementation `ashley.inference.router.RoutedInference` with a
     Strategy per provider (`ashley.inference.providers.AnthropicProvider`,

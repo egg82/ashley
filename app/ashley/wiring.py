@@ -292,7 +292,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
         balance_sources["elevenlabs"] = ElevenLabsQuota(elevenlabs)
     _wire_image_makers(settings, wired, closers)
     services.register(Inference, RoutedInference(
-        narrow(inference_routes.load({p.name: p for p in wired})), wired, PostgresSpendLedger(services.get(Database)),
+        narrow(inference_routes.load({p.name: p for p in wired}, settings.routes_file)), wired, PostgresSpendLedger(services.get(Database)),
         prices.load(), image_cap=ImageCap(partial(image_quota.drawn, services.get(Database)), image_quota.load())))
     services.register(ProviderBalances, SourcedBalances(balance_sources))
     services.register(SpendReport, SpendView(services.get(Database), lambda: services.get(People),

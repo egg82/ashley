@@ -17,6 +17,7 @@ class Settings:
     `patroni_password` is Patroni's REST API password, which the fail-back singleton needs to switch over.
     `anthropic_api_key`, `openai_api_key`, `gemini_api_key` and `local_llm_url` (with `local_llm_api_key`, which a
     local server may not need) each wire one inference provider when set; empty, that provider is not wired.
+    `routes_file` is a path to the operator's overlay of the shipped routes (`ashley.inference.routes.overlay`).
     `ha_url` (`http://homeassistant.local:8123`) and `ha_token` (a long-lived access token) wire Home Assistant's tools and
     presence; both or neither, since one without the other can reach nothing (ValueError).
     `wyoming_stt_url` (`tcp://host:port`) wires the Wyoming speech-to-text provider and `elevenlabs_api_key` the
@@ -90,6 +91,7 @@ class Settings:
     gemini_api_key: str = ""
     local_llm_url: str = ""
     local_llm_api_key: str = ""
+    routes_file: str = ""
     ha_url: str = ""
     ha_token: str = ""
     wyoming_stt_url: str = ""
@@ -204,7 +206,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     site=env.get("SITE", ""), patroni_password=env.get("PATRONI_RESTAPI_PASSWORD", ""),
                     anthropic_api_key=env.get("ANTHROPIC_API_KEY", ""), openai_api_key=env.get("OPENAI_API_KEY", ""),
                     gemini_api_key=env.get("GEMINI_API_KEY", ""), local_llm_url=env.get("LOCAL_LLM_URL", ""),
-                    local_llm_api_key=env.get("LOCAL_LLM_API_KEY", ""),
+                    local_llm_api_key=env.get("LOCAL_LLM_API_KEY", ""), routes_file=env.get("ROUTES_FILE", "").strip(),
                     ha_url=env.get("HA_URL", ""), ha_token=env.get("HA_TOKEN", ""),
                     wyoming_stt_url=env.get("WYOMING_STT_URL", ""),
                     elevenlabs_api_key=env.get("ELEVENLABS_API_KEY", ""),
