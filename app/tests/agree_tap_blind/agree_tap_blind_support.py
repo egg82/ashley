@@ -51,6 +51,7 @@ from ashley.people import admin
 from ashley.senses.proposal_payloads import OUTSIDE, HeldCall, HeldCalls
 from ashley.senses.proposals import Proposal, Proposals
 from ashley.settings import Settings
+from ashley.tools.everyday import Everyday
 from ashley.tools.outside_config import load as outside_config
 from ashley.tools.tools import Catalogue, Tools
 from fastapi.testclient import TestClient
@@ -276,6 +277,7 @@ def world(url: str) -> Generator[World]:
         died = asyncio.Event()
         w = World(url, client, Switchboard(died), Counting(), alana, sam, zed, died=died)
         services.register(Tools, w.tools)
+        services.register(Everyday, Everyday.null())
         services.register(Inference, w.model)
         _record_begin(w)
         yield w
