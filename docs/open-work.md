@@ -13,8 +13,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
     - **Route overrides per household** over the shipped and operator routes, for chat-facing tasks; `action_judge`
       written only by a person. Fits into: Inference, edited from the Spend room.
-    - **Persona sections as household overrides**, versioned like skills, the output contract locked. The shipped
-      persona's register and examples are one household's taste. Fits into: Skills with Persona.
     - **Units from the household** past the persona's unit line: the ask-first "more than five degrees" in
       `ashley.md`, the `{"temperature": 70}` example in `app/ashley/tools/house_act.py`, and which unit family recipe
       scaling prefers (`app/ashley/workshop/recipe.json`). Fits into: Persona, Tools, Workshop.

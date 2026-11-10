@@ -680,12 +680,15 @@ A thing is a system only if all four hold:
 ### Skills
 
 - **Owns (the question it answers):** What method does she follow for this kind of work in this household, and how
-  did it change?
+  did it change? And, in the same changelog, what has this household put in place of her persona's taste?
 - **Where:**
   - `app/ashley/skills/`; the limits and the shape of a kind's name are data, `app/ashley/skills/skills.json` (the kinds themselves are
     the household's rows, table `skill_kinds`, started by `ashley.skills.skills.Skills.add_kind`), and the seeds
     that ship are documents in `app/ashley/skills/seeds/` (`app/ashley/skills/seeds/3d.md` is her build123d method: measurements with sources,
     the model, its checks, the honest reading of the report)
+  - the persona overrides: `app/ashley/skills/persona.py` (read), `app/ashley/skills/persona_write.py` (write), the
+    family `persona` of `skill_versions`; which sections may be overridden is each marker's field in
+    `app/ashley/persona/ashley.md`, read by `ashley.persona.sections.catalogue`
 - **Pattern:**
   - Service behind the locator, `ashley.skills.skills.Skills`, Postgres implementation
     `ashley.skills.postgres.PostgresSkills`, a Null Object that raises `ashley.skills.skills.SkillsUnavailable`
@@ -694,6 +697,9 @@ A thing is a system only if all four hold:
   - kinds of work are rows, never a list: she starts one by setting a bench's work to a new name with a label
   - versions are append-only per household and kind (table `skill_versions`); a rollback is a new version, a pin
     (table `skill_pins`) makes her edits `proposed` until `ashley.skills.skills.Skills.decide`
+  - persona overrides are a second family in the same changelog: `ashley.skills.persona.PersonaOverrides` reads,
+    `ashley.skills.persona_write.PersonaWriter` writes (a person only; the boundary test keeps it to its route and
+    the wiring), both registered by `ashley.wiring_skills.wire_skills`; a null body is "the shipped text"
   - Fit: a versioned document, but not Memory (atomic facts retrieved by similarity, per person, superseded by
     correction; a skill is one whole document loaded by key) and not bench pieces (bench-scoped and a person's)
 - **Who asks, how:**
@@ -701,6 +707,10 @@ A thing is a system only if all four hold:
     into the stable part of her prompt
   - a person's routes (`app/ashley/api/skills.py`): read, pin, roll back, approve or decline her edit
   - the client's bench bar (`app/web/src/rooms/workshop/bench/Method.tsx`)
+  - every reply and errand reads the persona overrides into its prompt (`ashley.channels.taste.overrides`), which
+    `ashley.persona.sections.render` applies to the `allowed` sections only
+  - a person's persona routes (`app/ashley/api/persona.py`) and the Devices room's panel
+    (`app/web/src/rooms/devices/PersonaPanel.tsx`)
 
 ### Code runs
 
