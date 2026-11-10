@@ -82,8 +82,8 @@ def test_the_env_is_seeded_at_start_only_when_set() -> None:
 
 def test_wire_hands_back_what_closes_the_search_client_and_every_house_client() -> None:
     closers = wire(Settings(database_url=URL, build_version="t"))
-    assert len(closers) == 3, "the live feed, Homes and the search client"
+    assert len(closers) == 4, "the keyed providers, the live feed, Homes and the search client"
     closers += wire(Settings(database_url=URL, build_version="t", ha_url="http://ha.test:8123", ha_token="t"))
-    assert len(closers) == 6
+    assert len(closers) == 8
     for close in closers:
         asyncio.run(close())
