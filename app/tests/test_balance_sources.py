@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 import httpx2
 import pytest
 from ashley.inference.balance import BalanceFailed, Quota
-from ashley.inference.balance_reader import SourcedBalances
+from ashley.inference.balance_reader import SourcedBalances, fixed
 from ashley.inference.elevenlabs_quota import ElevenLabsQuota
 from spend_support import Told
 
@@ -73,7 +73,7 @@ def test_no_answer_is_unreachable() -> None:
 
 def test_a_read_is_cached_for_the_ttl_and_taken_again_after_it() -> None:
     told, clock = Told(Quota("characters", 1, 2, None)), [datetime(2026, 12, 1, tzinfo=UTC)]
-    balances = SourcedBalances({"elevenlabs": told}, lambda: clock[0], timedelta(seconds=60))
+    balances = SourcedBalances(fixed({"elevenlabs": told}), lambda: clock[0], timedelta(seconds=60))
 
     async def scenario() -> None:
         first = await balances.reading("elevenlabs")
@@ -89,7 +89,7 @@ def test_a_read_is_cached_for_the_ttl_and_taken_again_after_it() -> None:
 
 def test_a_failed_read_is_cached_too_so_a_down_provider_is_asked_once_a_minute() -> None:
     told = Told(failure=BalanceFailed("unreachable"))
-    balances = SourcedBalances({"elevenlabs": told})
+    balances = SourcedBalances(fixed({"elevenlabs": told}))
 
     async def scenario() -> None:
         assert (await asyncio.gather(*(balances.reading("elevenlabs") for _ in range(5))))[0] is not None
@@ -101,11 +101,11 @@ def test_a_failed_read_is_cached_too_so_a_down_provider_is_asked_once_a_minute()
 
 
 def test_a_provider_with_no_source_has_no_reading() -> None:
-    assert asyncio.run(SourcedBalances({}).reading("anthropic")) is None
+    assert asyncio.run(SourcedBalances(fixed({})).reading("anthropic")) is None
 
 
 def test_each_read_that_reaches_the_provider_logs_its_outcome_and_duration_only(caplog: pytest.LogCaptureFixture) -> None:
-    balances = SourcedBalances({"elevenlabs": Told(failure=BalanceFailed("refused"))})
+    balances = SourcedBalances(fixed({"elevenlabs": Told(failure=BalanceFailed("refused"))}))
     with caplog.at_level(logging.INFO, logger="ashley.inference"):
         asyncio.run(balances.reading("elevenlabs"))
         asyncio.run(balances.reading("elevenlabs"))

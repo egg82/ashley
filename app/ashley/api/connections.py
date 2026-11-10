@@ -85,14 +85,14 @@ def _connect_of(kind: ConnectionKind) -> Literal["pasted", "oauth", "bridge"]:
     return "bridge" if isinstance(kind.connect, BridgeLogin) else "pasted"
 
 
-def _kinds() -> list[ConnectionKindInfo]:
+def _kinds(household_id: int) -> list[ConnectionKindInfo]:
     return [ConnectionKindInfo(
         name=k.name, title=k.title, what=k.what, blurb=k.blurb, connected=k.connected, removed=k.removed,
         holders=sorted(k.holders), most=k.most, takes_address=k.fixed_address is None,
         address_placeholder=k.address_placeholder, secret_field=k.secret_field, secret_label=k.secret_label,
         secret_noun=k.secret_noun, connect=_connect_of(k), has_settings=bool(k.settings),
         set_up=not isinstance(k.connect, OAuth) or services.get(OAuthProviders).get(k.connect.provider) is not None)
-        for k in services.get(ConnectionKinds).all()]
+        for k in services.get(ConnectionKinds).offered(household_id)]
 
 
 async def _people(household_id: int) -> dict[int, WirePerson]:
@@ -155,7 +155,7 @@ async def list_connections(signed_in: Person, after: BackgroundTasks) -> Connect
     household = signed_in.person.household_id
     connections = services.get(Connections)
     if not connections.can_open():
-        return ConnectionsResponse(connections=[], offered=_kinds(), can_connect=False)
+        return ConnectionsResponse(connections=[], offered=_kinds(household), can_connect=False)
     me = signed_in.person.id
     try:
         found = await connections.of_household(household, me)
@@ -165,7 +165,7 @@ async def list_connections(signed_in: Person, after: BackgroundTasks) -> Connect
     after.add_task(connection_holders.refreshed, household, me, found)
     logs.info(log, "connections.listed", household=household, count=len(found))
     return ConnectionsResponse(connections=[_wire(c, people, me, resources.get(c.id, ())) for c in found],
-                               offered=_kinds(), can_connect=True)
+                               offered=_kinds(household), can_connect=True)
 
 
 @router.post("/api/connections", status_code=201, response_model=HouseholdConnection, responses={
@@ -176,7 +176,8 @@ async def connect(signed_in: Person, body: NewConnectionRequest) -> HouseholdCon
     `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when connections
     are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404."""
     person = signed_in.person
-    registered = services.get(ConnectionKinds).get(body.kind)
+    registered = next((k for k in services.get(ConnectionKinds).offered(person.household_id) if k.name == body.kind),
+                      None)
     if registered is None:
         return _not_found("there is no such kind of connection")
     secret = _secret(body, registered)

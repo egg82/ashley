@@ -78,7 +78,7 @@ export async function loadConnections(): Promise<void> {
 
 function secretOf(kind: ConnectionKindInfo, baseUrl: string, secret: string) {
   const base_url = kind.takes_address ? baseUrl : undefined;
-  return kind.secret_field === 'api_key' ? { base_url: baseUrl, api_key: secret } : { base_url, token: secret };
+  return kind.secret_field === 'api_key' ? { base_url, api_key: secret } : { base_url, token: secret };
 }
 
 function refusedBy(error: unknown): ConnectionsSaid {

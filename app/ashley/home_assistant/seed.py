@@ -9,10 +9,11 @@ from typing import Literal
 from .. import logs
 from ..connections import address
 from ..connections.connections import Connections, ConnectionsUnavailable
+from ..connections.kinds import FIRST_HOUSEHOLD
 from .homes import SCHEMES
 
 log = logging.getLogger("ashley.home_assistant")
-FALLBACK_HOUSEHOLD = 1
+FALLBACK_HOUSEHOLD = FIRST_HOUSEHOLD
 """The household the env's HA belongs to: the first, whose house was wired for the whole process before."""
 
 Outcome = Literal["seeded", "kept", "no_key", "bad_url", "unavailable"]

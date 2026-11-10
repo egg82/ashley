@@ -17,7 +17,7 @@ from ashley.channels.spend_view import SpendView
 from ashley.db.database import Database
 from ashley.inference import spend_catalog
 from ashley.inference.balance import BalanceFailed, ProviderBalances, Quota
-from ashley.inference.balance_reader import SourcedBalances
+from ashley.inference.balance_reader import SourcedBalances, fixed
 from ashley.main import create_app
 from ashley.people.people import People
 from ashley.settings import Settings
@@ -33,7 +33,7 @@ QUOTA = Quota("characters", 1200, 10000, datetime(2026, 12, 20, tzinfo=UTC))
 def with_sources(sources: dict[str, Told], budgets: object = None) -> None:
     catalog = spend_catalog.parse(json.loads(resources.files("ashley.inference").joinpath("providers.json").read_text()),
                                   {"monthly_usd": budgets or {}})
-    services.register(ProviderBalances, SourcedBalances(dict(sources), lambda: NOW))
+    services.register(ProviderBalances, SourcedBalances(fixed(dict(sources)), lambda: NOW))
     services.register(SpendReport, SpendView(services.get(Database), lambda: services.get(People),
                                              lambda: services.get(ProviderBalances), catalog, lambda: NOW))
 

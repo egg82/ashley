@@ -1,10 +1,11 @@
-"""`SourcedBalances`: the ProviderBalances service over a `BalanceSource` per provider, each read cached for `ttl`.
-Logs `balance.read` (provider, outcome, ms) once per read that reaches the provider; never a key or an amount."""
+"""`SourcedBalances`: the ProviderBalances service over a `BalanceSource` per provider, each read cached for `ttl` while
+the provider's source stays the same object (a rotated key brings a new one, read afresh). Logs `balance.read`
+(provider, outcome, ms) once per read that reaches the provider; never a key or an amount."""
 
 import asyncio
 import logging
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime, timedelta
 
 from .. import logs
@@ -13,26 +14,36 @@ from .balance import BalanceFailed, BalanceSource, ProviderBalances, Reading
 log = logging.getLogger("ashley.inference")
 TTL = timedelta(seconds=60)
 
+Sources = Callable[[], Awaitable[Mapping[str, BalanceSource]]]
+"""The balance sources wired now, by provider name (`KeyedProviders.balance_sources`)."""
+
+
+def fixed(sources: Mapping[str, BalanceSource]) -> Sources:
+    """`Sources` that are always `sources`."""
+    async def current() -> Mapping[str, BalanceSource]:
+        return sources
+    return current
+
 
 class SourcedBalances(ProviderBalances):
-    def __init__(self, sources: Mapping[str, BalanceSource], now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    def __init__(self, sources: Sources, now: Callable[[], datetime] = lambda: datetime.now(UTC),
                  ttl: timedelta = TTL) -> None:
-        self._sources = dict(sources)
+        self._sources = sources
         self._now = now
         self._ttl = ttl
-        self._kept: dict[str, Reading] = {}
-        self._locks = {name: asyncio.Lock() for name in sources}
+        self._kept: dict[str, tuple[BalanceSource, Reading]] = {}
+        self._locks: dict[str, asyncio.Lock] = {}
 
     async def reading(self, provider: str) -> Reading | None:
-        source = self._sources.get(provider)
+        source = (await self._sources()).get(provider)
         if source is None:
             return None
-        async with self._locks[provider]:
+        async with self._locks.setdefault(provider, asyncio.Lock()):
             kept = self._kept.get(provider)
-            if kept is not None and self._now() - kept.read_at < self._ttl:
-                return kept
+            if kept is not None and kept[0] is source and self._now() - kept[1].read_at < self._ttl:
+                return kept[1]
             fresh = await self._read(provider, source)
-            self._kept[provider] = fresh
+            self._kept[provider] = (source, fresh)
             return fresh
 
     async def _read(self, provider: str, source: BalanceSource) -> Reading:
