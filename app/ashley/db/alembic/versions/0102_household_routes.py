@@ -4,8 +4,8 @@ kept, with no setter, when the person who set it is gone."""
 
 from alembic import op
 
-revision: str = "0101"
-down_revision: str | None = "0100"
+revision: str = "0102"
+down_revision: str | None = "0101"
 
 
 def upgrade() -> None:
