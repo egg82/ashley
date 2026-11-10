@@ -112,5 +112,8 @@ def test_the_satellites_singleton_runs_only_with_a_clip_base_url(voice: str, cou
     for coroutine in running:
         coroutine.close()
     assert len(running) == count
-    assert singletons(Settings(database_url="x", build_version="t", voice_clip_base_url="https://a.test",
-                               esphome_noise_psk="k")) == [], "no etcd, no singletons"
+    bare = singletons(Settings(database_url="x", build_version="t", voice_clip_base_url=voice,
+                               esphome_noise_psk="k" if voice else ""))
+    for coroutine in bare:
+        coroutine.close()
+    assert len(bare) == count - 1, "without etcd, every singleton but fail-back"

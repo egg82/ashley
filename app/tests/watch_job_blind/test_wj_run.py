@@ -80,8 +80,9 @@ def test_with_etcd_the_wiring_starts_it_under_watches() -> None:
     assert "watches" in started_under_lease("http://etcd.test:2379")
 
 
-def test_without_etcd_the_wiring_starts_nothing() -> None:
-    assert started_under_lease("") == {}
+def test_without_etcd_the_wiring_still_starts_it_but_not_failback() -> None:
+    bodies = started_under_lease("")
+    assert "watches" in bodies and "fail-back" not in bodies
 
 
 def test_the_wiring_no_longer_starts_herdr_watch() -> None:

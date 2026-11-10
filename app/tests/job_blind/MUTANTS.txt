@@ -49,7 +49,7 @@ J44  an idle tick logs nothing                                                  
 J45  per-errand line wrong event, or missing errand/attempt/reason/tool_calls/duration_ms  test_ej_logs: test_done_line_carries..., test_released_line_for_owed_again, test_given_up_line_carries_the_reason
 J46  a log line carries the ask, the result, tool arguments or a refusal's message         test_ej_logs: test_no_log_line_carries_the_ask_the_result_or_the_tool_text
 J47  lease name not `errands`                                                              test_ej_singleton: test_the_lease_is_named_errands, test_with_etcd_the_job_is_one_of_the_singletons_under_the_lease
-J48  not started in wiring.singletons, or started without etcd                             test_ej_singleton: test_with_etcd_..., test_without_etcd_nothing_runs_under_a_lease, test_the_wired_body_runs_a_due_errand
+J48  not started in wiring.singletons, with or without etcd                               test_ej_singleton: test_with_etcd_..., test_without_etcd_the_job_still_runs_under_the_lease, test_the_wired_body_runs_a_due_errand
 J49  run ticks once and returns, or sleeps a constant instead of tick_s                    test_ej_singleton: test_run_ticks_again_and_again_until_cancelled, test_run_waits_tick_s_between_ticks
 J50  run swallows CancelledError (keeps ticking without the lease)                         test_ej_singleton: test_cancelling_a_tick_in_flight_stops_the_job, test_run_ticks_again_and_again_until_cancelled
 J51  an interrupted (running, past claim_s) errand is retaken instead of given up          test_ej_tick: test_a_running_errand_past_claim_s_is_interrupted_and_not_retaken

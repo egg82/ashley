@@ -1,5 +1,5 @@
-"""The job is a singleton: its lease is named `errands`, the wiring starts it under that name (with etcd), and its
-body ticks, waits `tick_s` and ticks again until cancelled."""
+"""The job is a singleton: its lease is named `errands`, the wiring starts it under that name (with etcd or without),
+and its body ticks, waits `tick_s` and ticks again until cancelled."""
 
 import asyncio
 from collections.abc import Callable, Generator
@@ -57,12 +57,12 @@ def test_with_etcd_the_job_is_one_of_the_singletons_under_the_lease(lease: Recor
     assert LEASE_NAME in lease.bodies
 
 
-def test_without_etcd_nothing_runs_under_a_lease(lease: RecordingLease) -> None:
+def test_without_etcd_the_job_still_runs_under_the_lease(lease: RecordingLease) -> None:
     async def started() -> None:
         await asyncio.gather(*wiring_singletons.singletons(Settings(database_url="postgresql://x", build_version="t")))
 
     run(started())
-    assert LEASE_NAME not in lease.bodies
+    assert LEASE_NAME in lease.bodies
 
 
 def test_the_wired_body_runs_a_due_errand(lease: RecordingLease, db_url: str) -> None:

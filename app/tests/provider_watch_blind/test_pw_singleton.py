@@ -37,9 +37,9 @@ def test_with_etcd_the_watch_is_one_of_the_singletons_under_the_lease(lease: Rec
     assert "inference-watch" in lease.bodies
 
 
-def test_without_etcd_nothing_runs_under_a_lease(lease: RecordingLease) -> None:
+def test_without_etcd_the_watch_still_runs_under_the_lease(lease: RecordingLease) -> None:
     go(started(Settings(database_url="postgresql://x", build_version="t")))
-    assert lease.bodies == {}
+    assert "inference-watch" in lease.bodies
 
 
 def test_the_singletons_body_watches_the_ledger(lease: RecordingLease, db_url: str, caplog: pytest.LogCaptureFixture) -> None:

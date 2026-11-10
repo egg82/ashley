@@ -85,9 +85,6 @@ from .people.accounts import Accounts
 from .people.people import People
 from .people.postgres_accounts import PostgresAccounts
 from .people.postgres import PostgresPeople
-from .referee.active_site import ActiveSite
-from .referee.etcd_lease import EtcdLease
-from .referee.lease import Lease
 from .senses.homes_presence import HomesPresence
 from .live.postgres_screens import PostgresScreens
 from .live.screens import Screens
@@ -106,7 +103,7 @@ from .settings import Settings
 from .wiring_providers import providers
 from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_sandbox
-from .wiring_singletons import etcd_tls
+from .wiring_singletons import wire_lease
 from .signin import policy as signin_policy
 from .signin.authentik import AuthentikOidc, Client
 from .signin.discord import CALLBACK_PATH as DISCORD_CALLBACK, DiscordOAuth
@@ -306,10 +303,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = app_routes) ->
     services.register(ProviderBalances, SourcedBalances(balance_sources))
     services.register(SpendReport, SpendView(services.get(Database), lambda: services.get(People),
                                              lambda: services.get(ProviderBalances), spend_catalog.load()))
-    if settings.etcd_url:
-        if not settings.site:
-            raise ValueError("SITE must name this site's Patroni member when ETCD_URL is set")
-        services.register(Lease, EtcdLease(settings.etcd_url, ActiveSite(settings.site), etcd_tls(settings)))
+    wire_lease(settings)
     return closers
 
 

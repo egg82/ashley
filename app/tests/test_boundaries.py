@@ -68,7 +68,7 @@ ALLOWED: dict[str, set[str]] = {
     "wiring_singletons": {"channels", "conversations", "db", "files", "home_assistant", "inference", "looks", "mail", "memory",
                           "referee", "senses", "services", "settings", "watches", "workshop"},
     "wiring": {"channels", "codehost", "connections", "conversations", "db", "errands", "files", "google", "herdr", "home_assistant", "inference", "initiative", "live",
-               "looks", "mail", "memory", "people", "printables", "referee", "runs", "senses", "services", "settings", "signin", "skills", "sure",
+               "looks", "mail", "memory", "people", "printables", "runs", "senses", "services", "settings", "signin", "skills", "sure",
                "tidy", "tools", "watches", "wiring_bridge", "wiring_providers", "wiring_sandbox", "wiring_singletons", "workshop"},
     "tidy": {"db", "inference", "logs", "services", "workshop"},
     "workshop": {"db", "files", "home_assistant", "live", "logs", "runs", "services", "text"},
