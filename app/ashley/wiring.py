@@ -57,17 +57,16 @@ from .files.mirror import MirroredStore
 from .files.s3 import S3Store
 from .files.store import ObjectStore
 from .inference import image_quota, prices, routes as inference_routes, spend_catalog
-from .inference.balance import BalanceSource, ProviderBalances
+from .inference.balance import ProviderBalances
 from .inference.balance_reader import SourcedBalances
-from .inference.elevenlabs_quota import ElevenLabsQuota
 from .inference.image_quota import ImageCap
+from .inference.key_seed import seed_from_env as seed_keys_from_env
+from .inference.keyed_providers import KeyedProviders
+from .inference.kinds import KEYED
+from .inference.provider_keys import ConnectionProviderKeys
 from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
 from .inference.postgres import PostgresSpendLedger
-from .inference.provider import Wired
-from .inference.elevenlabs_tts import ElevenLabsSpeaker
-from .inference.gemini_image import GeminiImageMaker
-from .inference.openai_image import OpenAIImageMaker
 from .inference.router import RoutedInference
 from .memory.inference_writer import InferenceFactWriter
 from .memory.memory import FactWriter, Memory
@@ -102,7 +101,7 @@ from .runs.postgres import PostgresRuns
 from .runs.runs import Runs
 from .tidy.register import register as register_tidy
 from .settings import Settings
-from .wiring_providers import providers
+from .wiring_providers import env_keys, providers
 from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_sandbox
 from .wiring_singletons import wire_lease
@@ -161,7 +160,8 @@ from .workshop.workshop import Workshop
 
 
 CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
-                                                replace(GOOGLE, resources=mailboxes))  # the panel's order
+                                                replace(GOOGLE, resources=mailboxes),
+                                                *(k.kind for k in KEYED))  # the panel's order
 
 
 def _wire_oauth(settings: Settings, sealer: Sealer, closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
@@ -284,40 +284,27 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
             settings.discord_oauth_client_id, settings.discord_oauth_client_secret,
             settings.public_url + DISCORD_CALLBACK), discord_http))
     _wire_homes(settings, closers)
-    wired = providers(settings)
-    balance_sources: dict[str, BalanceSource] = {}
-    if settings.elevenlabs_api_key:
-        elevenlabs = httpx2.AsyncClient(base_url="https://api.elevenlabs.io",
-                                        headers={"xi-api-key": settings.elevenlabs_api_key},
-                                        limits=httpx2.Limits(keepalive_expiry=30))
-        closers.append(elevenlabs.aclose)
-        wired.append(ElevenLabsSpeaker("elevenlabs", elevenlabs))
-        balance_sources["elevenlabs"] = ElevenLabsQuota(elevenlabs)
-    _wire_image_makers(settings, wired, closers)
-    services.register(Inference, RoutedInference(
-        narrow(inference_routes.load({p.name: p for p in wired}, settings.routes_file)), wired, PostgresSpendLedger(services.get(Database)),
-        prices.load(), image_cap=ImageCap(partial(image_quota.drawn, services.get(Database)), image_quota.load())))
-    services.register(ProviderBalances, SourcedBalances(balance_sources))
+    _wire_inference(settings, narrow, closers)
     services.register(SpendReport, SpendView(services.get(Database), lambda: services.get(People),
                                              lambda: services.get(ProviderBalances), spend_catalog.load()))
     wire_lease(settings)
     return closers
 
 
-def _wire_image_makers(settings: Settings, wired: list[Wired],
-                       closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
-    """The image providers whose key is set, beside the chat ones: their own wire and their own names (`openai_image`,
-    `gemini_image`), which `routes.json` lists for the `image` task."""
-    if settings.openai_api_key:
-        openai_images = httpx2.AsyncClient(base_url="https://api.openai.com",
-                                           headers={"Authorization": f"Bearer {settings.openai_api_key}"})
-        closers.append(openai_images.aclose)
-        wired.append(OpenAIImageMaker("openai_image", openai_images))
-    if settings.gemini_api_key:
-        gemini_images = httpx2.AsyncClient(base_url="https://generativelanguage.googleapis.com",
-                                           headers={"x-goog-api-key": settings.gemini_api_key})
-        closers.append(gemini_images.aclose)
-        wired.append(GeminiImageMaker("gemini_image", gemini_images))
+def _wire_inference(settings: Settings, narrow: Callable[[Routes], Routes],
+                    closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
+    """The router over the keyless providers and the keyed ones (`ashley.inference.kinds`), whose keys are the first
+    household's connections where it has them and the env's elsewhere, read again every `REFRESH_S`; routes are
+    checked against every provider a key could turn on. The spend page reads the keyed providers' balances."""
+    wired, env = providers(settings), env_keys(settings)
+    keyed = KeyedProviders(KEYED, ConnectionProviderKeys(lambda: services.get(Connections), (k.kind.name for k in KEYED),
+                                                         env), env)
+    closers.append(keyed.close)
+    routes = inference_routes.load({**keyed.checkers(), **{p.name: p for p in wired}}, settings.routes_file)
+    services.register(Inference, RoutedInference(
+        narrow(routes), wired, PostgresSpendLedger(services.get(Database)), prices.load(),
+        image_cap=ImageCap(partial(image_quota.drawn, services.get(Database)), image_quota.load()), keyed=keyed))
+    services.register(ProviderBalances, SourcedBalances(keyed.balance_sources))
 
 
 def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
@@ -378,13 +365,21 @@ def look_up_sources(web: WebSearchTools | None, places: Tools | None, models: Pr
 
 def warmups(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """What every pod runs once at start, for the app to start after `wire`, so the first reply after a deploy does not
-    pay for it: the embedding and speaker-embedding models' load, and with `HA_URL` set, the env's Home Assistant
-    sealed as household 1's connection where it has none (`seed_from_env`). Each is best effort and never raises."""
+    pay for it: the embedding and speaker-embedding models' load; with `HA_URL` set, the env's Home Assistant
+    sealed as household 1's connection where it has none (`seed_from_env`); and the env's model provider keys sealed as
+    its connections of their kinds where it has none (`ashley.inference.key_seed`). Each is best effort and never
+    raises."""
     inference = services.get(Inference)
     running: list[Coroutine[Any, Any, None]] = [inference.warm("embed"), inference.warm("voiceprint")]
     if settings.ha_url:
         running.append(_seed(settings))
+    if any(env_keys(settings).values()):
+        running.append(_seed_keys(settings))
     return running
+
+
+async def _seed_keys(settings: Settings) -> None:
+    await seed_keys_from_env(services.get(Connections), KEYED, env_keys(settings))
 
 
 async def _seed(settings: Settings) -> None:

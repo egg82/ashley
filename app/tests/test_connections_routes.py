@@ -165,8 +165,7 @@ def test_a_write_from_another_site_is_refused(client: TestClient) -> None:
 
 def test_a_body_missing_the_address_does_not_echo_the_key_back(client: TestClient) -> None:
     got = put_kind(client, "sure", json={"api_key": KEY}, headers=ORIGIN)
-    assert got.status_code == 422 and KEY not in got.text
-    assert all(e["loc"][-1] in ("base_url", "token") for e in got.json()["detail"])
+    assert got.status_code == 400 and KEY not in got.text and got.json()["reason"] == "bad_url"
 
 
 def test_a_malformed_address_or_key_does_not_echo_the_key_back(client: TestClient) -> None:
@@ -184,7 +183,7 @@ def test_not_signed_in_is_401(client: TestClient) -> None:
 def test_without_the_apps_key_nothing_can_be_connected(db_url: str, homes: Homes, sure: FakeSure) -> None:
     for c in _client(db_url, homes, sure, ""):
         off = listed(c)
-        assert off.connections == [] and not off.can_connect and len(off.offered) == 6
+        assert off.connections == [] and not off.can_connect and len(off.offered) == 10
         got = put_kind(c, "sure", json={"base_url": BASE, "api_key": KEY}, headers=ORIGIN)
         assert got.status_code == 503 and sure.seen == []
 

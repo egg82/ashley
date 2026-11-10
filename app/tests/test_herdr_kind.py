@@ -34,7 +34,8 @@ def test_other_addresses_still_take_no_fragment() -> None:
 
 def test_the_kind_is_personal_pinned_and_registered_before_google() -> None:
     assert (HERDR.name, HERDR.holders, HERDR.pinned, HERDR.secret_field) == ("herdr", frozenset({"person"}), True, "token")
-    assert wiring.CONNECTION_KINDS[-2] is HERDR
+    names = [k.name for k in wiring.CONNECTION_KINDS]
+    assert names.index("herdr") == names.index("google") - 1
     assert HERDR.base_url("http://vm.test") is None and HERDR.base_url(f"https://vm.test:7843#sha256={PIN}")
 
 
