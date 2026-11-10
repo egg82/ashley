@@ -923,6 +923,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/household": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Household
+         * @description 200 `Household`; 401 `unauthorized`; 404 `not_found`; 503 `unavailable`.
+         */
+        get: operations["read_household"];
+        /**
+         * Write Household
+         * @description 200 `Household` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 `HouseholdRefused`; 503
+         *     `unavailable`.
+         */
+        put: operations["write_household"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/messages": {
         parameters: {
             query?: never;
@@ -2715,6 +2740,38 @@ export interface components {
             certificate_sha256?: string | null;
         };
         /**
+         * Household
+         * @description The signed-in person's household as its people set it. `timezone` is an IANA name (`America/Denver`), the
+         *     household's local time for anything said about the time of day. `profile` is what she always knows about the
+         *     household, as prose (empty when none is set), at most `profile_limit` characters. `locale` is a BCP 47 tag (`en-US`)
+         *     for how dates and numbers are written; `unit_system` the units she speaks in; `clock` whether times are written on
+         *     a 12- or 24-hour clock. `name` is set by the admin and only read here.
+         */
+        Household: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Timezone */
+            timezone: string;
+            /** Profile */
+            profile: string;
+            /** Profile Limit */
+            profile_limit: number;
+            /** Locale */
+            locale: string;
+            /**
+             * Unit System
+             * @enum {string}
+             */
+            unit_system: "imperial" | "metric";
+            /**
+             * Clock
+             * @enum {string}
+             */
+            clock: "12h" | "24h";
+        };
+        /**
          * HouseholdConnection
          * @description One of the household's connections. `id` is what addresses it; `label` is what its owner calls it, empty for one
          *     never named. `kind` is the service, the `name` of a registered connection kind; `base_url` where it is
@@ -2777,6 +2834,42 @@ export interface components {
              * @default false
              */
             can_take_back: boolean;
+        };
+        /**
+         * HouseholdRefused
+         * @description Why nothing was stored: `invalid` names the field that is not one she can use, `timezone` (not an IANA zone
+         *     name) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`).
+         */
+        HouseholdRefused: {
+            /**
+             * Invalid
+             * @enum {string}
+             */
+            invalid: "timezone" | "locale";
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * HouseholdRequest
+         * @description Every field the household page sets, whole: a field left out is refused, never kept or cleared.
+         */
+        HouseholdRequest: {
+            /** Timezone */
+            timezone: string;
+            /** Profile */
+            profile: string;
+            /** Locale */
+            locale: string;
+            /**
+             * Unit System
+             * @enum {string}
+             */
+            unit_system: "imperial" | "metric";
+            /**
+             * Clock
+             * @enum {string}
+             */
+            clock: "12h" | "24h";
         };
         /**
          * InstallPieceRequest
@@ -2934,12 +3027,18 @@ export interface components {
          * @description What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who
          *     are home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's
          *     sources that have nothing behind them yet, which the page shows as not connected, never with sample data.
+         *     `locale` (BCP 47) and `clock` are how the household writes dates and times, null when the household could not be
+         *     read; the time itself is the tablet's own.
          */
         KioskGlance: {
             /** Home */
             home: string[] | null;
             /** Not Connected */
             not_connected: ("calendar" | "reminders")[];
+            /** Locale */
+            locale: string | null;
+            /** Clock */
+            clock: ("12h" | "24h") | null;
         };
         /**
          * KioskLayout
@@ -7632,6 +7731,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LexiconRefused"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_household: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: the session's household no longer exists */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    write_household: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseholdRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: the session's household no longer exists */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a timezone or locale she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdRefused"];
                 };
             };
             /** @description `unavailable`: the database could not be reached */

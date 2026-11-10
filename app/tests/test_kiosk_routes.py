@@ -250,9 +250,9 @@ def test_the_pages_reads_are_not_counted(client: TestClient, devices: FakeDevice
 def test_the_glance_names_only_the_household_people_home(client: TestClient, wired: Fakes) -> None:
     wired.presence.answer = frozenset({ALANA.id, 99})
     body = client.get("/api/kiosk/glance").json()
-    assert KioskGlance.model_validate(body) == KioskGlance(home=["Alana"],
-                                                           not_connected=["calendar", "reminders"])
-    assert set(body) == {"home", "not_connected"}
+    assert KioskGlance.model_validate(body) == KioskGlance(home=["Alana"], not_connected=["calendar", "reminders"],
+                                                           locale="en-US", clock="24h")
+    assert set(body) == {"home", "not_connected", "locale", "clock"}
 
 
 def test_the_glance_says_unknown_when_presence_cannot_tell(client: TestClient, wired: Fakes) -> None:

@@ -21,7 +21,7 @@ from .. import logs, services
 from ..channels.kiosk import controls
 from ..channels.kiosk.controls import Control
 from ..channels.kiosk.screen_controls_of import controls_piece
-from ..channels.kiosk.glance import home_names
+from ..channels.kiosk.glance import glance
 from ..channels.model import Device, Inbound
 from ..live.events import DeviceViewer
 from ..workshop.workshop import ScreenNotFound, Workshop, WorkshopUnavailable
@@ -115,8 +115,9 @@ async def kiosk_live(device: Kiosk) -> Response:
 @router.get("/api/kiosk/glance", response_model=KioskGlance, responses=_PAIRED)
 async def kiosk_glance(device: Kiosk) -> KioskGlance:
     """200 `KioskGlance`; 401 `unauthorized`; 503 `unavailable`."""
-    home = await home_names(device.household_id)
-    return KioskGlance(home=None if home is None else list(home), not_connected=["calendar", "reminders"])
+    seen = await glance(device.household_id)
+    return KioskGlance(home=None if seen.home is None else list(seen.home), not_connected=["calendar", "reminders"],
+                       locale=seen.locale, clock=seen.clock)
 
 
 @router.get("/api/kiosk/layout", response_model=KioskLayout, responses=_PAIRED)

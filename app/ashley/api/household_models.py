@@ -1,0 +1,45 @@
+"""The wire models of the household page (`ashley.api.household`)."""
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from ..people.fields import PROFILE_MAX
+from ..people.model import Clock, UnitSystem
+
+
+class Household(BaseModel):
+    """The signed-in person's household as its people set it. `timezone` is an IANA name (`America/Denver`), the
+    household's local time for anything said about the time of day. `profile` is what she always knows about the
+    household, as prose (empty when none is set), at most `profile_limit` characters. `locale` is a BCP 47 tag (`en-US`)
+    for how dates and numbers are written; `unit_system` the units she speaks in; `clock` whether times are written on
+    a 12- or 24-hour clock. `name` is set by the admin and only read here."""
+
+    id: int
+    name: str
+    timezone: str
+    profile: str
+    profile_limit: int
+    locale: str
+    unit_system: UnitSystem
+    clock: Clock
+
+
+class HouseholdRequest(BaseModel):
+    """Every field the household page sets, whole: a field left out is refused, never kept or cleared."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    timezone: str = Field(max_length=64)
+    profile: str = Field(max_length=PROFILE_MAX)
+    locale: str = Field(max_length=35)
+    unit_system: UnitSystem
+    clock: Clock
+
+
+class HouseholdRefused(BaseModel):
+    """Why nothing was stored: `invalid` names the field that is not one she can use, `timezone` (not an IANA zone
+    name) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`)."""
+
+    invalid: Literal["timezone", "locale"]
+    detail: str

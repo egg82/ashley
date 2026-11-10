@@ -82,8 +82,10 @@ from .home_assistant.homes import Home, Homes
 from .home_assistant.kind import HOME_ASSISTANT
 from .home_assistant.seed import seed_from_env
 from .people.accounts import Accounts
+from .people.household_write import HouseholdWriter
 from .people.people import People
 from .people.postgres_accounts import PostgresAccounts
+from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
 from .senses.homes_presence import HomesPresence
 from .live.postgres_screens import PostgresScreens
@@ -233,6 +235,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(InFlight, PostgresInFlight(services.get(Database), policy.load(), resume.CONFIG.claim_s))
     services.register(People, PostgresPeople(services.get(Database)))
     services.register(Accounts, PostgresAccounts(services.get(Database)))
+    services.register(HouseholdWriter, PostgresHouseholdWriter(services.get(Database)))
     services.register(Memory, PostgresMemory(services.get(Database)))
     services.register(FactWriter, InferenceFactWriter())
     _wire_devices()

@@ -3330,6 +3330,132 @@
         }
       }
     },
+    "/api/household": {
+      "get": {
+        "summary": "Read Household",
+        "description": "200 `Household`; 401 `unauthorized`; 404 `not_found`; 503 `unavailable`.",
+        "operationId": "read_household",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Household"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the session's household no longer exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Write Household",
+        "description": "200 `Household` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 `HouseholdRefused`; 503\n`unavailable`.",
+        "operationId": "write_household",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HouseholdRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Household"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the session's household no longer exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a timezone or locale she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat/messages": {
       "post": {
         "summary": "Send",
@@ -8520,6 +8646,63 @@
         "title": "Heartbeat",
         "description": "The pod of `epoch` is alive, with the SHA-256 (hex) of the TLS certificate Bridge serves IMAP and SMTP under."
       },
+      "Household": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "profile": {
+            "type": "string",
+            "title": "Profile"
+          },
+          "profile_limit": {
+            "type": "integer",
+            "title": "Profile Limit"
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          },
+          "unit_system": {
+            "type": "string",
+            "enum": [
+              "imperial",
+              "metric"
+            ],
+            "title": "Unit System"
+          },
+          "clock": {
+            "type": "string",
+            "enum": [
+              "12h",
+              "24h"
+            ],
+            "title": "Clock"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "timezone",
+          "profile",
+          "profile_limit",
+          "locale",
+          "unit_system",
+          "clock"
+        ],
+        "title": "Household",
+        "description": "The signed-in person's household as its people set it. `timezone` is an IANA name (`America/Denver`), the\nhousehold's local time for anything said about the time of day. `profile` is what she always knows about the\nhousehold, as prose (empty when none is set), at most `profile_limit` characters. `locale` is a BCP 47 tag (`en-US`)\nfor how dates and numbers are written; `unit_system` the units she speaks in; `clock` whether times are written on\na 12- or 24-hour clock. `name` is set by the admin and only read here."
+      },
       "HouseholdConnection": {
         "properties": {
           "id": {
@@ -8625,6 +8808,75 @@
         ],
         "title": "HouseholdConnection",
         "description": "One of the household's connections. `id` is what addresses it; `label` is what its owner calls it, empty for one\nnever named. `kind` is the service, the `name` of a registered connection kind; `base_url` where it is\nreached; `added_by` the person who added it, null once they are not among the household's people or for one\ncarried over from her own setup; `personal` whether it is the signed-in person's own (a code host) and not the\nhousehold's; `checked_at` when the service last answered with it, at its adding or on one of\nher reads since. `needs` is set while its person must act before it works again (`reconnect`: the service\nrefused its grant, so connect it again); `scopes` are what an OAuth service granted and `missing_scopes` what its kind asks for\nthat it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or\nkept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household\n(it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they\nadded it and its kind allows a person to hold it)."
+      },
+      "HouseholdRefused": {
+        "properties": {
+          "invalid": {
+            "type": "string",
+            "enum": [
+              "timezone",
+              "locale"
+            ],
+            "title": "Invalid"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invalid",
+          "detail"
+        ],
+        "title": "HouseholdRefused",
+        "description": "Why nothing was stored: `invalid` names the field that is not one she can use, `timezone` (not an IANA zone\nname) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`)."
+      },
+      "HouseholdRequest": {
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Timezone"
+          },
+          "profile": {
+            "type": "string",
+            "maxLength": 8000,
+            "title": "Profile"
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 35,
+            "title": "Locale"
+          },
+          "unit_system": {
+            "type": "string",
+            "enum": [
+              "imperial",
+              "metric"
+            ],
+            "title": "Unit System"
+          },
+          "clock": {
+            "type": "string",
+            "enum": [
+              "12h",
+              "24h"
+            ],
+            "title": "Clock"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timezone",
+          "profile",
+          "locale",
+          "unit_system",
+          "clock"
+        ],
+        "title": "HouseholdRequest",
+        "description": "Every field the household page sets, whole: a field left out is refused, never kept or cleared."
       },
       "InstallPieceRequest": {
         "properties": {
@@ -9025,15 +9277,43 @@
             },
             "type": "array",
             "title": "Not Connected"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "clock": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "12h",
+                  "24h"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clock"
           }
         },
         "type": "object",
         "required": [
           "home",
-          "not_connected"
+          "not_connected",
+          "locale",
+          "clock"
         ],
         "title": "KioskGlance",
-        "description": "What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who\nare home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's\nsources that have nothing behind them yet, which the page shows as not connected, never with sample data."
+        "description": "What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who\nare home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's\nsources that have nothing behind them yet, which the page shows as not connected, never with sample data.\n`locale` (BCP 47) and `clock` are how the household writes dates and times, null when the household could not be\nread; the time itself is the tablet's own."
       },
       "KioskLayout": {
         "properties": {
