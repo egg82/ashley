@@ -879,6 +879,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/spend/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Routes
+         * @description 200 `SpendRoutesResponse`; 401 `unauthorized`; 503 `unavailable`.
+         */
+        get: operations["read_routes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/spend/routes/{task}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Route
+         * @description 200 `SpendRoutesResponse` as stored; 401 `unauthorized`; 403 `forbidden`; 422 `SpendRouteRefused`; 503
+         *     `unavailable`.
+         */
+        put: operations["write_route"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lexicon": {
         parameters: {
             query?: never;
@@ -4504,6 +4545,17 @@ export interface components {
             to_version: number;
         };
         /**
+         * RouteModel
+         * @description One route: the provider (its name in the routes data, as the Usage room's provider rows name it) and the model
+         *     id it calls.
+         */
+        RouteModel: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+        };
+        /**
          * RunApplied
          * @description The Run command was accepted as `seq` and the piece was run as `run_id`: `run_output` is what came out. The
          *     bench read back shows it as the piece's `last_run`.
@@ -4854,6 +4906,38 @@ export interface components {
             providers: components["schemas"]["SpendProvider"][];
         };
         /**
+         * SpendRouteRefused
+         * @description Why nothing was stored: `not_household` (the task is not one a household chooses for), `not_offered` (not one of
+         *     its options), `unwired` (an option whose provider has no key now).
+         */
+        SpendRouteRefused: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "not_household" | "not_offered" | "unwired";
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * SpendRouteRequest
+         * @description The model for one task, or null to go back to the deployment's routes.
+         */
+        SpendRouteRequest: {
+            route: components["schemas"]["RouteModel"] | null;
+        };
+        /**
+         * SpendRoutesResponse
+         * @description Every task the household may choose for, in task order, then `action_judge`. A choice reaches every reply within
+         *     `refresh_s` seconds.
+         */
+        SpendRoutesResponse: {
+            /** Tasks */
+            tasks: components["schemas"]["TaskRoutes"][];
+            /** Refresh S */
+            refresh_s: number;
+        };
+        /**
          * SpendSpans
          * @description The same usage over the three spans.
          */
@@ -4932,6 +5016,28 @@ export interface components {
             quiet_rms: number;
             /** Voice S */
             voice_s: number;
+        };
+        /**
+         * TaskRoutes
+         * @description One task. `household`: whether this household may choose its model; false for `action_judge`, which is shown so a
+         *     person can see which model judges a change, and only the operator moves. `routes`: the deployment's routes, in the
+         *     order a call tries them. `chosen`: the household's choice, tried before `routes`; null when it has none.
+         *     `options`: what it may choose now (the deployment's routes for its chat-facing tasks whose provider is wired), in
+         *     order; empty when `household` is false.
+         */
+        TaskRoutes: {
+            /**
+             * Task
+             * @enum {string}
+             */
+            task: "command" | "chat" | "brainstorm" | "escalated" | "wrap_up" | "memory_write" | "memory_judge" | "look_up" | "bench_tidy" | "errand" | "action_judge" | "bench_job" | "eval_judge";
+            /** Household */
+            household: boolean;
+            /** Routes */
+            routes: components["schemas"]["RouteModel"][];
+            chosen: components["schemas"]["RouteModel"] | null;
+            /** Options */
+            options: components["schemas"]["RouteModel"][];
         };
         /**
          * TokenConnectionRequest
@@ -7757,6 +7863,106 @@ export interface operations {
                 };
             };
             /** @description `unavailable`: the ledger could not be read */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_routes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpendRoutesResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the choices could not be read or written */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    write_route: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task: "command" | "chat" | "brainstorm" | "escalated" | "wrap_up" | "memory_write" | "memory_judge" | "look_up" | "bench_tidy" | "errand" | "action_judge" | "bench_job" | "eval_judge";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpendRouteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpendRoutesResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a choice the task does not offer now; nothing was stored. A body or task outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpendRouteRefused"];
+                };
+            };
+            /** @description `unavailable`: the choices could not be read or written */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -27,13 +27,19 @@ IMAGE_TASKS: tuple[ImageTask, ...] = get_args(ImageTask)
 _ROUTE_KEYS = {"provider", "model", "timeout_s", "variant", "params"}
 _REQUIRED = ("provider", "model", "timeout_s")
 
+NEVER_HOUSEHOLD: frozenset[Task] = frozenset({"action_judge"})
+"""Text tasks no household may choose a model for, whatever the routes data says: `action_judge` is a safety check, and
+a weaker model there weakens the check that guards the household itself. Only the operator's `ROUTES_FILE` moves it."""
+
 
 @dataclass(frozen=True)
 class Routes:
     """Every text task has at least one route; a speech, embed or voiceprint task has routes when `routes.json` lists
     it, so a process that never speaks needs none. A provider that failed `unavailable` rests for `cooldown_s` (> 0).
     `waits_for_first` names the text tasks whose entry says `"fallback": false`: the app runs them on their first
-    route only (`without_fallback`), while the list stays whole for an eval to pin."""
+    route only (`without_fallback`), while the list stays whole for an eval to pin. `households` names the text tasks
+    whose entry says `"household": true`: a household may choose which model carries them
+    (`ashley.inference.household_routes`); never a task in `NEVER_HOUSEHOLD`."""
 
     by_task: Mapping[Task, tuple[Route, ...]]
     cooldown_s: float
@@ -43,6 +49,7 @@ class Routes:
         default_factory=dict[VoiceprintTask, tuple[Route, ...]])
     image: Mapping[ImageTask, tuple[Route, ...]] = field(default_factory=dict[ImageTask, tuple[Route, ...]])
     waits_for_first: frozenset[Task] = frozenset()
+    households: frozenset[Task] = frozenset()
 
     def for_task(self, task: TaskName) -> tuple[Route, ...]:
         """The task's routes in order; none for a speech, embed or voiceprint task the routes do not list."""
@@ -84,6 +91,13 @@ def load(providers: Mapping[str, Wired], routes_file: str = "") -> Routes:
         raise ValueError(f"ROUTES_FILE {routes_file}: {e}") from e
 
 
+def deployment(routes_file: str = "") -> dict[str, object]:
+    """The deployment's routes data before it is checked: `routes.json` beside this module with the operator's
+    `routes_file` over it (`overlay`) when non-empty. What `load` parses, and what a household's choices are laid over.
+    Raises ValueError naming ROUTES_FILE when that file cannot be read or overlaid."""
+    raise NotImplementedError
+
+
 def overlay(shipped: Mapping[str, object], operator: object) -> dict[str, object]:
     """The shipped routes data with an operator's over it: `{"cooldown_s"?: n, "tasks"?: {...}}`. Each task in
     the overlay replaces that task's whole entry; tasks it leaves out, and an absent `cooldown_s`, stay shipped.
@@ -103,7 +117,9 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
     `{"cooldown_s": n, "tasks": {"<task>": [{"provider": s, "model": s, "timeout_s": n, "variant"?: s,
     "params"?: {...}}, ...]}}`, one entry per text task (`{"like": "<task>"}` in place of the list takes that task's
     routes, which must be a list; `{"routes": [...], "fallback": false}` in place of the list is a text task that
-    waits for its first route, see `Routes.waits_for_first`), optionally one per speech task and one each for `embed`, `voiceprint` and `image`, and no others,
+    waits for its first route, see `Routes.waits_for_first`; `{"routes": [...], "household": true}` is a text task a
+    household may choose for, see `Routes.households`, and both flags may be given together; `"household": true` on a
+    task in `NEVER_HOUSEHOLD` is a ValueError), optionally one per speech task and one each for `embed`, `voiceprint` and `image`, and no others,
     each with at least one route and no keys beyond those. Numbers are finite and > 0 (a bool is not a number); strings are non-empty.
 
     A route naming a provider absent from `providers` is kept: it is skipped at call time, so routes may list a

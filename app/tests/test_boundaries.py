@@ -21,7 +21,7 @@ PKG = ROOT / "ashley"  # the package directory (its name is the import root)
 # Top-level module or subpackage -> those it may import. Seed with --write, then
 # cut edges deliberately.
 ALLOWED: dict[str, set[str]] = {
-    "api": {"channels", "connections", "conversations", "db", "files", "live", "logs", "looks", "mail", "memory", "people",
+    "api": {"channels", "connections", "conversations", "db", "files", "inference", "live", "logs", "looks", "mail", "memory", "people",
             "persona", "runs", "senses", "services", "settings", "signin", "skills", "text", "workshop"},
     "channels": {"stamp", "codehost", "connections", "conversations", "db", "errands", "inference", "initiative", "live", "logs", "memory",
                  "people", "persona", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "watches",
