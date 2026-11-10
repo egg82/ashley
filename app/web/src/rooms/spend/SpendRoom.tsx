@@ -5,6 +5,7 @@ import type { SpendResponse } from '../../api/types';
 import { dockIn } from '../../shell/her/dock';
 import { day } from './format';
 import { ProviderRow } from './ProviderRow';
+import { RoutesPanel } from './RoutesPanel';
 import { leaveRoom, loadSpend, spend, spendState } from './spend';
 
 function Table({ s }: { s: SpendResponse }) {
@@ -69,6 +70,7 @@ export function SpendRoom() {
             Days start at midnight in {s.zone}.
           </p>
         )}
+        <RoutesPanel />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 /* The Usage room. It sits in devices.css's room frame (.set, .set-head, .set-down) and the shell's tokens, .panel, .btn,
-   .pill, .label, .meta and .unk. New here: the provider rows and their cells. */
+   .pill, .label, .meta and .unk. New here: the provider rows and their cells, and the model choices (their select is workshop.css's .ws-m-kind select). */
 
 .set.sp-room { max-width: 1160px; }
 .set-head .sp-refresh { margin-left: auto; }
@@ -34,6 +34,16 @@
 .sp-note { margin: 0; padding: 8px 16px 12px 40px; border-top: 1px solid var(--line); }
 .sp-note a { color: var(--blue-hi); }
 
+.sp-routes { display: grid; gap: 10px; padding: 14px 16px; }
+.sp-routes h2 { margin: 0; }
+.sp-route { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 4px 16px; align-items: start;
+  padding: 8px 0; border-top: 1px solid var(--line); }
+.sp-route-pick { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.sp-route-pick select { height: 28px; padding: 0 8px; border-radius: var(--r-1); border: 1px solid var(--line-hi); background: var(--ink-1); color: var(--text); font: inherit; max-width: 100%; }
+.sp-route-pick select:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 1px; }
+.sp-route-pick .meta, .sp-route-pick .unk { white-space: normal; overflow-wrap: anywhere; }
+.sp-route-down { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
 @media (max-width: 900px) {
   .sp-head { display: none; }
   .sp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -42,4 +52,5 @@
   .sp-task > .sp-cell:last-child { display: none; }
   .sp-lab { display: block; font: 600 10px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); }
   .sp-note { padding-left: 16px; }
+  .sp-route { grid-template-columns: minmax(0, 1fr); }
 }
