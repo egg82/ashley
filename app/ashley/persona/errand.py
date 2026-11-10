@@ -6,7 +6,7 @@ from datetime import datetime
 
 from ..inference.model import SystemPrompt
 from ..people.model import Household, Person
-from . import facts, prose
+from . import facts, prose, sections
 from .persona import NO_OVERRIDES
 
 
@@ -20,10 +20,10 @@ def system(household: Household, asker: Person, source: str, instructions: str |
     now_line = f"# Now\n\nIt is {facts.when(now)}."
     prompts: dict[str, SystemPrompt] = {}
     for variant in prose.variants():
-        who, errand = prose.read(variant, "ashley.md"), prose.read(variant, "errand.md")
+        who, errand = prose.read(variant, sections.FILE), prose.read(variant, "errand.md")
         if who is None or errand is None:
             raise ValueError(f"no persona text for an errand in variant {variant!r}")
-        parts = [who, errand.format(name=asker.name, source=source), facts.tools(instructions, True, unreachable),
+        parts = [sections.render(who, overrides), errand.format(name=asker.name, source=source), facts.tools(instructions, True, unreachable),
                  facts.profile(household)]
         prompts[variant] = SystemPrompt("\n\n".join(p for p in parts if p), now_line)
     return prompts
