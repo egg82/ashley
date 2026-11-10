@@ -15,6 +15,7 @@ from ashley.conversations.model import Kind
 from ashley.people.model import Household, Person
 from ashley.persona import persona as persona_module
 from ashley.persona.persona import Context, system
+from ashley.persona.sections import MARKER_PREFIX
 from conversations_support import KINDS
 
 HERE = Path(persona_module.__file__).parent
@@ -26,7 +27,9 @@ ANY_KIND: Any = "not-a-kind"
 
 
 def first_line(path: Path) -> str:
-    return next(line.strip() for line in path.read_text().splitlines() if line.strip())
+    """The first line of the file that reaches a prompt: a section marker line (`persona.sections`) never does."""
+    return next(line.strip() for line in path.read_text().splitlines()
+                if line.strip() and not line.startswith(MARKER_PREFIX))
 
 
 def variants() -> set[str]:
