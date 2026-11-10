@@ -133,11 +133,10 @@ class Rig:
         return self.client.post(path, json=body)
 
 
-def build(url: str, fakes: Fakes, signed_in: bool = True) -> Rig:
-    """The real app over `url`, signed in as Alana (`Rig.as_` changes who), with the channel fakes in the locator."""
-    home, next_door = household(url, "home"), household(url, "next door")
-    w = World(Person(person(url, home, "Alana"), home, "Alana"), Person(person(url, home, "Sam"), home, "Sam"),
-              Person(person(url, next_door, "Zed"), next_door, "Zed"))
+def build(url: str, fakes: Fakes, signed_in: bool = True, world: World | None = None) -> Rig:
+    """The real app over `url`, signed in as Alana (`Rig.as_` changes who), with the channel fakes in the locator.
+    `world` reuses an earlier rig's households and people, for a second app over the same database."""
+    w = world or _world(url)
     app = create_app(Settings(database_url=url, build_version="t", public_url=PUBLIC))
     rig = Rig(TestClient(app, base_url=PUBLIC, headers={"origin": PUBLIC}), w, ["alana"])
     if signed_in:
@@ -148,6 +147,12 @@ def build(url: str, fakes: Fakes, signed_in: bool = True) -> Rig:
     services.register(Inference, fakes.inference)
     services.register(Tools, fakes.tools)
     return rig
+
+
+def _world(url: str) -> World:
+    home, next_door = household(url, "home"), household(url, "next door")
+    return World(Person(person(url, home, "Alana"), home, "Alana"), Person(person(url, home, "Sam"), home, "Sam"),
+                 Person(person(url, next_door, "Zed"), next_door, "Zed"))
 
 
 def events(caplog: pytest.LogCaptureFixture, event: str) -> list[dict[str, object]]:
