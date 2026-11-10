@@ -1,5 +1,6 @@
 // How long a message may be, as the server counts it (`api/models.py`: 1 to 4000 characters, counted as code points),
 // and what a composer says about it. A composer never cuts text: past the limit it says so and holds Send.
+import { locale } from '../../household/format.ts';
 
 export const MAX_CHARS = 4000;
 
@@ -24,7 +25,7 @@ export type Limit = { over: boolean; note: string | null };
  * and past it the count with how much to cut. */
 export function limitOf(sent: string): Limit {
   const n = charCount(sent);
-  const count = `${n.toLocaleString('en-US')} / ${MAX_CHARS.toLocaleString('en-US')}`;
-  if (n > MAX_CHARS) return { over: true, note: `${count}. Too long to send: cut ${(n - MAX_CHARS).toLocaleString('en-US')}.` };
+  const count = `${n.toLocaleString(locale())} / ${MAX_CHARS.toLocaleString(locale())}`;
+  if (n > MAX_CHARS) return { over: true, note: `${count}. Too long to send: cut ${(n - MAX_CHARS).toLocaleString(locale())}.` };
   return { over: false, note: n >= NEAR ? count : null };
 }

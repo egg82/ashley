@@ -1,6 +1,7 @@
 // Pure reads over the facts the API returned: which tab a fact belongs to, what is new this week, and how its dates
 // and source read on screen.
 import type { FactKind, FactSource, MemoryFact } from '../../api/types';
+import { hour, locale } from '../../household/format.ts';
 
 export type Tab = 'you' | 'household';
 /** A tab of the room: the facts' two, and the person's reminders. */
@@ -57,13 +58,13 @@ export function day(iso: string, now = new Date()): string {
   const d = new Date(iso);
   if (sameDay(d, now)) return 'today';
   const year = d.getFullYear() === now.getFullYear() ? undefined : 'numeric';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year });
+  return d.toLocaleDateString(locale(), { month: 'short', day: 'numeric', year });
 }
 
-/** "08:12" today, else "Oct 24 17:40". */
+/** "08:12" today, else "Oct 24 17:40", on the household's clock. */
 export function moment(iso: string, now = new Date()): string {
   const d = new Date(iso);
-  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const time = d.toLocaleTimeString(locale(), { hour: hour(), minute: '2-digit' });
   return sameDay(d, now) ? time : `${day(iso, now)} ${time}`;
 }
 

@@ -1,5 +1,6 @@
-// This screen's clock and date, which the screen keeps itself.
+// This screen's clock and date, which the screen keeps itself, written as the household writes them.
 import { useEffect, useState } from 'preact/hooks';
+import { hour, locale } from '../household/format';
 
 function useNow(everyMs: number): Date {
   const [now, setNow] = useState(() => new Date());
@@ -12,8 +13,8 @@ function useNow(everyMs: number): Date {
 
 export function Clock() {
   const now = useNow(10_000);
-  const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-  const date = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const time = now.toLocaleTimeString(locale(), { hour: hour(), minute: '2-digit' });
+  const date = now.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
   return (
     <div class="k-clock k-drift">
       <time class="k-time">{time}</time>

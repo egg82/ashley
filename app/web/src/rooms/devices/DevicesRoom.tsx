@@ -1,4 +1,4 @@
-// Devices, at bearing 070: this device's notifications, and the household's devices and pronunciation words beside them.
+// Devices, at bearing 070: this device's notifications, and the household's own settings, devices and pronunciation words beside them.
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import type { ListedDevice } from '../../api/types';
@@ -7,8 +7,10 @@ import { ControlsEditor } from './ControlsEditor';
 import { showsControls } from './controlRows';
 import { loadLights } from './controls';
 import { devices, devicesState, leaveRoom, loadDevices } from './devices';
+import { HouseholdPanel } from './HouseholdPanel';
 import { Lexicon } from './Lexicon';
 import { loadLexicon } from './lexiconWords';
+import { loadHousehold } from '../../household/household';
 import { loadPush, push, pushBusy, pushSaid, turnOff, turnOn } from './notifications';
 
 type PushSaid = NonNullable<typeof pushSaid.value>;
@@ -143,6 +145,7 @@ export function DevicesRoom() {
     void loadPush();
     void loadDevices();
     void loadLexicon();
+    void loadHousehold();
     void loadLights();
     return leaveRoom;
   }, []);
@@ -162,6 +165,7 @@ export function DevicesRoom() {
           <Notifications />
         </div>
         <div class="set-col">
+          <HouseholdPanel />
           <div class="panel devs">
             <div class="ph"><h3>Where to find her</h3></div>
             <DeviceList />

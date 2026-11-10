@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { SpendTotals } from '../../api/types.ts';
-import { ago, costOf, money, usedLine } from './format.ts';
+import { writing } from '../../household/format.ts';
+import { ago, costOf, count, money, usedLine } from './format.ts';
 
 const none: SpendTotals = {
   calls: 0, metered_calls: 0, unpriced_calls: 0, input_tokens: null, output_tokens: null, cache_read_tokens: null,
@@ -38,5 +39,15 @@ test('ago says how stale a read is', () => {
   const now = new Date('2026-12-01T03:00:00Z');
   assert.equal(ago('2026-12-01T03:00:00Z', now, 'UTC'), 'just now');
   assert.equal(ago('2026-12-01T02:58:00Z', now, 'UTC'), '2 min ago');
+  writing.value = { locale: 'en-US', clock: '12h' };
   assert.equal(ago('2026-12-01T01:30:00Z', now, 'America/Denver'), 'at 6:30 PM');
+  writing.value = { locale: 'en-GB', clock: '24h' };
+  assert.equal(ago('2026-12-01T01:30:00Z', now, 'America/Denver'), 'at 18:30');
+});
+
+test('counts are grouped as the household writes numbers', () => {
+  writing.value = { locale: 'de-DE', clock: '24h' };
+  assert.equal(count(12345), '12.345');
+  writing.value = { locale: 'en-US', clock: '24h' };
+  assert.equal(count(12345), '12,345');
 });
