@@ -78,7 +78,7 @@ class MeResponse(BaseModel):
 
 
 class LinkedAccount(BaseModel):
-    """One of the signed-in person's accounts elsewhere. `system` names where (`authentik`, `discord`,
+    """One of the signed-in person's accounts elsewhere. `system` names where (`oidc`, `discord`,
     `home_assistant`); `handle` is the account's name there as it was when they linked it themselves, null when the
     admin mapped it. `unlinkable` is whether they may unlink it here, which only a Discord account is: unlinking the
     account they sign in with would sign them out for good."""

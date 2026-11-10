@@ -27,7 +27,7 @@ class Household:
 @dataclass(frozen=True)
 class Account:
     """One identity a person has somewhere else, mapped to them explicitly, never guessed: `system` names where
-    (`home_assistant`, `discord`, `authentik`) and `external_id` is that system's own id for them
+    (`home_assistant`, `discord`, `oidc`) and `external_id` is that system's own id for them
     (`person.alana`, a Discord user id). One person may have several; an external id maps to at most one person.
     `handle` is the account's name on that system when its person linked it themselves (a Discord username), shown
     to that person only and never matched; empty when the admin mapped it."""

@@ -51,8 +51,8 @@ def home(db_url: str) -> Home:
     with psycopg.connect(db_url) as conn:
         hid = admin.add_household(conn, "home", "America/Denver")
         alana, sam = admin.add_person(conn, hid, "Alana"), admin.add_person(conn, hid, "Sam")
-        alana_signin = admin.add_account(conn, alana, "authentik", "sub-alana")
-        sam_signin = admin.add_account(conn, sam, "authentik", "sub-sam")
+        alana_signin = admin.add_account(conn, alana, "oidc", "sub-alana")
+        sam_signin = admin.add_account(conn, sam, "oidc", "sub-sam")
         return Home(hid, alana, sam, _session(conn, alana_signin, hid), _session(conn, sam_signin, hid), alana_signin)
 
 
@@ -102,7 +102,7 @@ def test_a_person_links_sees_and_unlinks_their_discord(client: TestClient, fake:
                                                       db_url: str) -> None:
     before = accounts(client)
     assert before.discord_linking
-    assert before.accounts == [LinkedAccount(id=home.alana_signin_account, system="authentik", handle=None,
+    assert before.accounts == [LinkedAccount(id=home.alana_signin_account, system="oidc", handle=None,
                                              unlinkable=False)]
     code, state = start(client, fake)
     assert back(client, code=code, state=state) == "/connections?link=linked"
@@ -134,7 +134,7 @@ def test_an_account_another_person_has_is_refused_and_left_theirs(client: TestCl
     code, state = start(client, fake)
     assert back(client, code=code, state=state) == "/connections?link=taken"
     assert discord_owner(db_url, fake.user.id) == home.sam
-    assert [a.system for a in accounts(client).accounts] == ["authentik"]
+    assert [a.system for a in accounts(client).accounts] == ["oidc"]
 
 
 def test_a_link_finishes_only_for_the_person_who_started_it(client: TestClient, fake: FakeDiscord, home: Home,

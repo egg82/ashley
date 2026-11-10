@@ -10,9 +10,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     household would want to change from the web; env vars stay for the basics (database, `CONNECTIONS_KEY`, sign-in,
     public URL). A single-machine lease, routes as an operator file and a compose setup are each in a pull request;
     what is left, by how soon a new household meets it:
-    - **Sign-in for anyone's OIDC provider.** Rename the `authentik` account system to `oidc` (a migration over
-      `accounts.system`, and the CLI's choices), check a second provider end to end, and add others (Entra, …)
-      through an OIDC library when asked. Fits into: Sign-in, People (accounts).
     - **A household page: timezone, profile, language, units, 12/24 h.** Today only the CLI sets timezone and
       profile. Fits into: People (Household), in the Devices room beside the lexicon.
     - **Provider keys as connections.** An `inference_provider` connection kind with sealed keys; env keys seed the

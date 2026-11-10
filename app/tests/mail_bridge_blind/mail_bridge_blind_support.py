@@ -218,7 +218,7 @@ def make_world(url: str, client: TestClient) -> World:
     with psycopg.connect(url) as conn:
         home = admin.add_household(conn, "home", "America/Denver")
         alana = admin.add_person(conn, home, "Alana")
-        account = admin.add_account(conn, alana, "authentik", "a")
+        account = admin.add_account(conn, alana, "oidc", "a")
         token = secrets.token_urlsafe(16)
         conn.execute("INSERT INTO sessions (token_sha256, account_id, household_id, expires_at) "
                      "VALUES (%s, %s, %s, now() + interval '1 day')",

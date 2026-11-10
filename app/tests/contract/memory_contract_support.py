@@ -68,7 +68,7 @@ def household_cast(url: str) -> Generator[Cast]:
     with browser(url) as web:
         cookies: dict[str, dict[str, str]] = {}
         for name, home in (("A", "home"), ("B", "home"), ("C", "other")):
-            account(url, hh[home], who[name], "authentik", f"sub-{name}")
+            account(url, hh[home], who[name], "oidc", f"sub-{name}")
             web.fake.sub = f"sub-{name}"
             web.client.cookies.clear()
             assert web.signin().status_code == 302

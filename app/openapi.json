@@ -9290,7 +9290,7 @@
           "unlinkable"
         ],
         "title": "LinkedAccount",
-        "description": "One of the signed-in person's accounts elsewhere. `system` names where (`authentik`, `discord`,\n`home_assistant`); `handle` is the account's name there as it was when they linked it themselves, null when the\nadmin mapped it. `unlinkable` is whether they may unlink it here, which only a Discord account is: unlinking the\naccount they sign in with would sign them out for good."
+        "description": "One of the signed-in person's accounts elsewhere. `system` names where (`oidc`, `discord`,\n`home_assistant`); `handle` is the account's name there as it was when they linked it themselves, null when the\nadmin mapped it. `unlinkable` is whether they may unlink it here, which only a Discord account is: unlinking the\naccount they sign in with would sign them out for good."
       },
       "ListedDevice": {
         "properties": {
