@@ -54,9 +54,10 @@ def test_a_metric_household_is_served_the_metric_amount_first() -> None:
     found = recipe_ld.recipe_in(page_of(PIE), URL)
     assert found is not None
     body = recipe.body_of(dataclasses.replace(found, serves=2 * (recipe.makes_of(found.yield_text) or 1)))
-    both = {metric: recipe_of(piece("recipe", body), KINDS["recipe"], metric) for metric in (False, True)}
-    assert both[False] is not None and both[True] is not None
-    sugar = next(i for i, line in enumerate(both[False].ingredients) if "(250g)" in line.text)
-    assert both[False].ingredients[sugar].shown == "2 1/2 cups (500g) granulated sugar, divided"
-    assert both[True].ingredients[sugar].shown == "500g (2 1/2 cups) granulated sugar, divided"
-    assert both[True].ingredients[sugar].text == both[False].ingredients[sugar].text
+    imperial = recipe_of(piece("recipe", body), KINDS["recipe"], False)
+    metric = recipe_of(piece("recipe", body), KINDS["recipe"], True)
+    assert imperial is not None and metric is not None
+    sugar = next(i for i, line in enumerate(imperial.ingredients) if "(250g)" in line.text)
+    assert imperial.ingredients[sugar].shown == "2 1/2 cups (500g) granulated sugar, divided"
+    assert metric.ingredients[sugar].shown == "500g (2 1/2 cups) granulated sugar, divided"
+    assert metric.ingredients[sugar].text == imperial.ingredients[sugar].text
