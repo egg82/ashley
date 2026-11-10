@@ -58,7 +58,7 @@
     ],
     "speak": [
       {"provider": "elevenlabs", "model": "eleven_flash_v2_5", "timeout_s": 5,
-       "params": {"voice_id": "DlbsiZVVCoinytYA5J3d", "output_format": "pcm_16000"}}
+       "params": {"voice_id": "Xb7hH8MSUJpSbSDYk0k2", "output_format": "pcm_16000"}}
     ],
     "embed": [
       {"provider": "fastembed", "model": "thenlper/gte-base", "timeout_s": 15}
