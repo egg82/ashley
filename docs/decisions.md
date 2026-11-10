@@ -643,8 +643,12 @@ catalogue, and she says in one line that she cannot use it right now, while the 
   - **Rejected: a URL argument for the file,** for the reason `read_page` takes none: the address comes from the API for a
     file the model lists.
 - **Places are Photon** (`photon.komoot.io`, OpenStreetMap), biased toward the house and ranked by distance in code,
-  nearest first, with the miles. The house's coordinates come from HA's `zone.home`; they are rounded to
-  `bias_decimals` (about a kilometre) before they leave, and the precise point is used only for the ranking, here.
+  nearest first, with the miles. The house's coordinates are the household's own home location, set by its people on the
+  household panel, else HA's `zone.home`: the person's explicit setting wins, as a row wins over the env, so a household
+  with no Home Assistant has places too, and a household with neither gets "the house's location is unknown". The own
+  location is read on every call, so an edit applies at once; HA's is read again every `home_ttl_s`. Either is rounded to
+  `bias_decimals` (about a kilometre) before it leaves, and the precise point is used only for the ranking, here; neither
+  is logged.
   With that bias "Target", "pharmacy", "urgent care" and "Chipotle" each came back nearest-first at about 3 km.
 - **Tunables are data**, `search.json`: Photon's host, timeout, how many results and how much of each snippet.
 - **Rejected: SearXNG's map category for places.** It drops any location bias: a bare "Target" returned ten
