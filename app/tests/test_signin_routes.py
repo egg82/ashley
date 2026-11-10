@@ -1,4 +1,4 @@
-"""Sign-in end to end through the real app, a real database and the fake authentik: a browser signs in, is named by
+"""Sign-in end to end through the real app, a real database and the fake provider: a browser signs in, is named by
 `/api/me`, and signs out; a callback not from this browser's sign-in, an unmapped account or a forged write never signs
 anyone in or out; unconfigured, starting a sign-in is 503 while the app runs; nothing secret or personal reaches the log."""
 
@@ -20,7 +20,7 @@ from contract.conversations_support import db_url as db_url, migrated_template a
 from contract.conversations_support import scalar
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from signin_support import CLIENT, ISSUER, FakeAuthentik, oidc_for
+from signin_support import CLIENT, ISSUER, FakeIdp, oidc_for
 
 PUBLIC = "https://ashley.test"
 ORIGIN = {"origin": PUBLIC}
@@ -41,12 +41,12 @@ def no_client(app: FastAPI) -> bool:
 
 
 @pytest.fixture
-def fake() -> FakeAuthentik:
-    return FakeAuthentik(sub="sub-alana", username="zqUSERNAME")
+def fake() -> FakeIdp:
+    return FakeIdp(sub="sub-alana", username="zqUSERNAME")
 
 
 @pytest.fixture
-def client(db_url: str, people: tuple[int, int], fake: FakeAuthentik,
+def client(db_url: str, people: tuple[int, int], fake: FakeIdp,
            monkeypatch: pytest.MonkeyPatch) -> Generator[TestClient]:
     monkeypatch.setattr("ashley.main.mount_client", no_client)
     app = create_app(Settings(database_url=db_url, build_version="t", oidc_issuer=ISSUER,
@@ -61,14 +61,14 @@ def client(db_url: str, people: tuple[int, int], fake: FakeAuthentik,
         yield c
 
 
-def sign_in(client: TestClient, fake: FakeAuthentik, next_: str = "/memory") -> httpx2.Response:
+def sign_in(client: TestClient, fake: FakeIdp, next_: str = "/memory") -> httpx2.Response:
     started = client.get("/api/auth/signin", params={"next": next_})
     assert started.status_code == 302
     code, state = fake.authorize(started.headers["location"])
     return client.get("/api/auth/callback", params={"code": code, "state": state})
 
 
-def test_a_browser_signs_in_is_named_and_signs_out(client: TestClient, fake: FakeAuthentik,
+def test_a_browser_signs_in_is_named_and_signs_out(client: TestClient, fake: FakeIdp,
                                                    people: tuple[int, int]) -> None:
     done = sign_in(client, fake)
     assert (done.status_code, done.headers["location"]) == (302, "/memory")
@@ -83,7 +83,7 @@ def test_a_browser_signs_in_is_named_and_signs_out(client: TestClient, fake: Fak
     assert client.get("/api/me").status_code == 401
 
 
-def test_the_cookies_are_host_only_secure_httponly_lax(client: TestClient, fake: FakeAuthentik) -> None:
+def test_the_cookies_are_host_only_secure_httponly_lax(client: TestClient, fake: FakeIdp) -> None:
     started = client.get("/api/auth/signin")
     code, state = fake.authorize(started.headers["location"])
     done = client.get("/api/auth/callback", params={"code": code, "state": state})
@@ -94,7 +94,7 @@ def test_the_cookies_are_host_only_secure_httponly_lax(client: TestClient, fake:
         assert "samesite=lax" in cookie.lower() and "path=/" in cookie.lower()
 
 
-def test_a_callback_from_another_browser_signs_no_one_in(client: TestClient, fake: FakeAuthentik) -> None:
+def test_a_callback_from_another_browser_signs_no_one_in(client: TestClient, fake: FakeIdp) -> None:
     started = client.get("/api/auth/signin")
     code, state = fake.authorize(started.headers["location"])
     client.cookies.clear()
@@ -103,7 +103,7 @@ def test_a_callback_from_another_browser_signs_no_one_in(client: TestClient, fak
     assert client.get("/api/me").status_code == 401
 
 
-def test_a_state_is_taken_once(client: TestClient, fake: FakeAuthentik) -> None:
+def test_a_state_is_taken_once(client: TestClient, fake: FakeIdp) -> None:
     started = client.get("/api/auth/signin")
     code, state = fake.authorize(started.headers["location"])
     cookie = started.cookies[SIGNIN_COOKIE]
@@ -114,7 +114,7 @@ def test_a_state_is_taken_once(client: TestClient, fake: FakeAuthentik) -> None:
     assert again.headers["location"] == "/?signin=failed"
 
 
-def test_an_unmapped_account_is_refused_and_listed_by_its_hash(client: TestClient, fake: FakeAuthentik, db_url: str,
+def test_an_unmapped_account_is_refused_and_listed_by_its_hash(client: TestClient, fake: FakeIdp, db_url: str,
                                                                capsys: pytest.CaptureFixture[str]) -> None:
     fake.sub = "sub-zqSTRANGER"
     capsys.readouterr()
@@ -126,7 +126,7 @@ def test_an_unmapped_account_is_refused_and_listed_by_its_hash(client: TestClien
     assert client.get("/api/me").status_code == 401
 
 
-def test_an_error_from_authentik_is_a_refusal(client: TestClient, fake: FakeAuthentik) -> None:
+def test_an_error_from_the_provider_is_a_refusal(client: TestClient, fake: FakeIdp) -> None:
     started = client.get("/api/auth/signin")
     code, state = fake.authorize(started.headers["location"])
     done = client.get("/api/auth/callback", params={"error": "access_denied", "code": code, "state": state})
@@ -136,8 +136,8 @@ def test_an_error_from_authentik_is_a_refusal(client: TestClient, fake: FakeAuth
 
 @pytest.mark.parametrize(("sent", "logged"), [("invalid_request", "invalid_request"),
                                               ("x reason=forged\nevent=signin.ok", "other")])
-def test_a_refusal_by_authentik_logs_its_error_code_and_nothing_else(
-        client: TestClient, fake: FakeAuthentik, capsys: pytest.CaptureFixture[str], sent: str, logged: str) -> None:
+def test_a_refusal_by_the_provider_logs_its_error_code_and_nothing_else(
+        client: TestClient, fake: FakeIdp, capsys: pytest.CaptureFixture[str], sent: str, logged: str) -> None:
     started = client.get("/api/auth/signin")
     _, state = fake.authorize(started.headers["location"])
     capsys.readouterr()
@@ -148,7 +148,7 @@ def test_a_refusal_by_authentik_logs_its_error_code_and_nothing_else(
 
 
 @pytest.mark.parametrize("next_",["//evil.test/x", "https://evil.test/", "/\\evil.test", "memory"])
-def test_next_returns_only_to_a_path_on_this_site(client: TestClient, fake: FakeAuthentik, next_: str) -> None:
+def test_next_returns_only_to_a_path_on_this_site(client: TestClient, fake: FakeIdp, next_: str) -> None:
     assert sign_in(client, fake, next_).headers["location"] == "/"
 
 
@@ -159,7 +159,7 @@ def test_next_returns_only_to_a_path_on_this_site(client: TestClient, fake: Fake
     {"sec-fetch-site": "cross-site"},
     {"origin": PUBLIC, "content-type": "text/plain"},
 ])
-def test_a_forged_sign_out_is_403_and_signs_no_one_out(client: TestClient, fake: FakeAuthentik,
+def test_a_forged_sign_out_is_403_and_signs_no_one_out(client: TestClient, fake: FakeIdp,
                                                        headers: dict[str, str]) -> None:
     sign_in(client, fake)
     body = "x" if "content-type" in headers else None
@@ -169,7 +169,7 @@ def test_a_forged_sign_out_is_403_and_signs_no_one_out(client: TestClient, fake:
     assert client.get("/api/me").status_code == 200
 
 
-def test_signing_in_again_ends_the_session_before(client: TestClient, fake: FakeAuthentik) -> None:
+def test_signing_in_again_ends_the_session_before(client: TestClient, fake: FakeIdp) -> None:
     sign_in(client, fake)
     first = client.cookies[SESSION_COOKIE]
     sign_in(client, fake)
@@ -178,7 +178,7 @@ def test_signing_in_again_ends_the_session_before(client: TestClient, fake: Fake
     assert client.get("/api/me").status_code == 401
 
 
-def test_nothing_secret_or_personal_is_logged(client: TestClient, fake: FakeAuthentik,
+def test_nothing_secret_or_personal_is_logged(client: TestClient, fake: FakeIdp,
                                               capsys: pytest.CaptureFixture[str]) -> None:
     capsys.readouterr()
     started = client.get("/api/auth/signin")
@@ -203,14 +203,14 @@ def test_unconfigured_sign_in_is_503_and_the_app_runs(db_url: str) -> None:
         assert c.get("/api/health").status_code == 200
 
 
-def test_the_authorization_url_is_authentiks(client: TestClient) -> None:
+def test_the_authorization_url_is_the_providers(client: TestClient) -> None:
     location = client.get("/api/auth/signin").headers["location"]
     assert urlsplit(location).netloc == "auth.test"
 
 
 @pytest.mark.parametrize(("headers", "status"), [
     ({"origin": "https://evil.test"}, 403), ({"sec-fetch-site": "cross-site"}, 403), (ORIGIN, 204), ({}, 204)])
-def test_a_write_with_the_cookie_must_come_from_this_site(client: TestClient, fake: FakeAuthentik,
+def test_a_write_with_the_cookie_must_come_from_this_site(client: TestClient, fake: FakeIdp,
                                                           headers: dict[str, str], status: int) -> None:
     sign_in(client, fake)
     assert client.post("/api/test-write", headers=headers).status_code == status

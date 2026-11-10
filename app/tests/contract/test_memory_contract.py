@@ -1,6 +1,6 @@
 """Blind contract tests for the memory page, written from `ashley.api.memory`'s docstrings, `openapi.json`, the `Memory`
 interface and `decisions.md` ("People see, correct and forget what she knows of them", "People sign in through
-authentik") without reading the implementation. Each test names the clause it checks. A, B share a household; C has
+OIDC") without reading the implementation. Each test names the clause it checks. A, B share a household; C has
 another."""
 
 from collections.abc import Generator

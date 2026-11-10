@@ -22,7 +22,7 @@ from conversations_support import household, person
 from fastapi.testclient import TestClient
 from people_support import account
 from signin_contract_support import SITE
-from signin_support import CLIENT, ISSUER, FakeAuthentik, oidc_for
+from signin_support import CLIENT, ISSUER, FakeIdp, oidc_for
 
 REDIRECT = SITE + CALLBACK_PATH
 WRITE = {"Origin": SITE}
@@ -151,11 +151,11 @@ def settings(url: str, discord: bool = True) -> Settings:
 
 @contextmanager
 def web(url: str, discord: bool = True, fake: bool = True) -> Generator[Web]:
-    """A and B in `home` and C in `other`, each with an authentik account and a session; the accounts and Discord
+    """A and B in `home` and C in `other`, each with an OIDC account and a session; the accounts and Discord
     port as the settings wire them, or `fake` standing in for Discord."""
     hh = {"home": household(url, "home"), "other": household(url, "other")}
     who = {"A": person(url, hh["home"], "A"), "B": person(url, hh["home"], "B"), "C": person(url, hh["other"], "C")}
-    idp = FakeAuthentik()
+    idp = FakeIdp()
     stand_in = FakeDiscord()
     services.unregister(DiscordOAuth)
     try:

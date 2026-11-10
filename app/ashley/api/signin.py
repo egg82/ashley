@@ -1,9 +1,9 @@
-"""Sign-in through authentik, and who is signed in (`decisions.md`, "People sign in through authentik").
+"""Sign-in through OIDC, and who is signed in (`decisions.md`, "People sign in through OIDC").
 
-`GET /api/auth/signin?next=/path` sends the browser to authentik; authentik sends it back to `GET /api/auth/callback`,
+`GET /api/auth/signin?next=/path` sends the browser to the provider; the provider sends it back to `GET /api/auth/callback`,
 which must carry the state this browser was sent with (its cookie), once, within the policy's `pending_minutes`, so a
 callback from someone else's sign-in never signs this browser in. A sign-in returns to `next`; one refused returns to
-`/?signin=failed`, or `/?signin=unmapped` when authentik vouched for an account no person here has yet (the admin
+`/?signin=failed`, or `/?signin=unmapped` when the provider vouched for an account no person here has yet (the admin
 maps it: `python -m ashley.signin unmapped`). `POST /api/auth/signout` ends the session; `GET /api/me` names the
 person. Unconfigured or unreachable, sign-in answers 503 and the rest of the app runs.
 
@@ -29,7 +29,7 @@ from .person import SESSION_COOKIE, SIGNIN_COOKIE, CrossSite, Person, clear_cook
 router = APIRouter()
 log = logging.getLogger("ashley.api")
 _POLICY = signin_policy.load()
-_UNAVAILABLE: dict[int | str, dict[str, Any]] = {503: {"model": ErrorResponse, "description": "`unavailable`: sign-in is not configured, or authentik "
+_UNAVAILABLE: dict[int | str, dict[str, Any]] = {503: {"model": ErrorResponse, "description": "`unavailable`: sign-in is not configured, or the provider "
                       "or the database could not be reached"}}
 
 
@@ -67,7 +67,7 @@ def _refused(reason: str, outcome: Literal["failed", "unmapped"] = "failed", **f
 
 @router.get("/api/auth/signin", response_class=RedirectResponse, status_code=302, responses=_UNAVAILABLE)
 async def start_signin(request: Request) -> Response:
-    """302 to authentik, with this sign-in's state in a cookie; 503 `unavailable`. The query's `next` is a path on this
+    """302 to the provider, with this sign-in's state in a cookie; 503 `unavailable`. The query's `next` is a path on this
     site to return to once signed in; anything else returns to `/`. Query parameters are read, not declared, so no
     value is ever a 422: a browser on its way to sign in gets a sign-in."""
     next = request.query_params.get("next")
@@ -89,7 +89,7 @@ async def start_signin(request: Request) -> Response:
 @router.get("/api/auth/callback", response_class=RedirectResponse, status_code=302, responses=_UNAVAILABLE)
 async def finish_signin(request: Request) -> Response:
     """302 to the sign-in's `next` with a session cookie; 302 to `/?signin=failed` or `/?signin=unmapped` when
-    refused; 503 `unavailable`. Reads authentik's `state`, `code` and `error` from the query, undeclared, as
+    refused; 503 `unavailable`. Reads the provider's `state`, `code` and `error` from the query, undeclared, as
     `start_signin` does."""
     state = request.query_params.get("state", "")
     code, error = request.query_params.get("code"), request.query_params.get("error")

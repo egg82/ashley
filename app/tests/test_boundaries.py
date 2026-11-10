@@ -78,7 +78,7 @@ ALLOWED: dict[str, set[str]] = {
 # reached only through its adapter's own interface, so swapping it touches one file.
 LIBRARIES: dict[str, set[str]] = {
     "hikari": {"ashley.channels.discord.client"},
-    "joserfc": {"ashley.signin.authentik"},
+    "joserfc": {"ashley.signin.provider"},
     "py_vapid": {"ashley.channels.push.sender"},
     "pywebpush": {"ashley.channels.push.sender"},
     "requests": {"ashley.channels.push.sender"},

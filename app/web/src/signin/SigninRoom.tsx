@@ -32,7 +32,7 @@ function SignIn({ next, outcome }: { next: string; outcome: string | undefined }
   return (
     <div class="si-act">
       <Refused outcome={outcome} />
-      <a class="btn primary si-btn" href={signinHref(next)}>Sign in with authentik</a>
+      <a class="btn primary si-btn" href={signinHref(next)}>Sign in</a>
       <div class="meta">The household sign-in. You'll come straight back.</div>
     </div>
   );

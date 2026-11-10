@@ -27,9 +27,9 @@ class Settings:
     replies; set, and with etcd, the satellite connections singleton runs. It needs `esphome_noise_psk`, the satellites'
     ESPHome API encryption key, since their audio never crosses the network unencrypted (ValueError).
     `discord_bot_token` is her Discord bot's token; set, and with etcd, the Discord singleton runs.
-    `oidc_issuer`, `oidc_client_id` and `oidc_client_secret` wire sign-in through authentik, all three or none
+    `oidc_issuer`, `oidc_client_id` and `oidc_client_secret` wire sign-in through OIDC, all three or none
     (ValueError); unset, the sign-in routes answer 503. It needs `public_url` (`https://ashley.example.com`), the
-    origin people reach her at, which names the callback authentik returns to and the one origin a cookie-signed write
+    origin people reach her at, which names the callback the provider returns to and the one origin a cookie-signed write
     may come from (ValueError).
     `discord_oauth_client_id` and `discord_oauth_client_secret` are the Discord application's OAuth2 client, through
     which a signed-in person links their own Discord account; both or neither (ValueError), and they need

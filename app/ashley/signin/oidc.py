@@ -1,6 +1,6 @@
 """The OIDC provider as a service (`ashley.services`): where to send a browser to sign in, and who a callback's code
 says signed in. Authorization code with PKCE (S256) for a confidential client. The one implementation is
-`ashley.signin.authentik.AuthentikOidc`, wired only when its settings are; unwired, every call raises
+`ashley.signin.provider.OidcProvider`, wired only when its settings are; unwired, every call raises
 OidcUnavailable and the sign-in routes answer 503."""
 
 import base64

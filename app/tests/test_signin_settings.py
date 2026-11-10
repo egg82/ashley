@@ -7,7 +7,7 @@ import pytest
 from ashley import services, wiring
 from ashley.settings import Settings, from_env
 from ashley.signin import policy
-from ashley.signin.authentik import AuthentikOidc
+from ashley.signin.provider import OidcProvider
 from ashley.signin.oidc import NullOidc, Oidc
 
 OIDC = {"DATABASE_URL": "postgresql://x/y", "OIDC_ISSUER": "https://auth.test/application/o/ashley/",
@@ -23,7 +23,7 @@ def test_oidc_is_all_or_nothing(missing: str) -> None:
 def test_configured_oidc_is_wired_with_the_public_callback() -> None:
     wiring.wire(from_env(OIDC))
     oidc = services.get(Oidc)
-    assert isinstance(oidc, AuthentikOidc)
+    assert isinstance(oidc, OidcProvider)
     assert oidc.client.redirect_uri == "https://ashley.test/api/auth/callback"
 
 

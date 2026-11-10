@@ -1,6 +1,6 @@
-"""A fake authentik, in process: its discovery document, its keys and its token endpoint behind an httpx2
-MockTransport, so `AuthentikOidc` runs its real HTTP and JOSE code with no network. `authorize` plays the browser at
-authentik's authorization endpoint: it reads the URL the app sent the browser to and hands back the code authentik
+"""A fake provider, in process: its discovery document, its keys and its token endpoint behind an httpx2
+MockTransport, so `OidcProvider` runs its real HTTP and JOSE code with no network. `authorize` plays the browser at
+the provider's authorization endpoint: it reads the URL the app sent the browser to and hands back the code the provider
 would put on the callback. The keys are made once, at import, since an RSA key costs about 0.1 s of CPU."""
 
 import base64
@@ -15,7 +15,7 @@ import httpx2
 from joserfc import jwt
 from joserfc.jwk import KeySet, OctKey, RSAKey
 
-from ashley.signin.authentik import AuthentikOidc, Client
+from ashley.signin.provider import OidcProvider, Client
 
 ISSUER = "https://auth.test/application/o/ashley/"
 CLIENT = Client(ISSUER, "ashley-client", "s3cret-client", "https://ashley.test/api/auth/callback")
@@ -31,7 +31,7 @@ class Grant:
 
 
 @dataclass
-class FakeAuthentik:
+class FakeIdp:
     """`sub` and `username` are who signs in next. `claims` overrides or adds ID-token claims (None drops one); `header` the JOSE
     header; `signer` the key, or an OctKey for an HS256 token. `token_status` other than 200 refuses the code."""
 
@@ -88,5 +88,5 @@ class FakeAuthentik:
                                           "id_token": jwt.encode(self.header, claims, self.signer, algorithms)})
 
 
-def oidc_for(fake: FakeAuthentik, client: Client = CLIENT) -> AuthentikOidc:
-    return AuthentikOidc(client, httpx2.AsyncClient(transport=httpx2.MockTransport(fake.handler)))
+def oidc_for(fake: FakeIdp, client: Client = CLIENT) -> OidcProvider:
+    return OidcProvider(client, httpx2.AsyncClient(transport=httpx2.MockTransport(fake.handler)))

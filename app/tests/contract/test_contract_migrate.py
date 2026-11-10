@@ -65,7 +65,7 @@ NOT_HOUSEHOLD_DATA = {
     "discord_seen": "which Discord messages were claimed for a reply: Discord's ids and a time, nothing said",
     "device_requests": "how many requests each device made in a window: a device id, a time and a count, nothing said",
     "signin_pending": "a sign-in in flight: hashed state, a PKCE verifier, a nonce and a path, before anyone is known",
-    "signin_unmapped": "authentik accounts refused because no person has them, so no household either",
+    "signin_unmapped": "OIDC accounts refused because no person has them, so no household either",
     "proton_bridge": "the one Bridge the deployment runs: its vault holds every household's Proton sessions at once, and its epoch and heartbeat say nothing about any one",
     "file_orphans": "object-store keys the sweep found unreferenced, which name their household and file hash and span households",
 }

@@ -160,7 +160,7 @@ export interface paths {
         };
         /**
          * Start Signin
-         * @description 302 to authentik, with this sign-in's state in a cookie; 503 `unavailable`. The query's `next` is a path on this
+         * @description 302 to the provider, with this sign-in's state in a cookie; 503 `unavailable`. The query's `next` is a path on this
          *     site to return to once signed in; anything else returns to `/`. Query parameters are read, not declared, so no
          *     value is ever a 422: a browser on its way to sign in gets a sign-in.
          */
@@ -183,7 +183,7 @@ export interface paths {
         /**
          * Finish Signin
          * @description 302 to the sign-in's `next` with a session cookie; 302 to `/?signin=failed` or `/?signin=unmapped` when
-         *     refused; 503 `unavailable`. Reads authentik's `state`, `code` and `error` from the query, undeclared, as
+         *     refused; 503 `unavailable`. Reads the provider's `state`, `code` and `error` from the query, undeclared, as
          *     `start_signin` does.
          */
         get: operations["finish_signin"];
@@ -5194,7 +5194,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description `unavailable`: sign-in is not configured, or authentik or the database could not be reached */
+            /** @description `unavailable`: sign-in is not configured, or the provider or the database could not be reached */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5221,7 +5221,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description `unavailable`: sign-in is not configured, or authentik or the database could not be reached */
+            /** @description `unavailable`: sign-in is not configured, or the provider or the database could not be reached */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5257,7 +5257,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `unavailable`: sign-in is not configured, or authentik or the database could not be reached */
+            /** @description `unavailable`: sign-in is not configured, or the provider or the database could not be reached */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5295,7 +5295,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `unavailable`: sign-in is not configured, or authentik or the database could not be reached */
+            /** @description `unavailable`: sign-in is not configured, or the provider or the database could not be reached */
             503: {
                 headers: {
                     [name: string]: unknown;

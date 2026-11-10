@@ -362,7 +362,7 @@ export async function signOut(): Promise<void> {
   if (response.status !== 204) throw new Error(`POST /api/auth/signout: ${response.status}`);
 }
 
-/** Where the sign-in button sends the browser: authentik, then back to `next`, a path on this site. */
+/** Where the sign-in button sends the browser: the provider, then back to `next`, a path on this site. */
 export function signinHref(next: string): string {
   return `/api/auth/signin?next=${encodeURIComponent(next)}`;
 }

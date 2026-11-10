@@ -105,7 +105,7 @@ from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_sandbox
 from .wiring_singletons import wire_lease
 from .signin import policy as signin_policy
-from .signin.authentik import AuthentikOidc, Client
+from .signin.provider import OidcProvider, Client
 from .signin.discord import CALLBACK_PATH as DISCORD_CALLBACK, DiscordOAuth
 from .signin.discord_http import App as DiscordApp, HttpDiscordOAuth
 from .signin.oidc import Oidc
@@ -271,7 +271,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     if settings.oidc_issuer:
         oidc_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
         closers.append(oidc_http.aclose)
-        services.register(Oidc, AuthentikOidc(Client(settings.oidc_issuer, settings.oidc_client_id,
+        services.register(Oidc, OidcProvider(Client(settings.oidc_issuer, settings.oidc_client_id,
                                                      settings.oidc_client_secret,
                                                      settings.public_url + "/api/auth/callback"), oidc_http))
     if settings.discord_oauth_client_id:

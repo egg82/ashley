@@ -62,7 +62,7 @@ class Cast:
 
 @contextmanager
 def household_cast(url: str) -> Generator[Cast]:
-    """A and B in `home`, C in `other`, each with an authentik account, all signed in."""
+    """A and B in `home`, C in `other`, each with an OIDC account, all signed in."""
     hh = {"home": household(url, "home"), "other": household(url, "other")}
     who = {"A": person(url, hh["home"], "A"), "B": person(url, hh["home"], "B"), "C": person(url, hh["other"], "C")}
     with browser(url) as web:
