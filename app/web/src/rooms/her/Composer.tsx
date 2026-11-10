@@ -10,6 +10,7 @@ import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Talk } from '../../speech/talk';
 import { TalkButton, TalkLine } from '../../speech/TalkButton';
 import { attachedOn, isLongPaste, pastedOn, unattachedOn } from './attached';
+import { locale } from '../../household/format';
 import { ATTACH_MAX, charCount, limitOf } from './limit';
 import { sentOn, typedOn, unsentOn } from './unsent';
 
@@ -45,14 +46,14 @@ export function Composer({ thread, disabled, send, talking, ask = 'Ask Ashley', 
       {limit.note && <p class={`compose-note${limit.over ? ' over' : ''}`} role={limit.over ? 'alert' : undefined}>{limit.note}</p>}
       {pasteOver && (
         <p class="compose-note over" role="alert">
-          {`The paste is ${pasteLength.toLocaleString('en-US')} / ${attachMax.toLocaleString('en-US')}. Too long to send: cut ${(pasteLength - attachMax).toLocaleString('en-US')}.`}
+          {`The paste is ${pasteLength.toLocaleString(locale())} / ${attachMax.toLocaleString(locale())}. Too long to send: cut ${(pasteLength - attachMax).toLocaleString(locale())}.`}
         </p>
       )}
       {refused && <p class="compose-note over" role="alert">{refused}</p>}
       {pasted !== null && (
         <div class="paste-chip">
           <span class="paste-chip-name">Pasted text</span>
-          <span class="paste-chip-size">{pasteLength.toLocaleString('en-US')} characters</span>
+          <span class="paste-chip-size">{pasteLength.toLocaleString(locale())} characters</span>
           <button class="paste-chip-x" type="button" aria-label="Remove the pasted text" onClick={() => unattachedOn(thread)}>{'\u00d7'}</button>
         </div>
       )}

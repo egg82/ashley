@@ -10,9 +10,10 @@ import { stateOf } from './protonSteps';
 import { RowMenu, type RowAction } from './RowMenu';
 import { HaSummary } from './settings/HaSummary';
 import { WhoFor } from './WhoFor';
+import { hour, locale } from '../../household/format';
 
-const ANSWERED = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const ADDED = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+const answered = (iso: string) => new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric', hour: hour(), minute: '2-digit' }).format(new Date(iso));
+const addedOn = (iso: string) => new Intl.DateTimeFormat(locale(), { dateStyle: 'medium' }).format(new Date(iso));
 
 const SYSTEM: Record<string, string> = { oidc: 'OIDC', home_assistant: 'Home Assistant', discord: 'Discord' };
 
@@ -113,12 +114,12 @@ function moveActions(c: HouseholdConnection): RowAction[] {
 }
 
 export function KindRow({ kind, c }: { kind: ConnectionKindInfo; c: HouseholdConnection }) {
-  const checked = ANSWERED.format(new Date(c.checked_at));
+  const checked = answered(c.checked_at);
   const added = c.added_by ? `Added by ${c.added_by.name}` : 'Added';
   return (
     <Row title={c.label || kind.title} mine={c.personal} menu={`${c.label || kind.title} actions`}
       sub={<KindSub kind={kind} c={c} />}
-      when={<><div><i class={`cn-dot${c.needs ? ' stale' : ''}`} />{c.needs ? 'Needs attention' : 'Working'} · checked {checked}</div><div class="cn-added">{added} · {ADDED.format(new Date(c.added_at))}</div></>}
+      when={<><div><i class={`cn-dot${c.needs ? ' stale' : ''}`} />{c.needs ? 'Needs attention' : 'Working'} · checked {checked}</div><div class="cn-added">{added} · {addedOn(c.added_at)}</div></>}
       actions={[
         replaceAction(kind, c),
         ...moveActions(c),

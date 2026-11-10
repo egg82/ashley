@@ -17,6 +17,7 @@ import {
 } from '../api/client';
 import type { KioskControl, KioskDevice, KioskGlance } from '../api/types';
 import type { MarkState } from '../components/AshleyMark';
+import { writing } from '../household/format';
 import type { Line, Missed } from '../rooms/her/chat';
 import { missedFor } from '../rooms/her/overlay';
 import { owedAt } from '../rooms/her/owed';
@@ -93,6 +94,8 @@ export async function refresh(part: Part): Promise<void> {
   try {
     if (part === 'glance') {
       glance.value = await getKioskGlance();
+      const { locale, clock } = glance.value;
+      if (locale && clock) writing.value = { locale, clock };
       return;
     }
     if (part === 'layout') {

@@ -1,11 +1,12 @@
 // A connection's settings, which are Home Assistant's alone today. Opened at
 // `/connections/<id>/settings`, so a reload or a shared link lands here. Saving replaces the whole of them.
 import { useEffect } from 'preact/hooks';
+import { locale } from '../../../household/format';
 import { held, kinds } from '../connections';
 import { HaSettings } from './HaSettings';
 import { dirty, discard, loadHouse, loadSettings, loaded, said, save, saving, settings } from './state';
 
-const CHANGED = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const changedAt = (iso: string) => new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 
 const SAID: Record<NonNullable<typeof said.value>, string> = {
   saved: 'Saved.',
@@ -23,7 +24,7 @@ function Foot({ id }: { id: number }) {
       {state && <span class={state === 'saved' ? 'meta' : 'cn-needs'} role="status">{SAID[state]}</span>}
       {state === 'conflict' && <button class="btn sm" type="button" onClick={() => void loadSettings(id)}>Reload</button>}
       {!state && read?.updated_at && (
-        <span class="meta">Last changed {CHANGED.format(new Date(read.updated_at))}{read.updated_by ? ` by ${read.updated_by.name}` : ''}</span>
+        <span class="meta">Last changed {changedAt(read.updated_at)}{read.updated_by ? ` by ${read.updated_by.name}` : ''}</span>
       )}
       {!state && read && !read.updated_at && <span class="meta">Not set yet</span>}
       <span class="cn-save-acts">

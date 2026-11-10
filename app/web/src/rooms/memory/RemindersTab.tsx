@@ -3,6 +3,7 @@
 // or could not fire, stays here, marked, until they dismiss it.
 import { useState } from 'preact/hooks';
 import type { Reminder } from '../../api/types';
+import { hour, locale } from '../../household/format';
 import { person } from '../../session/session';
 import { cancel, loadReminders, reminders, remindersState } from './reminders';
 
@@ -10,14 +11,15 @@ const UNIT: Record<NonNullable<Reminder['repeat']>, [string, string]> = {
   daily: ['day', 'days'], weekly: ['week', 'weeks'], monthly: ['month', 'months'], yearly: ['year', 'years'],
 };
 
-/** "Sat 1 Nov, 09:00" from the household's wall-clock `YYYY-MM-DDTHH:MM`, read as written, never shifted by the
+/** "Sat 1 Nov, 09:00" (on the household's clock and locale) from the household's wall-clock `YYYY-MM-DDTHH:MM`, read as written, never shifted by the
  * browser's own zone. */
 export function when(localAt: string): string {
   const [date = '', time = ''] = localAt.split('T');
   const [y, m, d] = date.split('-').map(Number);
-  const day = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1));
-  const shown = day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  return `${shown}, ${time}`;
+  const [hh, mm] = time.split(':').map(Number);
+  const at = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0));
+  const shown = at.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return `${shown}, ${at.toLocaleTimeString(locale(), { hour: hour(), minute: '2-digit', timeZone: 'UTC' })}`;
 }
 
 export function repeats(r: Reminder): string {

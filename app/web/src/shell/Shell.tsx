@@ -4,6 +4,7 @@ import { effect } from '@preact/signals';
 import { useLocation } from 'preact-iso';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { closeLive, onResync, openLive } from '../session/live';
+import { loadHousehold } from '../household/household';
 import { load, person, status } from '../session/session';
 import { watchBuild } from '../session/watch';
 import { loadingLines } from '../signin/LoadingLines';
@@ -29,6 +30,10 @@ effect(() => {
     unsubscribe();
     watcher.stop();
   };
+});
+
+effect(() => {
+  if (status.value === 'signed-in') void loadHousehold();
 });
 
 effect(() => {
