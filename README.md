@@ -31,7 +31,7 @@ for it is in [`deploy/compose`](deploy/compose).
 - **Picks a model per task.** Each task (chat, writing memories, judging an action and so on) has an ordered list
   of providers in [`app/ashley/inference/routes.json`](app/ashley/inference/routes.json): Anthropic, OpenAI,
   Gemini, Wyoming faster-whisper and ElevenLabs. She uses the first one that is configured and answering, and
-  records what each call cost.
+  records what each call cost. A household can choose, in the Usage room, which of those models answers its chat.
 
 ## Running your own
 
