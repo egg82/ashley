@@ -6,6 +6,36 @@ The first version worth switching to adds two things to what runs today: her own
 and the arrival greeting (the web app's first cut is built). The rest build on the pieces those land.
 
 
+42. **Others run her, with their own keys.** Anyone can stand her up from the published image and change what a
+    household would want to change from the web; env vars stay for the basics (database, `CONNECTIONS_KEY`, sign-in,
+    public URL). A single-machine lease, routes as an operator file and a compose setup are each in a pull request;
+    what is left, by how soon a new household meets it:
+    - **Sign-in for anyone's OIDC provider.** Rename the `authentik` account system to `oidc` (a migration over
+      `accounts.system`, and the CLI's choices), check a second provider end to end, and add others (Entra, …)
+      through an OIDC library when asked. Fits into: Sign-in, People (accounts).
+    - **A household page: timezone, profile, language, units, 12/24 h.** Today only the CLI sets timezone and
+      profile. Fits into: People (Household), in the Devices room beside the lexicon.
+    - **Provider keys as connections.** An `inference_provider` connection kind with sealed keys; env keys seed the
+      first row. Fits into: Connections.
+    - **Route overrides per household** over the shipped and operator routes, for chat-facing tasks; `action_judge`
+      written only by a person. Fits into: Inference, edited from the Spend room.
+    - **Persona sections as household overrides**, versioned like skills, the output contract locked. The shipped
+      persona's register and examples are one household's taste. Fits into: Skills with Persona.
+    - **Units from the household** in persona and tools (no shipped "degrees Fahrenheit"). Fits into: Persona, Tools.
+    - **Sandbox namespace and runtime class as settings** (`app/ashley/runs/runs.json`), and one constant for the
+      pod label prefix. Fits into: Code runs, Looks.
+    - **A plain object store**: one endpoint runs without the mirror's repair and sweep. Fits into: Object store.
+    - **Place coordinates without Home Assistant**: a household home location that place search reads. Fits into:
+      Homes, Tools.
+    - **Advertise only configured features**: hide the herdr and Proton connection kinds when their settings are
+      absent. Fits into: Connections.
+    - **The warm look pod and Proton Bridge without etcd**: their settings still refuse to start without it. Fits
+      into: Failover referee.
+    - **A sandbox without Kubernetes**, as an opt-in for one owner who trusts the code (`app/ashley/runs/podman.py`
+      behind the `Sandbox` strategy). Fits into: Code runs.
+    - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
+      site, and the room names in `app/ashley/evals/house_cases.json`.
+
 1. **Her own voice pipeline, past the first Echo.** One wake on the first Echo (an M5Stack Atom Echo) reaches
    her through her own pipeline: faster-whisper on each site, the turn loop, ElevenLabs, played on the
    Echo. What is left, in order:
