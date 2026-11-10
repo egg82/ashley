@@ -1,0 +1,9 @@
+# Ashley reads SearXNG's JSON output, which it ships turned off. The secret key comes from SEARXNG_SECRET.
+use_default_settings: true
+search:
+  formats:
+    - html
+    - json
+server:
+  limiter: false
+  public_instance: false

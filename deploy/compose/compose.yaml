@@ -1,0 +1,101 @@
+# Ashley on one machine: Postgres, the migration, and the app. Optional layers are profiles. Settings come from `.env`
+# (see `.env.example`). Two sites at once is the Kubernetes deployment, not this file.
+name: ashley
+
+x-app: &app
+  image: ghcr.io/egg82/ashley:${ASHLEY_TAG:-dev}
+  env_file: .env
+  read_only: true
+  tmpfs:
+    - /tmp
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ashley
+      POSTGRES_DB: ashley
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ashley}
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ashley -d ashley"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    <<: *app
+    command: ["python", "-m", "ashley.db", "migrate"]
+    restart: "no"
+
+  app:
+    <<: *app
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${ASHLEY_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  # Profile `files`: an S3-compatible store for bench files and pictures.
+  garage:
+    profiles: [files]
+    image: docker.io/dxflrs/garage:v2.1.0
+    restart: unless-stopped
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-}
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage:/var/lib/garage
+
+  # Creates the layout, the bucket and the app's key in Garage, and exits. Safe to run again.
+  garage-init:
+    profiles: [files]
+    image: docker.io/curlimages/curl:8.22.0
+    restart: "no"
+    depends_on:
+      - garage
+    environment:
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-}
+      FILES_BUCKET: ${FILES_BUCKET:-}
+      FILES_ACCESS_KEY: ${FILES_ACCESS_KEY:-}
+      FILES_SECRET_KEY: ${FILES_SECRET_KEY:-}
+    volumes:
+      - ./garage-init.sh:/garage-init.sh:ro
+    entrypoint: ["sh", "/garage-init.sh"]
+
+  # Profile `search`: web search for her tools. `settings.yml` turns on the JSON output she reads.
+  searxng:
+    profiles: [search]
+    image: docker.io/searxng/searxng:2026.11.6-87cbfef30
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-}
+    volumes:
+      - ./searxng-settings.yml:/etc/searxng/settings.yml:ro
+
+  # Profile `voice`: speech-to-text for voice satellites and recordings.
+  whisper:
+    profiles: [voice]
+    image: docker.io/rhasspy/wyoming-whisper:3.8.1
+    restart: unless-stopped
+    command: ["--model", "${WHISPER_MODEL:-small-int8}", "--language", "${WHISPER_LANGUAGE:-en}"]
+    volumes:
+      - whisper:/data
+
+volumes:
+  postgres:
+  garage:
+  whisper:
