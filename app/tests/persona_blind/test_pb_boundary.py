@@ -11,7 +11,7 @@ from test_boundaries import PKG, dotted, package
 from test_settings_boundary import writers_imported_by
 
 WRITER = "ashley.skills.persona_write"
-ROUTE_AND_WIRING = {"ashley.api.persona", "ashley.wiring"}
+ROUTE_AND_WIRING = {"ashley.api.persona", "ashley.wiring", "ashley.wiring_skills"}
 
 
 def importers(python_tree: dict[Path, Parsed]) -> dict[str, set[str]]:
@@ -28,7 +28,7 @@ def test_only_the_persona_route_the_wiring_and_the_implementation_import_the_wri
     found = importers(python_tree)
     assert found, "the gate saw no importer of the persona writer: it would pass on nothing"
     assert outside_the_implementation(found) <= ROUTE_AND_WIRING, sorted(found)
-    assert "ashley.wiring" in found, "the wiring no longer registers the writer"
+    assert found.keys() & {"ashley.wiring", "ashley.wiring_skills"}, "the wiring no longer registers the writer"
 
 
 def test_no_tool_channel_or_model_call_module_imports_the_writer(python_tree: dict[Path, Parsed]) -> None:

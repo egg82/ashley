@@ -266,7 +266,7 @@ def test_a_changed_section_the_release_no_longer_offers_is_listed_orphaned_and_n
         assert of(answered(edit(first, retired, "Household's own.")), retired).override == "Household's own."
         assert detail(first).orphaned == []
     monkeypatch.setattr(sections, "catalogue", lambda: real)
-    second = build(db_url, wired)
+    second = build(db_url, wired, world=first.w)
     with second.client:
         d = detail(second)
         assert d.orphaned == [retired]
