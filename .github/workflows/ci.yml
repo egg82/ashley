@@ -51,18 +51,21 @@ jobs:
       ASHLEY_HOUSEHOLD_NAMES: ${{ secrets.ASHLEY_HOUSEHOLD_NAMES }}
       ASHLEY_TEST_DATABASE_URL: postgresql://postgres@127.0.0.1/postgres
       ASHLEY_TEST_ETCD_URL: http://127.0.0.1:2379
+      ASHLEY_TEST_DEX_URL: http://127.0.0.1:5556/dex
     steps:
       - uses: actions/checkout@v4
 
-      # Started by hand, not as `services:`, which cannot pass a command: Postgres takes throwaway-data settings, and
-      # etcd listens beyond localhost.
-      - name: Start Postgres and etcd
+      # Started by hand, not as `services:`, which cannot pass a command: Postgres takes throwaway-data settings, etcd
+      # listens beyond localhost, and Dex reads the config the checkout holds (its issuer names port 5556).
+      - name: Start Postgres, etcd and Dex
         run: |
           docker run -d --name postgres -p 5432:5432 \
             -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_INITDB_ARGS="--locale=C --encoding=UTF8" \
             pgvector/pgvector:0.8.2-pg18 -c fsync=off -c synchronous_commit=off -c full_page_writes=off
           docker run -d --name etcd -p 2379:2379 quay.io/coreos/etcd:v3.7.3 \
             etcd --listen-client-urls http://0.0.0.0:2379 --advertise-client-urls http://127.0.0.1:2379
+          docker run -d --name dex -p 5556:5556 -v "$PWD/app/tests/dex/config.yaml:/etc/dex/config.yaml:ro" \
+            ghcr.io/dexidp/dex:v2.46.1 dex serve /etc/dex/config.yaml
 
       - uses: actions/setup-python@v5
         with:
@@ -77,11 +80,12 @@ jobs:
           sudo apt-get install -y -q --no-install-recommends ffmpeg
           pip install -r app/requirements.txt -r app/requirements-dev.txt
 
-      - name: Wait for Postgres and etcd
+      - name: Wait for Postgres, etcd and Dex
         working-directory: app
         run: |
           for _ in $(seq 60); do python -c "import psycopg; psycopg.connect('$ASHLEY_TEST_DATABASE_URL').close()" 2>/dev/null && break; sleep 1; done
           for _ in $(seq 60); do python -c "import httpx2; httpx2.get('$ASHLEY_TEST_ETCD_URL/health').raise_for_status()" 2>/dev/null && break; sleep 1; done
+          for _ in $(seq 60); do python -c "import httpx2; httpx2.get('$ASHLEY_TEST_DEX_URL/.well-known/openid-configuration').raise_for_status()" 2>/dev/null && break; sleep 1; done
 
       - name: Test (shard ${{ matrix.shard }})
         working-directory: app

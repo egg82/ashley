@@ -1,0 +1,22 @@
+# Dex for tests/test_signin_dex.py: one static client and one static password user, throwaway credentials.
+# Served on host port 5556, so the issuer is ASHLEY_TEST_DEX_URL=http://127.0.0.1:5556/dex.
+issuer: http://127.0.0.1:5556/dex
+storage:
+  type: memory
+web:
+  http: 0.0.0.0:5556
+oauth2:
+  skipApprovalScreen: true
+enablePasswordDB: true
+staticClients:
+  - id: ashley-test
+    name: Ashley test
+    secret: ashley-test-secret
+    redirectURIs:
+      - https://ashley.test/api/auth/callback
+staticPasswords:
+  - email: alana@example.test
+    # bcrypt of "password"
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: alana
+    userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
