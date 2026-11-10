@@ -31,7 +31,7 @@ def people(db_url: str) -> tuple[int, int]:
     with psycopg.connect(db_url) as conn:
         hid = admin.add_household(conn, "home", "America/Denver")
         pid = admin.add_person(conn, hid, "Alana")
-        admin.add_account(conn, pid, "authentik", "sub-alana")
+        admin.add_account(conn, pid, "oidc", "sub-alana")
     return hid, pid
 
 

@@ -95,7 +95,7 @@ def test_accounts_are_one_households_on_one_system_ordered_by_id(db_url: str) ->
             got = await p.accounts(house, "home_assistant")
             assert got == (Account(first, house, b, "home_assistant", "person.b"),
                            Account(second, house, a, "home_assistant", "person.a"))
-            assert await p.accounts(house, "authentik") == ()
+            assert await p.accounts(house, "oidc") == ()
             assert await p.accounts(987_654_321, "home_assistant") == ()
 
     run(scenario())

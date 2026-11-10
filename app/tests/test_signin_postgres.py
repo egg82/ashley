@@ -29,7 +29,7 @@ def household(url: str) -> tuple[int, int, int]:
     with psycopg.connect(url) as conn:
         hid = admin.add_household(conn, "home", "America/Denver")
         pid = admin.add_person(conn, hid, "Alana")
-        aid = admin.add_account(conn, pid, "authentik", "sub-alana")
+        aid = admin.add_account(conn, pid, "oidc", "sub-alana")
     return hid, pid, aid
 
 
@@ -86,9 +86,9 @@ def test_only_a_mapped_account_opens_a_session_and_its_token_finds_the_person(db
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            assert await s.open("authentik", "sub-stranger") is None
+            assert await s.open("oidc", "sub-stranger") is None
             assert await s.open("discord", "sub-alana") is None
-            opened = await s.open("authentik", "sub-alana")
+            opened = await s.open("oidc", "sub-alana")
             assert opened is not None and opened.signed_in.person == Person(pid, hid, "Alana")
             assert await s.find(opened.token) == opened.signed_in
             assert await s.find(opened.token + "x") is None
@@ -104,7 +104,7 @@ def test_a_session_ends_at_its_expiry_or_when_idle(db_url: str) -> None:
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            expired, idle, live = [await s.open("authentik", "sub-alana") for _ in range(3)]
+            expired, idle, live = [await s.open("oidc", "sub-alana") for _ in range(3)]
             assert expired and idle and live
             execute(db_url, "UPDATE sessions SET expires_at = now() - interval '1 second' WHERE id = %s",
                     (expired.signed_in.session_id,))
@@ -113,7 +113,7 @@ def test_a_session_ends_at_its_expiry_or_when_idle(db_url: str) -> None:
             assert await s.find(expired.token) is None
             assert await s.find(idle.token) is None
             assert await s.find(live.token) == live.signed_in
-            await s.open("authentik", "sub-alana")
+            await s.open("oidc", "sub-alana")
             assert scalar(db_url, "SELECT count(*) FROM sessions") == 2, "the dead two were swept"
 
     run(scenario())
@@ -124,7 +124,7 @@ def test_a_session_is_opened_for_session_days(db_url: str) -> None:
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            assert await s.open("authentik", "sub-alana")
+            assert await s.open("oidc", "sub-alana")
 
     run(scenario())
     days = scalar(db_url, "SELECT extract(epoch FROM expires_at - created_at) / 86400 FROM sessions")
@@ -136,7 +136,7 @@ def test_use_is_written_only_after_touch_minutes(db_url: str) -> None:
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            opened = await s.open("authentik", "sub-alana")
+            opened = await s.open("oidc", "sub-alana")
             assert opened
             execute(db_url, "UPDATE sessions SET last_seen_at = now() - make_interval(mins => %s) + interval '1 minute'",
                     (POLICY.touch_minutes,))
@@ -156,7 +156,7 @@ def test_close_ends_only_that_session_and_says_whose_it_was(db_url: str) -> None
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            one, two = await s.open("authentik", "sub-alana"), await s.open("authentik", "sub-alana")
+            one, two = await s.open("oidc", "sub-alana"), await s.open("oidc", "sub-alana")
             assert one and two
             ended = await s.close(one.token)
             assert ended == one.signed_in and one.signed_in.person == Person(pid, hid, "Alana")
@@ -172,7 +172,7 @@ def test_removing_the_account_ends_its_sessions(db_url: str) -> None:
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            opened = await s.open("authentik", "sub-alana")
+            opened = await s.open("oidc", "sub-alana")
             assert opened
             execute(db_url, "DELETE FROM accounts WHERE id = %s", (aid,))
             assert await s.find(opened.token) is None
@@ -186,12 +186,12 @@ def test_a_refused_account_is_listed_until_mapped_or_past_retention(db_url: str,
 
     async def scenario() -> None:
         async with sessions(db_url) as s:
-            await s.refused("authentik", "sub-sam", "sam")
-            await s.refused("authentik", "sub-sam", "sam.renamed")
-            await s.refused("authentik", "sub-old", "old")
+            await s.refused("oidc", "sub-sam", "sam")
+            await s.refused("oidc", "sub-sam", "sam.renamed")
+            await s.refused("oidc", "sub-old", "old")
             execute(db_url, "UPDATE signin_unmapped SET last_seen_at = now() - make_interval(days => %s) "
                     "- interval '1 hour' WHERE external_id = 'sub-old'", (POLICY.unmapped_retention_days,))
-            await s.refused("authentik", "sub-kim", "kim")
+            await s.refused("oidc", "sub-kim", "kim")
 
     run(scenario())
     monkeypatch.setenv("DATABASE_URL", db_url)
@@ -200,7 +200,7 @@ def test_a_refused_account_is_listed_until_mapped_or_past_retention(db_url: str,
     assert [(row[0], row[2]) for row in listed] == [("sub-kim", "kim"), ("sub-sam", "sam.renamed")]
     assert all(len(row[1]) == 12 for row in listed)
     with psycopg.connect(db_url) as conn:
-        admin.add_account(conn, pid, "authentik", "sub-kim")
+        admin.add_account(conn, pid, "oidc", "sub-kim")
     assert main(["unmapped"]) == 0
     assert [line.split("\t")[0] for line in capsys.readouterr().out.splitlines()] == ["sub-sam"]
 

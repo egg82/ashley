@@ -26,7 +26,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("name")
     p = sub.add_parser("add-account", help="map SYSTEM's EXTERNAL_ID to a person; print the new account id")
     p.add_argument("person_id", type=int)
-    p.add_argument("system", help="home_assistant, discord, authentik")
+    p.add_argument("system", help="home_assistant, discord, oidc")
     p.add_argument("external_id")
     p = sub.add_parser("list", help="a household's people and their accounts")
     p.add_argument("household_id", type=int)

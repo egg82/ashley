@@ -46,7 +46,7 @@ def test_a_person_unlinks_their_own_discord_account(w: Web) -> None:
     w.link("A", ALANA)
     assert w.unlink("A", discord_id_of(w, "A")).status_code == 204
     assert w.discord_rows() == []
-    assert [a.system for a in listed(w, "A").accounts] == ["authentik"]
+    assert [a.system for a in listed(w, "A").accounts] == ["oidc"]
 
 
 def test_unlinking_removes_only_that_account(w: Web) -> None:
@@ -75,10 +75,10 @@ def test_someone_elses_discord_account_is_404_and_stays(w: Web) -> None:
 
 
 def test_an_oidc_account_cannot_be_unlinked_here(w: Web, db_url: str) -> None:
-    mine = scalar(db_url, "SELECT id FROM accounts WHERE system = 'authentik' AND person_id = %s", (w.who["A"],))
+    mine = scalar(db_url, "SELECT id FROM accounts WHERE system = 'oidc' AND person_id = %s", (w.who["A"],))
     r = w.unlink("A", mine)
     assert (r.status_code, error_code(r)) == (404, "not_found")
-    assert [a.system for a in listed(w, "A").accounts] == ["authentik"]
+    assert [a.system for a in listed(w, "A").accounts] == ["oidc"]
     assert w.accounts("A").status_code == 200, "and the session still works"
 
 

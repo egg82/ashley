@@ -90,7 +90,7 @@ def landed(response: Any) -> str:
 def map_account(url: str, sub: str, name: str = "Alana") -> int:
     hh = household(url)
     pid = person(url, hh, name)
-    account(url, hh, pid, "authentik", sub)
+    account(url, hh, pid, "oidc", sub)
     return pid
 
 

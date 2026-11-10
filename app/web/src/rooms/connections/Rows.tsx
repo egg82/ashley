@@ -14,7 +14,7 @@ import { WhoFor } from './WhoFor';
 const ANSWERED = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const ADDED = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
-const SYSTEM: Record<string, string> = { authentik: 'authentik', home_assistant: 'Home Assistant', discord: 'Discord' };
+const SYSTEM: Record<string, string> = { oidc: 'OIDC', home_assistant: 'Home Assistant', discord: 'Discord' };
 
 function Row({ title, mine, sub, when, actions, menu }: {
   title: string;
@@ -140,6 +140,6 @@ export function DiscordRow({ account }: { account: LinkedAccount }) {
 export function AccountRow({ account }: { account: LinkedAccount }) {
   return (
     <Row title={SYSTEM[account.system] ?? account.system} mine
-      sub={account.system === 'authentik' ? 'you sign in with this' : (account.handle ?? 'linked by an admin')} />
+      sub={account.system === 'oidc' ? 'you sign in with this' : (account.handle ?? 'linked by an admin')} />
   );
 }

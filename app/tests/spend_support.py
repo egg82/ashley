@@ -27,7 +27,7 @@ def signed_in(url: str, zone: str = "America/Denver") -> tuple[str, int]:
     with psycopg.connect(url) as conn:
         hid = admin.add_household(conn, "home", zone)
         pid = admin.add_person(conn, hid, "Alana")
-        account = admin.add_account(conn, pid, "authentik", "sub-alana")
+        account = admin.add_account(conn, pid, "oidc", "sub-alana")
         token = secrets.token_urlsafe(16)
         conn.execute("INSERT INTO sessions (token_sha256, account_id, household_id, expires_at) "
                      "VALUES (%s, %s, %s, now() + interval '1 day')",

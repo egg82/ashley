@@ -194,7 +194,7 @@ class Home:
 
 
 def _session(conn: psycopg.Connection, who: Person) -> str:
-    account = admin.add_account(conn, who.id, "authentik", f"sub-{who.id}")
+    account = admin.add_account(conn, who.id, "oidc", f"sub-{who.id}")
     token = secrets.token_urlsafe(16)
     conn.execute("INSERT INTO sessions (token_sha256, account_id, household_id, expires_at) "
                  "VALUES (%s, %s, %s, now() + interval '1 day')",

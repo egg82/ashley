@@ -116,7 +116,7 @@ def logged(caplog: Any) -> list[tuple[str, dict[str, Any]]]:
 def signed_in_token(url: str, household: int, person: int, sub: str) -> str:
     """A live session for `person`, as its cookie value."""
     with psycopg.connect(url) as conn:
-        account = admin.add_account(conn, person, "authentik", sub)
+        account = admin.add_account(conn, person, "oidc", sub)
         token = secrets.token_urlsafe(16)
         conn.execute("INSERT INTO sessions (token_sha256, account_id, household_id, expires_at) "
                      "VALUES (%s, %s, %s, now() + interval '1 day')",

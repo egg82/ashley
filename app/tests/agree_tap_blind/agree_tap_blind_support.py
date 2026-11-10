@@ -248,7 +248,7 @@ def _household_of(url: str, person_id: int) -> int:
 
 def _session(conn: psycopg.Connection, person: int, household: int, tag: str) -> str:
     token = secrets.token_urlsafe(16)
-    account = admin.add_account(conn, person, "authentik", f"sub-{tag}")
+    account = admin.add_account(conn, person, "oidc", f"sub-{tag}")
     conn.execute("INSERT INTO sessions (token_sha256, account_id, household_id, expires_at) "
                  "VALUES (%s, %s, %s, now() + interval '1 day')",
                  (hashlib.sha256(token.encode()).digest(), account, household))

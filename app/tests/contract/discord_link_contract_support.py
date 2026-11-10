@@ -165,7 +165,7 @@ def web(url: str, discord: bool = True, fake: bool = True) -> Generator[Web]:
                 services.register(DiscordOAuth, stand_in)
             cookies: dict[str, str] = {}
             for name, home in (("A", "home"), ("B", "home"), ("C", "other")):
-                account(url, hh[home], who[name], "authentik", f"sub-{name}")
+                account(url, hh[home], who[name], "oidc", f"sub-{name}")
                 idp.sub = f"sub-{name}"
                 client.cookies.clear()
                 started = client.get("/api/auth/signin")

@@ -1,7 +1,7 @@
 """`python -m ashley.signin unmapped`: the OIDC accounts refused at sign-in because no person has them, most recently
 tried first, for the admin's own terminal: the sub, its first 12 hex of SHA-256 (what the refusal's log line carries),
 the OIDC username, and when it last tried. Map one with
-`python -m ashley.people add-account <person_id> authentik <sub>`; it then leaves this list. Run where DATABASE_URL is
+`python -m ashley.people add-account <person_id> oidc <sub>`; it then leaves this list. Run where DATABASE_URL is
 set (`kubectl exec deploy/app`)."""
 
 import argparse
@@ -24,7 +24,7 @@ def unmapped(conn: psycopg.Connection) -> list[tuple[str, str, str]]:
     """(sub, username, last tried as ISO 8601) for each refused OIDC account no person has yet."""
     rows = conn.execute(
         "SELECT u.external_id, u.username, u.last_seen_at FROM signin_unmapped u "
-        "WHERE u.system = 'authentik' AND NOT EXISTS "
+        "WHERE u.system = 'oidc' AND NOT EXISTS "
         "(SELECT 1 FROM accounts a WHERE a.system = u.system AND a.external_id = u.external_id) "
         "ORDER BY u.last_seen_at DESC").fetchall()
     return [(r[0], r[1], r[2].isoformat(timespec="seconds")) for r in rows]

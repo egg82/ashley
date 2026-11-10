@@ -48,18 +48,18 @@ def test_the_list_is_the_signed_in_persons_own_accounts_oldest_first(w: Web, db_
     assert w.link("A", ALANA) == "linked"
     assert w.link("B", ELLA) == "linked"
     got = listed(w, "A")
-    assert [a.system for a in got.accounts] == ["authentik", "home_assistant", "discord"]
+    assert [a.system for a in got.accounts] == ["oidc", "home_assistant", "discord"]
     assert [a.id for a in got.accounts] == sorted(a.id for a in got.accounts)
     assert got.discord_linking is True
-    assert [a.system for a in listed(w, "B").accounts] == ["authentik", "discord"]
-    assert [a.system for a in listed(w, "C").accounts] == ["authentik"]
+    assert [a.system for a in listed(w, "B").accounts] == ["oidc", "discord"]
+    assert [a.system for a in listed(w, "C").accounts] == ["oidc"]
 
 
 def test_an_account_shows_its_handle_and_whether_it_may_be_unlinked(w: Web, db_url: str) -> None:
     w.link("A", ALANA)
     by_system = {a.system: a for a in listed(w, "A").accounts}
     assert (by_system["discord"].handle, by_system["discord"].unlinkable) == (ALANA.handle, True)
-    assert (by_system["authentik"].handle, by_system["authentik"].unlinkable) == (None, False)
+    assert (by_system["oidc"].handle, by_system["oidc"].unlinkable) == (None, False)
     assert by_system["discord"].id == scalar(db_url, "SELECT id FROM accounts WHERE system = 'discord'")
 
 
@@ -79,7 +79,7 @@ def test_the_list_needs_a_session(w: Web) -> None:
 def test_unconfigured_the_list_says_so_and_still_lists(db_url: str) -> None:
     with web(db_url, discord=False, fake=False) as w:
         got = listed(w, "A")
-        assert got.discord_linking is False and [a.system for a in got.accounts] == ["authentik"]
+        assert got.discord_linking is False and [a.system for a in got.accounts] == ["oidc"]
 
 
 # --- POST /api/accounts/discord/link -------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ def test_an_account_another_person_has_is_taken_and_stays_theirs(w: Web) -> None
     assert w.link("B", ALANA) == "linked"
     assert w.link("A", ALANA) == "taken"
     assert w.discord_rows() == [(w.who["B"], ALANA.id)]
-    assert [a.system for a in listed(w, "A").accounts] == ["authentik"]
+    assert [a.system for a in listed(w, "A").accounts] == ["oidc"]
 
 
 def test_an_account_mapped_by_the_admin_to_someone_else_is_taken(w: Web, db_url: str) -> None:

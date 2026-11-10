@@ -46,8 +46,8 @@ def home(db_url: str) -> Home:
     with psycopg.connect(db_url) as conn:
         hid = admin.add_household(conn, "home", "America/Denver")
         alana, sam = admin.add_person(conn, hid, "Alana"), admin.add_person(conn, hid, "Sam")
-        return Home(_session(conn, admin.add_account(conn, alana, "authentik", "sub-alana"), hid),
-                    _session(conn, admin.add_account(conn, sam, "authentik", "sub-sam"), hid))
+        return Home(_session(conn, admin.add_account(conn, alana, "oidc", "sub-alana"), hid),
+                    _session(conn, admin.add_account(conn, sam, "oidc", "sub-sam"), hid))
 
 
 @contextmanager

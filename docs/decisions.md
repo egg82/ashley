@@ -684,7 +684,7 @@ talking with nothing guessed. She keeps no passwords of her own.
 - **An OIDC account maps to a person by its `sub`, which the admin maps after its first sign-in.** The
   provider's `sub` can be a hash of its user id, so nobody knows it beforehand. A sign-in by an account no person has is refused
   (`/?signin=unmapped`) and recorded with its OIDC username in `signin_unmapped`; the admin reads
-  `python -m ashley.signin unmapped` and maps it with `python -m ashley.people add-account <person> authentik <sub>`.
+  `python -m ashley.signin unmapped` and maps it with `python -m ashley.people add-account <person> oidc <sub>`.
   Rejected: mapping by username and pinning the `sub` at first sign-in, because a username can change or be reused
   at the provider, and until that first sign-in whoever holds the name would become that person. The username is only
   shown to the admin, never matched by code. The log line carries the first 12 hex of the sub's SHA-256, which the

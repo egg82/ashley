@@ -2,7 +2,7 @@
 
 import hashlib
 
-SYSTEM = "authentik"
+SYSTEM = "oidc"
 
 
 def sub_prefix(sub: str) -> str:
