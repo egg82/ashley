@@ -24,7 +24,7 @@ from .files import config as files_config, repair as files_repair, sweep as file
 from .files.intake import PREFIX as FILES_PREFIX
 from .files.mirror import MirroredStore
 from .files.orphans import PostgresCandidates
-from .files.store import ObjectStore
+from .files.store import NullStore, ObjectStore
 from .home_assistant.media_player import play_for
 from .inference import watch as inference_watch
 from .looks import warm_pod
@@ -91,9 +91,10 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     if isinstance(keeping, BridgeKeeping):
         running.append(services.get(Lease).run(proton_bridge_job.NAME, partial(proton_bridge_job.run, keeping)))
     store = services.get(ObjectStore)
-    if isinstance(store, MirroredStore):
+    if not isinstance(store, NullStore):
         files = files_config.load()
-        running.append(services.get(Lease).run(files_repair.NAME, partial(files_repair.run, store, REPAIRED_PREFIXES, files.repair_interval_s)))
+        if isinstance(store, MirroredStore):
+            running.append(services.get(Lease).run(files_repair.NAME, partial(files_repair.run, store, REPAIRED_PREFIXES, files.repair_interval_s)))
         referenced = partial(named_keys, workshop_rules.load())
         sweeping = partial(files_sweep.run, store, referenced, PostgresCandidates(), files)
         running.append(services.get(Lease).run(files_sweep.NAME, sweeping))

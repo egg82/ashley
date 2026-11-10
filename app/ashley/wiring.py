@@ -203,14 +203,14 @@ def _wire_connections(settings: Settings) -> list[Callable[[], Coroutine[Any, An
     return closers
 
 
-def _wire_files(settings: Settings) -> Callable[[], Coroutine[Any, Any, None]]:
-    """The object store over every endpoint in `files_endpoints`, in order, this site's first. Returns the closer of
-    the HTTP client."""
+def wire_files(settings: Settings) -> Callable[[], Coroutine[Any, Any, None]]:
+    """The object store over every endpoint in `files_endpoints`: the one store for a single endpoint, otherwise
+    every site's as a `MirroredStore`, this site's first. Returns the closer of the HTTP client."""
     http = httpx2.AsyncClient(timeout=30.0, follow_redirects=False)
     stores: list[ObjectStore] = [S3Store(endpoint.strip(), settings.files_bucket, settings.files_access_key,
                                          settings.files_secret_key, http)
                                  for endpoint in settings.files_endpoints.split(",") if endpoint.strip()]
-    services.register(ObjectStore, MirroredStore(stores))
+    services.register(ObjectStore, stores[0] if len(stores) == 1 else MirroredStore(stores))
     return http.aclose
 
 
@@ -251,7 +251,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
         closers.extend(_wire_connections(settings))
     register_herdr(settings.herdr_client_cert_file, settings.herdr_client_key_file)
     if settings.files_endpoints:
-        closers.append(_wire_files(settings))
+        closers.append(wire_files(settings))
     services.register(Wakes, PostgresWakes(services.get(Database)))
     services.register(Deposits, PostgresDeposits(services.get(Database)))
     register_proposals(services.get(Database), *outside_config.keeps())

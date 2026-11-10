@@ -640,9 +640,9 @@ A thing is a system only if all four hold:
   - Service behind the locator, `ashley.files.store.ObjectStore` over a neutral key and bytes, a Null Object that raises
     `ashley.files.store.StoreUnavailable`; adapters `ashley.files.s3.S3Store` (one S3-compatible endpoint, signed by
     `ashley.files.sigv4.sign`), `ashley.files.mirror.MirroredStore` (every site's endpoint as one: write all, read the
-    nearest) and `ashley.files.memory.MemoryStore` (tests)
-  - the copies are kept whole by a singleton under the lease, `ashley.files.repair.run`; bytes no piece names are
-    deleted from every site by another, `ashley.files.sweep.run`, which reads what pieces name through
+    nearest; wired only when `FILES_ENDPOINTS` lists two or more, one endpoint is its `S3Store` alone) and `ashley.files.memory.MemoryStore` (tests)
+  - the copies are kept whole by a singleton under the lease, `ashley.files.repair.run`, for a mirrored store alone; bytes no piece names are
+    deleted from every site (or the one store) by another, `ashley.files.sweep.run`, which reads what pieces name through
     `ashley.workshop.file_references.named_keys` (large pieces and the artifacts of the runs that remain) and keeps its last pass's findings in `ashley.files.orphans`
   - a file is judged before it is kept (`ashley.files.sniff.sniff` by its bytes, `ashley.files.intake.take`), and
     reached by signed, expiring links (`ashley.files.links`) that answer one byte range (`ashley.files.ranges.parse`),
