@@ -1,5 +1,6 @@
 """The skills' SQL, one statement per function, each on a connection the caller holds in its transaction. Tables
-`skill_versions` (the changelog, append-only apart from a proposal's status) and `skill_pins`."""
+`skill_versions` (the changelog, append-only apart from a proposal's status; only its `skill` family, the
+persona's being `persona_rows`') and `skill_pins`."""
 
 from datetime import UTC, datetime
 from typing import Any
@@ -24,7 +25,7 @@ async def lock(conn: Conn, household_id: int, kind: str) -> None:
 async def head(conn: Conn, household_id: int, kind: str) -> tuple[int, str, datetime] | None:
     """The latest live version's number, body and time."""
     cur = await conn.execute(
-        "SELECT version, body, at FROM skill_versions WHERE household_id = %s AND kind = %s AND status = 'live' "
+        "SELECT version, body, at FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s AND status = 'live' "
         "ORDER BY version DESC LIMIT 1", (household_id, kind))
     row = await cur.fetchone()
     return None if row is None else (int(row[0]), row[1], row[2].astimezone(UTC))
@@ -32,7 +33,7 @@ async def head(conn: Conn, household_id: int, kind: str) -> tuple[int, str, date
 
 async def live_body(conn: Conn, household_id: int, kind: str, version: int) -> str | None:
     cur = await conn.execute(
-        "SELECT body FROM skill_versions WHERE household_id = %s AND kind = %s AND version = %s AND status = 'live'",
+        "SELECT body FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s AND version = %s AND status = 'live'",
         (household_id, kind, version))
     row = await cur.fetchone()
     return None if row is None else row[0]
@@ -40,7 +41,7 @@ async def live_body(conn: Conn, household_id: int, kind: str, version: int) -> s
 
 async def live_count(conn: Conn, household_id: int, kind: str) -> int:
     cur = await conn.execute(
-        "SELECT count(*) FROM skill_versions WHERE household_id = %s AND kind = %s AND status = 'live'",
+        "SELECT count(*) FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s AND status = 'live'",
         (household_id, kind))
     row = await cur.fetchone()
     assert row is not None
@@ -49,7 +50,7 @@ async def live_count(conn: Conn, household_id: int, kind: str) -> int:
 
 async def next_version(conn: Conn, household_id: int, kind: str) -> int:
     cur = await conn.execute(
-        "SELECT coalesce(max(version), 0) + 1 FROM skill_versions WHERE household_id = %s AND kind = %s",
+        "SELECT coalesce(max(version), 0) + 1 FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s",
         (household_id, kind))
     row = await cur.fetchone()
     assert row is not None
@@ -60,8 +61,8 @@ async def insert(conn: Conn, household_id: int, kind: str, version: int, body: s
                  status: Status, base_version: int, restored_from: int | None, bench_id: int | None,
                  person_id: int | None) -> None:
     await conn.execute(
-        "INSERT INTO skill_versions (household_id, kind, version, body, what, why, status, base_version, "
-        "restored_from, bench_id, person_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        "INSERT INTO skill_versions (household_id, family, kind, version, body, what, why, status, base_version, "
+        "restored_from, bench_id, person_id) VALUES (%s, 'skill', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (household_id, kind, version, body, what, why, status, base_version, restored_from, bench_id, person_id))
 
 
@@ -81,7 +82,7 @@ async def set_pinned(conn: Conn, household_id: int, kind: str, pinned: bool) -> 
 async def proposal(conn: Conn, household_id: int, kind: str) -> Version | None:
     """The newest proposal still waiting."""
     cur = await conn.execute(
-        f"SELECT {_VERSION} FROM skill_versions WHERE household_id = %s AND kind = %s AND status = 'proposed' "
+        f"SELECT {_VERSION} FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s AND status = 'proposed' "
         "ORDER BY version DESC LIMIT 1", (household_id, kind))
     row = await cur.fetchone()
     return None if row is None else _version(row)
@@ -89,7 +90,7 @@ async def proposal(conn: Conn, household_id: int, kind: str) -> Version | None:
 
 async def changelog(conn: Conn, household_id: int, kind: str, limit: int) -> tuple[Version, ...]:
     cur = await conn.execute(
-        f"SELECT {_VERSION} FROM skill_versions WHERE household_id = %s AND kind = %s ORDER BY version DESC LIMIT %s",
+        f"SELECT {_VERSION} FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s ORDER BY version DESC LIMIT %s",
         (household_id, kind, limit))
     return tuple(_version(r) for r in await cur.fetchall())
 
@@ -97,14 +98,14 @@ async def changelog(conn: Conn, household_id: int, kind: str, limit: int) -> tup
 async def waiting(conn: Conn, household_id: int, kind: str, version: int) -> Version | None:
     """The version when it is a proposal still waiting."""
     cur = await conn.execute(
-        f"SELECT {_VERSION} FROM skill_versions WHERE household_id = %s AND kind = %s AND version = %s "
+        f"SELECT {_VERSION} FROM skill_versions WHERE household_id = %s AND family = 'skill' AND kind = %s AND version = %s "
         "AND status = 'proposed'", (household_id, kind, version))
     row = await cur.fetchone()
     return None if row is None else _version(row)
 
 
 async def set_status(conn: Conn, household_id: int, kind: str, version: int, status: Status) -> None:
-    await conn.execute("UPDATE skill_versions SET status = %s, at = now() WHERE household_id = %s AND kind = %s AND version = %s",
+    await conn.execute("UPDATE skill_versions SET status = %s, at = now() WHERE household_id = %s AND family = 'skill' AND kind = %s AND version = %s",
                        (status, household_id, kind, version))
 
 

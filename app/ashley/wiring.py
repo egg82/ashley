@@ -104,6 +104,7 @@ from .settings import Settings
 from .wiring_providers import env_keys, providers
 from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_sandbox
+from .wiring_skills import wire_skills
 from .wiring_singletons import wire_lease
 from .signin import policy as signin_policy
 from .signin.provider import OidcProvider, Client
@@ -144,9 +145,6 @@ from .tools.look_up import LookUpTools
 from .tools.look_up_config import LookUpConfig
 from .tools.pages import Pages
 from .tools.places import PlacesTools
-from .skills import config as skills_config, seeds as skills_seeds
-from .skills.postgres import PostgresSkills
-from .skills.skills import Skills
 from .tools.tools import Tools
 from .tools.web_search import WebSearchTools
 from .printables.config import PrintablesConfig
@@ -243,8 +241,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Outbox, PostgresOutbox(services.get(Database), outbox.load().stale_s, policy.load()))
     services.register(Sessions, PostgresSessions(services.get(Database), signin_policy.load()))
     services.register(Workshop, PostgresWorkshop(services.get(Database), workshop_rules.load()))
-    services.register(Skills, PostgresSkills(services.get(Database), skills_config.load(),
-                                             skills_seeds.load(skills_config.load())))
+    wire_skills()
     services.register(Runs, PostgresRuns(services.get(Database)))
     services.register(Looks, PostgresLooks(services.get(Database)))
     register_tidy(services.get(Database))
