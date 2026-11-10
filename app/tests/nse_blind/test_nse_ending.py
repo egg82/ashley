@@ -10,6 +10,7 @@ import pytest
 from ashley.channels import ending, inflight_config, unsaid
 from ashley.channels.inflight_config import CONFIG, FILE, Config, load
 from ashley.inference.reply import Reply
+from ashley.inference.routes import load as load_routes
 from later_support import Logged
 
 
@@ -73,10 +74,10 @@ def test_inflight_json_refuses_a_missing_or_non_positive_retry(tmp_path: Path, m
 
 
 def test_the_wrap_up_task_routes_to_providers_other_than_the_one_chat_leads_with() -> None:
-    routes = json.loads(resources.files("ashley.inference").joinpath("routes.json").read_text())["tasks"]
+    routes = load_routes({}).by_task
     assert routes["wrap_up"]
-    assert routes["wrap_up"][0]["provider"] != routes["chat"][0]["provider"]
-    assert all(r["timeout_s"] > 0 for r in routes["wrap_up"])
+    assert routes["wrap_up"][0].provider != routes["chat"][0].provider
+    assert all(r.timeout_s > 0 for r in routes["wrap_up"])
 
 
 def test_the_spend_ledger_accepts_the_wrap_up_task_and_still_refuses_an_unknown_one(db_url: str) -> None:

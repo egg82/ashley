@@ -4,15 +4,14 @@ Gemini answered every chat call 400 for two hours when one tool's schema had nes
 back to another model hid it. The schemas are collected through the real tool sources and wire modules, so a tool added
 tomorrow is checked; the rejected keywords are data (`provider_schema_rejects.json`), each with its source."""
 
-import json
 from collections.abc import Mapping
 from copy import deepcopy
 from pathlib import Path
 
 import pytest
 from ashley.inference.model import ToolSpec
-from ashley.inference.routes import TASKS
-from provider_schema_support import RULES, SHAPES, WIRES, Sent, collect, offered, rules, unlisted_formats, used_formats, violations
+from ashley.inference.routes import TASKS, load
+from provider_schema_support import SHAPES, WIRES, Sent, collect, offered, rules, unlisted_formats, used_formats, violations
 from source_tree import Parsed
 from ashley.tools import reminder_conditions
 
@@ -41,10 +40,8 @@ def test_the_collection_reaches_every_source_a_turn_can_offer() -> None:
 
 
 def test_every_provider_a_text_task_routes_to_is_gated() -> None:
-    data = json.loads((RULES.parent.parent / "ashley" / "inference" / "routes.json").read_text())
-    routed = {e["provider"] for task in TASKS for e in data["tasks"].get(task, [])
-              if isinstance(data["tasks"].get(task), list)}
-    assert routed <= set(WIRES)
+    routed = {r.provider for task in TASKS for r in load({}).by_task[task]}
+    assert {"anthropic", "gemini"} <= routed <= set(WIRES)
     assert set(rules()) == set(WIRES)
 
 

@@ -81,13 +81,12 @@ def load(providers: Mapping[str, Wired], routes_file: str = "") -> Routes:
     """The routes shipped in `routes.json` beside this module, checked against `providers` (`parse`). A non-empty
     `routes_file` is the operator's overlay of them (`overlay`); anything wrong with it, or with the routes it makes,
     is a ValueError naming ROUTES_FILE."""
-    shipped = json.loads(resources.files("ashley.inference").joinpath("routes.json").read_text())
+    data = deployment(routes_file)
     if not routes_file:
-        return parse(shipped, providers)
+        return parse(data, providers)
     try:
-        with open(routes_file) as f:
-            return parse(overlay(shipped, json.load(f)), providers)
-    except (OSError, ValueError) as e:
+        return parse(data, providers)
+    except ValueError as e:
         raise ValueError(f"ROUTES_FILE {routes_file}: {e}") from e
 
 
@@ -95,7 +94,14 @@ def deployment(routes_file: str = "") -> dict[str, object]:
     """The deployment's routes data before it is checked: `routes.json` beside this module with the operator's
     `routes_file` over it (`overlay`) when non-empty. What `load` parses, and what a household's choices are laid over.
     Raises ValueError naming ROUTES_FILE when that file cannot be read or overlaid."""
-    raise NotImplementedError
+    shipped = json.loads(resources.files("ashley.inference").joinpath("routes.json").read_text())
+    if not routes_file:
+        return shipped
+    try:
+        with open(routes_file) as f:
+            return overlay(shipped, json.load(f))
+    except (OSError, ValueError) as e:
+        raise ValueError(f"ROUTES_FILE {routes_file}: {e}") from e
 
 
 def overlay(shipped: Mapping[str, object], operator: object) -> dict[str, object]:
@@ -136,7 +142,7 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
     if tasks is None:
         raise ValueError("routes: tasks is an object with one entry per task")
     tasks = _likened(tasks)
-    tasks, waits = _unwrapped(tasks)
+    tasks, waits, households = _unwrapped(tasks)
     missing = [k for k in TASKS if k not in tasks]
     extra = sorted(set(tasks) - set(TASKS) - set(SPEECH_TASKS) - set(EMBED_TASKS) - set(VOICEPRINT_TASKS) - set(IMAGE_TASKS))
     if missing or extra:
@@ -146,31 +152,38 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
                   {task: _routes_of(task, tasks[task], providers) for task in EMBED_TASKS if task in tasks},
                   {task: _routes_of(task, tasks[task], providers) for task in VOICEPRINT_TASKS if task in tasks},
                   {task: _routes_of(task, tasks[task], providers) for task in IMAGE_TASKS if task in tasks},
-                  waits)
+                  waits, households)
 
 
-def _unwrapped(tasks: dict[str, object]) -> tuple[dict[str, object], frozenset[Task]]:
-    """`tasks` with each `{"routes": [...], "fallback": false}` entry replaced by its list, and the text tasks
-    that had one."""
+def _unwrapped(tasks: dict[str, object]) -> tuple[dict[str, object], frozenset[Task], frozenset[Task]]:
+    """`tasks` with each `{"routes": [...], "fallback": false, "household": true}` entry (either flag or both)
+    replaced by its list, and the text tasks that said each flag."""
     plain: dict[str, object] = {}
     waits: set[Task] = set()
+    households: set[Task] = set()
     for task, entry in tasks.items():
         fields = _object(entry)
         if fields is None or "routes" not in fields:
             plain[task] = entry
             continue
-        if set(fields) != {"routes", "fallback"} or fields["fallback"] is not False:
-            raise ValueError(f'{task}: expected exactly "routes" and "fallback": false in place of the list')
+        flags = set(fields) - {"routes"}
+        if (not flags or not flags <= {"fallback", "household"} or fields.get("fallback", False) is not False
+                or fields.get("household", True) is not True):
+            raise ValueError(f'{task}: expected "routes" with "fallback": false, "household": true or both in place '
+                             "of the list")
         if task not in TASKS:
-            raise ValueError(f"{task}.fallback: only a text task can wait for its first route")
+            raise ValueError(f"{task}: only a text task can wait for its first route or be a household's")
+        if "household" in flags and task in NEVER_HOUSEHOLD:
+            raise ValueError(f"{task}.household: no household chooses the model for {task}")
         plain[task] = fields["routes"]
-        waits.add(task)
-    return plain, frozenset(waits)
+        waits |= {task} if "fallback" in flags else set()
+        households |= {task} if "household" in flags else set()
+    return plain, frozenset(waits), frozenset(households)
 
 
 def _likened(tasks: dict[str, object]) -> dict[str, object]:
-    """`tasks` with each `{"like": "<task>"}` entry replaced by the routes of the task it names, which is a list of
-    routes itself, so one list is kept in one place."""
+    """`tasks` with each `{"like": "<task>"}` entry replaced by the routes of the task it names, which lists its own
+    routes (a list, or one in `"routes"`), so one list is kept in one place. Its flags are not taken."""
     resolved: dict[str, object] = {}
     for task, entry in tasks.items():
         fields = _object(entry)
@@ -178,10 +191,18 @@ def _likened(tasks: dict[str, object]) -> dict[str, object]:
             resolved[task] = entry
             continue
         like = fields["like"]
-        if not isinstance(like, str) or not isinstance(tasks.get(like), list):
+        listed = _listed(tasks.get(like)) if isinstance(like, str) else None
+        if listed is None:
             raise ValueError(f"{task}.like: expected the name of a task that lists its own routes")
-        resolved[task] = tasks[like]
+        resolved[task] = listed
     return resolved
+
+
+def _listed(entry: object) -> object | None:
+    """The route list an entry holds, itself or in `"routes"`; None when it holds none."""
+    fields = _object(entry)
+    inner = entry if fields is None else fields.get("routes")
+    return inner if _is_list(inner) else None
 
 
 def _routes_of(task: str, entries: object, providers: Mapping[str, Wired]) -> tuple[Route, ...]:

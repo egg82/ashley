@@ -55,6 +55,7 @@ class RoutedInference(Inference):
         speech, embeddings, voiceprints, pictures and `cooldown_s` use. Which providers are resting is held in this process only: a restarted pod tries each once
         again, which costs one failed call."""
         self._roster = Roster(routes, providers, ledger, prices, clock, today, keyed)
+        self._households = households
         self._speech = SpeechCalls(self._roster)
         self._embedding = EmbedCalls(self._roster)
         self._voiceprints = VoiceprintCalls(self._roster)
@@ -108,8 +109,9 @@ class RoutedInference(Inference):
         InferenceRejected when every route called failed `error`, InferenceCutOff when a reply was cut off at the token
         limit, else InferenceUnavailable."""
         await self._roster.refresh()
+        routes = None if self._households is None else await self._households.for_call(conversation_id)
         failures = Failed()
-        for route, provider in self._roster.candidates(task, Provider):
+        for route, provider in self._roster.candidates(task, Provider, routes):
             answer = await self._attempt(task, route, provider, prompt, output, conversation_id, failures)
             if answer is not None:
                 return answer

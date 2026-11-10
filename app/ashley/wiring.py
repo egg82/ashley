@@ -61,12 +61,17 @@ from .inference.balance import ProviderBalances
 from .inference.balance_reader import SourcedBalances
 from .inference.image_quota import ImageCap
 from .inference.key_seed import seed_from_env as seed_keys_from_env
+from .inference.household_routes import HouseholdRoutes
 from .inference.keyed_providers import KeyedProviders
+from .inference.layered_routes import LayeredRoutes
 from .inference.kinds import KEYED
 from .inference.provider_keys import ConnectionProviderKeys
 from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
 from .inference.postgres import PostgresSpendLedger
+from .inference.postgres_route_choice_write import PostgresRouteChoiceWriter
+from .inference.postgres_route_choices import PostgresRouteChoices
+from .inference.route_choice_write import RouteChoiceWriter
 from .inference.router import RoutedInference
 from .memory.inference_writer import InferenceFactWriter
 from .memory.memory import FactWriter, Memory
@@ -292,15 +297,22 @@ def _wire_inference(settings: Settings, narrow: Callable[[Routes], Routes],
                     closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
     """The router over the keyless providers and the keyed ones (`ashley.inference.kinds`), whose keys are the first
     household's connections where it has them and the env's elsewhere, read again every `REFRESH_S`; routes are
-    checked against every provider a key could turn on. The spend page reads the keyed providers' balances."""
-    wired, env = providers(settings), env_keys(settings)
+    checked against every provider a key could turn on, and a household's choices are laid over them. The spend page
+    reads the keyed providers' balances and sets the household's choices."""
+    wired, env, database = providers(settings), env_keys(settings), services.get(Database)
     keyed = KeyedProviders(KEYED, ConnectionProviderKeys(lambda: services.get(Connections), (k.kind.name for k in KEYED),
                                                          env), env)
     closers.append(keyed.close)
-    routes = inference_routes.load({**keyed.checkers(), **{p.name: p for p in wired}}, settings.routes_file)
+    checkers, keyless = {**keyed.checkers(), **{p.name: p for p in wired}}, frozenset(p.name for p in wired)
+    routes = inference_routes.load(checkers, settings.routes_file)
+    households = LayeredRoutes(inference_routes.deployment(settings.routes_file), checkers,
+                               lambda: keyless | keyed.current().keys(), PostgresRouteChoices(database), narrow)
+    services.register(HouseholdRoutes, households)
+    services.register(RouteChoiceWriter, PostgresRouteChoiceWriter(database))
     services.register(Inference, RoutedInference(
-        narrow(routes), wired, PostgresSpendLedger(services.get(Database)), prices.load(),
-        image_cap=ImageCap(partial(image_quota.drawn, services.get(Database)), image_quota.load()), keyed=keyed))
+        narrow(routes), wired, PostgresSpendLedger(database), prices.load(),
+        image_cap=ImageCap(partial(image_quota.drawn, database), image_quota.load()), keyed=keyed,
+        households=households))
     services.register(ProviderBalances, SourcedBalances(keyed.balance_sources))
 
 

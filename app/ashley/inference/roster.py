@@ -48,11 +48,12 @@ class Roster:
         found = self._providers.get(name)
         return found if found is not None or self._keyed is None else self._keyed.current().get(name)
 
-    def candidates[W: Wired](self, task: TaskName, kind: type[W]) -> Iterator[tuple[Route, W]]:
-        """The task's routes in order whose provider is wired, can do `kind`'s work and is not resting; each route
-        passed over is logged `inference.route_skipped`. A provider that rests during the walk is skipped when
-        reached."""
-        for route in self._routes.for_task(task):
+    def candidates[W: Wired](self, task: TaskName, kind: type[W],
+                             routes: Routes | None = None) -> Iterator[tuple[Route, W]]:
+        """The task's routes in order (from `routes`, the roster's own when None) whose provider is wired, can do
+        `kind`'s work and is not resting; each route passed over is logged `inference.route_skipped`. A provider that
+        rests during the walk is skipped when reached."""
+        for route in (self._routes if routes is None else routes).for_task(task):
             provider = self._provider(route.provider)
             if isinstance(provider, kind) and self._clock_ok(route):
                 yield route, provider
