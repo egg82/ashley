@@ -12,25 +12,11 @@ from .. import logs
 from .active_site import ActiveSite
 from .etcd_gateway import EtcdGateway, EtcdTls, EtcdUnavailable
 from .lease import Body, Lease
+from .lease_log import Streak, log_outcome, outcome
 
 log = logging.getLogger("ashley.referee")
 
 PREFIX = "/ashley/singletons/"
-
-
-class _Streak:
-    """Logs the first of a run of identical events, so a standby waiting for hours writes one line, not thousands."""
-
-    def __init__(self) -> None:
-        self._last = ""
-
-    def once(self, event: str, **fields: object) -> None:
-        if event != self._last:
-            logs.info(log, event, **fields)
-        self._last = event
-
-    def reset(self) -> None:
-        self._last = ""
 
 
 class EtcdLease(Lease):
@@ -58,7 +44,7 @@ class EtcdLease(Lease):
         await sibling.run(f"{name}@{self._site.member}", body)
 
     async def run(self, name: str, body: Body) -> None:
-        streak = _Streak()
+        streak = Streak()
         async with EtcdGateway(self._url, self._interval, self._tls, self._transport) as etcd:
             while True:
                 lease_id, deadline = await self._campaign(etcd, name, streak)
@@ -66,7 +52,7 @@ class EtcdLease(Lease):
                 await self._hold(etcd, name, lease_id, deadline, body)
                 await asyncio.sleep(self._interval)
 
-    async def _campaign(self, etcd: EtcdGateway, name: str, streak: _Streak) -> tuple[int, float]:
+    async def _campaign(self, etcd: EtcdGateway, name: str, streak: Streak) -> tuple[int, float]:
         """Wait until this process holds the key; its lease id and the moment the body must stop by."""
         while True:
             try:
@@ -106,7 +92,7 @@ class EtcdLease(Lease):
             await self._release(etcd, name, lease_id, "stopped")
             raise
         if task.done():
-            _log_outcome(task, name, lease_id)
+            log_outcome(task, name, lease=f"{lease_id:x}")
             await self._release(etcd, name, lease_id, reason)
         elif reason == "not_active_site":
             await self._stop(task, name)
@@ -121,7 +107,7 @@ class EtcdLease(Lease):
             next_at = min(time.monotonic() + self._interval, deadline)
             await asyncio.wait({task}, timeout=max(0.0, next_at - time.monotonic()))
             if task.done():
-                return _outcome(task)
+                return outcome(task)
             if time.monotonic() >= deadline:
                 return "deadline"
             sent = time.monotonic()
@@ -156,19 +142,3 @@ class EtcdLease(Lease):
         except EtcdUnavailable as e:
             logs.warning(log, "lease.revoke_failed", name=name, lease=f"{lease_id:x}", status=e.status)
 
-
-def _outcome(task: asyncio.Task[None]) -> str:
-    if task.cancelled() or task.exception() is not None:
-        return "body_failed"
-    return "body_returned"
-
-
-def _log_outcome(task: asyncio.Task[None], name: str, lease_id: int) -> None:
-    """A failed body's exception, logged with its frames (the body ran in its own task, so nothing else sees it)."""
-    if task.cancelled():
-        logs.error(log, "lease.body_failed", name=name, lease=f"{lease_id:x}", error="CancelledError")
-        return
-    try:
-        task.result()
-    except Exception:
-        logs.error(log, "lease.body_failed", exc=True, name=name, lease=f"{lease_id:x}")
