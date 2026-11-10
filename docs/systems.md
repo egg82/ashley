@@ -324,7 +324,7 @@ A thing is a system only if all four hold:
     a second, narrower service, `ashley.people.accounts.Accounts` (Postgres
     `ashley.people.postgres_accounts.PostgresAccounts`: their accounts, linking one, unlinking their Discord), kept
     apart so nothing that reads people can write them
-  - a household's own fields (timezone, profile, locale, unit system, clock; `ashley.people.model.Household`) are
+  - a household's own fields (timezone, profile, locale, unit system, clock, home location; `ashley.people.model.Household`) are
     set by its people on the Devices room's household panel through a third service,
     `ashley.people.household_write.HouseholdWriter` (Postgres
     `ashley.people.postgres_household_write.PostgresHouseholdWriter`), which only that route and the wiring import
@@ -491,7 +491,8 @@ A thing is a system only if all four hold:
   - each household's everyday tools come from `ashley.tools.everyday.Everyday` (`ashley.tools.everyday.HomesEveryday`,
     a Null Object answering the locator's `Tools`): over the household's own Home (Homes, below), the house's sources
     and the look-up with places near it, built once per Home and kept while it is the same, since the house tools'
-    catalogue is cached per Home; a turn holds them as `ashley.tools.everyday.HouseholdTools`, a Proxy that asks once
+    catalogue is cached per Home; a household with no Home gets the look-up with places near its own location,
+    built once for it; a turn holds them as `ashley.tools.everyday.HouseholdTools`, a Proxy that asks once
   - her sources are the house, `ashley.tools.house_tools.HouseTools` over the Home's `House` (Homes, below): its
     instructions are her `app/ashley/tools/home_assistant.md` over `ashley.tools.house_roster.roster` of the devices the household
     lists and `ashley.tools.house_roster.devices` of the house's own, its live state, `ashley.tools.house_state.HouseStateTools`, one tool answered in code from `House.states`
@@ -505,8 +506,8 @@ A thing is a system only if all four hold:
     turn's `ashley.tools.results.Results` (bound by `ashley.channels.landing.Landing` while a call runs, so a bench tool of
     the turn names a result by its number, `ashley.tools.bench_reference.References`) and reads a result's page by its number through `ashley.tools.page_fetch.fetch` (the one module that
     opens an arbitrary URL, public https hosts only) and `ashley.tools.page_text.text_of` (a YouTube video's page through `ashley.tools.youtube.read_page` instead, and a paste or GitHub file view at its plain-text address, `ashley.tools.raw_source.raw_url`; the choice is `ashley.tools.page_reader.PageReader`, a service the bench tools also use to read a site or video piece's page, `ashley.tools.bench_page`; a page's schema.org recipe is kept beside its text, `ashley.tools.recipe_ld.recipe_in`, and a page whose site refuses the plain fetch is read in the page browser, `ashley.tools.page_reader.browsed_page`, Looks below), and places near the house
-    through Photon, `ashley.tools.places.PlacesTools` (which reads the house's location with
-    `ashley.home_assistant.zone.home`), and Printables' 3D models, `ashley.tools.printables_search.PrintablesSearchTools`
+    through Photon, `ashley.tools.places.PlacesTools` (which reads the house's location from the household's own
+    (`ashley.tools.home_location.own`) before Home Assistant's, `ashley.home_assistant.zone.home`), and Printables' 3D models, `ashley.tools.printables_search.PrintablesSearchTools`
     over the Printables service (below), whose results are numbered into the same `Results` as model pages, and returns
     `ashley.tools.look_up.LookedUp` cut to length in code
   - the Printables service, `ashley.printables.printables.Printables` (a Null Object that fails), over Printables' public
