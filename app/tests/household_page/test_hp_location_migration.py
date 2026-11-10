@@ -1,6 +1,8 @@
 """The household-location migration leaves every existing household with no location, refuses a half or out-of-range
 location in the table itself, People reads one back, and downgrading drops the columns."""
 
+from typing import LiteralString
+
 import psycopg
 import pytest
 from alembic import command
@@ -23,12 +25,14 @@ def test_existing_households_have_no_location(empty_database: str) -> None:
     assert row == (None, None)
 
 
-@pytest.mark.parametrize("set_clause", ["latitude = 51.5", "longitude = -0.12", "latitude = 91, longitude = 0",
-                                        "latitude = 0, longitude = 181"])
-def test_the_table_refuses_a_half_or_out_of_range_location(db_url: str, set_clause: str) -> None:
+@pytest.mark.parametrize("update", [
+    "UPDATE households SET latitude = 51.5 WHERE id = %s", "UPDATE households SET longitude = -0.12 WHERE id = %s",
+    "UPDATE households SET latitude = 91, longitude = 0 WHERE id = %s",
+    "UPDATE households SET latitude = 0, longitude = 181 WHERE id = %s"])
+def test_the_table_refuses_a_half_or_out_of_range_location(db_url: str, update: LiteralString) -> None:
     home = int(scalar(db_url, "INSERT INTO households (name) VALUES ('Willow') RETURNING id"))
     with psycopg.connect(db_url) as conn, pytest.raises(psycopg.errors.CheckViolation):
-        conn.execute(f"UPDATE households SET {set_clause} WHERE id = %s", (home,))
+        conn.execute(update, (home,))
     with psycopg.connect(db_url) as conn:
         conn.execute("UPDATE households SET latitude = 51.5, longitude = -0.12 WHERE id = %s", (home,))
 

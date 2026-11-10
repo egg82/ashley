@@ -18,9 +18,9 @@ from httpx2 import Response
 BASE = "/api/household"
 PUBLIC = "https://ashley.test"
 ORIGIN = {"origin": PUBLIC}
-METRIC = {"timezone": "Europe/London", "profile": "Two cats, Mochi and Nuuk.", "locale": "en-GB",
+METRIC: dict[str, Any] = {"timezone": "Europe/London", "profile": "Two cats, Mochi and Nuuk.", "locale": "en-GB",
           "unit_system": "metric", "clock": "12h", "latitude": None, "longitude": None}
-LOCATED = {**METRIC, "latitude": 51.507222, "longitude": -0.1275}
+LOCATED: dict[str, Any] = {**METRIC, "latitude": 51.507222, "longitude": -0.1275}
 
 
 @dataclass(frozen=True)
