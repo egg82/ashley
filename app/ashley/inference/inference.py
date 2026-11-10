@@ -85,7 +85,9 @@ class Inference(Service):
         the `provider.Failure`), tokens, cost in USD where the model has a price and NULL where it has none, and duration.
         A ledger write that fails is logged `inference.spend_unrecorded` and does not cost the caller the reply.
 
-        `conversation_id` is the conversation the call serves, recorded on each spend row (None: it serves none).
+        `conversation_id` is the conversation the call serves, recorded on each spend row (None: it serves none). Its
+        household's routes are the ones walked: a model the household chose for the task comes first, the deployment's
+        routes after it (`household_routes`); a call serving no conversation walks the deployment's.
 
         Raises ValueError (before calling anything) for a task outside `Task`, or a prompt carrying `tools` (that is
         `step`); InferenceRefused; InferenceUnavailable when no route answered. Logs `inference.call` per call made

@@ -3140,6 +3140,140 @@
         }
       }
     },
+    "/api/spend/routes": {
+      "get": {
+        "summary": "Read Routes",
+        "description": "200 `SpendRoutesResponse`; 401 `unauthorized`; 503 `unavailable`.",
+        "operationId": "read_routes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendRoutesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the choices could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/spend/routes/{task}": {
+      "put": {
+        "summary": "Write Route",
+        "description": "200 `SpendRoutesResponse` as stored; 401 `unauthorized`; 403 `forbidden`; 422 `SpendRouteRefused`; 503\n`unavailable`.",
+        "operationId": "write_route",
+        "parameters": [
+          {
+            "name": "task",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "command",
+                "chat",
+                "brainstorm",
+                "escalated",
+                "wrap_up",
+                "memory_write",
+                "memory_judge",
+                "look_up",
+                "bench_tidy",
+                "errand",
+                "action_judge",
+                "bench_job",
+                "eval_judge"
+              ],
+              "type": "string",
+              "title": "Task"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpendRouteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendRoutesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the choices could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a choice the task does not offer now; nothing was stored. A body or task outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendRouteRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lexicon": {
       "get": {
         "summary": "Read Lexicon",
@@ -12714,6 +12848,29 @@
         "title": "RollbackRequest",
         "description": "Roll the skill back to the text of live version `to_version` (0: the seed), as a new version."
       },
+      "RouteModel": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model"
+        ],
+        "title": "RouteModel",
+        "description": "One route: the provider (its name in the routes data, as the Usage room's provider rows name it) and the model\nid it calls."
+      },
       "RunApplied": {
         "properties": {
           "seq": {
@@ -13545,6 +13702,73 @@
         "title": "SpendResponse",
         "description": "Usage as of `as_of`, in the household's time zone `zone` (an IANA name). Providers are the paid ones first, in\ncatalog order, then any other with calls in the spans, by name."
       },
+      "SpendRouteRefused": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "not_household",
+              "not_offered",
+              "unwired"
+            ],
+            "title": "Reason"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason",
+          "detail"
+        ],
+        "title": "SpendRouteRefused",
+        "description": "Why nothing was stored: `not_household` (the task is not one a household chooses for), `not_offered` (not one of\nits options), `unwired` (an option whose provider has no key now)."
+      },
+      "SpendRouteRequest": {
+        "properties": {
+          "route": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "route"
+        ],
+        "title": "SpendRouteRequest",
+        "description": "The model for one task, or null to go back to the deployment's routes."
+      },
+      "SpendRoutesResponse": {
+        "properties": {
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRoutes"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "refresh_s": {
+            "type": "integer",
+            "title": "Refresh S"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tasks",
+          "refresh_s"
+        ],
+        "title": "SpendRoutesResponse",
+        "description": "Every task the household may choose for, in task order, then `action_judge`. A choice reaches every reply within\n`refresh_s` seconds."
+      },
       "SpendSpans": {
         "properties": {
           "today": {
@@ -13750,6 +13974,67 @@
         ],
         "title": "SpokenLimits",
         "description": "Recording stops at `max_ms`, or after `speech_ms` of speech then `silence_ms` of quiet (speech: RMS >= `quiet_rms`).\nHer spoken answer to an utterance can be fetched for `voice_s` seconds."
+      },
+      "TaskRoutes": {
+        "properties": {
+          "task": {
+            "type": "string",
+            "enum": [
+              "command",
+              "chat",
+              "brainstorm",
+              "escalated",
+              "wrap_up",
+              "memory_write",
+              "memory_judge",
+              "look_up",
+              "bench_tidy",
+              "errand",
+              "action_judge",
+              "bench_job",
+              "eval_judge"
+            ],
+            "title": "Task"
+          },
+          "household": {
+            "type": "boolean",
+            "title": "Household"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/RouteModel"
+            },
+            "type": "array",
+            "title": "Routes"
+          },
+          "chosen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/RouteModel"
+            },
+            "type": "array",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task",
+          "household",
+          "routes",
+          "chosen",
+          "options"
+        ],
+        "title": "TaskRoutes",
+        "description": "One task. `household`: whether this household may choose its model; false for `action_judge`, which is shown so a\nperson can see which model judges a change, and only the operator moves. `routes`: the deployment's routes, in the\norder a call tries them. `chosen`: the household's choice, tried before `routes`; null when it has none.\n`options`: what it may choose now (the deployment's routes for its chat-facing tasks whose provider is wired), in\norder; empty when `household` is false."
       },
       "TokenConnectionRequest": {
         "properties": {
