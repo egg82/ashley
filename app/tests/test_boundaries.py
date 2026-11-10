@@ -28,7 +28,7 @@ ALLOWED: dict[str, set[str]] = {
     "codehost": {"connections", "logs", "services"},
     "connections": {"db", "logs", "services"},
     "conversations": {"db", "hearing", "logs", "receipts", "services"},
-    "inference": {"db", "logs", "services", "text"},
+    "inference": {"connections", "db", "logs", "services", "text"},
     "errands": {"db", "hearing", "services"},
     "files": {"db", "logs", "services"},
     "live": {"db", "logs", "services"},

@@ -479,7 +479,7 @@ export interface paths {
          * @description 201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;
          *     401 `unauthorized`; 403 `forbidden`; 404 `not_found`, no such kind; 409 `label_taken` or `too_many`; 422
          *     `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when connections
-         *     are not set up here.
+         *     are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.
          */
         post: operations["connect"];
         delete?: never;
@@ -1937,12 +1937,13 @@ export interface components {
         };
         /**
          * ApiKeyConnectionRequest
-         * @description Replace a connection of a kind whose `secret_field` is `api_key` (Sure): `base_url` is the address it is served
-         *     at; `api_key` is a key made in the service's own settings, checked against it before anything is stored.
+         * @description Replace a connection of a kind whose `secret_field` is `api_key` (Sure, a model provider): `base_url` is the
+         *     address it is served at, left out for a kind that has one address (a model provider's); `api_key` is a key made in
+         *     the service's own settings, checked against it before anything is stored.
          */
         ApiKeyConnectionRequest: {
             /** Base Url */
-            base_url: string;
+            base_url?: string | null;
             /** Api Key */
             api_key: string;
         };
@@ -2512,8 +2513,8 @@ export interface components {
         };
         /**
          * ConnectionsResponse
-         * @description The signed-in person's household's connections, by kind, and every kind that can be connected, in the order to
-         *     show them. `can_connect` is whether this app holds the key that seals them; false, none can be added and
+         * @description The signed-in person's household's connections, by kind, and every kind that household can connect, in the order
+         *     to show them (a model provider's key only for the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and
          *     `connections` is empty.
          */
         ConnectionsResponse: {
@@ -3496,7 +3497,7 @@ export interface components {
          */
         NewApiKeyConnectionRequest: {
             /** Base Url */
-            base_url: string;
+            base_url?: string | null;
             /** Api Key */
             api_key: string;
             /** Kind */
