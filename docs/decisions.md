@@ -1603,6 +1603,40 @@ treats the symptom.
   when a person approves it; an approval is refused `stale` once the live version has moved past the one she
   proposed against. Rejected: approval of every edit, since routine edits are too frequent for it to mean anything.
 
+## A household may override her taste, never her contract
+
+- **The persona's taste is the household's; its contract ships.** The shipped register, wit and examples are one
+  household's taste, so a household replaces them from the Devices room's persona panel. Which sections are taste is
+  an explicit field on each section's marker line in `app/ashley/persona/ashley.md`
+  (`<!-- section id=wit override=allowed label="…" -->`, `ashley.persona.sections`), never the words of a heading.
+  Everything `locked` stays the shipped text: her reply's fields and their rules, the rules that hold whatever anyone
+  asks, acting on the house, memory, and every kind file and the errand section, which carry no markers and are wholly
+  locked. A heading belongs to the text before the section it heads, so an override replaces a body and never a heading.
+- **Fits into Skills, as a second family in its changelog.** An override is a versioned document per household and
+  key, which is what a skill is: `skill_versions` gains `family` (`skill` or `persona`, in the key), and a persona
+  section's id goes in `kind`. Versions are append-only and a revert is a new version, as a skill's rollback is; the
+  writes take an advisory lock per household and section. What differs is held by the table: a `persona` row is
+  always a person's and `live` (no proposals, no bench), and its body may be null, meaning "the shipped text", so a
+  household that reverts follows the persona as it improves instead of keeping a copy of the old one. A household
+  with no rows gets the shipped persona.
+- **The lock is enforced twice, in code.** `PersonaWriter` refuses an id that is not an `allowed` section (`locked`),
+  and `sections.render` applies an override only to an `allowed` section of the text it renders, so a row for a
+  locked id, however it got there, never reaches a prompt. A section a later release renames, removes or locks keeps
+  its rows but stops applying; the persona page lists it as orphaned.
+- **Only a person writes them.** Overrides change how she talks and judges, so they are written only through the
+  persona route: the writer is its own service (`ashley.skills.persona_write`), imported only by `app/ashley/api/persona.py`
+  and the wiring (`tests/test_settings_boundary.py`), as the household's own fields are. Channels read through
+  `ashley.skills.persona.PersonaOverrides`, which cannot write.
+- **Read for every reply, never cached.** The reply and errand paths read the household's heads from the database
+  with the rest of the turn's reads and render them into the stable layer, so a change saved on any pod reaches the next
+  reply on every pod of both sites, and costs a conversation one cache write. When they cannot be read the reply uses
+  the shipped persona and logs `persona.overrides_unreachable`.
+- Rejected: a separate table for persona versions (a second versioning store that would drift from the skills'
+  semantics); overrides as skills of a reserved kind (her `skill_edit` reaches every kind of a household, and a
+  prefix in `kind` is shape-sniffing); choosing the overridable sections by their headings (behaviour keyed on
+  words); a whole-file override (it would carry the contract with it, unlocked); a per-pod cache (one indexed read per
+  reply is cheap, and a cache needs a staleness bound that a person saving and then talking would notice).
+
 ## Benches carry files, photographs and 3D
 
 - **Uploads and downloads are large pieces**: `image` and `file` kinds (above); a person uploads from the bench page and
