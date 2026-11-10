@@ -4,6 +4,7 @@ direction as a field; the fired reminder states, from data, that it left; rules 
 existed read as `in`."""
 
 import json
+import re
 from dataclasses import replace
 from datetime import date, timedelta
 
@@ -123,7 +124,7 @@ def test_the_poll_line_names_directions_never_what_was_paid(db_url: str, capsys:
             await deposit_sense.poll(NOW)
 
     run(go())
-    out = capsys.readouterr().out
+    out = re.sub(r"\b(ts|duration_ms)=\S+", "", capsys.readouterr().out)
     assert "directions=out" in out and "Statewide Mutual" not in out and "600" not in out
 
 
