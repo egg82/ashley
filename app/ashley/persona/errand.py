@@ -7,11 +7,13 @@ from datetime import datetime
 from ..inference.model import SystemPrompt
 from ..people.model import Household, Person
 from . import facts, prose
+from .persona import NO_OVERRIDES
 
 
 def system(household: Household, asker: Person, source: str, instructions: str | None, unreachable: tuple[str, ...],
-           now: datetime) -> Mapping[str, SystemPrompt]:
-    """One system prompt per variant: the persona, the errand section naming `asker` and the `source` that was out of
+           now: datetime, overrides: Mapping[str, str] = NO_OVERRIDES) -> Mapping[str, SystemPrompt]:
+    """One system prompt per variant: the persona (rendered with the household's `overrides`, as
+    `persona.Context.overrides`), the errand section naming `asker` and the `source` that was out of
     reach, `# Tools` from `instructions` and `unreachable` (`facts.tools`), the household's units and profile, and
     `# Now`. Raises ValueError for a naive `now`, an `asker` not in `household`, or a variant with no errand text."""
     facts.check(household, asker, None, now)

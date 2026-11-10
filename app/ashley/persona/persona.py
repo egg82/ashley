@@ -7,12 +7,15 @@ files: that is `Household.profile`."""
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from types import MappingProxyType
 
 from ..conversations.model import Kind
 from ..inference.model import SystemPrompt
 from ..memory.model import Recalled
 from ..people.model import Household, Person
 from . import facts, prose
+
+NO_OVERRIDES: Mapping[str, str] = MappingProxyType({})
 
 
 @dataclass(frozen=True)
@@ -28,7 +31,9 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
     (None: not a fact this turn is given). `aloud` is whether this message was said aloud on a page that can play her voice, which offers `Reply.aloud` (`channels.aloud.offered`). `said_before` is
     older turns that may bear on this message, one line each, already filtered to what this reply may hear. `while_away` is
     what she did since for asks she could not carry out, one line each, to tell. `tools_now` is the tool sources' state
-    at this moment (`Catalogue.now`), in the `moment` layer. Every reply carries
+    at this moment (`Catalogue.now`), in the `moment` layer. `overrides` is the household's text for the persona's
+    overridable sections by section id (`ashley.skills.persona.bodies`), applied by `sections.render`, which ignores
+    any id that is not an `allowed` section; empty, the persona is the shipped text. Every reply carries
     both a `spoken` and a `text` field whichever medium delivers it, so the medium is not a fact here."""
 
     now: datetime
@@ -47,10 +52,12 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
     said_before: tuple[str, ...] = ()
     while_away: tuple[str, ...] = ()
     tools_now: str | None = None
+    overrides: Mapping[str, str] = NO_OVERRIDES
 
 
 def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
-    """One system prompt per variant found under `variants/`, plus `default`: each is the persona, then the kind's
+    """One system prompt per variant found under `variants/`, plus `default`: each is the persona (its `ashley.md`
+    rendered with `context.overrides`), then the kind's
     rules, then the tool instructions or, when tools are unreachable, one line saying the house cannot be reached right
     now, then the household's units and its profile when non-empty, then her standing facts (`facts.standing`; nothing when there are
     none), then what she remembers (`facts.remembered`; nothing when memory recalled nothing), then what was said before
