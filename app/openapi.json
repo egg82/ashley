@@ -3456,6 +3456,229 @@
         }
       }
     },
+    "/api/persona": {
+      "get": {
+        "summary": "Read Persona",
+        "description": "200 `PersonaDetail`; 401 `unauthorized`; 503 `unavailable`.",
+        "operationId": "read_persona",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persona/{section}": {
+      "put": {
+        "summary": "Edit Persona",
+        "description": "200 `PersonaDetail` after the change; 401 `unauthorized`; 403 `forbidden`; 409 `PersonaRefusalBody`; 503\n`unavailable`.",
+        "operationId": "edit_persona",
+        "parameters": [
+          {
+            "name": "section",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "title": "Section"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`refused`, with the reason; nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaRefusalBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a path or body outside its model gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persona/{section}/revert": {
+      "post": {
+        "summary": "Revert Persona",
+        "description": "200 `PersonaDetail` after the change; 401 `unauthorized`; 403 `forbidden`; 409 `PersonaRefusalBody`; 503\n`unavailable`.",
+        "operationId": "revert_persona",
+        "parameters": [
+          {
+            "name": "section",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "title": "Section"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaRevertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`refused`, with the reason; nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaRefusalBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a path or body outside its model gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat/messages": {
       "post": {
         "summary": "Send",
@@ -10711,6 +10934,243 @@
         ],
         "title": "Person",
         "description": "One person of a household, as they are known to her. `name` is theirs to see; it is never logged."
+      },
+      "PersonaChange": {
+        "properties": {
+          "persona_version": {
+            "type": "integer",
+            "title": "Persona Version"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "what": {
+            "type": "string",
+            "title": "What"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          },
+          "base_version": {
+            "type": "integer",
+            "title": "Base Version"
+          },
+          "restored_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored From"
+          },
+          "person_id": {
+            "type": "integer",
+            "title": "Person Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "persona_version",
+          "body",
+          "what",
+          "why",
+          "base_version",
+          "restored_from",
+          "person_id",
+          "at"
+        ],
+        "title": "PersonaChange",
+        "description": "One entry of a section's changelog. `body` is the household's text it made, null for \"back to the shipped\ntext\". `what` names the kind of change; `why` is the person's note; `restored_from` is the version a revert copied\n(0: the shipped text), else null; `person_id` who made it."
+      },
+      "PersonaDetail": {
+        "properties": {
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/PersonaSection"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "orphaned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Orphaned"
+          },
+          "body_limit": {
+            "type": "integer",
+            "title": "Body Limit"
+          },
+          "note_limit": {
+            "type": "integer",
+            "title": "Note Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sections",
+          "orphaned",
+          "body_limit",
+          "note_limit"
+        ],
+        "title": "PersonaDetail",
+        "description": "Every overridable section in the shipped persona's order. The sections not listed (her reply's fields and\ntheir rules, and the rules that hold whatever anyone asks) are locked and no route changes them. `orphaned` names\nsections the household changed that this release no longer lets it override (renamed, removed or locked): their\ntext is kept but not used. `body_limit` and `note_limit` are the longest `body` and `why`."
+      },
+      "PersonaEditRequest": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Body"
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Why"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Base Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "body",
+          "why",
+          "base_version"
+        ],
+        "title": "PersonaEditRequest",
+        "description": "The household's whole new text for the section, made from `base_version`, with a line of why."
+      },
+      "PersonaRefusalBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "refused",
+            "title": "Code"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "locked",
+              "bad_body",
+              "bad_note",
+              "unchanged",
+              "stale",
+              "no_such_version"
+            ],
+            "title": "Reason"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "reason",
+          "detail"
+        ],
+        "title": "PersonaRefusalBody",
+        "description": "A change was refused and nothing changed. `reason` is a stable word a client branches on: `stale` (the section\nmoved on: read it again), `unchanged`, `no_such_version`, `bad_body`, `bad_note`, `locked` (not a section a\nhousehold may override)."
+      },
+      "PersonaRevertRequest": {
+        "properties": {
+          "to_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "To Version"
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Why"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Base Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "to_version",
+          "why",
+          "base_version"
+        ],
+        "title": "PersonaRevertRequest",
+        "description": "Bring back the text of version `to_version` as a new version; 0 goes back to the shipped text."
+      },
+      "PersonaSection": {
+        "properties": {
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "shipped": {
+            "type": "string",
+            "title": "Shipped"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "persona_version": {
+            "type": "integer",
+            "title": "Persona Version"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/PersonaChange"
+            },
+            "type": "array",
+            "title": "History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "section",
+          "label",
+          "shipped",
+          "override",
+          "persona_version",
+          "history"
+        ],
+        "title": "PersonaSection",
+        "description": "One section of her persona a household may override. `shipped` is the text that ships now. `override` is the\nhousehold's text in force, null when she uses `shipped`. `persona_version` is the section's newest version (0:\nnever changed), the `base_version` a change is made against. `history` is the latest entries of its changelog,\nnewest first. `section` is the id a change names."
       },
       "PieceAutomation": {
         "properties": {

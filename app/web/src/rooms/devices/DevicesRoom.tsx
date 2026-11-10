@@ -8,6 +8,7 @@ import { showsControls } from './controlRows';
 import { loadLights } from './controls';
 import { devices, devicesState, leaveRoom, loadDevices } from './devices';
 import { HouseholdPanel } from './HouseholdPanel';
+import { PersonaPanel } from './PersonaPanel';
 import { Lexicon } from './Lexicon';
 import { loadLexicon } from './lexiconWords';
 import { loadHousehold } from '../../household/household';
@@ -163,6 +164,7 @@ export function DevicesRoom() {
       <div class="set-grid">
         <div class="set-col">
           <Notifications />
+          <PersonaPanel />
         </div>
         <div class="set-col">
           <HouseholdPanel />

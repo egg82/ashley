@@ -1,8 +1,9 @@
 """Nothing she does on her own can widen what she trusts or reset what her household set: the modules that write a
-connection's settings (`ashley.connections.settings_write` and the Postgres writer) and a household's own fields
-(`ashley.people.household_write` and its Postgres writer) are imported only by their person route and the wiring that
-registers them, so no tool, channel or model call can reach `SettingsWriter` or `HouseholdWriter` (`decisions.md`, "A
-connection has settings its person sets"). An import of any by another module fails here, whatever package it is in."""
+connection's settings (`ashley.connections.settings_write` and the Postgres writer), a household's own fields
+(`ashley.people.household_write` and its Postgres writer) and its persona overrides (`ashley.skills.persona_write` and
+its Postgres writer) are imported only by their person route and the wiring that registers them, so no tool, channel or
+model call can reach `SettingsWriter`, `HouseholdWriter` or `PersonaWriter` (`decisions.md`, "A connection has settings
+its person sets", "A household may override her taste, never her contract"). An import of any by another module fails here, whatever package it is in."""
 
 import ast
 from pathlib import Path
@@ -16,6 +17,8 @@ GUARDED: dict[str, tuple[set[str], set[str]]] = {
                  {"ashley.api.connection_settings", "ashley.wiring", "ashley.connections.settings_write_postgres"}),
     "household": ({"ashley.people.household_write", "ashley.people.postgres_household_write"},
                   {"ashley.api.household", "ashley.wiring", "ashley.people.postgres_household_write"}),
+    "persona": ({"ashley.skills.persona_write", "ashley.skills.postgres_persona_write"},
+                {"ashley.api.persona", "ashley.wiring_skills", "ashley.skills.postgres_persona_write"}),
 }
 
 
@@ -56,10 +59,13 @@ def test_the_gate_catches_a_tool_a_channel_or_a_model_call_importing_a_writer() 
         "ashley.tools.household": "from ..people.household_write import HouseholdWriter\n",
         "ashley.persona.household": "from ..people import postgres_household_write\n",
         "ashley.tools.clean": "from ..connections.settings_read import SettingsReader\n",
-        "ashley.tools.reads": "from ..people.people import People\n"}
+        "ashley.tools.reads": "from ..people.people import People\n",
+        "ashley.tools.persona": "from ..skills.persona_write import PersonaWriter\n",
+        "ashley.channels.persona": "from ..skills import postgres_persona_write\n",
+        "ashley.tools.persona_reads": "from ..skills.persona import PersonaOverrides\n"}
     writers = {name for names, _ in GUARDED.values() for name in names}
     found = writers_imported_by({m: ast.parse(src) for m, src in planted.items()}, writers)
-    assert set(found) == set(planted) - {"ashley.tools.clean", "ashley.tools.reads"}, found
+    assert set(found) == set(planted) - {"ashley.tools.clean", "ashley.tools.reads", "ashley.tools.persona_reads"}, found
 
 
 def test_the_writer_modules_exist_where_the_gate_names_them() -> None:

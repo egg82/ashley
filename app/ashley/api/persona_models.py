@@ -4,7 +4,8 @@ it. Every answer is `PersonaDetail` as it stands after the call:
 
 - `GET /api/persona`: 200; 401 `unauthorized`; 503 `unavailable`.
 - `PUT /api/persona/{section}` with `PersonaEditRequest`: 200; 401; 403 `forbidden` (another site); 409
-  `PersonaRefusalBody`; 422 FastAPI's validation error for a body outside the schema; 503.
+  `PersonaRefusalBody`; 422 FastAPI's validation error for a request outside the schema (a body, or a `section`
+  that is not a slug of at most 40 characters); 503.
 - `POST /api/persona/{section}/revert` with `PersonaRevertRequest`: as `PUT`.
 
 A `section` that is not an overridable one (a locked section, or none at all) is 409 `locked`. A change reaches her
@@ -15,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..skills.persona_write import PersonaRefusal
+from ..skills.persona import PersonaRefusal
 from ..text import NoNul
 
 
@@ -37,14 +38,15 @@ class PersonaChange(BaseModel):
 class PersonaSection(BaseModel):
     """One section of her persona a household may override. `shipped` is the text that ships now. `override` is the
     household's text in force, null when she uses `shipped`. `persona_version` is the section's newest version (0:
-    never changed), the `base_version` a change is made against. `changelog` is the latest entries, newest first."""
+    never changed), the `base_version` a change is made against. `history` is the latest entries of its changelog,
+    newest first. `section` is the id a change names."""
 
-    id: str
+    section: str
     label: str
     shipped: str
     override: str | None
     persona_version: int
-    changelog: list[PersonaChange]
+    history: list[PersonaChange]
 
 
 class PersonaDetail(BaseModel):
