@@ -1,15 +1,18 @@
 import gc
 import itertools
-from collections.abc import Generator
+from collections.abc import Coroutine, Generator
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from hypothesis import HealthCheck, find, settings
 from hypothesis import strategies as st
 
-from ashley import services
+from ashley import main, services
 from ashley.connections.kinds import ConnectionKinds
 from ashley.ledger.ledger import Ledger
+from ashley.settings import Settings
 from ashley.sure.ledger import SureLedger
 from ashley.wiring import CONNECTION_KINDS
 from pg import throwaway_database
@@ -66,6 +69,16 @@ def unwired() -> Generator[None]:
     services.clear()
     if next(TESTS_RUN) % SWEEP_EVERY == 0:
         gc.collect()
+
+
+@pytest.fixture(autouse=True)
+def no_background_work(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An app a test starts (`create_app`) runs no singletons: without etcd they run under Postgres advisory locks, and
+    would work on the very rows the test checks. A test of the singletons calls `wiring_singletons.singletons` itself."""
+    def none(settings: Settings) -> list[Coroutine[Any, Any, None]]:
+        return []
+
+    monkeypatch.setattr(main, "wiring_singletons", SimpleNamespace(singletons=none))
 
 
 @pytest.fixture
