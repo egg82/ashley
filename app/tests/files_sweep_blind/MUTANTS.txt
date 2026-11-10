@@ -1,0 +1,68 @@
+MUTANTS.txt: planted wrong implementations of the files sweep, run against app/tests/files_sweep_blind.
+One line each: status, file, mutation. 'killed' = a test failed. The control (no-op) must survive.
+
+00 survived  sweep.py             control: no-op comment  -- control, survives by design
+01 killed    sweep.py             lease name changed
+02 killed    sweep.py             list without prefix
+03 killed    sweep.py             list prefix without slash
+04 killed    sweep.py             age strict less
+05 killed    sweep.py             age reversed
+06 killed    sweep.py             oldest copy decides instead of newest
+07 killed    sweep.py             referenced keys deleted
+08 killed    sweep.py             no named check
+09 killed    sweep.py             no second pass
+10 killed    sweep.py             candidates only load, condemned empty
+11 killed    sweep.py             grace is the interval
+12 killed    sweep.py             grace added to now
+13 killed    sweep.py             grace zero
+14 killed    sweep.py             grace halved
+15 killed    sweep.py             survivors empty
+16 survived  sweep.py             survivors keep deleted  -- equivalent by the contract: the key is gone from every site that was listed; the only difference is a copy on a site that was down, which the docs leave to 'once it is back' (first or second pass)
+17 killed    sweep.py             failed deletes lose candidacy
+18 killed    sweep.py             no listing still goes on
+19 killed    sweep.py             references before listing
+20 killed    sweep.py             list failure not tolerated
+21 killed    sweep.py             list failure not logged
+22 killed    sweep.py             delete failure not tolerated
+23 killed    sweep.py             delete failure continues
+24 killed    sweep.py             delete failure not logged
+25 killed    sweep.py             deleted never counted
+26 killed    sweep.py             deleted counted per pass key
+27 killed    sweep.py             delete asked of sites not holding
+28 killed    sweep.py             delete everything eligible
+29 killed    sweep.py             candidates not saved
+30 killed    sweep.py             candidates saved only when deleted
+31 killed    sweep.py             swept seen counts per site
+32 killed    sweep.py             swept unreferenced is eligible
+33 killed    sweep.py             failure raises
+34 killed    sweep.py             failure not logged
+35 killed    sweep.py             start not logged
+36 killed    sweep.py             swept not logged
+37 killed    sweep.py             store log missing deleted
+38 killed    sweep.py             store log seen is union
+39 killed    sweep.py             store log unreferenced all
+40 killed    sweep.py             store log carries keys
+41 killed    sweep.py             swept log carries keys
+42 killed    sweep.py             run waits grace
+43 killed    sweep.py             run once only
+44 killed    sweep.py             run no wait
+45 killed    sweep.py             run_once ignores clock
+46 killed    sweep.py             clock offset
+47 killed    orphans.py           candidates never dropped
+48 survived  orphans.py           candidates drop all each save  -- equivalent: RETURNING on an INSERT whose result is not read
+49 killed    orphans.py           first_seen reset
+50 killed    orphans.py           load empty
+51 killed    orphans.py           save inserts nothing
+52 killed    file_references.py   only stored family named
+53 killed    file_references.py   undo window ignored
+54 killed    file_references.py   window off by one short
+55 killed    file_references.py   window off by one long
+56 killed    file_references.py   window doubled
+57 killed    file_references.py   window unbounded
+58 killed    file_references.py   pieces filtered to unshelved
+59 survived  file_references.py   window outcome any  -- equivalent: a refused command's effect carries no piece (test_an_upload_refused_after_its_bytes_were_stored... holds under this mutant)
+60 killed    file_references.py   pieces table not read
+61 killed    file_references.py   key without household
+62 killed    file_references.py   other benches only first household
+63 killed    wiring.py            wiring: sweep not run
+64 killed    wiring.py            wiring: sweep runs always

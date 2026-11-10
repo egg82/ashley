@@ -1,0 +1,62 @@
+Planted wrong implementations, one at a time, each applied exactly once to the file named and reverted after the run.
+Each run is tests/site_video_blind against bench-site-video, green before the plant. 54 planted, 52 caught.
+Survivors: M27 (start has no upper bound) and M28 (extra JSON keys accepted) are not in the contract, so no test
+asserts them. M9 survived the first pass and is caught by the bad-port cases added for it.
+Files: embed.py = ashley/workshop/embed.py, decide.py, benches.py = ashley/api/benches.py.
+Finding resolved by decision: surrounding whitespace on a site or video URL is accepted and stored trimmed; a
+whitespace-only body is the empty body.
+
+M1 CAUGHT   https_host accepts http
+M2 CAUGHT   https_host ignores credentials
+M3 CAUGHT   https_host allows space characters
+M4 CAUGHT   https_host allows controls
+M5 CAUGHT   cap 2001
+M6 CAUGHT   cap 1999
+M7 CAUGHT   cap off by one
+M8 CAUGHT   host may be empty
+M9 CAUGHT   bad port not parsed
+M10 CAUGHT   site_well_formed always true
+M11 CAUGHT   video_well_formed always true
+M12 CAUGHT   video_well_formed: empty refused
+M13 CAUGHT   youtube by suffix
+M14 CAUGHT   youtube by substring host
+M15 CAUGHT   youtu.be dropped
+M16 CAUGHT   vimeo by suffix
+M17 CAUGHT   vimeo by substring
+M18 CAUGHT   youtube embed not nocookie
+M19 CAUGHT   youtube autoplay
+M20 CAUGHT   vimeo embed wrong host
+M21 CAUGHT   vimeo autoplay
+M22 CAUGHT   vimeo start dropped
+M23 CAUGHT   youtube start dropped
+M24 CAUGHT   youtube start off by one
+M25 CAUGHT   bool start accepted
+M26 CAUGHT   negative start accepted
+M27 SURVIVED start unbounded (unspecified in contract)
+M28 SURVIVED extra keys accepted (unspecified in contract)
+M29 CAUGHT   mov dropped
+M30 CAUGHT   m4v dropped
+M31 CAUGHT   file suffix on whole url
+M32 CAUGHT   file suffix anywhere
+M33 CAUGHT   file start dropped
+M34 CAUGHT   file embed differs
+M35 CAUGHT   youtube Video.start zero
+M36 CAUGHT   vimeo provider mislabelled
+M37 CAUGHT   youtube id any length
+M38 CAUGHT   youtube id any chars
+M39 CAUGHT   shorts dropped
+M40 CAUGHT   watch param wrong
+M41 CAUGHT   vimeo id any segment
+M42 CAUGHT   youtu.be id dropped
+M43 CAUGHT   decide: site unchecked
+M44 CAUGHT   decide: video unchecked
+M45 CAUGHT   decide: site refused as bad_video
+M46 CAUGHT   decide: video refused as bad_site
+M47 CAUGHT   decide: too_long after (moved)
+M48 CAUGHT   decide: site check on every kind
+M49 CAUGHT   decide: video check on every kind
+M50 CAUGHT   wire: video for every kind
+M51 CAUGHT   wire: video always null
+M52 CAUGHT   wire: start zero
+M53 CAUGHT   wire: embed_url is url
+M54 CAUGHT   wire: provider file

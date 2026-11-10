@@ -1,0 +1,26 @@
+Mutants for the reconciler (plant each in the implementation; the named test(s) must go red):
+ 1  every tier-b call still held (today's behaviour) -> test_tt_house_tiers tier_b, test_tt_other_tiers, test_tt_mail_tiers
+ 2  tier looked up by tool name only for house_do (all house_do runs, or all held) -> test_tt_house_tiers (light vs lock, garage vs blinds)
+ 3  consequential_entities ignored -> test_tt_house_tiers::an_entity_named_consequential
+ 4  consequential_entities applied only when the domain is tier c -> same test, light.porch case
+ 5  untainted turn goes through tiers (tier c held) -> test_tt_house_tiers::an_untainted_turn_runs_every_tier
+ 6  default (unnamed action / unlabelled spec / unoffered tool) mapped to runs -> mystery.do_it, test_tt_judge fresh_change / no_such_tool
+ 7  Null judge answers run -> every tier_c held test
+ 8  judge fault (raise / timeout / invalid decision) mapped to run, or exception escapes -> test_tt_judge faults
+ 9  judge given a tool result or free-text argument (view built from raw arguments) -> test_tt_judge no_outside_text
+10  provider called on the Null path -> test_tt_judge null_judge_no_provider
+11  reminder not stamped with taint -> launder reminder tests; stamped always -> untainted reminder test
+12  watch not stamped / stamped always -> launder watch tests
+13  fired turn origin left None, or "watch"/"stranger" instead of inherited -> launder (taint == "inherited")
+14  inherited turn not tainted from its first step (tiers skipped) -> launder fires_as (lamp runs, lock held)
+15  outside_writes not recorded / recorded for untainted writes -> launder list tests
+16  outside_writes never expire, or expire at once -> list test (400 days, fresh)
+17  outside_writes keyed by household wrong (another household's) -> not detected; equivalent here (single household)
+18  piece flag not set on tainted edit / set on every edit -> launder bench tests
+19  outside_actions row missing, for tier c held, for untainted turn, or two rows per call -> test_tt_actions
+20  outside_actions row carries argument text outside summary -> row_carries_no_argument_text
+21  retention pruning absent, or deletes in-limit rows -> test_tt_actions retention
+22  block absent when only ran / only held shown / shown for untainted -> block tests
+23  outside.tier / outside.judged missing, carrying arguments or explanation -> test_tt_logs
+24  agreeing tool allowed when labelled tier b -> test_tt_agrees; carry_out allowed in an inherited turn -> same file
+25  mail_send / trash treated as tier b -> test_tt_mail_tiers; mark-read held -> same

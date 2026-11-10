@@ -1,0 +1,44 @@
+/* The devices room, and the room layout the connections room shares. Layout is the approved mockup's devices block (rooms.css)
+   copied verbatim; new here: the note a change leaves, the devices list, the pronunciation words form (reusing connections.css's cn-form), and the loading, unavailable and unreachable states
+   (the last copied from memory.css's), and the dock and her word reused from it. */
+
+.set { position: absolute; inset: 0; overflow: auto; padding: 18px 32px 40px; max-width: 1160px; margin: 0 auto; }
+.set-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; } .set-head h1 { font-size: 26px; }
+.set-dock { width: 30px; height: 30px; margin-left: 8px; }
+.set-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start; }
+.dc-body { padding: 14px 16px 16px; } .dc-body p { margin: 0 0 12px; color: var(--text-2); }
+.dc-done { display: flex; gap: 12px; align-items: center; }
+.dc-done .btn { margin-left: auto; }
+@media (max-width: 900px) {
+  .set { padding: 12px 16px 30px; } .set-grid { grid-template-columns: 1fr; }
+}
+
+/* new here */
+.set-col { display: grid; gap: 16px; }
+.dc-body { display: grid; gap: 14px; }
+.dc-body p { margin: 0; }
+.dc-done > div { min-width: 0; }
+.dc-done b { display: block; overflow-wrap: anywhere; }
+.dc-act { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dc-note { display: flex; gap: 10px; align-items: baseline; padding: 10px 12px; border-radius: var(--r-1); border: 1px solid var(--line-hi);
+  background: var(--ink-1); font-size: 13px; color: var(--text); }
+.dc-note .btn { margin-left: auto; flex: none; }
+.dc-note.bad { border-color: rgba(255,93,108,.45); }
+.dc-note.ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+.acct-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+.acct-row:first-of-type { border-top: 0; }
+.acct-row b { font-weight: 600; }
+.devs-body { padding: 16px; display: grid; gap: 10px; justify-items: start; }
+.devs .acct-row .meta { grid-column: 1 / -1; }
+.set-none { margin: 0; }
+.set-down { display: flex; align-items: center; gap: 16px; padding: 18px 22px; max-width: 560px; }
+.set-down-says { display: grid; gap: 8px; justify-items: start; }
+.lx-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
+@media (max-width: 900px) { .lx-add { grid-template-columns: 1fr; } }
+
+/* touch controls of a device that shows them */
+.ctl { display: grid; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.ctl p { margin: 0; }
+.ctl-row { display: grid; grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1.4fr) auto; gap: 8px; align-items: center; }
+.ctl-move { display: flex; gap: 4px; }
+@media (max-width: 900px) { .ctl-row { grid-template-columns: 1fr 1fr; } .ctl-move { grid-column: 1 / -1; } }

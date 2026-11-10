@@ -1,0 +1,137 @@
+Wrong implementations the blind suite for part 4, "Bridge as a leased singleton" (app/tests/mail_bridge_blind), must kill.
+Written from the design alone (decisions.md, "Her mail is a port with two adapters, and Proton's runs as a leased Bridge",
+subsection "Bridge runs as a leased singleton whose vault outlives its pod"), before any of part 4 existed. Each line: id,
+where it would live, the wrong behaviour, and the test that should go red (abbreviated to its distinctive words). Some keeper ones were
+also run against a throwaway reference keeper written for the harness (never committed): K1, K2, K3, K5, K6 and K7 went red in the tests named;
+the rest are planted when the build lands. Equivalent or untestable ones are at the end with the reason.
+
+The record and routes (test_mb_route_fence, test_mb_syncing)
+R1   write-back route   takes any generation (no compare-and-set)                              test_mb_route_fence: stale_generation...; ahead_of_the_row...; two_writers_at_the_same_generation
+R2   write-back route   takes a generation only if >= the row's (a stale write is refused, a future one taken)   ahead_of_the_row_is_refused
+R3   write-back route   ignores the epoch (the generation alone decides)                      stale_epoch_is_refused_409_whatever_its_generation
+R4   write-back route   checks the epoch in the body but not that the token is that epoch's    old_epochs_token_is_refused_once_a_new_epoch_has_begun; stale_epoch...
+R5   write-back route   generation raised by the vault length / by two / not at all             each_accepted_write_back_raises_the_generation_by_exactly_one
+R6   write-back route   read-then-write with no lock: two writers at one generation both win   two_writers_at_the_same_generation_take_exactly_one
+R7   write-back route   stale write refused 409 but the vault bytes already replaced           stale_generation...changes_nothing
+R8   write-back route   a refused write-back still stamps heartbeat_at                         heartbeat_at_an_old_epoch...stamps_nothing (heartbeat form); stale_generation...
+R9   write-back route   no token check (any caller writes the vault)                           write_back_with_no_token_is_refused
+R10  write-back route   write at a read-only database answers 500, or 200 without writing       database_that_cannot_be_written_answers...503
+R11  vault route        a retired epoch may fetch the vault                                    retired_epoch_cannot_fetch_the_vault
+R12  vault route        fetch answers the vault of the epoch's start, not the row's latest     current_epoch_fetches_the_vault_at_its_generation
+R13  vault route        vault and keychain stored unsealed                                     vault_and_keychain_are_stored_sealed
+R14  record             the token stored in the clear instead of its hash                      begin_epoch_raises...hash; token_only_as_its_hash; no_pod_manifest_carries_the_token
+R15  heartbeat route    stamps heartbeat_at for any epoch (409 answered after stamping)        heartbeat_at_an_old_epoch_is_refused_409_and_stamps_nothing
+R16  heartbeat route    no token check                                                         heartbeat_with_no_token_or_a_wrong_one
+R17  heartbeat route    stamp never moves after the first                                      second_heartbeat_moves_the_stamp_forward
+R18  record             begin_epoch raises by more than one, or leaves heartbeat_at from the old epoch   begin_epoch_raises_the_epoch_by_one...; fresh_record...; the_epoch_is_raised_before_the_wait
+R19  record             begin_epoch resets generation or drops the vault                       new_epoch_leaves_generation_and_vault_alone
+R20  events route       sync_finished stored against the row's epoch at read time, not the event's   new_epoch_makes_every_synced_account_syncing_again
+R21  events route       accounts synced all together on any account's finish                   each_account_is_synced_on_its_own_finish
+R22  events route       a stale epoch's sync_finished accepted                                 sync_finished_event_from_a_retired_epoch...; ...naming_an_older_epoch...
+R23  events route       sync_progress dropped (progress not stored)                            progress_is_stored_with_the_syncing_state
+R24  events route       user_signed_out sets the state but not the connection's needs          signed_out_account_is_marked_and_its_connection_needs_a_login
+R25  events route       user_signed_out marks every account of the household                   signed_out_event_for_one_account_leaves_the_other_connected
+R26  accounts()         syncing computed as "synced_epoch is not None" (a finished sync of an old epoch reads as synced)   new_epoch_makes_every_synced_account_syncing_again
+R27  accounts()         an account with no sync yet reads as synced                           account_added_in_this_epoch_is_syncing_until...
+
+The singleton (test_mb_job_epoch, test_mb_job_pod)
+S1   job   adopts a same-site pod whatever its heartbeat's age                                 same_site_pod_whose_heartbeat_is_older_than_fence_s_is_not_adopted
+S2   job   adopts only when the pod is of this site by name prefix; adopts the other site's    pod_of_the_other_site_is_never_adopted
+S3   job   adopts, but also raises the epoch (a rollout restarts the pod's sync)              pod_of_the_current_epoch...adopted_as_it_is; adoption_keeps_every_accounts_sync
+S4   job   adopts and deletes then recreates the pod                                          adopted_as_it_is (no delete, no create)
+S5   job   makes the pod without waiting for the old epoch's fence                            new_holder_waits_until...; wait_is_counted_from...; two_bridges_never_run_from_one_vault
+S6   job   waits fence_s but not fence_margin_s                                               new_holder_waits_until_the_old_epochs_last_heartbeat_is_fence_plus_margin_old
+S7   job   waits fence_s + margin counted from the moment it took the lease                    wait_is_counted_from_the_old_epochs_last_heartbeat
+S8   job   waits first and raises the epoch afterwards (the old pod keeps running meanwhile)  epoch_is_raised_before_the_wait; two_bridges_never_run...retired_and_its_write_back_refused
+S9   job   never raises the epoch when it finds a stale pod (reuses the old one)              not_adopted_and_the_epoch_is_raised_by_one
+S10  job   makes the pod before the token Secret exists, or the secret never                   secret_is_made_before_the_pod_that_reads_it
+S11  job   one token for every epoch                                                           token_is_minted_per_epoch
+S12  job   the pod manifest carries the token as an env value                                  no_pod_manifest_carries_the_token_in_the_clear
+S13  job   cache on a PVC or host path (shipped with the pod)                                  cache_is_an_emptydir_and_no_volume_is_a_claim
+S14  job   an ended pod is replaced under the same epoch                                       pod_that_ends_is_followed_by_a_new_epoch...; ...whose_phase_says_it_ended...
+S15  job   an ended pod is replaced at once, ignoring restart_s                                pod_that_ends_is_followed_by_a_new_epoch_and_pod_after_restart_s
+S16  job   a holder that loses the lease deletes its pod                                       holder_that_loses_the_lease_does_not_delete_its_pod
+S17  job   a failed pod create ends the body (the lease is released and the epoch burnt in a loop)   failed_pod_create_is_survived_and_tried_again
+S18  job   writes the vault itself (an empty one) when none is stored                          job_never_writes_the_vault_or_raises_the_generation
+S19  job   the pod is made in the default namespace, or from an unpinned image                  pod_is_made_in_the_configured_namespace_from_the_pinned_image
+S20  job   the record names a pod other than the one made, or the wrong site                   record_names_the_pod_that_was_made_and_the_site_that_made_it
+S21  job   secret or manifest carries the vault                                                nothing_in_the_manifest_or_secret_carries_a_vault_or_a_password
+
+The keeper as its own program (test_mb_keeper_program)
+K1   keeper   a 409 write-back is logged and Bridge runs on                                    a_refused_write_back_stops_Bridge   (red on the reference)
+K2   keeper   a refused heartbeat is ignored until the fence runs out (the fallback hides it)  a_refused_heartbeat_stops_Bridge: exits before the fence   (red on the reference after the test was tightened: the first version survived because the fence stopped Bridge anyway)
+K3   keeper   no fence: Bridge runs on for ever when the app is unreachable                    no_heartbeat_answered_for_fence_s...
+K4   keeper   kills Bridge at the first failed heartbeat                                       no_heartbeat...not_a_moment_sooner; outage_shorter_than_the_fence...
+K5   keeper   Bridge ending leaves the keeper (and the pod) running                            Bridge_ending_on_its_own_ends_the_keeper   (red on the reference)
+K6   keeper   SIGTERM ends the keeper and orphans Bridge                                       pod_told_to_end_takes_Bridge_with_it   (red on the reference)
+K7   keeper   write-back generation hard-coded 0 / never taken from the answer                 first_write_back...at_the_generation_the_keeper_holds; every_change...   (red on the reference)
+K8   keeper   a 503 write-back retried for ever with Bridge running                             write_back_the_database_could_not_take_503
+K9   keeper   starts Bridge before the vault is fetched and written                              fetches_the_vault_for_its_epoch_and_writes_it_in_before_Bridge_starts
+K10  keeper   starts Bridge even when the fetch is refused (a retired epoch)                    keeper_of_a_retired_epoch_is_refused_the_vault_and_never_starts_Bridge
+K11  keeper   ships the cache directory with the vault                                         cache_is_never_shipped_only_the_vault_and_the_keychain (planted as a cache directory in the keychain tar)
+K12  keeper   writes back again on every poll though the vault is unchanged                    vault_that_did_not_change_is_not_written_back_again
+K13  keeper   a write-back that never answers is waited on for ever                            write_back_the_app_never_answers_stops_Bridge_within_the_fence
+K14  keeper   a request without the token or without the epoch                                 every_request_to_the_app_carries_the_token_and_names_the_epoch
+K15  keeper   logs the vault, the token or the Authorization header                            keeper_logs_something_and_never_the_vault_the_token...
+K16  keeper   imports a helper from ashley (works only in the app's image)                    keeper_imports_nothing_from_ashley; keeper_runs_alone_with_no_ashley_on_its_path
+K17  keeper   heartbeats once at start and never again                                         keeper_heartbeats_about_every_heartbeat_s
+K18  keeper   heartbeat interval ignored (a request storm)                                     keeper_heartbeats_about_every_heartbeat_s
+
+Login from the room (test_mb_login)
+L1   login   a typed password, code or username stored in a connection row or label           nothing_typed_is_stored
+L2   login   the Bridge password stored unsealed                                               nothing_typed_is_stored_and_the_bridge_password_only_sealed
+L3   login   a step relayed with another step's body, or out of order                          each_step_is_relayed_to_the_keeper_in_order...
+L4   login   a 2FA code accepted with no login begun                                           step_out_of_order_is_refused_and_never_reaches_the_keeper
+L5   login   a keeper refusal still stores a connection                                       login_the_keeper_refuses_stores_no_connection...
+L6   login   the error echoes the typed password                                              login_the_keeper_refuses...does_not_echo_the_password
+L7   login   a signed-out caller reaches the keeper                                            signed_out_caller_cannot_log_in
+L8   login   the connection's secret is the Proton password, not Bridge's                      finished_login_stores_one_proton_connection_whose_secret_is_the_bridge_password
+L9   login   mailbox password step skipped for an account with two passwords                   account_with_two_passwords_is_asked_for_the_mailbox_password
+L10  login   the login logs the password, code, username, Bridge password or an address        login_logs_no_password_code_username_bridge_password_or_address
+
+Logs (test_mb_logs)
+G1   routes/job   a log line carries vault bytes (or their base64) of a write-back                  routes_and_singleton_log_no_vault_token_or_address
+G2   routes/job   a log line carries a token or an Authorization header                            same
+G3   routes/job   a log line carries a Proton address (as a user id)                               same
+G4   routes       a refused write-back is silent                                                    refused_write_back_is_logged_with_its_epoch_and_generation
+G5   job          no log line names the epoch                                                       singleton_logs_each_pod_it_makes_with_ids_and_counts
+
+Equivalent or not testable from the design
+E1   keeper   "writes the vault back before it handles anything else": a keeper that heartbeats from a second thread while a write-back is in flight; the design gives no observable (a slow write-back in flight is the same as a heartbeat sent after it), so no test pins the order.
+E2   job      adopting a pod that exists in the record but not in Kubernetes: the design says "adopted as it is" on the record's word; the job cannot tell without a pod lookup the design does not require.
+E3   record   `fingerprint` kept only when it changes: indistinguishable from keeping it every beat.
+E4   routes   409 vs 401 for a retired epoch's token: the design says 409 for a non-current epoch; a token that belongs to an older epoch is accepted as 401, 403 or 409 by the tests.
+E5   login    the app's relay timing: nothing in the design bounds a login step's duration.
+E6   room     "the room shows the same" for syncing: part 4's room routes are not named; the record's `syncing` field is what is tested.
+
+Verdicts (each mutant applied one at a time to the built code, run against this suite, the part's own Bridge tests (fence,
+job, record, keeper, keeper routes, login routes, wiring, TLS), -x, per-test timeout 60 s, whole run 300 s; killed means the
+run went red; a letter suffix of a number is a variant and every variant was killed; the run's script and rows are in the
+notes of the reconcile, not committed)
+Killed: R1-R11, R13-R19, R21-R27, S1-S21, K1-K18, L1-L3, L5, L6, L8-L10, G1-G5.
+Killed by the part's own tests alone, the blind suite staying green: R22 (the record's `sync` taking a stale epoch is
+refused at the route first), S2 (a pod of the other site is made for by this site: test_mail_proton_fence), K10 (a refused
+fetch still starts Bridge: test_mail_keeper), K13 as first written (see below).
+Killed by a directed test added for it (test_mb_directed): R8 (a write-back refused at a stale generation still stamped
+`heartbeat_at`), S21 (the Secret carried the vault, base64, which the clear-text search of test_mb_job_pod cannot see),
+K13 (a write-back that cannot reach the app ended Bridge only when the fence did, which the fence-bounded test cannot tell
+from an immediate stop).
+Variants: R3 drops the epoch from the write-back's statement and from `authorize` together (either alone is refused by the
+other); R5 is +2, +0 and +length of the vault; R6 reads the generation, pauses, then writes unconditionally; S19 is the
+namespace and the image; S20 the pod name and the site; K7 never takes the answer's generation and hard-codes 0; K14 drops
+the Authorization header and drops the epoch; K15 logs the vault and the request headers; G2 logs the Authorization header
+at a refused write-back and the token at a retired epoch.
+Equivalent (no test can tell them apart, with the reason):
+R12  vault route   answers the vault of the epoch's start: the record is one row holding the latest vault, there is no
+     per-epoch copy to answer from.
+R18b begin_epoch leaves the old heartbeat in place: the build does it on purpose, so the new holder's wait is counted from
+     the older pod's last heartbeat; the blind suite's `heartbeat_at` is None only on a fresh record.
+R20  events route  sync_finished stored against the row's epoch at read time: an event is taken only where its epoch is the
+     row's, so both values are the same.
+L7   login         a signed-out caller reaches the keeper: the guard is the `Person` dependency every route of the app
+     shares, not part-4 code; the blind test asserts the 401 and passes for any route that has the dependency.
+Open, the baseline behaves as the mutant (a strict xfail of the suite lists it):
+L4   login         a 2FA code accepted with no login begun: only the keeper holds the pending login, the app keeps no state
+     in a pod, so the app relays it (test_a_step_out_of_order_is_refused_and_never_reaches_the_keeper, xfail).
+Not applied: R3's query-only form and R22's record-only form are unreachable through the routes while the other layer is in
+place; both are killed at the record by the part's own tests or by the paired variant.

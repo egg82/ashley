@@ -1,0 +1,8 @@
+{
+  "max_pieces": 8,
+  "title_max_chars": 120,
+  "recent_commands": 12,
+  "undo_window": 50,
+  "required": ["conversation"],
+  "one_each": true
+}

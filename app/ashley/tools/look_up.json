@@ -1,0 +1,10 @@
+{
+  "max_rounds": 3,
+  "result_chars": 12500,
+  "answer_chars": 500,
+  "max_sources": 3,
+  "page_timeout_s": 6,
+  "max_redirects": 3,
+  "page_bytes": 1000000,
+  "page_chars": 6000
+}

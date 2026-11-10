@@ -1,0 +1,40 @@
+{
+  "anthropic": {
+    "label": "Anthropic",
+    "kind": "paid",
+    "why_unknown": "Anthropic documents no call that returns the remaining credit; its Admin API reports past usage and cost only",
+    "source": "https://platform.claude.com/docs/en/manage-claude/usage-cost-api"
+  },
+  "openai": {
+    "label": "OpenAI",
+    "kind": "paid",
+    "why_unknown": "OpenAI's API reference has no call for the remaining prepaid credit; its costs call reports past cost and needs an admin key",
+    "source": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs"
+  },
+  "gemini": {
+    "label": "Gemini",
+    "kind": "paid",
+    "why_unknown": "Google documents the prepaid balance as readable only in the AI Studio Billing tab, with no API",
+    "source": "https://aistudio.google.com/docs/billing"
+  },
+  "gemini_image": {
+    "label": "Gemini images",
+    "kind": "paid",
+    "why_unknown": "Google documents the prepaid balance as readable only in the AI Studio Billing tab, with no API",
+    "source": "https://aistudio.google.com/docs/billing"
+  },
+  "openai_image": {
+    "label": "OpenAI images",
+    "kind": "paid",
+    "why_unknown": "OpenAI's API reference has no call for the remaining prepaid credit; its costs call reports past cost and needs an admin key",
+    "source": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs"
+  },
+  "elevenlabs": {
+    "label": "ElevenLabs",
+    "kind": "paid",
+    "source": "https://elevenlabs.io/docs/api-reference/user/subscription/get"
+  },
+  "fastembed": {"label": "FastEmbed", "kind": "local"},
+  "sherpa": {"label": "Sherpa", "kind": "local"},
+  "wyoming": {"label": "Wyoming", "kind": "local"}
+}

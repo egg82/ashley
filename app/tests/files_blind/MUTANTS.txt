@@ -1,0 +1,105 @@
+Planted mutants for the files blind suite (tests/files_blind). Each was applied alone to the shipped source and the
+suite run to its first failure; the file was restored from the text read before mutating. 88 planted: 83 killed,
+4 equivalent, 1 killed only after a directed test (G9). No defect found in main.
+
+sniff.py
+  S1  type_mismatch verdict returns the found type                       killed
+  S2  declared type read after the last ';' instead of before            killed
+  S3  declared type not lower-cased                                      killed
+  S4  form feed not a plain control                                      killed
+  S5  DEL allowed in text                                                killed
+  S6  U+001F allowed in text                                             killed
+  S7  text always text/plain (the client's text type ignored)            killed
+  S8  signature pairs joined with any() instead of all()                 killed
+  S9  text judged before the signature                                   killed
+  S10 refusal reason type_not_allowed -> type_mismatch                   killed
+  S11 mismatch not raised when the declared type is a text type          killed
+  S12 signature offset ignored                                           killed
+intake.py
+  I1  size limit >= instead of >                                         killed
+  I2  empty check removed                                                killed
+  I3  key without the household                                          killed
+  I4  sha1 for the hash                                                  killed
+  I5  backslash not a directory separator                                killed
+  I6  name cut one character too late                                    killed
+  I7  name not trimmed after the cut                                     killed
+  I8  name not percent-decoded                                           killed
+  I9  a no-op line added                                                 equivalent (no behaviour changes by construction)
+  I10 file name added to the files.stored log fields                     killed
+  I11 sniff run before the size check, the size refusal still first      equivalent (same refusal for the same input; only a pure computation moves)
+  I12 Stored.media_type is the declared type when given                  killed
+links.py
+  L1  expiry inclusive (now <= expires_at)                               killed
+  L2  expiry not checked                                                 killed
+  L3  mac not checked                                                    killed
+  L4  mac over an empty message                                          killed
+  L5  inline always true                                                 killed
+  L6  window_end one half-window early                                   killed
+  L7  window is the whole ttl                                            killed
+  L8  expiry in the token one second late                                killed
+  L9  media type lost in the token                                       killed
+  L10 household lost in the token                                       killed
+mirror.py
+  M1  write returns 1 whatever landed                                    killed
+  M2  write goes to the first store only                                 killed
+  M3  write needs every store                                            killed
+  M4  read asks the stores last first                                    killed
+  M5  read returns the first answer even when it is None                 killed
+  M6  read never raises when no store answered                           killed
+  M7  keys is the first store's only                                     killed
+  M8  keys returns empty when no store answered                          killed
+  M9  repair copies the wrong direction                                  killed
+  M10 repair counts no copies                                            killed
+  M11 repair wants only what the first store holds                       killed
+  M12 a failed copy is not logged                                        killed
+  M13 write no store took does not raise                                 killed
+repair.py
+  R1  run_once lets StoreUnavailable out                                 killed
+  R2  run_once returns 0 after a repair                                  killed
+  R3  run waits 1 s, not the interval                                    killed
+  R4  repair_failed not logged                                           killed
+bench_file.py
+  B1  every file an image-less `file` piece                              killed
+  B2  title is the whole name                                            killed
+  B3  needs_bytes true for an unknown kind, family test inverted          killed
+  B4  the config argument ignored                                        killed
+  B5  the Add is always hers                                             killed
+  B6  the stored name cut in the descriptor                              killed
+  B7  the declared type dropped                                          killed
+bench_files.py (upload route)
+  F1  empty -> 400                                                       killed
+  F2  too_large -> 400                                                   killed
+  F3  type_mismatch -> 422                                               killed
+  F4  body of exactly the limit refused                                  killed
+  F5  upload recorded as hers                                            killed
+  F6  closed bench -> 404                                                killed
+  F7  StoreUnavailable not caught                                        killed
+  F8  409 reason always "full"                                           equivalent (a file Add can only be refused `full` once the bytes are judged)
+  F9  a refused Add answered 200                                         killed
+  F10 unknown bench -> 503                                               killed
+  F11 route reads one byte over the limit                                equivalent (intake refuses the same body as too_large, 413 either way)
+  F12 X-File-Type dropped                                                killed
+files.py (download route)
+  G1  always inline                                                      killed
+  G2  always attachment                                                  killed
+  G3  nosniff header removed                                             killed
+  G4  sandbox CSP removed                                                killed
+  G5  object looked up under household 1                                 killed
+  G6  missing object answered 200 empty                                  killed
+  G7  store down answered 404                                            killed
+  G8  served as octet-stream                                             killed
+  G9  Cache-Control public                                               survived; killed by test_a_served_file_is_cached_by_the_browser_alone_...
+  G10 clock fixed at 0 (expiry never reached)                            killed
+  G11 token added to the files.served log                                killed
+stored_file.py / decide.py
+  W1  extra keys allowed in the descriptor                               killed
+  W2  size 0 allowed                                                     killed
+  W3  name one character too long allowed                                killed
+  W4  size may be a string                                               killed
+  W5  image body accepts any media type                                  killed
+  W6  Edit may change a large piece's body                               killed
+  W7  image kind checked with the file rule                              killed
+
+Not tested, not in the written contract: Cache-Control max-age beyond "private, no longer than the link";
+IMAGE_SIZE/FILE_SIZE (the placement size of a new piece); a blank descriptor name (stored_file refuses it); the
+cross-site (Content-Type) check of `Uploading`, whose dependency the rig replaces.

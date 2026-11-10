@@ -1,0 +1,5 @@
+# The browser image `bench_look` runs a look pod in (.gitlab-ci.yml, build-look-image): Playwright's own image, which
+# holds the browsers but not the Python package, plus that package at the version the browsers belong to. Tagged by a
+# hash of this file (tools/ci_image_hash.py --look); the build context is this directory. The pod runs as 65534.
+FROM mcr.microsoft.com/playwright/python@sha256:72bd171a9ffc2b4b59532aaa6210e21014d07093120dc25528870c0b840da1f0
+RUN pip install --no-cache-dir playwright==1.63.0

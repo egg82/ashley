@@ -1,0 +1,42 @@
+Planted mutants for the measurements blind suite (tests/measurements_blind). Each was applied alone to the shipped source
+(measurements.py, decide.py, kinds.json) and the suite (without the xfailed findings) run to its first failure; the file was
+restored from the text read before mutating. 59 planted: 54 killed, 1 no-op control survived as it must, 1 equivalent,
+3 survive because the contract is silent. Two survivors found earlier (M18 a `note` key, M45 only 50 items kept) got
+directed tests and are counted as killed.
+
+measurements.py
+  M1-M2   MAX_REF 199 / 201                                              killed
+  M3-M4   name limit 63 / 65 characters                                  killed
+  M5-M7   name start/continue character classes changed                  killed
+  M8-M11  a unit or a source dropped / added                             killed
+  M12     extra top-level keys allowed                                   killed
+  M13     {"items": {}} accepted                                         killed
+  M14-M15 duplicate names allowed / compared case-insensitively          killed
+  M16-M18 extra item keys allowed, source not required, a `note` key     killed (M18 after a directed test)
+  M19-M20 name matched by prefix / anywhere                              killed
+  M21-M22 unit / source unchecked                                        killed
+  M23-M25 tolerance 0 refused / small negatives allowed / any allowed    killed
+  M26-M28 ref limit >=, bytes, type unchecked                            killed
+  M29-M30 bools are numbers / ints refused                               killed
+  M31-M33 non-finite allowed, overflow read as 0, infinity allowed       killed
+  M34-M35 absent tolerance reads 0 / absent ref reads ""                 killed
+  M36-M37 unit and source swapped / value made positive                  killed
+  M38-M39 tolerance / ref required                                       killed
+  M40     whitespace-only body no longer a draft                         SURVIVED: the contract says only "an empty body is a draft"
+  M41     empty body refused                                             killed
+  M42     bad JSON raises                                                killed
+  M43     items reversed                                                 killed
+  M44     `loaded is None or` dropped (set(None) guarded by `or {}`)     EQUIVALENT: None gives set() != {"items"} just as before
+  M45     only the first 50 items kept                                   killed (after a directed 700-item test)
+  M46-M48 ref limit 300, values rounded, digits truncated                killed
+  M49     whitespace change (no-op control)                              survived, as it must
+decide.py
+  D1      wrong reason                                                   killed
+  D2-D3   body never checked / format not checked                        killed
+  D4      empty body refused                                             killed
+  D5-D6   body limit off by one up / down                                killed
+kinds.json
+  K1      format plain                                                   killed
+  K2      max_chars 49999                                                SURVIVED: the limit's value is data, the contract names none
+  K3      family live                                                    killed
+  K4      label "Measures"                                               SURVIVED: the label is data, the contract names none

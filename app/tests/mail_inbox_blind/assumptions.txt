@@ -1,0 +1,28 @@
+Guesses of the blind mail_inbox suite (part 7). Each lives in mail_inbox_blind_support.py (G1-G7) or
+mail_inbox_blind_store_support.py (G8); a reconciler changes the helper, not the tests.
+
+G1  ashley.watches.model.Later is a frozen dataclass built with no arguments, Later(); the store's record takes it.
+    Rests on: "the check gains that outcome, ashley.watches.model.Later". Open: whether it carries fields (retry_s).
+G2  The kind finds a watch's mailbox through ConnectionResources.usable(use, False) (kind "mailbox"), the resource whose
+    ref equals the watch's target, and reads it through Mailbox.search(Account(connection.id, ...), query).
+    Rests on: "whose target is a mailbox" and the resource gate in "Who holds a connection". The Use passed is not asserted.
+G3  The inbox is read with MailQuery(folder="inbox"), paged through MailQuery.page until max_items headers or an empty
+    Page.cursor. Rests on: "the newest max_items messages in the inbox" and mail.json search_max (25) < max_items (50).
+G4  Item fields: from (Header.sender), subject, unread (bool), labels as ONE text scalar of the label names (items are
+    scalars only; the join format is not asserted, labels_of reads it). Rests on: "tracking from, subject, unread, labels".
+G5  MailFailed("syncing") makes the watch's read a Later check at the job; other MailFailed is Failed (unreachable ->
+    "unreachable", the others some closed-list slug), never an item gone. Rests on: "a read answered syncing records no
+    check ... nor reads as every message gone". The test drives the job tick, so how the read says "later" is free.
+G6  A target none of the person's usable mailboxes has fails the read "not_connected" and the Mailbox is not asked.
+    Rests on: nothing in the spec; the existing claude_session kind does the same for a missing connection.
+G7  KINDS.get("mail_inbox") is the kind; watches.json carries kinds.mail_inbox with outside true, track of the four
+    fields, when [[new]]. Rests on: "Its default when is [[new]]" and "Its outside is true".
+G8  The store is PostgresWatches(database, WatchesConfig) and an Arm is built by keyword, as the existing store tests do.
+G9  Later at the store: nothing a check stores changes (state, reason, failures, version, series, baseline), no wake row,
+    next_check_at becomes now + retry_s (not interval_s), a stale version returns False. Rests on: "records no check and
+    is tried again at retry_s". Failures neither reset nor rise: "records no check".
+G10 A syncing read logs no watches.read_failed line and the tick line counts failed=0 and paused=0. Rests on: "does not
+    pause the watch" and "nothing marked failed". A builder that logs syncing at info under another event passes.
+G11 A wake's turn is inbound(...).taint == "watch" through ashley.channels.wake.watch_turn.inbound, which keys on the
+    kind's outside (existing code); the kind's said and note must not raise for a new-message change.
+G12 The suite does not assert said/note text, interval_s's value, or the Use given to the resource gate.

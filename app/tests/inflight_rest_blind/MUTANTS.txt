@@ -1,0 +1,50 @@
+Planted wrong implementations, applied one at a time to the file named, tests/inflight_rest_blind run, then reverted.
+Files: ashley/channels/postgres_outbox.py (M1-M3), ashley/conversations/postgres_inflight.py (M4-M9), ashley/conversations/postgres_queries.py (M10-M14),
+ashley/channels/discord/postgres_seen.py (M15-M18), ashley/channels/discord/bot.py (M19-M26), ashley/channels/respond.py (M27-M28), ashley/channels/inflight.py (M29-M30, M36, M38),
+ashley/channels/discord/route.py (M31-M32), ashley/channels/resume.py (M33-M35, M39), ashley/channels/voice/run.py (M37). CAUGHT means the suite goes red.
+
+Survivors that earned a directed test: M4 (finish with `after` skipped the claim check: test_a_runner_that_lost_the_work_cannot_finish_it_leaving_something_to_do),
+M13 (no ON CONFLICT guard: test_a_source_handed_in_by_many_racing_pods_is_one_turn_whichever_conversation_each_names), M21 (no settle when respond raises:
+test_a_claim_is_settled_when_the_turn_loop_raises_something_unexpected), M27 (re-handed message final rather than pending), M31 (source from the channel id).
+
+Equivalent: M11 and M14 each weaken one of two overlapping guards in insert_turn (the early source lookup, the conversation-scoped lookup); the ON CONFLICT
+path then reads and returns the stored turn, so no test can tell them apart.
+
+M1   CAUGHT     answer stores her turn and queues nothing; first failing: test_an_answer_is_queued_and_stored_together_and_ends_the_work
+M2   CAUGHT     answer queues in its own transaction before storing; first failing: test_a_failure_after_her_turn_was_stored_undoes_the_queueing_and_the_turn
+M3   CAUGHT     answer drops `after`; first failing: test_a_failure_after_her_turn_was_stored_undoes_the_queueing_and_the_turn
+M4   CAUGHT     finish with `after` does not check the claim; first failing: test_a_runner_that_lost_the_work_cannot_finish_it_leaving_something_to_do
+M5   CAUGHT     finish with `after` deletes the work; first failing: test_an_answer_with_something_left_to_do_keeps_the_work_with_the_checkpoint_it_names
+M6   CAUGHT     finish with `after` keeps the old checkpoint; first failing: test_an_answer_with_something_left_to_do_keeps_the_work_with_the_checkpoint_it_names
+M8   CAUGHT     begin accepts a turn whose answer is stored; first failing: test_begin_refuses_a_turn_whose_answer_is_stored
+M9   CAUGHT     begin refuses a turn that has only a held line; first failing: test_begin_still_takes_a_turn_that_only_has_a_held_line
+M10  CAUGHT     her turn with a source is accepted; first failing: test_her_turn_with_a_source_is_refused_and_stores_nothing
+M11  EQUIVALENT insert path without the early source lookup (relies on conflict)
+M12  CAUGHT     source looked up across all households; first failing: test_a_source_in_another_household_is_its_own_turn
+M13  CAUGHT     no conflict guard on insert; first failing: test_a_source_handed_in_by_many_racing_pods_is_one_turn_whichever_conversation_each_names
+M14  EQUIVALENT source deduped only within one conversation
+M15  CAUGHT     settle does nothing; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M16  CAUGHT     unsettled lists settled claims; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M17  CAUGHT     unsettled ignores the window; first failing: test_unsettled_reads_only_claims_made_in_its_window
+M18  CAUGHT     settle settles the whole channel; first failing: test_a_claim_is_unsettled_until_it_is_settled
+M19  CAUGHT     claim never settled after a reply; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M20  CAUGHT     claim settled before respond; first failing: test_a_message_killed_with_its_work_saved_is_answered_once_whichever_of_catch_up_and_the_resumer_comes_first[c
+M21  CAUGHT     claim not settled when respond raises; first failing: test_a_claim_is_settled_when_the_turn_loop_raises_something_unexpected
+M22  CAUGHT     catch-up ignores unsettled claims; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M23  CAUGHT     catch-up claims a stranded message again; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M24  CAUGHT     stranded claim she would not answer stays unsettled; first failing: test_a_stranded_claim_from_an_unmapped_account_is_settled_and_not_answered
+M25  CAUGHT     catch-up does not reach back to the earliest unsettled; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M26  CAUGHT     stranded claim goes through claim() so is dropped; first failing: test_a_claim_whose_session_died_before_the_turn_loop_is_answered_once_by_the_next
+M27  CAUGHT     re-handed message returns a final empty reply, not pending; first failing: test_a_message_handed_to_the_turn_loop_again_while_saved_or_answered_returns_pending_with_no_words
+M28  CAUGHT     person turn stored without its source; first failing: test_a_message_killed_with_its_work_saved_is_answered_once_whichever_of_catch_up_and_the_resumer_comes_first[c
+M29  CAUGHT     every turn is saved; first failing: test_a_turn_on_a_channel_with_no_later_replies_is_not_saved_for_a_resumer
+M30  CAUGHT     no turn is saved; first failing: test_a_message_killed_with_its_work_saved_is_answered_once_whichever_of_catch_up_and_the_resumer_comes_first[c
+M31  CAUGHT     source is the channel id; first failing: test_two_messages_in_one_channel_are_two_turns_with_two_answers
+M32  CAUGHT     Discord message has no source; first failing: test_a_message_killed_with_its_work_saved_is_answered_once_whichever_of_catch_up_and_the_resumer_comes_first[c
+M33  CAUGHT     act past max_attempts is carried out; first failing: test_a_forget_past_max_attempts_is_skipped_and_not_looked_for_again
+M34  CAUGHT     act already begun is carried out again; first failing: test_a_forget_cut_off_while_it_ran_after_a_resumed_answer_is_not_made_again_nor_the_answer_queued_again
+M35  CAUGHT     act never carried out by a resumer; first failing: test_a_forget_whose_runner_stopped_before_recording_it_is_made_once_by_the_resumer_with_the_answer_sent_once
+M36  CAUGHT     act not recorded begun before it runs; first failing: test_a_forget_cut_off_while_it_ran_after_a_resumed_answer_is_not_made_again_nor_the_answer_queued_again
+M37  CAUGHT     voice pending logged as ok; first failing: test_a_reply_with_no_words_is_pending
+M38  CAUGHT     work not ended after the act; first failing: test_a_resumed_discord_answer_with_a_forget_is_queued_once_and_the_forget_made_once
+M39  CAUGHT     give up never reached; first failing: test_a_forget_past_max_attempts_is_skipped_and_not_looked_for_again

@@ -1,0 +1,83 @@
+MUTANTS.txt: plausible wrong implementations of the Watches judge, the claude_session kind and the `watches` job, to be
+planted one at a time once the implementation exists and run against app/tests/watch_job_blind, then restored.
+Style of app/tests/errands_blind/MUTANTS.txt.
+One line each: status, file, mutation. 'killed' = a test failed, named after '--'. The run applied each mutant alone, ran
+watch_job_blind plus the builder's own watches job/judge/kind/claude_session tests (-x, 30 s thread-based per-test
+timeout), restored byte-identically and checked the sources against git. A line marked 'first run' survived the suite as
+first written and is killed by the directed test named. M60's second half (wiring starts both singletons) is not a
+mutant but the build as it stands: the strict xfail test_the_wiring_no_longer_starts_herdr_watch.
+Ids with a letter are variants of the planted mutant of that number.
+
+M01      killed    first read is Quiet  -- test_the_first_successful_read_is_a_silent_baseline_even_when_it_would_wake
+M02      killed    first read replays as Woke  first run: survived; killed by directed test test_wj_the_first_read_is_a_baseline_even_when_when_holds_for_every_item_in_it
+M03      killed    `if not baseline`  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M04      killed    when judged over unchanged items too  first run: survived; killed by directed test test_wj_a_read_with_nothing_changed_is_quiet_whatever_when_would_say_of_its_items
+M05      killed    wake dropped  -- test_the_default_when_wakes_on_a_finish_or_a_block_and_not_on_a_look[recorded0-seen0-True]
+M06      killed    Woke on any change  -- test_the_default_when_wakes_on_a_finish_or_a_block_and_not_on_a_look[recorded4-seen4-False]
+M07      killed    Woke.ends False  -- test_until_holding_on_a_wake_ends_the_watch_and_the_change_is_still_told
+M08      killed    until before when  -- test_until_holding_on_a_wake_ends_the_watch_and_the_change_is_still_told
+M09      killed    Woke.ends True  -- test_a_wake_carries_the_whole_read_and_the_change_with_its_sides
+M10      killed    Quiet.ends False  -- test_a_session_closed_with_the_handoff_until_ends_silently
+M11      killed    Quiet ends when until holds on any read item  -- test_no_change_is_quiet_even_when_until_would_hold_on_the_unchanged_item
+M12      killed    until judged over changes plus all items  -- test_no_change_is_quiet_even_when_until_would_hold_on_the_unchanged_item
+M13      killed    failed read treated as empty read  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M14      killed    failed read with baseline is Quiet  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M15      killed    Failed fixed reason  -- test_a_failed_read_is_a_failed_check_with_its_reason[not_connected]
+M16      killed    failed read ends a [[gone]] watch  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M17      killed    Woke.items is the baseline  -- test_a_wake_carries_the_whole_read_and_the_change_with_its_sides
+M18      killed    Woke.changes only those satisfying when  -- test_several_sessions_in_one_read_judge_each_and_tell_every_change
+M19      killed    gone omitted from changes  -- test_several_sessions_in_one_read_judge_each_and_tell_every_change
+M20      killed    new omitted from changes  -- test_several_sessions_in_one_read_judge_each_and_tell_every_change
+M21      killed    before/after swapped  -- test_a_wake_carries_the_whole_read_and_the_change_with_its_sides
+M22      killed    baseline compared by identity  -- test_the_default_when_wakes_on_a_finish_or_a_block_and_not_on_a_look[recorded0-seen0-True]
+M23      killed    judge mutates its read  -- test_a_wake_carries_the_whole_read_and_the_change_with_its_sides
+M24      killed    paused watch judged as first read  -- test_a_paused_watch_that_reads_again_is_diffed_against_its_baseline_from_before_the_pause
+M25      killed    any alternative -> all alternatives  -- test_the_default_when_wakes_on_a_finish_or_a_block_and_not_on_a_look[recorded0-seen0-True]
+M26      killed    missing side is true  -- test_a_predicate_on_a_missing_side_is_false_before_negate
+M27      killed    negate not applied on a missing side  -- test_a_predicate_on_a_missing_side_is_false_before_negate
+M28      killed    gone item's after is the baseline's  -- test_a_gone_session_wakes_a_when_that_asks_for_gone_and_the_until_gone_ends_it
+M29      killed    seq compared with >  -- test_the_default_when_wakes_on_a_finish_or_a_block_and_not_on_a_look[recorded13-seen13-True]
+M30      killed    done->idle wakes (not-before-done dropped)  -- test_the_shipped_defaults_are_the_spec_conditions
+M31      killed    one Bridge call per watch  -- test_one_bridge_call_serves_every_watch_of_the_person_and_each_keeps_only_its_target
+M32      killed    watch keeps every session  -- test_one_bridge_call_serves_every_watch_of_the_person_and_each_keeps_only_its_target
+M33      killed    missing target is ReadFailed  -- test_a_target_missing_from_a_successful_read_is_gone_not_failed
+M34      killed    unreachable returns empty items  -- test_an_unreachable_bridge_fails_every_watch_with_unreachable
+M35      killed    BridgeFailed escapes  -- test_an_unreachable_bridge_fails_every_watch_with_unreachable
+M36      killed    no connection returns empty items  -- test_a_person_with_no_bridge_connection_fails_not_connected_and_the_bridge_is_not_asked
+M37      killed    another person's connection  -- test_the_connection_of_another_person_is_not_used
+M38      killed    keyed by label  -- test_one_bridge_call_serves_every_watch_of_the_person_and_each_keeps_only_its_target
+M39a     killed    status upper-cased  -- test_one_bridge_call_serves_every_watch_of_the_person_and_each_keeps_only_its_target
+M39b     killed    seq always 0  -- test_one_bridge_call_serves_every_watch_of_the_person_and_each_keeps_only_its_target
+M40      killed    NullKind returns items  -- test_the_null_kind_fails_every_watch_unknown_kind
+M41      killed    Access built with wrong person  -- test_one_bridge_call_serves_every_watch_of_the_person_and_each_keeps_only_its_target
+M42a     killed    expire not called  -- test_the_tick_line_counts_every_outcome
+M42b     killed    expire after due  -- test_a_tick_expires_first_then_asks_what_is_due_with_the_batch
+M43      killed    expire(tick_s)  -- test_a_tick_expires_first_then_asks_what_is_due_with_the_batch
+M44      killed    due(batch*2)  -- test_a_tick_expires_first_then_asks_what_is_due_with_the_batch
+M45      killed    one read per watch  -- test_a_failed_group_logs_its_kind_reason_and_how_many_watches
+M46a     killed    households merged  -- test_people_households_and_kinds_are_separate_reads
+M46b     killed    people merged  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M46c     killed    kind only  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M47      killed    record version + 1  -- test_a_watch_with_no_baseline_records_a_baseline_of_what_was_read
+M48      killed    record uses the group's first id  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M49      killed    refused record raises  -- test_a_record_the_store_refuses_does_not_stop_the_other_watches
+M50      killed    raising kind propagates  -- test_a_kind_that_raises_fails_every_watch_of_its_group_and_not_the_others
+M51      killed    raising kind fails only the first watch  -- test_a_kind_that_raises_fails_every_watch_in_its_group_without_its_message
+M52      killed    no read timeout  -- test_a_read_that_outlasts_read_timeout_fails_its_group_and_the_tick_still_ends
+M53      killed    timeout/except swallows CancelledError  -- test_cancelling_a_tick_in_a_hung_read_cancels_it_and_records_nothing
+M54      killed    timeout fails the whole tick  -- test_a_read_that_outlasts_read_timeout_fails_its_group_and_the_tick_still_ends
+M55      killed    unknown kind skips the watch  -- test_an_unknown_kind_fails_its_watches_unknown_kind_and_the_others_still_run
+M56      killed    paused watch skipped  -- test_the_tick_line_counts_every_outcome
+M57      killed    run sleeps keep_s  -- test_run_ticks_then_sleeps_tick_s_until_cancelled
+M58      killed    run dies on WatchesUnavailable  -- test_run_keeps_going_past_an_unavailable_store_and_logs_the_run_of_failures_once
+M59a     killed    unavailable logged every failed tick  -- test_run_keeps_going_past_an_unavailable_store_and_logs_the_run_of_failures_once
+M59b     killed    unavailable never logged  -- test_run_keeps_going_past_an_unavailable_store_and_logs_the_run_of_failures_once
+M60      killed    lease name herdr_watch  -- test_the_lease_is_named_watches
+M61a     killed    baselines counted as quiet  -- test_the_tick_line_counts_every_outcome
+M61b     killed    paused counted at every Failed  -- test_the_tick_line_counts_every_outcome
+M61c     killed    fail_after off by one  -- test_the_tick_line_counts_every_outcome
+M62      killed    Quiet(True) counted as woke  -- test_a_closed_handoff_session_counts_as_ended
+M63      killed    woke log carries the target  first run: survived; killed by directed test test_wj_the_woke_line_carries_no_target_label_or_value
+M64a     killed    read_failed omitted  -- test_a_failed_group_logs_its_kind_reason_and_how_many_watches
+M64b     killed    read_failed reason wrong  -- test_a_failed_group_logs_its_kind_reason_and_how_many_watches
+M65      killed    failed never counted in the tick line  -- test_the_tick_line_counts_every_outcome

@@ -1,0 +1,138 @@
+{
+ "data": {
+  "searchPrints2": {
+   "items": [
+    {
+     "id": "100001",
+     "name": "DESK PENCIL CUP",
+     "slug": "desk-pencil-cup",
+     "summary": "I liked the pencil cup design but also needed a place for my sticky notes so I modified it to add a note\u2026",
+     "likesCount": 45,
+     "downloadCount": 683,
+     "makesCount": 7,
+     "ratingAvg": "5.0000000000",
+     "user": {
+      "publicUsername": "MakerOne"
+     },
+     "stls": [
+      {
+       "id": "200001",
+       "name": "cup_v3.stl",
+       "fileSize": 335384
+      }
+     ]
+    },
+    {
+     "id": "100002",
+     "name": "Pencil Cup & Note Holder",
+     "slug": "desk-pencil-cup",
+     "summary": "Remixed version of a pencil cup and note holder, optimized with a sleek design and cutouts to reduce weight.",
+     "likesCount": 25,
+     "downloadCount": 623,
+     "makesCount": 3,
+     "ratingAvg": "4.6666666667",
+     "user": {
+      "publicUsername": "MakerTwo"
+     },
+     "stls": [
+      {
+       "id": "200011",
+       "name": "Cup_Note_Holder_2Notes.3mf",
+       "fileSize": 124770
+      },
+      {
+       "id": "200012",
+       "name": "Cup_Note_Holder_2Notes.stl",
+       "fileSize": 127184
+      },
+      {
+       "id": "200013",
+       "name": "Cup_Note_Holder_Single.stl",
+       "fileSize": 126984
+      },
+      {
+       "id": "200014",
+       "name": "Cup_Note_Holder_Single.3mf",
+       "fileSize": 127567
+      }
+     ]
+    },
+    {
+     "id": "100003",
+     "name": "Pencil and Note Holder",
+     "slug": "pencil-and-note-holder",
+     "summary": "This is intended to hold a pencil and a single stack of notes together.",
+     "likesCount": 25,
+     "downloadCount": 533,
+     "makesCount": 3,
+     "ratingAvg": "4.5000000000",
+     "user": {
+      "publicUsername": "MakerThree"
+     },
+     "stls": [
+      {
+       "id": "200021",
+       "name": "Note Holder.stl",
+       "fileSize": 59584
+      }
+     ]
+    },
+    {
+     "id": "100004",
+     "name": "Strengthened Pencil + Note Holder",
+     "slug": "strengthened-desk-pencil-cup",
+     "summary": "added more material between the note holder and pencil cup for better structural integrity",
+     "likesCount": 12,
+     "downloadCount": 352,
+     "makesCount": 1,
+     "ratingAvg": "5.0000000000",
+     "user": {
+      "publicUsername": "MakerFour"
+     },
+     "stls": [
+      {
+       "id": "200031",
+       "name": "Customizable_NoteLong_2x.stl",
+       "fileSize": 1461325
+      }
+     ]
+    },
+    {
+     "id": "100005",
+     "name": "Pencil Cup/Stand (3 and 4 slots)",
+     "slug": "pencil-cupstand-3-and-4-slots",
+     "summary": "Pencil Cup/Stand with three and four slots",
+     "likesCount": 2,
+     "downloadCount": 130,
+     "makesCount": 2,
+     "ratingAvg": "4.5000000000",
+     "user": {
+      "publicUsername": "MakerFive"
+     },
+     "stls": [
+      {
+       "id": "200041",
+       "name": "cup-4slot.stl",
+       "fileSize": 231084
+      },
+      {
+       "id": "200042",
+       "name": "cup-4slot.f3d",
+       "fileSize": 465561
+      },
+      {
+       "id": "200043",
+       "name": "cup-3slot.stl",
+       "fileSize": 149884
+      },
+      {
+       "id": "200044",
+       "name": "cup-3slot.f3d",
+       "fileSize": 476887
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,37 @@
+Planted wrong implementations of the bench cue (MR !278, head b4677d6), applied one at a time to the file named, tests/bench_cue_blind run, then restored from the text read (source diff clean afterwards). CAUGHT means a test failed (exit 1 with a FAILED line).
+Baseline before planting: 134 passed. 30 of 31 CAUGHT.
+
+M1   CAUGHT    decide: not_video check removed
+M2   CAUGHT    decide: not_video reported as bad_cue
+M3   CAUGHT    decide: unknown_kind check dropped in cue
+M4   CAUGHT    decide: seek 0 refused (0 < s)
+M5   CAUGHT    decide: seek MAX_START refused (s < MAX)
+M6   CAUGHT    decide: negative allowed to -1
+M7   CAUGHT    decide: upper bound MAX_START+1
+M8   CAUGHT    decide: play with seconds accepted
+M9   CAUGHT    decide: seek without seconds accepted
+M10  CAUGHT    decide: Cued drops seconds
+M11  CAUGHT    decide: Cued names the action play
+M12  CAUGHT    decide: an Undo may name a cue
+M13  CAUGHT    effects.apply: cue no longer leaves pieces alone
+M14  CAUGHT    effects.settled: a cue counts as a later change
+M15  SURVIVED  effects.inverse: cue has an inverse
+M16  CAUGHT    rows: cue not a run step in the walk
+M17  CAUGHT    postgres: cue announced as BenchChanged
+M18  CAUGHT    postgres: BenchCued drops seconds
+M19  CAUGHT    postgres: BenchCued names the seq as piece
+M20  CAUGHT    codec: Cue command drops seconds
+M21  CAUGHT    codec: Cued effect decodes without seconds
+M22  CAUGHT    codec: Cue decodes with the wrong piece
+M23  CAUGHT    events: BenchCued allowed for no person
+M24  CAUGHT    events: cue wire drops seconds
+M25  CAUGHT    events: cue decode accepts any action
+M26  CAUGHT    api.live: cue sent as LiveBench
+M27  CAUGHT    api.live: cue wire loses its piece
+M28  CAUGHT    bench_args: bool accepted as seconds
+M29  CAUGHT    bench_args: tool cue drops seconds
+M30  CAUGHT    bench_args: tool cue always names piece 1
+M31  CAUGHT    commands: type_of cue is run
+
+M15 is equivalent: `decide` answers `nothing_to_undo` for an Undo naming a Cued before `inverse` is reached, so no command can put a Cued in front of it.
+Not planted: Live fan-out filtering (shared `shown_to`, covered by test_live_events); the client player.

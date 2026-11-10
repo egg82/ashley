@@ -1,0 +1,16 @@
+Undo walk (test_undo_walk_contract.py): each mutant appended a wrong `next_undo` or a wrapper over `decide`, run with
+`-n 0 -k "not rig and not undo_next"`, then reverted (source diff clean). Route tests are not in the mutant runs.
+oldest-first                       next_undo names the oldest not-yet-undone command           RED
+undos-are-targets                  an accepted Undo may be named                                RED
+ignores-undone                     next_undo does not skip commands an Undo took back           RED
+refused-undo-counts                a refused Undo hides its target                              RED
+refused-are-targets                a refused command may be named                               RED
+skips-past-stuck                   names the second-newest, reaching past the newest            RED
+only-last-undo-counts              only the latest Undo hides its target                        RED
+already-undone-is-nothing-to-undo  re-undoing refused nothing_to_undo, not changed_since        RED
+undo-of-undo-is-changed-since      undoing an Undo refused changed_since, not nothing_to_undo   RED
+her-undo-refused                   her Undo refused                                             RED
+other-person-refused               a second person's Undo refused                               RED
+undos-not-recorded                 BenchState.undos left empty after an accepted Undo           RED
+Not planted (no reachable seam without reading the bodies): `undo_next` served wrong on the route; the Remove-after-touch
+rule inside `decide`.

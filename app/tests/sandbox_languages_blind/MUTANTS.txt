@@ -1,0 +1,74 @@
+Planted wrong implementations, one at a time, in the worktree (the file restored from the text read before the plant,
+the plant asserted to apply exactly once). Each run is tests/sandbox_languages_blind, green before the plant, stopping at
+the first failure. 57 planted plus one no-op control (N0). 7 survived the contract tests (marked *); directed tests
+in test_sl_directed.py kill all 7. No equivalent mutants. The control survives, as it must.
+
+#    mutant
+C1   profile returned for a language with no image
+C2   offered not Python first
+C3   longest deadline ignores profiles
+C4   longest deadline counts only profiles run
+C5   with_image accepts an unpinned image
+C6   with_image accepts a language with no profile
+C7   with_image changes nothing
+C8   python profile deadline is its timeout
+C9   python accepted under languages
+C10  unknown language accepted under languages  *
+C11  deadline equal to timeout accepted
+C12  profiles' room not checked
+C13  python profile's room not checked  *
+C14  log room off by one  *
+C15  profile value types not checked
+C16  profiles come with an image
+P1   pod deadline of Python's
+P2   python image for every language
+P3   python cpu limit
+P4   python memory limit
+P5   python cpu request
+P6   python work dir size
+P7   python script timeout for every language  *
+P8   python log bytes for every language  *
+P9   manifest falls back to the python profile
+P10  token mounted in a non-python pod
+P11  privilege escalation in a non-python pod
+P12  writable root in a non-python pod
+P13  non-python pod outside gVisor
+P14  host network in a non-python pod
+P15  capability in a non-python pod
+P16  non-python pod resolves names
+P17  non-python scratch in memory
+P18  non-python pod restarts
+P19  non-python script not carried
+K1   unoffered language reaches pod_spec
+K2   sandbox offers python only
+K3   wait for python's deadline
+K4   python log limit for every language
+K5   sweep by python's deadline
+K6   sweep at once the longest deadline  *
+K7   sweep at thrice the longest deadline
+K8   python profile for a language not run
+K9   only python pods deleted
+K10  sweep only on python runs  *
+R1   language recorded as python
+R2   job always python
+R3   stored language read as python
+T1   loose run_code takes build123d
+T2   loose run_code ignores LOOSE
+T3   bench_run offers python only
+T4   bench Run refuses build123d always
+T5   bench Run judges the shipped config, not the sandbox
+T6   bench Run runs the first language
+T7   kinds list python only
+T8   carried run names python
+T9   run_code takes any language named
+N0   no-op control
+
+Survivors and the directed test that kills each:
+C10  a profile under a language the model has no name for: test_a_language_with_no_name_in_the_contract_is_refused_under_languages
+C13  the Python log with no room for both streams: test_python_s_log_must_have_room_for_both_streams
+C14  log room boundary: test_a_log_with_exactly_room_for_both_streams_parses_and_one_byte_less_does_not
+P7/P8  script timeout and log bytes carried in the pod's environment per language: test_each_pod_carries_its_languages_script_timeout_and_log_limit
+K6   sweep at once (not twice) the longest deadline: test_a_pod_between_one_and_two_longest_deadlines_old_is_kept
+K10  sweep skipped on a build123d run: test_a_build123d_run_sweeps_leftovers_like_any_other
+
+Not mutated: ashley_cad (its tests that need build123d run in the CAD image).

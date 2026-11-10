@@ -1,0 +1,51 @@
+Each mutant was one wrong implementation planted in the shelf, closed-bench or tool code, run against this directory
+(`pytest -x -n 3`), then reverted (source diff clean). Result: RED = a test failed.
+
+restore-first                      RED
+restore-ignores-full               RED
+restore-full-before-missing        RED
+restore-resets-size                RED
+restore-missing-wrong-reason       RED
+restore-changed-by-kept            RED
+shelved-takes-remove               RED
+shelved-takes-edit                 RED
+shelved-takes-move                 RED
+shelved-takes-archive              RED
+shelved-takes-run                  SURVIVED first run; killed by test_a_shelved_piece_takes_no_run
+add-counts-shelf                   RED
+restore-counts-shelf               SURVIVED first run; killed by test_restore_counts_only_the_layout_against_the_limit
+undo-restore-skips-full            RED
+undo-archive-restore-both-full     RED
+undo-archive-goes-last             RED
+undo-restore-removes               RED
+undo-archive-skips-settled         RED
+undo-restore-skips-settled         RED
+shelf-oldest-first                 RED
+shelved-changed-by-kept            RED
+archive-bumps-version              RED
+archive-shrinks-size               RED
+archive-no-renumber                RED
+restore-stays-on-shelf             RED
+piece-of-archived-lost             RED
+type-of-swapped                    RED
+piece-count-with-shelf             RED
+closed-oldest-first                RED
+closed-by-id                       RED
+closed-any-owner                   RED
+reopen-keeps-closed                RED
+reopen-resets-opened-at            RED
+close-again-moves                  RED
+shelf-read-oldest-first            RED
+reopen-logs-as-closed              RED
+reopen-always-logs                 RED
+closed-route-lists-open            RED
+tool-shelved-counts-layout         RED
+tool-shelf-reversed                RED
+tool-shelf-version-fixed           RED
+tool-read-lists-shelf              RED
+tool-archive-removes               RED
+tool-restore-archives              RED
+
+44 planted, 44 red (2 after a directed test). No equivalent mutants.
+Not planted: the route-level reopen owner check (shares code with close, whose route test covers it); the Live
+announcement of archive/restore (tested, not mutated).

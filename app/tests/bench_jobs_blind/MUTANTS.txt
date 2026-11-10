@@ -1,0 +1,219 @@
+Planted wrong implementations for the bench-jobs blind suite. One line each: id | area | the wrong behaviour.
+A mutation run swaps each one in and expects at least one test to go red; a survivor gets a directed test, or is recorded
+below as equivalent with the reason no test can tell it apart.
+
+-- tools/bench_jobs.py: the hand-off call --
+M001 | tools/bench_jobs.py offer | bench_hand_off is offered on a chat thread that is not a bench
+M002 | tools/bench_jobs.py offer | bench_hand_off is offered on a shared channel or a device's screen
+M003 | tools/bench_jobs.py offer | bench_hand_off is offered on an unprompted woken turn, so a wake can chain jobs
+M004 | tools/bench_jobs.py claude_code | a claude_code job is accepted with no herdr connection
+M005 | tools/bench_jobs.py claude_code | the bridge's whoami capabilities are not read, so bridge_too_old never happens
+M006 | tools/bench_jobs.py claude_code | the job is recorded before the bridge check, and a refusal leaves its row behind
+M007 | tools/bench_jobs.py order | the job piece is added before the call is validated, so a refusal leaves an orphan piece
+M008 | tools/bench_jobs.py pieces | an unnamed piece's title is put in the brief or the prompt
+M009 | tools/bench_jobs.py pieces | every piece of the bench goes to the worker, not only the named ones
+M010 | tools/bench_jobs.py pieces | a shelved piece is accepted as named
+M011 | tools/bench_jobs.py pieces | a piece of another bench of the same person is accepted
+M012 | tools/bench_jobs.py pieces | a piece of another person's bench is accepted (looked up by household)
+M013 | tools/bench_jobs.py limits | max_pieces_in is compared with >= so exactly twelve pieces is too_large
+M014 | tools/bench_jobs.py limits | max_bytes_in is not checked at all
+M015 | tools/bench_jobs.py limits | max_bytes_in is summed over the jobs of the call instead of per job
+M016 | tools/bench_jobs.py limits | too_many counts only jobs already running, not due ones
+M017 | tools/bench_jobs.py limits | too_many counts the person's jobs across both workers
+M018 | tools/bench_jobs.py limits | too_many counts every person's jobs of the worker
+M019 | tools/bench_jobs.py limits | a group's jobs are each checked against max_running alone, not added to what runs
+M020 | tools/bench_jobs.py atomicity | a group's valid jobs are recorded before a later invalid job fails the call
+M021 | tools/bench_jobs.py limits | a call of more than max_group jobs is accepted
+M022 | tools/bench_jobs.py watch | one watch is armed per job instead of one per group
+M023 | tools/bench_jobs.py watch | the watch is armed as armed_by ashley, not handoff
+M024 | tools/bench_jobs.py watch | watched is true even when arming the watch failed
+M025 | tools/bench_jobs.py timing | the tool runs the worker's first step inline before returning
+M026 | tools/bench_jobs.py cancel | bench_job_cancel cancels another person's job
+M027 | tools/bench_jobs.py args | a brief over brief_chars is silently cut instead of refused bad_arguments
+M028 | tools/bench_jobs.py session | the job's title is used as the session label
+M029 | tools/bench_jobs.py piece | the job piece is added as a person's change (undoable, editable by them)
+
+-- errands/bench_jobs_postgres.py: the service --
+M030 | claim | no SKIP LOCKED: two runners can take the same due job
+M031 | claim | the newest due job is taken first
+M032 | claim | attempts is not raised on a retake
+M033 | claim | a claude_code job is claimed straight into running, not starting
+M034 | claim | deadline_at is set from the other worker's deadline_min
+M035 | sweep | a lapsed running agent job is left running
+M036 | sweep | a retake clears made[], so the earlier attempt's pieces are forgotten
+M037 | sweep | a live claim is swept as lapsed
+M038 | sweep | max_attempts is never enforced: the job is retaken for ever
+M039 | sweep | the job is given up one attempt late
+M040 | sweep | given up with reason "timeout" instead of "attempts"
+M041 | writes | made/started/prompted/state ignore the attempt, so a zombie attempt writes
+M042 | writes | finish ignores the attempt, so a zombie attempt finishes the job
+M043 | writes | finish overwrites a cancelled job
+M044 | writes | heartbeat answers True after a cancel
+M045 | writes | heartbeat does not refresh claimed_at
+M046 | cancel | cancel of a finished job answers True and rewrites its state
+M047 | cancel | cancel is not limited to the person's own jobs
+M048 | group | group_settled counts blocked as final
+M049 | group | group_settled does not count cancelled as final
+M050 | group | group_settled answers as soon as any one job is final
+M051 | group | start_group inserts the jobs in separate transactions
+M052 | get | get answers another person's job
+M053 | running | running counts finished jobs too
+M054 | due_closes | due_closes lists running jobs that were not cancelled
+
+-- errands/job_scope.py and bench_agent.py: the agent --
+M055 | job_scope | bench_read (the whole bench) is offered to the agent
+M056 | job_scope | bench_remove, bench_move or bench_propose is offered
+M057 | job_scope | bench_read_piece works on any piece of the bench
+M058 | job_scope | bench_edit works on a named piece the agent did not make
+M059 | job_scope | bench_run works on a named piece the agent did not make
+M060 | job_scope | a piece added through bench_add_file is not recorded as made
+M061 | job_scope | made pieces are kept in memory only, never written to the job, so a retake loses them
+M062 | bench_agent | the model's claimed output ids are returned without intersecting them with made
+M063 | bench_agent | the summary is not cut to result_chars
+M064 | bench_agent | done=false is returned as a done job
+M065 | bench_agent | agent_max_tool_rounds is ignored
+M066 | bench_agent | a retake's first message omits the earlier attempt's pieces
+M067 | bench_agent | the first message holds the whole bench
+M068 | bench_agent | a named large piece's bytes are pasted into the prompt
+
+-- errands/bench_session.py: the claude_code worker --
+M069 | bench_session | uploaded files are named by the piece's title
+M070 | bench_session | an unnamed piece is uploaded
+M071 | bench_session | run_files is ignored, or the run's file is sent without it
+M072 | bench_session | the prompt is the brief alone, no footer
+M073 | bench_session | the footer quotes the job's title
+M074 | bench_session | the session starts in a directory outside the first root, or not under ashley-jobs/j<id>
+M075 | bench_session | the prompt is sent before the files are uploaded
+M076 | bench_session | a retake prompts a session that is already working
+M077 | bench_session | a retake with a session id but no prompted_at does not upload again
+M078 | bench_session | a blocked session leaves the job running
+M079 | bench_session | a prompt is sent to answer a blocked session
+M080 | bench_session | idle after working is not treated as done
+M081 | bench_session | a done session is closed on finish
+M082 | bench_session | RESULT.md also becomes a file piece
+M083 | bench_session | a refused file (an executable) is accepted, or refusals are not counted
+M084 | bench_session | more than max_outputs files become pieces
+M085 | bench_session | a name the listing did not give is downloaded
+M086 | bench_session | out/ files become pieces authored by the person
+M087 | bench_session | a file over the ceiling is downloaded instead of counted refused
+M088 | bench_session | null roots are not refused: the session starts in an unchecked directory
+
+-- errands/bench_job_runner.py: the singleton --
+M089 | runner | the deadline is ignored for agent jobs
+M090 | runner | a timed-out agent job's pieces are removed
+M091 | runner | a timed-out claude_code job does not collect out/ first
+M092 | runner | group_timeout_min is never applied
+M093 | runner | the group timeout also marks jobs that already finished as timed_out
+M094 | runner | cancelling a claude_code job does not close its session
+M095 | runner | an agent goes on stepping after its cancel
+M096 | runner | removing the job piece does not cancel the job
+M097 | runner | a finishing job rewrites every job piece of its group
+M098 | runner | the job piece shows no outputs or files_refused after the finish
+M099 | wiring_singletons | the runner is started without the bench_jobs lease
+M100 | wiring | PostgresBenchJobs is not wired, so an entry point runs on the Null Object
+
+-- watches/bench_job.py and the woken turn --
+M101 | wake | the group wakes once per job
+M102 | wake | the group wakes when its first job finishes
+M103 | wake | the woken note carries the worker's transcript
+M104 | wake | the kind is not outside, so the woken turn is untainted
+M105 | wake | a blocked job does not wake her
+M106 | wake | a blocked job wakes only when the group settles
+M107 | wake | the note carries no summary or output ids
+M108 | wake | a failure carries free text instead of a reason code
+M109 | wake | the watch target is a job id, not the group id
+M110 | wake | a second wake fires after the first is settled and nothing changed
+
+-- the run cap --
+M111 | bench_run | the cap counts runs per bench, not per turn
+M112 | bench_run | the cap is an in-memory counter, so a resumed turn forgets its runs
+M113 | bench_run | the cap allows max_runs_per_turn + 1 runs
+M114 | bench_run | the cap refuses the last allowed run
+M115 | bench_run | a refused run still runs
+M116 | bench_run | the refusal reason is not hand_off
+
+-- the job piece --
+M117 | workshop | the person can edit a job piece
+M118 | workshop | her bench_edit can edit a job piece
+M119 | workshop | by_code is enforced on Edit only, so an Add of a job piece is accepted
+M120 | workshop | removing a job piece is refused
+M121 | workshop | by_code refuses edits to every kind
+
+-- logs --
+M122 | logs | a bench_jobs line carries the title, brief or summary
+M123 | logs | a bench_jobs line has no job id, worker or attempt
+M124 | logs | bench_jobs.finished has no duration
+M125 | logs | no bench_jobs.retaken or bench_jobs.cancelled line is written
+
+-- bridge/herdr --
+M126 | bridge | a name with a slash is written under in/
+M127 | bridge | ".." is accepted as a name
+M128 | bridge | a leading-dot name (.env) is accepted
+M129 | bridge | a NUL in a name is accepted
+M130 | bridge | a symlinked in/ is followed
+M131 | bridge | a symlinked out/ is followed for the listing or a download
+M132 | bridge | the listing includes subdirectories or symlinks
+M133 | bridge | a download reaches a file outside out/ in the session directory
+M134 | bridge | max_file_bytes is checked only after the whole body is read (no 413 by Content-Length)
+M135 | bridge | max_files is off by one
+M136 | bridge | a session outside the roots is served the file routes
+M137 | bridge | whoami has no capabilities, or the version is still 0.1.0
+M138 | bridge | the file routes skip the token or the person lock
+M139 | bridge | the call line names the file or carries bytes of it
+M140 | bridge | a symlink inside out/ is downloaded and gives what it points at
+
+-- recorded as equivalent / not observable from outside --
+E01 | bridge upload | the temp-file-then-rename is replaced by a direct write: the bytes written are the same unless the write is interrupted, which no in-process test can do
+E02 | bench_session | the order of the downloads within one done session: only the set of pieces is contract
+
+-- added by the reconciler: wrong implementations planted beside the blind writer's, against the built code --
+X01 | bench_job_start | a started line carries the brief under another key
+X02 | channels/hand_off.py | the hand-off note is added again every step
+X03 | channels/hand_off.py | the note is added on a turn that does not offer bench_hand_off
+X04 | channels/hand_off.py | the note forces the step to tool choice none
+X05 | channels/hand_off.py | the rounds limit is off by one
+X06 | channels/hand_off.py | the seconds limit reads deadline_s
+X07 | tools/bench_jobs.py | a boolean is accepted as a job id
+X08 | tools/bench_job_piece.py | the piece is written from the job the caller held, not the stored one
+X09 | channels/bench_job/runner.py | a tick cancels an agent task that is still writing its own finish
+X10 | tools/bench_session.py | a recorded state count that has not moved reads as moved
+X11 | channels/hand_off.py | an unset rounds limit (0) always fires
+X12 | errands/bench_jobs_postgres.py | sweep ignores the clock it is given
+X13 | channels/hand_off.py | the note is added after a cut-off re-ask already named the tool
+
+-- run_files and a run's artifacts (test_bjb_run_artifacts.py), each killed by it --
+R01 | bench_job_parts | a run's artifacts are not added to run_files
+R02 | bench_job_parts | an artifact's size is counted as 0, so the job's byte cap ignores it
+R03 | bench_job_parts | what the run could not keep is not named in p<piece>-skipped.txt
+R04 | bench_job_parts | an artifact's extension is not taken from its media type
+R05 | bench_job_parts | two artifacts of one stem get one name, the second replacing the first
+R06 | bench_session | an artifact the store lost is skipped silently instead of failing the job as file_missing
+
+-- run against the built code (harness and results kept by the reconciler) --
+Every planted mutant above is killed by this suite plus `test_bjb_directed.py`, `test_hand_off_nudge.py` and
+`test_cutoff_hand_off.py`. Alive after the blind suite alone, killed by a directed test: M012 M039 M051 M073 M097 M099
+M109 M111 M117 M118 M119 M126 M129 X07 X08 X10 X12. M100 and M104 were killed by a collection-level scan and a kind
+check, not a behavioural test. E01 and E02 stay equivalent for the reason given above.
+
+-- waiting for the person's machine, and closing a session when its job ends (all killed by test_bench_hand_off, test_bench_session, test_bench_job_runner, test_bench_jobs_postgres, test_watches_bench_job) --
+U01 | tools/bench_jobs.py | hand-off never waits
+U02 | tools/bench_jobs.py | hand-off waits for a refusal too
+U03 | tools/bench_session.py | a start that meets a silent bridge does not wait
+U04 | tools/bench_session.py | a waiting job never gives up
+U05 | tools/bench_session.py | a waiting job resumes without the bridge answering
+U06 | errands/bench_jobs_postgres.py | a waiting job has no deadline
+U07 | errands/bench_jobs_postgres.py | resume from any state
+U08 | errands/bench_jobs_postgres.py | waiting is not live
+U09 | watches/bench_job.py | the watch does not count waiting
+U10 | watches/bench_job.py | the watch note never says waiting
+U11 | tools/bench_session.py | a bad token is retried not refused
+U12 | tools/bench_job_bridge.py | every bridge failure is unreachable at hand-off
+U13 | watches/watches.json | the waiting count does not wake her
+U14 | tools/bench_job_start.py | a waiting job is never shown as such
+U21 | errands/bench_jobs_postgres.py | only a cancelled job's session is due to close
+U22 | errands/bench_jobs_postgres.py | a live job's session is due to close too
+U23 | errands/bench_jobs_postgres.py | a closed session is still due
+U24 | tools/bench_session.py | a refused connection is retried for ever
+U25 | tools/bench_session.py | a session already gone is retried for ever
+U26 | channels/bench_job/runner.py | a closed session is not recorded closed
+U27 | channels/bench_job/runner.py | a close that did not happen is recorded

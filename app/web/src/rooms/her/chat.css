@@ -1,0 +1,177 @@
+/* Her room. The thread, lines, composer and "This conversation" rail are the approved mockup's her (chat) block
+   (rooms.css) copied verbatim, less what is not built (the learned-fact chip, the bench chip), and the rail hides below 1360px
+   rather than 1200px, where it covered the thread; new here: the quiet, loading and unreachable states, a line she gave no reply to, her thinking line, and phone width. */
+
+.thread { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 6px 2px 16px; }
+.m { display: grid; grid-template-columns: 28px 1fr; gap: 10px; max-width: 600px; }
+.m > div { padding: 10px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+.m p { margin: 2px 0 0; }
+.m.you { align-self: flex-end; } .m.you > div { border-color: rgba(77,163,255,.35); }
+.m.her > div { border-color: var(--brass-dim); background: linear-gradient(160deg, rgba(242,180,90,.06), transparent 60%), var(--panel); }
+.m.her p { color: #f6e3c4; }  /* her words: brass-tinted ink */
+.her-meta { color: var(--brass) !important; }
+.her-gap { width: 28px; }
+.household-line { max-width: 600px; padding: 2px 14px; border-left: 2px solid var(--line-hi); color: var(--text-3); }
+.household-line p { margin: 2px 0 0; font: 12px/1.5 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.compose { display: flex; gap: 8px; align-items: center; margin: 6px 0 14px; padding: 6px 6px 6px 8px; border-radius: 14px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.92); }
+.compose input { flex: 1; min-width: 0; border: 0; background: none; outline: none; height: 34px; }
+.talk-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line-hi); background: var(--ink-3); color: var(--blue-hi); flex: none; }
+.convo { position: absolute; right: 32px; top: 70px; width: 270px; }
+.convo dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; margin: 0; padding: 14px 16px; font-size: 13px; }
+.convo dt { font: 11px/1.6 var(--f-mono); color: var(--text-3); } .convo dd { margin: 0; }
+@media (max-width: 1359px) { .convo { display: none; } }
+
+/* new here */
+.compose:focus-within { border-color: var(--blue); }
+.compose input { padding: 0 6px; }
+.compose { align-items: flex-end; }
+.compose textarea { flex: 1; min-width: 0; border: 0; background: none; outline: none; resize: none; padding: 7px 6px; font: inherit; color: inherit;
+  line-height: 20px; height: 34px; max-height: 174px; overflow-y: auto; box-sizing: border-box; }
+.compose.over { border-style: dashed; }
+.compose-note { margin: 6px 4px 0; font: 12px/1.4 var(--f-mono); color: var(--text-3); text-align: right; }
+.compose-note.over { color: var(--text); text-align: left; }
+.m p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.m.missed > div { border-style: dashed; }
+.m-err { margin-top: 6px; font-size: 12.5px; color: var(--text-2); }
+.chat-quiet { margin: auto; text-align: center; }
+.chat-down { margin: auto; display: grid; gap: 10px; justify-items: center; text-align: center; }
+/* her thinking line: three brass beats, still under reduced motion */
+.m.her.thinking > div { padding-bottom: 12px; }
+.dots { display: flex; gap: 5px; height: 1.45em; align-items: center; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--brass); opacity: .35; animation: beat 1.2s var(--ease-io) infinite; }
+.dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes beat { 30% { opacity: 1; transform: translateY(-2px); } 60% { opacity: .35; transform: none; } }
+:root[data-motion="reduced"] .dots i { animation: none; opacity: .8; }
+/* a line arriving rises in; reduced motion shows it at once */
+.thread > .m { animation: line-in var(--t-panel) var(--ease-out) both; }
+@keyframes line-in { from { opacity: 0; transform: translateY(8px); } }
+:root[data-motion="reduced"] .thread > .m { animation: none; }
+
+/* her reply continued on a bench: a link that opens the bench in place */
+.continued { display: inline-flex; gap: 8px; align-items: baseline; margin-top: 2px; color: var(--blue-hi); text-decoration: none; overflow-wrap: anywhere; }
+.continued:hover { text-decoration: underline; }
+.continued:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; border-radius: 4px; }
+
+/* the talk button's states and the line above the composer: new here. Blue is the person's: the open microphone is
+   theirs. The ring breathes while it listens; reduced motion keeps it still and lit. */
+.talk-btn { display: grid; place-items: center; padding: 0; font-size: 13px; touch-action: none; user-select: none;
+  -webkit-user-select: none; -webkit-touch-callout: none; transition: background var(--t-tap), color var(--t-tap), border-color var(--t-tap); }
+.talk-btn:hover { border-color: var(--blue); }
+.talk-btn:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+.talk-btn:disabled { opacity: .45; cursor: default; border-color: var(--line-hi); }
+.talk-btn.live { background: var(--blue); border-color: var(--blue); color: var(--ink-0); box-shadow: 0 0 0 4px var(--blue-glow);
+  animation: talk-ring 1.6s var(--ease-io) infinite; }
+.talk-btn.hearing { border-color: var(--blue); cursor: progress; }
+@keyframes talk-ring { 50% { box-shadow: 0 0 0 7px rgba(77,163,255,.12); } }
+:root[data-motion="reduced"] .talk-btn.live { animation: none; }
+.talk-line { margin: 0 0 6px 10px; font: 12px/1.4 var(--f-mono); color: var(--text-2); }
+.talk-line:empty { display: none; }
+.talk-line.on { color: var(--blue-hi); }
+
+@media (max-width: 600px) {
+  .m { grid-template-columns: 20px 1fr; gap: 8px; max-width: 100%; }
+  .her-gap { width: 20px; }
+  .m.you { margin-left: 28px; } .m.her { margin-right: 28px; }
+}
+
+/* remembering a line: the header's "Remember", shown on hover or focus where there is hover, the carried copy, and the
+   hold that lifts it */
+.linkish { border: 0; background: none; padding: 0; color: var(--blue-hi); text-decoration: underline; font-size: 11px; }
+.keep { margin-left: 10px; border: 0; background: none; padding: 0; font: inherit; color: var(--text-3); text-decoration: underline dotted; opacity: 0; }
+.keep:hover, .keep:focus-visible { color: var(--brass); opacity: 1; }
+.m:hover .keep, .m:focus-within .keep { opacity: 1; }
+@media (hover: none) { .keep { opacity: 1; } }
+.m.keepable { -webkit-touch-callout: none; }
+.m.lifted { visibility: hidden; }
+.carried { position: fixed; margin: 0; z-index: 90; transform-origin: 0 0; pointer-events: none; box-shadow: 0 18px 40px rgba(0,0,0,.6); cursor: grabbing; }
+:root.carrying, :root.carrying * { user-select: none; cursor: grabbing; }
+
+/* earlier conversations read in above the open one: new here. A divider each, quiet like the mono labels; their lines
+   are the open conversation's, a little dimmer and without the rise-in, since they arrive above what is being read. */
+.past-divider { display: flex; align-items: center; gap: 12px; margin: 6px 0 2px; font: 11px/1.6 var(--f-mono); color: var(--text-3); }
+.past-divider::before, .past-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.past-note { margin: 0; text-align: center; }
+.thread > .m.past { animation: none; }
+.m.past > div { background: var(--panel); }
+.m.past p { color: var(--text-2); }
+
+/* her Markdown: lists tight in the bubble, a fenced block scrolls sideways instead of widening it */
+.m p + p, .m p + .md-list, .m .md-list + p { margin-top: 6px; }
+.md-list { margin: 2px 0 0; padding-left: 20px; color: #f6e3c4; }
+.md-list li { margin: 0; }
+.m code { font: 12px/1.5 var(--f-mono); }
+.md-pre { margin: 6px 0 0; padding: 8px 10px; overflow-x: auto; border-radius: 8px; background: var(--ink-1); border: 1px solid var(--line); color: var(--text-2); }
+.md-pre code { white-space: pre; }
+.md-link { color: var(--blue-hi); text-decoration: underline; overflow-wrap: anywhere; }
+
+/* a script she ran, under her answer: a closed disclosure line, opening to mono blocks that scroll instead of widening */
+.run { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; font-size: 12.5px; color: var(--text-2); }
+.run > summary, .run-file > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; font: 12px/1.6 var(--f-mono); color: var(--text-2); }
+.run > summary::-webkit-details-marker, .run-file > summary::-webkit-details-marker { display: none; }
+.run > summary::after { content: "▸"; margin-left: auto; color: var(--text-3); }
+.run[open] > summary::after { content: "▾"; }
+.run > summary:hover, .run-file > summary:hover { color: var(--text); }
+.run > summary:focus-visible, .run-file > summary:focus-visible, .run-pre:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+.run-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex: none; }
+.run-dot.ok { background: var(--ok); }
+.run-part { margin-top: 8px; }
+.run-label { font: 11px/1.6 var(--f-mono); color: var(--text-3); }
+.run-pre { margin: 2px 0 0; padding: 8px 10px; max-height: 240px; overflow: auto; border-radius: 8px; background: var(--ink-1); border: 1px solid var(--line); color: var(--text); font: 12px/1.5 var(--f-mono); white-space: pre; scrollbar-color: var(--line-hi) transparent; scrollbar-width: thin; }
+.run-none { margin: 4px 0 0; font-size: 12px; color: var(--text-3); }
+.run-file { margin-top: 4px; }
+.run-file > summary { color: var(--text); }
+
+/* a paste, held beside the composer as a chip until it is sent, then folded under the message it came with */
+.paste-chip { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; padding: 4px 4px 4px 10px; align-self: flex-start; max-width: 100%; border-radius: 10px; border: 1px solid var(--line-hi); background: var(--panel); font: 12px/1.6 var(--f-mono); color: var(--text-2); }
+.paste-chip-name { color: var(--text); }
+.paste-chip-size { color: var(--text-3); }
+.paste-chip-x { flex: none; width: 26px; height: 26px; border: 0; border-radius: 8px; background: none; color: var(--text-2); font-size: 16px; line-height: 1; cursor: pointer; }
+.paste-chip-x:hover { color: var(--text); background: var(--ink-1); }
+.paste-chip-x:focus-visible, .paste summary:focus-visible, .paste-pre:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+.paste { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; font-size: 12.5px; color: var(--text-2); }
+.paste > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; font: 12px/1.6 var(--f-mono); }
+.paste > summary::-webkit-details-marker { display: none; }
+.paste > summary::after { content: "\25B8"; margin-left: auto; color: var(--text-3); }
+.paste[open] > summary::after { content: "\25BE"; }
+.paste > summary:hover { color: var(--text); }
+.paste-name { color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paste-size { color: var(--text-3); flex: none; }
+.paste-pre { margin: 6px 0 0; padding: 8px 10px; max-height: 260px; overflow: auto; border-radius: 8px; background: var(--ink-1); border: 1px solid var(--line); color: var(--text); font: 12px/1.5 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; scrollbar-color: var(--line-hi) transparent; scrollbar-width: thin; }
+.look-seen { margin: 8px 0 0; border-top: 1px solid var(--line); padding-top: 6px; }
+.look-seen a { display: block; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--ink-1); }
+.look-seen img { display: block; width: 100%; max-height: 320px; object-fit: contain; }
+.look-seen a:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+.look-seen figcaption, .m .look-none { margin: 4px 0 0; font: 11px/1.6 var(--f-mono); color: var(--text-3); }
+.agree { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
+.agree-btn { border: 1px solid var(--brass); background: none; color: var(--brass); border-radius: 6px; padding: 4px 14px; font: inherit; cursor: pointer; }
+.agree-btn:hover:not(:disabled), .agree-btn:focus-visible { background: var(--brass); color: var(--brass-ink); }
+.agree-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* her voice playing under her line (speech/VoiceMark): brass, since it is hers */
+.voice-mark { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--brass); }
+.voice-icon { width: 16px; height: 16px; flex: none; }
+.voice-btn { border: 1px solid var(--brass-dim); background: none; color: var(--brass); border-radius: 6px; padding: 3px 12px; font: inherit; cursor: pointer; }
+.voice-btn:hover, .voice-btn:focus-visible { background: var(--brass); color: var(--brass-ink); }
+.voice-mark.blocked .voice-btn { border-color: var(--brass); }
+
+/* what the app shows beside her reply (Receipts): a quiet note for what ran, a card for what waits */
+.receipt { margin: 8px 0 0; font-size: 12.5px; color: var(--text-2); }
+.receipt-done { border-top: 1px solid var(--line); padding-top: 6px; }
+.receipt-done > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; font: 12px/1.6 var(--f-mono); }
+.receipt-done > summary::-webkit-details-marker { display: none; }
+.receipt-done > summary::after { content: "\25B8"; margin-left: auto; color: var(--text-3); }
+.receipt-done[open] > summary::after { content: "\25BE"; }
+.receipt-done > summary:hover { color: var(--text); }
+.receipt-done > summary:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+p.receipt-done { font: 12px/1.6 var(--f-mono); }
+.receipt-agreed { font: 12px/1.6 var(--f-mono); }
+.receipt-agreed > span { display: block; overflow-wrap: anywhere; }
+.receipt-held { border: 1px solid var(--brass); border-radius: 10px; padding: 8px 12px; background: var(--panel); }
+.receipt-held.gone { border-color: var(--line); opacity: 0.7; }
+.receipt-title { font: 11px/1.6 var(--f-mono); color: var(--brass); }
+.receipt-held.gone .receipt-title { color: var(--text-3); }
+.receipt-list { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.receipt-head { display: block; color: var(--text); }
+.receipt-detail { display: block; margin-top: 2px; font: 12px/1.5 var(--f-mono); color: var(--text-2); overflow-wrap: anywhere; white-space: pre-wrap; }
+.receipt-why { display: block; margin-top: 2px; font-size: 12px; color: var(--text-3); }
+.receipt-gone { margin: 6px 0 0; font-size: 12px; color: var(--text-3); }

@@ -1,0 +1,71 @@
+Blind no-silent-endings suite: planted mutants, each killed by tests/nse_blind (score 68/69).
+
+ 1 refused: wrong task
+ 2 refused: no wrap-up note
+ 3 refused: tool choice auto
+ 4 refused: tools dropped
+ 5 refused: inference error escapes
+ 6 refused: empty wrap-up accepted
+ 7 refused: tool calls accepted
+ 8 refused: wrong recovery logged on success
+ 9 refused: wrong recovery logged on fallback
+10 refused: conversation id dropped
+11 refused: medium ignored
+12 settled: kept without retries
+13 settled: kept on any error
+14 settled: told every time
+15 settled: never told
+16 settled: not deferred
+17 settled: deferred zero
+18 settled: kept claim lost returns false
+19 settled: claim lost dropped
+20 settled: survives inverted
+21 settled: failed shown inverted
+22 settled: why swapped
+23 settled: recovery swapped
+24 settled: always told_and_kept
+25 settled: told not recorded
+26 settled: line not follows
+27 settled: line answers nothing
+28 settled: reason ignored
+29 settled: defer failure escapes
+30 settled: unstorable line escapes
+31 settled: stored not shown
+32 settled: line not queued
+33 settled: outbox error escapes
+34 settled: work not dropped
+35 unsaid: unreachable text is the fixed line
+36 unsaid: fixed spoken wrong
+37 unsaid: same line
+38 unsaid.json: empty line
+39 ending: event name
+40 ending: recovery is reason
+41 ending: conversation dropped
+42 ending: reason dropped
+43 inflight default defer: no renewal
+44 pg defer: doubled
+45 pg defer: constant seconds
+46 pg defer: extends rather than replaces
+47 Saved.defer renews
+48 Saved.retries false
+49 Saved.unreachable_told false
+50 Saved.told_unreachable not set
+51 Work.retries true
+52 checkpoint: loads ignores flag
+53 checkpoint: dumps drops flag
+54 outbox: stale not logged
+55 outbox: wrong conversation logged
+56 outbox: logs only very stale
+57 resume: retry seconds zero
+58 inflight.json: retry 12
+59 pace: past exclusive
+60 pace: left negative
+61 pace: ms scale
+62 pace: zero start replaced
+63 ts: STALL_MS
+64 ts: author
+65 ts: follows ignored -- EQUIVALENT: `owedAt` already returns -1 unless every trailing line of hers follows, so the explicit follows test cannot change a result
+66 ts: owedAt boundary
+67 ts: stillOn inverted
+68 ts: missed value
+69 ts: always marks

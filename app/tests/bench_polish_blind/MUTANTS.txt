@@ -1,0 +1,41 @@
+Planted wrong implementations, applied one at a time to the file named (from the text read before the mutation, restored
+after, never by git), the suite in tests/bench_polish_blind run on each. CAUGHT means exit 1 with a FAILED test. Run against
+bench-held-line at 8d6cb07. The harness is ~/scratch/ashley/workshop/mutate-blind-bench-held-line.py (kept outside the repo).
+
+Two survivors of the first runs got directed tests: M8 (drop_leaving without the lock was caught only by a flaky test; the
+lock is now proved by a message stored under it), M30 (a resumed landed turn re-carries its ask before its first step, so
+only a checkpoint round-trip test sees it).
+
+M1   CAUGHT   no message ever steers (running always false)  [ashley/channels/steering.py]
+M2   CAUGHT   chat messages steer too  [ashley/channels/steering.py]
+M3   CAUGHT   handed newest first  [ashley/channels/steering.py]
+M4   CAUGHT   handed without the speaker's name and 'just said'  [ashley/channels/steering.py]
+M5   CAUGHT   hand ignores what was handed  [ashley/channels/steering.py]
+M6   CAUGHT   the store never raises Unhanded  [ashley/conversations/postgres_queries.py]
+M7   CAUGHT   after Unhanded the turn goes on without the handed message  [ashley/channels/answering.py]
+M8   CAUGHT   drop_leaving takes no conversation lock  [ashley/conversations/postgres_inflight.py]
+M9   CAUGHT   drop_leaving leaves no work  [ashley/conversations/postgres_inflight.py]
+M10  CAUGHT   drop_leaving seeds the newest message  [ashley/conversations/postgres_inflight.py]
+M11  CAUGHT   drop_leaving drops work it no longer holds  [ashley/conversations/postgres_inflight.py]
+M12  CAUGHT   a landed turn's carried ask is not working  [ashley/conversations/postgres_inflight.py]
+M13  CAUGHT   Saved.steer hands again what it handed  [ashley/channels/inflight.py]
+M14  CAUGHT   her final answer carries no handed ids  [ashley/channels/inflight.py]
+M15  CAUGHT   a held line after the move stays in chat  [ashley/channels/continued.py]
+M16  CAUGHT   the ask is never carried into the bench's talk  [ashley/channels/continued.py]
+M17  CAUGHT   the bench's held line does not answer the carried ask  [ashley/channels/continued.py]
+M18  CAUGHT   retold after the whole span  [ashley/channels/live_turn.py]
+M19  CAUGHT   retold on every call  [ashley/channels/live_turn.py]
+M20  CAUGHT   a bench turn gets run_code, no bench_run  [ashley/channels/turn_tools.py]
+M21  CAUGHT   a turn that lands mid-way keeps run_code  [ashley/channels/turn_tools.py]
+M22  CAUGHT   the house is asked at every catalogue  [ashley/tools/bench_automations.py]
+M23  CAUGHT   a non-list answer reads as False  [ashley/home_assistant/rest_automations.py]
+M24  CAUGHT   a garbled services object reads as False  [ashley/home_assistant/rest_automations.py]
+M25  CAUGHT   an unreachable house reads as False  [ashley/home_assistant/rest_automations.py]
+M26  CAUGHT   a missing domain reads as unknown, not False  [ashley/home_assistant/rest_automations.py]
+M27  CAUGHT   a video page is a well-formed site  [ashley/workshop/embed.py]
+M28  CAUGHT   a bench's messages do not steer  [ashley/channels/model.py]
+M29  CAUGHT   the checkpoint forgets what was handed  [ashley/channels/checkpoint.py]
+M30  CAUGHT   the checkpoint forgets the carried ask  [ashley/channels/checkpoint.py]
+M31  CAUGHT   left work is resumed as an ordinary turn  [ashley/channels/resume.py]
+
+31/31 caught. No equivalent mutants recorded.

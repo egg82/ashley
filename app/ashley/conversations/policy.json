@@ -1,0 +1,5 @@
+{
+  "command": {"idle_after_s": 60, "closed_after_s": 300},
+  "chat": {"idle_after_s": 300, "closed_after_s": 1800},
+  "brainstorm": {"idle_after_s": 900, "closed_after_s": 7200}
+}

@@ -1,0 +1,75 @@
+{
+ "specs": [
+  {
+   "name": "money_accounts",
+   "description": "The household's accounts in Sure with their balances, type and id.",
+   "parameters": {
+    "type": "object",
+    "properties": {}
+   },
+   "reads": true
+  },
+  {
+   "name": "money_transactions",
+   "description": "The household's transactions in Sure, newest first, with date, name, amount, account, category and merchant; how many matched, and whether the list was cut.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "start_date": {
+      "type": "string",
+      "description": "first day, YYYY-MM-DD"
+     },
+     "end_date": {
+      "type": "string",
+      "description": "last day, YYYY-MM-DD"
+     },
+     "account_id": {
+      "type": "string",
+      "description": "one account, by the id money_accounts gives"
+     },
+     "category_id": {
+      "type": "string",
+      "description": "one category, by the id money_categories gives"
+     },
+     "search": {
+      "type": "string",
+      "description": "words in the name, notes or merchant"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "income",
+       "expense"
+      ]
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "how many, newest first; 25 unless given"
+     }
+    }
+   },
+   "reads": true
+  },
+  {
+   "name": "money_categories",
+   "description": "The household's transaction categories in Sure, with id and parent.",
+   "parameters": {
+    "type": "object",
+    "properties": {}
+   },
+   "reads": true
+  },
+  {
+   "name": "money_net_worth",
+   "description": "The household's net worth in Sure: total assets, total liabilities and the difference.",
+   "parameters": {
+    "type": "object",
+    "properties": {}
+   },
+   "reads": true
+  }
+ ],
+ "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. They only read; you cannot change anything there. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short."
+}

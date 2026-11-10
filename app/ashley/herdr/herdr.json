@@ -1,0 +1,5 @@
+{
+  "timeout_s": 20,
+  "start_timeout_s": 120,
+  "response_max_bytes": 1048576
+}

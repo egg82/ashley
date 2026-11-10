@@ -1,0 +1,476 @@
+Planted wrong implementations, one at a time, in a scratch copy of app/ (never the worktree). Each run is the whole
+tests/contract directory, green before the plant (47 passed, 1 xfailed). The plant is asserted to apply exactly once.
+
+#    mutant                                                 first red test(s)
+M1   Null Object created fresh per call                     locator: the_null_object_is_the_same_one_each_time
+M2   register accepts any object                            locator: a_provider_of_another_interface_is_refused, anything_that_is_not_an_instance_*
+M3   unregister keeps the live provider                     locator: get_answers_the_last_registration_*, registrations_do_not_leak_between_tests
+M4   get ignores the registry                               locator: a_registered_provider_is_what_get_answers; http: ready_conforms_*
+M5   migrate without its advisory lock                      migrate: two_concurrent_runs_* (3 of 3 rounds red)
+M6   migrate never upgrades                                 migrate: reaches_head_and_creates_households
+M7   health missing `version`                               http: health_conforms_with_the_database_up
+M8   health reports a fixed version                         http: health_reports_the_running_build
+M9   ready answers 200 when the database is down            http: ready_is_503_with_the_declared_error_*
+M10  ready answers 500 instead of 503                       http: ready_is_503_*, every_declared_path_*
+M11  access log keeps the query string                      logs: no_query_string_header_value_or_client_address_*
+M12  access log keeps the client address                    logs: no_query_string_header_value_or_client_address_*
+M13  access log keeps a header value                        logs: no_query_string_header_value_or_client_address_*
+M14  /api/health is logged                                  logs: health_is_not_logged
+M15  access log writes the raw path as the route            logs: an_unmatched_path_is_not_logged_as_a_route
+M16  access log records status 200 always                   logs: a_failing_request_logs_its_real_status
+M17  logfmt keeps raw newlines                              SURVIVED at first (random text rarely held "\n");
+                                                            killed after the field strategy drew from control
+                                                            characters: logs: any_field_value_still_makes_exactly_one_line
+M18  exception message is logged                            logs: an_exception_is_logged_by_type_and_frames_*
+M19  ready always reports writable=True                     SURVIVED at first (no test could make a probe say
+                                                            unwritable); killed by the fixed-probe tests and the
+                                                            read-only-database test:
+                                                            http: ready_reports_what_the_database_service_found[False]
+M20  migrate never unlocks explicitly                       EQUIVALENT: the lock is a session lock, released when the
+                                                            connection closes (the docstring says so), and the
+                                                            connection closes at the end of migrate; no outside
+                                                            observer sees the difference
+M21  /api/health probes the database                        http: health_is_200_with_the_database_unreachable
+M22  migrate takes a different lock key per call            migrate: two_concurrent_runs_* (3 of 3 rounds red)
+
+Totals: 22 planted; 21 killed (2 after a directed test was added), 0 surviving, 1 equivalent.
+
+Lease contract (test_contract_lease.py, test_contract_lease_faults.py; need ASHLEY_TEST_ETCD_URL). Each plant ran
+against both files, green before it (17 passed).
+
+#    mutant                                                 first red test(s)
+L1   body never cancelled when the lease is lost            lease_faults: a_revoked_lease_cancels_the_body_*, a_partitioned_holder_stops_*
+L2   body cancelled only once etcd reports expiry           lease_faults: a_partitioned_holder_stops_its_body_before_etcd_frees_the_key
+L3   keepalive TTL 0 counted as success                     EQUIVALENT: the deadline it sets is already past, so the loss is
+                                                            reported at the same moment, as reason=deadline not expired
+L4   cancelling run does not revoke the lease               lease: cancelling_run_cancels_the_body_and_frees_the_key_at_once
+L5   a body that returns/raises does not revoke             lease: a_body_that_ends_frees_the_lease_at_once_*[return|raise]
+L6   an exception from the body ends run                    lease: a_body_that_ends_*[raise]
+L7   the exception message is logged                        lease: a_body_that_ends_*[raise]
+L8   held_elsewhere / etcd_unreachable on every retry       lease_faults: waiting_on_another_holder_is_logged_once_*
+L10  etcd_unreachable logs the etcd URL                     lease_faults: etcd_unreachable_is_logged_once_per_streak_*
+L11  acquire overwrites the key (no create guard)           lease: exactly_one_of_three_holders_runs_the_body
+L12  lease key shared across names                          lease: distinct_names_do_not_exclude_each_other
+L13  key value is not the holder id                         lease: exactly_one_of_three_holders_*
+L14  loss not re-campaigned                                 lease_faults: a_revoked_lease_* (second start)
+L15  lease.lost not logged                                  lease_faults: a_revoked_lease_*, a_partitioned_holder_*
+L16  cancel during the claim does not revoke                lease_faults: a_run_cancelled_just_after_etcd_granted_it_the_key_*
+                                                            (found by the blind tests as a real bug, then fixed)
+L17  NullLease runs the body                                lease: null_lease_never_runs_a_body_*
+L18  wire never registers a Lease                           lease: wired_with_an_etcd_url_*
+L20  no stop margin (cancel at the lease's own expiry)      lease_faults: a_partitioned_holder_leaves_its_body_time_to_clean_up_*
+                                                            (survived until that directed test was added)
+Totals: 18 planted; 17 killed (1 after a directed test was added), 0 surviving, 1 equivalent.
+
+Active site and fail-back (test_contract_lease_site.py, test_contract_patroni.py, test_contract_failback_policy.py,
+test_contract_failback.py, plus both lease files). Each plant ran against all six, green before it (227 passed).
+
+#    mutant                                                 first red test(s)
+F1   keepalive never re-checks the site                     lease_site: the_leader_moving_away_cancels_the_body_*
+F2   campaign skips the site pre-check                      lease_site: a_site_that_is_not_active_logs_standby_once_per_wait
+F3   claim without the site guard in its transaction        lease_site: the_site_check_and_the_claim_are_one_transaction
+                                                            (survived until that directed test was added)
+F4   losing the site handled as a lost lease (no release)   lease_site: the_leader_moving_away_*, the_leader_key_vanishing_*
+F5   release reason not not_active_site                     lease_site: the_leader_moving_away_*
+F6   settle boundary > instead of >=                        policy: a_look_exactly_at_the_wait_switches_over
+                                                            (survived until the boundary was in the contract and tested)
+F7   recent failovers never lengthen the wait               policy: each_promotion_away_beyond_the_first_doubles_*
+F8   the wait never capped                                  policy: each_promotion_away_beyond_the_first_doubles_*
+F9   window ignored                                         policy: promotions_older_than_the_window_do_not_count
+F10  lag ignored                                            policy: lag_is_judged_at_most_the_limit
+F11  timeline ignored                                       policy: on_another_timeline
+F12  replication_state ignored                              policy: not_streaming
+F13  health counted from each look, not the first           policy: a_healthy_look_inside_the_wait_keeps_the_clock
+F14  clock kept after a switchover                          failback: the_health_clock_restarts_after_a_switchover_*
+F15  an unreadable look keeps the clock                     failback: an_unreadable_look_counts_as_unhealthy_*
+F16  a refused switchover reported as success               patroni: a_refusal_is_false_and_not_retried
+F17  replica position from xlog_location                    patroni: a_replica_position_is_its_replay_lsn_*
+F18  history ignored                                        patroni: older_history_entries_have_no_new_leader
+Totals: 18 planted; 18 killed (2 after a directed test was added), 0 surviving, 0 equivalent.
+The blind tests also found two real defects before any plant: a member key holding JSON that is not an object
+escaped `view()` as AttributeError, and `switchover` refused when its snapshot named another leader.
+
+Fail-back maintenance switch (test_contract_hold.py, test_contract_hold_cli.py, test_contract_failback_held.py, plus
+the fail-back policy and loop files). Each plant ran against all five, green before it.
+
+#    mutant                                                 first red test(s)
+H1   held ignored by step                                   failback_held: a_healthy_replica_settled_long_ago_waits_while_held
+H2   held keeps the health clock                            failback_held: health_counts_again_from_after_the_hold
+H3   FailBack never asks the hold                           failback_held: every_look_asks_the_hold
+H4   unreadable hold counts as not held                     hold: an_unreachable_etcd_reads_as_held
+H5   hold set without a lease                               hold: the_key_lives_under_a_lease
+H6   release reports True always                            hold: releasing_with_no_hold_is_false
+H7   hold TTL ignores the duration                          hold_cli: each_unit_reaches_the_expiry
+H8   default duration not 4h                                hold_cli: the_default_is_the_documented_four_hours
+                                                            (survived until that directed test was added)
+H9   days parsed as hours                                   hold_cli: a_number_and_a_unit_parse
+H10  etcd failure exits 0                                   hold_cli: an_unreachable_etcd_exits_one_and_says_something
+H11  held checked before preferred_leads                    failback_held: held_changes_nothing_while_the_preferred_member_leads
+Totals: 11 planted; 11 killed (1 after a directed test was added), 0 surviving, 0 equivalent.
+
+Conversations (test_contract_conversations*.py, test_conversations_snapshot.py, test_conversations_utc.py), planted
+in a scratch copy by `mutate`-style anchor replacement asserted to apply once, each run against all of them.
+
+#    mutant                                                 first red test(s)
+C1   open until idle inclusive                              policy: fractional_thresholds_are_exact
+C2   idle until closed inclusive                            policy: each_boundary_belongs_to_the_later_state
+C3   every kind reads chat's timing                         conversations: get_reports_the_state_its_kind_s_policy_gives_now
+C4   parse accepts unknown kinds                            policy: parse_refuses_a_kind_that_does_not_exist_and_names_it
+C5   parse accepts idle >= closed                           policy: parse_refuses_a_timing_that_breaks_the_rule
+C6   parse accepts booleans as seconds                      policy: parse_refuses_a_timing_that_breaks_the_rule
+                                                            (survived until a `True` case was added)
+C7   add_turn takes no row lock                             races: concurrent_turns_are_all_stored_with_distinct_ids_in_order
+C8   a closed conversation never refuses                    conversations: a_turn_to_a_closed_conversation_is_refused_*
+C9   a new speaker never joins                              conversations: a_known_speaker_joins_and_an_unnamed_one_*
+C10  turns newest first                                     conversations: a_service_reads_what_another_instance_wrote
+C11  repeated participants not deduplicated                 conversations: participants_may_be_empty_or_repeat_an_id
+C12  OperationalError leaks                                 faults: a_turn_whose_connection_dies_mid_call_*
+C13  read-only error leaks                                  faults: writes_to_a_read_only_database_raise_unavailable_*
+C14  unknown household reported as unknown person           logs: no_text_or_name_reaches_any_log_line (first under -x)
+C15  whitespace-only text accepted                          households: a_malformed_turn_is_refused_before_the_database
+C16  turn text logged                                       logs: no_text_or_name_reaches_any_log_line
+C17  last_activity_at never moves                           conversations: well_before_the_closing_moment_a_turn_is_taken
+C18  get derives state from started_at                      conversations: a_turn_to_an_idle_conversation_reopens_it
+C19  ashley may have a speaker                              households: a_malformed_turn_is_refused_before_the_database
+C20  times not normalised to UTC                            utc: times_are_utc_when_the_database_runs_in_another_timezone
+                                                            (survived until that directed test was added)
+C21  get reads READ COMMITTED                               snapshot: a_turn_committed_mid_read_is_seen_whole_or_not_at_all
+C22  a turn timed at transaction start                      races: concurrent_turns_are_all_stored_with_distinct_ids_in_order
+Totals: 22 planted; 22 killed (2 after a directed test was added), 0 surviving, 0 equivalent.
+The snapshot defect (C21) was real in the first implementation; its test landed as a strict xfail before the fix.
+
+Memory write job (test_memory_postgres_writes.py, test_memory_write_job.py). Each plant ran against the file named,
+green before it (8 and 7 passed).
+
+W1   watermark in its own transaction                       writes: a_refused_apply_leaves_neither_facts_nor_watermark
+W2   watermark always advances                              writes: the_same_turns_are_never_written_twice
+W3   any author's turn needs a write                        writes: a_new_turn_of_hers_alone_does_not_need_a_write
+W4   failure cap ignored                                    writes: failures_in_a_row_hold_a_conversation_back_*
+W5   open conversations need a write                        writes: only_idle_or_closed_conversations_*
+W6   candidates cross households                            writes: candidates_are_current_facts_of_the_household_*
+W7   candidates include closed facts                        writes: candidates_are_current_facts_of_the_household_*
+W8   candidates search her turns too                        writes: candidates_are_current_facts_of_the_household_*
+W9   failure streak never resets                            writes: failures_in_a_row_hold_a_conversation_back_*
+J1   inference unavailable recorded as a failure            job: inference_unavailable_ends_the_tick_and_marks_nothing
+                                                            (first planted by adding it to the ValueError clause:
+                                                            EQUIVALENT, the earlier InferenceUnavailable clause wins)
+J2   the writer sees every turn                             job: idle_conversations_are_written_once_*
+J3   a refused write marks the conversation written         job: a_refused_write_moves_on_and_is_held_back_*
+J4   failures never recorded                                job: a_refused_write_moves_on_and_is_held_back_*
+J5   cancellation swallowed per conversation                job: losing_the_lease_stops_the_job_* (by timeout)
+J6   inference unavailable skips just that conversation     job: inference_unavailable_ends_the_tick_and_marks_nothing
+J7   an unexpected error ends the lease body                job: an_unexpected_error_fails_that_conversation_alone_*
+J8   an unexpected error skipped, not counted               job: an_unexpected_error_fails_that_conversation_alone_*
+J9   the catch-all also takes cancellation                  job: losing_the_lease_stops_the_job_* (by timeout)
+J10  an unexpected failure logged without its frames        job: an_unexpected_error_fails_that_conversation_alone_*
+Totals: 19 planted; 19 killed, 0 surviving, 1 equivalent plant replaced.
+
+Standing facts (test_contract_profile.py, _apply, _prompt, _respond), written blind before the code. Each plant ran
+against the four files, green before the plant. Run so far: P2, P7, P9, P13, P16, P19, P23, P32, each killed.
+
+P1   profile ignores valid_to (returns closed facts)               profile: a_replaced_invalidated_or_forgotten_*
+P2   profile ignores standing (returns every current fact)         profile: every_row_of_the_visibility_filter
+P3   profile ignores household_id                                  profile: the_other_household_sees_only_its_own
+P4   profile treats an unknown speaker as known                    profile: every_row_of_the_visibility_filter
+P5   profile shows own private without owner_only                  profile: every_row_of_the_visibility_filter
+P6   profile shows another person's private                        profile: every_row_of_the_visibility_filter
+P7   profile marks another's discreet fact may_volunteer True      profile: every_row_of_the_visibility_filter
+P8   profile hides other people's discreet facts                   profile: every_row_of_the_visibility_filter
+P9   profile ordered by valid_from / text / descending id          profile: the_profile_is_in_fact_id_order_*
+P10  profile embeds the household's name or a query                profile: profile_makes_no_embedding_call
+P11  profile logs fact text                                        apply: the_profile_log_line_has_household_count_*
+P12  profile logs no ids or no count                               apply: the_profile_log_line_has_household_count_*
+P13  recall also returns standing facts                            profile: recall_never_returns_a_standing_fact_*
+P14  recall's vector branch returns standing facts                 profile: recall_by_vector_never_returns_*
+P15  similar drops standing facts                                  profile: similar_still_returns_a_fact_*
+P16  apply stores the op's standing for a diet                     apply: a_diet_is_always_standing_*, an_update_to_a_diet_*
+P17  apply pins every fact's standing true                         apply: every_other_kind_keeps_the_standing_*
+P18  apply drops standing (always false)                           apply: every_other_kind_keeps_the_standing_*
+P19  apply pins a diet private                                     apply: a_diet_is_always_standing_* (shared cases)
+P20  apply stops pinning health private                            apply: health_is_still_pinned_private_*
+P21  apply overrides a stated health visibility                    apply: health_is_still_pinned_private_*
+P22  NullMemory.profile returns ()                                 apply: the_null_memory_cannot_say_*
+P23  standing section after "What you remember"                    prompt: the_section_follows_the_profile_*
+P24  standing section before the household profile                 prompt: the_section_follows_the_profile_*
+P25  marker on every fact / on none / after the text               prompt: only_a_fact_she_may_not_volunteer_*
+P26  standing sorted by id or text instead of the order given      prompt: each_standing_fact_is_one_id_*
+P27  section kept (header only) when nothing is standing           prompt: nothing_standing_has_no_section_at_all
+P28  standing shown alongside the unreachable line                 respond: either_tier_unreachable_*
+P29  profile and recall awaited one after the other                respond: profile_and_recall_are_in_flight_together
+P30  profile failure leaves recall's facts reachable               respond: either_tier_unreachable_*[profile]
+P31  recall failure leaves the profile reachable                   respond: either_tier_unreachable_*[recall]
+P32  used_facts counts recalled ids only                           respond: used_facts_count_ids_from_both_tiers_*
+P33  used_facts counts standing ids only                           respond: used_facts_count_ids_from_both_tiers_*
+P34  an id in neither tier dropped from used_unrecalled            respond: an_id_in_neither_tier_is_still_unrecalled
+P35  respond.done omits standing / logs recalled's count for it    respond: done_counts_the_standing_facts
+P36  standing fact text logged by respond                          respond: no_standing_fact_text_reaches_any_log_line
+P37  profile asked with a different asker than recall              respond: the_profile_is_asked_once_for_the_same_asker_*
+
+Memory report (`ashley.memory.report`, `python -m ashley.memory report`), written blind before the code. Run so far,
+each killed: dedupe dropped, replies unsorted, `unavailable` read as empty, `forgotten` unmarked, `replaced by`
+dropped, unreachable said as not logged, used-not-offered dropped, respond.done's tiers swapped.
+R1   parse raises on a non-logfmt line / returns {} for no event       report_parse: a_line_that_is_not_logfmt_*, parse_never_raises
+R2   parse keeps quotes or leaves an escape undone                     report_parse: a_quoted_value_round_trips_*, the_escapes_are_undone_once_each
+R3   parse folds a trailing newline into the last value                report_parse: a_trailing_newline_*
+R4   seen matches the conversation by substring (7 takes 17, 70)       report_seen: only_the_conversations_own_lines_are_kept
+R5   seen keeps other events (respond.failed, memory.profile)          report_seen: other_events_for_the_conversation_are_ignored
+R6   seen keeps input order, or sorts replies but not writes           report_seen: replies_are_ordered_*, writes_are_ordered_*, two_sites_*
+R7   seen counts a repeated line twice                                 report_seen: the_same_line_twice_counts_once
+R8   seen de-duplicates by time instead of by line                     report_seen: different_lines_at_the_same_instant_both_count
+R9   seen sorts the id lists                                           report_seen: the_offered_order_is_kept_not_sorted
+R10  seen reads an empty tier as None / unavailable as ()              report_seen: empty_tiers_*, an_unavailable_tier_is_none
+R11  seen guesses () for an old line without tier fields               report_seen: an_old_line_without_the_tier_fields_*
+R12  seen keeps a line with a malformed id list (skips the bad id)     report_seen: a_malformed_id_list_drops_that_line_only, a_malformed_inserted_*
+R13  seen reads written_through absent as 0                            report_seen: a_write_with_nothing_inserted_or_written_through
+R14  respond.done omits standing_facts / recalled_facts                report_respond: the_ids_are_logged_in_the_order_offered
+R15  respond.done lists recalled ids in both fields, or sorted         report_respond: the_ids_are_logged_*
+R16  respond.done writes fact text beside the ids                      report_respond: no_fact_text_reaches_the_line
+R17  respond.done writes () instead of unavailable when memory is down report_respond: unreachable_memory_is_unavailable_*, unwired_memory_*
+R18  respond.done drops or changes a field it already had              report_respond: the_rest_of_the_line_is_as_it_was
+R19  facts filters on valid_to IS NULL                                 report_db: facts_returns_current_closed_and_superseded_rows_*
+R20  facts invents a row for a forgotten id                            report_db: facts_returns_current_*, facts_asks_only_for_the_ids_given
+R21  facts filters by household / returns every row                    report_db: a_fact_from_another_household_*, facts_asks_only_*
+R22  writers ignores the conversation or the memory_write task         report_db: writers_are_the_conversations_memory_write_calls_oldest_first
+R23  writers orders newest first or by id                              report_db: writers_are_the_conversations_memory_write_calls_oldest_first
+R24  render marks used on every fact / none / the wrong tier           report_render: used_is_marked_*, used_is_per_reply
+R25  render omits closed, its date, or replaced by                     report_render: a_closed_fact_says_when_*, an_inserted_fact_since_closed_*
+R26  render says closed on a current fact                              report_render: a_closed_fact_says_when_*
+R27  render lists a forgotten id as current / drops it                 report_render: a_fact_with_no_row_is_forgotten, an_inserted_fact_since_forgotten_*
+R28  render drops the used-not-offered ids                             report_render: an_id_used_but_offered_by_neither_tier_*, a_used_id_with_no_row_*
+R29  render marks every used id not offered                            report_render: nothing_is_called_not_offered_*
+R30  render prints an empty list for unreachable memory                report_render: unreachable_memory_is_not_an_empty_list, an_older_line_says_*
+R31  render conflates unreachable and not logged                       report_render: unreachable_*, an_older_line_*, one_unreachable_reply_*
+R32  render says unreachable for a reply offered nothing               report_render: a_reply_that_was_offered_nothing_says_neither
+R33  render omits origin conversation, kind or visibility              report_render: each_offered_fact_shows_*
+R34  render omits the writes, their facts or the writer models         report_render: writes_show_*, every_writer_model_is_shown
+R35  render prints nothing / several lines when nothing was found      report_render: nothing_found_is_one_line_*
+R36  render reverses the replies                                       report_render: replies_come_oldest_first
+R37  entry exits 1 or raises on bad arguments                          report_cli: bad_arguments_exit_two_*
+R38  entry exits non-zero when nothing is found                        report_cli: nothing_found_exits_zero_*, empty_stdin_*
+R39  entry ignores --conversation (reports every conversation)         report_cli: the_report_of_a_conversation_prints_*
+R40  entry omits the writer ledger or the facts lookup                 report_cli: a_forgotten_fact_and_the_writer_are_reported
+
+Search contract (test_contract_search_*.py; blind, written from the contract before the implementation existed, so
+none of these has been run yet: the column is the test expected to go red first).
+
+S1   composite asks sources one after another                          composite: sources_are_asked_concurrently
+S2   composite orders by key name, or reverses source order            composite: specs_are_concatenated_in_source_order, mapping_order_*
+S3   composite keeps the later duplicate                               composite: a_duplicate_name_keeps_the_earlier_source_*
+S4   composite drops a duplicate without logging, or logs wrong keys   composite: a_duplicate_name_*, no_duplicates_logs_nothing
+S5   composite lists unreachable keys in completion order / as names   composite: unreachable_sources_are_named_by_key_in_source_order
+S6   composite raises when one source is down (not all)                composite: unreachable_sources_*, an_empty_but_reachable_*
+S7   composite returns an empty catalogue when all are down            composite: every_source_down_raises_tools_unavailable
+S8   composite joins instructions with one newline, or keeps empties   composite: instructions_join_the_reachable_non_empty_ones_*
+S9   composite includes an unreachable source's instructions           composite: instructions_join_*
+S10  composite routes by the first catalogue forever (no refetch)      composite: a_tool_that_appeared_since_*, routing_follows_the_latest_catalogue
+S11  composite refetches on every call, or never before the first      composite: a_known_name_does_not_refetch_*, a_call_before_any_catalogue_*
+S12  composite refetches twice, or not at all, for an unknown name     composite: an_unknown_name_refetches_once_*
+S13  composite raises on an unknown name / on a refetch ToolsUnavailable composite: an_unknown_name_*, a_call_never_raises_*
+S14  composite rewrites the source's result (id, content, is_error)    composite: a_call_goes_to_the_source_that_offered_the_name_*
+S15  composite logs unknown_tool with the arguments                    composite: an_unknown_name_refetches_once_*
+S16  web_search sends the query as json/POST or under another key     web: the_request_is_a_get_of_search_with_q_format_json_*
+S17  web_search omits format=json or ignores timeout_s                 web: the_request_is_a_get_*
+S18  web_search returns more than web_results, or fewer                web: at_most_web_results_come_back
+S19  web_search sorts or dedupes SearXNG's results                     web: a_result_has_title_snippet_and_the_host_as_source_*
+S20  web_search leaves the snippet uncut, or cuts a short one          web: a_snippet_is_cut_*, a_snippet_under_the_limit_*
+S21  web_search gives the full URL (or netloc with a path) as source   web: a_result_has_title_snippet_and_the_host_*
+S22  web_search writes "published": null for an undated result         web: published_appears_only_when_*
+S23  web_search always includes "answers" (even empty)                 web: answers_appear_only_when_searxng_gave_some
+S24  web_search calls no results an error                              web: no_results_is_ok_and_empty
+S25  web_search treats a blank or non-string query as ok / searches    web: a_missing_blank_or_non_string_query_*
+S26  web_search puts the query in an error reason or a log line        web: the_query_urls_titles_*, every_failure_to_answer_*
+S27  web_search reports a non-2xx with a parseable body as ok          web: an_http_error_status_is_unavailable_*, every_failure_*[not_found]
+S28  web_search lets a timeout / connect error / bad JSON escape       web: every_failure_to_answer_is_unavailable_*
+S29  web_search logs outcome error for an unavailable (or the reverse) web: a_missing_blank_*, every_failure_to_answer_*
+S30  web_search answers a foreign tool name instead of unknown_tool    web: a_name_other_than_search_web_is_unknown_*
+S31  places ranks by the rounded bias, not the unrounded home          places: ranking_and_distance_use_the_unrounded_home_*
+S32  places keeps Photon's order                                       places: photons_own_order_is_not_trusted, the_nearest_come_first_*
+S33  places measures distance from the rounded bias                    places: ranking_and_distance_use_the_unrounded_home_*
+S34  places sends unrounded coordinates, or rounds to the wrong count places: the_request_asks_photon_*, the_bias_is_rounded_to_bias_decimals
+S35  places sends a limit other than places_fetched                    places: limit_is_places_fetched, the_request_asks_*
+S36  places returns places_fetched instead of places_results          places: at_most_places_results_come_back
+S37  places caps before skipping nameless / coordinate-less features  places: features_without_a_name_or_coordinates_are_skipped_before_the_cap
+S38  places crashes on a feature with no geometry                      places: features_without_a_name_*
+S39  places builds the address as street, housenumber / drops the city places: the_address_is_housenumber_street_then_city_*
+S40  places writes an empty or null address when there is none         places: a_place_with_no_address_parts_has_no_address_key
+S41  places gives distance in km or unrounded, or rounds to an integer places: the_nearest_come_first_*, distance_is_rounded_to_a_tenth_of_a_mile
+S42  places calls the home on every request                            places: a_known_home_is_asked_once_per_ttl
+S43  places caches the home forever                                    places: a_known_home_is_asked_once_per_ttl
+S44  places caches a home failure (or the failure's absence)           places: a_home_failure_is_not_cached
+S45  places forgets the cached home after a Photon failure             places: a_failure_after_a_success_does_not_discard_the_cached_home
+S46  places reports a home failure as "did not answer" / as error     places: an_unknown_home_is_unavailable_with_its_own_reason_*
+S47  places asks Photon with a stale or zero bias when home fails      places: an_unknown_home_*
+S48  places logs the coordinates, the query or an address              places: no_query_coordinate_name_address_or_url_reaches_a_log_line
+S49  zone.home returns on a non-2xx or missing latitude (0.0 default)  zone: anything_but_two_numbers_is_home_unknown[*]
+S50  zone.home lets a transport error / bad JSON escape as another type zone: anything_but_two_numbers_is_home_unknown[timeout|connect|html|list]
+S51  zone.home swaps latitude and longitude                            zone: the_house_is_the_zone_homes_latitude_and_longitude
+S52  zone.home logs the coordinates or the token                       zone: no_coordinate_or_token_reaches_a_log_line
+S53  search_config accepts a missing key (default) or an unknown key   config: a_missing_key_*, an_unknown_key_*
+S54  search_config accepts zero or a negative number                   config: a_number_that_is_not_positive_*
+S55  facts.tools ignores `unreachable` / puts it before instructions   persona: the_instructions_come_first_then_a_sentence_per_key_*
+S56  facts.tools adds the sentences when reachable is False            persona: unreachable_tools_say_only_the_house_line_*
+S57  facts.tools writes a sentence for an unknown key, or None wrongly persona: an_unknown_key_adds_no_sentence
+S58  facts.tools drops "house" from the keys it knows                  persona: one_unreachable_source_is_one_sentence[house]
+S59  respond does not copy catalogue.unreachable into the Context     persona: respond_hands_the_persona_the_catalogues_unreachable_keys
+S60  persona.md still says she cannot search the web                   persona: she_no_longer_says_she_cannot_search_the_web
+
+look_up (test_contract_look_up.py). Each plant was run against a throwaway implementation of the contract, written
+beside the tests and deleted; the loop, cap and log tests were green before each plant (persona and routes tests need the
+real code). Plants 1-3 and 5-7 went red as named; the rest are what the tests should kill once the implementation exists.
+
+L1   the `none` round never comes (tool_choice stays auto)             look_up: auto_for_max_rounds_rounds_then_none_and_the_loop_ends[*]
+L2   the loop stops one round early, or runs one more than max_rounds  look_up: auto_for_max_rounds_*, an_answer_before_the_cap_*
+L3   Ashley's tools (the locator's Tools) offered or called inside     look_up: the_inner_tools_are_offered_under_auto_and_ashleys_are_not
+L4   the inner specs not offered / only some offered                   look_up: the_inner_tools_are_offered_*, a_round_runs_each_call_*
+L5   inner results not cut to result_chars (or cut when they fit)     look_up: a_result_is_cut_to_result_chars_and_a_shorter_one_is_not
+L6   inner results returned out of order or is_error dropped          look_up: a_round_runs_each_call_*, a_result_is_cut_*
+L7   answer not capped at answer_chars (or cut off by one)            look_up: the_answer_is_cut_to_answer_chars_*
+L8   sources not capped at max_sources, or not cut to 80 chars       look_up: sources_are_cut_to_max_sources_in_order_and_each_to_80_chars
+L9   the question logged (or the answer, a source, an inner result)  look_up: the_question_the_answer_the_sources_and_the_results_reach_no_log_line
+L10  a blank, missing or non-string question reaches the model        look_up: a_missing_or_blank_question_is_an_error_and_asks_nobody[*]
+L11  a question error with another reason, or is_error False          look_up: a_missing_or_blank_question_*
+L12  InferenceUnavailable or InferenceRefused escapes, or is reported  look_up: an_unavailable_or_refusing_model_is_unavailable_and_never_raises[*]
+     as outcome error / found false
+L13  a look-up that found nothing returned as is_error or outcome     look_up: not_found_is_still_a_result_not_an_error, a_look_up_that_found_nothing_*
+L14  the system prompt not from look_up.md, or task not `look_up`     look_up: the_first_step_is_the_look_up_task_with_the_prompt_file_and_one_question
+L15  more than the question in the first message, or a conversation   look_up: the_first_step_is_the_look_up_task_*
+     id passed on
+L16  the log line drops rounds, calls, found or duration_ms           look_up: an_ok_call_logs_*, a_look_up_that_found_nothing_logs_*
+L17  another tool name run as a look-up instead of unknown_tool       look_up: another_tool_name_is_an_error_and_asks_nobody, the_other_outcomes_are_logged
+L18  catalogue offers more than one tool, a different required key,   look_up: the_catalogue_is_one_tool_with_a_required_question
+     or non-None instructions
+L19  catalogue swallows the inner sources' ToolsUnavailable           look_up: the_catalogue_raises_when_the_inner_sources_do
+L20  look_up.json loader accepts a missing key, an unknown key, or a  look_up: a_missing_key_*, an_unknown_key_*, a_number_that_is_not_positive_*
+     non-positive number; shipped values differ                       the_shipped_file_holds_the_contracts_values_and_loads
+L21  facts.tools keeps a sentence for web/places, or none for search  look_up: the_two_keys_are_house_and_search, the_old_source_keys_give_no_sentence[*]
+L22  routes.json lacks the look_up task, or its routes differ         look_up: the_task_is_named_and_has_the_routes_the_contract_gives
+
+
+read_page (blind tests: read_page_contract_support.py, test_contract_read_page*.py, test_contract_page_text.py).
+STATUS: PLANNED, NOT YET RUN. The implementation did not exist when these tests were written. The reviewer plants each in a
+scratch copy of app/, asserts the plant applied exactly once and the suite is green first, and counts a kill only on
+exit 1 with a FAILED line naming the test.
+
+#    mutant                                                 first red test(s)
+G1   a second search restarts at 1                          read_page: a_second_search_continues_the_numbering_*
+G2   numbering or the table kept on LookUpTools/module      read_page: the_next_look_up_numbers_afresh_*, the_limit_is_per_look_up_*
+G3   a number past the returned results is accepted         read_page: a_number_the_look_up_never_returned_*[6|8]
+G4   read_page honours a `url` argument                     read_page: a_url_beside_the_number_is_never_fetched_or_resolved
+G5   "1" or 1.5 coerced to an integer                       read_page: a_missing_or_non_integer_result_*
+G6   a wrong reason for a missing/unknown number            read_page: a_missing_or_non_integer_*, a_number_the_look_up_never_*
+G7   the third read allowed, or a limit of three            read_page: the_third_read_is_refused_*, *_in_one_round_*
+G8   the limit checked after the fetch                      read_page: the_third_read_is_refused_and_fetches_nothing
+G9   the limit kept per LookUpTools, not per look-up        read_page: the_limit_is_per_look_up_*
+G10  read_page in Ashley's catalogue, or callable there     read_page: ashleys_catalogue_still_has_only_look_up_*
+G11  read_page missing from some steps (the `none` step)    read_page: read_page_is_offered_to_the_sub_agent_on_every_step_*
+G12  only the first resolved address is checked             fetch: a_mixed_answer_*[public first]
+G13  is_private / is_loopback instead of is_global          fetch: a_host_that_resolves_to_a_non_public_*[100.64.0.1]
+G14  a literal address skips the check                      fetch: a_literal_non_public_address_*
+G15  the request is made, then the address refused          fetch: a_host_that_resolves_to_a_non_public_* (net.hits == [])
+G16  a redirect's host is not checked                       fetch: a_redirect_to_a_non_public_host_*
+G17  a redirect's scheme is not checked                     fetch: a_redirect_to_http_*
+G18  http (or another scheme) fetched                       fetch: a_scheme_other_than_https_*
+G19  redirects followed by the client, or off by one        fetch: at_most_max_redirects_redirects_*, a_redirect_loop_*
+G20  max_redirects hard-coded                               fetch: at_most_max_redirects_redirects_*[1|5]
+G21  the whole body read, then cut                          fetch: the_body_is_streamed_and_reading_stops_*, only_page_bytes_*
+G22  page_bytes hard-coded                                  fetch: only_page_bytes_are_read_from_the_body
+G23  content type unchecked, or any text/* read             fetch: any_other_content_type_is_refused_*
+G24  a non-2xx read as a page, or reported refused          fetch: a_non_2xx_page_did_not_answer
+G25  a timeout or connection error escapes or is `refused`  fetch: a_timeout_or_connection_error_did_not_answer
+G26  a cut mid-character raises                             fetch: a_cut_through_a_multibyte_character_*
+G27  the shared User-Agent or page_timeout_s not sent       read_page: a_read_is_an_https_get_*
+G28  the text not cut to page_chars, or cut to result_chars read_page: a_page_is_cut_to_page_chars_*, the_shipped_page_chars_*
+G29  an error reason carries the URL or host                read_page/fetch: the exact reason strings; logs: no_url_host_*
+G30  the log line carries the URL, host, query or text      logs: every_outcome_is_logged_and_no_url_host_*, an_ok_read_*
+G31  the log line lacks bytes, chars or duration_ms         logs: an_ok_read_logs_outcome_bytes_chars_*
+G32  a new key missing from look_up.json, or a wrong value  logs: the_shipped_file_has_the_four_new_keys_*
+G33  result_chars left at 4000 (cuts a full page)           logs: the_shipped_result_chars_does_not_cut_a_full_page
+G34  the loader accepts a missing/unknown/non-positive key  logs: a_missing_key_*, an_unknown_key_*, a_new_number_*
+G35  text_of: a nested dropped element ends at the first end tag   page_text: a_nested_dropped_element_ends_only_*
+G36  text_of: one of the ten tags missing from the drop list       page_text: a_dropped_elements_contents_go_*[tag]
+G37  text_of: a stray end tag drives the depth negative            page_text: a_stray_end_tag_does_not_swallow_*
+G38  text_of: a void element counted as opening                    page_text: a_void_element_inside_a_dropped_one_*
+G39  text_of: parser or depth kept across calls                    page_text: one_call_leaves_nothing_behind_*
+G40  text_of: blocks not on their own lines / inline broken apart  page_text: block_elements_*, inline_elements_stay_*
+G41  text_of: whitespace not collapsed                             page_text: whitespace_is_collapsed, a_real_page_puts_list_items_*
+G42  text_of: entities left, or unescaped twice                    page_text: entities_are_unescaped_once, a_real_page_keeps_its_content_*
+G43  text_of: comments or the doctype kept                         page_text: comments_and_the_doctype_are_not_text
+
+House state and page move contract (test_contract_house_state.py, test_contract_move_page.py; no database needed). Green
+before each plant (74 passed). Each plant applied exactly once-or-more by an asserted text replace, then reverted.
+
+#    mutant                                                 first red test(s)
+H1   move_page shows another person's screens               move_page: a_room_move_publishes_one_page_moved_to_the_speaker_alone
+H2   move_page skips the open-bench check                   move_page: a_bench_that_is_not_the_speakers_open_one_moves_nothing
+H3   chat maps to the memory room                           move_page: a_room_move_publishes_one_page_moved_*[chat]
+H4   bench id dropped from the event                        move_page: an_open_bench_of_the_speaker_moves_the_page_to_it
+H5   benches read for another person                        move_page: an_open_bench_of_the_speaker_moves_the_page_to_it
+H6   a bool accepted as a bench id                          SURVIVED at first (bench 1 was never open); killed by
+                                                            move_page: true_is_not_a_bench_id_even_when_bench_one_is_open
+H7   unavailable workshop not caught                        move_page: an_unreachable_workshop_is_an_error_result_not_a_raise
+H8   event published twice                                  move_page: a_room_move_publishes_one_page_moved_*
+H9   any non-string `to` accepted as a room                 move_page: a_destination_that_is_not_a_room_is_an_error_*
+H10  house_state says complete when capped                  house_state: an_answer_over_the_cap_says_it_is_not_complete_*
+H11  name matches ANY word                                  house_state: a_name_gives_the_entities_it_matches
+H12  house_state caches the live read                       house_state: a_change_in_the_house_shows_on_the_next_call
+H13  house_state logs the arguments                         house_state: a_call_logs_its_outcome_and_duration_and_nothing_*
+H14  narrow_by never offered                                house_state: an_answer_over_the_cap_says_it_is_not_complete_*
+H15  a source result marked error read as the house         SURVIVED at first (the fake's error text did not parse
+                                                            anyway); killed by house_state:
+                                                            a_source_result_marked_as_an_error_is_never_read_as_the_house
+H16  matched 0 reported as 1                                house_state: a_name_matching_nothing_says_matched_zero_*
+H17  house_state runs any tool name                         house_state: a_call_to_another_tool_name_is_an_error_result
+H18  the cap ignored (first form always)                    house_state: a_big_answer_stays_within_the_cap
+H19  move_page logs no bench id                             move_page: a_bench_move_logs_its_bench_id
+H20  house_state drops the last entity                      house_state: following_the_answers_down_reaches_every_entity_*
+
+Totals: 20 planted; 20 killed (2 after a directed test was added), 0 surviving. The script is
+~/scratch/ashley/workshop/notes/blind-house-move-mutate.py.
+
+tool_loop blind contract (test_contract_tool_loop_blind.py, _pace.py, _mix.py; no database). Green before each plant
+(81 passed). Each plant applied once by an asserted text replace on tool_loop.py or aside.py, then reverted. Written
+blind: the plants were chosen and run after the tests.
+
+#    mutant                                               first red test
+M8   repeat key includes the aside                        x6_two_reads_differing_only_in_aside_run_once
+M9   repeat key sensitive to key order                    k4_key_order_is_ignored
+M10  a change that ran does not clear the memory          x16_in_one_round_a_read_after_a_change_that_ran_runs_again
+M12  a change that ran is deduped when repeated           k5_a_change_is_never_deduped
+M13  resume forgets the entries so far                    x4_a_read_before_the_hold_is_still_remembered_after_the_resume
+M14  hold budget never reached                            k8_past_hold_after_the_latest_aside_is_returned_as_held
+M15  hold with no aside gets canned text                  k8_no_aside_no_hold_by_time
+M16  time hold ignores the hold flag                      k8_without_hold_nothing_holds_by_time
+M17  resume may hold again                                k9_a_turn_held_by_not_answer_is_not_held_again_by_time
+M18  deadline passes at twice deadline_s                  k10_it_is_logged_with_the_conversation_rounds_and_duration
+M19  resume ignores `started`                             k10_a_resumed_turn_counts_from_started
+M20  aside not stripped for the source                    k7_the_source_never_sees_the_aside
+M21  aside not offered                                    k7_every_tool_is_offered_with_a_required_string_aside_*
+M22  resume of aside_budget asks under required           k8_k9_the_turn_holds_at_most_once_and_resume_goes_on_under_auto
+M23  tools.repeat event renamed                           k4_it_is_logged_tools_repeat
+M25  respond.deadline event renamed                       k10_the_deadline_counts_from_started_not_from_the_call
+M26  latest aside is the first, not the last              k8_the_line_is_the_latest_aside_of_the_turn
+M27  a blank aside counts                                 k8_a_blank_aside_is_no_aside
+
+The change gate (declare_change) was removed: its mutants M1-M7, M11 and M24 are gone, and M8 and M13 name the
+tests that now catch them. The rest were not re-run.
+Totals: 18 planted; 18 killed (1 after a directed test was added), 0 surviving. The script is
+~/scratch/ashley/workshop/notes/blind-tool-loop-mutate.py. Contract gaps: ~/scratch/ashley/workshop/notes/blind-tool-loop.txt.
+
+bench_replace and windowed reads (test_contract_bench_replace.py); 16 planted, 16 killed, 0 surviving
+B1   several matches allowed up to 2                         a_snippet_once_in_the_window_read_but_twice_in_the_whole_body
+B2   snippet searched only in the first window               a_snippet_spanning_two_windows_is_found_once
+B3   stale base not checked                                  an_older_version_than_the_piece_has_is_stale_base
+B4   unread not checked                                      a_piece_she_has_not_read_is_unread
+B5   zero matches applied as a no-op edit                    zero_matches_an_empty_old_and_several_matches
+B6   empty old allowed                                       an_empty_old_is_refused_even_on_an_empty_body
+B7   a gone piece reported stale_base                        a_piece_taken_off_the_bench_after_she_read_it
+B8   empty new keeps the snippet                             an_empty_new_deletes_the_snippet
+B9   reported version is base+2                              the_new_text_is_spliced_in_literally
+B10  only the first window counts as read                    replace_after_reading_only_the_last_window
+B11  body_cut ignores offset                                 the_window_is_piece_chars_from_the_shipped_config
+B12  body_cut true on an exact fit                           a_body_exactly_one_window_long_is_not_cut
+B13  negative offset allowed                                 an_offset_at_or_past_the_end_is_an_empty_uncut_window
+B14  the edit's title replaced                               the_new_text_is_spliced_in_literally
+B15  new inserted after old instead of replacing             a_snippet_spanning_a_multibyte_character
+B16  edit built on base_version+1                            a_snippet_spanning_two_windows_is_found_once
+Script: ~/scratch/ashley/workshop/notes/blind-bench-replace-mutate.py.

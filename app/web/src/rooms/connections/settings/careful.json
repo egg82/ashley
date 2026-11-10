@@ -1,0 +1,10 @@
+{
+  "domains": [
+    "climate", "cover", "fan", "input_boolean", "input_button", "input_number", "input_select", "light", "media_player",
+    "scene", "switch", "timer", "todo", "vacuum"
+  ],
+  "careful_classes": {
+    "cover": ["door", "garage", "gate"],
+    "switch": ["outlet"]
+  }
+}

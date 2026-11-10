@@ -1,0 +1,7 @@
+{
+  "max_chars": 3000,
+  "list_at_most": 2,
+  "tally_at_most": 3,
+  "summary_attributes": ["current_temperature"],
+  "outside_domains": ["calendar"]
+}

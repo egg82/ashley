@@ -1,0 +1,43 @@
+Planted wrong implementations, applied one at a time to the file named, tests/escalation_blind run, then the file restored
+from the text read before planting. CAUGHT means an assertion failed (exit 1 and a FAILED line). Run against
+escalation-2 at bbe71fb.
+
+Only M8 survived the suite as first written. Files: TL = channels/tool_loop.py, ES = channels/escalation.py, LA = channels/landing.py.
+
+M1   CAUGHT  TL  A: the round limit is off by one (escalates past the limit, not at it)
+M2   CAUGHT  TL  A: the deadline is no trigger
+M3   CAUGHT  TL  A: a turn that has made no call escalates (directed test: deadline passed before any call)
+M4   CAUGHT  TL  A: a held turn with no aside escalates instead of closing on the fast route
+M5   CAUGHT  TL  A: reported as trigger b
+M6   CAUGHT  TL  B: the line is dropped under hold
+M7   CAUGHT  TL  B: a reply's escalate is honoured on a turn with no escalation
+M8   CAUGHT  TL  B: the rounds logged are always 0 (survived the first suite; directed test: B after two rounds)
+M9   CAUGHT  TL  the stronger route keeps its escalation (a chain)
+M10  CAUGHT  TL  the stronger route keeps the fast route's limits
+M11  CAUGHT  TL  the stronger route is asked under the fast task
+M12  CAUGHT  TL  the trigger is never recorded (Steps.escalate not called)
+M13  CAUGHT  TL  log: trigger fixed to a
+M14  CAUGHT  TL  log: from_route is the stronger task
+M15  CAUGHT  TL  log: carries the line said
+M16  CAUGHT  TL  log: respond.escalated not emitted
+M17  CAUGHT  TL  Held.by is not_answer
+M18  CAUGHT  TL  Held drops the trigger
+M19  CAUGHT  TL  Held line is not the line
+M20  CAUGHT  TL  resume ignores Held.trigger (directed test: a resume whose steps record nothing)
+M21  EQUIV   TL  the escalated turn goes on from `entries` rather than `got.entries`: the same list contents
+M22  EQUIV   TL  the escalated turn is run with `hold` rather than False: the escalation has no line, so hold is False
+M23  CAUGHT  ES  of(): every kind escalates
+M24  CAUGHT  ES  of(): reply length from the stronger kind
+M25  CAUGHT  ES  of(): the stronger limits escalate again
+M26  CAUGHT  ES  task name is brainstorm
+M27  CAUGHT  LA  Landing escalates on a channel with no later reply
+M28  CAUGHT  turns.json  command escalates
+M29  CAUGHT  turns.json  chat does not escalate
+M30  CAUGHT  routes.json  escalated takes chat's routes
+M31  CAUGHT  checkpoint.py  the trigger is not stored
+M32  CAUGHT  checkpoint.py  the trigger is not read back
+M33  CAUGHT  inflight.py  Saved.escalate saves nothing
+M34  CAUGHT  resume.py  a resumed turn gets no escalation
+M35  CAUGHT  migration 0053  the ledger refuses the escalated task
+M36  CAUGHT  respond.py  the first run is given no escalation
+M37  CAUGHT  respond.py  the held turn's resume is given no escalation

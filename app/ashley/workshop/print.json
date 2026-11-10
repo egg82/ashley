@@ -1,0 +1,11 @@
+{
+  "roles": ["decorative", "enclosure", "structural", "flexure", "moving", "fit", "test", "reference"],
+  "overhang_deg": 45,
+  "layer_height_mm": 0.2,
+  "min_open_gap_mm": 0.6,
+  "min_support_gap_mm": 1.5,
+  "sample_mm": 0.5,
+  "max_print_triangles": 200000,
+  "max_islands": 12,
+  "bed_mm": null
+}

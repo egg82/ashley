@@ -1,0 +1,34 @@
+Planted wrong implementations, one at a time, each applied once to the file named and reverted after the run. Each run is
+tests/household_ha_blind against household-ha at b0e5dce, green before the plant. 25 planted, 24 caught.
+M4 (no-key fallback offered to every household) and M25 (seed without the households check) survived the first pass
+and were caught by tests added for them. M21 survives and is equivalent: on a household with no Home, `Everyday.of`
+answers the locator's tools before it looks at what it built, and a connection added again is a new Home, so the kept
+entry is never served; it only keeps one closed client's tools in memory. `tests/test_everyday_removed.py` shows the
+next turn after a removal never reaches the house with the old token, and fails when the kept entry is served.
+
+#    mutant
+M1  connected_homes.py: the env answers for every household
+M2  connected_homes.py: a removed row is never respected (never settled)
+M3  connected_homes.py: the seed is retried on every read
+M4  connected_homes.py: the seed is never retried
+M5  connected_homes.py: with no key, every household gets the env's
+M6  connected_homes.py: unreadable connections, every household gets the env's
+M7  connected_homes.py: unreadable connections, the last home seen is dropped
+M8  connected_homes.py: a rotated token is not followed
+M9  connected_homes.py: a replaced connection is not followed
+M10 connected_homes.py: 401 is not refused
+M11 connected_homes.py: the greeting is not checked
+M12 connected_homes.py: unreachable reported as refused
+M13 seed.py: a bad address is seeded
+M14 seed.py: ConnectionsUnavailable escapes
+M15 seed.py: seeded without the key
+M16 seed.py: outcome always seeded
+M17 postgres.py: seed overwrites a person's row
+M18 media_player.py: play_for asks household 1
+M19 homes.py: automations_of asks household 1
+M20 everyday.py: Everyday asks household 1
+M21 everyday.py: built tools kept after the connection was removed (SURVIVED, equivalent)
+M22 homes_presence.py: presence asks household 1
+M23 kiosk controls.py: run asks household 1
+M24 api/connections.py: stored without checking the house
+M25 postgres.py: seed inserts without the households check

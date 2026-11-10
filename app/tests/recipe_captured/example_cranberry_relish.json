@@ -1,0 +1,7 @@
+{
+ "url": "https://recipes.example/cranberry-relish",
+ "captured": "invented, in the shape of a plain fetch of a page whose JSON-LD is one @graph",
+ "blocks": [
+  "{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"WebPage\",\"@id\":\"https://recipes.example/cranberry-relish\",\"name\":\"Orange Cranberry Relish\"},{\"@type\":\"Article\",\"@id\":\"https://recipes.example/cranberry-relish#article\",\"headline\":\"Orange Cranberry Relish\"},{\"@type\":\"Recipe\",\"@id\":\"https://recipes.example/cranberry-relish#recipe\",\"name\":\"Orange Cranberry Relish\",\"author\":{\"@type\":\"Person\",\"name\":\"Example Cook\"},\"description\":\"A bright cranberry relish with orange.\",\"recipeYield\":[\"8\",\"8 servings (about 2 cups)\"],\"prepTime\":\"PT5M\",\"cookTime\":\"PT15M\",\"totalTime\":\"PT20M\",\"recipeIngredient\":[\"12 ounces fresh cranberries, rinsed\",\"3/4 cup granulated sugar\",\"1/2 cup orange juice\",\"1/4 cup water\",\"1 teaspoon grated orange zest\",\"1 pinch salt\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"Combine the sugar, orange juice and water in a medium saucepan and bring to a boil.\"},{\"@type\":\"HowToStep\",\"text\":\"Add the cranberries and simmer for 10 minutes, until most have burst.\"},{\"@type\":\"HowToStep\",\"text\":\"Stir in the zest and salt, then cool to room temperature before serving.\"}],\"recipeCategory\":[\"Side\"],\"recipeCuisine\":[\"American\"],\"keywords\":\"cranberry, relish\"}]}"
+ ]
+}

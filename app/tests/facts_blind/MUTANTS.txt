@@ -1,0 +1,16 @@
+Wrong implementations these tests should catch (plant each; the named test goes red):
+- choice row accepted with label of 61 characters: test_fb_row::test_label_over_60_is_refused
+- value limit 81 instead of 80: test_fb_row::test_value_over_80_is_refused
+- options of 1 or 7 accepted: test_fb_row::test_options_outside_2_to_6_are_refused
+- value need not be among options: test_fb_row::test_value_must_be_one_of_the_options
+- source `measured` or `bound` accepted on a choice: test_fb_row::test_number_only_sources_are_refused_on_a_choice
+- a row with no kind refused or changed: test_fb_row::test_a_row_with_no_kind_is_a_number_as_before
+- a piece citation not checked against the bench: test_fb_decide::test_her_citation_of_a_piece_not_on_the_bench_is_bad_citation
+- a person's edit demanded to carry a citation: test_fb_decide::test_a_person_needs_no_citation
+- confirmed guard skips choices: test_fb_decide::test_her_rewrite_of_a_confirmed_choice_is_refused
+- confirmed guard also refuses a guessed choice: test_fb_decide::test_her_rewrite_of_a_guessed_choice_is_accepted
+- guessed choice treated as confirmed by the report: test_fb_report::test_a_check_resting_on_a_confirmed_choice_passes
+- choice row dropped from the CAD file: test_fb_report::test_the_model_file_carries_choice_rows
+- reference part without form allowed: test_ashley_facts_blind.ReferenceForms::test_a_reference_part_with_no_form_fails_the_run
+- parts_apart against a reference rests on nothing: test_ashley_facts_blind.ApartRestsOnForm::test_an_overlap_with_a_reference_rests_on_its_form
+- `chosen` does not record the read: test_ashley_facts_blind.Chosen::test_a_check_without_rests_on_rests_on_the_choice_read

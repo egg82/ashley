@@ -1,0 +1,44 @@
+MUTANTS.txt: planted wrong implementations of the pure watch-items parts (ashley.criteria.items, ashley.criteria.condition,
+ashley.criteria.record, ashley.watches.diff), each applied alone, run against app/tests/watch_items_blind plus tests/test_item_predicates.py
+and tests/test_watch_diff.py (30 s thread timeout per test), then restored byte-identically (git diff --quiet).
+One line each: id, status, file, mutation -- first failing test. 'killed' = a test failed. conditions.py in the plan is condition.py in the build.
+
+W01  killed     items.py  holds ignores negate                                           -- test_a_before_predicate_on_a_new_item_is_false[p0]
+W02  killed     items.py  negate applied twice for a missing side                        -- test_a_before_predicate_on_a_new_item_is_false[p0]
+W03  killed     items.py  a missing side is true before negate (equals)                  -- test_a_before_predicate_on_a_new_item_is_false[p0]
+W04  killed     items.py  a missing side raises instead of reading false                 -- test_a_before_predicate_on_a_new_item_is_false[p0]
+W05  killed     items.py  `of` ignored, always reads after                               -- test_a_before_predicate_on_a_new_item_is_false[p0]
+W06  killed     items.py  `of` ignored, always reads before                              -- test_a_condition_holds_when_some_change_satisfies_it
+W07  killed     items.py  equals is case-insensitive                                     -- test_equals_reads_the_item_after_the_change_by_default[BLOCKED-False]
+W08  killed     items.py  one_of requires every listed value                             -- test_a_condition_holds_when_some_changed_item_meets_an_alternative
+W09  killed     items.py  number minimum exclusive                                       -- test_a_predicate_judges_as_the_spec_reads
+W10  killed     items.py  number maximum exclusive                                       -- test_a_predicate_judges_as_the_spec_reads
+W11  killed     items.py  number needs both bounds                                       -- test_a_predicate_judges_as_the_spec_reads
+W12  killed     items.py  number accepts a text field by coercion                        -- test_number_on_a_non_number_is_false
+W13  killed     items.py  contains is case-sensitive                                     -- test_contains_is_a_case_insensitive_substring[BLOCK-True]
+W14  killed     items.py  contains is a prefix match                                     -- test_a_predicate_judges_as_the_spec_reads
+W15  killed     items.py  changed true on a new item (None != value)                     -- test_a_condition_judges_as_the_spec_reads
+W16  killed     items.py  changed ignores the field, compares whole items                -- test_a_blocked_status_with_no_new_seq_does_not_wake
+W17  killed     items.py  new reads as `before is None or after is None`                 -- test_a_condition_judges_as_the_spec_reads
+W18  killed     condition.py alternative holds when any predicate holds (any)               -- test_a_blocked_status_with_no_new_seq_does_not_wake
+W19  killed     condition.py condition needs every alternative (all)                        -- test_a_condition_holds_when_some_changed_item_meets_an_alternative
+W20  killed     condition.py condition judges only the first change                         -- test_a_condition_holds_when_some_change_satisfies_it
+W21  killed     condition.py alternative's predicates judged on different changes           -- test_an_alternative_needs_all_its_predicates_on_one_item
+W22  killed     condition.py condition_holds true on no changes with all-negations          -- test_a_condition_judges_as_the_spec_reads
+W23  killed     condition.py validate ignores fields of changed                             -- test_a_field_outside_track_is_refused
+W24  killed     condition.py validate max_alternatives exclusive                            -- test_the_alternative_limit_is_inclusive
+W25  killed     condition.py validate max_predicates checks only the first alt              -- test_the_predicate_limit_is_inclusive_and_counts_each_alternative
+W26  killed     condition.py validate demands a field of new/gone                           -- test_a_condition_over_tracked_fields_within_limits_is_accepted
+W27  killed     diff.py   unchanged items are reported                                   -- test_a_condition_judges_as_the_spec_reads
+W28  killed     diff.py   gone items are not reported                                    -- test_a_change_from_diff_equals_the_one_built_by_hand
+W29  killed     diff.py   new items are not reported                                     -- test_a_change_from_diff_equals_the_one_built_by_hand
+W30  killed     diff.py   changed carries only the differing fields                      -- test_a_boolean_is_not_the_number_it_equals
+W31  killed     diff.py   before and after swapped in a changed item                     -- test_a_change_from_diff_equals_the_one_built_by_hand
+W32  killed     diff.py   compares only the first tracked field                          -- test_a_run_between_two_wakes_reads_as_one_finish
+W33  killed     diff.py   None compared as absent (None == missing)                      -- test_a_boolean_is_not_the_number_it_equals
+W34  killed     diff.py   falsy values (0, False) treated as unchanged                   -- test_none_null_and_false_are_values_like_any_other
+W35  killed     diff.py   text not cut                                                   -- test_text_cut_to_the_same_prefix_is_not_a_change
+W36  equivalent diff.py   text cut after comparing, not before                           -- not expressible: the build cuts text in to_items before diff ever compares, so there is no step ordering to swap; W35 and W38 cover the cut
+W37  killed     diff.py   numbers cut like text (str(n)[:max])                           -- test_text_within_the_limit_is_kept_whole_and_numbers_are_never_cut
+W38  killed     diff.py   cut off by one (max_value_chars - 1)                           -- test_text_is_cut_to_max_value_chars_before_it_is_kept
+W39  killed     diff.py   same identity from both reads yields two changes               -- test_a_boolean_is_not_the_number_it_equals

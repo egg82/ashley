@@ -1,0 +1,38 @@
+Planted against 3b2f6d3 one at a time, suite green before each, the file restored from the text read before planting;
+"caught" is exit 1 with a FAILED line naming a test. 28 of 28 non-equivalent mutants caught; 1 equivalent (below).
+
+deposit_rule.py
+ M1  matches drops the direction check
+ M2  matches compares direction == instead of !=
+ M3  minimum < -> <=
+ M4  exact payee compared case-sensitively
+ M5  exact and contains swapped
+ M6  from_json reads every rule as in
+ M7  to_json writes in
+ M8  landed() always in
+ M9  landed_from_json always in
+ M10 describe words an out rule as a deposit
+ M11 from_json accepts an unknown direction
+ M26 day < since -> <=
+ M27 matches ignores counts
+ M28 matches ignores the account
+deposit_sense.py
+ M13 poll always asks both directions
+ M14 poll asks income only
+ M15 a transfer counts
+ M16 an excluded row counts
+ M17 a split parent counts
+ M18 classification unchecked
+ M19 every page asks type=income
+ M20 deposits.poll drops directions
+ M21 cents keep their sign
+ M29 every row is read as out
+reminders.py / reminder_specs.py / reminder_turn.py
+ M22 the tool takes a missing direction as in
+ M23 the tool maps out to in
+ M24 her turn states a withdrawal for in
+ M25 the spec no longer requires direction
+
+Equivalent
+ M12 DepositRule.__post_init__ stops checking direction: every route in (from_json, the tool) validates first, and a
+     typed caller cannot pass a value outside Direction, so no test can reach it.

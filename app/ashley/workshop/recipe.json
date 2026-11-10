@@ -1,0 +1,32 @@
+{
+  "max_ingredients": 120,
+  "max_steps": 120,
+  "max_line_chars": 2000,
+  "max_serves": 200,
+  "words": {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+            "ten": 10, "eleven": 11, "twelve": 12, "a dozen": 12, "dozen": 12},
+  "units": {
+    "cup": {"one": "cup", "many": "cups", "aliases": ["cup", "cups", "c"]},
+    "tablespoon": {"one": "tbsp", "many": "tbsp", "aliases": ["tablespoon", "tablespoons", "tbsp", "tbsps", "tbs", "tbl"]},
+    "teaspoon": {"one": "tsp", "many": "tsp", "aliases": ["teaspoon", "teaspoons", "tsp", "tsps"]},
+    "pound": {"one": "lb", "many": "lb", "aliases": ["pound", "pounds", "lb", "lbs"]},
+    "ounce": {"one": "oz", "many": "oz", "aliases": ["ounce", "ounces", "oz"]},
+    "fluid_ounce": {"one": "fl oz", "many": "fl oz", "aliases": ["fl oz", "fluid ounce", "fluid ounces"]},
+    "pint": {"one": "pint", "many": "pints", "aliases": ["pint", "pints", "pt"]},
+    "quart": {"one": "quart", "many": "quarts", "aliases": ["quart", "quarts", "qt"]},
+    "gallon": {"one": "gallon", "many": "gallons", "aliases": ["gallon", "gallons", "gal"]},
+    "gram": {"one": "g", "many": "g", "aliases": ["g", "gram", "grams", "gr"], "metric": true},
+    "kilogram": {"one": "kg", "many": "kg", "aliases": ["kg", "kilogram", "kilograms"], "metric": true},
+    "millilitre": {"one": "ml", "many": "ml", "aliases": ["ml", "milliliter", "milliliters", "millilitre", "millilitres"], "metric": true},
+    "litre": {"one": "l", "many": "l", "aliases": ["l", "liter", "liters", "litre", "litres"], "metric": true},
+    "clove": {"one": "clove", "many": "cloves", "aliases": ["clove", "cloves"]},
+    "stick": {"one": "stick", "many": "sticks", "aliases": ["stick", "sticks"]},
+    "can": {"one": "can", "many": "cans", "aliases": ["can", "cans"]},
+    "pinch": {"one": "pinch", "many": "pinches", "aliases": ["pinch", "pinches"]},
+    "dash": {"one": "dash", "many": "dashes", "aliases": ["dash", "dashes"]},
+    "slice": {"one": "slice", "many": "slices", "aliases": ["slice", "slices"]},
+    "sprig": {"one": "sprig", "many": "sprigs", "aliases": ["sprig", "sprigs"]},
+    "bunch": {"one": "bunch", "many": "bunches", "aliases": ["bunch", "bunches"]},
+    "package": {"one": "package", "many": "packages", "aliases": ["package", "packages", "pkg"]}
+  }
+}

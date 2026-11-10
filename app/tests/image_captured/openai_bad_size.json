@@ -1,0 +1,8 @@
+{
+ "error": {
+  "message": "Invalid size '1000x1001'. Width and height must both be divisible by 16.",
+  "type": "image_generation_user_error",
+  "param": "size",
+  "code": "invalid_value"
+ }
+}

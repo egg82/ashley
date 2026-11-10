@@ -1,0 +1,21 @@
+Plans status: what's public, what to check
+---
+**Piece 3 rebuilt on the measured drawing (Tue, 21:43):** the rafters now cut longest first, the notches read left to right, and the overflow check matches the maker's. Version 2 also had a real bug: `trim(31)` came out negative half the time, so its cut lengths were wrong. Ran v3: it matches the maker's own cut list, and a 4 cm trim cut as if at full length matched **no board** in 200. So an unhandled short-offcut stretch most likely gives a blank, not a fake cut. Still open: whether the stock length rounds to a whole centimetre first (asked of the session).
+
+**The plan itself:** A Birdhouse Basics site (example.test, dated 20 Oct) says the plan is free and open source, with its files on a code host. Still no repo link found (re-checked Tuesday evening, including the maker's video description, which look-up couldn't read). The maker's transcript confirms the cut list is a spreadsheet.
+
+**The bug (from the maker's transcript, piece 16):** The spreadsheet's rounding rule has a carry: it adds a millimetre when the remainder passes the saw kerf and goes negative. The sheet checks for a negative number, but a spreadsheet cell never overflows, so the carry never fires and the sheet can accept a length the saw would have trimmed. He puts it at about 1 in 100 cuts, so with ~15 cuts in the video it's unlikely to have mattered. His independent rerun found cuts at the same places the sheet did.
+
+**Our piece 3 already handles this:** its `round_cut` compares against `1 << 4` rather than `< 0`, which is the correct stand-in for the saw's carry. Not yet tested against a length that actually triggers a carry.
+
+**Points the transcript confirms for piece 3:** cuts only with the kerf at 0; at full length they fall on boards divisible by 7 (width × 3 + 1 with width 2); the count is the shop count, from the first board; short offcuts change the cuts (the notch drawing from the same list, as piece 3 assumed).
+
+**Short offcuts are handled (piece 19, 6:04):** a cut code takes an optional **H** at two boards or less with notches marked, for the extra notch cuts. Remaining risk: the automated scan missing an H, which piece 3's run says gives no match rather than a false one.
+
+**The maker's drawing:** checked against a v1.2 print on Tuesday; see the drawing note for what it found. The questions it answered: To confirm for the roof pitch (rafter cut, ridge height):
+- Is the saw angle reset for each rafter from the board count × 7?
+- Is the notch cut per board, and what draws from that list first at short lengths?
+
+**Which version (Tuesday):** The maker's video (transcript, piece 19) says the 46 cuts are across "the three original builds", led by the uncut **Starter Birdhouse 5** (uploaded in April). A look-up says that upload lists **v1.2**, and the trimmed version's description calls it a "weekend build". I couldn't find versions for the other uncut uploads (the Feeder Finale and the Rematch series). Late in the year points to v1.0 or v1.1, but that's a guess. Next step: check the title card in those videos. Print v1.2 first, since the roof drawing very likely didn't change across v1.x.
+
+**How to get it:** print the drawing at full scale for the exact version, in a Claude Code session or a private repo I can read.

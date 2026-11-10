@@ -1,0 +1,19 @@
+/* The sign-in face and loading screen: the reticle around her, the button, the loading lines, the refusals. */
+
+.si { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; text-align: center; }
+.reticle { position: relative; width: 240px; height: 240px; display: grid; place-items: center; }
+.ret-ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: sweep 24s linear infinite; transition: transform 700ms var(--ease-out); }
+.reticle.locked .ret-ring { animation: none; transform: rotate(45deg) scale(.86); }
+:root[data-motion="reduced"] .ret-ring { animation: none; transition: none; }
+.si-dock { width: 128px; height: 128px; }
+.si-name { font-size: 34px; letter-spacing: .3em; text-transform: uppercase; padding-left: .3em; }
+.si-act { display: grid; gap: 10px; justify-items: center; }
+.si-btn { height: 44px; padding: 0 22px; font-size: 15px; }
+.si-steps { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; text-align: left; min-width: 260px; }
+.si-steps li { display: flex; gap: 10px; align-items: center; font-size: 14px; opacity: 0; transform: translateY(4px); transition: opacity 240ms, transform 240ms var(--ease-out); }
+.si-steps li.in { opacity: 1; transform: none; }
+:root[data-motion="reduced"] .si-steps li { transform: none; transition: opacity 160ms linear; }
+.si-steps li::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); flex: none; }
+.si-steps li[data-unk]::before { background: none; border: 1.5px dashed var(--text-3); box-shadow: none; }
+.si-err, .si-note { display: grid; gap: 8px; justify-items: center; }
+.si-note { margin-bottom: 6px; max-width: 420px; }

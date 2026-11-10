@@ -1,0 +1,102 @@
+{
+ "data": {
+  "print": {
+   "id": "100101",
+   "name": "Letter Keychain / Tag",
+   "slug": "letter-keychain-tag",
+   "summary": "Keyboard Keychain or bag tag",
+   "likesCount": 4,
+   "downloadCount": 19,
+   "makesCount": 0,
+   "ratingAvg": "0",
+   "user": {
+    "publicUsername": "MakerSix"
+   },
+   "stls": [
+    {
+     "id": "5247638",
+     "name": "seta_keyembedded.stl",
+     "fileSize": 449384
+    },
+    {
+     "id": "5247637",
+     "name": "seta_keyraised.stl",
+     "fileSize": 457084
+    },
+    {
+     "id": "5247639",
+     "name": "seta_keyembedded_logo.stl",
+     "fileSize": 613984
+    },
+    {
+     "id": "5247636",
+     "name": "seta_logo.stl",
+     "fileSize": 168684
+    },
+    {
+     "id": "5247634",
+     "name": "setb_keyembedded.stl",
+     "fileSize": 492484
+    },
+    {
+     "id": "5247635",
+     "name": "setb_keyraised.stl",
+     "fileSize": 500484
+    },
+    {
+     "id": "5247632",
+     "name": "setb_keyembedded_logo.stl",
+     "fileSize": 604284
+    },
+    {
+     "id": "5247633",
+     "name": "setb_logo.stl",
+     "fileSize": 85084
+    },
+    {
+     "id": "5247629",
+     "name": "setc_keyembedded_nologo.stl",
+     "fileSize": 724484
+    },
+    {
+     "id": "5247630",
+     "name": "setc_keyraised.stl",
+     "fileSize": 736484
+    },
+    {
+     "id": "5247628",
+     "name": "setc_logo.stl",
+     "fileSize": 85084
+    },
+    {
+     "id": "5247631",
+     "name": "setc_keyembedded_logo.stl",
+     "fileSize": 835684
+    },
+    {
+     "id": "5375224",
+     "name": "setc_keyembedded_logo_v2.stl",
+     "fileSize": 837284
+    },
+    {
+     "id": "200101",
+     "name": "base_letter_3mm.stl",
+     "fileSize": 684
+    },
+    {
+     "id": "5251518",
+     "name": "base_handle.stl",
+     "fileSize": 12684
+    }
+   ],
+   "description": "<p>Letter Keychain/Tag</p><p><i>Included some letter sets; more may follow. &nbsp;Follow the customize section below to create your own.</i></p><h4>Printing / Finishing</h4><ol><li>To embed a logo or text use a first layer height of 0.32mm so only one filament change is needed</li><li>Print vertically rather than flat if printing a single color</li><li>Wet sand with 220, 320, 600 &amp; 1500 grit</li><li>Fill the embedded letters with acrylic paint (3 layers, let dry between)</li><li>Sand again to clean up the paint</li><li>Rinse off with water &amp; dry</li></ol><h3>Customize with your layout</h3><ol><li>Use a layout editor to design your letters</li><li>Download an SVG</li><li>Import into a 3d editor or slicer</li><li>Make a rectangle around the letters (3mm depth)</li></ol><p><i>Note: There are quite a few variations</i></p><p>&nbsp;</p>",
+   "datePublished": "2026-06-03T20:48:55.878303+00:00",
+   "license": {
+    "name": "Creative Commons \u2014 Attribution"
+   },
+   "category": {
+    "name": "Computers"
+   }
+  }
+ }
+}

@@ -1,0 +1,8 @@
+{
+  "interval_s": 60,
+  "window_s": 600,
+  "min_calls": 5,
+  "error_share": 0.5,
+  "failing": ["error", "unavailable", "invalid_output"],
+  "tasks": ["chat"]
+}

@@ -1,0 +1,9 @@
+# The image CI's Python jobs run in (.gitlab-ci.yml, build-ci-image): both requirement files installed once, so a job
+# starts at its tests instead of at `pip install`. Tagged by a hash of this file and the two requirement files
+# (tools/ci_image_hash.py); the build context is app/.
+FROM docker.io/library/python:3.13-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+# ffmpeg: the media runner's tests run it for real (tests/test_media_runner.py).
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt requirements-dev.txt /tmp/
+RUN pip install -r /tmp/requirements.txt -r /tmp/requirements-dev.txt && rm /tmp/requirements*.txt

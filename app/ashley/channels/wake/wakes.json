@@ -1,0 +1,9 @@
+{
+  "poll_s": 2,
+  "batch": 5,
+  "max_age_s": 300,
+  "keep_s": 604800,
+  "fire_attempts": 3,
+  "retry_s": 300,
+  "deliver_for_s": 86400
+}

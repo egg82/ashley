@@ -1,0 +1,31 @@
+Planted wrong implementations, applied one at a time to the file named, tests/household_money_blind run, then reverted.
+CAUGHT means the suite goes red. Run against household-money at bf5506c.
+
+M1   CAUGHT   hearing.MAY_HEAR: a members row heard on a channel others hear
+M2   CAUGHT   MAY_HEAR: a members row heard by an unknown speaker
+M3   CAUGHT   MAY_HEAR: a members row heard by everyone
+M4   CAUGHT   MAY_HEAR: a members row heard by its owner only
+M5   CAUGHT   MAY_HEAR: a members row never heard
+M6   CAUGHT   hearing.Visibility: no members
+M7   CAUGHT   postgres_queries.stored_owner: finance keeps its owner
+M8   CAUGHT   stored_owner: stated finance loses its owner
+M9   CAUGHT   stored_visibility: household money stored shared
+M10  CAUGHT   stored_visibility: stated private finance forced to members
+M11  CAUGHT   PRIVATE_KINDS: health not pinned
+M12  CAUGHT   _HELD: members facts about someone not held
+M13  CAUGHT   recall: every channel treated as owner-only
+M14  CAUGHT   profile: every channel treated as owner-only
+M16  CAUGHT   api.memory._moved: a members fact moved to mine stays members
+M17  CAUGHT   _moved: a members fact moved to mine has no owner
+M18  CAUGHT   migration: every finance fact becomes members, stated or not
+M19  CAUGHT   migration: every unstated fact becomes members, any kind
+M20  CAUGHT   migration: the owner is kept
+M21  CAUGHT   turn_tools.sources: money offered to the first member only
+
+Equivalent: M15, _moved returning "shared" for money moved to the household. The move writes the new fact through
+Memory.apply, whose stored_visibility makes any ownerless finance fact members, so the route's own value is never what
+is stored.
+
+Observed, not a defect: a members fact stored with about_id kept (about Alana) cannot be moved to "mine" and a private
+finance fact about Alana cannot be moved to the household, since _moved only moves facts about nobody. The routes tests
+use facts about the household.

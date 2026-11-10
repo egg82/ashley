@@ -1,0 +1,92 @@
+"""What every task kind shares in `RoutedInference`: the wired providers by name, the routes, which providers are
+resting, and the spend ledger with its one log line per call."""
+
+import logging
+import time
+from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping
+from datetime import UTC, date, datetime
+
+from .. import logs
+from .model import Route, TaskName, Usage
+from .prices import Prices
+from .provider import ProviderFailed, Wired
+from .routes import Routes
+from .spend import Call, Outcome, SpendLedger
+
+log = logging.getLogger("ashley.inference")
+
+
+def utc_today() -> date:
+    return datetime.now(UTC).date()
+
+
+class Roster:
+    def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, prices: Prices,
+                 clock: Callable[[], float] = time.monotonic, today: Callable[[], date] = utc_today) -> None:
+        self._providers: dict[str, Wired] = {}
+        for provider in providers:
+            if provider.name in self._providers:
+                raise ValueError(f"two providers are named {provider.name!r}")
+            self._providers[provider.name] = provider
+        self._routes = routes
+        self._ledger = ledger
+        self._prices = prices
+        self.clock = clock
+        self._today = today
+        self._resting_until: dict[str, float] = {}
+
+    def candidates[W: Wired](self, task: TaskName, kind: type[W]) -> Iterator[tuple[Route, W]]:
+        """The task's routes in order whose provider is wired, can do `kind`'s work and is not resting; each route
+        passed over is logged `inference.route_skipped`. A provider that rests during the walk is skipped when
+        reached."""
+        for route in self._routes.for_task(task):
+            provider = self._providers.get(route.provider)
+            if isinstance(provider, kind) and self._clock_ok(route):
+                yield route, provider
+                continue
+            reason = "resting" if isinstance(provider, kind) else "unwired"
+            logs.info(log, "inference.route_skipped", task=task, provider=route.provider, model=route.model,
+                      reason=reason)
+
+    def _clock_ok(self, route: Route) -> bool:
+        return self.clock() >= self._resting_until.get(route.provider, float("-inf"))
+
+    def failed(self, route: Route, failure: Outcome) -> None:
+        """A call to the route's provider produced `failure`: `unavailable` rests the provider."""
+        if failure == "unavailable":
+            self._resting_until[route.provider] = self.clock() + self._routes.cooldown_s
+
+    async def warm(self, task: TaskName, route: Route, warming: Awaitable[None]) -> None:
+        """Awaits `warming`, a provider's `warm` for `route`, and logs `inference.warm`; never raises."""
+        started = self.clock()
+        outcome: Outcome = "ok"
+        reason: str | None = None
+        try:
+            await warming
+        except ProviderFailed as e:
+            outcome = e.failure
+            reason = str(e)
+        except Exception:
+            outcome = "error"
+            logs.error(log, "inference.warm_error", exc=True, provider=route.provider, model=route.model)
+        logs.info(log, "inference.warm", task=task, provider=route.provider, model=route.model, outcome=outcome,
+                  **_reason(reason), duration_ms=max(0, round((self.clock() - started) * 1000)))
+
+    async def record(self, task: TaskName, route: Route, outcome: Outcome, usage: Usage | None, started: float,
+                     fields: Mapping[str, object], conversation_id: int | None = None,
+                     reason: str | None = None) -> None:
+        """Logs `inference.call` and enters it in the ledger. `reason` is a failed call's `ProviderFailed` message."""
+        duration_ms = max(0, round((self.clock() - started) * 1000))
+        cost = None if usage is None else self._prices.cost_usd(route.provider, route.model, usage, self._today())
+        logs.info(log, "inference.call", task=task, provider=route.provider, model=route.model, outcome=outcome,
+                  **_reason(reason), **fields, duration_ms=duration_ms)
+        try:
+            await self._ledger.record(Call(task, route.provider, route.model, outcome, usage, cost, duration_ms,
+                                          conversation_id))
+        except Exception:
+            logs.error(log, "inference.spend_unrecorded", exc=True, task=task, provider=route.provider,
+                       model=route.model, outcome=outcome)
+
+
+def _reason(reason: str | None) -> dict[str, str]:
+    return {} if reason is None else {"reason": reason}

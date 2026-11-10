@@ -1,0 +1,35 @@
+{
+ "text": "Café society met in Zürich.\n😀😀 Emoji lead: the seven bridges of Königsberg were never crossed twice.\nPlain line, ends here.",
+ "cases": [
+  {
+   "quote": "Zürich",
+   "paragraph": 0,
+   "start": 20,
+   "end": 26
+  },
+  {
+   "quote": "the seven bridges of Königsberg",
+   "paragraph": 1,
+   "start": 15,
+   "end": 46
+  },
+  {
+   "quote": "crossed twice",
+   "paragraph": 1,
+   "start": 58,
+   "end": 71
+  },
+  {
+   "quote": "Plain line",
+   "paragraph": 2,
+   "start": 0,
+   "end": 10
+  },
+  {
+   "quote": "ends here.",
+   "paragraph": 2,
+   "start": 12,
+   "end": 22
+  }
+ ]
+}

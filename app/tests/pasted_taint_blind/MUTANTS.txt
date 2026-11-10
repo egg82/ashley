@@ -1,0 +1,44 @@
+Wrong implementations of P5 (a pasted or forwarded block that taints a turn) and the test that must go red for each. The
+blind writer guessed character-offset spans; the built model is the block stored apart (`Turn.attachment`), so each
+mutant below is restated against that model and planted by the reconciler's runner (all killed). Not applicable, with
+the reason: M6 (only the first span cut) and M7 (off-by-one in a cut) need offsets inside the text, which a block
+stored apart does not have; M16 (a short block cut from words anyway) cannot differ, since no block is ever words.
+Added after the plant run: O3 (a NUL in a forward passes) is killed by test_pasted_taint.py::test_a_nul_in_the_forward...
+Files: W = test_ptb_words.py, B = test_ptb_web.py, O = test_ptb_other_channels.py, K = test_ptb_kept.py.
+
+M1  judge_words cuts nothing (pasted spans stay in WORDS).                       W::test_the_pasted_span_is_cut_and_the_typed_text_around_it_stays
+M2  judge_words drops the whole pasted-turn message instead of the span.          W::test_the_pasted_span_is_cut_and_the_typed_text_around_it_stays
+M3  a turn with taint "pasted" has no words at all (the old "tainted => none").   W::test_a_turn_with_nothing_pasted_reads_whole
+M4  only the asking turn's own spans are cut; an earlier turn's are not.          W::test_a_later_message_cuts_the_spans_of_an_earlier_one
+M5  each message is cut to words_chars first, then the span is removed.           W::test_the_cut_is_made_before_each_message_is_cut_to_its_length
+M6  only the first span of a message is cut.                                      W::test_two_marked_spans_in_one_message_are_both_cut
+M7  a message made only of paste leaves a remainder of it (off-by-one cut).       W::test_a_message_that_is_only_paste_leaves_none_of_it
+M8  a woken (inherited) turn reads the creating turn uncut.                       W::test_a_woken_turn_made_by_a_pasted_turn_does_not_get_the_pasted_spans_as_words
+M9  the reminder's firing turn reads the brief or the creating turn uncut.        W::test_a_reminder_a_pasted_turn_made_wakes_a_turn_whose_words_are_cut
+M10 another speaker's turn is read once it carries spans.                         W::test_another_speakers_message_is_never_words_pasted_or_not
+M11 pasted taint widens the other outside origins into having words.              W::test_the_other_outside_origins_still_have_no_words
+M12 web route ignores the marks (never taints).                                   B::test_an_over_threshold_paste_taints_the_turn_pasted_and_the_spans_are_stored
+M13 web route taints but does not store the spans on the person turn.             B::test_an_over_threshold_paste_taints_the_turn_pasted_and_the_spans_are_stored
+M14 web route stores the text with the paste removed.                             B::test_an_over_threshold_paste_taints_the_turn_pasted_and_the_spans_are_stored
+M15 any marked span taints, whatever its length (no threshold).                   B::test_a_paste_under_the_threshold_changes_nothing
+M16 under-threshold spans are cut from words anyway.                              B::test_a_paste_under_the_threshold_changes_nothing
+M17 a long message taints by length alone, with no marked span.                   B::test_a_message_with_no_marked_span_is_not_tainted_however_it_looks_pasted
+M18 text that looks pasted (quote marker, original-message header, code fence) is
+    marked by scanning its words.                                                 B::test_a_message_with_no_marked_span_is_not_tainted_however_it_looks_pasted
+M19 an empty marks list taints.                                                   B::test_an_empty_marks_list_is_the_same_as_none
+M20 out-of-range spans are clamped, not refused.                                  B::test_a_span_outside_the_text_is_422_and_nothing_is_stored
+M21 the turn's log lines carry the pasted text (or a prefix of it).               B::test_the_turn_s_logs_carry_the_pasted_count_and_never_the_text
+M22 the turn's log lines carry no pasted count.                                   B::test_the_turn_s_logs_carry_the_pasted_count_and_never_the_text
+M23 a Discord forward is not marked.                                              O::test_a_forward_over_the_threshold_is_marked_and_taints_the_turn_pasted
+M24 the forward's span also covers the typed content.                             O::test_a_forward_over_the_threshold_is_marked_and_taints_the_turn_pasted
+M25 a Discord forward under the threshold taints.                                 O::test_a_forward_under_the_threshold_changes_nothing
+M26 a Discord message is marked by quote-looking wording ("> ", "-----Original").  O::test_long_text_that_looks_quoted_but_names_no_forward_is_not_marked
+M27 a long reply to her is read as a quote.                                       O::test_a_long_reply_to_her_is_not_a_quote
+M28 DMs are not marked (only guild messages).                                     O::test_a_dm_forward_is_marked_the_same
+M29 voice marks a long utterance as pasted.                                       O::test_voice_is_never_marked_however_long_it_hears
+M30 the checkpoint drops the spans or the origin on resume.                       K::test_the_origin_and_the_spans_survive_the_checkpoint_json
+M31 loads requires the new key (breaks an in-flight turn on rollout).             K::test_a_checkpoint_written_before_the_field_loads_with_no_spans
+M32 the store does not persist, or does not return, a turn's spans.               K::test_the_store_keeps_a_person_turns_spans_and_reads_them_back
+
+Equivalent or unpinned (no test tells them apart, by design): the exact threshold boundary, whether several short spans sum
+past the threshold, and whether an under-threshold span is kept in the stored field (G1, G3).

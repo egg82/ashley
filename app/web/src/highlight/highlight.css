@@ -1,0 +1,17 @@
+/* Code colours, from the house tokens: one --hl-* name per job, each an existing colour variable. */
+:root {
+  --hl-keyword: var(--k-plan); --hl-string: var(--t-code); --hl-number: var(--k-person); --hl-comment: var(--text-3);
+  --hl-name: var(--blue-hi); --hl-type: var(--k-routine); --hl-attr: var(--k-home); --hl-meta: var(--k-health);
+  --hl-literal: var(--k-diet);
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag { color: var(--hl-keyword); }
+.hljs-string, .hljs-regexp { color: var(--hl-string); }
+.hljs-number { color: var(--hl-number); }
+.hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--hl-literal); }
+.hljs-comment, .hljs-quote { color: var(--hl-comment); font-style: italic; }
+.hljs-title, .hljs-section, .hljs-title.function_ { color: var(--hl-name); }
+.hljs-title.class_, .hljs-type, .hljs-built_in { color: var(--hl-type); }
+.hljs-attr, .hljs-attribute, .hljs-property, .hljs-variable, .hljs-template-variable, .hljs-selector-class { color: var(--hl-attr); }
+.hljs-meta, .hljs-meta .hljs-keyword, .hljs-link { color: var(--hl-meta); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }

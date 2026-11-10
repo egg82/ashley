@@ -1,0 +1,72 @@
+Bench code runs (blind, from the contract and interface): each mutant is one wrong change to the source, run against
+this directory (`-x`, `-n 4`), then reverted (source diff clean afterwards). 53 planted; 50 red at once, 3 survived and
+each got a directed test, after which all 53 are red.
+
+decide / Ran
+run-unknown-kind-as-not-runnable   a piece of a kind the rules lost is not_runnable, not unknown_kind        RED
+run-stale-never-refused            a stale base is accepted                                                  RED
+run-stale-before-not-runnable      stale_base is judged before not_runnable                                  RED
+run-any-kind-runnable              only markdown is refused not_runnable                                     RED
+run-ran-wrong-version              Ran names version + 1                                                     RED
+run-effect-piece-id                Ran names piece 0                                                         RED
+undo-of-run-allowed                Undo naming a Run is not nothing_to_undo                                  RED
+walk-names-runs                    next_undo may name a Run                                                  RED
+walk-skips-after-run               next_undo stops at a Run                                                  RED
+
+run_piece
+language-unchecked                 any language is taken                                                     RED
+blank-unchecked                    a blank piece is run                                                      RED
+blank-only-empty                   only "" is blank, whitespace runs                                         RED
+too-long-unchecked                 any length is run                                                         RED
+too-long-off-by-one                a body exactly max_script_chars is too_long                               RED
+check-ignores-kind                 a blank note raises CannotRun instead of not_runnable                     RED
+piece-ignores-version              a stale run of a now-blank piece raises CannotRun instead of stale_base   RED
+files-never-passed                 the run starts with no files                                              RED
+files-of-wrong-piece               files are those of piece 1                                                RED
+runs-refused-commands              a refused-but-found piece is still run                                    RED
+turn-dropped                       her turn's ids are not recorded                                           RED
+wrong-version-recorded             the recorded piece_version is 1                                           RED
+wrong-seq-recorded                 the recorded command seq is 1                                             RED
+not-announced                      BenchChanged is not published after the run                               RED
+announced-to-nobody-else-wrong-person  BenchChanged shown to another person (survived; test_the_owners_screens_are_told_again checks the Shown)  RED
+script-not-body                    the title is run                                                          RED
+
+Runs service (Postgres)
+last-ordered-oldest-first          last_on_bench returns the first run of a piece                            RED
+last-ignores-household             last_on_bench reads another household's bench                             RED
+files-any-outcome                  files from a timed-out / killed / lost run are passed on                  RED
+files-any-run-incl-unrecorded      files from a run with no recorded result are passed on                   RED
+files-exit-zero-only               a non-zero exit passes nothing on                                         RED
+files-oldest-first                 the first finished run's files are passed on                              RED
+files-ignores-household            files_left reads another household's runs                                 RED
+files-ignores-bench                files_left mixes benches                                                  RED
+files-ignores-piece                files_left mixes pieces                                                   RED
+
+Route and wire
+route-run-by-her                   the person's Run is logged as hers                                        RED
+route-refusal-status               refused run is not 409                                                    RED
+route-cannot-status                language/blank/too_long is not 422                                        RED
+route-output-files-dropped         files missing from the output                                             RED
+route-cut-dropped                  output_cut always false                                                   RED
+route-skipped-dropped              files_left_out always empty                                              RED
+piece-run-version                  last_run.piece_version always 1                                           RED
+piece-run-output-dropped           last_run.run_output always null                                           RED
+last-run-never-shown               BenchPiece.last_run always null                                           RED
+kinds-no-languages                 run_languages always ["python"]                                           RED
+kinds-max-chars                    run_max_chars one short                                                   RED
+
+Her tools
+tool-run-by-person                 bench_run logged as the person's                                          RED
+tool-no-turn                       bench_run not recorded against her turn                                   RED
+tool-run-reads                     bench_run marked reads                                                    RED
+tool-last-is-a-change              bench_last_run not marked reads                                           RED
+tool-offers-when-null              tools offered with no sandbox language                                    RED
+tool-unreached-is-ok               an unreachable sandbox is a good result                                   RED
+tool-refusal-is-ok                 a refusal loses its reason (survived; test_a_refused_run_says_the_reason)  RED
+tool-last-first-piece              bench_last_run always answers for piece 1 (survived; test_the_last_run_is_of_the_piece_asked_for)  RED
+
+Defect found: bench_last_run (BenchRunTools) reads Runs.last_on_bench by household, so another person of the owner's
+household, given the tool for a bench that is not theirs, reads its runs. It is an xfail(strict) in test_brb_tool.py
+(`test_a_strangers_last_run_read_shows_nothing_of_the_owners_run[sam]`). Turn wiring only builds the tools for the
+asker's own bench, so it is not reachable today.
+Not planted: the `decide` unknown_kind refusal for Run is checked only through a rules object that lacks the kind.

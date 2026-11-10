@@ -1,0 +1,3 @@
+{
+  "excluded": ["assist_satellite.announce", "assist_satellite.start_conversation"]
+}

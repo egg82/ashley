@@ -1,0 +1,31 @@
+Mutants for the reconciler: plant each in the P4 implementation; the named tests must go red. None was run (the suite
+was written blind and red at base); the names are the tests whose assertions each one breaks.
+
+ 1  Any signed-in person may agree to any proposal id (no speaker check) -> test_at_refused other_person, test_at_site body_cannot_name_another_person
+ 2  The household is checked but not the person, or the person but not the household -> test_at_refused other_person / other_household
+ 3  The proposal is looked up by id with no household scope (another household's id is found) -> test_at_refused other_household
+ 4  A refused tap consumes the proposal (deleted before the check) -> test_at_refused (both "owner can still agree" tests), unknown, older_proposal
+ 5  The expiry gate is skipped for a tap -> test_at_refused expired, test_at_resume work_left_by_a_refused_tap
+ 6  The proposal is not consumed, so a second tap carries out again -> test_at_agree proposal_is_consumed, test_at_refused already_carried_out
+ 7  The proposal is consumed by the first tap but carried out by a second runner too (no claim): two sweeps both run it -> test_at_resume two_runners
+ 8  A model step runs before or instead of the carry-out (a reply is generated, or the judge/model is asked) -> test_at_agree no_model_is_asked, test_at_resume resumed_agree_never_asks_a_model
+ 9  The agree turn is built with the proposal's original taint or the held turn's, or tainted="agree" -> test_at_agree turn_is_the_tapping_persons_own_command
+10  The Inbound carries text (the held summary, "yes", the proposal id as text) -> test_at_agree turn_is_the_tapping_persons_own_command, stored_turn_carries_none
+11  The Inbound's author is household/ashley, or speaker_id is the proposal's maker rather than the tapper, or the audience is not owner -> test_at_agree turn_is_the_tapping_persons_own_command
+12  The carry-out runs inline in the request and is never checkpointed (no InFlight.begin) -> test_at_agree turn_is_..., test_at_resume (all)
+13  The checkpoint is saved after the calls run, so a runner that dies after begin loses the carry-out -> test_at_resume dies_right_after_the_checkpoint
+14  Resume re-runs a call that already took effect -> test_at_resume call_that_took_effect_is_not_run_again
+15  Resume re-takes a proposal that is gone and runs a stale copy kept in the checkpoint -> test_at_resume never_run_a_second_time, test_at_refused already_carried_out
+16  Held calls run in the wrong order, with arguments re-read from the tap body, or only the first runs -> test_at_agree carries_out_the_held_calls_as_stored, one_call_only
+17  A tap for an older, replaced proposal id carries out the newest one -> test_at_refused older_proposal
+18  The same-site check is skipped (a cookie-only auth that ignores Origin/Sec-Fetch-Site/content type) -> test_at_site (cross_site, marked_cross_site, form body)
+19  A signed-out tap is treated as the proposal's maker or answers 200 -> test_at_site signed_out
+20  A refusal runs part of the work before refusing (a checkpoint is begun, then dropped late) leaving work a later sweep carries out -> test_at_refused (every nothing_ran), test_at_site untouched
+21  The refusal reason is not typed (free text) or one reason is reported for another -> test_at_refused each case, test_at_logs refusals
+22  Logs carry the held summary, arguments or tool result -> test_at_logs (all)
+23  Refusals or the tap are not logged with the proposal id, or the refusal's reason is missing from the line -> test_at_logs taken_tap, refusal
+24  A malformed body (no proposal_id, wrong type) is read as a default id (0, the latest) -> test_at_refused body_without_a_proposal_id
+
+Not covered (and why): the Agree button on the page and in the push notification (client rendering and the push
+payload's shape are not pinned by the contract; they need a render check, not this suite); a proposal that is not held
+calls (a reminder, a money rule) being tapped, since the contract speaks of the held block only.

@@ -1,0 +1,102 @@
+Planted wrong implementations of bench_look and looks, run by ~/scratch/ashley/workshop/mutate_bench_look.py
+(each restored from the text read before mutating). 99 planted: 92 killed, 6 equivalent, 1 no-op control (survives).
+
+00 tools/bench_look.py: no-op control -> CONTROL (no-op, must survive)
+01 tools/bench_look.py: own bytes limit off by one -> killed
+02 tools/bench_look.py: own bytes limit doubled -> killed
+03 tools/bench_look.py: every type is an image -> killed
+04 tools/bench_look.py: missing piece not refused -> killed
+05 tools/bench_look.py: target loses the piece -> killed
+06 tools/bench_look.py: target person is the household -> killed (killed once ids were padded (household id differed from person id))
+07 tools/bench_look.py: screenshot typed png -> killed
+08 tools/bench_look.py: renders() not consulted -> EQUIVALENT: NullLooker.look raises LookUnavailable, so skipping the renders() check still gives an error result; only the reason text differs, which the contract does not state
+09 tools/bench_look.py: look not kept -> killed
+10 tools/bench_look.py: kept without piece -> killed
+11 tools/bench_look.py: kept under a fixed call id -> killed
+12 tools/bench_look.py: own call counted against the limit -> killed
+13 tools/bench_look.py: limit one too many -> killed
+14 tools/bench_look.py: limit counted on the conversation id -> killed
+15 tools/bench_look.py: catalogue inverted -> killed
+16 tools/bench_look.py: tool name unchecked -> killed
+17 tools/bench_look.py: browser failure raises -> killed
+18 tools/bench_look.py: record failure raises -> killed
+19 tools/bench_look.py: how named shot -> killed
+20 tools/bench_look.py: bytes logged as zero -> killed
+21 tools/bench_look.py: no image in result -> killed
+22 tools/bench_look.py: own bytes read from the person's key -> killed
+23 tools/bench_look.py: lost bytes drawn instead -> killed
+24 tools/bench_look.py: constant pod name -> killed
+25 tools/bench_look.py: image piece always drawn -> killed
+26 tools/bench_look.py: any piece with a stored file read -> killed (killed by a note whose body reads like a stored image)
+27 tools/bench_look.py: spec not a read -> killed
+28 tools/bench_picture.py: picture limit off by one -> killed
+29 tools/bench_picture.py: limit counts the asking call -> killed
+30 tools/bench_picture.py: picture under the files prefix -> killed
+31 tools/bench_picture.py: row media type constant -> killed
+32 tools/bench_picture.py: row size zero -> killed
+33 looks/postgres.py: second keep ignored -> killed
+34 looks/postgres.py: taken counts only the excepted call -> killed
+35 looks/postgres.py: taken ignores the household -> killed
+36 looks/postgres.py: newest first -> killed
+37 looks/postgres.py: listing ignores the household -> killed
+38 looks/postgres.py: replace keeps old hash -> killed
+39 looks/postgres.py: replace keeps old size -> killed
+40 looks/postgres.py: replace keeps old date -> killed
+41 looks/postgres.py: replace keeps old media type -> killed
+42 looks/postgres.py: replace keeps old piece -> killed (killed by a replacing keep that changes the piece)
+43 looks/links.py: picture purpose equals page purpose -> EQUIVALENT: a page token's payload lacks the picture token's keys (s, m), so check_picture refuses it on shape whatever the purpose; the purpose is defence in depth
+44 looks/links.py: page token lives to the second -> killed
+45 looks/links.py: picture token lives to the second -> killed
+46 looks/links.py: token drops the piece -> killed
+47 looks/links.py: page mac unchecked -> killed
+48 looks/links.py: picture mac under page purpose -> killed
+49 looks/links.py: page purpose empty -> EQUIVALENT: a file link's payload lacks the page token's keys (p, b), so check refuses it on shape whatever the purpose
+50 looks/links.py: picture token drops the household -> killed
+51 api/chat_looks.py: link ends a full ttl after now -> killed
+52 api/chat_looks.py: looks not sorted -> killed
+53 api/chat_looks.py: link drops the household -> killed
+54 api/chat_looks.py: no link key still links -> killed
+55 api/chat_looks.py: unanswered looks shown under -1 -> killed
+56 api/look.py: piece not narrowed -> killed
+57 api/look.py: page cacheable -> killed
+58 api/look.py: bench read as nobody -> killed
+59 api/look.py: page not logged -> killed
+60 api/look.py: picture read under files prefix -> killed
+61 api/look.py: store failure raises -> killed
+62 api/look.py: picture as attachment -> killed
+63 api/look.py: gone bytes served empty -> killed
+64 api/look.py: errors cacheable -> killed
+65 api/chat.py: unreadable looks fail the conversation -> killed
+66 api/chat.py: looks never shown -> killed
+67 looks/keys.py: look prefix is the files prefix -> killed
+68 looks/keys.py: key without household -> killed
+69 looks/config.py: max_height equal refused -> killed
+70 looks/config.py: quality 100 refused -> killed
+71 looks/config.py: ephemeral equal to home taken -> killed
+72 looks/config.py: deadline equal to ready taken -> killed
+73 looks/config.py: zero int taken -> killed
+74 looks/config.py: bool taken as int -> killed
+75 looks/config.py: log room boundary -> EQUIVALENT: the margin added to the base64 length (LINE_OVERHEAD) is not in the contract, so the boundary cannot be asserted
+76 looks/config.py: key set unchecked -> killed
+77 looks/pod_spec.py: pod restarts -> killed
+78 looks/pod_spec.py: service account token mounted -> killed
+79 looks/pod_spec.py: root writable -> killed
+80 looks/pod_spec.py: tmp outside the home -> killed
+81 looks/pod_spec.py: deadline doubled -> killed
+82 looks/pod_spec.py: no label -> killed
+83 looks/pod_spec.py: no storage limit -> killed
+84 looks/pod_spec.py: shm not memory -> killed
+85 looks/pod_spec.py: capabilities kept -> killed
+86 looks/kubernetes.py: first marker wins -> killed
+87 looks/kubernetes.py: non-jpeg accepted -> killed
+88 looks/kubernetes.py: failure line ignored -> killed
+89 looks/kubernetes.py: base64 junk skipped -> EQUIVALENT: junk characters in a base64 line decode to bytes that fail the JPEG check anyway; strictness of the decoder is not in the contract
+90 inference/anthropic_wire.py: pictures before the text -> killed
+91 inference/anthropic_wire.py: text always a block list -> EQUIVALENT: a result without pictures as a one-block list instead of a string says the same text; the contract fixes only where pictures go
+92 inference/anthropic_wire.py: picture type constant -> killed
+93 inference/openai_wire.py: pictures dropped -> killed
+94 inference/openai_wire.py: label names no call -> killed
+95 inference/openai_wire.py: no label line -> killed
+96 channels/checkpoint.py: checkpoint drops pictures -> killed
+97 looks/looker.py: null looker renders -> killed
+98 looks/looks.py: null looks keeps -> killed

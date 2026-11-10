@@ -1,0 +1,8 @@
+{
+  "session_days": 30,
+  "idle_days": 7,
+  "touch_minutes": 10,
+  "pending_minutes": 10,
+  "max_pending": 1000,
+  "unmapped_retention_days": 30
+}

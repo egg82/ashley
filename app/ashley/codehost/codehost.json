@@ -1,0 +1,7 @@
+{
+  "timeout_s": 20,
+  "projects_max": 100,
+  "tree_max": 100,
+  "read_bytes": 262144,
+  "snapshot_max_bytes": 20971520
+}

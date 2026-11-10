@@ -1,0 +1,12 @@
+[Unit]
+Description=herdr headless server
+Before=ashley-herdr-bridge.service
+
+[Service]
+ExecStart=%h/.local/bin/herdr server
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

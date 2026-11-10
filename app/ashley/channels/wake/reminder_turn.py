@@ -1,0 +1,81 @@
+"""The turn a reminder starts when it falls due: an `Inbound` nobody is waiting on (`unprompted`) that the person asked
+for earlier (`promised`), so it goes out whatever Initiative would say; on the phone thread of the person it is for
+(`push:<person id>`), with that person as the one it is with, so it reaches where they alone read it
+(`audience.owner_alone`), never a satellite, the tablet or Discord. Her answer is only stored (`later_by` `turn`), not
+queued in the outbox, which drops what waits too long: the push singleton sends it and records the delivery on the
+reminder (`ashley.channels.push.reminders`). It offers only the tools that change nothing (`Inbound.reads_only`), so she can look at their money before she words it
+and never act on it unattended, unless the reminder names the tools its turn may use (`Reminder.tools`, which its maker
+agreed to: `Inbound.tools_only`), when it carries them out and says what it did. Its conversation is not remembered. A reminder a deposit or withdrawal fired carries it
+(`Reminder.landed`), which she states from its fields. A reminder a tainted turn made starts tainted `inherited`
+(`Reminder.taint`), since its brief was written under outside words. The wake's id is the turn's `source`, so an occurrence handed in twice is one turn."""
+
+from ...people.model import Person
+from ...senses.deposit_rule import Landed
+from ...senses.wakes import Reminder
+from ..model import Inbound
+
+
+def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person) -> Inbound:
+    return Inbound(household_id=reminder.household_id, thread=f"push:{person.id}",
+                   text=said(reminder, person, made_by), kind="chat", medium="text", audience="owner",
+                   speaker_id=person.id, shared=False, place=None, channel="device", remembers=False, later=True,
+                   later_by="turn", source=f"wake:{wake_id}", unprompted=True, promised=not _judged(reminder),
+                   tools_only=reminder.tools, reads_only=reminder.tools is None,
+                   taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in)
+
+
+def _judged(reminder: Reminder) -> bool:
+    return reminder.landed is not None and reminder.landed.judged
+
+
+def said(reminder: Reminder, person: Person, made_by: Person) -> str:
+    """The reminder as she reads it."""
+    asked = "they asked" if made_by.id == person.id else f"{made_by.name} asked"
+    return (f"[A reminder you set, not words anyone said: for {person.name}; {asked} you to remind them.]\n"
+            f"What to remind them of: {reminder.brief}\n"
+            f"{_landed(reminder.landed)}{_what_to_do(reminder, person)}")
+
+
+def _what_to_do(reminder: Reminder, person: Person) -> str:
+    if reminder.tools is not None:
+        return ("They asked you to do this, and agreed to the tools you have now. Do it now with them, then say "
+                "briefly what you did or why you could not.\n")
+    return ("If it depends on their money, look first with the tools you have (they only read) and say what you "
+            "found, how much or that there is nothing to do. It goes out whatever you find.\n"
+            f"Remind {person.name} of it now, briefly, in your own words. It goes to their phone.")
+
+
+def _landed(landed: Landed | None) -> str:
+    if landed is None:
+        return ""
+    amount = f"{landed.cents // 100}.{landed.cents % 100:02d}"
+    if landed.direction == "out":
+        source = "" if landed.payee is None else f", to {landed.payee}"
+        return (f"The withdrawal that left: {amount} on {landed.day.isoformat()} out of {landed.account_name}{source}. "
+                f"Say what left, from these figures.\n")
+    source = "" if landed.payee is None else f", from {landed.payee}"
+    return (f"The deposit that landed: {amount} on {landed.day.isoformat()} into {landed.account_name}{source}. "
+            f"{_why(landed)}{_history(landed)}{_judge(landed)}Say what landed, from these figures.\n")
+
+
+def _why(landed: Landed) -> str:
+    return f"It matched because: {', '.join(landed.because)}. " if landed.because else ""
+
+
+def _history(landed: Landed) -> str:
+    h = landed.history
+    if h is None:
+        return ""
+    if h.seen == 0:
+        return "This payer has not paid into this account in the history read. "
+    return (f"This payer paid into this account {h.seen} time(s) before, from {_money(h.low_cents)} to "
+            f"{_money(h.high_cents)}, about every {h.every_days} days, last on {h.last_day}. ")
+
+
+def _judge(landed: Landed) -> str:
+    return ("Decide whether this is what they meant: set worth_saying false if it is not, and nothing is sent. "
+            if landed.judged else "")
+
+
+def _money(cents: int | None) -> str:
+    return "?" if cents is None else f"{cents // 100}.{cents % 100:02d}"

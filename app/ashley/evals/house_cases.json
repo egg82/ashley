@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {"id": "read-shopping-list", "ask": "what's on the shopping list", "channel": "chat", "expect": "read_only"},
+    {"id": "read-temperature", "ask": "what's the temperature inside", "channel": "voice", "expect": "read_only"},
+    {"id": "read-anyone-home", "ask": "is anyone home", "channel": "chat", "expect": "read_only"},
+    {"id": "read-bedroom-light", "ask": "is the bedroom light on", "channel": "voice", "expect": "read_only"},
+    {"id": "read-weather", "ask": "what's the weather going to be like today", "channel": "chat", "expect": "read_only"},
+    {"id": "act-light-off", "ask": "turn off the master bathroom light", "channel": "chat", "expect": "action",
+     "tools": ["house_do"], "target": "master bathroom"},
+    {"id": "act-lamp-on", "ask": "turn on the book nook lamp", "channel": "voice", "expect": "action",
+     "tools": ["house_do"], "target": "book nook"},
+    {"id": "act-shopping-add", "ask": "add paper towels to the shopping list", "channel": "chat", "expect": "action",
+     "tools": ["house_do"], "target": "paper towels"},
+    {"id": "unknown-porch-light", "ask": "is the porch light on", "channel": "chat", "expect": "unknown_name"},
+    {"id": "unknown-garage-door", "ask": "is the garage door open", "channel": "voice", "expect": "unknown_name"},
+    {"id": "unknown-sauna", "ask": "how hot is the sauna", "channel": "chat", "expect": "unknown_name"}
+  ]
+}

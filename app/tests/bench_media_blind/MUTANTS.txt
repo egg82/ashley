@@ -1,0 +1,135 @@
+Planted mutants for the bench video/audio blind suite (tests/bench_media_blind). Each was applied alone to the shipped
+source and the suite run to its first failure (the tests for that file first, then the whole suite); the file was
+restored from the text read before mutating. 119 planted: 110 killed (9 only after a directed test), 8 equivalent,
+1 no-op control (N0, survives by design).
+
+tools/bench_media.py
+  N0   no-op control (must survive)                     survived   [no-op control: survives by design]
+  A1   at: empty list allowed                           killed
+  A2   at: max_frames not allowed                       killed
+  A3   at: one over max allowed                         killed
+  A4   at: zero refused                                 killed
+  A5   at: non-finite allowed                           killed
+  A6   at: strings allowed                              killed
+  A7   at: under a second refused                       killed
+  A8   at: a bare string passes the type check          survived   [equivalent: a bare string is split into characters, and each is refused as a time, so the call errors either way]
+  A9   at: moments sorted                               killed
+  A10  at: only first three kept                        killed
+  L1   language: prefix match                           killed
+  L2   language: non-strings stringified                survived   [equivalent: a non-string stringified never matches a 2-3 letter code]
+  L3   language: always None                            killed
+  L4   language: lower-cased                            killed
+  L5   language: four letters allowed                   killed   [killed after a directed test (four-letter language)]
+  L6   language: one-char subtag allowed                killed
+  L7   language: nine-char subtag allowed               killed   [killed after a directed test (nine-character subtag)]
+  R1   recording: kind not checked                      killed
+  R2   frames: audio allowed                            killed
+  R3   transcribe: audio refused                        killed
+  F1   frames: limit not checked                        killed
+  F2   frames: own call counted                         killed
+  F3   frames: limit one too high                       killed
+  F4   frames: limit counted by conversation            killed
+  F5   frames: wrong media type                         killed
+  F6   frames: look not tied to the piece               killed
+  F7   frames: picture not in result                    killed
+  F8   frames: look tied to wrong bench                 killed
+  F9   frames: picture not kept                         killed
+  F10  frames: log counts asked not given               killed   [killed after a directed test (worker returns fewer frames than moments)]
+  F11  frames: only first moment asked                  killed
+  F12  frames: job name fixed                           killed
+  T1   transcribe: captions file ignored                killed
+  T2   transcribe: captions file logged as speech       killed
+  T3   transcribe: nothing said accepted                killed
+  T4   transcribe: title not cut                        killed
+  T5   transcribe: wrong kind                           killed
+  T6   transcribe: transcript has an address            killed
+  T7   transcribe: lines unstamped                      killed
+  T8   transcribe: placed two after                     killed
+  T9   transcribe: not moved beside                     killed
+  T10  transcribe: refused add treated as done          killed
+  T11  transcribe: language dropped                     killed
+  T12  transcribe: source always speech                 killed
+  T13  transcribe: language never checked               killed
+  T14  transcribe: reader accepted as recording         survived   [equivalent: a reader's body is not a stored file, so the recording lookup refuses it whichever kinds are listed]
+  S1   sidecar: type not checked                        killed   [killed after a directed test (a boolean piece number)]
+  S2   sidecar: none gives empty cues                   killed
+  S3   sidecar: missing piece reads empty               survived   [equivalent: a missing piece reads as empty text, which holds no cue, so the call errors either way (message differs only)]
+  S4   sidecar: any file piece                          killed   [killed after a directed test (a captions file after another file piece)]
+  S5   sidecar: no cues accepted                        survived   [equivalent: no cues leaves nothing to put up, which is refused as nothing said]
+  C1   catalogue: store not required                    killed
+  C2   catalogue: worker not required                   killed
+  C3   catalogue: one tool                              killed
+  C4   spec: at not required                            killed
+  C5   spec: frames is a change                         killed
+  C6   spec: transcribe is a read                       killed
+  C7   call: undefined arguments allowed                killed
+  C9   source: person id as household                   killed   [killed after a directed test (scene ids made to differ)]
+  C10  source: size off                                 killed
+  C11  source: media type fixed                         killed
+runs/captions.py
+  P1   stamp: rounds to nearest                         killed
+  P2   stamp: hour length                               killed
+  P3   stamp: hour form seconds unpadded                killed
+  P4   stamp: seconds unpadded                          killed
+  P5   stamp: hour form from two hours                  killed
+  P6   lines_of: whitespace text kept                   killed
+  P7   lines_of: line breaks kept                       killed
+  P8   cue time: comma refused                          killed
+  P9   cue time: hours required                         killed
+  P10  cue time: hour length                            killed
+  P11  cue time: minute length                          killed
+  P12  cue time: millisecond scale                      killed
+  P13  tags: timestamp tags kept                        killed
+  P14  cue text: first line only                        killed
+  P15  cue text: lines joined by break                  survived   [equivalent: lines joined by a break are re-split on whitespace by the caller's join, same words]
+  P16  cue: empty cues kept                             survived   [equivalent through every caller: `lines_of` leaves a cue with no words out; the contract does not say whether `parse_captions` returns it]
+  P17  parse: BOM kept                                  killed
+  P18  parse: blank lines with spaces do not split      killed   [killed after a directed test (cues separated by a line of spaces)]
+  P19  parse: rows reversed                             killed
+files/ranges.py
+  G1   range: bare dash                                 killed
+  G2   range: suffix zero                               killed
+  G3   range: suffix longer than file                   killed
+  G4   range: start at end                              survived   [equivalent: a start at the end also has end < start, so it is unsatisfiable either way]
+  G5   range: one byte                                  killed
+  G6   range: end past the file                         killed
+  G7   range: multiple ranges                           killed
+  G8   range: open end one past                         killed
+api/files.py
+  G9   serve: wrong total                               killed
+  G10  serve: last byte dropped                         killed
+  G11  serve: Accept-Ranges removed                     killed   [killed after a directed test and a corrected anchor (Accept-Ranges)]
+  G12  serve: 416 without length                        killed
+  G13  serve: 206 as 200                                killed
+  G14  serve: range loses type                          killed
+tools/bench_picture.py
+  K1   picture: limit one too high                      killed
+  K2   picture: own call counted                        killed
+  K3   picture: bytes not stored                        killed
+  K4   picture: size off                                killed
+  K5   picture: wrong household key                     killed
+workshop/stored_file.py
+  W1   clip body: audio accepted                        killed
+  W2   audio body: video accepted                       killed
+  W3   large body: any media type                       killed
+files/config.py
+  W4   piece_kind: recordings are files                 killed
+  W5   plays: nothing plays                             killed
+  W6   piece_kind: audio as clip                        killed
+workshop/decide.py
+  D1   cue: audio not driven                            killed
+  D2   cue: clip not driven                             killed
+  D3   cue: reader driven                               killed   [killed after a directed test (cue of a reader piece)]
+workshop/reader.py
+  E1   reader: empty address refused                    killed
+  E2   reader: any address                              killed
+runs/media.py
+  E3   null media: frames succeed                       killed
+  E4   null media: available                            killed
+looks/postgres.py
+  O1   looks: other calls counted as own                killed
+  O2   looks: no-op placeholder                         killed
+  O3   looks: replace keeps the old size                killed
+  O4   looks: taken ignores the household               killed
+  O5   looks: newest first                              killed
+  O6   looks: conversation read ignores the household   killed

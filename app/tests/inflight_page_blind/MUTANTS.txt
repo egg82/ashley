@@ -1,0 +1,31 @@
+Planted wrong implementations, applied one at a time to the file named, tests/inflight_page_blind run, then reverted.
+Files: ashley/conversations/postgres_inflight.py (W1-W4), ashley/channels/postgres_outbox.py (A1-A4), ashley/api/chat.py (C1-C4),
+ashley/channels/to_phone.py (T1-T5), ashley/channels/respond.py (S1-S6, R2), ashley/channels/resume.py (R1). CAUGHT means the suite goes red.
+
+Survivor that earned a directed test: A3 (messages queued after her turn committed, outside the transaction: test_a_message_the_outbox_refuses_undoes_her_turn).
+
+W1   CAUGHT   working counts answered turns; first failing: test_work_kept_only_for_a_memory_act_after_her_answer_is_not_working
+W2   CAUGHT   held line ends working; first failing: test_a_held_line_does_not_end_it
+W3   CAUGHT   working across all conversations; first failing: test_work_in_another_conversation_is_not_this_ones
+W4   CAUGHT   working returns one id; first failing: test_two_turns_of_one_conversation_with_work_are_both_working
+A1   CAUGHT   answer queues only the first message; first failing: test_every_message_pushed_is_queued_with_her_turn
+A2   CAUGHT   messages queued in their own transaction before the turn; first failing: test_a_failure_inside_the_transaction_leaves_neither_the_turn_nor_any_message
+A3   CAUGHT   messages queued after the turn committed; first failing: test_a_message_the_outbox_refuses_undoes_her_turn (after the directed test; survived the first suite)
+A4   CAUGHT   each message queued twice; first failing: test_every_message_pushed_is_queued_with_her_turn
+C1   CAUGHT   route never marks working; first failing: test_an_idle_conversation_marks_its_working_turn_too
+C2   CAUGHT   route inverts working; first failing: test_a_turn_with_work_in_flight_is_working_and_the_rest_are_not
+C3   CAUGHT   route marks every turn when any is working; first failing: test_a_turn_with_work_in_flight_is_working_and_the_rest_are_not
+C4   CAUGHT   route asks about the wrong conversation; first failing: test_an_idle_conversation_marks_its_working_turn_too
+T1   CAUGHT   copy to the household id's push thread; first failing: test_the_copy_is_the_text_for_the_speakers_phone
+T2   CAUGHT   copy ignores to_phone; first failing: test_no_copy_when_there_is_nothing_for_the_phone[not asked for]
+T3   CAUGHT   copy carries the spoken field; first failing: test_the_copy_is_the_text_for_the_speakers_phone
+T4   CAUGHT   copy to a phone nobody offered; first failing: test_no_copy_when_there_is_nothing_for_the_phone[not offered]
+T5   CAUGHT   copy in the wrong household; first failing: test_the_copy_is_the_text_for_the_speakers_phone
+S1   CAUGHT   stored drops the copy; first failing: test_a_spoken_reply_offered_to_the_phone_is_stored_as_the_written_text_with_the_copy
+S2   CAUGHT   stored drops what the channel queued; first failing: test_what_the_channel_queued_travels_with_the_turn_whole_and_once
+S3   CAUGHT   stored holds spoken when copied; first failing: test_a_spoken_reply_offered_to_the_phone_is_stored_as_the_written_text_with_the_copy
+S4   CAUGHT   stored's plain turn answers none; first failing: test_a_spoken_reply_not_for_the_phone_is_stored_as_what_was_said_and_queues_nothing
+S5   CAUGHT   stored doubles the copy; first failing: test_a_spoken_reply_offered_to_the_phone_is_stored_as_the_written_text_with_the_copy
+S6   CAUGHT   stored never copies; first failing: test_a_spoken_reply_offered_to_the_phone_is_stored_as_the_written_text_with_the_copy
+R1   CAUGHT   resumed turn loses the phone copy; first failing: test_the_phone_gets_the_text_once_whenever_the_runner_is_killed[before commit]
+R2   CAUGHT   first run loses the phone copy; first failing: test_the_phone_gets_the_text_once_whenever_the_runner_is_killed[before commit]

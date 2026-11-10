@@ -1,0 +1,88 @@
+MUTANTS.txt: planted wrong implementations of the Errands store (PostgresErrands, its Null Object, migration 0072), each
+applied alone, run against app/tests/errands_blind, then restored.
+One line each: status, file, mutation. 'killed' = a test failed, named after '--'. M-lines are the planted list; X-lines
+remove constraints the planted list left alone. A line marked 'first run' survived the suite as first written and is
+killed by the directed test named.
+
+M01      killed    postgres.py     owe without ON CONFLICT  -- test_owe_twice_for_one_turn_returns_the_same_id_and_stores_one
+M02      killed    postgres.py     owe upserts source/state  -- test_owe_again_for_a_turn_keeps_the_first_source
+M03      killed    postgres.py     owe returns 0 for an existing turn  -- test_owe_twice_for_one_turn_returns_the_same_id_and_stores_one
+M04      killed    postgres.py     owe visibility always shared  -- test_the_errand_keeps_the_turns_visibility
+M05      killed    postgres.py     claim newest first  -- first run: survived; killed by directed test test_claim_order_follows_creation_whatever_the_ids_run
+M06      killed    postgres.py     claim ignores answering  -- test_claim_takes_only_a_source_that_answers
+M07      killed    postgres.py     claim ignores max_age_s  -- test_claim_skips_an_errand_older_than_max_age
+M07b     killed    postgres.py     claim max_age the wrong way round  -- test_claim_takes_the_errand_and_sets_it_running
+M08      killed    postgres.py     claim sets attempts to 1  -- test_claim_again_after_release_counts_a_second_attempt
+M08b     killed    postgres.py     claim does not bump attempts  -- test_claim_takes_the_errand_and_sets_it_running
+M09      killed    postgres.py     claim leaves state due  -- test_claim_takes_the_errand_and_sets_it_running
+M09b     killed    postgres.py     claim does not set claimed_at  -- test_claim_takes_the_errand_and_sets_it_running
+M10      killed    postgres.py     claim without FOR UPDATE SKIP LOCKED  -- test_racing_claims_never_take_one_errand_twice[T]
+M11      killed    postgres.py     claim FOR UPDATE without SKIP LOCKED  -- test_a_claim_skips_an_errand_another_job_has_locked[T]
+M11b     killed    postgres.py     claim FOR UPDATE NOWAIT  -- test_racing_claims_never_take_one_errand_twice
+M12      killed    postgres.py     claim also takes running  -- test_racing_claims_never_take_one_errand_twice
+M13      killed    postgres.py     release gives up only above the maximum  -- test_release_one_below_the_maximum_still_retries_and_the_next_gives_up
+M14      killed    postgres.py     release gives up one early  -- test_release_one_below_the_maximum_still_retries_and_the_next_gives_up
+M15      killed    postgres.py     release reason not attempts  -- test_release_one_below_the_maximum_still_retries_and_the_next_gives_up
+M16      killed    postgres.py     release/settle drop the attempt condition  -- test_a_released_run_cannot_be_finished_by_its_old_attempt
+M16r     killed    postgres.py     release drops the attempt condition  -- test_release_of_a_stale_attempt_changes_nothing
+M16s     killed    postgres.py     finish/give_up drop the attempt condition  -- test_a_released_run_cannot_be_finished_by_its_old_attempt
+M17      killed    postgres.py     release/settle drop the running condition  -- test_finish_of_an_errand_the_sweep_gave_up_changes_nothing
+M17r     killed    postgres.py     release drops the running condition  -- test_release_of_an_errand_no_longer_running_changes_nothing
+M17s     killed    postgres.py     finish/give_up drop the running condition  -- test_finish_of_an_errand_the_sweep_gave_up_changes_nothing
+M18a     killed    postgres.py     finish stores no result  -- test_claim_takes_nothing_that_is_not_due
+M18b     killed    postgres.py     finish keeps state running  -- test_claim_takes_nothing_that_is_not_due
+M19      killed    postgres.py     give_up stores a fixed reason  -- first run: survived; killed by directed test test_give_up_stores_whichever_reason_it_is_given[expired]
+M20      killed    postgres.py     sweep judges running by created_at  -- test_sweep_interrupts_a_running_errand_claimed_too_long_ago
+M21      killed    postgres.py     sweep expires by claimed_at  -- test_sweep_expires_a_due_errand_older_than_max_age
+M21b     killed    postgres.py     sweep expires running errands too  -- test_sweep_judges_a_running_errand_by_its_claim_not_its_age
+M22      killed    postgres.py     sweep counts swapped  -- test_sweep_interrupts_a_running_errand_claimed_too_long_ago
+M22b     killed    postgres.py     sweep interrupted count is every row  -- test_sweep_leaves_a_recently_claimed_errand_running
+M23      killed    postgres.py     sweep also sweeps done  -- test_sweep_counts_each_kind_and_leaves_finished_errands_alone
+M24a     killed    postgres.py     sweep running boundary inverted  -- test_sweep_interrupts_a_running_errand_claimed_too_long_ago
+M24b     killed    postgres.py     sweep due boundary inverted  -- test_sweep_expires_a_due_errand_older_than_max_age
+M25      killed    postgres.py     untold ignores the hearer's ownership  -- test_a_person_of_another_household_hears_nothing
+M25b     killed    postgres.py     untold returns the whole household's  -- test_someone_else_in_the_household_does_not_hear_the_askers_errands
+M26      killed    postgres.py     untold newest first  -- test_untold_gives_the_askers_finished_errands_oldest_first
+M27      killed    postgres.py     untold ignores limit  -- test_untold_honours_the_limit_keeping_the_oldest
+M27b     killed    postgres.py     untold limits the newest before filtering  -- test_untold_honours_the_limit_keeping_the_oldest
+M28      killed    postgres.py     untold returns given_up too  -- test_untold_gives_only_errands_that_are_done
+M29      killed    postgres.py     untold ignores told_at  -- test_told_stops_an_errand_coming_back
+M30      killed    postgres.py     untold always withholds private  -- test_the_asker_hears_a_private_result_as_well_as_a_shared_one
+M30b     killed    postgres.py     untold never withholds private  -- first run: survived; killed by directed test test_a_reply_others_may_hear_withholds_private_results_and_keeps_shared_ones
+M31      killed    postgres.py     untold marks told  -- test_untold_honours_the_limit_keeping_the_oldest
+M32      killed    postgres.py     told marks only the first id  -- test_told_marks_every_id_it_is_given_and_no_other
+M32b     killed    postgres.py     told marks every done errand  -- test_told_stops_an_errand_coming_back
+M32c     killed    postgres.py     told overwrites told_at  -- first run: survived; killed by directed test test_told_again_keeps_the_first_time_it_was_told
+M34      killed    0072_errands.py turn_id not unique  -- test_a_second_errand_for_one_turn_is_refused
+M35      killed    0072_errands.py turn FK without the conversation  -- first run: survived; killed by directed test test_a_turn_of_another_conversation_than_the_one_named_is_refused
+M35b     killed    0072_errands.py conversation FK without the household  -- test_a_turn_of_another_household_is_refused
+M36      killed    0072_errands.py asker FK without the household  -- test_an_asker_of_another_household_is_refused
+M37a     killed    0072_errands.py no CHECK on state  -- test_a_value_outside_the_closed_set_is_refused[state-paused]
+M37b     killed    0072_errands.py no CHECK on visibility  -- test_a_value_outside_the_closed_set_is_refused[visibility-members]
+M37c     killed    0072_errands.py no CHECK on reason  -- test_a_value_outside_the_closed_set_is_refused[reason-bored]
+M38s-due killed    0072_errands.py state CHECK lacks due  -- test_claim_skips_an_errand_older_than_max_age
+M38s-runningkilled    0072_errands.py state CHECK lacks running  -- test_racing_claims_never_take_one_errand_twice
+M38s-donekilled    0072_errands.py state CHECK lacks done  -- test_claim_takes_nothing_that_is_not_due
+M38s-given_upkilled    0072_errands.py state CHECK lacks given_up  -- test_claim_takes_nothing_that_is_not_due
+M38r-attemptskilled    0072_errands.py reason CHECK lacks attempts  -- test_every_listed_state_and_reason_is_accepted[given_up-attempts]
+M38r-expiredkilled    0072_errands.py reason CHECK lacks expired  -- test_every_listed_state_and_reason_is_accepted[given_up-expired]
+M38r-interruptedkilled    0072_errands.py reason CHECK lacks interrupted  -- test_every_listed_state_and_reason_is_accepted[given_up-interrupted]
+M38r-refusedkilled    0072_errands.py reason CHECK lacks refused  -- test_claim_takes_nothing_that_is_not_due
+M38v     killed    0072_errands.py visibility CHECK lacks private  -- test_the_errand_keeps_the_turns_visibility
+X01      killed    0072_errands.py no CHECK that source is not blank  -- first run: survived; killed by directed test test_a_row_the_states_do_not_allow_is_refused[fields1]
+X02      killed    0072_errands.py no CHECK attempts >= 0  -- first run: survived; killed by directed test test_a_row_the_states_do_not_allow_is_refused[fields2]
+X03      killed    0072_errands.py no CHECK given_up iff reason  -- first run: survived; killed by directed test test_a_row_the_states_do_not_allow_is_refused[fields3]
+X04      killed    0072_errands.py no CHECK done iff result  -- first run: survived; killed by directed test test_a_row_the_states_do_not_allow_is_refused[fields5]
+X05      killed    0072_errands.py no CHECK told only when done  -- first run: survived; killed by directed test test_an_errand_not_done_cannot_be_told
+X06      killed    0072_errands.py visibility has a default  -- first run: survived; killed by directed test test_an_errand_must_say_how_widely_it_was_heard
+M33-owe  killed    errands.py      Null Object owe returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-claimkilled    errands.py      Null Object claim returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-releasekilled    errands.py      Null Object release returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-finishkilled    errands.py      Null Object finish returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-give_upkilled    errands.py      Null Object give_up returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-sweepkilled    errands.py      Null Object sweep returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-untoldkilled    errands.py      Null Object untold returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+M33-told killed    errands.py      Null Object told returns instead of raising  -- test_unregistered_errands_is_a_null_that_raises_unavailable
+
+Equivalent / not tellable from outside: finish setting done and result in two statements instead of one transaction
+(atomicity needs a crash between them). No planted mutant is equivalent: every one is killed.

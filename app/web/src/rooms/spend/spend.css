@@ -1,0 +1,45 @@
+/* The Usage room. It sits in devices.css's room frame (.set, .set-head, .set-down) and the shell's tokens, .panel, .btn,
+   .pill, .label, .meta and .unk. New here: the provider rows and their cells. */
+
+.set.sp-room { max-width: 1160px; }
+.set-head .sp-refresh { margin-left: auto; }
+.sp-body { display: grid; gap: 12px; }
+.sp-foot { margin: 0 2px; max-width: 78ch; }
+
+.sp { overflow: visible; }
+.sp-row { display: grid; grid-template-columns: minmax(150px, 1.1fr) repeat(3, minmax(120px, 1fr)) minmax(190px, 1.4fr); gap: 4px 16px;
+  align-items: start; padding: 12px 16px; border-top: 1px solid var(--line); }
+.sp-head { border-top: 0; align-items: center; padding-top: 10px; padding-bottom: 10px; }
+.sp-prov > summary { list-style: none; cursor: pointer; }
+.sp-prov > summary::-webkit-details-marker { display: none; }
+.sp-prov > summary:hover { background: rgba(77,163,255,.04); }
+.sp-prov[open] > summary { background: rgba(77,163,255,.05); }
+.sp-task { background: var(--ink-1); padding-top: 9px; padding-bottom: 9px; }
+.sp-task .sp-name { padding-left: 14px; }
+.sp-name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.sp-name b { font-weight: 600; overflow-wrap: anywhere; }
+.sp-prov > summary .sp-name::before { content: "▸"; color: var(--text-3); font-size: 11px; width: 10px; }
+.sp-prov[open] > summary .sp-name::before { content: "▾"; }
+
+.sp-cell { display: grid; gap: 2px; min-width: 0; align-content: start; justify-items: start; }
+.sp-cell .meta { overflow-wrap: anywhere; }
+.sp-cell .unk { white-space: normal; max-width: 100%; }
+.sp-lab { display: none; }
+.sp-amt b { font: 600 15px/1.3 var(--f-mono); }
+.sp-amt .meta { white-space: normal; }
+.sp-meter { display: block; width: 100%; max-width: 180px; height: 5px; border-radius: 3px; background: var(--ink-4); overflow: hidden; }
+.sp-meter i { display: block; height: 100%; background: var(--blue); }
+.sp-est { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line-hi); }
+.sp-est b { font: 600 13px/1.3 var(--f-mono); }
+.sp-note { margin: 0; padding: 8px 16px 12px 40px; border-top: 1px solid var(--line); }
+.sp-note a { color: var(--blue-hi); }
+
+@media (max-width: 900px) {
+  .sp-head { display: none; }
+  .sp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sp-name { grid-column: 1 / -1; }
+  .sp-rem { grid-column: 1 / -1; }
+  .sp-task > .sp-cell:last-child { display: none; }
+  .sp-lab { display: block; font: 600 10px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); }
+  .sp-note { padding-left: 16px; }
+}

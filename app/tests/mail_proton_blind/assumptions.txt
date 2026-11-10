@@ -1,0 +1,56 @@
+Guesses of the blind Proton mailbox suite (parts 5 and 6, Proton's side). Each lives in mail_proton_blind_support.py (wire_adapter and the helpers); a reconciler changes the support module, not the tests.
+
+G1  The adapter is `ashley.mail.imap.ImapMailbox`, built as `ImapMailbox(hosts, imap_port, smtp_port, config)`: the
+    Bridge Service addresses (hosts only, no scheme; the design's `MAIL_BRIDGE_KEEPER_URL` list serves IMAP and SMTP too),
+    the two ports (the design's 2143 and 2025, given here because a test cannot bind them), and the `MailConfig`. Rests
+    on "`planned:ashley.mail.imap.ImapMailbox` (SMTP for sending)" and "The same list serves part 5's IMAP and SMTP".
+G2  The Mailbox service is registered as that adapter alone, so a Proton connection is served by it; where the build routes
+    between Gmail's adapter and this one by the connection's kind, `wire_adapter` registers the router. Rests on nothing:
+    the design has one `Mailbox` and two adapters.
+G3  The adapter signs in with the Bridge account's address as the IMAP and SMTP user and the connection's sealed secret as
+    the password (the Bridge password the kind stores), over the transport `FakeBridge.tls` says: 'none' (plain), or
+    'implicit' or 'starttls' with a self-signed certificate whose fingerprint `FakeBridge.cert.fingerprint` is, which
+    `wire_adapter` hands the record's heartbeat if the build pins it. Rests on "the connection is stored with the
+    account's Bridge password as its sealed secret" and "The app pins Bridge's TLS certificate by the fingerprint".
+G4  The Proton kind's connection has no Gmail scope, so `Mailbox.can_read` and `can_change` are true for it (the adapter
+    is the Proton one). Rests on the kind having `ports={"mail"}` and no scopes.
+G5  A mailbox is one Bridge account in split address mode, named by its address, and its resource is stored when the
+    connection is (the suite stores it, as the connect flow will). Rests on "a Proton account in split address mode is
+    one per address".
+G6  An account's `syncing` (record: connected and `synced_epoch` not the current epoch) makes `mail_labels`, `mail_search`
+    and `mail_read` answer `is_error` with `syncing` in the text and no `messages` or `labels` key, and `mail_boxes` list
+    the mailbox with `syncing` true. A label change on a syncing mailbox is refused and changes nothing. A draft or a send
+    on one is not asserted. Rests on "answers every read `syncing`" and "never an empty mailbox".
+G7  An account Bridge signed out (record state `signed_out`, its connection's `needs` `login`) answers `needs_reconnect`,
+    as every connection that needs a login does. Rests on "her tools over it answer `needs_reconnect` rather than empty
+    results" and "(`login` (a Proton account Bridge signed out)".
+G8  A login Bridge refuses (IMAP `NO [AUTHENTICATIONFAILED]` or SMTP 535) answers `needs_reconnect` or `refused`, an
+    error that is neither `syncing`, `unreachable` nor an empty result; nothing is sent. A server that does not answer or
+    does not speak IMAP answers `unreachable`. Rests on "IMAP login failure surfaces as a clear error" and the reasons'
+    meanings in `ashley.mail.model`.
+G9  A message's id is its `Message-ID` header (the id contains the header's address part); one with none gets a hash of
+    date, sender and subject, stable across a resync. Rests on "for Proton the `Message-ID` header (a hash of date,
+    sender and subject for a message with none)". A message in several mailboxes (a folder and its labels) is one message.
+G10 A search with no folder reaches every message in the mailbox that is in a folder or label, once, Spam and Trash
+    apart. Folders as `mail_labels` names them are lower case (`inbox`, `sent`, `drafts`, `archive`, `spam`, `trash`);
+    labels are the names under `Labels/` with that prefix dropped; `All Mail` and `Folders/...` are neither. Rests on
+    `Label`'s "named in lower case" and "the household's own labels".
+G11 Reading a message, and searching, leave its unread state as it was. Rests on parity with Gmail, whose reads never
+    modify, and on a read being a read.
+G12 A draft is an IMAP APPEND of the whole message to `Drafts` with `\\Draft`, carrying From (the address), To, Cc,
+    Subject, Date, Message-ID, and for a reply In-Reply-To (and References) set to the original's Message-ID; it is not sent.
+    The id it gives is the Message-ID of what was appended. Rests on "draft = APPEND to Drafts".
+G13 A send goes over SMTP submission once, MAIL FROM the mailbox's address, RCPT TO each of `to` and `cc` and no other
+    (never a Bcc), the message carrying the same headers as a draft; the adapter does not save a copy in Sent (Bridge's
+    server does). The id it gives is the Message-ID of the message sent. A failed or dropped send is `unreachable` or
+    `refused` and is never retried: one DATA attempt. Rests on "send goes over SMTP" and "A send is posted once and never
+    retried".
+G14 A label is a copy of the message in `Labels/<name>`: adding copies it there, removing deletes that copy; the message's
+    folder copy and its other labels stay. A folder move (`inbox`, `archive`, `spam`, `trash`) takes the message out of
+    the folder it was in and puts it in the new one, leaving its labels; `unread` sets or clears `\\Seen`. A name that is no
+    label of the mailbox, or an id of no message, refuses the whole call, nothing changed and nothing created
+    (no CREATE, DELETE or RENAME command). Rests on "label change = folder copy/move under Labels/".
+G15 A label call whose targets' sender and subject do not begin with what the id's message has is `refused` whole; an id of
+    no message is `not_found`. Rests on `Mailbox.change`'s docstring.
+G16 `mail.call` is logged for each call with `call`, `status`, `count`, `duration_ms`; no log record, at any level, carries
+    an address, subject, body, label, query, password or server reply text. Rests on the Logs section.

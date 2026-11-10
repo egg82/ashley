@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {"id": "E1", "scene": "bench", "said": [["person", "the v2c currently fits the cable perfectly, replace the slips with a clip"], ["ashley", "Here is the plan: a spring tongue on the back block, rope channel untouched, one test block first."]],
+     "ask": "Yeah let's see it", "policy": "builder", "expect": {"bench_run_min": 1, "closed": "answer"}},
+    {"id": "E2", "scene": "bench", "said": [["person", "I'd skip a plain snap clip; closed eye or a gate would hold better"]],
+     "ask": "let's see those options in new models", "policy": "builder", "expect": {"bench_run_min": 1}},
+    {"id": "E3", "scene": "bench", "said": [],
+     "ask": "v2c fits perfectly, replace the slips with a clip", "policy": "editor", "expect": {"model_changes_min": 1}},
+    {"id": "E4", "scene": "bench", "said": [], "ask": "Alright, go", "policy": "builder", "step_s": 20,
+     "fail_at_step": 2, "resume": {"age_s": 440, "worked_s": 60}, "expect": {"rounds_after_resume_min": 1, "no_deadline_close": true}},
+    {"id": "E5", "scene": "bench", "said": [], "ask": "Alright, go", "policy": "long_builder", "step_s": 100,
+     "expect": {"windows_taken": 1, "closed": "answer", "answers": true}},
+    {"id": "E6", "scene": "chat", "said": [["person", "can we add the clip to v2c?"], ["ashley", "Yes, I can work that out with you."]],
+     "ask": "Yes, go", "policy": "mover", "expect": {"moved_to": 23, "changes_min": 1}},
+    {"id": "E7", "scene": "bench", "said": [], "ask": "clip or eye? thoughts?", "policy": "talker", "step_s": 20,
+     "expect": {"changes_max": 0, "held_max": 0}},
+    {"id": "E8", "scene": "bench", "said": [], "ask": "what does the notes piece say about the options?", "policy": "talker",
+     "expect": {"no_taint_before_outside_read": true}},
+    {"id": "E8h", "scene": "bench", "said": [], "ask": "what does the notes piece say about the options?", "policy": "talker",
+     "household_only": true, "expect": {"no_taint_before_outside_read": true}}
+  ]
+}

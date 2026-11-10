@@ -1,0 +1,35 @@
+Planted wrong implementations, one at a time, each applied once and restored from the text read before planting. Each run
+is tests/reminders_shaped_blind with -n 3, green before the plant, against main at 968ccfc (reminders she shapes, !330).
+A kill is exit 1 with a FAILED line. 76 plants: 72 killed, 3 equivalent, 1 no-op control (R26, survives as it must,
+proving the harness reports survivors). The tests were written before the sources were read; mutants after.
+
+Files: ashley/senses/repeat.py (R), postgres_wakes.py (W), deposits.py (D), postgres_deposits.py (P),
+ashley/tools/reminders.py (T), reminder_shape.py (S).
+
+Equivalent, no test can tell them apart:
+R19 next_after starts at the period estimate, not one before it. The estimate (days or months since the anchor over the
+    period) never exceeds the true period of the instant asked from, so the step back only costs a loop turn.
+P6  propose's `_latest` ordered oldest first. propose deletes the maker's earlier proposals in that conversation before
+    inserting, so one row exists and the order has nothing to order.
+S8  weekday names turned to numbers from a set without sorting. A set of small ints iterates in ascending order in CPython,
+    and Repeat refuses an unsorted tuple anyway.
+R26 no-op control.
+
+R1-R5 nth weekday from the 2nd; last weekday counted backwards; weeks from the anchor not Monday; every ignored (weekly, monthly)
+R6-R9 anchor dropped; until exclusive; ended rule never ends; monthly weekdays out of order
+R10-R15 duplicate weekdays; yearly takes weekdays; weekly takes nth / monthly may lack it; any nth; weekday 7; nth without weekdays
+R16-R18 until_after takes a rule with an end; one late; next_after not strictly after
+R20-R25 repeated hour read as second instant; until, nth, weekdays not stored; until a day late; Sunday dropped
+W1-W5 edit of a settled reminder; maker may not edit; no household check; armed time moved by an edit; armed given a repeat
+W6-W7 edit keeps old route; edit cannot clear tools
+W8-W14 quiet handed out for a push; successor drops route and tools; route / tools never read back; schedule drops route / tools; edit drops repeat
+D1-D6 same turn may agree; ttl boundary; reminder agreed at its time; edit proposal expires; money rule expires; ttl never enforced
+P1-P4,P7,P8 take does not consume / never refuses; new proposal leaves the old; replacement keyed by who it is for; stale not dropped; fire drops route
+T1-T14 arm offered in the proposing turn / wrong conversation; acting reminder for another person / set at once; edit mishandling of acting
+    tools, route, tools, rule-only edit; tools nameable in a shared turn; remind ignores delivery; arm in the proposing turn;
+    armed reminder loses tools; proposed edit carries old fields
+S1-S9 edit drops weekdays; new repeat inherits old; until and count both; one-off / rule at exactly now; acts inverted; any tool name;
+    count one too many
+
+Survivors of the first pass, killed after directed tests: P4 (reverse-order case added); R22, R23 and D6 first read BROKEN
+(the plant left bad indentation) and were re-planted correctly.

@@ -1,0 +1,11 @@
+{
+  "provenance": "An invented bench: bodies are short stand-ins and every size is approximate.",
+  "bench": {"id": 23, "household_id": 1, "owner_id": 1, "title": "Cable holder"},
+  "pieces": [
+    {"id": 6, "kind": "model", "title": "Holder v2c", "version": 4, "body": "from build123d import *\nfrom ashley_cad import measured, show\nshow(Box(measured('block_w'), 30, 8))"},
+    {"id": 7, "kind": "measurements", "title": "Measurements", "version": 3, "body": "{\"items\": [{\"name\": \"block_w\", \"value\": 42, \"unit\": \"mm\", \"source\": \"guessed\", \"ref\": \"flat strap guess\"}]}"},
+    {"id": 8, "kind": "note", "title": "Notes on the clip", "version": 6, "body": "The cord passage stays as v2c has it. Options so far: closed eye, inward gate."},
+    {"id": 9, "kind": "file", "title": "v2c.stl", "version": 1, "body": "stl"}
+  ],
+  "run_result": {"exit_code": 0, "outcome": "ran", "artifacts": 1, "report": {"checks": 2, "unconfirmed": 1}}
+}

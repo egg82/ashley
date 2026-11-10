@@ -1,0 +1,67 @@
+Planted against a scratch reference build of the spec (not committed), each applied alone and restored byte-identically. The
+reference passes this suite whole before any plant. killed = pytest exit 1 and a FAILED line names a test, the first of
+which follows `--`. Nothing survived; the suite was extended once because G15 did (a send or draft carrying an `add`
+argument), and S08 and the arm-again hours test came from reading the list before the run.
+
+Groups: G the grant comparison and where the grant travels, T the taint and the pending block, S the standing watch's
+end, F the three fields at the store, A arming through her tools, L logs.
+
+A01  killed  watch: the proposal does not show the grant  -- test_a_sort_that_acts_is_only_proposed_and_the_proposal_shows_the_grant
+A02  killed  watch: a grant with no acting tool is armed at once  -- test_a_grant_with_no_tool_that_acts_is_never_armed
+A03  killed  arm_reminder: the agreed watch is armed without the proposed grant  -- test_the_person_agreeing_in_a_later_turn_arms_it_with_the_brief_the_standing_flag_and_the_grant
+A04  killed  arm_reminder: the agreed watch is armed without the brief  -- test_the_person_agreeing_in_a_later_turn_arms_it_with_the_brief_the_standing_flag_and_the_grant
+A05  killed  arm_reminder: the agreed watch is armed not standing  -- test_the_person_agreeing_in_a_later_turn_arms_it_with_the_brief_the_standing_flag_and_the_grant
+A06  killed  arming.start: the grant is dropped from the Arm  -- test_the_person_agreeing_in_a_later_turn_arms_it_with_the_brief_the_standing_flag_and_the_grant
+A07  killed  proposal encoding: the grant is not stored with the proposed watch  -- test_the_person_agreeing_in_a_later_turn_arms_it_with_the_brief_the_standing_flag_and_the_grant
+A08  killed  watch: grant elements are not checked  -- test_a_malformed_brief_standing_or_grant_is_refused_and_arms_and_proposes_nothing
+A09  killed  watch: standing takes any truthy value  -- test_a_malformed_brief_standing_or_grant_is_refused_and_arms_and_proposes_nothing
+A10  killed  watch: the tool counts as a read, so a tainted turn runs it  -- test_the_woken_sort_cannot_widen_its_own_grant_because_arming_is_a_change_it_would_hold
+A11  killed  arm_reminder: the agreeing tool is not marked as agreeing  -- test_a_turn_that_has_read_outside_words_cannot_agree_to_it
+A12  killed  MailInbox.available: never  -- test_the_kind_is_available_to_a_person_with_a_usable_mailbox
+A13  killed  MailInbox.available: always  -- test_the_kind_is_not_available_to_a_person_with_none
+F01  killed  store: arming again adds to the grant instead of replacing it  -- test_arming_the_same_target_again_replaces_the_grant_and_does_not_add_to_it
+F02  killed  store: arming again keeps the old brief when the new one is empty  -- test_arming_again_replaces_the_brief_and_the_standing_flag
+F03  killed  store: arming again can only turn standing on  -- test_arming_again_replaces_the_brief_and_the_standing_flag
+F04  killed  rows: a stored grant reads back empty  -- test_a_watch_stores_the_brief_the_standing_flag_and_the_grant_it_was_armed_with
+F05  killed  store: a new watch is stored without its grant  -- test_a_grant_belongs_to_the_watch_it_was_armed_on
+F06  killed  rows: a stored brief reads back empty  -- test_a_watch_stores_the_brief_the_standing_flag_and_the_grant_it_was_armed_with
+G01  killed  Outside._covered: any() of the added labels in the grant instead of all()  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+G02  killed  Outside._covered: the mail label tool by name only, the arguments never compared  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+G03  killed  Outside._covered: a removal does not hold the call  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+G04  killed  Outside._covered: a move to a folder does not hold the call  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+G05  killed  Outside._covered: the mailbox is not compared  -- test_a_granted_label_on_another_mailbox_is_held
+G06  killed  Outside._covered: the mailbox compared by its domain only  -- test_a_granted_label_on_another_mailbox_is_held
+G07  killed  Outside._covered: a label is in the grant when it begins with a granted name  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+G08  killed  Outside._covered: a label is in the grant when a granted name begins with it  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+G09  killed  Landing: the grant is never given to Outside  -- test_a_label_in_the_grant_on_the_watchs_mailbox_is_run_and_reaches_the_port
+G10  killed  watch_turn: the watch's grant is not carried to the turn  -- test_a_label_in_the_grant_on_the_watchs_mailbox_is_run_and_reaches_the_port
+G11  killed  watch_turn: a fixed grant of School whatever the watch holds  -- test_a_label_in_the_grant_on_the_watchs_mailbox_is_run_and_reaches_the_port
+G12  killed  watch_turn: the grant is for no mailbox in particular (the empty address)  -- test_a_label_in_the_grant_on_the_watchs_mailbox_is_run_and_reaches_the_port
+G13  killed  checkpoint: a resumed turn loses the grant  -- test_a_turn_resumed_from_its_checkpoint_keeps_the_grant_and_the_taint
+G14  killed  Outside: a granted call is run only while nothing has been held yet in the turn  -- test_the_same_call_on_the_watchs_mailbox_runs_so_the_mailbox_is_what_held_the_other
+G15  killed  Outside: a call the grant covers is run for any tool of the turn that holds a label argument (the name is not compared)  -- test_a_send_and_a_draft_are_held_whatever_the_grant
+L01  killed  arming.start: logs the brief  -- test_arming_and_agreeing_log_neither_the_brief_nor_the_address
+L02  killed  job: watches.woke logs the watch's target  -- test_the_store_and_the_job_log_neither_the_brief_nor_the_address
+L03  killed  Outside: outside.held logs the held call's summary  -- test_the_woken_turn_logs_neither_the_brief_nor_the_address_nor_the_subject
+S01  killed  store: a standing watch's end never moves  -- test_a_successful_read_moves_a_standing_watchs_end_forward_by_its_hours
+S02  killed  store: the end moves by interval_s, not hours  -- test_the_store_and_the_job_log_neither_the_brief_nor_the_address
+S03  killed  store: every watch's end moves, standing or not  -- test_a_watch_that_is_not_standing_keeps_the_end_it_was_armed_with
+S04  killed  store: the end moves from the old end, not from now  -- test_a_successful_read_moves_a_standing_watchs_end_forward_by_its_hours
+S05  killed  store: the end moves only when the check woke her  -- test_a_successful_read_moves_a_standing_watchs_end_forward_by_its_hours
+S06  killed  store: a failed read moves a standing watch's end  -- test_a_failed_read_does_not_move_a_standing_watchs_end
+S07  killed  store: the hours are always the kind's default day  -- test_a_successful_read_moves_a_standing_watchs_end_forward_by_its_hours
+S08  killed  store: arming again keeps the hours of the first arming  -- test_arming_again_with_other_hours_sets_the_hours_the_end_moves_by
+S09  killed  store: a standing watch is never expired (the end ignored once standing)  -- test_a_standing_watch_ends_once_its_source_has_failed_for_its_hours
+T01  killed  watch_turn: the woken turn of an outside kind starts untainted  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+T02  killed  Outside: the pending block is never written  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+T03  killed  Landing: the reply with a pending block keeps the worth_saying she set  -- test_any_other_label_call_is_held_and_nothing_reaches_the_port
+T04  killed  watch_turn: the brief is not put in the note  -- test_the_brief_reaches_her_in_the_note_and_is_never_stored_with_the_turn
+T05  killed  watch_turn: the brief is stored as the household's message  -- test_the_brief_reaches_her_in_the_note_and_is_never_stored_with_the_turn
+
+Not pinned, because the spec is silent (a build may do either and pass):
+U1  a mail_label call that adds only granted labels and also marks messages read or unread (`unread`): run or held
+U2  the grant's label names compared case-sensitively or not ("school" against "School")
+U3  the mailbox argument compared to the watch's address case-sensitively or not (a fail-closed build holds it)
+U4  a mail_label call that names nothing to do (no add, remove, folder or unread): the tool refuses it either way
+U5  a `Later` (syncing) read of a standing watch moving its end or not
+U6  a grant with no tool that acts: refused, proposed, or armed with the grant dropped (G7)

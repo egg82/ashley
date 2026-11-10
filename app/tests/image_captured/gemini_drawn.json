@@ -1,0 +1,46 @@
+{
+ "candidates": [
+  {
+   "content": {
+    "parts": [
+     {
+      "inlineData": {
+       "mimeType": "image/jpeg",
+       "data": "/9j/4AAQSkZJRgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "thoughtSignature": "c2ln"
+     }
+    ],
+    "role": "model"
+   },
+   "finishReason": "STOP",
+   "index": 0,
+   "safetyRatings": [
+    {
+     "category": "HARM_CATEGORY_HATE_SPEECH",
+     "probability": "NEGLIGIBLE"
+    }
+   ]
+  }
+ ],
+ "usageMetadata": {
+  "promptTokenCount": 6,
+  "candidatesTokenCount": 1479,
+  "totalTokenCount": 1485,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 6
+   }
+  ],
+  "candidatesTokensDetails": [
+   {
+    "modality": "IMAGE",
+    "tokenCount": 1120
+   }
+  ],
+  "serviceTier": "standard"
+ },
+ "modelVersion": "gemini-3.1-flash-lite-image",
+ "responseId": "Mgbqao-qFbv6-sAP7_jbkQE"
+}

@@ -1,0 +1,11 @@
+{
+  "tick_s": 30,
+  "batch": 3,
+  "max_attempts": 3,
+  "max_age_s": 86400,
+  "claim_s": 600,
+  "context_turns": 12,
+  "max_tool_rounds": 6,
+  "max_tool_result_chars": 4000,
+  "tell_max": 3
+}

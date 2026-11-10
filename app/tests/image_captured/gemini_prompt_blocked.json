@@ -1,0 +1,18 @@
+{
+ "promptFeedback": {
+  "blockReason": "PROHIBITED_CONTENT"
+ },
+ "usageMetadata": {
+  "promptTokenCount": 3,
+  "totalTokenCount": 3,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 3
+   }
+  ],
+  "serviceTier": "standard"
+ },
+ "modelVersion": "gemini-3.1-flash-lite-image",
+ "responseId": "RAbqarWML8iN_PUPtOXeUA"
+}

@@ -1,0 +1,29 @@
+{
+  "default": "judged",
+  "arguments": [
+    {"tool": "mail_label", "argument": "folder", "values": ["archive", "spam", "trash"], "tier": "judged"},
+    {"tool": "remind", "argument": "tools", "tier": "judged"},
+    {"tool": "watch", "argument": "tools", "tier": "judged"}
+  ],
+  "house_do": [
+    {"tier": "judged", "domain": "cover", "device_class": ["garage", "gate", "door"]},
+    {"tier": "runs", "domain": "cover"},
+    {"tier": "judged", "domain": "switch", "device_class": ["outlet"]},
+    {"tier": "runs", "domain": "switch"},
+    {"tier": "runs", "domain": "light"},
+    {"tier": "runs", "domain": "fan"},
+    {"tier": "runs", "domain": "media_player"},
+    {"tier": "runs", "domain": "input_boolean"},
+    {"tier": "runs", "domain": "input_number"},
+    {"tier": "runs", "domain": "input_select"},
+    {"tier": "runs", "domain": "input_button"},
+    {"tier": "runs", "domain": "timer"},
+    {"tier": "runs", "action": "scene.turn_on"},
+    {"tier": "runs", "action": "climate.set_temperature"},
+    {"tier": "runs", "action": "climate.set_hvac_mode"},
+    {"tier": "runs", "action": "vacuum.start"},
+    {"tier": "runs", "action": "vacuum.return_to_base"},
+    {"tier": "runs", "action": "todo.add_item"},
+    {"tier": "runs", "action": "todo.update_item"}
+  ]
+}

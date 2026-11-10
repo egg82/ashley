@@ -1,0 +1,48 @@
+# The client (web/) built into one directory by build.mjs. Its own stage so node and node_modules never reach the app
+# image.
+FROM docker.io/library/node:22-slim AS client
+WORKDIR /client
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/build.mjs ./
+COPY web/src ./src
+COPY web/icons ./icons
+RUN node build.mjs /built
+
+FROM docker.io/library/python:3.13-slim
+
+# Runs with a read-only root filesystem: nothing is written outside /tmp.
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+ && useradd --uid 1000 --user-group --no-create-home ashley
+# The embedding model (`ashley.inference.fastembed_embedder`), fetched now because the running image has no network and a
+# read-only root. Its own layer so a code change does not fetch it again.
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding('thenlper/gte-base', cache_dir='/opt/ashley/models')" \
+ && chmod -R a+rX /opt/ashley/models
+# The speaker-embedding model (`ashley.inference.sherpa_voiceprint`), fetched and checked for the same reason, in its
+# own layer. CI builds without a layer cache, so this fetch runs on every build: two copies of the same file (the
+# checksum decides, not the host), each tried a few times. The GitHub release tag is spelled that way upstream.
+RUN for attempt in 1 2 3; do \
+  for url in https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/main/nemo_en_titanet_small.onnx \
+             https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/nemo_en_titanet_small.onnx; do \
+   python -c "import hashlib, os, sys, urllib.request; \
+data = urllib.request.urlopen(sys.argv[1], timeout=120).read(); \
+os.makedirs('/opt/ashley/models/voiceprint', exist_ok=True); \
+assert hashlib.sha256(data).hexdigest() == 'ad4a1802485d8b34c722d2a9d04249662f2ece5d28a7a039063ca22f515a789e', 'voiceprint model checksum mismatch'; \
+open('/opt/ashley/models/voiceprint/nemo_en_titanet_small.onnx', 'wb').write(data)" "$url" && break 2; \
+  done; \
+  sleep $((attempt * 15)); \
+ done \
+ && test -s /opt/ashley/models/voiceprint/nemo_en_titanet_small.onnx \
+ && chmod -R a+rX /opt/ashley/models
+COPY ashley ./ashley
+COPY --from=client /built ./build
+# The commit this image is built from (CI passes it); /api/health reports it.
+ARG BUILD_VERSION=dev
+ENV BUILD_VERSION=$BUILD_VERSION
+
+USER 1000:1000
+EXPOSE 8080
+CMD ["uvicorn", "ashley.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8080"]

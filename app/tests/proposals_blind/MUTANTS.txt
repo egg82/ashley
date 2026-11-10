@@ -1,0 +1,92 @@
+Planted wrong implementations for the proposals contract suite (app/tests/proposals_blind/). Each is one change to
+ashley/senses/{postgres_proposals,proposals,proposal_gate,proposal_payloads}.py or ashley/tools/{house_change,reminders}.py,
+run against the whole suite with -x; the file is restored from the text read before the mutation.
+
+Result: 83 planted, 81 killed, 1 equivalent, 1 no-op control (survives by design).
+Equivalent: M12 (propose returns id + 1): the id is an opaque return value; no API takes an id, so nothing can tell it apart.
+Not covered here: remind_on_money's proposal (its tool needs Sure; deposit_sense_blind owns it).
+
+Mutants:
+  M00 no-op control (whitespace)
+  M01 propose never replaces
+  M02 replace ignores conversation
+  M03 replace ignores topic
+  M04 replace ignores person
+  M05 stores person as household
+  M06 stores turn_id + 1
+  M07 stores now as proposed_at
+  M08 purge drops every topic
+  M09 purge never drops
+  M10 purge ttl x1000
+  M11 purge drops the fresh
+  M12 propose returns id + 1
+  M13 pending returns oldest
+  M14 pending ignores topic
+  M15 pending ignores conversation
+  M16 pending ignores person
+  M17 take does not consume
+  M18 take ignores the gate
+  M19 take refusal always none
+  M20 take ttl x1000
+  M21 lost delete race still wins
+  M22 nothing found is expired
+  M23 database errors swallowed
+  M24 propose skips the payload check
+  M25 latest swaps household and person
+  M26 latest reads turn from conversation
+  M27 latest proposed_at is now
+  M28 take consumes before the gate is judged
+  M29 propose purges before storing (new proposal can be purged)
+  R01 refusal ignores a lapsed time
+  R02 lapsed reads as same_turn
+  R03 refusal ignores the gate
+  R04 gate judged against the wrong turn
+  R05 null store propose answers
+  G01 same turn passes
+  G02 earlier turn passes
+  G03 expiry at ttl inclusive
+  G04 age reversed
+  G05 ttl doubled
+  G06 reasons swapped
+  L01 lapsed inclusive at the instant
+  L02 money rule lapses
+  L03 lapse reversed
+  C01 empty brief allowed
+  C02 brief limit exclusive
+  C03 NUL allowed
+  C04 tool limit exclusive
+  C05 repeating money rule allowed
+  C06 tools never counted
+  C07 a repeat refused for every kind
+  E01 money rule stored in the house topic
+  E02 change tagged as a schedule
+  E03 target dropped
+  E04 summary dropped
+  E05 ids dropped
+  E06 data dropped
+  E07 change id dropped
+  E08 change op swapped for kind
+  D01 route always phone
+  D02 tools dropped
+  D03 person and maker swapped
+  D04 repeat dropped
+  D05 rule dropped from a money rule
+  D06 due_at read as naive
+  T01 reminder topic renamed
+  T02 house topic named reminder
+  H01 house confirm takes the reminder topic
+  H02 house offer reads the reminder topic
+  H03 house offer ignores the gate
+  H04 house proposal stores the wrong turn
+  H05 house proposal drops the summary
+  H06 house proposal stored under another person
+  H07 house ttl ignored on confirm
+  H08 house proposes with ttl zero
+  K01 arm offered ignoring the gate
+  K02 arm offered against the house topic
+  K03 arm takes the house topic
+  K04 reminder proposal stores the wrong turn
+  K05 change proposed as a schedule
+  K06 change target off by one
+  K07 arm of a change does not edit
+  K08 arm schedules the proposal's reminder altered

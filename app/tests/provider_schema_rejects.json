@@ -1,0 +1,11 @@
+{
+  "gemini": [
+    {
+      "keyword": "maxItems",
+      "shape": "array_and_its_array_items",
+      "source": "recorded 400, 2026-11-01: gemini-3.8-flash answered BadRequestError 400 to every chat call while remind_on_money.conditions had maxItems on an array and on its array items beside the strict reply response_format; removing either maxItems made it OK (docs, which warn of 400 INVALID_ARGUMENT for maxItems: https://ai.google.dev/gemini-api/docs/structured-output)"
+    }
+  ],
+  "openai": [],
+  "anthropic": []
+}

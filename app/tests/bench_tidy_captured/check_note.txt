@@ -1,0 +1,23 @@
+Print check of v1.2 (session birdhouse-check, done 21:29)
+---
+Source: a CAD export 2.4 and a slicer, metric profile, in /home/person/work/birdhouse-1.2 (full write-up in FINDINGS.md there). Checked against piece 3's assumptions.
+
+**Confirmed**
+- Board cut: kerf <= 0 && boardCount % (width*3+1) == 0, offset trim(3) - 1. All 10 boards cut or none do; boards that don't cut take no trims.
+- The shop list is private and used on only three lines (737, 794, 851). Roof, floor, perch and hinge take no trims.
+- trim uses the u - r + m < 0 carry on 31-bit lengths.
+
+**Corrections / gaps for piece 3**
+- **Notches cut first at short lengths.** When ceil(length) <= 4, each notch takes one trim(2), and the number of notches is ceil((base + ceil(extra)) / 2), so 12 with an extra board. Each cut moves the list one step, so at short lengths the board cuts come later in the sequence.
+- **Boards cut right to left**: cut 0 is the rightmost board. Unclear whether the spreadsheet maps them that way (the session had no spreadsheet source).
+- **The roof isn't always there.** No roof on a model that shows its own lid (e.g. a feeder), and none of this runs in the flat-pack variant.
+- **Carry shortcut must use >=.** Comparing against 1 << 31 matches the saw's < 0 only as >= 2**31. For width 3 a carry happens about 1 in 2^30.
+
+**What a jump means**
+The counter is boards since the shop opened. It doesn't reset on a new plan and stops while the saw is idle. A jump means a cut, a pause, a trip to the shelf, or a delay of more than 10 boards, not necessarily an edit.
+
+**Not checked**
+- The carry was read from a 2022 export. v1.2 shipped on the 2019 format; the spec requires the same algorithm, but no 2019 build was inspected.
+- The maker's own cut list (still not found).
+
+Housekeeping: .cache/ in that folder is large; delete it if no rebuild is needed.

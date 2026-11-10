@@ -1,0 +1,149 @@
+Wrong implementations the blind mail-port suite (app/tests/mail_gmail_blind) must kill. Written from the design alone
+(decisions.md, "Her mail is a port with two adapters, and Proton's runs as a leased Bridge", build part 2), before the
+implementation existed. Each line: id, where it would live, the wrong behaviour, and the test that should go red. Names of
+tests are abbreviated to their distinctive words. Equivalent or untestable ones are listed at the end with the reason.
+
+Specs
+M1   MailTools    mail_read declares outside false                                       test_mg_offered: every_tool_reads_and_the_two...; test_mg_taint: ..._read_mail_is_tainted[mail_read]; a_result_of_a_mail_read_does_not_clear_the_taint
+M2   MailTools    mail_search declares outside false                                     test_mg_offered: every_tool_reads...; test_mg_taint: ..._tainted[mail_search]
+M3   MailTools    mail_read result sets ToolResult.outside=False (overrides the spec)    test_mg_taint: a_result_of_a_mail_read_does_not_clear_the_taint_for_itself; ..._tainted[mail_read]
+M4   MailTools    a tool declares reads false (the loop reruns it, Reading drops it)     test_mg_offered: every_tool_reads...; a_reads_only_turn_keeps_the_mail_tools_for_the_owner
+M5   MailTools    mail_boxes or mail_labels declares outside true (taints on a list)     test_mg_offered: every_tool_reads...; test_mg_taint: listing_mailboxes_and_labels_does_not_taint
+
+The gate
+M6   turn_tools   mail source added with no owner_alone check (shared channels get it)   test_mg_offered: a_channel_others_can_read_is_offered_none[*]
+M7   turn_tools   gate on audience == owner only (shared flag ignored)                   test_mg_offered: ...[owner-on-shared]
+M8   turn_tools   gate on shared only (device screen ignored)                            test_mg_offered: ...[owner-with-screen]
+M9   turn_tools   gate on speaker_id only (a satellite's voice match is the speaker)     test_mg_offered: a_voice_match_never_makes_someone_the_speaker; ...[satellite]
+M10  turn_tools   unknown speaker gets the tools (a household connection is guessed)     test_mg_offered: an_unknown_speaker_is_offered_none
+M11  MailTools    catalogue hides the tools but call still runs them                     test_mg_offered: ...offered_none (call answers is_error, Gmail unreached)
+M12  MailTools    connection looked up by household, not by the speaker                  test_mg_offered: a_housemate_has_no_access_to_anothers_login; each_person_reaches_only_their_own_mailbox
+M13  MailTools    connection looked up with person_id None (every personal row visible)  test_mg_offered: a_housemate...; a_person_of_another_household
+M14  MailTools    tools offered with no Gmail scope granted                              test_mg_offered: a_connection_not_granted_a_gmail_scope_offers_no_mail_tool
+M15  MailTools    scope compared by full URL only (short name never matches)             test_mg_offered: ..._granted_the_scope_by_its_short_name_is_offered
+M16  MailTools    offered whenever Connections.can_open is false                         test_mg_offered: connections_that_cannot_be_opened_offer_no_mail_tool
+M17  MailTools    no connection: tools offered anyway and a call raises                  test_mg_offered: no_mail_connection_offers_no_tool...
+M18  MailTools    a connection that needs a reconnect hides the tools                    test_mg_offered: ..._needs_a_reconnect_still_offers_the_tools
+M19  MailTools    mailbox argument ignored: the speaker's first connection is used       test_mg_boxes_labels: a_mailbox_the_person_does_not_hold_is_refused; test_mg_read: ..._does_not_hold_is_refused_before_gmail
+
+Results as neutral records
+M20  GmailMailbox label ids passed through (Label_12) instead of the household's names    test_mg_search: a_header_is_the_neutral_record...; the_answer_carries_no_gmail_field_name...; test_mg_boxes_labels: labels_never_shows_gmails_ids
+M21  GmailMailbox raw Gmail resource returned as the record (labelIds, payload, threadId)  test_mg_search: the_answer_carries_no_gmail_field_name...; test_mg_read: the_answer_is_the_neutral_record_not_gmails
+M22  GmailMailbox unread read from the wrong label, or always true                        test_mg_search: a_header_...; a_read_message_without_attachments_is_not_unread
+M23  GmailMailbox subject not decoded (RFC 2047 encoded word left as written)             test_mg_search: an_encoded_word_subject_is_decoded
+M24  GmailMailbox date is the Date header string, or the unparsed millisecond internalDate test_mg_search: a_header_is_the_neutral_record... (date starts with the UTC day)
+M25  GmailMailbox attachment count taken from a metadata fetch (always 0)                 test_mg_search: a_header_is_the_neutral_record... (2 attachments)
+M26  GmailMailbox attachment count counts the body parts, not the attachments             test_mg_search: a_header_...; a_read_message_without_attachments_...
+M27  GmailMailbox unpadded base64url body not decoded (padding error, or garbled)         test_mg_read: a_plain_text_message_reads_as_its_text
+M28  GmailMailbox body decoded as latin-1, not UTF-8                                      test_mg_read: a_plain_text_message_reads_as_its_text (Café, à, €)
+M29  GmailMailbox html part preferred over the plain part                                 test_mg_read: a_message_with_both_parts_reads_as_its_plain_text
+M30  GmailMailbox html body returned as markup                                            test_mg_read: html_is_turned_to_text_in_code
+M31  GmailMailbox html turned to text with script and style content kept                  test_mg_read: html_is_turned_to_text_in_code
+M32  GmailMailbox html entities left as written (&amp;)                                   test_mg_read: html_is_turned_to_text_in_code
+M33  GmailMailbox only the top-level payload read (multipart body empty)                  test_mg_read: a_message_with_both_parts...; attachments_are_listed...; html_is_turned_to_text
+M34  GmailMailbox attachment bytes fetched to measure them                                test_mg_read: attachments_are_listed_by_name_type_and_size_and_never_fetched
+M35  GmailMailbox attachment type or size wrong (type from the filename, size = 0)        test_mg_read: attachments_are_listed_by_name_type_and_size...
+M36  GmailMailbox from or to read from the Sender or Delivered-To header                  test_mg_search: a_header_is_the_neutral_record...
+M37  GmailMailbox mailbox address taken from the connection label or a constant           test_mg_boxes_labels: boxes_names_the_address_gmail_says_not_one_the_test_guessed
+M38  GmailMailbox folder is never set, or is a label id                                   test_mg_search: a_header_is_the_neutral_record... ; query[folder]
+
+Search
+M39  GmailMailbox query terms dropped (from, to, subject, text, after, before)            test_mg_search: each_query_field_selects_what_gmail_says_it_does[*]
+M40  GmailMailbox filters joined with OR, not AND                                         test_mg_search: ...[two-filters]; ...[no-match]
+M41  GmailMailbox a multi-word subject or text not grouped (matches either word)          test_mg_search: ...[subject]; ...[text]
+M42  GmailMailbox has_attachment or unread ignored                                        test_mg_search: ...[attachment]; ...[unread]
+M43  GmailMailbox after and before swapped, or inclusive on the wrong side               test_mg_search: ...[after]; ...[before]; ...[window]
+M44  GmailMailbox spam and trash included (includeSpamTrash=true)                         test_mg_search: spam_and_trash_are_not_shown_as_mail
+M45  GmailMailbox sorted oldest first, or in the order of the ids Gmail answered after a re-sort of fetched headers by subject  test_mg_search: newest_first_whatever_order_gmail_stored
+M46  GmailMailbox no cap: every match fetched (260 headers)                               test_mg_search: a_search_with_more_matches_than_the_cap...; a_search_never_fetches_more_headers_than_it_shows
+M47  GmailMailbox capped but cut never set                                                test_mg_search: a_search_with_more_matches_than_the_cap...
+M48  GmailMailbox cut always true, even for a result that fits                            test_mg_search: a_search_that_fits_is_not_cut; nothing_found_is_an_answer...
+M49  GmailMailbox next_page missing, or Gmail's token lost, so a second page restarts     test_mg_search: paging_to_the_end_gives_every_match_once_in_order...
+M50  GmailMailbox a page repeats the last message of the page before, or skips one        test_mg_search: paging_to_the_end_gives_every_match_once_in_order...
+M51  GmailMailbox maxResults above Gmail's 500                                            test_mg_search: a_page_size_larger_than_gmail_allows_is_never_asked_for
+M52  GmailMailbox no match answered as an error                                           test_mg_search: nothing_found_is_an_answer_with_no_headers...
+M53  MailTools    a date that is not a date is sent to Gmail as text                      test_mg_search: a_date_that_is_not_a_date_is_a_bad_call_and_reaches_no_gmail
+M54  MailTools    unknown arguments silently ignored                                       test_mg_search: an_argument_the_tool_does_not_have_is_refused
+
+Reading a body
+M55  MailTools    the whole body returned in one result (no page)                          test_mg_read: a_long_body_is_cut_to_a_page_that_fits_a_tool_result; pages_read_from_next_start...
+M56  MailTools    page longer than READABLE_CHARS                                          test_mg_read: a_long_body_is_cut_...; pages_read_from_next_start...
+M57  MailTools    next_start missing, or counted in bytes, or off by one                   test_mg_read: pages_read_from_next_start_reassemble_the_whole_body_exactly
+M58  MailTools    start ignored (every call reads the first page)                          test_mg_read: pages_read_from_next_start...
+M59  MailTools    next_start set on the last page (never ends)                             test_mg_read: pages_read_...; a_short_body_is_one_page_with_no_next_start
+M60  MailTools    total_chars missing or the page's length                                 test_mg_read: a_short_body_...; a_long_body_is_cut_...
+M61  MailTools    negative or non-integer start accepted                                   test_mg_read: a_start_that_is_not_a_position_is_a_bad_call
+M62  GmailMailbox unknown message answered as unreachable, or as an empty message          test_mg_read: an_unknown_message_is_not_found
+M63  MailTools    a read without an id reads the newest message                            test_mg_read: a_read_without_an_id_is_a_bad_call
+
+Failures and renewal
+M64  GmailMailbox 403 answered as unreachable, 503 as refused, or either as empty results  test_mg_search: gmail_refusing_unreachable_and_down_are_told_apart; test_mg_read: gmail_down_is_unreachable_and_refusing_is_refused
+M65  GmailMailbox a connection error raised out of the tool                               test_mg_search: ...told_apart; test_mg_boxes_labels: labels_answers_unreachable_when_gmail_is_down
+M66  GmailMailbox renewal skipped: the stored access token used as it is                  test_mg_renewal: an_expired_token_is_renewed...; every_tool_renews_an_expired_token[*]
+M67  GmailMailbox renewal on every call (Renewal bypassed, refresh each time)             test_mg_renewal: a_fresh_token_is_used_as_it_is_with_no_refresh; the_renewed_token_is_kept...
+M68  GmailMailbox token read once per process and cached across turns                      test_mg_renewal: an_expired_token_is_renewed... ; a_reconnected_connection_answers_again
+M69  GmailMailbox token fetched through its own refresh call, not Renewal (second refresher, no compare-and-set)  test_mg_renewal: two_turns_at_once_with_an_expired_token_both_answer; the_renewed_token_is_kept_so_a_later_turn_does_not_refresh_again
+M70  GmailMailbox NeedsReconnect turned into an empty result                              test_mg_renewal: a_refused_renewal_answers_needs_reconnect...[*]; a_connection_marked_needs_reconnect_answers_it_not_an_empty_list
+M71  GmailMailbox NeedsReconnect answered as unreachable or refused                       test_mg_renewal: ...needs_reconnect...[*]; test_mg_boxes_labels: labels_answers_needs_reconnect
+M72  GmailMailbox a refused renewal still calls Gmail with the old token                  test_mg_renewal: a_refused_renewal_answers_needs_reconnect_marks_the_row_and_reaches_no_gmail
+M73  GmailMailbox OAuthUnavailable (token endpoint down) answered as needs_reconnect, or marking the row   test_mg_renewal: a_token_endpoint_that_is_down_...; ..._that_errors_...
+M74  GmailMailbox a marked connection asks Google again every call                        test_mg_renewal: after_a_refusal_the_next_call_says_so_without_asking_google_again
+M75  GmailMailbox 401 or other failures swallowed into an empty list                      test_mg_search: ...told_apart; test_mg_logs: a_failed_call_logs_its_reason_as_its_status
+M76  MailTools    mail_boxes lists a mailbox of a connection that needs a reconnect as healthy   (equivalent under the design: see below)
+
+Taint
+M77  MailTools    outside true on the spec but the tool is wrapped so Outside never sees the call   test_mg_taint: a_turn_that_read_mail_is_tainted... (tainted == tool, change held)
+M78  MailTools    only mail_read taints (mail_search does not)                             test_mg_taint: ..._tainted[mail_search]
+M79  MailTools    every mail tool taints, mail_boxes and mail_labels included              test_mg_taint: listing_mailboxes_and_labels_does_not_taint
+M80  MailTools    a tainted turn is refused further mail reads                             test_mg_taint: a_tainted_turn_can_still_read_more_mail
+M81  MailTools    the mail text is copied into the held call's summary or pending block    test_mg_taint: the_pending_block_shows_the_held_change_and_none_of_the_mail
+
+Logs and secrets
+M82  GmailMailbox mail.call never logged                                                  test_mg_logs: each_tool_call_logs_one_mail_call...
+M83  GmailMailbox mail.call lacks status, count or duration_ms                            test_mg_logs: each_tool_call_logs_one_mail_call...
+M84  GmailMailbox failures logged as status ok                                            test_mg_logs: a_failed_call_logs_its_reason_as_its_status
+M85  GmailMailbox log line carries the subject, sender, snippet or body                   test_mg_logs: no_log_line_carries_an_address_subject_body...
+M86  GmailMailbox log line carries the mailbox address or the query words                 test_mg_logs: no_log_line_carries_an_address_subject_body...; failures_log_no_content_either
+M87  GmailMailbox log line carries the bearer token or the renewed token                  test_mg_logs: no_log_line_carries_a_token_or_the_client_secret
+M88  GmailMailbox a failed request logged with the request URL (query words) or exception text   test_mg_logs: failures_log_no_content_either
+M89  MailTools    a result echoes the access token (e.g. an error that prints the request)  test_mg_read: a_result_never_carries_a_credential[*]
+
+The adapter's boundary
+M90  GmailMailbox token sent in the query string (access_token=)                          test_mg_port: every_request_is_a_get_to_gmails_api_with_the_token_in_the_header
+M91  GmailMailbox a write call (POST, trash, modify, label) made by a read tool           test_mg_port: every_request_is_a_get...
+M92  GmailMailbox a request goes to a host that is not Gmail's                            test_mg_port: every_request_is_a_get... (stray)
+M93  GoogleKind   gmail.modify not added to the kind, or the kind asks for gmail.compose, gmail.send or mail.google.com   test_mg_port: the_google_kind_implements_the_mail_port_and_asks_for_gmail_modify_and_nothing_wider
+M94  GoogleKind   ports left empty (no kind implements mail)                              test_mg_port: the_google_kind_implements_the_mail_port...
+M95  model        a record is a mutable dataclass or a dict                                test_mg_port: the_records_are_frozen_values
+M96  GmailMailbox is not a Mailbox (the tools call the adapter directly)                  test_mg_port: the_port_the_adapter_and_the_tools_are_where_the_design_names_them
+M97  MailFailed   reason not kept, or not one of the five reasons                         test_mg_port: a_failure_carries_its_reason[*]
+M98  model        Port has no "mail"                                                       test_mg_port: the_port_list_gains_mail
+
+Equivalent or untestable
+M76  By design only reads of a mailbox answer needs_reconnect; what `mail_boxes` shows for a connection that needs a reconnect
+     is not stated, so the suite does not pin it (design gap, reported).
+M24b A date rendered in a time zone other than UTC for a message sent at 12:00 UTC: the test message sits at midday so every
+     zone within +-11 hours gives the same calendar day; a zone beyond that is untestable without pinning the format.
+M99  The cap's value (25, 50, 100): the design makes it data (`mail.json`), so the suite pins only "capped, cut, paged
+     to the end gives every match once".
+M100 Fetching headers with `format=full` or `format=metadata`: equivalent through the tool's results; a count of attachments
+     needs parts, which only `full` carries, so a test of the format would pin the adapter's route, not its contract.
+M101 One mail.call per tool call or several per port call: the suite asserts at least one per tool call, not exactly one.
+
+Verdicts (each mutant applied one at a time to the built code, run against this suite, the part's own mail tests and
+mail_oauth_blind, per-run timeout 150 s; killed means the run went red)
+Killed: M1-M9, M11-M15, M17-M75 (a letter suffix is a variant: M39a-f one dropped term each, M42a-b, M43a-b, M45a-b,
+M64a-b, M83a-c, M93a-b; every variant killed), M77, M79, M82-M98. M78 is M2 (mail_search alone declaring outside false).
+Killed by a directed test added for it: M88. A transport error on the search's list call, after the labels call answered,
+is the only place query words are in hand when a failure is logged; the suite's failure test downed Gmail on the first call,
+so a log of the request's query never saw them. test_mg_logs: a_search_that_cannot_reach_gmail_logs_no_query_words.
+Equivalent (no test can tell them apart, with the reason):
+M10  turn_tools  mail gated without the speaker check: `sources` returns nothing for a turn with no speaker_id before any
+     source is built, so the check inside the mail gate is unreachable.
+M16  turn_tools  mail offered when connections cannot be opened: MailTools' catalogue is empty then, because reading the
+     person's connections raises ConnectionsUnavailable, and a call answers is_error; the offered set and every answer match.
+M76  see above.
+Not applied: M80 and M81 live in the turn's Outside check and the held-call summary (ashley.tools.outside and its callers),
+outside this part's diff; this suite's taint tests pin them through the tools and ran green against the unmutated tree.
+M89 was applied as an address that carried the access token (mail_boxes echoing a credential); M66 as a fixed stale token
+where the renewed one belongs; M67, M69 and M74 were applied to ashley/connections/renewal.py, where those behaviours live.

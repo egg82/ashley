@@ -1,0 +1,13 @@
+{
+  "catalogue_ttl_s": 300,
+  "proposal_ttl_s": 86400,
+  "max_chars": 6000,
+  "devices_chars": 900,
+  "find_default": 25,
+  "history_max_hours": 168,
+  "history_default_hours": 24,
+  "history_max_things": 5,
+  "logbook_max_things": 5,
+  "readings_per_thing": 40,
+  "entries_max": 60
+}

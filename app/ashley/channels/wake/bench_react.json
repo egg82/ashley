@@ -1,0 +1,9 @@
+{
+  "pause_s": 30,
+  "max_reactions": 3,
+  "window_s": 900,
+  "scan": 50,
+  "batch": 2,
+  "listed": 30,
+  "keep_s": 604800
+}

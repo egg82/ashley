@@ -1,0 +1,23 @@
+{
+  "tick_s": 5,
+  "claim_s": 600,
+  "max_attempts": 3,
+  "max_group": 3,
+  "group_timeout_min": 200,
+  "max_running": {"agent": 3, "claude_code": 3},
+  "deadline_min": {"agent": 30, "claude_code": 180},
+  "max_pieces_in": 12,
+  "max_bytes_in": 52428800,
+  "max_outputs": 8,
+  "brief_chars": 6000,
+  "result_chars": 800,
+  "agent_max_tool_rounds": 40,
+  "tool_result_chars": 12000,
+  "max_runs_per_turn": 2,
+  "kind_extensions": {"code": "py", "model": "py", "measurements": "json", "document": "md", "note": "md"},
+  "extensions": {
+    "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "application/pdf": "pdf",
+    "application/zip": "zip", "model/3mf": "3mf", "model/stl": "stl", "model/gltf-binary": "glb", "text/plain": "txt",
+    "text/csv": "csv", "application/json": "json", "text/markdown": "md", "video/mp4": "mp4", "audio/mpeg": "mp3"
+  }
+}

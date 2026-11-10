@@ -1,0 +1,75 @@
+{
+  "cooldown_s": 300,
+  "tasks": {
+    "command": [
+      {"provider": "anthropic", "model": "claude-haiku-5-5", "timeout_s": 10, "params": {"max_tokens": 1024, "effort": "low"}},
+      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 10, "params": {"max_completion_tokens": 1024, "reasoning_effort": "none"}},
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 10, "params": {"max_completion_tokens": 1024}}
+    ],
+    "chat": [
+      {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "low"}},
+      {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}}
+    ],
+    "brainstorm": [
+      {"provider": "anthropic", "model": "claude-opus-5-5", "timeout_s": 120, "params": {"max_tokens": 8192, "effort": "medium"}},
+      {"provider": "gemini", "model": "gemini-4-argon", "timeout_s": 120, "params": {"max_completion_tokens": 8192}}
+    ],
+    "escalated": {"like": "brainstorm"},
+    "wrap_up": [
+      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "none"}},
+      {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "low"}},
+      {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}}
+    ],
+    "memory_write": [
+      {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}},
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 30, "params": {"max_completion_tokens": 2048}}
+    ],
+    "memory_judge": [
+      {"provider": "anthropic", "model": "claude-haiku-5-5", "timeout_s": 10, "params": {"max_tokens": 512, "effort": "low"}},
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 10, "params": {"max_completion_tokens": 512}}
+    ],
+    "look_up": [
+      {"provider": "anthropic", "model": "claude-haiku-5-5", "timeout_s": 15, "params": {"max_tokens": 1024, "effort": "low"}},
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 15, "params": {"max_completion_tokens": 1024}}
+    ],
+    "errand": [
+      {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}},
+      {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "low"}}
+    ],
+    "bench_job": [
+      {"provider": "anthropic", "model": "claude-opus-5-5", "timeout_s": 480, "params": {"max_tokens": 32000, "effort": "medium"}},
+      {"provider": "gemini", "model": "gemini-4-argon", "timeout_s": 480, "params": {"max_completion_tokens": 32000}}
+    ],
+    "action_judge": [
+      {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 8, "params": {"max_tokens": 512, "effort": "low"}},
+      {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 8, "params": {"max_completion_tokens": 512, "reasoning_effort": "low"}}
+    ],
+    "eval_judge": [
+      {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 1024, "effort": "low"}},
+      {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 30, "params": {"max_completion_tokens": 1024, "reasoning_effort": "low"}}
+    ],
+    "bench_tidy": [
+      {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 45, "params": {"max_completion_tokens": 6000}},
+      {"provider": "anthropic", "model": "claude-haiku-5-5", "timeout_s": 45, "params": {"max_tokens": 6000, "effort": "low"}}
+    ],
+    "transcribe": [
+      {"provider": "wyoming", "model": "whisper", "timeout_s": 8},
+      {"provider": "openai", "model": "gpt-4o-mini-transcribe", "timeout_s": 10, "params": {"language": "en"}}
+    ],
+    "speak": [
+      {"provider": "elevenlabs", "model": "eleven_flash_v2_5", "timeout_s": 5,
+       "params": {"voice_id": "DlbsiZVVCoinytYA5J3d", "output_format": "pcm_16000"}}
+    ],
+    "embed": [
+      {"provider": "fastembed", "model": "thenlper/gte-base", "timeout_s": 15}
+    ],
+    "image": [
+      {"provider": "gemini_image", "model": "gemini-3.1-flash-lite-image", "timeout_s": 60},
+      {"provider": "openai_image", "model": "gpt-image-2.5-flare", "timeout_s": 90,
+       "params": {"quality": "medium", "output_format": "jpeg"}}
+    ],
+    "voiceprint": [
+      {"provider": "sherpa", "model": "nemo_en_titanet_small", "timeout_s": 2}
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "document": {"family": "stored", "label": "Document", "max_chars": 200000, "format": "markdown"},
+  "note": {"family": "stored", "label": "Note", "max_chars": 4000, "format": "plain"},
+  "code": {"family": "stored", "label": "Code", "max_chars": 50000, "format": "code", "language": "text"},
+  "model": {"family": "stored", "label": "Model", "max_chars": 50000, "format": "code", "language": "build123d"},
+  "automation": {"family": "stored", "label": "Automation", "max_chars": 50000, "format": "automation"},
+  "wake": {"family": "stored", "label": "Wake rule", "max_chars": 4000, "format": "wake"},
+  "diagram": {"family": "stored", "label": "Diagram", "max_chars": 20000, "format": "diagram"},
+  "measurements": {"family": "stored", "label": "Measurements", "max_chars": 50000, "format": "measurements"},
+  "site": {"family": "live", "label": "Site", "max_chars": 2000, "format": "site", "outside": true},
+  "video": {"family": "live", "label": "Video", "max_chars": 2200, "format": "video", "outside": true},
+  "reader": {"family": "stored", "label": "Reader", "max_chars": 200000, "format": "reader", "outside": true},
+  "recipe": {"family": "stored", "label": "Recipe", "max_chars": 200000, "format": "recipe", "outside": true},
+  "image": {"family": "large", "label": "Image", "max_chars": 1000, "format": "image", "outside": true},
+  "file": {"family": "large", "label": "File", "max_chars": 1000, "format": "file", "outside": true},
+  "clip": {"family": "large", "label": "Clip", "max_chars": 1000, "format": "clip", "outside": true},
+  "audio": {"family": "large", "label": "Audio", "max_chars": 1000, "format": "audio", "outside": true},
+  "clock": {"family": "screen", "label": "Clock", "max_chars": 1, "format": "screen"},
+  "home": {"family": "screen", "label": "Who's home", "max_chars": 1, "format": "screen"},
+  "conversation": {"family": "screen", "label": "Conversation", "max_chars": 1, "format": "screen"},
+  "job": {"family": "stored", "label": "Job", "max_chars": 4000, "format": "job", "by_code": true},
+  "controls": {"family": "screen", "label": "Controls", "max_chars": 4000, "format": "controls"}
+}

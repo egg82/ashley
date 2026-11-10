@@ -1,0 +1,10 @@
+{"line": "I couldn't put an answer together for that, sorry. Please ask me again.",
+ "rejected": "Something went wrong on my side and I couldn't finish that, so please don't count on it being done.",
+ "unreachable": "Sorry, I've lost my train of thought for a moment. I'm still on it and will answer here.",
+ "act": "Your last reply only said you were about to act, and no tool was called. Do not say it again: this time call the tool that does the work now, and answer once it has run.",
+ "hand_off": "This work is taking many steps. If what is left is a build or a long loop with a clear brief, hand it to a worker now with bench_hand_off, naming the pieces it needs, and tell the person it is underway. Otherwise carry on.",
+ "wrap_up": "You have no more tools this turn. Tell the person where the work stands for them: what is done, and what you could not do or still need from them.",
+ "too_big": "Your last attempt was too long for one reply and was cut off, so nothing came of it. Do not try it all at once: make the smallest real change that moves the work forward with a tool now, and run it, or say plainly what you need.",
+ "too_big_hand_off": "Your last attempt was too long for one reply and was cut off, so nothing came of it. Work this big is not for one reply: hand it to a worker now with bench_hand_off, with a clear brief and the pieces it needs, and tell the person it is underway.",
+ "too_big_line": "That was too big for me to do in one go, so nothing came of it. Ask me for a smaller part of it.",
+ "stand": "You can do no more on this now. Tell the person where it stands: what is done, what is not, and what they can ask you to do next. Never say you will do more."}

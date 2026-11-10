@@ -1,0 +1,114 @@
+Planted wrong implementations of "receipts leave her words" for a mutation run against the builder's branch. Each is applied
+alone, tests/receipts_blind (and app/web receipts.blind.test.ts for W-lines) run, then reverted. CAUGHT-BY names the
+contract item (spec CONTRACT numbering) and the test that must go red. NOT RUN: written blind, before any implementation.
+
+M1   c1   Landing.closing still appends "\n\n"+blocks to reply.text.                          test_c01_nothing_code_wrote..., test_c01_closing_returns...
+M2   c1   Landing.closing leaves text alone but still appends the receipts to reply.spoken     test_c01_nothing_code_wrote...[voice/phone_copy], test_c01_closing_returns...[spoken]
+          on a spoken turn.
+M3   c1   storing.stored writes the receipt headlines into NewTurn.text of the phone copy.     test_c01_nothing_code_wrote...[phone_copy]
+M4   c1   respond._answered renders Outbound.body from a reply the receipts were joined to     test_c01_nothing_code_wrote...[voice,discord]
+          (body = text + headlines) while the stored turn is clean.
+M5   c1   An old block intro (block_intro text) is still written by a leftover code path       test_c01_nothing_code_wrote... (receipt_strings holds both old intros)
+          when the turn held calls.
+M6   c1   The queued outbox body for a to_phone copy is her words plus the receipts.           test_c01_nothing_code_wrote...[phone_copy], test_c11_a_reply_is_one_notification_of_her_words_only
+M7   c2   Outside.receipts lists a judged change only when the reply text names it (done is    test_c02_a_judged_change_is_shown_though_her_reply_mentions_nothing
+          gated on the reply).
+M8   c2   Done rows read from OutsideRecord.of_turn of the wrong turn id (the previous one).   test_c02_two_judged_changes..., test_c02 e2e (answer turn id differs from said id)
+M9   c2   Outside.receipts shows a change when the turn is untainted too (done from the        test_c02_a_turn_that_read_nothing_outside_has_no_receipts
+          record regardless of taint).
+M10  c2   A tainted turn that did nothing returns Receipts((), (), None) instead of None.      test_c02_a_tainted_turn_that_changed_nothing_has_no_receipts, test_c05_a_turn_that_did_and_held_nothing_has_none
+M11  c3   Done includes tier "runs" rows.                                                      test_c03_a_runs_tier_change_is_recorded_and_never_shown, test_c03_beside_a_judged_change..., test_c03_the_unit_agrees...
+M12  c3   Runs-tier changes are no longer recorded in outside_actions (dropped to avoid        test_c03_a_runs_tier_change_is_recorded... (count of runs rows == 1)
+          showing them).
+M13  c4   _done's OutsideRecordUnavailable branch appends nothing to the unrecorded list.      test_c04_a_judged_change_whose_record_could_not_be_written_is_still_shown, test_c04_the_stored_turn_holds...
+M14  c4   Unrecorded changes are shown only when of_turn answers (an of_turn that raises       test_c04_a_judged_change_whose_record... (Down raises on of_turn too)
+          drops them all).
+M15  c4   A change whose record raised is also run a second time or counted twice.            test_c04_the_stored_turn_holds... (ran == 2 calls, one entry)
+M16  c5   Held receipts in reverse order, or sorted by tool name.                              test_c05_held_calls_are_receipts_in_order..., test_c05_the_stored_snapshot_has_the_held_calls_in_order...
+M17  c5   Held detail is the label or the tool name, not HeldCall.summary.                    test_c05_held_calls_are_receipts_in_order..., test_c09_held_calls_show_their_full_summary...
+M18  c5   Held detail is cut to a length (the summary is truncated for display).               test_c05 (summary equality), web test "a long summary is shown whole"
+M19  c5   proposal_id is the person turn id / conversation id rather than the proposal's id.   test_c05_held_calls_are_receipts..., test_c05_the_stored_snapshot..., test_c15 held
+M20  c5   proposal_id is set although nothing is held (done only).                             test_c05_done_and_held_in_one_turn_..., test_c08_a_snapshot_with_nothing_held_offers_no_agree
+M21  c5   worth_saying is not forced when held, or is forced when only done.                   test_c05_a_held_turn_is_worth_saying_whatever_she_set_and_a_done_only_one_is_not_made_so
+M22  c5   Landing.receipts is not kept after closing (property returns None).                   test_c01_closing_returns..., test_c05_a_held_turn_is_worth_saying...
+M23  c6   A shared reply shows the done_summary as detail.                                      test_c06_a_shared_reply_shows_a_change_by_its_label_alone, test_c06_in_a_shared_channel...
+M24  c6   A private reply shows no detail (the private branch dropped).                        test_c06_a_private_reply_adds_the_codes_summary_as_detail
+M25  c6   Detail names every argument (the old full summary) instead of done_summary.          test_c06_a_private_reply_adds... (room "porch" must not appear)
+M26  c7   Headline is the tool name when the label is None.                                    test_c07_a_headline_is_the_label_else_unlabelled..., test_c07_an_unlabelled_change_that_ran...
+M27  c7   Headline is the description of the spec, or "" when there is no label.               test_c07_*, test_c05_held_calls_are_receipts_in_order (labels)
+M28  c7   Held headline looked up in the catalogue at read time, so a tool the page move       test_c07_a_headline_is_the_label_else... (label stored from the spec at call time)
+          removed falls back to unlabelled.
+M29  c8   ChatConversationTurn.receipts is rebuilt from outside_actions/proposals at read      test_c08_the_snapshot_survives_the_proposal_being_deleted, ..._taken
+          time instead of the stored snapshot.
+M30  c8   The web wire drops receipts on the turns list (always null).                         test_c08_her_turn_serves_the_stored_snapshot...
+M31  c8   Agree is offered on every turn that has receipts.held, not by agree.waiting.         test_c08_agree_is_offered_on_the_answer_the_proposal_was_held_in_and_nowhere_else, test_c08_the_snapshot_survives...
+M32  c8   ChatReply or MessageResponse omit receipts.                                          test_c08_a_web_reply_carries_the_receipts..., test_c08_a_device_reply_carries...
+M33  c8   The wire names the keys differently (items, calls, proposal).                        test_c08_the_wire_names_done_held_and_the_proposal...
+M34  c9   Discord receipt message sent before her chunks.                                      test_c09_her_words_then_exactly_one_subtext_message_after_them, test_c09_her_chunks_are_as_they_were...
+M35  c9   Receipt message is counted in max_messages (her last chunk is dropped for it).       test_c09_her_chunks_are_as_they_were_and_the_extra_message_is_outside_max_messages
+M36  c9   One message per receipt line instead of one message.                                 test_c09_her_words_then_exactly_one_subtext_message_after_them
+M37  c9   A line of the receipt message lacks "-# " (details after a newline).                 test_c09_every_line_is_subtext_even_when_a_detail_runs_over_lines
+M38  c9   The held footer is added to a done-only message, or missing from a held one.         test_c09_a_done_only_message_has_no_footer, test_c09_held_calls_show_their_full_summary...
+M39  c9   later.post sends her chunks but not the receipt message (only bot.py does).          test_c09_the_outbox_posts_her_chunks_then_the_receipt_message..., test_c09_the_outbox_row_for_a_discord_thread...
+M40  c9   An Outbound with receipts is queued for Discord without receipts (outbox drops it).  test_c09_the_outbox_row_for_a_discord_thread_carries_the_receipts...
+M41  c10  Voice body/spoken clip includes the headlines.                                       test_c01_nothing_code_wrote...[voice], test_c10_the_reply_of_a_voice_turn...
+M42  c10  A receipt push is queued for a voice turn whose speaker has no browser.               test_c10_an_unreachable_speaker_queues_no_push...
+M43  c10  Unreachable speaker: nothing logged (receipts.unshown missing) or logged twice.       test_c10_an_unreachable_speaker_queues_no_push_and_the_turn_logs_unshown_once
+M44  c10  With to_phone the copy carries the receipts AND a second receipt-only push is queued. test_c10_when_she_sends_the_phone_copy... (len(queued) == 1)
+M45  c10  The receipt push is queued after the turn's transaction (a resumed turn queues twice  test_c15 (one answer) and test_c10 (one row)
+          or none).
+M46  c10  A web or Discord turn with a reachable phone also queues a receipt-only push.        test_c10_a_page_or_a_discord_turn_queues_no_receipt_push...
+M47  c10  Receipt-only push without Agree when held.                                           test_c10_a_held_change_pushes_with_agree_on_the_one_notification
+M48  c11  Push sends a second notification with the receipts for a reply that has them.        test_c11_a_reply_is_one_notification_of_her_words_only (sends == 1)
+M49  c11  Her notification body includes the receipts, or loses her words to them.             test_c11_a_reply_is_one_notification_of_her_words_only
+M50  c11  Agree action dropped from her notification when proposal held (moved to a second     test_c11_agree_is_on_her_notification_when_a_proposal_is_held..., test_c10 to_phone [held]
+          one).
+M51  c11  A receipt-only reply pushes an empty body.                                           test_c11_a_receipt_only_reply_is_one_notification_of_the_headlines...
+M52  c11  Receipt-only titles swapped (done_title on a held one).                              test_c11_a_receipt_only_reply..., test_c10_a_held_change_pushes...
+M53  c12  prompt.messages appends the history line on the same line as her words.              test_c12_a_carried_turn_with_receipts_has_the_history_line_alone_on_a_line...
+M54  c12  History line added to a turn without receipts, or to a household/person turn.        test_c12_a_carried_turn_without_receipts_gets_nothing
+M55  c12  said_before forgets the line.                                                        test_c12_said_before_carries_the_line_likewise
+M56  c12  Held entries in the history line show the headline only (no summary).                 test_c12_a_carried_turn_with_receipts_has_the_history_line... (summary asserted)
+M57  c12  A done-only turn's history line names a waiting part.                                 test_c12_a_done_only_turn_names_its_headlines_and_no_waiting_part
+M58  c12  The history line is stored back into her turn text.                                   test_c12_the_next_prompt_carries_the_line_while_her_stored_words_stay_hers
+M59  c13  Reading strips the old blocks from stored text.                                      test_c13_*
+M60  c13  A stored old turn gets a receipts synthesised by parsing its text.                   test_c13_the_web_serves_an_old_turn_as_stored_with_no_receipts, test_c13_a_stored_old_turn_reads_back_whole...
+M61  c13  prompt.messages adds a history line to an old turn (parses the block).               test_c13_the_prompt_carries_an_old_turn_as_stored
+M62  c14  outside.receipts logs the labels or summaries (done=<list>).                          test_c14_no_planted_label_summary_why_or_argument_reaches_a_log
+M63  c14  receipts.unshown logs the headlines.                                                 test_c14_the_unshown_line_names_counts_only
+M64  c14  The judge's explanation is logged with outside.receipts.                             test_c14_no_planted_...
+M65  c15  A resumed turn computes receipts from the dead runner's memory only (empty after      test_c15_the_resumed_turn_stores_the_same_receipts_once
+          resume) so the answer stores none.
+M66  c15  A resumed turn runs the calls again, or stores two answers.                          test_c15 (second.tools.ran == [], one answer)
+M67  c15  Held: the resumed turn's snapshot has proposal_id None (proposal not read back).     test_c15 [held]
+M68  c15  The recorded row is written twice on resume (counted twice in done).                  test_c15 [done] (outside_actions judged == 1, one entry)
+M69  web  doneNote includes details or the proposal.                                           receipts.blind.test.ts "carries no detail"
+M70  web  heldCard hides the detail until a tap, truncates it, or drops the why.               receipts.blind.test.ts "shows every held call ... in full", "a long summary is shown whole"
+M71  web  heldCard.agreeable follows the snapshot's proposal_id instead of the turn's agree.   receipts.blind.test.ts "enabled by the turn agree"
+M72  web  The card disappears once agree is gone (instead of greying).                         receipts.blind.test.ts "stays"
+M73  web  doneNote returns "Done: " for an empty done list.                                    receipts.blind.test.ts "no done note when nothing was done"
+
+Equivalent mutants: none found (none could be run). Two to watch when it is run:
+  - M45: "queued with the turn" and "queued once on resume" are told apart only by test_c10 (one row) and test_c15
+    (one answer); a receipt push queued outside the transaction but after a store succeeded is indistinguishable
+    without killing a runner between the two writes, which no test here does (see gaps.txt).
+  - M28: whether a label is stored at call time or looked up later differs only when the catalogue changes between the call
+    and closing; test_c07 does not move the page, so M28 may survive.
+
+
+---- Reconciled run (on the built branch) ----
+Each mutant above was planted alone against the contract's own test files, then (for survivors) against the whole receipts
+set. Splits: M21 as a (never forced) and b (forced when only done); M32 as a (ChatReply) and b (device reply). Own mutants:
+O1 a tool name in a held summary; O2 a tool name in a done summary; O3 a receipt-only push on a woken turn that speaks;
+O4 no receipt push on a quiet woken turn; O5 Receipt.from_json drops why; O6 Receipts.to_json drops proposal_id;
+O7 Discord lists held before done; O8 the wire swaps ran and held; O9 a non-ashley turn may carry receipts;
+O10 Discord truncation drops the footer; O11 a held receipt drops the judge's reason; O12 a tool that agrees is not refused
+in a tainted turn (not receipts code; killed by tests/outside_ask).
+Result: all killed but one equivalent. Before directed tests, M21b, M37, M57 survived the blind suite; the directed tests are
+test_rcb_woken_quiet.py (a done-only turn is not made worth saying), test_receipts_reconcile.py (a held detail over lines
+stays subtext; the history line names a part only for what there is). M28 (a held headline resolved at read time) was
+killed only by tests/outside_ask/test_outside_plain.py and was a real defect (fixed: HeldCall.label).
+EQUIVALENT: M9 (Outside.receipts without its untainted early return): a change is judged or held only in a tainted turn, so
+the guard changes no output, only saves two store reads per untainted turn.
+M10 and M20 are caught by the Receipts invariant raising rather than by an assertion on output; M66 and M68 are caught
+through the recorded counts.

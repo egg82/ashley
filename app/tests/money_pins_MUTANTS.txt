@@ -1,0 +1,22 @@
+Planted wrong implementations, one at a time, each applied exactly once and restored from the text read before planting.
+Run against test_money_pins.py, test_money_tools.py, sure_blind/test_money.py and household_money_blind/test_hm_tools.py
+for the tools (m, r, p), and test_deposit_read_pins.py plus the deposit-sense, withdrawal-sense and criteria suites for
+the sense's read (d). Run on the code as it stood before the move behind the Ledger: 20 tool-body, 22 render, 22 spec and
+29 sense mutants. Before the pins, 26 of the 42 tool-body and render ones survived the existing suites alone (error texts,
+page sizes asked, logged row counts, key order, optional fields), as did the date-length bound and, before the sense
+pins, the id-length bound; the pins kill them all.
+
+Equivalent, no test can tell it apart: p15 `params["per_page"] = limit` written as `params.get("per_page", limit)`.
+
+m  money.py: unknown tool allowed; each error text and code changed; accounts and categories page sizes swapped;
+   balance sheet asked with parameters; rows not counted; connection looked up on every call; catalogue offered to a
+   household with none, or without instructions
+r  money_render.py: cut at equal, or when the total is unknown; optional fields kept when none; key order of accounts,
+   transactions and the three names; transfer, excluded and split flags renamed or dropped; matched always present or
+   the shown count; category parent dropped or its id; currency always present
+p  money_specs.py: date, id, search, type and limit bounds and their edges; per-argument validation dropped; defaults;
+   schema bounds and descriptions; reads flag; instructions
+d  sure_transactions.py (now senses/ledger_transactions.py): id length bound, missing id, amount or date kept, name order,
+   each of transfer, excluded, split and classification ignored when counting, cents signed, direction words swapped,
+   page arithmetic, which pages are read, the day a cut read continues from, directions read, answered not recorded,
+   the parameters sent

@@ -1,0 +1,133 @@
+Planted mutants for the her-own-setup blind suite (tests/hos_blind). Each was applied alone to the shipped source and the
+suite run whole (both xdist workers, no -x); "killed" is exit 1 with a FAILED line naming a test. The file was restored from the text read
+before mutating and the tree checked clean after each. 98 planted: 96 killed (8 only after a directed test), 2 equivalent.
+Four defects were found in main as strict xfails; the fixes removed the markers.
+Directed tests added for survivors also fixed one hole in the suite itself: a long-file test had lost its `go(scenario())` and never ran
+(found because mutants T7 and T8 survived); every test that defines a scenario now runs it.
+Not run again whole after the survivors' directed tests, which only add assertions; the survivors were rerun (T12 first as a malformed mutant, then replanted).
+
+connections/postgres.py
+  P1  a listing holds every person's code host                                    killed
+  P2  opened ignores whose it is and takes the first row of the kind              killed
+  P3  remove deletes every person's connection of the kind                        killed
+  P4  a personal connection is stored with no person                              killed
+  P5  a person of another household may be the adder                              killed
+  P6  answered moves every connection's checked_at                                killed
+  P7  the put log line carries the secret                                         killed
+  P8  the secret is sealed bound to household and kind only, not the person       killed
+  P9  the unsealable log line carries the sealed bytes                            killed after a directed test
+  P10 an unsealable secret escapes as another error                               killed
+
+connections/sealing.py
+  S1  bound_to ignores the person                                                 killed
+  S2  bound_to ignores the kind                                                   killed
+
+connections/model.py
+  M1  Opened shows the secret in its repr                                         killed
+  M2  github is a household's connection, not a person's                          killed
+
+connections/address.py
+  A1  a fragment is allowed in an address                                         killed
+  A2  a username with no password is allowed                                      killed
+  A3  port 65536 is in range                                                      equivalent
+  A4  a trailing slash is kept                                                    killed
+
+codehost/wire.py
+  W1  an http redirect is followed                                                killed
+  W2  a redirect is followed where none was asked for                             killed
+  W3  the token and headers go on to the redirect target                          killed
+  W4  redirects are followed more than once                                       killed
+  W5  403 is not a refusal                                                        killed
+  W6  404 is not not_found                                                        killed
+  W7  a body read in pieces stops at exactly the cap and says nothing was left    killed
+  W8  a cut archive is not too large and a cut file is                            killed
+  W9  a further page is never reported                                            killed
+  W10 the log line carries the URL                                                killed
+  W11 the log line carries the token                                              killed
+  W12 json_rows takes a list of non-objects                                       killed
+  W13 no timeout on a call                                                        killed
+  W14 a 3xx or 4xx other than 401/403/404 passes as a success                     killed
+  W15 a body over the cap is returned whole                                       killed
+
+codehost/gitlab.py
+  G1  the token goes as a bearer, not PRIVATE-TOKEN                               killed
+  G2  a project path is not encoded                                               killed
+  G3  a file path is not encoded                                                  killed
+  G4  no ref is sent when none was named                                          killed
+  G5  the tree ignores the ref                                                    killed
+  G6  the archive ignores the ref                                                 killed
+  G7  the search is dropped                                                       killed
+  G8  check passes any JSON                                                       killed after a directed test
+  G9  tree kinds are swapped                                                      killed
+  G10 a missing description is the word None                                      killed
+  G11 projects are asked for a hard-coded page                                    killed
+  G12 a cut file does not say it went on                                          killed
+
+codehost/github.py
+  H1  the token goes with the scheme token, not Bearer                            killed
+  H2  a directory exactly at the cap is more                                      killed
+  H3  the tree is not cut at the cap                                              killed
+  H4  a file is asked for as JSON                                                 killed
+  H5  the zipball's redirect is not followed                                      killed
+  H6  the search does not filter                                                  killed
+  H7  check passes anything that answered                                         killed
+  H8  the archive ignores the ref                                                 killed
+  H9  tree kinds are swapped                                                      killed
+  H10 the tree ignores the ref                                                    killed
+  H11 the owner/repo slash is encoded                                             killed
+
+codehost/routed.py
+  R1  check always goes to GitLab                                                 killed
+  R2  the archive's ref is dropped on the way                                     killed
+
+codehost/config.py
+  C1  a page of exactly the page size is refused                                  killed
+  C2  a zero timeout is accepted                                                  killed
+  C3  a non-integer count is accepted                                             killed
+  C4  an unknown key is accepted                                                  killed
+
+tools/code_host.py
+  T1  the tools open no person's connection                                       killed
+  T2  the first person's access is kept for everyone                              killed
+  T3  a host the person did not connect raises                                    killed
+  T4  a path may climb                                                            killed
+  T5  a ref may climb                                                             killed after a directed test
+  T6  a ref may hold any characters                                               equivalent
+  T7  a file is shown past the character cap                                      killed after a directed test
+  T8  a file cut to characters is not marked truncated                            killed after a directed test
+  T9  a file cut by the cap is put on the bench as if whole                       killed
+  T10 bench_add_from_git is callable with no bench                                killed
+  T11 every host is offered, connected or not                                     killed
+  T12 git_projects lists every connected host whichever was asked                 killed after a directed test
+  T13 a person with no connection is not told so                                  killed
+  T14 a project name has no length limit                                          killed
+  T15 unreadable connections read as none                                         killed
+  T16 unknown argument names are not rejected                                     killed after a directed test
+  T17 a file goes on the bench under another's name and type                      killed
+  T18 reading no path is a success                                                killed
+
+channels/devices_tool.py
+  D1  another household's devices are listed                                      killed
+  D2  what a device is read from its conversation kind                            killed
+  D3  unreadable devices raise                                                    killed
+  D4  audience and medium are swapped                                             killed
+  D5  the count is off by one                                                     killed
+
+api/connections.py
+  X1  a person's disconnect names no person                                       killed
+  X2  a person's own code host is not listed to them                              killed
+  X3  a connection is stored unchecked                                            killed
+  X4  a refused token reads as unreachable                                        killed
+  X5  a GitLab at an http address is allowed                                      killed
+  X6  the connected log line carries the token                                    killed
+  X7  a code host is not marked personal                                          killed
+  X8  removing what is not there is a 204                                         killed
+  X9  an address that is not one is not refused as bad_url                        killed
+  X10 connect does not check that connections can be opened                       killed after a directed test
+  X11 every refusal is reported as key_refused                                    killed
+  X12 a non-forge answer is reported as a refused key                             killed
+  X13 an app with no key lists as if it could connect                             killed
+
+Equivalent, with the reason no test can tell them apart
+  A3  equivalent: urlsplit().port already raises ValueError above 65535, so the explicit upper bound repeats it
+  T6  equivalent: the ref pattern is a second guard; both adapters percent-encode a ref (query value or path segment), so a ref outside the pattern is only a name no forge has, still an error result

@@ -1,0 +1,48 @@
+Planted wrong implementations, one at a time, in a scratch copy of app/ (never the worktree), each plant asserted to
+apply exactly once. Each run is tests/run_code_blind-style: tests/runs_history_blind, green before the plant.
+41 planted, 39 caught, 2 not (below).
+
+#    mutant                                          result
+M1   carried reads the said turn too                red
+M2   zero budget still reads                        red
+M3   no person turn still reads                     red
+M4   unavailable not caught                         red
+M5   conversations not placed apart                 red
+M6   said not part of placement                     red
+M7   runs of an answer reversed                     red
+M8   latest off by one                              red
+M9   wrong household                                red
+M10  script cut from the start                      red
+M11  output keeps its head                          red
+M12  script cut at the budget exactly               red
+M13  output cut at the budget exactly               red
+M14  stream labels swapped                          red
+M15  file contents in the files line                red
+M16  stdin in the block                             red
+M17  exit code dropped                              red
+M18  other outcome printed as failed                red
+M19  no-result note dropped                         red
+M20  end marker missing                             red
+M21  script uses the output budget                  red
+M22  streams use the script budget                  red
+M23  empty streams printed                          survived: not pinned: the contract does not say whether an empty stream is printed; any run with output prints both or one, and nothing the contract states tells them apart
+M24  of_turns gives the earliest                    red
+M25  of_turns newest first                          red
+M26  of_turns reads bench runs                      red
+M27  of_turns ignores the household                 red
+M28  of_turns ignores latest                        red
+M29  of_turns zero-latest shortcut removed          survived: equivalent: with latest 0 the query's LIMIT 0 returns the same empty list the shortcut returns
+M30  answer is the first of hers                    red
+M31  trailing held line answers                     red
+M32  any held line never answers                    red
+M33  held line before a person turn never answers   red
+M34  runs joined with a space                       red
+M35  runs put on the message being answered         red
+M36  run budgets floor at 1                         red
+M37  bool accepted as a budget                      red
+M38  run budgets optional                           red
+M39  respond drops the runs                         red
+M40  respond uses another kind's limits             red
+M41  respond reads for another household            red
+
+Defect found: block() with run_output_chars 0 keeps the whole stream (test_a_zero_output_budget_keeps_no_output, strict xfail).

@@ -1,0 +1,371 @@
+#!/usr/bin/env python3
+"""
+Loaf Rise Estimator (invented example)
+
+This script estimates how long a dough needs to rise from a batch code.
+
+Batch code input:   "<flourGrams>[W] <pattern>"
+Example:            "500W -+0-0++"
+
+Add the optional `W` suffix when the dough was proofed warm.
++ for taller
+0 for same
+- for shorter
+
+Output:             "<hours>:<minutes> (<minutes> minutes)"
+"""
+
+from __future__ import annotations
+
+import sys
+from dataclasses import dataclass
+from typing import List
+
+
+def step_0(value: int, limit: int) -> int:
+    """One rise step of kind 0: fold `value` into `limit`."""
+    scaled = (value * 1000) % 997
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_1(value: int, limit: int) -> int:
+    """One rise step of kind 1: fold `value` into `limit`."""
+    scaled = (value * 1007) % 998
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_2(value: int, limit: int) -> int:
+    """One rise step of kind 2: fold `value` into `limit`."""
+    scaled = (value * 1014) % 999
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_3(value: int, limit: int) -> int:
+    """One rise step of kind 3: fold `value` into `limit`."""
+    scaled = (value * 1021) % 1000
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_4(value: int, limit: int) -> int:
+    """One rise step of kind 4: fold `value` into `limit`."""
+    scaled = (value * 1028) % 1001
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_5(value: int, limit: int) -> int:
+    """One rise step of kind 5: fold `value` into `limit`."""
+    scaled = (value * 1035) % 1002
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_6(value: int, limit: int) -> int:
+    """One rise step of kind 6: fold `value` into `limit`."""
+    scaled = (value * 1042) % 1003
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_7(value: int, limit: int) -> int:
+    """One rise step of kind 7: fold `value` into `limit`."""
+    scaled = (value * 1049) % 1004
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_8(value: int, limit: int) -> int:
+    """One rise step of kind 8: fold `value` into `limit`."""
+    scaled = (value * 1056) % 1005
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_9(value: int, limit: int) -> int:
+    """One rise step of kind 9: fold `value` into `limit`."""
+    scaled = (value * 1063) % 1006
+    return scaled % limit if limit > 0 else scaled
+
+
+
+
+
+
+
+
+
+
+
+
+@dataclass
+class Dough:
+    """A batch: flour grams and the state of its starter."""
+
+    flour: int
+    seed: int
+
+    def next_bits(self, count: int) -> int:
+        self.seed = (self.seed * 25214903917 + 11) & ((1 << 48) - 1)
+        return self.seed >> (48 - count)
+
+    def next_int(self, limit: int) -> int:
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+        while True:
+            rise = self.next_bits(31)
+            value = rise % limit
+            if rise - value + (limit - 1) >= 0:
+                return value
+
+def step_10(value: int, limit: int) -> int:
+    """One rise step of kind 10: fold `value` into `limit`."""
+    scaled = (value * 1070) % 1007
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_11(value: int, limit: int) -> int:
+    """One rise step of kind 11: fold `value` into `limit`."""
+    scaled = (value * 1077) % 1008
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_12(value: int, limit: int) -> int:
+    """One rise step of kind 12: fold `value` into `limit`."""
+    scaled = (value * 1084) % 1009
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_13(value: int, limit: int) -> int:
+    """One rise step of kind 13: fold `value` into `limit`."""
+    scaled = (value * 1091) % 1010
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_14(value: int, limit: int) -> int:
+    """One rise step of kind 14: fold `value` into `limit`."""
+    scaled = (value * 1098) % 1011
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_15(value: int, limit: int) -> int:
+    """One rise step of kind 15: fold `value` into `limit`."""
+    scaled = (value * 1105) % 1012
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_16(value: int, limit: int) -> int:
+    """One rise step of kind 16: fold `value` into `limit`."""
+    scaled = (value * 1112) % 1013
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_17(value: int, limit: int) -> int:
+    """One rise step of kind 17: fold `value` into `limit`."""
+    scaled = (value * 1119) % 1014
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_18(value: int, limit: int) -> int:
+    """One rise step of kind 18: fold `value` into `limit`."""
+    scaled = (value * 1126) % 1015
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_19(value: int, limit: int) -> int:
+    """One rise step of kind 19: fold `value` into `limit`."""
+    scaled = (value * 1133) % 1016
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_20(value: int, limit: int) -> int:
+    """One rise step of kind 20: fold `value` into `limit`."""
+    scaled = (value * 1140) % 1017
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_21(value: int, limit: int) -> int:
+    """One rise step of kind 21: fold `value` into `limit`."""
+    scaled = (value * 1147) % 1018
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_22(value: int, limit: int) -> int:
+    """One rise step of kind 22: fold `value` into `limit`."""
+    scaled = (value * 1154) % 1019
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_23(value: int, limit: int) -> int:
+    """One rise step of kind 23: fold `value` into `limit`."""
+    scaled = (value * 1161) % 1020
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_24(value: int, limit: int) -> int:
+    """One rise step of kind 24: fold `value` into `limit`."""
+
+    scaled = (value * 1168) % 1021
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_25(value: int, limit: int) -> int:
+    """One rise step of kind 25: fold `value` into `limit`."""
+    scaled = (value * 1175) % 1022
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_26(value: int, limit: int) -> int:
+    """One rise step of kind 26: fold `value` into `limit`."""
+    scaled = (value * 1182) % 1023
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_27(value: int, limit: int) -> int:
+    """One rise step of kind 27: fold `value` into `limit`."""
+    scaled = (value * 1189) % 1024
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_28(value: int, limit: int) -> int:
+    """One rise step of kind 28: fold `value` into `limit`."""
+    scaled = (value * 1196) % 1025
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_29(value: int, limit: int) -> int:
+    """One rise step of kind 29: fold `value` into `limit`."""
+    scaled = (value * 1203) % 1026
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_30(value: int, limit: int) -> int:
+    """One rise step of kind 30: fold `value` into `limit`."""
+    scaled = (value * 1210) % 1027
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_31(value: int, limit: int) -> int:
+    """One rise step of kind 31: fold `value` into `limit`."""
+    scaled = (value * 1217) % 1028
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_32(value: int, limit: int) -> int:
+    """One rise step of kind 32: fold `value` into `limit`."""
+    scaled = (value * 1224) % 1029
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_33(value: int, limit: int) -> int:
+    """One rise step of kind 33: fold `value` into `limit`."""
+    scaled = (value * 1231) % 1030
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_34(value: int, limit: int) -> int:
+    """One rise step of kind 34: fold `value` into `limit`."""
+    scaled = (value * 1238) % 1031
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_35(value: int, limit: int) -> int:
+    """One rise step of kind 35: fold `value` into `limit`."""
+    scaled = (value * 1245) % 1032
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_36(value: int, limit: int) -> int:
+    """One rise step of kind 36: fold `value` into `limit`."""
+    scaled = (value * 1252) % 1033
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_37(value: int, limit: int) -> int:
+    """One rise step of kind 37: fold `value` into `limit`."""
+    scaled = (value * 1259) % 1034
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_38(value: int, limit: int) -> int:
+    """One rise step of kind 38: fold `value` into `limit`."""
+    scaled = (value * 1266) % 1035
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_39(value: int, limit: int) -> int:
+    """One rise step of kind 39: fold `value` into `limit`."""
+    scaled = (value * 1273) % 1036
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_40(value: int, limit: int) -> int:
+    """One rise step of kind 40: fold `value` into `limit`."""
+    scaled = (value * 1280) % 1037
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_41(value: int, limit: int) -> int:
+    """One rise step of kind 41: fold `value` into `limit`."""
+    scaled = (value * 1287) % 1038
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_42(value: int, limit: int) -> int:
+    """One rise step of kind 42: fold `value` into `limit`."""
+    scaled = (value * 1294) % 1039
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_43(value: int, limit: int) -> int:
+    """One rise step of kind 43: fold `value` into `limit`."""
+    scaled = (value * 1301) % 1040
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_44(value: int, limit: int) -> int:
+    """One rise step of kind 44: fold `value` into `limit`."""
+    scaled = (value * 1308) % 1041
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_45(value: int, limit: int) -> int:
+    """One rise step of kind 45: fold `value` into `limit`."""
+    scaled = (value * 1315) % 1042
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_46(value: int, limit: int) -> int:
+    """One rise step of kind 46: fold `value` into `limit`."""
+    scaled = (value * 1322) % 1043
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_47(value: int, limit: int) -> int:
+    """One rise step of kind 47: fold `value` into `limit`."""
+    scaled = (value * 1329) % 1044
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_48(value: int, limit: int) -> int:
+    """One rise step of kind 48: fold `value` into `limit`."""
+    scaled = (value * 1336) % 1045
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_49(value: int, limit: int) -> int:
+    """One rise step of kind 49: fold `value` into `limit`."""
+    scaled = (value * 1343) % 1046
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_50(value: int, limit: int) -> int:
+    """One rise step of kind 50: fold `value` into `limit`."""
+    scaled = (value * 1350) % 1047
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_51(value: int, limit: int) -> int:
+    """One rise step of kind 51: fold `value` into `limit`."""
+    scaled = (value * 1357) % 1048
+    return scaled % limit if limit > 0 else scaled
+
+
+def step_52(value: int, limit: int) -> int:
+    """One rise step of kind 52: fold `value` into `limit`."""
+if __name__ == "__main__":
+    main()

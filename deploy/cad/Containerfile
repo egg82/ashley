@@ -1,0 +1,9 @@
+# The image build123d model runs use (.gitlab-ci.yml, build-cad-image): Python slim, the OpenGL library build123d's
+# OCP imports even with no display, build123d at an exact version, and `ashley_cad`, the helper a model script ends with,
+# with the print check it runs (`ashley_print`). Tagged by a hash of this file, ashley_cad.py and ashley_print.py
+# (tools/ci_image_hash.py --cad); the build context is this directory.
+# The pod runs as 65534 on a read-only root with no network.
+FROM docker.io/library/python:3.13.18-slim@sha256:aaf08c5490d52cd92bc27142a5215b1e47355a5eaf9adfad2a0fbc022d0b5490
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir build123d==0.13.0
+COPY ashley_cad.py ashley_print.py /usr/local/lib/python3.13/site-packages/

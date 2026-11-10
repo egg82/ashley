@@ -1,0 +1,13 @@
+[Unit]
+Description=Ashley herdr bridge
+After=network-online.target herdr-server.service
+Wants=network-online.target herdr-server.service
+
+[Service]
+ExecStart=%h/.local/share/ashley-herdr-bridge/venv/bin/herdr-bridge serve
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

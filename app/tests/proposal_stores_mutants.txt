@@ -1,0 +1,83 @@
+Planted wrong implementations of the proposal stores (`postgres_deposits.py`, `postgres_house_proposals.py`), the turn gate
+and the tools that call them, one at a time, each restored from the text read before planting. Each run is
+tests/criteria_blind/test_cb_proposals.py, ha_general_blind, reminders_shaped_blind, test_house_change.py,
+test_money_proposals.py, test_reminders_shaped.py, reminders_look_blind and deposit_sense_blind/test_ds_deposits.py, green
+before the plant. 72 planted and one no-op control (PD30, which must survive). A kill is a pytest failure. The 11 that
+survived the first pass (PD29 aside) were killed by tests added before the stores became one: test_proposal_pins.py,
+test_proposal_gate.py and the limit tests in test_house_change.py, test_money_proposals.py and
+reminders_shaped_blind/test_rsh_tools.py. PD29 is equivalent. Test names are cut where the runner cut them.
+
+#     file                          mutant -> result
+PD1   postgres_deposits.py           money: a new proposal keeps the older -> killed by test_a_newer_proposal_replaces_the_older_ones_in_the_conversation_and_
+PD2   postgres_deposits.py           money: replace spans conversations -> killed by test_conversations_and_people_keep_their_own_proposals
+PD3   postgres_deposits.py           money: replace spans people -> killed by test_conversations_and_people_keep_their_own_proposals
+PD4   postgres_deposits.py           money: pending is the oldest -> SURVIVED the first pass, killed by test_the_latest_of_two_stored_money_proposals_is_the_pending_one
+PD5   postgres_deposits.py           money: take does not consume -> killed by test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_later_one_wh
+PD6   postgres_deposits.py           money: take never refused -> killed by test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_later_one_wh
+PD7   postgres_deposits.py           money: old never dropped -> killed by test_proposing_again_drops_proposals_older_than_the_ttl
+PD8   postgres_deposits.py           money: purge drops all -> killed by test_remind_on_money_proposes_and_arms_nothing_in_words
+PD9   postgres_deposits.py           money: due_at not restored -> killed by test_a_proposed_edit_is_replaced_by_a_newer_proposal_of_any_kind
+PD10  postgres_deposits.py           money: repeat not restored -> killed by test_a_proposal_taken_from_a_later_turn_comes_back_whole_and_
+PD11  postgres_deposits.py           money: route not restored -> killed by test_an_edit_that_names_no_new_acting_tool_is_at_once_and_keeps_
+PD12  postgres_deposits.py           money: tools not restored -> killed by test_an_edit_that_adds_an_acting_tool_changes_nothing_until_arme
+PD13  postgres_deposits.py           money: target not restored -> killed by test_an_edit_that_adds_an_acting_tool_changes_nothing_until_arme
+PD14  postgres_deposits.py           money: rule not restored -> killed by test_remind_on_money_proposes_and_arms_nothing_in_words
+PD15  postgres_deposits.py           money: proposed_at replaced by now -> killed by test_a_proposal_older_than_its_time_is_refused_as_expired
+PD16  postgres_deposits.py           money: empty brief allowed -> killed by test_a_proposal_with_a_brief_outside_the_limits_raises_and_st
+PD17  postgres_deposits.py           money: brief at max refused -> SURVIVED the first pass, killed by test_a_brief_of_exactly_the_limit_and_exactly_the_most_tools_are_kept
+PD18  postgres_deposits.py           money: NUL allowed -> killed by test_a_proposal_with_a_brief_outside_the_limits_raises_and_st
+PD19  postgres_deposits.py           money: tools cap off by one -> SURVIVED the first pass, killed by test_one_tool_more_than_the_most_is_refused_and_replaces_nothing
+PD20  postgres_deposits.py           money: tools cap ignored -> SURVIVED the first pass, killed by test_one_tool_more_than_the_most_is_refused_and_replaces_nothing
+PD21  postgres_deposits.py           money: repeat on rule allowed -> killed by test_a_repeat_on_a_money_rule_raises_and_keeps_the_proposal_i
+PD22  postgres_deposits.py           money: any repeat refused -> killed by test_remind_on_money_proposes_and_arms_nothing_in_words
+PD23  postgres_deposits.py           money: none reported as expired -> killed by test_arming_with_nothing_proposed_in_this_conversation_by_this_person_
+PD24  postgres_deposits.py           money: person_id is the maker -> SURVIVED the first pass, killed by test_the_person_a_reminder_is_for_is_kept_apart_from_who_made_it
+PD25  postgres_deposits.py           money: due_at stored as proposed_at -> killed by test_a_proposed_edit_is_replaced_by_a_newer_proposal_of_any_kind
+PD26  postgres_deposits.py           money: route stored phone -> killed by test_an_edit_that_names_no_new_acting_tool_is_at_once_and_keeps_
+PD27  postgres_deposits.py           money: tools not stored -> killed by test_an_edit_that_adds_an_acting_tool_changes_nothing_until_arme
+PD28  postgres_deposits.py           money: target not stored -> killed by test_an_edit_that_adds_an_acting_tool_changes_nothing_until_arme
+PD29  postgres_deposits.py           money: unreachable guard -> SURVIVED, equivalent: RETURNING id always returns a row
+PD30  postgres_deposits.py           money: noop control -> SURVIVES, as the control must
+RF1   deposits.py                    refusal: due exactly now allowed -> killed by test_a_reminder_proposed_for_exactly_now_cannot_be_taken
+RF2   deposits.py                    refusal: money rule judged by due_at -> killed by test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_later_one_wh
+RF3   deposits.py                    refusal: change judged by due_at -> killed by test_a_proposed_change_to_a_reminder_is_not_bound_to_a_time_i
+RF4   deposits.py                    refusal: due_at never judged -> killed by test_a_reminder_proposed_for_a_time_that_has_come_cannot_be_t
+RF5   deposits.py                    refusal: age from due_at -> killed by test_refusal_names_why_a_proposal_for_a_reminder_cannot_be_ta
+RF6   deposits.py                    refusal: due reported as ok -> killed by test_a_reminder_proposed_for_a_time_that_has_come_cannot_be_t
+GT1   proposal_gate.py               gate: same turn may take -> killed by test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_later_one_wh
+GT2   proposal_gate.py               gate: exactly at limit expired -> killed by test_refusal_names_why_a_proposal_for_a_reminder_cannot_be_ta
+GT3   proposal_gate.py               gate: expiry judged before turn -> SURVIVED the first pass, killed by test_a_turn_that_is_not_later_is_the_same_turn_even_when_the_proposal_has_expired
+GT4   proposal_gate.py               gate: backwards -> killed by test_a_proposal_older_than_the_ttl_is_expired_when_armed
+HP1   postgres_house_proposals.py    house: new keeps older -> killed by test_a_newer_proposal_replaces_the_older_and_only_it_is_carried_out
+HP2   postgres_house_proposals.py    house: replace spans conversations -> killed by test_a_proposal_is_not_replaced_by_one_in_another_conversation
+HP3   postgres_house_proposals.py    house: replace spans people -> killed by test_a_newer_proposal_replaces_the_earlier_of_its_person_and_conver
+HP4   postgres_house_proposals.py    house: pending is oldest -> SURVIVED the first pass, killed by test_the_latest_of_two_stored_house_proposals_is_the_pending_one
+HP5   postgres_house_proposals.py    house: take does not consume -> killed by test_in_a_later_turn_she_is_offered_house_confirm_and_it_carries_out_wh
+HP6   postgres_house_proposals.py    house: take never refused -> killed by test_she_cannot_confirm_in_the_turn_she_proposed_or_an_earlier_one_and_
+HP7   postgres_house_proposals.py    house: old never dropped -> killed by test_proposing_drops_what_is_older_than_the_limit
+HP8   postgres_house_proposals.py    house: purge drops all -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_i
+HP9   postgres_house_proposals.py    house: pending of anyone -> killed by test_only_the_person_who_proposed_it_in_its_conversation_can_take_it
+HP10  postgres_house_proposals.py    house: proposed_at replaced by now -> killed by test_a_proposal_keeps_the_time_it_was_given
+HP11  postgres_house_proposals.py    house: household_id is maker -> killed by test_a_newer_proposal_replaces_the_earlier_of_its_person_and_conver
+HP12  postgres_house_proposals.py    house: ids not stored -> killed by test_a_proposal_is_kept_whole_and_pending_until_taken
+HP13  postgres_house_proposals.py    house: data not stored -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_i
+HP14  postgres_house_proposals.py    house: id not stored -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_i
+HP15  postgres_house_proposals.py    house: kind not stored -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_i
+HP16  postgres_house_proposals.py    house: summary not stored -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_i
+HP17  postgres_house_proposals.py    house: none as expired -> killed by test_a_proposal_is_taken_from_a_later_turn_once_and_leaves_none
+HP18  postgres_house_proposals.py    house: conversation and turn swapped -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_i
+HC1   tools/house_change.py          house tools: confirm offered in proposing turn -> killed by test_she_cannot_confirm_in_the_turn_she_proposed_or_an_earlier_one_and_
+HC2   tools/house_change.py          house tools: confirm offered when not private -> killed by test_where_the_reply_may_be_heard_by_others_nothing_is_proposed_or_conf
+HC3   tools/house_change.py          house tools: offered by whoever's proposal -> killed by test_only_the_person_who_proposed_it_in_its_conversation_can_take_it
+HC4   tools/house_change.py          house tools: takes anyone's -> killed by test_only_the_person_who_proposed_it_in_its_conversation_can_take_it
+HC5   tools/house_change.py          house tools: purge ttl doubled -> SURVIVED the first pass, killed by test_proposing_drops_what_is_older_than_the_limit_she_was_given_and_keeps_the_younger
+HC6   tools/house_change.py          house tools: proposal made_by household -> SURVIVED the first pass, killed by test_a_proposal_is_the_speakers_whatever_the_ids_of_the_household
+RT1   tools/reminders.py             rem tools: arm offered in proposing turn -> killed by test_she_is_offered_arming_only_in_a_turn_after_a_proposal_of_hers_in_
+RT2   tools/reminders.py             rem tools: offered by whoever's -> killed by test_she_is_offered_arming_only_in_a_turn_after_a_proposal_of_hers_in_
+RT3   tools/reminders.py             rem tools: takes anyone's -> killed by test_a_proposal_arms_nothing_and_is_armed_only_from_a_later_turn_by_its_person_onc
+RT4   tools/reminders.py             rem tools: propose ttl doubled -> SURVIVED the first pass, killed by test_proposing_a_reminder_that_acts_drops_proposals_older_than_the_ttl_and_keeps_the_younger
+RT5   tools/reminders.py             rem tools: money ttl doubled -> SURVIVED the first pass, killed by test_proposing_drops_proposals_older_than_the_ttl_and_keeps_the_younger
+RT7   tools/reminders.py             rem tools: acting reminder for another -> killed by test_a_reminder_that_acts_for_another_person_is_refused_and_propo
+RT8   tools/reminders.py             rem tools: money rule scheduled not armed -> killed by test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_later_one_wh
+RT9   tools/reminders.py             rem tools: change scheduled anew -> killed by test_an_edit_that_adds_an_acting_tool_changes_nothing_until_arme
+RT10  tools/reminders.py             rem tools: armed loses route and tools -> killed by test_agreeing_to_a_money_reminder_arms_it_with_the_route_and_tool

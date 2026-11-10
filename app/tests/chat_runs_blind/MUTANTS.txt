@@ -1,0 +1,42 @@
+Planted wrong implementations, applied one at a time to the file named, tests/chat_runs_blind run, then reverted.
+CAUGHT means the suite goes red. Run against chat-runs-shown-2 (a1f2184).
+
+M1   CAUGHT   wire: a run with no recorded result served with result unknown
+M2   CAUGHT   wire: exit_code dropped
+M3   CAUGHT   wire: cut always false
+M4   CAUGHT   wire: skipped names dropped
+M5   CAUGHT   wire: files the run made dropped
+M6   CAUGHT   wire: finished_at dropped when there is a result
+M7   CAUGHT   wire: stdout and stderr swapped
+M8   CAUGHT   answer_of: a held line ending the conversation counts as the answer
+M9   SURVIVED answer_of: a held line is never an answer, wherever it is (not only at the end). Differs from the real
+              code only for a held line that is the last of hers before a later person turn ("phpa"); the contract
+              says "never under a held line" but the docstring withholds only a held line with nothing after it, so
+              no test pins it. See the question in the MR.
+M10  CAUGHT   answer_of: the first of hers answers, not the last
+M11  CAUGHT   answer_of: the first person turn is the asker throughout
+M12  CAUGHT   under_answers: runs not ordered by id
+M13  CAUGHT   under_answers: runs newest first
+M14  CAUGHT   under_answers: run put on the person turn itself
+M15  CAUGHT   under_answers: a run whose turn has no answer falls back to its own turn
+M16  CAUGHT   under_answers: only the last run of an answer kept
+M17  CAUGHT   answer_of: the final-turn check never true (a trailing held line becomes the answer)
+M18  EQUIVALENT  answer_of: `author != "ashley"` for `author == "person"`; the only authors are person and ashley
+M19  CAUGHT   in_conversation: conversation filter dropped
+M20  CAUGHT   in_conversation: household filter dropped
+M21  CAUGHT   in_conversation: bench runs not excluded
+M22  CAUGHT   in_conversation: newest first
+M23  SURVIVED in_conversation: no ORDER BY. On a test-sized table Postgres returns rows in id order whatever the
+              order they were started, finished or updated in, so no test can tell; the DESC and other-key orders
+              (M22, M24) are caught.
+M24  CAUGHT   in_conversation: ordered by script
+M25  CAUGHT   in_conversation: finished runs only
+M26  CAUGHT   in_conversation: a run with a turn and call from a bench's talk left out
+M27  CAUGHT   NullRuns.in_conversation raises instead of returning []
+M28  CAUGHT   route: runs read for the household id as the conversation
+M29  CAUGHT   route: runs read for the conversation id as the household
+M30  CAUGHT   route: runs never put on a turn
+M31  CAUGHT   route: RunsUnavailable not turned into 503
+M32  CAUGHT   route: every turn carries every run
+M33  CAUGHT   route: runs shown under the person turn
+M34  CAUGHT   route: every run dropped when the conversation ends on a held line, even those of answered messages

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ashley · Privacy</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fbfbf9; --fg: #1d1f21; --muted: #5b6168; --link: #1f5fbf; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0d1117; --fg: #e6e8eb; --muted: #9aa3ad; --link: #7fb0ff; } }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, sans-serif; margin: 0; }
+  main { max-width: 42rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.8rem; margin-bottom: .2rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
+  p.meta { color: var(--muted); margin-top: 0; } a { color: var(--link); }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy</h1>
+<p class="meta">Ashley, at $host · last changed 7 November 2026</p>
+
+<p>Ashley is a private assistant that one person runs for their own household. It is not a commercial service and has
+no users outside that household. This page says what it keeps, where that goes, and how to take it back.</p>
+
+<h2>Who runs it</h2>
+<p>Ashley is run by $operator. Questions, or a request to delete anything below: $contact.</p>
+
+<h2>What it keeps</h2>
+<ul>
+  <li>Conversations with household members, and what Ashley remembers from them.</li>
+  <li>Household data it is given access to: the home's devices and lists, reminders, and the services a member connects.</li>
+  <li>For each connected account (for example a Google account): the sign-in token, encrypted in the database under a
+      key held only by the household's servers, and the list of mailboxes it reaches.</li>
+  <li>Mail is read from the provider when a member asks, or when a watch the member set up checks their inbox. Ashley
+      does not store mail in its database. For Proton accounts, Proton Mail Bridge keeps a working copy on the
+      household's servers while it runs, as Proton's own app does.</li>
+  <li>A record of each model call: which provider, how many tokens, and the cost. Not its content.</li>
+</ul>
+
+<h2>Where it runs</h2>
+<p>On the household's own servers, at two of its sites, in a database only those servers reach. Nothing is
+sold or shared with anyone outside the household.</p>
+
+<h2>Who else sees data</h2>
+<p>To answer a request, Ashley sends the text it needs to an AI model provider's API: Anthropic, OpenAI or
+Google (Gemini). Speech goes to ElevenLabs. When a member asks about their mail, the parts of messages needed to answer
+are sent the same way. Nothing else leaves the household's servers.</p>
+
+<h2>Google user data</h2>
+<p>A household member can connect a Google account so Ashley can read, search, label, draft and send their Gmail, using
+the <code>gmail.modify</code> scope. Ashley uses that access only for what the member asks for, or for a standing watch
+the member set up and agreed to. It sends mail only when the member asks, or when the member approves one Ashley
+held for approval. Google user data is not sold, not used for advertising, not used to train AI models, and is not read
+by people except as needed to fix a problem the member reports.</p>
+<p>Ashley's use and transfer of information received from Google APIs adheres to the
+<a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+including the Limited Use requirements.</p>
+
+<h2>Taking it back</h2>
+<ul>
+  <li>Disconnect an account in Ashley's Connections room. That deletes its stored token.</li>
+  <li>Or remove Ashley's access from the Google account itself at
+      <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>.</li>
+  <li>To have conversations or anything else deleted, email the address above.</li>
+</ul>
+
+<p><a href="/terms">Terms</a></p>
+</main>
+</body>
+</html>

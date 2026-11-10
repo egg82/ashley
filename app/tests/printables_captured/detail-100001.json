@@ -1,0 +1,32 @@
+{
+ "data": {
+  "print": {
+   "id": "100001",
+   "name": "DESK PENCIL CUP",
+   "slug": "desk-pencil-cup",
+   "summary": "I liked the pencil cup design but also needed a place for my sticky notes so I modified it to add a note\u2026",
+   "likesCount": 45,
+   "downloadCount": 683,
+   "makesCount": 7,
+   "ratingAvg": "5.0000000000",
+   "user": {
+    "publicUsername": "MakerOne"
+   },
+   "stls": [
+    {
+     "id": "200001",
+     "name": "cup_v3.stl",
+     "fileSize": 335384
+    }
+   ],
+   "description": "\n\n\n<p>I liked the pencil cup design but also needed a place for my sticky notes so I modified it to add a note \"slot\". Works great to keep the notes and pencils together.</p>\n<h3>Print Settings</h3>\n<p><strong>Printer Brand:</strong></p>\n<p>Example</p>\n<p class=\"detail-setting printer\"><strong>Printer: </strong>\n<div><p>Model 3</p></div>\n<p><strong>Rafts:</strong></p>\n<p>Doesn't Matter</p>\n<p class=\"detail-setting supports\"><strong>Supports: </strong>\n<div><p>Yes</p></div>\n<p><strong>Notes:</strong></p>\n<p>I printed face down which put supports on the hidden face but leaves the front with a nice finish. Can also be printed vertically with supports.</p>\n</p></p>\n\nCategory: Other\n",
+   "datePublished": "2022-09-28T15:33:41.444781+00:00",
+   "license": {
+    "name": "Creative Commons \u2014 Attribution"
+   },
+   "category": {
+    "name": "Other Ideas"
+   }
+  }
+ }
+}

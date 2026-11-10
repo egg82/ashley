@@ -1,0 +1,56 @@
+Planted wrong implementations, one at a time, each applied exactly once to the file named and reverted after the run.
+Each run is tests/sure_blind against sure-tools-2, green before the plant. 49 planted, 49 caught.
+Two survived the first pass and were caught by tests added for them: M7 (key_from accepting stray characters inside
+otherwise valid base64) and M23 (the key carried in an exception's cause, which str/repr of the error do not show, only
+a rendered traceback).
+
+#    mutant
+M1  sealing.py: binding ignores household
+M2  sealing.py: binding ignores kind
+M3  sealing.py: fixed nonce
+M4  sealing.py: seal and open ignore binding
+M5  sealing.py: open ignores binding
+M6  sealing.py: key_from skips length check
+M7  sealing.py: key_from not validating base64
+M8  sealing.py: open drops the length floor
+M9  sealing.py: seal under the wrong version byte
+M10 sealing.py: plaintext in the sealed form
+M11 audience.py: speaker not required
+M12 audience.py: audience not required
+M13 audience.py: shared allowed
+M14 audience.py: device screen allowed
+M15 audience.py: household audience counts
+M16 turn_tools.py: money without owner_alone
+M17 turn_tools.py: money without can_open
+M18 client.py: 403 not refused
+M19 client.py: 404 unreachable
+M20 client.py: key in wrong header
+M21 client.py: error status passes as success
+M22 client.py: key in the log line
+M23 client.py: key in the exception
+M24 client.py: base_url allows credentials
+M25 client.py: base_url allows a query
+M26 client.py: base_url allows http
+M27 client.py: base_url keeps trailing slash
+M28 postgres.py: opened binds to household 0
+M29 postgres.py: put binds to household 0
+M30 postgres.py: of_household not filtered
+M31 postgres.py: opened not filtered by household
+M32 postgres.py: remove deletes across households
+M33 postgres.py: remove always true
+M34 postgres.py: adder need not be of the household
+M35 postgres.py: replace keeps the old secret
+M36 postgres.py: answered does nothing
+M37 postgres.py: answered moves every row
+M38 postgres.py: unsealable returns None not unavailable
+M39 api: stored without asking Sure
+M40 api: stored without can_open check
+M41 api: refused key reported unreachable
+M42 api: bad address not refused
+M43 api: disconnect missing is 204
+M44 api: connect adds under another household
+M45 api: wire carries the key
+M46 money.py: opens another household's connection
+M47 money.py: answered not recorded
+M48 money.py: unknown tool allowed to read
+M49 money.py: no connection still offered

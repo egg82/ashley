@@ -1,0 +1,10 @@
+{
+  "photon_url": "https://photon.komoot.io",
+  "timeout_s": 8,
+  "web_results": 5,
+  "snippet_chars": 300,
+  "places_fetched": 15,
+  "places_results": 3,
+  "bias_decimals": 2,
+  "home_ttl_s": 86400
+}

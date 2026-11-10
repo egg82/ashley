@@ -1,0 +1,148 @@
+Plausible wrong implementations of part 3, the ErrandJob, each applied alone to ashley.errands.job (or its wiring), the
+suite tests/job_blind run, then restored. CAUGHT = the named test fails on an assertion. The list was written blind; the verdicts are at the end. The job lives in
+ashley.channels.errand (job.py, attempt.py); the store mutants are in ashley.errands.postgres.
+
+J1   tick does not call sweep (or sweeps only when something is due)                       test_ej_tick: test_a_tick_sweeps_with_the_configured_ages, test_every_tick_sweeps_again, test_nothing_due_reads_no_catalogue_and_claims_nothing
+J2   sweep is given swapped or wrong ages (max_age_s, claim_s; or the module defaults)     test_ej_tick: test_a_tick_sweeps_with_the_configured_ages
+J3   sweep runs after the claims, or once per run instead of once per tick                 test_ej_tick: test_the_sweep_runs_before_anything_is_claimed, test_every_tick_sweeps_again
+J4   tick returns early when the catalogue is absent, before sweeping                      test_ej_tick: test_no_catalogue_means_no_source_answers
+J5   catalogue read on every tick whether or not anything is due                          test_ej_tick: test_nothing_due_reads_no_catalogue_and_claims_nothing, test_errands_that_are_not_due_do_not_count_as_due
+J6   "anything due" counts running or finished errands, or is asked before the sweep       test_ej_tick: test_errands_that_are_not_due_do_not_count_as_due, test_an_errand_the_sweep_expires_is_not_due_so_the_catalogue_is_not_read
+J7   catalogue read once per claimed errand instead of once per tick                        test_ej_tick: test_when_something_is_due_the_catalogue_is_read_once
+J8   catalogue absent (ToolsUnavailable) treated as every source answering                  test_ej_tick: test_no_catalogue_means_no_source_answers
+J9   ToolsUnavailable propagates out of tick, or an unreachable catalogue releases/claims   test_ej_tick: test_no_catalogue_means_no_source_answers
+J10  unreachable keys ignored: every source treated as answering                           test_ej_tick: test_an_unreachable_source_is_not_claimed_and_its_errand_stays_due, test_only_the_errand_whose_source_answers_is_run
+J11  unreachable inverted: only the unreachable sources are claimed                         test_ej_tick: test_only_the_errand_whose_source_answers_is_run, test_a_source_that_is_not_listed_unreachable_answers
+J12  an unreachable source's errand is claimed then released (attempts burned)             test_ej_tick: test_an_unreachable_source_is_not_claimed_and_its_errand_stays_due
+J13  the first claim of an unreachable source stops the tick (older errand blocks younger) test_ej_tick: test_an_older_errand_of_an_unreachable_source_does_not_block_a_younger_one
+J14  claim called without the config's max_age_s                                           test_ej_tick: test_claim_is_asked_for_the_configured_max_age
+J15  batch ignored (runs everything due) or hard-coded                                     test_ej_batch: test_a_tick_runs_at_most_batch_errands, test_batch_comes_from_the_config
+J16  batch off by one (<= batch, or batch - 1)                                             test_ej_batch: test_a_tick_runs_at_most_batch_errands, test_fewer_due_than_batch_runs_them_all_and_stops
+J17  batch counts only finished errands, so a released one is retaken within the tick      test_ej_batch: test_a_released_errand_still_counts_toward_the_batch
+J18  tick stops after one errand even when more are due                                    test_ej_batch: test_the_next_tick_takes_the_next_batch, test_a_tick_runs_at_most_batch_errands
+J19  errands run newest first (claims reversed or sorted)                                  test_ej_batch: test_the_oldest_errand_is_run_first
+J20  a plain reply does not call finish, or finishes with Reply.spoken                     test_ej_outcome: test_a_plain_reply_finishes_the_errand_with_its_text, test_the_result_is_the_reply_text_not_the_spoken_line
+J21  finish called with the wrong attempt (errand.attempt - 1, or always 1)                test_ej_outcome: test_finish_is_called_at_the_attempt_the_claim_gave
+J22  a reply with owed set is finished instead of released                                 test_ej_outcome: test_a_reply_with_owed_set_releases_the_errand, test_a_reply_with_owed_set_is_not_finished_even_with_text
+J23  release gets a hard-coded max_attempts, or the attempt count wrong                    test_ej_outcome: test_a_reply_with_owed_set_releases_the_errand, test_max_attempts_comes_from_the_config
+J24  release is skipped at the last attempt (errand stays running until swept)             test_ej_outcome: test_a_release_at_max_attempts_gives_up_for_attempts
+J25  InferenceUnavailable gives the errand up, or leaves it running                        test_ej_outcome: test_inference_unavailable_releases_the_errand
+J26  InferenceUnavailable releases but the tick goes on to the next errand                 test_ej_outcome: test_inference_unavailable_ends_the_tick, test_ej_batch: test_a_tick_with_inference_down_makes_one_run_however_large_the_batch
+J27  InferenceUnavailable propagates out of tick (errand left running)                     test_ej_outcome: test_inference_unavailable_releases_the_errand, test_a_tick_that_ended_on_unavailable_still_swept
+J28  InferenceUnavailable ends the tick before releasing, or skips the tick log            test_ej_outcome: test_inference_unavailable_releases_the_errand; test_ej_logs: test_released_line_for_inference_unavailable
+J29  refusal released (retried) instead of given up                                        test_ej_outcome: test_a_refusal_gives_the_errand_up_as_refused, test_a_refused_errand_is_not_retried_by_the_next_tick
+J30  refusal gives up with the wrong reason (attempts, interrupted)                        test_ej_outcome: test_a_refusal_gives_the_errand_up_as_refused
+J31  refusal ends the tick                                                                 test_ej_outcome: test_a_refusal_does_not_end_the_tick
+J32  the outcome is also stored as a memory fact                                           test_ej_outcome: test_the_outcome_is_not_stored_as_a_fact
+J33  a visibility other than the ask's is written (always shared)                          test_ej_outcome: test_the_result_keeps_the_asks_visibility
+J34  run uses another task (chat, look_up) or none                                         test_ej_run: test_a_run_is_the_errand_task
+J35  messages include turns after the ask                                                  test_ej_run: test_the_messages_are_the_conversation_through_the_ask_and_no_further
+J36  context_turns ignored or off by one (whole conversation, or the last N before the ask) test_ej_run: test_only_the_last_context_turns_are_read, test_context_turns_comes_from_the_config
+J37  system prompt lacks the catalogue's instructions / # Tools                            test_ej_run: test_the_system_prompt_carries_the_catalogues_guidance_and_names_the_asker
+J38  system prompt does not say who asked                                                  test_ej_run: test_the_system_prompt_carries_the_catalogues_guidance_and_names_the_asker
+J39  run offers no tools, or a second catalogue read supplies them                         test_ej_run: test_the_run_offers_the_catalogues_tools, test_ej_tick: test_when_something_is_due_the_catalogue_is_read_once
+J40  tool rounds taken from the turn loop's limits, not errands.json                       test_ej_run: test_the_tool_rounds_are_capped_by_the_configs_max_tool_rounds
+J41  run with hold=True (a "let me check" reply comes back Held and is stored)             test_ej_run: test_a_reply_that_is_not_the_answer_is_asked_again_not_held
+J42  tick log missing a field, or swept not counted                                        test_ej_logs: test_a_tick_logs_its_counts, test_the_tick_counts_what_the_sweep_gave_up
+J43  tick log counts released and given_up together, or counts claims not runs             test_ej_logs: test_a_tick_logs_its_counts, test_released_line_for_inference_unavailable
+J44  an idle tick logs nothing                                                             test_ej_logs: test_an_idle_tick_still_logs_with_zero_counts
+J45  per-errand line wrong event, or missing errand/attempt/reason/tool_calls/duration_ms  test_ej_logs: test_done_line_carries..., test_released_line_for_owed_again, test_given_up_line_carries_the_reason
+J46  a log line carries the ask, the result, tool arguments or a refusal's message         test_ej_logs: test_no_log_line_carries_the_ask_the_result_or_the_tool_text
+J47  lease name not `errands`                                                              test_ej_singleton: test_the_lease_is_named_errands, test_with_etcd_the_job_is_one_of_the_singletons_under_the_lease
+J48  not started in wiring.singletons, or started without etcd                             test_ej_singleton: test_with_etcd_..., test_without_etcd_nothing_runs_under_a_lease, test_the_wired_body_runs_a_due_errand
+J49  run ticks once and returns, or sleeps a constant instead of tick_s                    test_ej_singleton: test_run_ticks_again_and_again_until_cancelled, test_run_waits_tick_s_between_ticks
+J50  run swallows CancelledError (keeps ticking without the lease)                         test_ej_singleton: test_cancelling_a_tick_in_flight_stops_the_job, test_run_ticks_again_and_again_until_cancelled
+J51  an interrupted (running, past claim_s) errand is retaken instead of given up          test_ej_tick: test_a_running_errand_past_claim_s_is_interrupted_and_not_retaken
+J52  Task lacks `errand`, routes.json lacks its routes, or the inference_calls check lacks it test_ej_task_db: all four
+
+
+Verdicts (each mutant applied alone, job_blind + test_errand_job.py, 30 s thread timeout per test; the tree restored
+and `git diff --quiet` checked after each). The mutant ids below are the J-numbers above, with a letter when one line
+was planted as several variants. The test named is the first to fail.
+
+J1     killed  test_the_tick_counts_what_the_sweep_gave_up
+J2     killed  test_a_tick_sweeps_with_the_configured_ages
+J3     killed  test_a_tick_that_ended_on_unavailable_still_swept
+J4     killed  test_errands_that_are_not_due_do_not_count_as_due
+J5     killed  test_nothing_due_reads_no_catalogue_and_claims_nothing
+J6a    killed  test_errands_that_are_not_due_do_not_count_as_due
+J6b    killed  test_a_release_that_exhausts_the_attempts_is_logged_as_given_up_or_released_but_counted_once
+J7     killed  test_when_something_is_due_the_catalogue_is_read_once
+J8     killed  test_no_catalogue_means_no_source_answers
+J9     killed  test_no_catalogue_means_no_source_answers
+J10    killed  test_an_unreachable_source_is_not_claimed_and_its_errand_stays_due
+J11    killed  test_a_release_that_exhausts_the_attempts_is_logged_as_given_up_or_released_but_counted_once
+J12    killed  test_an_older_errand_of_an_unreachable_source_does_not_block_a_younger_one
+J13    killed  test_an_unreachable_source_is_not_claimed_and_its_errand_stays_due
+J14    killed  test_claim_is_asked_for_the_configured_max_age
+J15a   killed  test_a_tick_runs_at_most_batch_errands
+J15b   killed  test_a_tick_runs_at_most_batch_errands
+J16a   killed  test_a_tick_runs_at_most_batch_errands
+J16b   killed  test_a_tick_runs_at_most_batch_errands
+J17    killed  test_released_errands_of_other_sources_still_use_the_batch
+J18    killed  test_a_tick_runs_at_most_batch_errands
+J19    killed  test_a_tick_runs_at_most_batch_errands
+J20a   killed  test_a_tick_runs_at_most_batch_errands
+J20b   killed  test_a_plain_reply_finishes_the_errand_with_its_text
+J21a   killed  test_a_tick_runs_at_most_batch_errands
+J21b   killed  test_finish_is_called_at_the_attempt_the_claim_gave
+J22    killed  test_a_release_that_exhausts_the_attempts_is_logged_as_given_up_or_released_but_counted_once
+J23a   killed  test_inference_unavailable_at_the_last_attempt_gives_up_for_attempts
+J23b   killed  test_a_reply_with_owed_set_releases_the_errand
+J24    killed  test_a_release_at_max_attempts_gives_up_for_attempts
+J25a   killed  test_released_line_for_inference_unavailable
+J25b   killed  test_inference_unavailable_at_the_last_attempt_gives_up_for_attempts
+J26    killed  test_inference_unavailable_ends_the_tick_whatever_the_other_sources
+J27    killed  test_released_line_for_inference_unavailable
+J28    killed  test_released_line_for_inference_unavailable
+J29    killed  test_given_up_line_carries_the_reason
+J30    killed  test_a_refusal_gives_the_errand_up_as_refused
+J31    killed  test_a_refusal_does_not_end_the_tick
+J33    killed  test_the_result_keeps_the_asks_visibility
+J34    killed  test_a_run_is_the_errand_task
+J35    killed  test_released_errands_of_other_sources_still_use_the_batch
+J36a   killed  test_only_the_last_context_turns_are_read
+J36b   killed  test_only_the_last_context_turns_are_read
+J36c   killed  test_only_the_last_context_turns_are_read
+J37    killed  test_the_system_prompt_carries_the_catalogues_guidance_and_names_the_asker
+J38    killed  test_the_run_is_under_the_errand_task_with_the_conversation_through_the_ask
+J39    killed  test_no_log_line_carries_the_ask_the_result_or_the_tool_text
+J40    killed  test_the_tool_rounds_are_capped_by_the_configs_max_tool_rounds
+J41    killed  test_a_reply_that_is_not_the_answer_is_asked_again_not_held
+J42a   killed  test_the_tick_counts_what_the_sweep_gave_up
+J42b   killed  test_every_tick_log_carries_all_the_tick_fields
+J43a   killed  test_a_release_that_exhausts_the_attempts_is_logged_as_given_up_or_released_but_counted_once
+J43b   killed  test_released_line_for_inference_unavailable
+J44    killed  test_an_idle_tick_still_logs_with_zero_counts
+J45a   killed  test_released_line_for_inference_unavailable
+J45b   killed  test_given_up_line_carries_the_reason
+J45c   killed  test_given_up_line_carries_the_reason
+J45d   killed  test_done_line_carries_errand_attempt_tool_calls_and_duration
+J45e   killed  test_done_line_carries_errand_attempt_tool_calls_and_duration
+J46    killed  test_no_log_line_carries_the_ask_the_result_or_the_tool_text
+J47    killed  test_the_lease_is_named_errands
+J48    killed  test_with_etcd_the_job_is_one_of_the_singletons_under_the_lease
+J49a   killed  test_run_ticks_again_and_again_until_cancelled
+J49b   killed  test_run_waits_tick_s_between_ticks
+J49c   killed  test_run_ticks_again_and_again_until_cancelled
+J50    killed  test_cancelling_a_tick_in_flight_stops_the_job
+J51    killed  test_a_running_errand_past_claim_s_is_interrupted_and_not_retaken
+J52a   killed  test_errand_is_a_task
+J52b   killed  test_the_shipped_routes_list_errand
+J52c   killed  test_the_spend_ledger_accepts_an_errand_call_after_migrating
+J12,J13 killed (each planted together with the unreachable filter removed, so the claim itself is the difference)
+J32    not planted: the built design stores the outcome on the errand (`finish(result)`), not as a fact, and the job
+       has no fact-writing call to add; the suite's test_the_outcome_is_not_stored_as_a_fact guards the absence
+J36a-c, J35 killed (J35 also killed by the directed batch test, since a missing ask is Unrunnable)
+
+First run survivors, each now killed by a directed test:
+J17    released errands counted as no run: killed by test_ej_directed: test_released_errands_of_other_sources_still_use_the_batch
+       (the job's own skipping of a released source hid it while every errand shared one source)
+J26    Inference unavailable not ending the tick: killed by test_ej_directed: test_inference_unavailable_ends_the_tick_whatever_the_other_sources (same cause)
+J42b   tick log without duration_ms: killed by test_ej_directed: test_every_tick_log_carries_all_the_tick_fields
+       (the blind test that checked every field is a strict xfail, see below)
+J50    run swallowing CancelledError: first run survived because the test helper's `suppress(CancelledError)` also
+       swallowed the timeout that should have failed it; the helper now waits a bounded 5 s and asserts the task is done
+
+Equivalent: none. Two blind tests are strict xfails (the spec is silent on the job leaving a released errand's source
+alone for the rest of the tick): test_a_tick_logs_its_counts and test_each_errand_in_a_batch_gets_its_own_outcome.

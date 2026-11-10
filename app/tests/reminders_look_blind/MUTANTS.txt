@@ -1,0 +1,30 @@
+Planted wrong implementations of MR !291, each run against this suite; every one fails it. Two first survived and got a directed test: the amount's zero-padded cents, and the exact key set of a stored deposit (plus the fire count the poll logs).
+
+ashley/tools/reading.py: reading lists everything
+ashley/tools/reading.py: reading calls anything
+ashley/tools/reading.py: reading returns the unfiltered catalogue
+ashley/tools/reading.py: unlistable source permits any call
+ashley/tools/reading.py: callable set is every name once listed
+ashley/channels/turn_tools.py: reads for a non-private turn
+ashley/channels/turn_tools.py: reads_only narrows nothing
+ashley/channels/turn_tools.py: reads_only ignored
+ashley/channels/turn_tools.py: swapped branches
+ashley/channels/wake/reminder_turn.py: reminder turn not reads only
+ashley/channels/wake/reminder_turn.py: reminder turn not promised
+ashley/channels/wake/reminder_turn.py: None payee rendered
+ashley/channels/wake/reminder_turn.py: cents not zero padded
+ashley/channels/wake/reminder_turn.py: day dropped from the text
+ashley/channels/wake/reminder_turn.py: deposit never stated
+ashley/senses/deposit_rule.py: last name as payee
+ashley/senses/deposit_rule.py: account id as name
+ashley/senses/deposit_rule.py: bool accepted as cents
+ashley/senses/deposit_rule.py: day written another way
+ashley/senses/deposit_rule.py: extra or missing keys accepted
+ashley/senses/postgres_deposits.py: landed never stored
+ashley/senses/postgres_deposits.py: settled armed reminder fires
+ashley/senses/postgres_wakes.py: landed never read
+ashley/senses/postgres_wakes.py: landed column dropped when reading
+ashley/senses/deposit_sense.py: sense gives no landed
+ashley/senses/deposit_sense.py: fire result ignored
+ashley/channels/respond.py: offered logs descriptions
+ashley/channels/respond.py: offered logs the wrong tools

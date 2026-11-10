@@ -1,0 +1,106 @@
+Wrong implementations the blind changes suite (app/tests/mail_changes_blind) must kill. Written from the design alone
+(decisions.md, "Her mail is a port with two adapters, and Proton's runs as a leased Bridge", build part 6), before the
+implementation existed. Each line: id, where it would live, the wrong behaviour, and the test that should go red. Test
+names are abbreviated to their distinctive words. The verdicts (killed, directed test added, equivalent) are filled in
+after the planted-mutant run, below the list.
+
+Specs and scopes
+M1   MailTools    a change tool's spec says `reads` true                                      test_mc_specs: a_change_reads_nothing_and_shows_no_stranger_words
+M2   MailTools    a change tool's spec says `outside` true (the send taints the turn)         test_mc_specs: ...shows_no_stranger_words; test_mc_untainted: a_send_does_not_taint_the_turn...
+M3   MailTools    a change tool left to the `outside` default (true) by omitting the field    test_mc_specs: a_change_reads_nothing_and_shows_no_stranger_words
+M4   google.kind  the kind still asks for `gmail.readonly` only                               test_mc_specs: the_google_kind_asks_for_the_change_scope
+M5   GmailMailbox a readonly connection is treated as allowed to change (scope check dropped)  test_mc_specs: a_connection_that_was_only_granted_to_read_changes_nothing
+M6   MailTools    a readonly connection answers `refused` or an empty ok instead of needs_reconnect   same test
+M7   MailTools    the change tools are offered and attempted whatever the scopes; the 403 is swallowed as success   same test
+M8   MailTools    a tool offered that deletes for good (`delete`/`purge` argument or tool)       test_mc_specs: nothing_offered_deletes_for_good
+M9   GmailMailbox `folder: "delete"` calls `messages.delete`                                   test_mc_label: what_is_not_a_household_label_or_a_folder... [folder-delete]
+
+Held after a read (Outside)
+M10  MailTools    `mail_send` run directly in a tainted turn (spec says outside/reads wrongly such that Outside lets it through)   test_mc_held: a_change_after_a_read_is_held_and_nothing_is_written
+M11  MailTools    `mail_draft` spec says `reads` true, so a tainted turn's draft runs          test_mc_held: ...[mail_draft]
+M12  MailTools    `mail_label` spec says `reads` true, so a tainted turn's label runs          test_mc_held: ...[mail_label]
+M13  MailTools    `mail_read` or `mail_search` with `outside` false (the read does not taint)  test_mc_held: a_change_after_a_read_is_held...[read]; test_mc_gate: a_held_change_is_not_made...
+M14  carry_out    the held send re-run with arguments rebuilt from the model's later call, not the stored ones   test_mc_held: a_held_send_runs_once_with_the_stored_arguments
+M15  carry_out    a held send runs twice (once at hold, once at carry_out) or carry_out repeats it   test_mc_held: a_held_send_runs_once...; several_held_changes_run_in_order_once_each
+M16  MailTools    a held call's arguments lose a field when stored (cc, reply_to, body newline)  test_mc_held: a_held_send_runs_once_with_the_stored_arguments
+M17  MailTools    the pending block omits the body or the recipients (a summary written from the tool, not the arguments)   test_mc_held: the_pending_block_shows_a_sends_recipients_subject_and_body_in_full
+M18  MailTools    a label's arguments omit each message's sender and subject, so the block shows ids only   test_mc_held: the_pending_block_shows_each_labelled_message_by_id_sender_and_subject
+M19  carry_out    a turn that read mail after the hold may carry out                           test_mc_held: a_turn_that_read_mail_cannot_carry_out_what_is_held
+M20  carry_out    a held send is carried out through a login that now needs reconnecting and the failure is reported as sent   test_mc_held: a_connection_that_needs_reconnecting_by_then_sends_nothing
+M21  Outside      the same send held twice in a turn runs twice                                test_mc_held: several_held_changes_run_in_order_once_each
+
+Untainted turn
+M22  MailTools    a dictated send held in an untainted private turn (every change held)        test_mc_untainted: a_dictated_send_runs_once_with_what_was_asked
+M23  GmailMailbox a send retried after success (two POSTs) or sent once as a draft and once as a send   test_mc_untainted: a_dictated_send_runs_once...; a_draft_is_stored_in_gmail_and_not_sent
+M24  GmailMailbox `mail_draft` calls `messages.send`                                          test_mc_untainted: a_draft_is_stored_in_gmail_and_not_sent
+M25  GmailMailbox `mail_send` only creates a draft                                            test_mc_untainted: a_dictated_send_runs_once...
+M26  GmailMailbox `cc` dropped, merged into `to`, or sent as `Bcc`                            test_mc_untainted: a_dictated_send_runs_once_with_what_was_asked
+M27  GmailMailbox a non-ASCII subject or body sent as raw 8-bit or latin-1 (mojibake)         test_mc_untainted: words_outside_ascii_arrive_as_written
+M28  GmailMailbox a reply sets no `In-Reply-To` or no `threadId`                              test_mc_untainted: a_reply_names_the_message_it_answers_and_its_thread
+M29  GmailMailbox a reply to an id the mailbox does not have sends anyway as a new message    test_mc_untainted: a_reply_to_a_message_the_mailbox_does_not_have...
+M30  GmailMailbox a Gmail 503 on send answered as ok (the failure swallowed)                  test_mc_untainted: a_failed_send_reaches_nobody_and_says_why
+M31  GmailMailbox an unreachable Gmail answered `refused` rather than `unreachable`           test_mc_untainted: a_gmail_that_is_down_fails_the_send_as_unreachable
+
+The gate by resource
+M32  MailTools    changes gated like reads (a shared channel may change a kept mailbox)       test_mc_gate: a_kept_mailbox_is_changed_on_no_channel_others_can_read
+M33  MailTools    a kept mailbox is changed by the owner on a screen channel (device_id) or a shared channel   same test [owner-on-shared], [owner-with-screen]
+M34  MailTools    a housemate changes a kept mailbox from their own chat                      test_mc_gate: a_housemate_cannot_change_a_kept_mailbox...
+M35  MailTools    a shared mailbox is changed only by its owner (the opens_for login is not used for a housemate)   test_mc_gate: a_shared_mailbox_is_changed_by_a_housemate_with_its_owners_login
+M36  MailTools    a shared mailbox is changed on a satellite or by a voice match (no speaker needed)   test_mc_gate: a_shared_mailbox_is_read_but_never_changed_where_nobody_is_named
+M37  MailTools    a shared channel naming a member cannot change a shared mailbox              test_mc_gate: a_shared_channel_that_names_a_member_changes_a_shared_mailbox
+M38  Outside use  a held change in a turn whose reply others read is held instead of refused   test_mc_gate: a_held_change_is_not_made_on_a_channel_where_agreement_cannot_follow
+M39  MailTools    needs_reconnect answered as an empty ok, or the change attempted with a stale token   test_mc_gate: a_connection_that_must_be_connected_again...
+M40  MailTools    a refused gate still reaches Gmail (the profile is read first)               test_mc_gate: a_kept_mailbox_is_changed_on_no_channel_others_can_read (no Gmail call)
+
+Labels
+M41  GmailMailbox `add_labels` also removes the label's siblings, or replaces the label set    test_mc_label: labels_are_added_and_removed_on_the_listed_messages_only; adding_alone_keeps...
+M42  GmailMailbox the change applied to every message in the mailbox, not the ones listed      test_mc_label: labels_are_added_and_removed_on_the_listed_messages_only
+M43  GmailMailbox `remove_labels` ignored, or applied as add                                   test_mc_label: removing_alone_adds_nothing
+M44  GmailMailbox `unread` false removes INBOX, or true adds nothing                           test_mc_label: read_and_unread_toggle_only_the_unread_state
+M45  GmailMailbox `folder: trash` leaves INBOX, drops the household labels, or deletes the message   test_mc_label: a_move_to_the_trash_leaves_the_inbox_and_keeps_everything_else
+M46  GmailMailbox `folder: inbox` does not leave the trash                                     test_mc_label: a_move_back_to_the_inbox_leaves_the_trash
+M47  GmailMailbox the sender or subject check dropped, or checked only the first message       test_mc_label: a_message_whose_sender_or_subject_is_not_the_ids...; refuses_the_whole_call
+M48  GmailMailbox the check compares the raw encoded-word header, not the decoded subject      test_mc_label: a_subject_that_was_encoded_on_the_wire_matches_as_its_text
+M49  GmailMailbox a bad id is skipped and the rest changed                                     test_mc_label: an_id_the_mailbox_does_not_have_refuses_the_whole_call
+M50  GmailMailbox an unknown label name is created (`labels.create`) and applied              test_mc_label: what_is_not_a_household_label...[unknown-add]
+M51  GmailMailbox a system label name (TRASH, SPAM, INBOX, UNREAD) accepted as a household label   test_mc_label: ...[system-trash], [system-spam], [system-inbox], [system-unread]
+M52  mail_args    a label given as one string is split into characters or accepted             test_mc_label: ...[label-not-a-list]; [unread-not-a-flag]
+M53  GmailMailbox no cap on ids (`max_change_ids` unread) or the cap off by one                 test_mc_label: as_many_ids_as_the_most_are_changed; one_id_more_than_the_most...
+M54  GmailMailbox an empty message list or a call with no change makes a write                  test_mc_label: a_call_with_no_messages_or_no_change_does_nothing
+
+Limits and arguments
+M55  mail.json    `max_body_chars` at or above `max_argument_chars`                             test_mc_limits: the_body_limit_is_below_the_most_characters...; a_body_of_exactly_the_limit_is_held...
+M56  mail_args    a body is cut to the limit and sent short instead of refused                 test_mc_limits: a_body_over_the_limit_is_refused_and_nothing_is_stored
+M57  mail_args    the limit is checked in bytes, or off by one (limit chars refused)           test_mc_limits: a_body_of_exactly_the_limit_is_made_in_an_untainted_turn
+M58  Outside      a body over the limit but under `max_argument_chars` is held and then sent at carry_out   test_mc_limits: a_body_over_the_limit_is_never_made_even_when_it_was_held_first
+M59  mail_args    a send with no `to` (or an empty list) sent                                  test_mc_limits: a_send_with_no_recipient_sends_nothing
+M60  GmailMailbox recipient, subject or reply id written into the raw message by string concatenation (header injection)   test_mc_limits: a_line_break_in_an_argument_adds_no_header_and_no_recipient
+M61  GmailMailbox the body appended without a blank line after the headers                     test_mc_limits: header_looking_lines_in_a_body_stay_in_the_body
+
+Logs
+M62  GmailMailbox a change logs no `mail.call`                                                  test_mc_logs: each_change_logs_a_mail_call...
+M63  GmailMailbox `mail.call` for a change lacks `count` or `duration_ms`                       test_mc_logs: each_change_logs_a_mail_call...
+M64  GmailMailbox a failed change logs status `ok`                                              test_mc_logs: a_failed_change_logs_its_reason_as_its_status
+M65  GmailMailbox a needs_reconnect change logs nothing or `ok`                                 test_mc_logs: a_change_that_needs_a_reconnect_logs...
+M66  GmailMailbox the log line carries the recipients, subject or label names                   test_mc_logs: no_log_line_carries_a_recipient_subject_body_label...
+M67  GmailMailbox a failure's log carries Gmail's error text with the request body               test_mc_logs: failures_log_no_content_either
+M68  GmailMailbox the log carries the access token                                              test_mc_logs: no_log_line_carries_a_token
+M69  Outside      `outside.held` logs the held call's arguments                                 test_mc_logs: no_log_line_carries_a_recipient...
+
+Verdicts (each mutant applied one at a time to the built code and run against this suite, the part's own tests
+(test_mail_changes_gmail, test_mail_changes_tools, test_mail_change_limits) and tests/outside_ask, -x, per-run timeout
+170 s; killed means the run went red). Variants carry a letter suffix (M7a-b, M13a-b, M16a-c, M23a-b, M26a-c, M27a-b,
+M28a-b, M29-b, M32a-c, M33a-b, M43a-b, M44a-b, M45a, M47a-c, M52-b, M53a-c, M54a-b, M57a-b, M60a-b, M63a-b, M66a-b).
+Killed: M1-M29 (every variant), M31, M33-M51, M53-M56, M57b, M58-M66, M68, M69, M32a, M32c.
+Killed by a directed test added for it: M30 (a 5xx on a label change, whose answer is empty, reached the caller as
+success: test_mail_changes_gmail: a_change_gmail_fails_with_an_empty_answer_is_unreachable); M52 (a label list given as one
+string: test_mail_change_limits: labels_given_as_one_string_are_refused...); M57a (the body limit counted in bytes:
+...a_body_is_counted_in_characters_not_bytes); M67 (a failure's log carrying what was sent or answered:
+test_mail_changes_gmail: a_failed_send_logs_nothing_it_sent_or_was_answered).
+Equivalent (no test can tell them apart, with the reason):
+M32b  the chosen mailbox is looked up among the readable ones instead of the changeable ones: a speaker either is a
+      member (every readable mailbox is changeable) or is not (none is, and the call answers not_connected before the
+      lookup), so the two sets never differ where a lookup happens.
+Not applied: M45b (no-op by construction, dropped). M61 has no code path to mutate: the body follows the headers because
+`EmailMessage` serialises it so, and a body cannot be appended another way here.
+

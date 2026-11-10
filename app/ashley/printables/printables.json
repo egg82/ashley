@@ -1,0 +1,11 @@
+{
+  "api_url": "https://api.printables.com/graphql/",
+  "site_url": "https://www.printables.com",
+  "file_hosts": ["files.printables.com"],
+  "timeout_s": 8,
+  "results": 5,
+  "summary_chars": 300,
+  "listed_files": 6,
+  "download_timeout_s": 30,
+  "max_redirects": 3
+}

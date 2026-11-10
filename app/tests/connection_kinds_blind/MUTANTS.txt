@@ -1,0 +1,101 @@
+Planted mutants for the connection-kinds blind suite (app/tests/connection_kinds_blind). Each was applied alone to the shipped
+source and the suite run whole (-x, two xdist workers); "killed" is a failing run. The file was restored from the text read before
+mutating, asserted equal after each. 94 planted (one no-op control, two replants): 92 killed (2 only after a directed test),
+1 equivalent, the control survived.
+
+Directed tests added for survivors: two kinds may not share a name (K4); an address typed with surrounding spaces is stored without them (D9).
+
+N0   api/connections.py         NO-OP CONTROL: a docstring changes                         survived, as the no-op control must
+R1   api/connections.py         keyless listing says can_connect                           killed
+R2   api/connections.py         keyless listing offers nothing                             killed
+R3   api/connections.py         listing omits the person's own                             killed
+R4   api/connections.py         wire checked_at is added_at                                killed
+R5   api/connections.py         wire personal always false                                 killed
+R6   api/connections.py         wire added_by always null                                  killed
+R7   api/connections.py         other secret field accepted                                killed
+R8   api/connections.py         422 code is not unsupported                                killed
+R9   api/connections.py         disconnect never names the person                          killed
+R10  api/connections.py         disconnect always names the person                         killed
+R12  api/connections.py         unknown kind is 400                                        killed
+R13  api/connections.py         removing what is not there is 400                          killed
+R14  api/connections.py         refusal detail always wrong_service text                   killed
+R15  api/connections.py         the service is never asked                                 killed
+R16  api/connections.py         bad address not refused                                    killed
+R17  api/connections.py         stores the address as typed                                killed
+R18  api/connections.py         connect without the key still checks first                 killed
+R19  api/connections.py         connect log carries the secret                             killed
+R21  api/connections.py         takes_address inverted                                     killed
+R22  api/connections.py         offered personal always false                              killed
+R23  api/connections.py         offered secret_noun is the label                           killed
+R24  api/connections.py         offered in reverse order                                   killed
+R25  api/connections.py         listing is not logged                                      killed
+R26  api/connections.py         removal is not logged                                      killed
+R27  api/connections.py         connect skips the registry                                 killed
+R28  api/connections.py         remove skips the registry                                  killed
+P1   connections/postgres.py    listing holds everyone's code hosts                        killed
+P2   connections/postgres.py    listing holds only the person's                            killed
+P3   connections/postgres.py    opened without a person takes anyone's                     killed, but by a type error in the mutant; replanted as P3b
+P4   connections/postgres.py    open binds no person                                       killed
+P5   connections/postgres.py    put binds no person                                        killed
+P6   connections/postgres.py    every connection carries a person                          killed
+P7   connections/postgres.py    no connection carries a person                             killed
+P8   connections/postgres.py    any person may add to any household                        killed
+P9   connections/postgres.py    replacing leaves checked_at                                killed
+P10  connections/postgres.py    replacing leaves added_at                                  killed
+P11  connections/postgres.py    seed replaces                                              killed
+P12  connections/postgres.py    seed for every household                                   killed
+P13  connections/postgres.py    remove always true                                         killed
+P14  connections/postgres.py    remove deletes every person's                              killed, but by a type error in the mutant; replanted as P14b
+P15  connections/postgres.py    answered moves every connection                            killed
+P16  connections/postgres.py    answered moves nothing                                     killed
+P17  connections/postgres.py    answered moves added_at too                                killed
+P18  connections/postgres.py    unknown stored kind is read                                killed
+P19  connections/postgres.py    unregistered kind is written                               killed
+P20  connections/postgres.py    unsealable log carries the sealed bytes                    killed
+P21  connections/postgres.py    put log carries the secret                                 killed
+P22  connections/postgres.py    seed binds the wrong kind                                  killed
+P24  connections/postgres.py    seed log carries the secret                                killed
+P25  connections/postgres.py    removal is not logged by the service                       killed
+K1   connections/kinds.py       a fixed address yields to what was typed                   killed
+K2   connections/kinds.py       unregistered is personal                                   killed
+K3   connections/kinds.py       registry order reversed                                    killed
+K4   connections/kinds.py       two kinds may share a name                                 killed after a directed test
+K5   connections/kinds.py       every kind takes http                                      killed
+D1   connections/address.py     trailing slash kept                                        killed
+D2   connections/address.py     username allowed                                           killed
+D3   connections/address.py     password allowed                                           killed
+D4   connections/address.py     query allowed                                              killed
+D5   connections/address.py     fragment allowed                                           killed
+D6   connections/address.py     port 0 allowed                                             killed
+D7   connections/address.py     no host allowed                                            killed
+D8   connections/address.py     any web scheme allowed                                     killed
+D9   connections/address.py     NO-OP-like whitespace kept                                 killed after a directed test
+M1   api/connection_models.py   api key may hold whitespace                                killed
+M2   api/connection_models.py   token may hold whitespace                                  killed
+M3   api/connection_models.py   token may be empty                                         killed
+M4   api/connection_models.py   token may be long                                          killed
+M5   api/connection_models.py   address may be long                                        killed
+S1   sure/kind.py               Sure's wrong service is bad_url                            killed
+S2   sure/kind.py               Sure's refused key is unreachable                          killed
+S3   sure/kind.py               Sure takes http                                            killed
+S4   sure/kind.py               Sure is personal                                           killed
+S5   sure/kind.py               Sure takes a token                                         killed
+H1   home_assistant/kind.py     Home Assistant is https only                               killed
+H2   home_assistant/kind.py     HA's wrong service is bad_url                              killed
+H3   home_assistant/kind.py     HA is personal                                             killed
+H4   home_assistant/kind.py     HA's refused token is unreachable                          killed
+C1   codehost/kinds.py          GitLab is the household's                                  killed
+C2   codehost/kinds.py          GitHub is the household's                                  killed
+C3   codehost/kinds.py          GitHub has no fixed address                                killed
+C4   codehost/kinds.py          GitLab takes http                                          killed
+C5   codehost/kinds.py          a code host's not_found is unreachable                     killed
+C6   codehost/kinds.py          a code host's unexpected is unreachable                    killed
+C7   codehost/kinds.py          GitLab is checked as GitHub                                killed
+C8   codehost/kinds.py          a code host's refused is unreachable                       killed
+L1   sure/ledger.py             Sure's read does not move checked_at                       killed
+L2   sure/ledger.py             Sure's read moves a connection that is not there           killed
+L3   sure/ledger.py             Sure's checked_at moves before the answer                  killed
+W1   wiring.py                  GitHub is not registered                                   killed
+W2   wiring.py                  the panel's order changes                                  equivalent: the order is the constant itself, which no contract sentence fixes otherwise
+P3b  connections/postgres.py    opened ignores whose it is (replanted)                     killed
+P14b connections/postgres.py    remove deletes every person's (replanted)                  killed

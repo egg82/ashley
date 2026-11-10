@@ -1,0 +1,160 @@
+MUTANTS.txt: planted wrong implementations of the Watches store (PostgresWatches, its Null Object, migration 0074 and the
+helpers it uses), each applied alone, run against app/tests/watches_blind and app/tests/test_watches_postgres.py with a
+30 s thread-based per-test timeout, then restored byte-identically.
+One line each: status, file, mutation. 'killed' = a test failed, named after '--'. W-lines are the planned list (some
+split into a, b, ... where one line named several mutations); X-lines remove constraints the planned list left alone.
+A line marked 'first run' survived the suite as first written and is killed by the directed test named (all in
+test_ws_survivors.py). Where the planned list named postgres.py for validation, the code is in condition.py; the row
+JSON is in rows.py.
+
+W01    killed    postgres.py     arm of a live target inserts a second row  -- test_arm_again_while_paused_updates_the_same_watch, test_arming_an_existing_target_at_max_live_is_not_a_new_watch (and more)
+W02    killed    postgres.py     arm again resets baseline  -- test_arm_again_keeps_baseline_version_and_series, test_arm_again_after_a_baseline_check_keeps_the_version (and more)
+W03    killed    postgres.py     arm again resets version  -- test_arm_again_keeps_baseline_version_and_series, test_arm_again_after_a_baseline_check_keeps_the_version (and more)
+W04    killed    postgres.py     arm again resets series  -- test_arm_again_keeps_baseline_version_and_series
+W05a   killed    postgres.py     arm again leaves until unchanged  -- test_arm_the_same_target_again_updates_the_one_watch
+W05b   killed    postgres.py     arm again leaves tools unchanged  -- test_arm_the_same_target_again_updates_the_one_watch, test_arm_twice_updates_the_live_watch_and_keeps_its_baseline
+W05c   killed    postgres.py     arm again leaves interval unchanged  -- test_arm_the_same_target_again_updates_the_one_watch, test_arm_again_keeps_baseline_version_and_series (and more)
+W05d   killed    postgres.py     arm again leaves expires_at unchanged  -- test_arm_the_same_target_again_updates_the_one_watch, test_arm_twice_updates_the_live_watch_and_keeps_its_baseline
+W05e   killed    postgres.py     arm again does not write until (when_clauses still moves)  -- test_arm_the_same_target_again_updates_the_one_watch
+W06    killed    postgres.py     arm again does not move the bench  -- test_arm_again_moves_the_bench, test_arm_twice_updates_the_live_watch_and_keeps_its_baseline
+W07    killed    postgres.py     armed_by takes the newer arming  -- test_handoff_is_sticky_when_either_arming_was_one, test_handoff_stays_after_two_more_ashley_armings (and more)
+W08    killed    postgres.py     armed_by stays the first arming  -- test_handoff_is_sticky_when_either_arming_was_one
+W09a   killed    postgres.py     live lookup ignores kind  -- test_a_different_target_kind_or_person_is_a_different_watch
+W09b   killed    postgres.py     live lookup ignores person  -- test_max_live_counts_per_person, test_a_different_target_kind_or_person_is_a_different_watch (and more)
+W09c   killed    postgres.py     live lookup ignores target  -- test_a_new_watch_past_max_live_is_refused, test_arming_an_existing_target_at_max_live_is_not_a_new_watch (and more)
+W10    killed    postgres.py     live lookup includes ended  -- test_arm_after_the_watch_ended_makes_a_new_one, test_disarm_ends_the_live_watch_once_and_a_new_arm_is_new
+W11    killed    postgres.py     validation skips until  -- test_an_until_field_outside_track_is_refused, test_too_many_alternatives_is_refused_and_the_limit_is_allowed (and more)
+W12    killed    condition.py    validation checks only the first alternative  -- first run: survived; killed by directed test test_ws_a_bad_field_in_the_second_of_two_alternatives_is_refused
+W13    killed    condition.py    validation rejects fieldless predicates  -- 
+W14a   killed    condition.py    max_alternatives off by one (low)  -- test_arm_with_when_condition_is_stored_per_alternative, test_predicates_without_a_field_need_no_tracked_field (and more)
+W14b   killed    condition.py    max_alternatives off by one (high)  -- test_too_many_alternatives_is_refused_and_the_limit_is_allowed, test_arm_refuses_before_writing[over2]
+W14c   killed    condition.py    max_predicates off by one (low)  -- test_arm_with_when_condition_is_stored_per_alternative, test_too_many_predicates_is_refused_and_the_limit_is_allowed
+W14d   killed    condition.py    max_predicates off by one (high)  -- test_too_many_predicates_is_refused_and_the_limit_is_allowed, test_arm_refuses_before_writing[over1]
+X14e   killed    condition.py    an empty alternative is allowed  -- first run: survived; killed by directed test test_ws_an_empty_alternative_is_refused
+W15a   killed    postgres.py     expiry check allows the past  -- test_expiry_not_in_the_future_is_refused, test_a_refused_rearm_leaves_the_live_watch_as_it_was (and more)
+W15b   killed    postgres.py     expiry check rejects the near future  -- test_a_new_watch_past_max_live_is_refused, test_arm_again_while_paused_updates_the_same_watch (and more)
+W16    killed    postgres.py     refusal after the commit  -- test_a_when_field_outside_track_is_refused, test_an_until_field_outside_track_is_refused (and more)
+W17    killed    postgres.py     max_live counts re-arming  -- test_arming_an_existing_target_at_max_live_is_not_a_new_watch, test_arm_past_max_live_is_refused_only_for_a_new_watch
+W18a   killed    postgres.py     max_live counts ended  -- test_ended_watches_do_not_count_toward_max_live
+W18b   killed    postgres.py     max_live ignores paused  -- test_paused_watches_count_toward_max_live
+W19    killed    postgres.py     max_live counts the household  -- test_max_live_counts_per_person
+W20a   killed    postgres.py     disarm reason is until  -- test_get_finds_a_watch_in_any_state, test_disarm_ends_the_live_watch_as_disarmed (and more)
+W20b   killed    postgres.py     disarm ends another person's  -- test_disarm_of_nothing_is_false_and_changes_nothing, test_disarm_leaves_the_other_persons_watch_and_a_waiting_wake
+W20c   killed    postgres.py     disarm ends another kind's  -- test_disarm_of_nothing_is_false_and_changes_nothing
+W20d   equivalent postgres.py   disarm ignores the household  -- first run: survived; equivalent: a person id belongs to one household, so the person condition already implies it
+W21    killed    postgres.py     disarm answers True when nothing was live  -- test_disarm_of_nothing_is_false_and_changes_nothing, test_disarm_twice_is_true_then_false_and_keeps_the_first_end (and more)
+W22a   killed    postgres.py     live orders by arming  -- test_live_gives_armed_and_paused_soonest_expiry_first
+W22b   killed    postgres.py     live includes ended  -- test_ended_watches_do_not_count_toward_max_live, test_live_leaves_out_ended_watches (and more)
+W22c   killed    postgres.py     live orders latest expiry first  -- test_live_gives_armed_and_paused_soonest_expiry_first, test_live_is_soonest_expiry_first_and_get_of_nothing_is_none
+W22d   killed    postgres.py     live is the household's  -- test_live_is_that_persons_alone
+W23    killed    postgres.py     due ignores the unsettled wake  -- test_due_skips_a_watch_with_an_unsettled_wake_until_it_is_settled, test_the_unsettled_wake_that_holds_a_watch_is_its_own_only (and more)
+W24    killed    postgres.py     due excludes for any household wake  -- test_due_skips_a_watch_with_an_unsettled_wake_until_it_is_settled, test_the_unsettled_wake_that_holds_a_watch_is_its_own_only (and more)
+W25    killed    postgres.py     due treats a settled wake as unsettled  -- test_due_skips_a_watch_with_an_unsettled_wake_until_it_is_settled, test_due_skips_a_paused_watch_while_its_paused_wake_waits (and more)
+W26a   killed    postgres.py     due ignores expires_at  -- test_due_skips_a_watch_past_its_expiry, test_due_skips_future_expired_and_watches_with_an_unsettled_wake
+W26b   killed    postgres.py     due ignores ended  -- test_due_skips_an_ended_watch
+W26c   killed    postgres.py     due ignores next_check_at  -- test_due_skips_a_watch_not_yet_due, test_due_gives_a_paused_watch_once_its_retry_has_come (and more)
+W27a   killed    postgres.py     due newest-due first  -- test_due_orders_the_longest_due_first, test_due_returns_at_most_limit_keeping_the_longest_due (and more)
+W27b   killed    postgres.py     due ordered by id  -- test_due_orders_the_longest_due_first, test_due_orders_across_people_and_households
+W28    killed    postgres.py     due ignores limit  -- test_due_returns_at_most_limit_keeping_the_longest_due, test_due_skips_future_expired_and_watches_with_an_unsettled_wake
+W29    killed    postgres.py     record drops the version condition  -- test_failed_does_not_pause_on_a_stale_version, test_record_at_a_stale_version_changes_nothing_and_says_false (and more)
+W30a   killed    postgres.py     stale record still moves next_check_at  -- test_record_on_an_ended_watch_is_false_and_changes_nothing, test_record_at_a_stale_version_changes_nothing_and_says_false (and more)
+W30b   killed    postgres.py     stale record still counts a failure  -- test_failed_does_not_pause_on_a_stale_version, test_record_at_a_version_ahead_of_the_watch_changes_nothing (and more)
+W31    killed    postgres.py     record drops the live condition  -- test_record_on_an_ended_watch_is_false_and_changes_nothing, test_quiet_keeps_the_baseline_and_ends_when_told
+W32    killed    postgres.py     record returns True when no row matched  -- test_failed_does_not_pause_on_a_stale_version, test_record_on_an_ended_watch_is_false_and_changes_nothing (and more)
+W33a   killed    postgres.py     Baseline does not raise the version  -- test_arm_again_keeps_baseline_version_and_series, test_arm_again_after_a_baseline_check_keeps_the_version (and more)
+W33b   killed    postgres.py     Baseline raises series  -- test_baseline_stores_the_items_and_raises_the_version
+W34a   killed    postgres.py     Quiet raises the version  -- test_pausing_then_resuming_then_pausing_again_tells_each_pause, test_quiet_keeps_the_baseline_and_version (and more)
+W34b   killed    postgres.py     Quiet replaces the baseline  -- test_quiet_that_ends_ends_the_watch_until_without_a_wake, test_quiet_after_a_failure_resumes_and_resets_failures (and more)
+W35a   killed    postgres.py     Quiet ends with reason expired  -- test_quiet_that_ends_ends_the_watch_until_without_a_wake, test_woke_that_ends_ends_the_watch_until_and_still_tells_it (and more)
+W35b   killed    postgres.py     Quiet ignores ends  -- test_live_leaves_out_ended_watches, test_expire_leaves_an_already_ended_watch_with_its_reason (and more)
+W36a   killed    postgres.py     a success leaves failures  -- test_quiet_after_a_failure_resumes_and_resets_failures, test_baseline_after_a_pause_resumes (and more)
+W36b   killed    postgres.py     a success leaves the paused state  -- test_pausing_then_resuming_then_pausing_again_tells_each_pause, test_quiet_after_a_failure_resumes_and_resets_failures (and more)
+W37a   killed    postgres.py     Woke does not raise series  -- test_arm_again_keeps_baseline_version_and_series, test_woke_stores_baseline_counters_and_one_wake (and more)
+W37b   killed    postgres.py     Woke raises series by two  -- test_arm_again_keeps_baseline_version_and_series, test_woke_that_ends_ends_the_watch_until_and_still_tells_it (and more)
+W38    killed    postgres.py     Woke does not store the baseline  -- test_arm_again_keeps_baseline_version_and_series, test_racing_wokes_at_one_version_store_one_wake (and more)
+W39a   killed    postgres.py     wake event id uses the old version  -- test_the_second_wake_counts_the_series_and_since_the_last_wake, test_woke_stores_baseline_counters_and_one_wake (and more)
+W39b   killed    postgres.py     wake event id omits the version  -- test_the_second_wake_counts_the_series_and_since_the_last_wake, test_woke_stores_baseline_counters_and_one_wake (and more)
+W40a   equivalent postgres.py   wake insert without ON CONFLICT  -- first run: survived; equivalent: a repeated record at one version is refused by the version lock before the insert, and a watch id is never reused, so no event id can already exist
+W40b   killed    postgres.py     wake event id varies per call  -- test_woke_stores_baseline_counters_and_one_wake, test_the_second_wake_counts_the_series_and_since_the_last_wake (and more)
+W41    killed    postgres.py     Woke baseline and wake in separate transactions  -- test_a_failed_wake_write_rolls_the_baseline_back
+W42a   killed    rows.py         changes JSON drops since  -- test_the_wake_changes_carry_what_changed, test_the_second_wake_counts_the_series_and_since_the_last_wake (and more)
+W42b   killed    postgres.py     since is always the arming time  -- first run: survived; killed by directed test test_ws_the_second_wake_is_since_the_first_not_since_arming
+W43a   killed    postgres.py     changes series is the version  -- first run: survived; killed by directed test test_ws_a_wake_after_a_baseline_carries_its_series_not_the_version
+W43b   killed    rows.py         changes ended always null  -- test_woke_that_ends_ends_the_watch_until_and_still_tells_it, test_woke_that_ends_ends_until_and_still_tells
+W44a   killed    rows.py         changes items lose before  -- test_the_wake_changes_carry_what_changed, test_woke_stores_baseline_and_one_wake_and_a_repeat_stores_none
+W44b   killed    rows.py         changes items lose after  -- test_the_wake_changes_carry_what_changed, test_woke_stores_baseline_and_one_wake_and_a_repeat_stores_none
+W44c   killed    rows.py         changes items drop gone items  -- test_the_wake_changes_carry_what_changed
+W45a   killed    postgres.py     Woke(ends) skips the wake  -- test_woke_that_ends_ends_the_watch_until_and_still_tells_it, test_a_failed_wake_write_rolls_the_baseline_back (and more)
+W45b   killed    postgres.py     Woke(ends) skips the ending  -- test_arm_again_keeps_baseline_version_and_series, test_arm_again_after_a_baseline_check_keeps_the_version (and more)
+W46    killed    postgres.py     Woke does not set last_woke_at  -- test_woke_stores_baseline_counters_and_one_wake, test_the_second_wake_counts_the_series_and_since_the_last_wake (and more)
+W47a   killed    postgres.py     Failed pauses one late  -- test_arm_again_while_paused_updates_the_same_watch, test_paused_watches_count_toward_max_live (and more)
+W47b   killed    postgres.py     Failed pauses one early  -- test_failed_at_fail_after_pauses_with_the_last_reason_and_one_wake, test_a_failed_pause_wake_write_rolls_the_failure_back (and more)
+W48a   killed    postgres.py     Failed pauses without a wake  -- test_a_failed_pause_wake_write_rolls_the_failure_back, test_due_skips_a_paused_watch_while_its_paused_wake_waits (and more)
+W48b   killed    postgres.py     Failed wake in a separate transaction  -- test_a_failed_pause_wake_write_rolls_the_failure_back
+W49    killed    postgres.py     Failed while paused stores a wake every time  -- test_further_failures_while_paused_count_but_store_no_second_wake, test_failures_pause_at_fail_after_with_one_paused_wake_and_a_success_resumes
+W50a   killed    postgres.py     Failed bumps version  -- test_arm_again_while_paused_updates_the_same_watch, test_the_reason_is_the_latest_one (and more)
+W50b   killed    postgres.py     Failed clears the baseline  -- test_failed_leaves_baseline_version_and_series_alone, test_quiet_after_a_failure_resumes_and_resets_failures (and more)
+W50c   killed    postgres.py     Failed bumps series  -- test_failed_leaves_baseline_version_and_series_alone
+W51a   killed    postgres.py     paused reason keeps the first  -- test_further_failures_while_paused_count_but_store_no_second_wake, test_failures_pause_at_fail_after_with_one_paused_wake_and_a_success_resumes
+W51b   killed    postgres.py     paused wake carries a fixed reason  -- test_failed_at_fail_after_pauses_with_the_last_reason_and_one_wake, test_failures_pause_at_fail_after_with_one_paused_wake_and_a_success_resumes
+W52a   killed    postgres.py     failing paused uses interval_s  -- test_next_check_is_retry_s_while_paused, test_failures_pause_at_fail_after_with_one_paused_wake_and_a_success_resumes
+W52b   killed    postgres.py     failing armed uses retry_s  -- test_next_check_is_retry_s_while_paused
+W53    killed    postgres.py     success next_check uses a fixed interval  -- test_next_check_uses_the_watchs_own_interval
+W53b   killed    postgres.py     armed failure next_check uses a fixed interval  -- first run: survived; killed by directed test test_ws_a_failure_below_the_threshold_checks_again_after_the_watchs_own_interval
+W54    killed    postgres.py     next_check stays at retry after a resume  -- test_next_check_returns_to_interval_s_after_resuming
+W55a   killed    postgres.py     expire by armed_at  -- test_expire_ends_a_live_watch_past_its_expiry_as_expired, test_expire_with_nothing_to_do_counts_zero (and more)
+W55b   killed    postgres.py     expire ignores paused  -- test_expire_ends_a_paused_watch_too_and_writes_no_wake
+W56    killed    postgres.py     expire rewrites already ended  -- test_a_watch_expired_long_ago_is_ended_then_pruned_by_later_expiry, test_expire_leaves_an_already_ended_watch_with_its_reason (and more)
+W57    killed    postgres.py     prune ignores unsettled wakes  -- test_expire_keeps_an_old_ended_watch_with_an_unsettled_wake, test_expire_ends_past_expiry_and_prunes_only_old_ended_watches_without_an_unsettled_wake
+W58a   killed    postgres.py     prune takes live watches  -- test_expire_leaves_an_already_ended_watch_with_its_reason, test_expire_never_prunes_a_live_watch_however_old (and more)
+W58b   killed    postgres.py     prune ignores keep_s  -- test_a_watch_expired_long_ago_is_ended_then_pruned_by_later_expiry, test_pruning_one_watch_leaves_the_others_wakes (and more)
+W59    equivalent postgres.py   prunes the watch it just expired  -- first run: survived; equivalent: the expiry and the prune are one statement and a row it has just updated is not also deleted by it; test_ws_a_live_watch_long_past_its_expiry_is_ended_not_pruned_in_the_same_call guards a split into two statements
+W60a   killed    postgres.py     expire counts swapped  -- test_expire_counts_each_watch_it_ends, test_expire_deletes_an_ended_watch_older_than_keep_s (and more)
+W60b   killed    postgres.py     expire counts all live watches  -- test_expire_ends_a_live_watch_past_its_expiry_as_expired, test_expire_with_nothing_to_do_counts_zero (and more)
+W61a   killed    watches.py      Null Object method returns empty: arm  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W61b   killed    watches.py      Null Object method returns empty: disarm  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W61c   killed    watches.py      Null Object method returns empty: live  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W61d   killed    watches.py      Null Object method returns empty: get  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W61e   killed    watches.py      Null Object method returns empty: due  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W61f   killed    watches.py      Null Object method returns empty: record  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W61g   killed    watches.py      Null Object method returns empty: expire  -- test_unregistered_watches_is_a_null_that_raises_unavailable, test_the_null_object_raises_on_every_method
+W62a   killed    0074_watches.py reason allowed on armed  -- test_reason_is_null_exactly_when_armed
+W62b   killed    0074_watches.py null reason allowed on paused/ended  -- test_reason_is_null_exactly_when_armed
+W63a   killed    0074_watches.py ended accepts a failure slug  -- first run: survived; killed by directed test test_ws_an_ended_watch_takes_no_failure_slug
+W63b   killed    0074_watches.py paused accepts an end reason  -- test_a_paused_watch_cannot_carry_an_ending_reason
+W64a   killed    0074_watches.py unique index covers ended  -- test_arm_after_the_watch_ended_makes_a_new_one, test_an_ended_watch_does_not_hold_the_target (and more)
+W64b   killed    0074_watches.py unique index omits kind  -- test_a_different_target_kind_or_person_is_a_different_watch, test_one_live_watch_per_person_kind_and_target
+W64c   killed    0074_watches.py unique index omits person  -- test_max_live_counts_per_person, test_a_different_target_kind_or_person_is_a_different_watch (and more)
+W65a   killed    0074_watches.py person FK lacks household  -- test_a_person_of_another_household_is_refused
+W65b   killed    0074_watches.py person FK lacks cascade  -- test_a_watch_goes_with_its_person, test_deleting_a_person_deletes_their_watches_wakes
+W66a   killed    0074_watches.py track length unchecked  -- test_track_is_one_to_eight_fields
+W66b   killed    0074_watches.py target length unchecked  -- test_target_is_one_to_200_characters
+W66c   killed    0074_watches.py label length unchecked  -- test_label_is_one_to_100_characters
+W66d   killed    0074_watches.py interval unchecked  -- test_interval_is_positive_and_counters_are_not_negative
+W66e   killed    0074_watches.py failures unchecked  -- test_interval_is_positive_and_counters_are_not_negative
+W66f   killed    0074_watches.py version unchecked  -- test_interval_is_positive_and_counters_are_not_negative
+W66g   killed    0074_watches.py series unchecked  -- test_interval_is_positive_and_counters_are_not_negative
+W66h   killed    0074_watches.py kind slug unchecked  -- test_kind_is_a_slug
+X66i   killed    0074_watches.py track upper bound off by one  -- test_track_is_one_to_eight_fields
+X66j   killed    0074_watches.py target upper bound off by one  -- test_target_is_one_to_200_characters
+X66k   killed    0074_watches.py label upper bound off by one  -- test_label_is_one_to_100_characters
+X66l   killed    0074_watches.py empty target allowed  -- test_target_is_one_to_200_characters
+X66m   killed    0074_watches.py empty label allowed  -- test_label_is_one_to_100_characters
+X66n   killed    0074_watches.py empty track allowed  -- test_track_is_one_to_eight_fields
+X70a   killed    0074_watches.py state unchecked  -- first run: survived; killed by directed test test_ws_a_state_outside_the_three_is_refused_even_with_a_reason
+X70b   killed    0074_watches.py armed_by unchecked  -- test_state_and_armed_by_take_only_their_values
+X70c   killed    0074_watches.py ended_at unchecked  -- first run: survived; killed by directed test test_ws_ended_at_is_set_exactly_when_the_watch_has_ended
+X70d   killed    0074_watches.py when_clauses type unchecked  -- first run: survived; killed by directed test test_ws_clauses_are_json_arrays_and_the_baseline_an_object
+X70e   killed    0074_watches.py until_clauses type unchecked  -- first run: survived; killed by directed test test_ws_clauses_are_json_arrays_and_the_baseline_an_object
+X70f   killed    0074_watches.py baseline type unchecked  -- first run: survived; killed by directed test test_ws_clauses_are_json_arrays_and_the_baseline_an_object
+X70g   killed    0074_watches.py changes type unchecked  -- test_changes_must_be_a_json_object
+X70h   killed    0074_watches.py paused reason unrestricted  -- test_a_paused_watch_cannot_carry_an_ending_reason
+W67a   killed    0074_watches.py watch_id may be set for non-watch  -- test_watch_id_is_set_exactly_for_kind_watch
+W67b   killed    0074_watches.py watch_id may be null for watch  -- test_watch_id_is_set_exactly_for_kind_watch
+W68a   killed    0074_watches.py watch wake without changes  -- test_a_watch_wake_needs_changes_and_a_person_and_no_device
+W68b   killed    0074_watches.py watch wake without person  -- test_a_watch_wake_needs_changes_and_a_person_and_no_device
+W68c   killed    0074_watches.py watch wake with a device  -- test_a_watch_wake_needs_changes_and_a_person_and_no_device
+W69    killed    0074_watches.py wakes.watch_id not cascading  -- test_expire_deletes_once_the_wake_is_settled_and_takes_its_wakes_along, test_deleting_a_person_deletes_their_watches_wakes (and more)
+X71    killed    0074_watches.py person FK stays immediate (the (b) fix removed)  -- test_deleting_a_person_deletes_their_watches_wakes
+X72    killed    0074_watches.py wakes_watch index missing  -- first run: survived; killed by directed test test_ws_the_hot_paths_are_indexed_as_designed
+X73    killed    0074_watches.py next_check index missing  -- first run: survived; killed by directed test test_ws_the_hot_paths_are_indexed_as_designed

@@ -1,0 +1,103 @@
+Wrong implementations the blind Proton mailbox suite (app/tests/mail_proton_blind) must kill. Written from the design alone
+(decisions.md, "Her mail is a port with two adapters, and Proton's runs as a leased Bridge", build parts 5 and 6), before the
+implementation existed. Each line: id, where it would live (the adapter, `ashley.mail.imap`, unless said), the wrong behaviour,
+and the test that should go red (abbreviated). The reconciler plants these in the real adapter; the ones marked [ref] were also
+planted in a throwaway reference adapter and their verdicts are in mutant-run.txt beside this file.
+
+Ids (test_mp_ids, test_mp_read)
+P1   id is the IMAP UID (or folder:uid)                                   ids: an_id_is_the_message_id_header; ids_and_reads_survive_a_resync
+P2   fallback id for a message with no Message-ID includes the UID       ids: a_message_with_no_message_id_gets_one_that_is_stable
+P3   search with no folder concatenates folders, so a labelled message is listed twice   read: a_labelled_message_is_one_message...; ids: same_message_in_folder_and_label
+P4   a Message-ID longer than message_id_chars is passed through (the read tool then refuses it)   ids: an_id_a_search_gives_is_one_the_read_tool_takes
+P5   a read finds the message by UID of the folder it was listed in, not by id        ids: ids_and_reads_survive_a_resync; an_id_read_before_a_resync_finds...
+P6   a read of an id that is no message answers an empty message, not not_found       read: an_id_that_is_no_message_of_this_mailbox_is_not_found
+P7   a read looks the id up in every account's mailbox                              ids: the_id_of_another_mailboxs_message_is_not_found_here
+
+Syncing and state (test_mp_syncing)
+S1   a syncing mailbox answers an empty page / empty labels                          syncing: a_mailbox_not_synced...; the_answers_are_full_once...
+S2   syncing is `synced_epoch == 0` (never synced) rather than != the current epoch   syncing: a_new_epoch_makes_a_synced_mailbox_syncing_again
+S3   only search checks syncing; read and labels do not                              syncing: a_mailbox_not_synced... (all three reads)
+S4   syncing is any account syncing (global), not this account's                     syncing: syncing_is_per_account
+S5   a signed-out account (connection needs login) answers an empty list             syncing: an_account_bridge_signed_out_answers_needs_reconnect
+S6   mail_boxes lists syncing false always                                           syncing: a_mailbox_that_is_syncing_is_listed_as_syncing
+S7   an empty synced mailbox is mistaken for syncing (empty list => syncing)         syncing: an_empty_mailbox_that_has_synced_answers_an_empty_list; read: ..._empty_list_not_an_error
+S8   a label change on a syncing mailbox proceeds                                    syncing: a_change_on_a_mailbox_that_is_syncing_is_refused
+
+Errors (test_mp_errors)
+E1   a refused IMAP login answers an empty page                                      errors: a_bridge_password_bridge_refuses_is_an_error
+E2   a refused login answers `unreachable` or `syncing`                              errors: same (REFUSED reasons)
+E3   a connection error or a dropped connection answers an empty page                errors: a_bridge_that_is_not_listening...; a_connection_dropped_mid_conversation...
+E4   a non-IMAP greeting is read as an empty mailbox                                 errors: an_answer_that_is_not_imap_is_unreachable
+E5   a send is retried when the connection drops after DATA (two attempts)            send_draft: a_send_cut_off_after_the_data...; errors
+E6   a 4xx at DATA is retried                                                         send_draft: a_server_that_fails_the_data_is_one_attempt
+E7   a refused SMTP login is reported as sent                                         errors: a_refused_login_stops_a_send_and_a_draft
+
+Reads (test_mp_read)
+R1   a read fetches BODY[] (not PEEK), marking the message read                      read: reading_and_searching_leave_the_unread_state
+R2   HTML-only mail is returned as markup                                            read: html_only_mail_is_read_as_text
+R3   the HTML part is read when a plain part exists                                  read: the_plain_part_is_read_when_there_is_also_an_html_one
+R4   charset ignored (ISO-8859-1 / quoted-printable read as UTF-8)                   read: other_charsets_and_encoded_headers_are_decoded
+R5   an RFC 2047 subject or sender is returned encoded                               read: same
+R6   a body over body_chars is cut without `truncated`                               read: a_body_longer_than_the_cap_is_cut_and_says_so
+R7   search ignores search_max, or answers a cursor that repeats the first page      read: a_search_cut_at_the_cap_pages_with_the_cursor
+R8   newest first reversed, or sorted by UID                                         read: ..._newest_first_across_folders; an_inbox_search...
+R9   a search with no folder includes Spam and Trash                                 read: a_search_without_a_folder_lists_each_message_once_and_not_spam_or_trash
+R10  labels returned with the `Labels/` prefix, or All Mail / Folders listed as labels   read: folders_come_first...; the_tools_name_no_provider_field
+R11  folder names returned as Bridge spells them (Sent, Drafts) not lower case        read: folders_come_first_in_lower_case
+R12  unread inverted                                                                  read: an_inbox_search...; each_filter_narrows
+R13  a filter ignored (sender, to, subject, text, label, unread, has_attachment, after, before)   read: each_filter_narrows_the_search
+R14  `after` exclusive or `before` inclusive (Gmail's after: is inclusive, before: exclusive)   read: each_filter_narrows_the_search
+R15  a query value with IMAP syntax (quote, parenthesis, literal, OR) is sent unescaped, or a line break reaches the wire   injection: *
+R16  header attachments count always 0 / has_attachment ignored                      read: each_filter...; an_inbox_search...
+R17  snippet carries markup or is not cut to snippet_chars                           read: an_inbox_search...
+
+Draft and send (test_mp_send_draft, test_mp_limits)
+D1   a draft is also sent over SMTP                                                  send_draft: a_draft_is_appended_to_drafts_once...
+D2   a draft is appended without \Draft, or to INBOX / Sent instead of Drafts         send_draft: a_draft_is_kept_as_a_draft_and_is_listed_and_read_back
+D3   a draft has no Message-ID (the id it gives is then not the appended message's)  send_draft: a_draft_is_appended...; same_id_read_back
+D4   the id a draft or send gives is the UID, the APPENDUID or an invented token     send_draft: ..._by_the_id_it_gave; a_send_goes_over_smtp...
+D5   a send also APPENDs a copy to Sent (a duplicate of the one Bridge saves)        send_draft: a_send_saves_nothing_itself...
+D6   RCPT TO omits cc, or adds Bcc / the sender, or sends a Bcc header               send_draft: a_send_goes_over_smtp_from_the_mailbox...
+D7   MAIL FROM is the first recipient or the connection label, not the mailbox's address   send_draft: same; gate: a_person_with_two_proton_mailboxes...
+D8   a reply has no In-Reply-To / References, or names the UID                       send_draft: a_reply_draft_is_threaded...; a_reply_is_threaded...
+D9   a reply to an id that is nothing is sent unthreaded                              send_draft: a_reply_to_nothing_is_not_found
+D10  a line break in subject, to, cc or reply_to reaches the headers or the envelope  send_draft: a_line_break_in_a_header_value...
+D11  non-ASCII subject or body is mangled (ASCII, errors ignore)                      send_draft: text_that_is_not_ascii_arrives_as_written
+D12  a send with no recipient reaches the server                                      send_draft: a_send_with_no_recipient_is_refused
+D13  a refused recipient (550) answers ok, or saves anyway                            send_draft: a_recipient_the_server_refuses...
+D14  the body or recipient limits not enforced for Proton (limits live in tools; a Proton path that bypasses mail_args)   limits: *
+D15  SMTP user or password of another account                                        gate: a_person_with_two_proton_mailboxes...; errors: a_login_that_works_is_made_with...
+
+Labels and moves (test_mp_label)
+L1   adding a label moves the message (it leaves INBOX)                               label: adding_a_label_copies...
+L2   removing a label removes every copy, the folder's too                           label: removing_a_label_deletes_that_copy_only
+L3   a folder move copies (the INBOX copy stays)                                      label: moving_to_the_archive...; each_move...
+L4   a folder move also moves the label copies out of Labels/                         label: moving_to_the_archive_takes_it_out_of_the_inbox_and_leaves_its_labels
+L5   an unknown label is created (CREATE) instead of refused                         label: a_label_that_is_none_of_the_mailboxs_refuses_the_call_and_creates_nothing
+L6   a folder or path (inbox, Trash, Labels/School, ../Trash) taken as a label        label: a_name_that_is_a_folder_or_a_path_is_not_a_label
+L7   no all-or-nothing: earlier targets applied before a later one is found wrong     label: one_message_whose_sender...; an_id_that_is_no_message...
+L8   the sender/subject check skipped, or exact-match only (a prefix refused)         label: one_message_whose_sender...; a_target_that_gives_the_start...
+L9   unread inverted                                                                   label: unread_sets_and_clears_the_read_state
+L10  trash is deleted for good (STORE \Deleted + EXPUNGE, or DELETE)                  label: nothing_is_deleted_for_good; each_move...
+L11  `changed` count wrong (counts labels, not messages)                              label: adding_a_label_copies...; one_call_labels_several_messages
+L12  an id resolved in the wrong folder copy (the label copy moved instead of the folder copy)   label: moving_to_the_archive...
+L13  a label both added and removed applied (add then remove)                         label: a_label_both_added_and_removed_changes_nothing
+
+Outside and the gate (test_mp_held, test_mp_gate)
+O1   mail_read or mail_search of a Proton mailbox declares outside false (tools/mail.py)  held: the_read_tools_of_a_proton_mailbox_declare_outside...
+O2   a change after a read is run, not held, for a Proton mailbox                     held: a_change_after_reading_proton_mail_is_held
+O3   a held send runs twice, or with arguments other than the stored ones             held: a_held_send_runs_once...
+O4   a kept Proton mailbox offered on a shared channel; a shared one changed with no speaker  gate: *
+O5   the owner's login not used for a shared mailbox (the speaker's id opens it)       gate: a_shared_mailbox_is_read_by_any_member...
+
+Logs (test_mp_logs)
+G1   mail.call carries the address, subject, query, label or sender                    logs: no_log_line_carries...
+G2   a failure logs the server's reply text (the fake echoes the recipient and a secret word)   logs: same
+G3   the IMAP/SMTP library's debug output (LOGIN line, password) reaches the logs      logs: no_log_line_carries_a_password...
+G4   mail.call missing for a failed call, or without status/count/duration_ms          logs: each_call_logs...; a_failed_call_logs...
+
+Equivalent or untestable here (and why)
+Q1   which IMAP commands are used for a label (COPY vs APPEND of the fetched message): the suite reads the end state in the fake Bridge, so both pass; a copy by APPEND would lose the shared read state in a real Bridge, which the fake models (flags are the message's), so a change of unread by a re-APPEND is caught by label: unread_*
+Q2   a timeout on a server that never answers: the suite does not wait out `timeout_s` (20 s); a test would be slow. Left for the reconciler's own directed test with a small `timeout_s`
+Q3   TLS: the fake serves plain, implicit TLS or STARTTLS (FakeBridge(tls=...), controls in test_mp_fake_bridge) but the contract tests run plain; pinning by fingerprint is part 4's record and the build's choice (assumption G3)
+Q4   routing between Gmail's and Proton's adapters by connection kind: wire_adapter registers the Proton adapter alone; a router's own tests are the reconciler's

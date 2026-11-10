@@ -1,0 +1,97 @@
+MUTANTS.txt: plausible wrong implementations of the tainted turn's wrapper (`ashley.tools.outside.Outside`, its
+`HeldCalls` payload and the `OUTSIDE` topic, `carry_out`), written blind from the design, then applied one at a time to the
+built code and run against app/tests/taint_ask_blind and app/tests/outside_ask, each restored after.
+One line each: id, status, where, mutation -- the first test that failed. A variant id (M26b) is a second way to make the
+same wrong choice. 'survived then killed' means the blind suite alone passed it and a directed test in
+tests/outside_ask/test_outside_directed.py now fails it. A line marked (translated) is the blind mutant restated for the
+built code, which differs from what the blind author assumed.
+
+M01   killed                outside.py                   taint read only from the result's spec, ignoring ToolResult.outside  -- test_ta_taint.py::test_a_result_that_says_outside_false_does_not_taint_though_its_spec_is_outside
+M02   killed                outside.py                   taint read only from ToolResult.outside, ignoring the spec  -- test_ta_hold.py::test_a_tool_that_takes_agreement_is_refused_after_a_read_taints_the_turn
+M03   killed                outside.py                   a result outside=False still taints when its spec is outside  -- test_ta_taint.py::test_a_result_that_says_outside_false_does_not_taint_though_its_spec_is_outside
+M04   killed                model.py                     ToolSpec.outside defaults to false (a new tool does not taint)  -- test_ta_taint.py::test_a_tool_whose_spec_says_nothing_about_outside_taints_by_default
+M05   killed                outside.py                   a name outside the catalogue does not taint  -- test_ta_taint.py::test_an_unknown_name_taints_the_turn_it_is_called_in
+M06   killed                outside.py                   a name outside the catalogue is run in a tainted turn instead of held  -- test_ta_taint.py::test_an_unknown_name_in_a_tainted_turn_is_a_change_and_is_held
+M07   survived then killed  landing.py                   origin dropped when the Landing builds Outside (translated: Landing, not Outside, joins origin and checkpoint taint)  -- test_outside_directed.py::test_a_landing_starts_tainted_by_its_origin_or_by_its_checkpoint[inbound2-None-held2]
+M07b  killed                outside.py                   origin taint ignored (only reads taint)  -- test_ta_carry.py::test_carry_out_is_a_change_that_agrees_and_takes_no_arguments
+M08   survived then killed  landing.py                   the `watch` origin does not count (translated: `webhook` no longer exists)  -- test_outside_directed.py::test_a_landing_starts_tainted_by_its_origin_or_by_its_checkpoint[inbound1-None-held1]
+M09   killed                outside.py                   taint decided once at construction, never updated by a read  -- test_ta_hold.py::test_a_tool_that_takes_agreement_is_refused_after_a_read_taints_the_turn
+M10   killed                outside.py                   (translated) the taint is read as of the last catalogue listing, not at each call  -- test_ta_hold.py::test_a_tool_that_takes_agreement_is_refused_after_a_read_taints_the_turn
+M11   killed                outside.py                   a later untainting result clears the taint  -- test_ta_taint.py::test_a_taint_never_clears_a_later_clean_read_leaves_the_turn_tainted
+M12   killed                outside.py                   Steps.tainted called after the result is returned / fire and forget  -- a test errors (ERROR    asyncio:base_events.py:1890 Task exception was neve)
+M13   killed                outside.py                   Steps.tainted called on every tainting read, not the first only  -- test_outside_calls.py::test_the_taint_is_recorded_once_and_before_the_result_returns
+M14   killed                outside.py                   a failure of Steps.tainted is swallowed and the result returned  -- test_ta_taint.py::test_a_runner_that_loses_the_turn_at_the_taint_raises_and_the_result_is_not_returned
+M15   survived then killed  landing.py                   the checkpoint taint a Landing resumes with is ignored (translated: seam is Landing)  -- test_outside_directed.py::test_a_landing_starts_tainted_by_its_origin_or_by_its_checkpoint[inbound3-look_up-held3]
+M16   killed                outside.py                   the wrapper holds only what irreversible.json names  -- test_ta_carry.py::test_carry_out_is_a_change_that_agrees_and_takes_no_arguments
+M17   killed                outside.py                   a change before the taint is held as well  -- test_ta_block.py::test_a_turn_that_held_nothing_has_no_block
+M18   killed                outside.py                   reads are held in a tainted turn  -- test_ta_block.py::test_a_tainted_turn_that_only_read_has_no_block
+M19   killed                outside.py                   the held call also runs (held and run)  -- test_ta_hold.py::test_where_the_reply_does_not_reach_the_person_alone_the_change_is_refused_not_held[unknown_speaker]
+M20   killed                outside.py                   stored arguments are a summary or stringified, not the arguments  -- test_ta_hold.py::test_a_turn_resumed_after_a_kill_does_not_double_a_call_it_asks_again
+M21   killed                outside.py                   each call replaces the turn's earlier held call (no accumulation)  -- test_ta_block.py::test_the_block_names_every_held_tool_and_every_argument_in_full
+M22   killed                outside.py                   calls stored in reverse or sorted order  -- test_ta_block.py::test_the_block_lists_the_calls_in_the_order_they_were_asked_for
+M23   killed                outside.py                   identical calls are added twice  -- test_ta_hold.py::test_a_turn_resumed_after_a_kill_does_not_double_a_call_it_asks_again
+M24   killed                outside.py                   duplicate compared by tool name only  -- test_ta_hold.py::test_calls_up_to_max_calls_are_held_and_the_next_is_refused_unstored
+M25   killed                outside.py                   duplicate compared by arguments only  -- test_ta_hold.py::test_the_same_arguments_to_another_tool_is_another_call
+M26   killed                outside.py                   max_calls not enforced / off by one  -- test_ta_hold.py::test_calls_up_to_max_calls_are_held_and_the_next_is_refused_unstored
+M26b  killed                outside.py                   max_calls not enforced / off by one  -- test_ta_hold.py::test_calls_up_to_max_calls_are_held_and_the_next_is_refused_unstored
+M27   killed                outside.py                   max_argument_chars not enforced, or the call is truncated and held  -- test_ta_block.py::test_a_refused_call_is_not_in_the_block
+M27b  killed                outside.py                   max_argument_chars not enforced, or the call is truncated and held  -- test_ta_block.py::test_a_refused_call_is_not_in_the_block
+M28   killed                outside.py                   a refused long call wipes the calls already held  -- test_ta_block.py::test_a_refused_call_is_not_in_the_block
+M29   killed                outside.py                   a later tainted turn appends to the earlier turn's proposal instead of replacing it  -- test_ta_hold.py::test_a_later_tainted_turns_first_call_replaces_the_earlier_pending_proposal
+M30   killed                proposal_payloads.py         OUTSIDE scoped to the conversation (not the person)  -- test_ta_carry.py::test_it_is_offered_in_another_conversation_of_the_same_person
+M31   killed                postgres_proposals.py        OUTSIDE keyed on household, so Sam replaces Alana's  -- test_ta_hold.py::test_one_person_pending_set_per_person
+M32   killed                outside.py                   held in a shared room or on a device instead of refused  -- test_ta_hold.py::test_the_refusals_are_logged_with_their_reasons_and_no_arguments
+M33   killed                standing.py                  (translated) a turn with no speaker gets a standing for person 0  -- test_ta_hold.py::test_where_the_reply_does_not_reach_the_person_alone_the_change_is_refused_not_held[unknown_speaker]
+M34   killed                outside.py                   an agrees tool is allowed when tainted  -- test_ta_hold.py::test_a_tool_that_takes_agreement_is_refused_in_a_tainted_turn_and_never_held
+M35   killed                outside.py                   an agrees tool is held as a change instead of refused  -- test_ta_hold.py::test_a_tool_that_takes_agreement_is_refused_in_a_tainted_turn_and_never_held
+M36   killed                outside.py                   an agrees tool refused in an untainted turn too  -- test_ta_hold.py::test_a_tool_that_takes_agreement_runs_in_an_untainted_turn
+M37   killed                outside.py                   the held proposal's turn id is the previous turn's or zero  -- test_ta_block.py::test_the_block_names_every_held_tool_and_every_argument_in_full
+M38   killed                outside.py                   the block is written from the model's text, or from the tool's result  -- test_ta_block.py::test_the_block_names_every_held_tool_and_every_argument_in_full
+M39   killed                outside.py                   the block shows tool names without arguments, or truncates them  -- test_ta_block.py::test_the_block_names_every_held_tool_and_every_argument_in_full
+M39b  killed                outside.py                   the block shows tool names without arguments, or truncates them  -- test_ta_block.py::test_the_block_names_every_held_tool_and_every_argument_in_full
+M40   killed                outside.py                   a block written for a turn that held nothing  -- test_ta_block.py::test_a_turn_that_held_nothing_has_no_block
+M41   killed                outside.py                   the block lists refused calls  -- test_ta_block.py::test_a_refused_call_is_not_in_the_block
+M42   killed                outside.py                   the block built from the live turn's memory, not the store (a resume has none)  -- test_ta_block.py::test_a_resumed_turn_writes_the_same_block_from_what_is_stored
+M43   killed                outside.py                   carry_out always offered  -- test_ta_carry.py::test_it_is_not_offered_where_the_reply_does_not_reach_them_alone[unknown_speaker]
+M44   killed                proposal_gate.py             proposal gate lets the proposing turn agree (<= becomes <)  -- test_ta_carry.py::test_it_is_not_offered_in_the_turn_that_proposed
+M45   killed                postgres_proposals.py        offered to any person of the household  -- test_ta_carry.py::test_it_is_not_offered_to_another_person
+M46   killed                outside.py                   offered in a shared room, on a device or with an unknown speaker  -- test_ta_carry.py::test_it_is_not_offered_where_the_reply_does_not_reach_them_alone[shared_room]
+M47   killed                standing.py                  offered to a turn the household started (author household, taint null)  -- test_ta_carry.py::test_it_is_not_offered_to_a_turn_the_household_started
+M48   killed                outside.py                   ttl ignored  -- test_ta_carry.py::test_it_is_not_offered_once_the_proposal_has_lapsed
+M49   killed                postgres_proposals.py        ttl one conversation only (cross-conversation agreeing lost)  -- test_ta_carry.py::test_it_is_offered_in_another_conversation_of_the_same_person
+M50   killed                outside.py                   carry_out runs the arguments the model gives  -- test_ta_carry.py::test_the_model_cannot_change_what_runs_by_giving_arguments
+M51   killed                outside.py                   carry_out runs the calls in reverse / unordered  -- test_ta_carry.py::test_it_runs_each_held_call_with_its_stored_arguments_in_order
+M52   killed                outside.py                   calls rerun under their old ids  -- test_ta_carry.py::test_the_calls_run_under_new_ids
+M53   killed                outside.py                   proposal peeked and not taken (runs twice across turns)  -- test_ta_carry.py::test_the_proposal_is_consumed
+M54   killed                outside.py                   take after running, not before (a race runs it twice)  -- test_ta_carry.py::test_two_turns_agreeing_at_once_run_the_calls_once_between_them
+M55   killed                outside.py                   carry_out in one turn re-runs on a second call  -- test_ta_carry.py::test_calling_it_twice_in_one_turn_runs_the_calls_once
+M56   survived then killed  outside.py                   a tool not offered aborts the rest, or runs anyway  -- test_outside_directed.py::test_a_held_call_the_source_no_longer_offers_does_not_stop_the_ones_after_it
+M56b  killed                outside.py                   a tool not offered aborts the rest, or runs anyway  -- test_ta_carry.py::test_a_tool_the_turn_does_not_offer_is_not_run_but_the_rest_are
+M57   killed                outside.py                   results of agreed calls never taint the agreeing turn  -- test_ta_carry.py::test_a_carried_out_call_that_returns_outside_words_taints_the_agreeing_turn
+M58   killed                outside.py                   the agreeing turn is always tainted after carry_out  -- test_ta_carry.py::test_a_carried_out_call_that_returns_nothing_outside_leaves_the_turn_untainted
+M59   killed                outside.py                   carry_out's own result outside always false / null  -- test_ta_carry.py::test_a_carried_out_call_that_returns_outside_words_taints_the_agreeing_turn
+M60   killed                outside.py                   carry_out spec takes a parameter, or is marked a read  -- test_ta_carry.py::test_carry_out_is_a_change_that_agrees_and_takes_no_arguments
+M61   killed                outside.py                   carry_out hides the source's own tools  -- test_ta_carry.py::test_carry_out_is_a_change_that_agrees_and_takes_no_arguments
+M62a  killed                outside.py                   (L) carry_out offered to a turn tainted by origin  -- test_ta_launder.py::test_a_read_that_taints_withdraws_the_offer
+M62b  killed                standing.py                  (L) carry_out offered to a turn tainted by origin  -- test_outside_landing.py::test_only_an_untainted_person_turn_that_reaches_the_speaker_alone_may_agree
+M62   killed                outside.py,standing.py       (L) carry_out offered to a turn tainted by origin  -- test_ta_launder.py::test_it_is_not_offered_to_a_turn_tainted_by_its_origin[watch]
+M63   killed                outside.py                   (L) carry_out callable in an origin-tainted turn though not offered  -- test_ta_launder.py::test_calling_it_after_a_taint_runs_nothing_and_keeps_the_proposal
+M63b  killed                outside.py,standing.py       (L) carry_out callable in an origin-tainted turn though not offered  -- test_ta_launder.py::test_calling_it_in_an_origin_tainted_turn_runs_nothing_and_keeps_the_proposal[watch]
+M64   killed                outside.py                   (L) offer decided at the start of the turn, so a read that taints does not withdraw it  -- test_ta_launder.py::test_a_read_that_taints_withdraws_the_offer
+M65   killed                outside.py                   (L) callable after a taint (offer checked in the catalogue only)  -- test_ta_launder.py::test_calling_it_after_a_taint_runs_nothing_and_keeps_the_proposal
+M66   killed                outside.py                   (L) resumed tainted turn offered it  -- test_ta_carry.py::test_carry_out_is_a_change_that_agrees_and_takes_no_arguments
+M67   killed                outside.py                   (L) a refused carry_out in a tainted turn consumes the proposal  -- test_ta_launder.py::test_calling_it_in_an_origin_tainted_turn_runs_nothing_and_keeps_the_proposal[watch]
+M68   killed                outside.py                   (L) the refusal in a tainted turn is not logged, or logged with another reason  -- test_ta_launder.py::test_the_refusal_is_logged_as_agreeing_while_tainted
+M68b  killed                outside.py                   (L) the refusal in a tainted turn is not logged, or logged with another reason  -- test_ta_launder.py::test_the_refusal_is_logged_as_agreeing_while_tainted
+M69   killed                outside.py                   (L) carry_out held as a change by a tainted turn  -- test_ta_launder.py::test_calling_it_in_an_origin_tainted_turn_runs_nothing_and_keeps_the_proposal[watch]
+M70   killed                outside.py                   (L) a new tainted set is appended to the pending one, so agreeing runs calls the person was not shown last  -- test_ta_hold.py::test_a_later_tainted_turns_first_call_replaces_the_earlier_pending_proposal
+M71   killed                proposal_gate.py             same patch as M44: the proposing turn can agree to its own set  -- test_ta_carry.py::test_it_is_not_offered_in_the_turn_that_proposed
+M72a  killed                outside.py                   held / refused / carried_out / tainted log arguments or results  -- test_ta_hold.py::test_each_held_call_is_logged_with_the_count_so_far
+M72b  killed                outside.py                   held / refused / carried_out / tainted log arguments or results  -- test_ta_hold.py::test_the_refusals_are_logged_with_their_reasons_and_no_arguments
+M72c  survived then killed  outside.py                   held / refused / carried_out / tainted log arguments or results  -- test_outside_directed.py::test_carrying_out_logs_no_result_text
+M73   survived then killed  outside.py                   outside.held calls field is the total of the proposal's id, not the count  -- test_outside_directed.py::test_the_held_log_counts_the_calls_not_the_proposal_it_stored
+
+Equivalent: none judged. The blind author's M07 and M15 (taint joined inside Outside) are one patch there, `self._tainted = None`, M07b/M66; the built Landing joins them, so M07 and M15 are restated at Landing.
+M30 and M49 reach the same read path (the person scope) and were killed by the same cross-conversation tests.
+Layered defences: M62 and M63 each need two patches to launder (the standing's `agreeing` and `Outside`'s own taint check); M62a, M62b, M63 and M63b are the single-layer and double-layer forms, all killed.
+Known gaps (no test): a read and a change in one ROUND through tool_loop (M10 is checked only at the Outside seam), the classification gate, and a kill between `starting` and the run of carry_out.

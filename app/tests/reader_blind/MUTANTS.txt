@@ -1,0 +1,68 @@
+Each mutant was one wrong implementation planted in the reader, Point path, pointers, results or tool code, run against
+the area's files of this directory (-x -n 2), then the source restored from the text the script read
+(mutate_reader.py and mutants_reader.py under ~/scratch/ashley/workshop). 63 planted: 60 killed, 3 equivalent or unspecified.
+No defect found in the branch.
+
+holds-start-le                           RED
+holds-end-lt                             RED
+holds-start-neg                          RED
+holds-paragraph-neg                      RED
+holds-paragraph-bound                    RED
+locate-first-of-many                     RED
+locate-nonoverlapping                    SURVIVED first run; killed by test_overlapping_occurrences_are_more_than_one
+locate-empty-allowed                     RED
+locate-end-off                           RED
+locate-index-zero                        RED
+page-extra-fields                        RED
+page-title-unchecked                     RED
+page-text-unchecked                      RED
+page-url-unchecked                       RED
+wellformed-empty-rejected                RED
+wellformed-everything                    RED
+wellformed-whitespace-empty              EQUIVALENT (unspecified): the contract says an empty body; a whitespace-only body is not stated
+paragraphs-splitlines                    RED
+body-ensure-ascii                        EQUIVALENT: escaping changes the stored bytes, not the page a body means
+decide-point-stale-before-kind           RED
+decide-point-skips-stale                 RED
+decide-point-clear-checked               RED
+decide-point-draft-accepts               RED
+decide-point-unknown-kind-as-not-reader  RED
+decide-point-effect-wrong-version        RED
+decide-point-effect-base-version         EQUIVALENT: a Point reaching the effect has base_version == piece.version (stale_base is decided first)
+decide-point-effect-drops-passage        RED
+decide-undo-point-allowed                RED
+decide-reader-unvalidated                RED
+decide-reader-wrong-reason               RED
+rows-pointers-oldest                     RED
+rows-pointers-keep-cleared               RED
+rows-pointers-any-outcome                RED
+rows-pointers-seq-wrong                  RED
+rows-last-change-counts-point            SURVIVED first run; killed by test_a_point_does_not_move_the_benchs_last_change_but_an_edit_does
+reactions-count-point                    RED
+undo-walk-point-counts                   RED
+view-pointer-ignores-version             RED
+view-pointer-start-end                   RED
+view-reader-any-kind                     SURVIVED first run; killed by test_a_note_whose_text_happens_to_be_a_page_body_has_no_reader
+route-clear-by-her                       RED
+route-clear-base-zero                    RED
+tool-point-old-version                   RED
+tool-point-empty-quote-locates           RED
+tool-point-passage-none                  RED
+tool-point-no-bad-arguments              RED
+tool-replace-reader-allowed              RED
+ref-fitted-no-cut                        RED
+ref-fitted-overcut                       RED
+ref-fitted-cut-front                     RED
+ref-page-title-dropped                   RED
+ref-page-url-wrong                       RED
+ref-unread-as-unknown                    RED
+ref-unread-allowed                       RED
+ref-body-with-result-allowed             RED
+view-reader-body-raw-json                RED
+view-reader-no-url                       RED
+view-reader-title-url                    RED
+pages-keep-cut                           RED
+pages-answer-uncut                       RED
+pages-keep-no-title                      RED
+results-keep-wrong-key                   RED
+results-page-any                         RED

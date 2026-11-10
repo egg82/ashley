@@ -1,0 +1,33 @@
+Guesses of the blind sort suite (part 8). G1-G2 live in mail_sort_blind_support.py, G3-G5 and G9 in
+mail_sort_blind_turn_support.py, G6-G8 in mail_sort_blind_arming_support.py; a reconciler changes the helper, not the tests.
+The suite runs the real PostgresWatches store and the real `watches` job (database tests), the real watch_turn.inbound and
+Landing/Outside with MailTools over an in-memory mail port (turn tests), and the real WatchTools/ReminderTools (arming).
+
+G1  `brief` (str | None, default None), `standing` (bool, default False) and `grant` (frozenset[str], default empty) are
+    fields of both ashley.watches.model.Arm and Watch, built by keyword; a test reads a grant as set(watch.grant).
+    Rests on: "A watch gains `brief` ... and `standing`", "A watch gains `grant`: a set of label names".
+G2  A standing watch's `hours` is the span it was armed for (expires_at at arming minus now). A read that succeeded
+    (Baseline, Quiet or Woke) sets expires_at to now + hours; Failed moves nothing; arming again with other hours changes it.
+    Rests on: "expires_at moves forward by `hours` on every successful read ... ends only when disarmed or after its source
+    has failed for `hours`". Open: whether `hours` is a stored column or derived; the suite only sees the end it gives.
+G3  watch_turn.inbound(wake_id, watch, wake, on_bench) carries the watch's grant to the turn however it likes; the turn's
+    tool source is Landing(inbound, (conversation, turn), limits, tainted). A resumed turn is the same Inbound through
+    channels.checkpoint dumps/loads (which must carry the grant) and Landing(..., tainted="watch").
+    Rests on: "In that watch's woken turn, `Outside` runs a call the grant covers" and "What survives a failover".
+G4  A label call is mail_label with the shipped arguments (mailbox, messages [{id, from, subject}], add, remove, folder,
+    unread). The watch's mailbox is its `target`; "the message is in the watch's mailbox" is read as the call's `mailbox`
+    argument being that mailbox. A folder move (trash, archive) is "moving/archiving" and held (Rejected list).
+G5  A held call returns outside_config.load().held with no error and does not reach the port; a run call reaches the
+    Mailbox port once with the call's ids and labels.
+G6  `watch` takes `brief` (string), `standing` (boolean) and `grant` (list of strings) beside its other arguments; a
+    malformed one is bad_arguments and arms and proposes nothing. A watch whose tools act is proposed (armed false) and its
+    result names every granted label; arm_reminder of a later person turn arms it with brief, standing, grant and the tools
+    as proposed. Rests on: "shown in the arming proposal and agreed with it, in a person's untainted turn like any
+    agreement".
+G7  A grant with no tool that acts is either not armed or armed with an empty grant.
+G8  MailInbox.available(household_id, person_id) is True when ConnectionResources.usable gives the person a mailbox and False
+    when it gives none. Rests on: part 7 left `available` False "until now".
+G9  The brief reaches her in Inbound.note, never in Inbound.text.
+    Rests on: "brief (what this watch's turn is for, as a reminder's brief is: people's data, never logged)".
+
+Not pinned (spec silent): see the foot of mutants.txt, U1-U6.

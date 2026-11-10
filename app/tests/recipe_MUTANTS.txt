@@ -1,0 +1,20 @@
+Planted wrong implementations, one at a time, each applied exactly once and restored from the text read before planting,
+against the recipe and page-browser suites (test_recipe_scaling.py, test_recipe_ld.py, test_page_browser_fallback.py,
+test_bench_recipe.py, test_bench_open_rows.py, test_looks_page_read.py, test_bench_recipe_wire.py,
+test_bench_video_page.py, test_page_piece.py, and the web's recipeCard.test.ts). All 22 were killed; no equivalent
+mutant was found.
+
+quantity.py   a bracketed metric equivalent left unscaled; a number joined by a hyphen (a size) read as an amount
+recipe.py     factor inverted (yield over headcount); a yield range's top taken as the count
+recipe_ld.py  the data's own `url` trusted over the address read; `@graph` not walked
+page_reader   the browser asked for any failing status, not only a refusing one; a browser's non-2xx answer taken as a page
+bench_recipe_ref  a body she wrote accepted; a page with no recipe not refused; `serves` dropped on an add; a result
+              whose page was not read accepted
+bench_page    a site piece's read page not kept; the page numbered before the read, so a failed read gives a number
+bench_view    a site piece's read without its `result` number
+bench_now     rows of a piece written after outside words listed; asked rows left out
+pod_spec      a read pod without the fetch label
+shooter       the read document not cut at `read_bytes`
+bench_recipe  the wire's `shown` given the page's text instead of the scaled line
+pages         a read page's recipe not given first
+recipeCard.ts every unscaled line marked "as written", even when nothing was scaled

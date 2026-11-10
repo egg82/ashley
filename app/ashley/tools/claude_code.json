@@ -1,0 +1,5 @@
+{
+  "read_lines": 80,
+  "read_lines_max": 400,
+  "prompt_chars": 8000
+}

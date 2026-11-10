@@ -1,0 +1,34 @@
+Planted wrong implementations, run against this directory (each reverted after). 31 plants: 30 red, 1 equivalent.
+
+red  decide: window check one tight (seq - W < command.seq)
+red  decide: window check one loose (seq - W - 1 <= command.seq)
+red  decide: window check removed
+red  decide: window taken from recent_commands
+red  service: undo context loaded only for seq > next_seq - W
+EQUIV service: undo context loaded for seq >= next_seq - W - 1. decide refuses an Undo outside the window itself, so
+     the extra context is never read; no behaviour differs.
+red  read: undo_next walks recent_commands instead of the window
+red  read: undo_next walks window + 1
+red  read: undo_next walks window - 1
+red  read: undo_next walks the whole log
+red  steps: returned newest first
+red  steps: oldest N instead of newest N
+red  steps: latest + 1
+red  steps: not scoped to the bench
+red  steps: refusals reported as accepted
+red  steps: Run flag dropped
+red  prune: highest-id run not kept (survived first; directed test: the_highest_id_run_is_kept_when_it_is_neither...)
+red  prune: highest run that ran not kept
+red  prune: the run being finished not kept
+red  prune: in-flight runs deleted
+red  prune: not scoped to the piece
+red  prune: not scoped to the bench
+red  prune: chat-turn runs deleted too
+red  prune: "ran" restricted to exit code 0
+red  prune: "ran" widened to any finished outcome
+red  prune: two newest ran runs kept
+red  prune: two newest runs kept
+red  prune: runs.pruned logged when nothing went
+red  prune: runs.pruned count wrong (survived first; directed test: one_finish_can_prune_several_runs)
+red  prune: runs.pruned piece field holds the bench id (survived first; log test now uses bench 3, piece 2)
+red  prune: pruning never done

@@ -1,0 +1,7 @@
+**/__pycache__
+**/node_modules
+build
+tests
+tools
+ci
+.pytest_cache

@@ -1,0 +1,7 @@
+{
+  "claim_s": 15,
+  "poll_s": 5,
+  "max_attempts": 3,
+  "batch": 10,
+  "unavailable_retry_s": 120
+}

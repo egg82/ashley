@@ -1,0 +1,6 @@
+{
+  "max_pieces": 50,
+  "title_max_chars": 120,
+  "recent_commands": 50,
+  "undo_window": 200
+}

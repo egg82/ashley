@@ -1,0 +1,113 @@
+MUTANTS: planted wrong implementations of the warm look pod, each run against app/tests/warm_look_blind.
+Each line: id, file, what is wrong, verdict. KILLED = a test fails; SURVIVED-EQUIVALENT = no test can tell it from
+the original, with the reason; M00 and C14 are controls and must survive.
+
+M00  app/ashley/looks/warm_looker.py  control: no behaviour change; must survive  -> SURVIVED (control: no behaviour change)
+M01  app/ashley/looks/warm_looker.py  warm looker says it cannot draw  -> KILLED
+M02  app/ashley/looks/warm_looker.py  503 is not named busy (falls to the generic http_ reason)  -> SURVIVED EQUIVALENT: without the 503 branch the reply falls to the generic non-200 branch, which falls back the same way; only the logged reason string differs, and the contract names no reason strings
+M03  app/ashley/looks/warm_looker.py  a non-200 reply is read as a picture  -> SURVIVED EQUIVALENT: a non-200 reply without a marked line is read by `picture` as no_picture and falls back anyway; only a non-200 reply carrying a picture would differ, which the pod never sends
+M04  app/ashley/looks/warm_looker.py  only a refused connection falls back  -> KILLED
+M05  app/ashley/looks/warm_looker.py  too_large is retried in a pod of its own  -> KILLED
+M06  app/ashley/looks/warm_looker.py  not_ready is retried  -> KILLED
+M07  app/ashley/looks/warm_looker.py  every failure is the look's answer  -> KILLED
+M08  app/ashley/looks/warm_looker.py  no failure is the look's answer  -> KILLED
+M09  app/ashley/looks/warm_looker.py  connect wait is the whole deadline  -> KILLED
+M10  app/ashley/looks/warm_looker.py  a look is cut off after the connect wait  -> KILLED
+M11  app/ashley/looks/warm_looker.py  wrong path  -> KILLED
+M12  app/ashley/looks/warm_looker.py  wrong address posted  -> KILLED
+M13  app/ashley/looks/warm_looker.py  pod of its own gets another name  -> KILLED
+M14  app/ashley/looks/warm_looker.py  fallback not logged  -> KILLED
+M15  app/ashley/looks/warm_looker.py  bytes not counted  -> KILLED
+M16  app/ashley/looks/warm_looker.py  answer not logged  -> KILLED
+M17  app/ashley/looks/warm_looker.py  transport error text (may hold the address) is logged  -> KILLED
+M18  app/ashley/looks/warm_looker.py  reply body logged  -> KILLED
+M19  app/ashley/looks/warm_looker.py  an answer becomes a fallback  -> KILLED
+M20  app/ashley/looks/warm_looker.py  pod of its own asked twice  -> KILLED
+M21  app/ashley/looks/warm_looker.py  an answer is retried in a pod of its own (first clause wins)  -> KILLED
+M22  app/ashley/looks/warm_looker.py  picture truncated  -> KILLED
+P01  app/ashley/looks/warm_pod.py  pod never created  -> KILLED
+P02  app/ashley/looks/warm_pod.py  a Succeeded pod is kept  -> KILLED
+P03  app/ashley/looks/warm_pod.py  a Failed pod is kept  -> KILLED
+P04  app/ashley/looks/warm_pod.py  replaces a pod of the same spec  -> KILLED
+P05  app/ashley/looks/warm_pod.py  spec change ignored  -> KILLED
+P06  app/ashley/looks/warm_pod.py  boundary: exactly max age replaced  -> SURVIVED EQUIVALENT: age is a float of seconds measured against a moving wall clock; no test can place a pod at exactly warm_max_age_s
+P07  app/ashley/looks/warm_pod.py  lives twice as long  -> KILLED
+P08  app/ashley/looks/warm_pod.py  young pods replaced  -> KILLED
+P09  app/ashley/looks/warm_pod.py  a pod being deleted is deleted again  -> KILLED
+P10  app/ashley/looks/warm_pod.py  no quick re-check after a delete  -> KILLED
+P11  app/ashley/looks/warm_pod.py  quick re-check after create  -> KILLED
+P12  app/ashley/looks/warm_pod.py  digest covers the image only  -> KILLED
+P13  app/ashley/looks/warm_pod.py  digest covers image and cpu only  -> KILLED
+P14  app/ashley/looks/warm_pod.py  digest differs per holder  -> KILLED
+P15  app/ashley/looks/warm_pod.py  no quick re-check  -> KILLED
+P16  app/ashley/looks/warm_pod.py  a failed call ends the keeper  -> KILLED
+P17  app/ashley/looks/warm_pod.py  keeper stops after one failure  -> KILLED
+P18  app/ashley/looks/warm_pod.py  adoption never logged  -> KILLED
+P19  app/ashley/looks/warm_pod.py  ended and aged share a reason  -> KILLED
+P20  app/ashley/looks/warm_pod.py  spec change and ended share a reason  -> KILLED
+P21  app/ashley/looks/warm_pod.py  wrong pod deleted  -> KILLED
+P22  app/ashley/looks/warm_pod.py  wrong namespace  -> KILLED
+P23  app/ashley/looks/warm_pod.py  no annotation  -> KILLED
+P24  app/ashley/looks/warm_pod.py  age always zero  -> KILLED
+P25  app/ashley/looks/warm_pod.py  manifest (with prefix) logged  -> KILLED
+P26  app/ashley/looks/warm_pod.py  replace not logged  -> KILLED
+P27  app/ashley/looks/warm_pod.py  create even if present  -> KILLED
+P28  app/ashley/looks/warm_pod.py  recreates in the same tick as the delete  -> KILLED
+S01  app/ashley/looks/shooter.py  no prefix check  -> KILLED
+S02  app/ashley/looks/shooter.py  prefix anywhere in the address  -> KILLED
+S03  app/ashley/looks/shooter.py  no gate  -> KILLED
+S04  app/ashley/looks/shooter.py  gate never released  -> KILLED
+S05  app/ashley/looks/shooter.py  busy is not 503  -> KILLED
+S06  app/ashley/looks/shooter.py  every GET is healthy  -> KILLED
+S07  app/ashley/looks/shooter.py  no body limit  -> KILLED
+S08  app/ashley/looks/shooter.py  any path is a look  -> KILLED
+S09  app/ashley/looks/shooter.py  tmp never cleared  -> KILLED
+S10  app/ashley/looks/shooter.py  clears what was there before  -> KILLED
+S11  app/ashley/looks/shooter.py  symlink to a directory followed  -> KILLED
+S12  app/ashley/looks/shooter.py  serve_one clears everything  -> KILLED
+S13  app/ashley/looks/shooter.py  browser failure escapes serve_one  -> KILLED
+S14  app/ashley/looks/shooter.py  browser never closed  -> KILLED
+S15  app/ashley/looks/shooter.py  not_ready reported as browser  -> KILLED
+S16  app/ashley/looks/shooter.py  too_large reported as browser  -> KILLED
+S17  app/ashley/looks/shooter.py  boundary: exactly max bytes refused  -> KILLED
+S18  app/ashley/looks/shooter.py  quality never steps down  -> KILLED
+S19  app/ashley/looks/shooter.py  quality can reach zero  -> KILLED
+S20  app/ashley/looks/shooter.py  ready wait in ms not s  -> KILLED
+S21  app/ashley/looks/shooter.py  no cut at max_height  -> KILLED
+S22  app/ashley/looks/shooter.py  shorter than the viewport  -> KILLED
+S23  app/ashley/looks/shooter.py  timeout answered 200  -> SURVIVED EQUIVALENT to the contract: it says nothing of the status when the browser thread does not answer in time; an empty 200 is read as no picture and falls back (end_to_end covers the fallback)
+S24  app/ashley/looks/shooter.py  reply before clearing  -> SURVIVED EQUIVALENT: one thread owns Playwright and takes the next look only after serve_one returns, so the order of reply and clear cannot be seen
+S25  app/ashley/looks/shooter.py  request lines to stderr  -> SURVIVED EQUIVALENT to the contract: the request line holds the method and path (`POST /look`), never the address, which is in the body
+S26  app/ashley/looks/shooter.py  address echoed back  -> KILLED
+S27  app/ashley/looks/shooter.py  non-string accepted  -> KILLED
+S28  app/ashley/looks/shooter.py  address altered  -> KILLED
+C01  app/ashley/looks/pod_spec.py  not in serve mode  -> KILLED
+C02  app/ashley/looks/pod_spec.py  does not restart  -> KILLED
+C03  app/ashley/looks/pod_spec.py  has a deadline  -> KILLED
+C04  app/ashley/looks/pod_spec.py  ready probe on the wrong path  -> KILLED
+C05  app/ashley/looks/pod_spec.py  wrong port  -> KILLED
+C06  app/ashley/looks/pod_spec.py  no warm label  -> KILLED
+C07  app/ashley/looks/pod_spec.py  no look label  -> KILLED
+C08  app/ashley/looks/pod_spec.py  writable root  -> KILLED
+C09  app/ashley/looks/pod_spec.py  service account token mounted  -> KILLED
+C10  app/ashley/looks/pod_spec.py  wrong ready wait  -> KILLED
+C11  app/ashley/looks/pod_spec.py  prefix without trailing slash  -> KILLED
+C12  app/ashley/looks/pod_spec.py  pod gives up a look after a second  -> KILLED
+C13  app/ashley/looks/pod_spec.py  host network  -> KILLED
+C14  app/ashley/looks/pod_spec.py  control-ish: harmless probe field  -> SURVIVED (control: a harmless probe field)
+L01  app/ashley/referee/etcd_lease.py  site lease shares the active site's key  -> KILLED
+L02  app/ashley/referee/etcd_lease.py  site lease is gated on the active site  -> KILLED
+L03  app/ashley/referee/etcd_lease.py  every site shares one key  -> KILLED
+L04  app/ashley/referee/lease.py  default run_on_site runs nothing  -> KILLED
+L05  app/ashley/wiring.py  keeper under the active-site lease  -> KILLED
+L06  app/ashley/wiring.py  keeper lease named otherwise  -> KILLED
+L07  app/ashley/wiring.py  keeper started for any looker  -> KILLED
+L08  app/ashley/wiring.py  keeper body ticks once  -> KILLED
+W01  app/ashley/wiring_sandbox.py  never warm  -> KILLED
+W02  app/ashley/wiring_sandbox.py  pod may open the whole app  -> KILLED
+W03  app/ashley/wiring_sandbox.py  looks sent to the app  -> KILLED
+W04  app/ashley/settings.py  warm url validation off  -> KILLED
+W05  app/ashley/settings.py  trailing slash kept  -> KILLED
+K01  app/ashley/looks/kubernetes.py  sweep reaches the warm pod  -> KILLED
+
+99 killed, 8 survived (see reasons).

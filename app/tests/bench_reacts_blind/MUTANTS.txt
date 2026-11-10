@@ -1,0 +1,40 @@
+Planted wrong implementations of the bench reaction (MR !279, head cd611a2), applied one at a time to the file named by the ID's prefix (R postgres_reactions.py, B bench_reacts.py, T bench_react_turn.py, J bench_react.json), tests/bench_reacts_blind run, then restored from the text read. CAUGHT means a test failed (exit 1 with a FAILED line).
+
+R1 CAUGHT her commands count
+R2 CAUGHT refused commands count
+R3 CAUGHT closed benches count
+R4 CAUGHT pause inverted
+R5 CAUGHT pause halved
+R6 CAUGHT mark inclusive
+R7 CAUGHT pause from the first command
+R8 CAUGHT newest quiet first
+R9 CAUGHT mark is the oldest record
+R10 CAUGHT listed are the oldest
+R11 CAUGHT listed beyond to_seq
+R12 CAUGHT ages oldest first
+R13 CAUGHT window empty
+R15 CAUGHT keep ignored
+R16 CAUGHT pieceless commands vanish
+B1 CAUGHT cap off by one
+B2 CAUGHT wait from the newest
+B3 CAUGHT cap never applies
+B4 CAUGHT batch off by one
+B5 CAUGHT capped logged every sweep
+B6 CAUGHT mark never recorded
+B7 CAUGHT outcome swapped
+B9 CAUGHT waits never cleared
+B10 CAUGHT half pause
+B11 CAUGHT keep not passed
+T1 CAUGHT source from count
+T2 CAUGHT turn prompted
+T3 CAUGHT author person
+T4 CAUGHT wrong thread
+T5 CAUGHT kind omitted
+T6 CAUGHT count of listed
+T7 CAUGHT no speaker
+J1 CAUGHT pause 20
+J2 CAUGHT cap 4
+J3 CAUGHT window 600
+R14 CAUGHT newest not kept
+R17 CAUGHT re-record refreshes the time (first run survived; directed test added)
+B8 CAUGHT commands count of listed (first run survived; directed test added)

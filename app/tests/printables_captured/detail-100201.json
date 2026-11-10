@@ -1,0 +1,32 @@
+{
+ "data": {
+  "print": {
+   "id": "100201",
+   "name": "Shelf Support Peg",
+   "slug": "shelf-support-peg",
+   "summary": "A support peg for your shelf made quick and easy with very little plastic used. Peg currently sized at 4.8mm for a 5mm.",
+   "likesCount": 56,
+   "downloadCount": 477,
+   "makesCount": 3,
+   "ratingAvg": "5.0000000000",
+   "user": {
+    "publicUsername": "MakerSeven"
+   },
+   "stls": [
+    {
+     "id": "200201",
+     "name": "Shelf Support Peg.3mf",
+     "fileSize": 919
+    }
+   ],
+   "description": "<p>A support peg for a shelf, quick to print with very little plastic. Peg currently sized at 4.8mm for a<strong> 5mm holes</strong> (give-or-take printer accuracy).</p><ul><li>1g/.24m filament used</li><li>7min estimated print time</li></ul>",
+   "datePublished": "2022-11-28T00:32:46.264332+00:00",
+   "license": {
+    "name": "Creative Commons \u2014 Public Domain"
+   },
+   "category": {
+    "name": "Other House Equipment"
+   }
+  }
+ }
+}

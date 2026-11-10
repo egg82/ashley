@@ -1,0 +1,15 @@
+{
+  "poll_s": 300,
+  "lookback_days": 3,
+  "per_page": 100,
+  "max_pages": 20,
+  "proposal_ttl_s": 86400,
+  "judged_days": 120,
+  "default_days": 120,
+  "max_days": 365,
+  "default_min_seen": 2,
+  "default_tolerance_days": 3,
+  "max_tolerance_days": 15,
+  "max_clauses": 6,
+  "max_predicates": 6
+}

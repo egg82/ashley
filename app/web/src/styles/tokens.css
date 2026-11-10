@@ -1,0 +1,90 @@
+/* The design's tokens, copied verbatim from the approved mockup's token block, and the base every room shares. */
+
+:root {
+  color-scheme: dark;
+  /* ground: blue-black */
+  --ink-0: #04070c; --ink-1: #08101a; --ink-2: #0c1622; --ink-3: #112031; --ink-4: #172a40;
+  --panel: rgba(9,17,29,.94); --line: #1b2d44; --line-hi: #2a4566;
+  --text: #dce7f4; --text-2: #93a8c2; --text-3: #5d7290;
+  /* meaning: one colour, one job */
+  --blue: #4da3ff; --blue-hi: #8cc4ff; --blue-glow: rgba(77,163,255,.28);        /* the person, and what they touch */
+  --cyan: #5fe1ff; --cyan-dim: rgba(95,225,255,.35);                              /* live, from outside; changes a person made at the bench */
+  --brass: #f2b45a; --brass-hi: #ffd58a; --brass-dim: rgba(242,180,90,.38); --brass-ink: #2a1a05; /* her, only */
+  --red: #ff5d6c;                                                                 /* forgetting, only */
+  --ok: #4fd18b;                                                                  /* status: answered */
+  /* people: a circle each, blue family */
+  --p-house: #8fb3d6;
+  /* fact kinds: notch colour + glyph letter (never brass, never red) */
+  --k-preference: #6aa8ff; --k-routine: #45d4c8; --k-plan: #a18cff; --k-person: #ff8fc4;
+  --k-health: #e7a6ff; --k-diet: #c3e35a; --k-home: #7fb8d6; --k-other: #8a9bb0;
+  /* piece types: typed tile glyph */
+  --t-code: #8cf0b8; --t-doc: #9fd0ff; --t-design: #ff9de0; --t-model: #b49cff; --t-capture: var(--cyan);
+  /* unknown: hatched, with its reason */
+  --unk-hatch: repeating-linear-gradient(135deg, transparent 0 4px, rgba(147,168,194,.16) 4px 5px);
+
+  --f-display: "Chakra Petch", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, monospace;
+  --r-1: 6px; --r-2: 10px; --r-3: 14px;
+
+  /* motion */
+  --ease-camera: cubic-bezier(.65,0,.25,1);   /* the field moving */
+  --ease-out: cubic-bezier(.2,.8,.2,1);       /* arrivals */
+  --ease-in: cubic-bezier(.5,0,.9,.4);        /* departures */
+  --ease-io: cubic-bezier(.65,0,.35,1);       /* flights, track resizes */
+  --ease-spring: cubic-bezier(.34,1.45,.64,1);/* settles */
+  --t-tap: 120ms; --t-chip: 240ms; --t-panel: 420ms; --t-dock: 620ms; --t-tracks: 720ms; --t-camera: 900ms;
+}
+:root[data-motion="reduced"] { --t-chip: 1ms; --t-panel: 1ms; --t-dock: 1ms; --t-tracks: 1ms; --t-camera: 1ms; --ease-spring: linear; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { background: var(--ink-0); color: var(--text); font: 14px/1.45 var(--f-body); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.meta { font: 11px/1.35 var(--f-mono); color: var(--text-3); letter-spacing: .02em; }
+.label { font: 600 10.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; font-weight: 600; letter-spacing: .01em; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: var(--r-1); border: 1px solid var(--line-hi); background: var(--ink-3); font-weight: 500; font-size: 13px; white-space: nowrap; text-decoration: none; color: var(--text); }
+.btn:hover { border-color: var(--blue); }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: var(--ink-0); font-weight: 600; }
+.btn.ghost { background: none; }
+.btn.sm { height: 26px; padding: 0 10px; font-size: 12px; }
+.btn:disabled { opacity: .45; cursor: default; border-color: var(--line-hi); }
+.btn:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-3); }
+.panel > .ph { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel > .ph h3 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+
+/* PERSON: a circle in their hue, monogram */
+.who { --hue: var(--p-house); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--hue) 55%, #fff 0%), color-mix(in srgb, var(--hue) 28%, var(--ink-1)));
+  box-shadow: 0 0 0 1.5px var(--hue), 0 0 12px color-mix(in srgb, var(--hue) 35%, transparent); color: var(--ink-0); font: 700 12px/1 var(--f-display); }
+.who.you { --hue: var(--blue); }
+.who.sm { width: 20px; height: 20px; font-size: 9.5px; }
+
+/* UNKNOWN: a dash with its reason, hatched, never a value */
+.unk { display: inline-flex; align-items: center; gap: 6px; padding: 1px 7px; border-radius: 4px; background: var(--unk-hatch); color: var(--text-2); font: 11.5px/1.5 var(--f-mono); white-space: nowrap; }
+.unk::before { content: "—"; color: var(--text-3); }
+.pill { background: var(--ink-1); display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 11px; border: 1px solid var(--line-hi); font: 500 11.5px/1 var(--f-body); color: var(--text-2); white-space: nowrap; }
+
+/* FACT: a tab with a notched left edge, coloured by kind */
+.fact { --kc: var(--k-other); position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 5px 12px; align-items: center;
+  padding: 11px 14px 11px 20px; border-radius: 4px var(--r-2) var(--r-2) 4px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--kc) 10%, var(--ink-2)), var(--ink-2) 45%); border: 1px solid var(--line);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 calc(50% + 7px), 6px 50%, 0 calc(50% - 7px)); }
+.fact::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--kc); box-shadow: 0 0 10px var(--kc); }
+.fact .kind { display: inline-flex; align-items: center; gap: 6px; font: 600 10px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--kc); }
+.fact .kind i { display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid var(--kc); border-radius: 3px; font-style: normal; font-size: 9px; }
+.fact .text { grid-column: 1 / -1; font-size: 14.5px; }
+.fact .foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.fact .was { grid-column: 1 / -1; font-size: 12.5px; color: var(--text-3); }
+.fact .was s { text-decoration-color: var(--text-3); }
+.fact[data-kind="preference"] { --kc: var(--k-preference); } .fact[data-kind="routine"] { --kc: var(--k-routine); }
+.fact[data-kind="plan"] { --kc: var(--k-plan); } .fact[data-kind="person"] { --kc: var(--k-person); }
+.fact[data-kind="health"] { --kc: var(--k-health); } .fact[data-kind="diet"] { --kc: var(--k-diet); }
+.fact[data-kind="home"] { --kc: var(--k-home); }
+/* who may hear a fact: one ring, closed by how few may hear */
+.vis { display: inline-flex; align-items: center; gap: 5px; font: 11px/1 var(--f-mono); color: var(--text-2); white-space: nowrap; }
+.vis svg { width: 13px; height: 13px; flex: none; }

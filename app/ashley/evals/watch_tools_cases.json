@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {"id": "watch-that-one", "turns": ["Which of my Claude sessions is doing the cluster upgrade?", "Keep an eye on that one."],
+     "expect": "watch", "session": "k8s-upgrade", "until": "none"},
+    {"id": "watch-named", "turns": ["Keep an eye on my docs-pass session."],
+     "expect": "watch", "session": "docs-pass", "until": "none"},
+    {"id": "watch-until-closed", "turns": ["Tell me when my ashley-wiring session is closed."],
+     "expect": "watch", "session": "ashley-wiring", "until": "gone"},
+    {"id": "watch-until-closed-after-looking", "turns": ["What is my k8s-upgrade session up to?", "Ok, tell me when it's closed."],
+     "expect": "watch", "session": "k8s-upgrade", "until": "gone"},
+    {"id": "watch-finish", "turns": ["Let me know when the k8s-upgrade session finishes."],
+     "expect": "watch", "session": "k8s-upgrade", "until": "none"},
+    {"id": "unwatch-it", "turns": ["Keep an eye on my docs-pass session.", "Stop watching it."],
+     "expect": "unwatch", "session": "docs-pass"},
+    {"id": "unwatch-named", "turns": ["Watch my ashley-wiring session for me.", "Actually, you can stop watching the ashley-wiring one."],
+     "expect": "unwatch", "session": "ashley-wiring"},
+    {"id": "nothing-dryer", "turns": ["Tell me when the dryer's done."], "expect": "nothing"},
+    {"id": "nothing-no-such-session", "turns": ["Keep an eye on my terraform session."], "expect": "nothing"},
+    {"id": "nothing-question", "turns": ["Is my k8s-upgrade session done yet?"], "expect": "nothing"},
+    {"id": "nothing-list", "turns": ["What are you watching for me right now?"], "expect": "nothing"}
+  ]
+}

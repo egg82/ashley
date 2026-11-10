@@ -1,0 +1,57 @@
+MUTANTS.txt: planted wrong implementations of WatchTools (ashley/tools/watches.py) and its wiring (turn_tools.py,
+reminders.py, arming.py, watch_agreed.py, watch_conditions.py, proposal_gate.py, proposal_payloads.py), each applied alone
+and run against tests/watch_tools_blind plus tests/test_watch_tools.py (30 s thread timeout per test), then restored
+byte-identically. One line each: status, file, mutation. 'killed' = a test failed, named after '--'. A line marked
+'first run' survived the blind suite as first written and is killed by the directed test named (test_wtl_survivors.py).
+W04 plants person 11 (Alana) in place of the speaker. Mutants are split a/b where one planted line was two edits.
+
+W01      killed    turn_tools.py   watches offered without owner_alone  -- test_the_turn_does_not_offer_them_where_others_may_read_the_reply
+W02      killed    turn_tools.py   owner_alone checked but a device screen allowed  -- test_the_turn_does_not_offer_them_where_others_may_read_the_reply[fields3]
+W03      killed    watches.py      catalogue offered with no bridge connected  -- test_nothing_is_offered_to_a_person_with_no_bridge
+W04      killed    watches.py      connection looked up household-wide, not the person's  -- test_nothing_is_offered_to_another_person_of_the_household
+W05      killed    watches.py      call works with no connection (no catalogue gate)  -- test_a_call_without_a_bridge_is_refused_and_arms_nothing
+W06      killed    watches.py      kind enum lists every kind, usable or not  -- test_the_kind_enum_holds_only_kinds_this_person_can_use
+W07      killed    watches.py      unusable kind accepted when named  -- test_a_kind_this_person_cannot_use_is_refused_even_if_named
+W08      killed    watches.py      arming skips the read (no baseline read)  -- test_arming_reads_the_target_once_and_stores_that_read_as_the_baseline
+W09      killed    watches.py      arming reads twice  -- test_arming_reads_the_target_once_and_stores_that_read_as_the_baseline
+W10      killed    watches.py      baseline stored empty  -- test_arming_reads_the_target_once_and_stores_that_read_as_the_baseline
+W11      killed    watches.py      missing target armed with an empty baseline  -- test_a_target_missing_from_the_read_is_refused_not_found_and_nothing_is_stored
+W12      killed    watches.py      failed read reported as not_found  -- test_a_read_that_fails_is_never_taken_for_a_missing_target
+W13      killed    watches.py      failed read armed anyway  -- test_a_read_that_fails_is_never_taken_for_a_missing_target
+W14      killed    watches.py      kind exception escapes call  -- test_a_kind_that_raises_is_an_error_result_and_arms_nothing
+W15      killed    watches.py      label taken from another session of the read  -- test_the_label_is_the_targets_not_another_sessions
+W16      killed    watches.py      expiry told in UTC, not the household's zone  -- test_the_expiry_is_told_in_the_households_wall_clock_not_utc
+W17      killed    watches.py      hours ignored (always the kind's default)  -- test_hours_sets_the_expiry_and_the_kinds_hours_is_the_default
+W18      killed    watches.py      hours taken as minutes/days  -- test_hours_sets_the_expiry_and_the_kinds_hours_is_the_default
+W19      killed    watches.py      hours above max_hours accepted  -- test_the_longest_a_kind_allows_is_accepted_and_one_more_hour_is_refused
+W20      killed    watches.py      max_hours itself refused (off by one)  -- test_the_longest_a_kind_allows_is_accepted_and_one_more_hour_is_refused
+W21a     killed    watches.py      hours 0 accepted  -- test_one_hour_is_accepted_and_zero_is_refused
+W21b     killed    watches.py      bool hours accepted  -- first run: survived the blind suite; killed by directed test test_wtl_hours_that_are_not_numbers_are_refused[True]
+W22      killed    watches.py      until field not checked against the track  -- test_a_field_outside_the_kinds_track_is_refused
+W23      killed    watches.py      track taken from the first kind, not the named one  -- test_the_track_is_the_kinds_own
+W24      killed    watches.py      until alternatives flattened into one conjunction  -- test_until_reaches_the_store_as_alternatives_of_item_predicates
+W25a     killed    watches.py      not ignored in an until predicate  -- test_not_negates_a_predicate
+W25b     killed    watches.py      of ignored in an until predicate  -- test_of_before_reads_the_side_before
+W26a     killed    watches.py      a field the kind does not take is not refused  -- test_a_predicate_missing_what_its_kind_needs_or_carrying_what_it_cannot_is_refused
+W26b     survived  watches.py      a null `of` is refused instead of read as absent  -- spec-open: the design says nothing of null fields; equals, one_of and contains with a null value are refused either way (test_wtl_a_predicate_with_a_null_where_its_kind_needs_a_value_is_refused), a null `of` is read as the default and not pinned
+W27a     killed    watches.py      armed_by set to handoff  -- test_the_watch_is_stored_with_the_kinds_defaults_and_her_own_arming
+W27b     killed    watches.py      bench dropped  -- test_the_watch_is_stored_with_the_kinds_defaults_and_her_own_arming
+W28      killed    watches.py      tool accepts a when argument  -- test_an_argument_the_tool_does_not_define_is_refused
+W29      killed    watches.py      acting tool armed at once instead of proposed  -- test_naming_a_tool_that_acts_proposes_and_arms_nothing
+W30      killed    watches.py      reading tool proposed instead of armed  -- test_naming_a_tool_that_only_reads_arms_at_once_with_that_tool
+W31      killed    watches.py      tools not checked against the speaker's turn tools  -- test_a_tool_the_speaker_does_not_have_cannot_be_named
+W32      killed    watches.py      proposal stored in a topic other than REMINDERS  -- test_the_proposal_is_in_the_reminders_topic_and_carries_the_arm
+W33      killed    reminders.py    arm_reminder drops a WatchSchedule (arms nothing)  -- test_arm_reminder_arms_the_proposed_watch_in_a_later_turn
+W34      killed    reminders.py    arm_reminder agrees in the proposing turn  -- test_arm_reminder_in_the_proposing_turn_arms_nothing
+W35      killed    reminders.py    agreed watch armed without consuming the proposal  -- test_a_proposed_watch_is_armed_once
+W36      killed    watches.py      unwatch disarms for the household, not the speaker  -- test_unwatch_is_for_the_speaker_not_the_household
+W37      killed    watches.py      unwatch answers ok when nothing was disarmed  -- test_unwatch_of_nothing_watched_is_not_found
+W38      killed    watches.py      unwatch reads through the kind first  -- test_unwatch_reads_nothing_through_the_kind
+W39      killed    watches.py      watches lists the household's watches, not the speaker's  -- test_watches_lists_the_speakers_live_watches_each_with_its_fields
+W40a     killed    watches.py      paused reason shown on every row  -- first run: survived; killed by directed test test_wtl_an_armed_row_of_the_listing_carries_no_pause_field_at_all
+W40b     killed    watches.py      paused reason dropped  -- test_a_paused_watch_says_why_and_an_armed_one_does_not
+W41      killed    watches.py      tracked fields omitted from the watch result  -- test_the_result_is_the_label_the_tracked_fields_now_and_the_expiry
+W42a     killed    watches.py      arguments written to the log  -- test_nothing_a_call_carries_or_returns_is_logged
+W42b     killed    watches.py      the read, label included, written to the log  -- test_nothing_a_call_carries_or_returns_is_logged ; test_the_result_text_is_not_logged_either
+W43      killed    watches.py      until schema carries nested maxItems  -- first run: survived the blind suite (builder test only); killed by directed test test_wtl_no_array_in_the_until_schema_carries_a_size_bound
+W44      killed    watches.py      until field enum is not the kind's track  -- test_the_until_fields_are_enumerated_from_the_track_in_the_schema

@@ -1,0 +1,11 @@
+{
+  "controls": [
+    {"expected": "Mochi is fed at 7am, 1pm and 7pm", "written": "Mochi is fed at 7am, 1pm and 6pm", "same": false},
+    {"expected": "Alana has bought Elodie a record player for her birthday", "written": "Elodie has bought Alana a record player for his birthday", "same": false},
+    {"expected": "Alana has bought Elodie a record player for her birthday", "written": "Alana ordered Elodie a turntable as a birthday present", "same": true},
+    {"expected": "Elodie sees a therapist on Tuesday afternoons", "written": "Elodie sees a therapist on Thursday afternoons", "same": false},
+    {"expected": "The spare key is in the green watering can by the side gate", "written": "The spare key is in a planter", "same": false},
+    {"expected": "Alana takes a blood pressure tablet every morning at 8", "written": "Alana takes a new blood pressure tablet every morning at 8.", "same": true},
+    {"expected": "Regular milk no longer agrees with Alana", "written": "Alana has switched to oat milk", "same": false}
+  ]
+}

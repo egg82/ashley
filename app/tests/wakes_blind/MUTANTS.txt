@@ -1,0 +1,72 @@
+Planted wrong implementations, one at a time, each applied exactly once to the file named and reverted after the run.
+Each run is tests/wakes_blind with `-x -n 0` against main at d1aa779, green before the plant. 56 planted, 56 caught. Five survived the first pass
+and were caught by tests added for them: runner no_person without the who check (a People that answers for no `who`
+hid it), wake_turn speaker / remembers / audience (test_the_turn_is_the_persons_own_private_and_not_remembered), and
+wake_action accepting keys beyond `action` and `data`.
+
+Files: ashley/senses/postgres_wakes.py (M1-M12), ashley/api/wakes.py (M13-M19, M54-M56), ashley/channels/wake/runner.py
+(M20-M27), wake_turn.py (M28-M33), rule.py (M34-M35), ashley/channels/unprompted.py (M36-M39), ashley/initiative/
+initiative.py (M40-M41), ashley/tools/only.py (M42-M44), ashley/workshop/wake_rule.py (M45-M48), wake_action.py
+(M49-M52), ashley/channels/turn_tools.py (M53). The list and the replacements are in the plant script's table, one line
+per mutant below.
+
+#    mutant
+M1  postgres_wakes: receive reports a new wake as not new
+M2  postgres_wakes: a delivery that raced the insert reported as new
+M3  postgres_wakes: due newest first
+M4  postgres_wakes: due includes settled wakes
+M5  postgres_wakes: due ignores its limit
+M6  postgres_wakes: age_s always zero
+M7  postgres_wakes: due swaps who and what
+M8  postgres_wakes: settle works on a settled wake
+M9  postgres_wakes: settle ignores the outcome
+M10 postgres_wakes: prune takes unsettled wakes
+M11 postgres_wakes: prune ages by arrival
+M12 postgres_wakes: prune takes wakes inside the limit
+M13 wakes route: duplicate inverted
+M14 wakes route: household fixed
+M15 wakes route: `when` ignored
+M16 wakes route: unavailable answers 500
+M17 wakes route: answers 200 not 202
+M18 wakes route: log line carries who
+M19 wakes route: log line carries the event id
+M20 runner: expiry inverted
+M21 runner: person of another household accepted
+M22 runner: a refused turn counted as `turn`
+M23 runner: never prunes
+M24 runner: batch ignored
+M25 runner: workshop/people unavailable settles failed
+M26 runner: wakes.settled carries who
+M27 runner: no check that the wake names a person
+M28 wake_turn: no source
+M29 wake_turn: every tool offered
+M30 wake_turn: not marked unprompted
+M31 wake_turn: no speaker
+M32 wake_turn: conversation remembered
+M33 wake_turn: household audience
+M34 rule_for: two rules for one event pick the first
+M35 rule_for: event not matched
+M36-M39 unprompted: a person's reply asks Initiative; quiet keeps `spoken`; as_said never quiet; initiative.decided logs the reply
+M40 initiative: WorthSaying always true
+M41 initiative: NullInitiative speaks
+M42 only: call unchecked
+M43 only: catalogue unfiltered
+M44 only: catalogue inverted
+M45 wake_rule: extra keys allowed
+M46 wake_rule: brief limit off by one
+M47 wake_rule: blank brief allowed
+M48 wake_rule: repeated tool names allowed
+M49 wake_action: extra keys beyond action and data allowed
+M50 wake_action: event_id may be a literal
+M51 wake_action: who may be free text
+M52 wake_action: nested wake actions not searched
+M53 turn_tools: tools_only not applied
+M54 wakes route: house check removed
+M55 wakes route: house check inverted
+M56 wakes route: house matched on any device of the household
+
+Not planted: the bearer sign-in itself (an unauthenticated request is refused by the shared `signed_in`, covered by the route
+tests but not mutated here); the lease the runner runs under.
+
+The legacy `service:` key defect the earlier version of this suite pinned is fixed on main
+(test_the_legacy_service_key_is_checked_like_the_action_key is a plain test).

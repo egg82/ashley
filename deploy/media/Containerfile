@@ -1,0 +1,6 @@
+# The image media jobs run in (.gitlab-ci.yml, build-media-image): the code sandbox's own Python, plus ffmpeg, the
+# Wyoming client its runner (app/ashley/runs/media_runner.py) speaks to the speech service with (at the version the
+# app's requirements pin) and yt-dlp, which fetches a YouTube video's captions. Tagged by a hash of this file
+# (tools/ci_image_hash.py --media); the build context is this directory. The pod runs as 65534.
+FROM docker.io/library/python:3.13.18-alpine3.24@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8
+RUN apk add --no-cache ffmpeg && pip install --no-cache-dir wyoming==1.10.2 yt-dlp==2026.10.26

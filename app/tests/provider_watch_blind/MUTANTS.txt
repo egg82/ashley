@@ -1,0 +1,59 @@
+Planted wrong implementations for the provider watch (watch.py, outcomes.py, the outcome recording in router.py).
+Each was applied alone, the suite run, the file restored from the text read. Result: killed / survived.
+
+m00 watch.py: no-op control (must survive) -> SURVIVED  [survives by design: a no-op control]
+m01 watch.py: min_calls inclusive -> exclusive -> killed
+m02 watch.py: min_calls off by one up -> killed
+m03 watch.py: min_calls off by one down -> killed
+m04 watch.py: share inclusive -> exclusive -> killed
+m05 watch.py: and -> or -> killed
+m06 watch.py: min_calls dropped -> killed
+m07 watch.py: share dropped -> killed
+m08 watch.py: only the first alert logged -> killed
+m09 watch.py: alert logged at info -> killed
+m10 watch.py: task and provider swapped -> killed
+m11 watch.py: calls field is failed -> killed
+m12 watch.py: failed field is calls -> killed
+m13 watch.py: share inverted -> killed
+m14 watch.py: window field is interval -> killed
+m15 watch.py: pairs counts alerts -> killed
+m16 watch.py: alerts counts pairs -> killed
+m17 watch.py: pass line renamed -> killed
+m18 watch.py: alert line renamed -> killed
+m19 watch.py: evaluate returns every pair -> killed
+m20 watch.py: interval used as window -> killed
+m21 watch.py: tasks hard-coded -> killed
+m22 watch.py: failing hard-coded -> killed
+m23 watch.py: outage flag never cleared -> killed
+m24 watch.py: outage line every failed pass -> killed
+m25 watch.py: outage flag never set -> killed
+m26 watch.py: sleeps the window -> killed
+m27 watch.py: waits before the first evaluation -> killed
+m28 watch.py: unknown keys accepted -> killed
+m29 watch.py: share zero accepted -> SURVIVED  [EQUIVALENT: `_number` already refuses 0 for error_share before the range check runs]
+m30 watch.py: share one refused -> killed
+m31 watch.py: zero min_calls accepted -> killed
+m32 watch.py: zero number accepted -> killed
+m33 watch.py: ok accepted as failing -> killed
+m34 watch.py: any task name accepted -> killed
+m35 watch.py: lease name changed -> killed
+m36 watch.py: empty name list accepted -> SURVIVED  [SURVIVES, contract silent: the docstring does not say whether an empty failing/tasks list is refused]
+m37 watch.py: unknown names beside known accepted -> killed
+m38 outcomes.py: task filter dropped -> killed
+m39 outcomes.py: window inverted -> killed
+m40 outcomes.py: failed counts the non-failing -> killed
+m41 outcomes.py: failed counts every call -> killed
+m42 outcomes.py: provider-major order -> killed
+m43 outcomes.py: order dropped -> SURVIVED  [EQUIVALENT in practice: the planner's GROUP BY output is already sorted on this table; no test can force another order]
+m44 outcomes.py: share inverted in Share -> killed
+m45 outcomes.py: calls and failed swapped -> killed
+m46 outcomes.py: window in minutes -> killed
+m47 outcomes.py: only the first failing outcome -> killed
+m48 router.py: refusal recorded as error -> killed
+m49 router.py: failure recorded as error -> killed
+m50 router.py: stray tool calls recorded as error -> killed
+m51 router.py: tool use recorded as failure -> killed
+m52 router.py: answer recorded as error -> killed
+
+53 planted: 49 killed, 1 control survived, 2 equivalent (m29, m43), 1 contract-silent survivor (m36).
+Directed tests added for m08 (every provider in breach is alerted) and m20 (calls older than the interval but inside the window count).

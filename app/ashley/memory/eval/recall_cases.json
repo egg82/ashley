@@ -1,0 +1,123 @@
+{
+  "people": {"alana": 1, "elodie": 2, "other-household": 3},
+  "households": {"home": 1, "other": 2},
+  "facts": [
+    {"ref": "mochi-feeding", "household": "home", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "Mochi is fed at 7am, 1pm and 7pm"},
+    {"ref": "mochi-feeding-old", "household": "home", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "Mochi is fed at 7am and 6pm", "superseded_by": "mochi-feeding"},
+    {"ref": "alana-bp", "household": "home", "about": "alana", "owner": "alana", "visibility": "private", "kind": "health", "text": "Alana takes a blood pressure tablet every morning at 8"},
+    {"ref": "elodie-therapy", "household": "home", "about": "elodie", "owner": "elodie", "visibility": "private", "kind": "health", "text": "Elodie sees a therapist on Tuesday afternoons"},
+    {"ref": "gift", "household": "home", "about": "elodie", "owner": "alana", "visibility": "private", "kind": "plan", "text": "Alana has bought Elodie a record player for her birthday"},
+    {"ref": "elodie-drinks", "household": "home", "about": "elodie", "owner": "elodie", "visibility": "discreet", "kind": "plan", "text": "Elodie is having drinks with Nadia on Friday after work"},
+    {"ref": "elodie-coffee", "household": "home", "about": "elodie", "owner": "elodie", "visibility": "shared", "kind": "preference", "text": "Elodie takes her coffee black"},
+    {"ref": "alana-portland", "household": "home", "about": "alana", "owner": "alana", "visibility": "discreet", "kind": "plan", "text": "Alana is looking at new jobs in Portland", "forgotten": true},
+    {"ref": "alana-pottery", "household": "home", "about": "alana", "owner": "alana", "visibility": "shared", "kind": "routine", "text": "Alana has a pottery class on Thursday evenings", "invalidated": true},
+    {"ref": "neighbour-cat", "household": "other", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "Biscuit the cat is fed at 6am"}
+  ],
+  "cases": [
+    {
+      "id": "unknown-speaker-shared-only",
+      "basis": "decisions: an unknown speaker gets shared facts only",
+      "asker": {"household": "home", "speaker": null, "owner_only": false},
+      "query": "when is Mochi fed, what tablet does Alana take, where does Elodie go on Tuesday, what is she doing on Friday, the record player, the Portland jobs",
+      "include": ["mochi-feeding"],
+      "exclude": ["alana-bp", "elodie-therapy", "gift", "elodie-drinks", "alana-portland"]
+    },
+    {
+      "id": "gift-never-reaches-its-subject",
+      "basis": "Jarvis: withholding scoped by the owner; the fact is about Elodie and owned by Alana",
+      "asker": {"household": "home", "speaker": "elodie", "owner_only": true},
+      "query": "has Alana bought me anything for my birthday",
+      "include": [],
+      "exclude": ["gift"]
+    },
+    {
+      "id": "gift-paraphrased",
+      "basis": "Jarvis: the exclusion survives a paraphrased question",
+      "asker": {"household": "home", "speaker": "elodie", "owner_only": true},
+      "query": "any packages or deliveries coming, a record player maybe",
+      "include": [],
+      "exclude": ["gift"]
+    },
+    {
+      "id": "gift-reaches-its-owner-privately",
+      "basis": "decisions: private facts come back to their owner on an owner-only channel",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": true},
+      "query": "what did I get Elodie for her birthday",
+      "include": ["gift"],
+      "exclude": []
+    },
+    {
+      "id": "own-private-not-said-aloud",
+      "basis": "decisions: private answers go only to channels the owner alone hears",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": false},
+      "query": "what tablets do I take in the morning",
+      "include": [],
+      "exclude": ["alana-bp"]
+    },
+    {
+      "id": "other-persons-health-private",
+      "basis": "Jarvis: the harder palladium variant, a third party asks directly about a private health fact",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": true},
+      "query": "where does Elodie go on Tuesday afternoons",
+      "include": [],
+      "exclude": ["elodie-therapy"]
+    },
+    {
+      "id": "near-identical-pair-alana",
+      "basis": "Jarvis: near-identical questions from each person; a neutral fact is answered",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": false},
+      "query": "how does Elodie take her coffee",
+      "include": ["elodie-coffee"],
+      "exclude": ["elodie-therapy"]
+    },
+    {
+      "id": "discreet-returned-but-not-volunteered",
+      "basis": "decisions: discreet is answered when asked, never volunteered",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": false},
+      "query": "what is Elodie doing on Friday",
+      "include": ["elodie-drinks"],
+      "not_volunteer": ["elodie-drinks"],
+      "exclude": []
+    },
+    {
+      "id": "own-discreet-volunteerable",
+      "basis": "discreet limits other people, not the owner",
+      "asker": {"household": "home", "speaker": "elodie", "owner_only": true},
+      "query": "what am I doing on Friday",
+      "include": ["elodie-drinks"],
+      "exclude": []
+    },
+    {
+      "id": "superseded-not-current",
+      "basis": "real usage: Alexa answered with the old fact after an update",
+      "asker": {"household": "home", "speaker": "elodie", "owner_only": false},
+      "query": "when does Mochi get fed",
+      "include": ["mochi-feeding"],
+      "exclude": ["mochi-feeding-old"]
+    },
+    {
+      "id": "invalidated-not-current",
+      "basis": "real usage: stale routines after a life change",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": true},
+      "query": "do I have pottery this Thursday",
+      "include": [],
+      "exclude": ["alana-pottery"]
+    },
+    {
+      "id": "forgotten-stays-forgotten",
+      "basis": "real usage: a deleted memory must not resurface, even to its owner",
+      "asker": {"household": "home", "speaker": "alana", "owner_only": true},
+      "query": "the Portland jobs I was looking at",
+      "include": [],
+      "exclude": ["alana-portland"]
+    },
+    {
+      "id": "no-crossing-households",
+      "basis": "decisions: nothing crosses households",
+      "asker": {"household": "home", "speaker": "elodie", "owner_only": true},
+      "query": "when is the cat fed",
+      "include": ["mochi-feeding"],
+      "exclude": ["neighbour-cat"]
+    }
+  ]
+}

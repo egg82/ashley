@@ -1,0 +1,51 @@
+Planted wrong implementations, one at a time, each applied exactly once to the file named and restored after the run from the text read
+before planting. Each run is tests/reference_blind (-n 2), green before the plant; CAUGHT means exit 1 with a FAILED line.
+43 planted, 42 caught, 1 equivalent.
+Files: bench_reference.py, bench_tools.py, look_up.py, results.py = ashley/tools/*, said_links.py = ashley/channels/said_links.py.
+M1 and M7 survived the first pass and are caught by the nested-URL and composed-video-URL cases added for them.
+Harness: ~/scratch/ashley/workshop/rb_mutate.py.
+Defect found, not a mutant: bench_replace on a site piece wrote a composed URL unchecked; now refused (test_defects.py).
+
+M1 CAUGHT   links_in takes the last scheme start
+M2 CAUGHT   links_in keeps no closing-punctuation-stripped form
+M3 CAUGHT   links_in adds every prefix
+M4 CAUGHT   links_in https only
+M5 CAUGHT   site body is JSON
+M6 CAUGHT   video body drops start
+M7 CAUGHT   a video body's URL is never checked
+M8 CAUGHT   edit unresolved
+M9 CAUGHT   edit's piece unknown
+M10 CAUGHT   video unresolved
+M11 CAUGHT   result ignored
+M12 CAUGHT   no unlisted check
+M13 CAUGHT   unlisted code wrong
+M14 CAUGHT   result with body allowed
+M15 CAUGHT   unknown_result code wrong
+M16 CAUGHT   start on site allowed
+M17 SURVIVED (equivalent)   start passed through: with result, command_of ignores a stray start, so the body is the same
+M18 CAUGHT   start never carried
+M19 CAUGHT   shelf not a source
+M20 CAUGHT   any piece vouches
+M21 CAUGHT   whole body vouches
+M22 CAUGHT   people never vouch
+M23 CAUGHT   bench never vouches
+M24 CAUGHT   unreadable conversation passes
+M25 CAUGHT   unavailable code wrong
+M26 CAUGHT   no reader vouches
+M27 CAUGHT   household turns vouch
+M28 CAUGHT   her turns vouch
+M29 CAUGHT   wrong conversation read
+M30 CAUGHT   down conversations read as empty
+M31 CAUGHT   record skips a number
+M32 CAUGHT   next_number is off
+M33 CAUGHT   url off by one
+M34 CAUGHT   current ignores bound
+M35 CAUGHT   bound never restores
+M36 CAUGHT   stores share numbers
+M37 CAUGHT   reference site is the URL
+M38 CAUGHT   reference site has the port
+M39 CAUGHT   look-up reads a store of its own
+M40 CAUGHT   references reversed
+M41 CAUGHT   references never resolved
+M42 CAUGHT   given results ignored
+M43 CAUGHT   said ignored

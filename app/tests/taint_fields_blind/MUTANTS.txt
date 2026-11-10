@@ -1,0 +1,45 @@
+MUTANTS.txt: planted wrong implementations of the taint fields (Inbound.taint, ToolSpec.outside, ToolResult.outside,
+Checkpoint.tainted and its saving, the classification gate), each applied alone to the built code and run against
+app/tests/taint_fields_blind plus the builder's tests for these modules (test_taint_*, test_outside_*, test_discord_route),
+then restored byte-identically.
+One line each: status, where, mutation. 'killed' = a test fails, named after '--'. 'equivalent' = no test can tell it apart,
+with the reason. M24b and M37 were added after the planned list (M37 is the Discord-member decision's guard).
+
+M01  killed     inference/model.py   ToolSpec.outside defaults False  -- test_the_checkpoint_names_the_tool_whose_result_tainted_the_turn[toggle]
+M02  killed     tool_loop            the result's own outside is ignored (spec only)  -- test_a_result_that_carries_nothing_from_outside_leaves_the_turn_untainted[narrowed]
+M03  killed     tool_loop            the spec's outside is ignored (result only, null = clean)  -- test_the_checkpoint_names_the_tool_whose_result_tainted_the_turn[toggle]
+M04  killed     tool_loop            a name not in the catalogue does not taint  -- test_a_name_that_is_not_in_the_catalogue_taints
+M05  killed     tool_loop            a later tainting tool replaces the first  -- test_the_taint_a_resumed_turn_had_is_not_replaced_by_a_later_tainting_tool
+M06  killed     checkpoint.py        loads drops tainted  -- test_the_tool_that_tainted_the_turn_survives_the_json[fetch]
+M07  killed     inflight.py          Saved.tainted stores a constant instead of the tool  -- test_saved_work_stores_the_tool_that_tainted_it
+M08  killed     checkpoint.py        dumps leaves tainted out  -- test_the_tool_that_tainted_the_turn_survives_the_json[fetch]
+M09  killed     tool_loop            the loop never calls Steps.tainted  -- test_the_checkpoint_names_the_tool_whose_result_tainted_the_turn[toggle]
+M10  equivalent tool_loop            a cut result loses its outside after the taint was decided  -- the taint is decided before the cut and a stored result's `outside` is read nowhere after (a call in `done` is never run or judged again), so the turn cannot differ
+M11  killed     inflight.py          Saved.tainted keeps the taint in memory and does not save it  -- test_saved_work_stores_the_tool_that_tainted_it
+M12  killed     inflight.py          Saved.tainted swallows ClaimLost  -- test_a_runner_that_lost_the_turn_cannot_record_a_taint
+M13  killed     inflight.py          Saved.tainted rebuilds the checkpoint from the Inbound and drops progress  -- test_saved_work_keeps_the_rest_of_the_checkpoint_when_it_stores_a_taint
+M14  killed     steps.py             the base Steps.tainted raises or is not a coroutine  -- test_a_turn_that_is_not_saved_records_a_taint_as_nothing
+M15  killed     resume path          a resumed turn starts with tainted reset to None  -- test_a_tainted_turn_stays_tainted_through_the_rest_of_its_rounds
+M16  killed     resume path          resumed() runs its round with NO_STEPS, so nothing is recorded  -- test_a_read_with_no_result_when_the_runner_died_taints_when_it_runs_again
+M17  killed     tool_loop            resumed() does not taint on a read that had no result  -- test_a_read_with_no_result_when_the_runner_died_taints_when_it_runs_again
+M18  killed     tool_loop            a call already in done re-runs and taints a second time  -- test_a_result_the_dead_runner_already_has_is_not_run_again_and_the_turn_stays_tainted
+M19  killed     checkpoint.py        Saved.ran clears the field on a result with no `outside` of its own  -- test_the_checkpoint_names_the_tool_whose_result_tainted_the_turn[toggle]
+M20  killed     tool_loop            the taint is a module global, so the next turn starts tainted  -- test_a_result_that_carries_nothing_from_outside_leaves_the_turn_untainted[lamp_state]
+M21  killed     tool_loop            the taint is recorded after `steps.ran` stores the result  -- survives the blind suite alone; killed by the builder's test_the_taint_is_recorded_before_its_result_is_taken_in (tests/test_taint_loop.py: `steps.order == ["tainted", "ran"]`)
+M22  killed     aside.py             aside.offered rebuilds each ToolSpec and drops outside  -- test_a_spec_keeps_its_outside_when_aside_is_added
+M23  killed     checkpoint.py        _inbound drops taint on the way back  -- test_the_origin_survives_the_json[watch]
+M24  killed     checkpoint.py        a checkpoint without the new keys fails to load  -- test_a_checkpoint_an_older_pod_saved_loads_untainted
+M25  killed     wake_turn.py         a house wake is built with taint="watch"  -- test_a_house_wake_does_not_taint_by_origin
+M26  killed     watch_turn.py        only the phone-thread watch turn carries taint  -- test_a_watchs_wake_is_a_watch_turn_wherever_it_runs[True-False]
+M27  killed     watch_turn.py        a watch the person armed by hand-off is not tainted  -- test_a_watchs_wake_is_a_watch_turn_wherever_it_runs[False-True]
+M28  killed     reminder_turn.py     a reminder firing is tainted watch  -- test_a_reminder_firing_is_not_tainted
+M29  killed     bench_react_turn.py  a bench's reaction is tainted  -- test_a_benchs_reaction_to_the_persons_change_is_not_tainted
+M30  killed     discord/route.py     every guild message is a stranger turn  -- test_a_guild_message_from_a_household_member_is_not_tainted
+M31  killed     discord/route.py     a stranger's guild message has no taint  -- test_a_guild_message_from_someone_in_no_household_is_a_stranger_turn
+M32  killed     discord/route.py     a household member's DM is a stranger turn  -- test_a_dm_from_a_household_member_is_not_tainted
+M33  killed     tools/look_up.py     look_up states outside=False  -- test_every_tool_the_spec_names_as_outside_taints
+M34  killed     ?                    ?  -- test_every_tool_the_spec_names_as_household_does_not_taint
+M35  killed     any module           a new ToolSpec( call omits outside=  -- test_every_tool_the_spec_names_as_household_does_not_taint
+M36  killed     any module           a new Inbound( call omits taint=  -- test_a_house_wake_does_not_taint_by_origin
+M24b killed     checkpoint.py        an older pod's inbound without `taint` fails to load  -- test_a_checkpoint_an_older_pod_saved_loads_untainted
+M37  killed     discord/route.py     a member of ANOTHER household is not a stranger  -- test_tf_a_guild_message_from_a_member_of_another_household_is_a_stranger_turn

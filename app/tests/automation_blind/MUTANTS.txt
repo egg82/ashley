@@ -1,0 +1,77 @@
+Planted wrong implementations, one at a time, in a scratch copy of app/ (never the worktree), the plant asserted to apply
+exactly once and the file restored after. Each run is tests/automation_blind against bench-automation, green before the
+plant. 61 planted, 60 caught, 1 equivalent. Where a first run let a plant survive, the test that now catches it is
+named (M17, M18, M21, M24, M28, M56 were directed tests added after a first survival).
+
+#    mutant                                                   first red test
+
+M1   overwrite guard removed                                  test_an_install_never_writes_over_an_automation_under_its_id_that_this_bench_did_not_install
+M2   guard refuses every update of a piece's own automation   test_undo_of_an_update_writes_back_the_config_and_on_off_state_the_house_had
+M3   config written under another id                          test_her_undo_of_an_install_is_needs_person_and_the_house_keeps_what_the_install_wrote
+M4   installed automation always turned on                    test_a_fresh_install_writes_the_pieces_config_under_its_id_and_leaves_it_off_as_proposed
+M5   installed automation's enabled inverted                  test_a_fresh_install_writes_the_pieces_config_under_its_id_and_leaves_it_off_as_proposed
+M6   old automation turned on, not off                        test_the_named_old_automation_is_turned_off_and_nothing_else_of_the_house_changes
+M7   old automation never turned off                          test_the_install_is_recorded_before_its_first_write_and_each_write_follows_the_record
+M8   old automation turned off even when already off          equivalent (see below)
+M9   install recorded after its writes                        test_the_install_is_recorded_before_its_first_write_and_each_write_follows_the_record
+M10  install record never ended                               test_her_install_is_needs_person_and_writes_nothing
+M11  a duplicate record raises out of carry_out               test_carrying_an_install_out_again_writes_nothing_and_returns_the_record_as_it_stands
+M12  undo of a fresh install deletes nothing                  test_undo_of_a_fresh_install_deletes_it_and_turns_the_old_automation_back_on
+M13  undo never turns the old automation back on              test_undo_of_a_fresh_install_deletes_it_and_turns_the_old_automation_back_on
+M14  undo turns the old automation on even if found off       test_undo_leaves_an_old_automation_off_that_the_install_found_off
+M15  undo of an update deletes instead of writing back        test_undo_of_an_update_writes_back_the_config_and_on_off_state_the_house_had
+M16  undo of an update leaves the enabled state               test_undo_of_an_update_writes_back_the_config_and_on_off_state_the_house_had
+M17  undo of a refused install not skipped                    test_home_assistant_refusing_the_config_ends_the_install_refused_with_its_message_and_writes_nothing
+M18  undo of an untouched install takes back anyway           test_an_install_never_writes_over_an_automation_under_its_id_that_this_bench_did_not_install
+M19  before: enabled state of the automation not read         test_undo_of_an_update_writes_back_the_config_and_on_off_state_the_house_had
+M20  before: old automation always found on                   test_undo_leaves_an_old_automation_off_that_the_install_found_off
+M21  undo ignores the turn_off of the install                 test_undo_of_a_fresh_install_deletes_it_and_turns_the_old_automation_back_on
+M22  undo not carried out                                     test_her_undo_of_an_install_is_needs_person_and_the_house_keeps_what_the_install_wrote
+M23  HA's refusal reads as failed                             test_home_assistant_refusing_the_config_ends_the_install_refused_with_its_message_and_writes_nothing
+M24  unreachable house still writes                           test_home_assistant_out_of_reach_ends_the_install_failed_and_touches_nothing
+M25  her Install allowed                                      test_her_install_is_needs_person_and_writes_nothing
+M26  her Undo of an install allowed                           test_her_undo_of_an_install_is_needs_person_and_the_house_keeps_what_the_install_wrote
+M27  a proposal may be installed twice                        test_a_proposal_is_installed_once_and_a_second_press_is_no_proposal_and_writes_nothing
+M28  another piece's proposal accepted                        test_an_install_naming_another_pieces_proposal_is_no_proposal
+M29  install of a changed piece accepted                      test_an_install_of_a_piece_changed_since_the_proposal_is_stale_base_and_writes_nothing
+M30  propose at a stale version accepted                      test_a_proposal_stops_pending_when_installed_when_the_piece_changes_and_when_it_was_refused
+M31  incomplete automation proposable                         test_an_empty_body_is_a_draft_that_is_accepted_but_cannot_be_proposed
+M32  a note can be proposed                                   test_a_piece_that_is_not_an_automation_is_not_installable_by_propose_or_install
+M33  a note can be installed                                  test_a_piece_that_is_not_an_automation_is_not_installable_by_propose_or_install
+M34  Installed carries enabled True                           test_a_fresh_install_writes_the_pieces_config_under_its_id_and_leaves_it_off_as_proposed
+M35  Installed drops turn_off                                 test_an_install_naming_its_own_proposal_carries_the_proposals_options
+M36  a Propose can be undone                                  test_a_propose_changes_no_piece_and_cannot_be_undone
+M37  Proposed drops turn_off                                  test_pending_names_the_newest_proposal_of_each_piece_not_yet_installed_at_its_current_version
+M38  oldest proposal wins                                     test_a_proposal_stops_pending_when_installed_when_the_piece_changes_and_when_it_was_refused
+M39  an Install does not clear the proposal                   test_a_proposal_stops_pending_when_installed_when_the_piece_changes_and_when_it_was_refused
+M40  a stale proposal still pending                           test_a_proposal_stops_pending_when_installed_when_the_piece_changes_and_when_it_was_refused
+M41  blank alias counts as complete                           test_complete_needs_a_non_blank_alias_a_trigger_and_an_action
+M42  no trigger counts as complete                            test_complete_needs_a_non_blank_alias_a_trigger_and_an_action
+M43  no action counts as complete                             test_complete_needs_a_non_blank_alias_a_trigger_and_an_action
+M44  body_of keeps the id                                     test_a_config_read_from_the_house_becomes_a_body_without_its_id
+M45  singular names not renamed                               test_older_singular_names_become_the_plural_ones
+M46  an empty body is not well formed                         test_an_empty_body_is_a_draft_well_formed_but_neither_a_config_nor_complete
+M47  unknown fields allowed                                   test_texts_that_are_not_a_json_object_of_the_shape_are_not_well_formed
+M48  mode not checked                                         test_texts_that_are_not_a_json_object_of_the_shape_are_not_well_formed
+M49  max not checked                                          test_modes_are_the_four_home_assistant_has_and_max_is_a_positive_whole_number
+M50  a record may start twice                                 test_carrying_an_install_out_again_writes_nothing_and_returns_the_record_as_it_stands
+M51  a record may end twice                                   test_a_command_has_one_record_and_one_ending
+M52  of ignores the household                                 test_the_latest_install_of_each_piece_is_read_by_piece_and_not_across_households
+M53  latest_on_bench ignores the household                    test_the_latest_install_of_each_piece_is_read_by_piece_and_not_across_households
+M54  latest_on_bench returns the oldest                       test_an_install_that_could_not_reach_the_house_does_not_stop_a_later_install_updating_its_own_automation
+M55  tool proposes as the person                              test_bench_propose_install_makes_her_propose_command_and_changes_nothing_in_the_house
+M56  tool drops enabled                                       test_bench_propose_install_without_turn_off_proposes_none
+M57  tool drops turn_off                                      test_bench_propose_install_makes_her_propose_command_and_changes_nothing_in_the_house
+M58  house_automation keeps the id in the body                test_house_automation_reads_one_config_as_a_body_without_its_id
+M59  state tool hides the waiting proposal                    test_bench_install_state_says_a_proposal_is_waiting_then_how_the_install_went
+M60  wire model drops turn_off of the proposal                test_the_bench_shows_her_proposal_then_the_install_writes_exactly_what_was_proposed
+M61  wire model drops the note                                test_home_assistant_refusing_the_config_is_answered_200_and_the_piece_shows_refused_with_its_reason
+
+Equivalent:
+M8   turning off an old automation that is already off: the house ends in the same state, and an undo (which turns the
+     old one on only if the install found it on) still leaves it off. Only a redundant request differs, which the
+     contract does not forbid.
+
+Notes:
+M24 and M54 are first caught by the strict xfail of the overwrite-guard defect (the plant changes what that test sees);
+M24 is also caught by the `touched` assertions of the unreachable-house test, M54 by the latest-on-bench test.

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100" width="1024" height="1024">
+  <!-- Ashley's still mark on its own ground: the source of every raster icon (render.sh). The animated mark is src/components/AshleyMark.tsx. -->
+  <defs>
+    <radialGradient id="ground" r="0.75">
+      <stop offset="0" stop-color="#241b12"/>
+      <stop offset="1" stop-color="#0f0c09"/>
+    </radialGradient>
+    <radialGradient id="halo" r="0.5">
+      <stop offset="0" stop-color="#F2B45A" stop-opacity=".30"/>
+      <stop offset=".55" stop-color="#C46A4A" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#C46A4A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="core" r="0.5">
+      <stop offset="0" stop-color="#FFF6E4"/>
+      <stop offset=".45" stop-color="#FFD58A"/>
+      <stop offset="1" stop-color="#E8962F"/>
+    </radialGradient>
+    <radialGradient id="glow" r="0.5">
+      <stop offset="0" stop-color="#FFD58A" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#F2B45A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="-50" y="-50" width="100" height="100" fill="url(#ground)"/>
+  <g id="mark" transform="scale(1)">
+    <circle r="46" fill="url(#halo)"/>
+    <g fill="none" stroke-linecap="round" opacity=".4">
+      <path transform="rotate(52)" stroke="#D9785A" stroke-width="1.8" d="M-33 0A33 8 0 0 1 33 0"/>
+      <path transform="rotate(-16)" stroke="#F2B45A" stroke-width="2.6" d="M-38 0A38 11.5 0 0 1 38 0"/>
+    </g>
+    <g transform="rotate(-16)" fill="none" stroke="#B98A4E" stroke-width=".7" opacity=".55">
+      <circle r="27"/>
+      <ellipse rx="27" ry="7"/>
+      <ellipse cy="-14" rx="23" ry="5.5"/>
+      <ellipse cy="14" rx="23" ry="5.5"/>
+      <ellipse rx="10.3" ry="27"/>
+      <ellipse rx="22.1" ry="27"/>
+    </g>
+    <circle r="27" fill="url(#glow)"/>
+    <circle r="18" fill="url(#core)"/>
+    <g fill="#3a1e08">
+      <rect x="-7.6" y="-6.8" width="5" height="11.5" rx="2.5"/>
+      <rect x="2.6" y="-6.8" width="5" height="11.5" rx="2.5"/>
+    </g>
+    <g fill="none" stroke-linecap="round">
+      <path transform="rotate(52)" stroke="#D9785A" stroke-width="1.8" d="M33 0A33 8 0 0 1 -33 0"/>
+      <path transform="rotate(-16)" stroke="#F2B45A" stroke-width="2.6" d="M38 0A38 11.5 0 0 1 -38 0"/>
+    </g>
+    <circle transform="rotate(-16)" cx="32.9" cy="5.75" r="2.3" fill="#FFF1D6"/>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "max_messages": 4,
+  "catch_up_s": 900,
+  "seen_retention_days": 7,
+  "typing_refresh_s": 8,
+  "unavailable_text": "I can't answer right now. Try me again in a minute.",
+  "refused_text": "I'd rather not answer that one.",
+  "held_footer": "Answer yes to go ahead."
+}

@@ -1,0 +1,26 @@
+{
+  "end_of_speech": {
+    "start_probability": 0.2,
+    "speech_probability": 0.5,
+    "speech_ms": 300,
+    "start_gap_ms": 1000,
+    "silence_ms": 700,
+    "max_utterance_ms": 15000
+  },
+  "clip_retention_s": 120,
+  "connect_timeout_s": 10,
+  "reconnect_first_s": 1,
+  "reconnect_max_s": 60,
+  "satellites_poll_s": 60,
+  "speaker": {
+    "floor": 0.5,
+    "margin": 0.1,
+    "min_audio_ms": 1000,
+    "decides": false
+  },
+  "enrol_minutes": 30,
+  "playback": {
+    "lead_s": 1.5,
+    "words_per_s": 2.6
+  }
+}

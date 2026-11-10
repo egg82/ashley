@@ -1,0 +1,7 @@
+{
+  "tick_s": 30,
+  "batch": 10,
+  "candidates": 10,
+  "max_failures": 3,
+  "embed_batch": 20
+}

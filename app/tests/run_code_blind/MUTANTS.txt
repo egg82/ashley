@@ -1,0 +1,50 @@
+Planted wrong implementations, one at a time, in a scratch copy of app/ (never the worktree), the plant asserted to apply
+exactly once. Each run is tests/run_code_blind against main, green before the plant. 46 planted, 46 caught.
+
+#    mutant
+M1   pod mounts the service-account token
+M2   pod shares the host network
+M3   pod deadline one second past the config
+M4   pod not under the configured runtime class
+M5   writable root filesystem
+M6   container adds a capability
+M7   script appended to the command
+M8   limits dropped, only requests
+M9   scratch volume without a size limit
+M10  privileged when the script says so
+M11  pod deleted only when the run succeeded
+M12  first marked line taken, not the last
+M13  stdout not cut
+M14  one file past the count kept
+M15  output never recorded by the tool
+M16  get ignores the household
+M17  a run can finish twice
+M18  script limit off by one
+M19  token read once, not per call
+M20  sweep deletes young pods
+M21  out-of-memory read as failed
+M22  script logged with the outcome
+M23  pod never gives up waiting
+M24  start failure still runs the code
+M25  deadline equal to timeout accepted
+M26  file names chosen by the job become env names
+M27  the run is named by the call, not its id
+M28  whitespace-only script accepted
+M29  deadline-exceeded pod read as failed
+M30  envelope accepts timed_out with an exit code
+M31  stray log ignores the line cut flag
+M32  sweep failure aborts the run
+M33  unreadable log raises
+M34  sandbox failure leaves the run open
+M35  kept file longer than limit
+M36  skipped names from the runner dropped
+M37  stdin limit ignored
+M38  start gives a run to another household
+M39  output exit code lost on round trip
+M40  pod namespace from the job
+M41  unknown tool name runs anyway
+M42  pod left when the app task is cancelled
+M43  script sent as plain text, not base64
+M44  request cpu set to the limit
+M45  file name and text joined without the NUL
+M46  unreadable log read as failed, not unknown

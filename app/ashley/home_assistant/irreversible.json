@@ -1,0 +1,13 @@
+{
+  "operations": [
+    "delete:*",
+    "remove:*",
+    "perform:homeassistant.restart",
+    "perform:homeassistant.stop",
+    "perform:recorder.purge",
+    "perform:recorder.purge_entities",
+    "perform:recorder.disable",
+    "perform:backup.*",
+    "perform:hassio.*"
+  ]
+}

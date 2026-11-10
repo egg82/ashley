@@ -1,0 +1,465 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 296716550,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "14451",
+    "name": "Target",
+    "street": "Orchard Parkway",
+    "city": "Westminster",
+    "county": "Adams",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80023",
+    "countrycode": "US",
+    "extent": [
+     -104.9962537,
+     39.9598174,
+     -104.9951449,
+     39.9582233
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.9956918,
+     39.9589905
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 45610960,
+    "osm_key": "shop",
+    "osm_value": "supermarket",
+    "type": "house",
+    "housenumber": "1001",
+    "name": "Target",
+    "street": "East 120th Avenue",
+    "city": "Thornton",
+    "county": "Adams",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80233",
+    "countrycode": "US",
+    "extent": [
+     -104.9754687,
+     39.9173595,
+     -104.9736577,
+     39.9163594
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.9745647,
+     39.9166374
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 64301395,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "10445",
+    "name": "Target",
+    "street": "Reed Street",
+    "locality": "Westcliff & Cambridge",
+    "city": "Westminster",
+    "county": "Jefferson",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80021",
+    "countrycode": "US",
+    "extent": [
+     -105.0801589,
+     39.887249,
+     -105.0782252,
+     39.8856649
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.079192,
+     39.8864141
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 60302115,
+    "osm_key": "shop",
+    "osm_value": "supermarket",
+    "type": "house",
+    "housenumber": "400",
+    "name": "Target",
+    "street": "Marshall Road",
+    "city": "Superior",
+    "county": "Boulder",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80027",
+    "countrycode": "US",
+    "extent": [
+     -105.1750713,
+     39.9571777,
+     -105.1736495,
+     39.955738
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.174341,
+     39.956482
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "N",
+    "osm_id": 14073695101,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "4358",
+    "name": "Target",
+    "street": "City Centre Road",
+    "city": "Firestone",
+    "county": "Weld",
+    "state": "Colorado",
+    "country": "United States",
+    "postcode": "80504",
+    "countrycode": "US"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.9720494,
+     40.1580358
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "N",
+    "osm_id": 2433951329,
+    "osm_key": "shop",
+    "osm_value": "supermarket",
+    "type": "house",
+    "housenumber": "7899",
+    "name": "Target",
+    "street": "Wadsworth Boulevard",
+    "city": "Arvada",
+    "county": "Jefferson",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80003",
+    "countrycode": "US"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.085432,
+     39.8396027
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 220904096,
+    "osm_key": "shop",
+    "osm_value": "supermarket",
+    "type": "house",
+    "housenumber": "2171",
+    "name": "Target",
+    "street": "Prairie Center Parkway",
+    "city": "Brighton",
+    "county": "Adams",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80601",
+    "countrycode": "US",
+    "extent": [
+     -104.7814986,
+     39.9571426,
+     -104.7795127,
+     39.9555955
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.7805892,
+     39.9563363
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 167529417,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "551",
+    "name": "Target",
+    "street": "South Hover Road",
+    "city": "Longmont",
+    "county": "Boulder",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80501",
+    "countrycode": "US",
+    "extent": [
+     -105.1349412,
+     40.1541121,
+     -105.1336137,
+     40.1527143
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.1342617,
+     40.1532838
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 130861012,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "2800",
+    "name": "Target",
+    "street": "Pearl Street",
+    "city": "Boulder",
+    "county": "Boulder",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80301",
+    "countrycode": "US",
+    "extent": [
+     -105.2568046,
+     40.0223495,
+     -105.255302,
+     40.0209935
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.2559665,
+     40.0215766
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 481124132,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "5071",
+    "name": "Target",
+    "street": "Kipling Street",
+    "city": "Wheat Ridge",
+    "county": "Jefferson",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80033",
+    "countrycode": "US",
+    "extent": [
+     -105.1136956,
+     39.7889356,
+     -105.1123729,
+     39.7875315
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.1130633,
+     39.7883387
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 133018274,
+    "osm_key": "shop",
+    "osm_value": "supermarket",
+    "type": "house",
+    "housenumber": "7930",
+    "name": "Target",
+    "street": "Northfield Boulevard",
+    "city": "Denver",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80238",
+    "countrycode": "US",
+    "extent": [
+     -104.8961051,
+     39.7842975,
+     -104.8949322,
+     39.7825463
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.8955464,
+     39.7832835
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "N",
+    "osm_id": 6856301656,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "1600",
+    "name": "Target",
+    "street": "California Street",
+    "locality": "Central Business District",
+    "city": "Denver",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80202",
+    "countrycode": "US"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.9918274,
+     39.7451309
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 219064057,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "1985",
+    "name": "Target",
+    "street": "Sheridan Boulevard",
+    "city": "Edgewater",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80214",
+    "countrycode": "US",
+    "extent": [
+     -105.0566457,
+     39.746844,
+     -105.0554689,
+     39.7457455
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -105.0560896,
+     39.7460307
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 1145037599,
+    "osm_key": "shop",
+    "osm_value": "supermarket",
+    "type": "house",
+    "housenumber": "93",
+    "name": "Target",
+    "street": "North Quebec Street",
+    "city": "Denver",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80230",
+    "countrycode": "US",
+    "extent": [
+     -104.9048346,
+     39.7182585,
+     -104.9039471,
+     39.7178814
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.9043909,
+     39.7180614
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_type": "W",
+    "osm_id": 91973657,
+    "osm_key": "shop",
+    "osm_value": "department_store",
+    "type": "house",
+    "housenumber": "4301",
+    "name": "Target",
+    "street": "East Virginia Avenue",
+    "city": "Glendale",
+    "county": "Arapahoe",
+    "state": "CO",
+    "country": "United States",
+    "postcode": "80246",
+    "countrycode": "US",
+    "extent": [
+     -104.9377274,
+     39.7094858,
+     -104.9365543,
+     39.7076223
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.9371368,
+     39.7085408
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,47 @@
+{
+ "data": {
+  "print": {
+   "id": "100002",
+   "name": "Pencil Cup & Note Holder",
+   "slug": "desk-pencil-cup",
+   "summary": "Remixed version of a pencil cup and note holder, optimized with a sleek design and cutouts to reduce weight.",
+   "likesCount": 25,
+   "downloadCount": 623,
+   "makesCount": 3,
+   "ratingAvg": "4.6666666667",
+   "user": {
+    "publicUsername": "MakerTwo"
+   },
+   "stls": [
+    {
+     "id": "200011",
+     "name": "Cup_Note_Holder_2Notes.3mf",
+     "fileSize": 124770
+    },
+    {
+     "id": "200012",
+     "name": "Cup_Note_Holder_2Notes.stl",
+     "fileSize": 127184
+    },
+    {
+     "id": "200013",
+     "name": "Cup_Note_Holder_Single.stl",
+     "fileSize": 126984
+    },
+    {
+     "id": "200014",
+     "name": "Cup_Note_Holder_Single.3mf",
+     "fileSize": 127567
+    }
+   ],
+   "description": "<p>This is a remixed model of a pencil cup and note holder, originally made by <strong>an earlier maker </strong>over on another site. Thanks for a great model.&nbsp;</p><p>&nbsp;</p><p>I loved the look of the model, so I removed the logo, and made it so it can take a standard stack of sticky notes:</p><figure class=\"image image-style-align-left\"><img src=\"https://media.printables.com/media/prints/100002/rich_content/example-1/photo-one.png\"></figure><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>I also made a version of the model that can accept two stacks in the slot.</p><p>&nbsp;</p><p>Print specs / details:</p><ul><li>Printer: Example Printer</li><li>Material: Black PLA (default settings)</li><li>Supports: None</li><li>Layer height: .20</li><li>Brim: 8mm so it does not fall over, as it is quite tall</li></ul><p>There are some overhangs in the slot where the note stack goes. I did not have issues printing those, but if you struggle with overhangs, you may want to use minor supports in those areas.</p><p>&nbsp;</p><figure class=\"image image_resized image-style-align-left\" style=\"width:50%;\"><img src=\"https://media.printables.com/media/prints/100002/rich_content/example-2/photo-two.png\"></figure><p>&nbsp;</p><p>&nbsp;</p><p>In the future, I may make a version that holds two cups, if there is a demand for that.</p>",
+   "datePublished": "2024-06-19T02:59:22.381789+00:00",
+   "license": {
+    "name": "Creative Commons \u2014 Attribution  \u2014 Noncommercial  \u2014  Share Alike"
+   },
+   "category": {
+    "name": "Office"
+   }
+  }
+ }
+}

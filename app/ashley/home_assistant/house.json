@@ -1,0 +1,4 @@
+{
+  "timeout_s": 15,
+  "socket_max_bytes": 16777216
+}

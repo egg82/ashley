@@ -1,0 +1,142 @@
+Planted mutants for the herdr bridge blind suite (app/tests/herdr_bridge_blind). Each was applied alone to the shipped
+source in bridge/herdr/herdr_bridge and the whole suite run (-x, two xdist workers); "killed" is a failing run (an
+xfail that starts to pass counts: strict). The file was restored from the text read before mutating, asserted equal after
+each. 112 planted (one no-op control): 103 killed, 8 survived as equivalent or contract-silent (reasons below), the control
+survived. A mutant that replaced the runner's argument list with a shell string was found to run the test arguments as
+shell commands (it left empty files named by them in the working directory); the files were moved aside.
+Directed tests were added for the first survivors: P04, P08, P13, I04, A12, P25, P27, H02, H04, H05, L04, C01-C03.
+
+A01  auth.py      killed    any auth scheme accepted
+A02  auth.py      killed    token never compared
+A03  auth.py      killed    person id format unchecked
+A04  auth.py      killed    person id prefix match
+A05  auth.py      killed    person compared case-insensitively
+A06  auth.py      killed    first person never recorded
+A07  auth.py      killed    person lock never refuses
+A08  auth.py      killed    missing person is bad_token
+A09  auth.py      killed    other person is bad_token
+A10  auth.py      killed    person id 65 chars
+A11  auth.py      killed    lock forgotten at every start
+A12  auth.py      killed    short digest (equal behaviour, weaker)  [killed by the full-sha256 token-file test after it was added]
+I01  install.py   killed    raw token stored
+I02  install.py   killed    init keeps the person lock
+I03  install.py   killed    short token
+I04  install.py   killed    private key left default-mode
+I05  install.py   killed    new certificate on every init
+I06  install.py   killed    fingerprint of PEM not DER
+I07  install.py   killed    config not written
+I08  install.py   killed    constant token
+P01  api.py       killed    prompt limit 8001
+P02  api.py       killed    prompt limit 7999
+P03  api.py       SURVIVED  whitespace-only prompt allowed  [equivalent: the contract says 1 to 8000 characters and is silent on whitespace-only text; the test accepts 200 or 400]
+P04  api.py       killed    prompt body extra keys / missing text unchecked
+P05  api.py       killed    lines lower bound 0
+P06  api.py       killed    lines upper bound 401
+P07  api.py       killed    default lines 100
+P08  api.py       killed    non-ascii digits accepted in lines
+P09  api.py       killed    lines digits unchecked
+P10  api.py       killed    body cap doubled
+P11  api.py       killed    no body cap
+P12  api.py       SURVIVED  non-object body not refused  [equivalent: obj() turns a non-object into {}, and both prompt and start refuse an empty object later]
+P13  api.py       killed    extra start fields accepted
+P14  api.py       killed    non-string model accepted
+P15  api.py       killed    any method on session routes
+P16  api.py       SURVIVED  session id case kept  [equivalent for lowercase ids (herdr's); the contract does not say whether an upper-case id names the session]
+P17  api.py       killed    log carries the session id in clear
+P18  api.py       killed    log carries the person
+P19  api.py       killed    log carries the request body
+P20  api.py       killed    log carries the path
+P21  api.py       killed    prompt answer false
+P22  api.py       killed    close answer false
+P23  api.py       killed    whoami wrong person
+P24  api.py       killed    whoami on any method
+P25  api.py       killed    start on any method  [killed after the wrong-method test sent a valid start body (it first sent a body the start route refuses for other reasons)]
+P26  api.py       killed    whoami fakes the herdr version
+P27  api.py       killed    prompt truncated
+S01  sessions.py  killed    unknown session takes a prompt
+S02  sessions.py  killed    blocked session takes a prompt
+S03  sessions.py  killed    working session takes a prompt
+S04  sessions.py  killed    blocked reported as busy
+S05  sessions.py  killed    uppercase first letter
+S06  sessions.py  killed    label 33 chars
+S07  sessions.py  killed    label may start with a digit
+S08  sessions.py  killed    label prefix match
+S09  sessions.py  killed    model prefix match
+S10  sessions.py  killed    model may start with a dash
+S11  sessions.py  killed    model 66 chars
+S12  sessions.py  killed    model unchecked
+S13  sessions.py  killed    label unchecked
+S14  sessions.py  killed    string-prefix root test
+S15  sessions.py  killed    symlinks not resolved
+S16  sessions.py  killed    relative path allowed
+S17  sessions.py  killed    missing or file directory allowed
+S18  sessions.py  killed    start in the path as given
+S19  sessions.py  killed    must be under every root
+S20  sessions.py  killed    only the first root
+S21  sessions.py  killed    label_taken never checked
+S22  sessions.py  killed    tab left after a start that never reports
+S23  sessions.py  killed    tab left after a failed start
+S24  sessions.py  killed    never-up start is herdr_unavailable
+S25  sessions.py  killed    unknown state counts as up
+S26  sessions.py  killed    prompt state check removed
+S27  sessions.py  killed    prompt timeout is herdr_unavailable
+S28  sessions.py  killed    close timeout is herdr_unavailable
+S29  sessions.py  killed    read ignores lines
+S30  sessions.py  killed    find returns the first agent
+S31  sessions.py  killed    close closes the whole tab
+S32  sessions.py  SURVIVED  never truncated  [contract silent: the README gives `truncated` no meaning, so no test can say when it is true]
+S33  sessions.py  killed    herdr agent_not_found is unavailable
+S34  sessions.py  killed    herdr agent_blocked is unavailable
+S35  sessions.py  SURVIVED  dir check moved inside the lock (equivalent)  [equivalent: the directory check inside or outside the lock gives the same answers]
+S36  sessions.py  killed    tab made at the unresolved path
+S37  sessions.py  killed    model dropped
+S38  sessions.py  SURVIVED  tab label preferred (equivalent in the harness)  [equivalent here: herdr's agent name always equals the label the bridge gave it]
+H01  herdr.py     killed    read asks for one line more
+H02  herdr.py     killed    prompt text stripped  [killed by the exact-text test; H04, H05, I04, P04, P08, P13, P27, L04, C01, C02, C03 likewise]
+H03  herdr.py     SURVIVED  model not after a separator (equivalent: validated)  [equivalent: a validated model never begins with a dash, so a missing `--` changes nothing]
+H04  herdr.py     killed    starts another kind of agent
+H05  herdr.py     killed    close with an extra flag
+H06  herdr.py     killed    fixed herdr version
+V01  server.py    killed    TLS 1.2 allowed
+V02  server.py    killed    client certificate optional
+V03  server.py    killed    client certificate not asked for
+V04  server.py    killed    system CAs instead of the bridge CA
+V05  server.py    killed    handshake failure logs the client address
+V06  server.py    killed    header names not lowercased
+V07  server.py    killed    query dropped
+V08  server.py    killed    POST unsupported
+V09  server.py    killed    serves the CA certificate (no key)
+V10  server.py    SURVIVED  no explicit handshake (equivalent: lazy)  [equivalent: the handshake is done lazily on the first read instead, with the same refusal]
+C01  config.py    killed    missing client CA tolerated
+C02  config.py    killed    unknown config keys tolerated
+C03  config.py    killed    relative roots tolerated
+L01  logs.py      killed    nine hex digits
+L02  logs.py      killed    error never logged
+L03  logs.py      killed    session never logged
+L04  logs.py      killed    bytes always zero
+R01  runner.py    killed    arguments joined through a shell
+R02  runner.py    killed    timeout reported as missing
+R03  runner.py    killed    missing reported as timeout
+N00  api.py       SURVIVED  NO-OP control  [the no-op control, survives as it must]
+J01  sessions.py  killed    the settings are written but not passed
+J02  sessions.py  killed    every started session gets the job settings
+J03  jobdirs.py   killed    the rule path is relative to the project
+J04  jobdirs.py   killed    the rule covers the parent of the job folder
+J05  jobdirs.py   killed    no Write rule
+J06  jobdirs.py   killed    a bypass mode is added
+J07  jobdirs.py   killed    any path is accepted into a rule
+J08  jobdirs.py   killed    any ashley-jobs child counts as a job folder
+J09  herdr.py     killed    the model flag comes before the settings
+J10  jobdirs.py   killed    a job folder anywhere counts, not only under ashley-jobs
+J11  jobdirs.py   killed    one folder too many is kept
+J12  jobdirs.py   killed    the oldest are kept, the newest removed
+J13  jobdirs.py   killed    a folder a live session runs in is removed
+J14  jobdirs.py   killed    job numbers are compared as text
+J15  jobdirs.py   killed    a symlink named like a job folder is followed
+J16  jobdirs.py   killed    any folder beside the jobs is removed
+J17  sessions.py  killed    nothing is ever pruned
+J18  config.py    killed    the default is not twenty
+J19  config.py    killed    the setting is not read from the file
+J20  cli.py       killed    the count is not passed to the sessions
+J21  sessions.py  killed    pruning is logged with no count
+J22  sessions.py  killed    pruning happens before the start is known good

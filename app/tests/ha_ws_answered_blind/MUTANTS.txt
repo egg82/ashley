@@ -1,0 +1,52 @@
+Planted mutants for the HA websocket-answered blind suite (app/tests/ha_ws_answered_blind). Each was applied alone to the shipped
+source (home_assistant/client.py, connected_homes.py, ha_socket.py) and the suite run whole (-x, two xdist workers); "caught" is a
+failing run. Each file was restored from the text read before mutating, asserted equal after each. 41 planted: 37 caught (7 only
+after a directed test), 4 survived: the no-op control, a second no-op, and 2 equivalent mutants (reasons below).
+
+Directed tests added for survivors: an answer with no `success` verdict is unavailable (M17); a house that says auth_invalid but keeps
+listening is unavailable (M20); a greeting that is not auth_required is unavailable (M21); a REST 401 and a 200 text/plain leave
+checked_at (M34, M35); a REST read is one write (M36); a client with no stored connection moves nobody's (M40).
+
+M1   ha_socket.py   NO-OP CONTROL: a docstring changes                          survived, as the control must
+M10  ha_socket.py   plants a bare newline after the rejection raise             survived: also a no-op (a mistaken plant, kept as a second control)
+M14  ha_socket.py   errors raised by `answered` are swallowed                   survived: equivalent for the contract; the real callback is
+                                                                                answered.record, which never raises, and the contract says nothing of a raising one
+M26  client.py      an extra defaulted field on HomeAssistant                   survived: equivalent; nothing reads a field that is not part of the contract
+
+M2   client.py      default answered raises                                     caught
+M3   ha_socket.py   answered called, not awaited                                caught
+M4   ha_socket.py   answered never called                                       caught
+M5   ha_socket.py   answered called twice                                       caught
+M6   ha_socket.py   answered before the result is accepted                      caught
+M7   ha_socket.py   answered before connecting                                  caught
+M8   ha_socket.py   answered after the greeting                                 caught
+M9   ha_socket.py   answered after authentication                               caught
+M11  ha_socket.py   answered in a finally (also on failure)                     caught
+M12  ha_socket.py   answered also on a rejection                                caught
+M13  ha_socket.py   answered scheduled, not awaited                             caught
+M15  ha_socket.py   Commands uses the default answered, not the client's        caught
+M16  ha_socket.py   result returned as None                                     caught
+M17  ha_socket.py   success is anything but False                               caught after directed test
+M18  ha_socket.py   any error is a rejection                                     caught
+M19  ha_socket.py   any message type accepted as the result                      caught
+M20  ha_socket.py   authentication outcome not checked                           caught after directed test
+M21  ha_socket.py   greeting not checked                                         caught after directed test
+M22  ha_socket.py   token in the refusal message                                 caught
+M23  ha_socket.py   a dropped connection raises HouseRejected                     caught
+M24  ha_socket.py   rejection message lost                                        caught
+M25  ha_socket.py   always wss                                                    caught
+M27  connected_homes.py  command hook never wired                                caught
+M28  connected_homes.py  command hook records nothing                            caught
+M29  connected_homes.py  command hook records twice                              caught
+M30  connected_homes.py  command hook records connection 1                       caught
+M31  connected_homes.py  command hook records the next id                        caught
+M32  connected_homes.py  command hook does not await the write                   caught
+M33  connected_homes.py  REST hook dropped                                       caught
+M34  connected_homes.py  REST hook records every status                          caught after directed test
+M35  connected_homes.py  REST hook records non-JSON                              caught after directed test
+M36  connected_homes.py  REST hook records twice                                 caught after directed test
+M37  connected_homes.py  recorder's result unused (client not replaced)          caught
+M38  connected_homes.py  recorder's result unused, second plant                  caught
+M39  connected_homes.py  her house built over an unrecorded client               caught
+M40  connected_homes.py  recorder applied to a client with no stored connection  caught after directed test
+M41  connected_homes.py  recorder wired for the first client only                caught

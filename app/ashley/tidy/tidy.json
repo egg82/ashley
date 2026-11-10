@@ -1,0 +1,12 @@
+{
+  "kinds": ["note", "document", "code", "model", "measurements"],
+  "max_piece_chars": 12000,
+  "max_total_chars": 40000,
+  "max_findings": 12,
+  "shown": 6,
+  "min_quote_chars": 12,
+  "max_quote_chars": 400,
+  "max_why_chars": 160,
+  "lock_s": 180,
+  "keep_s": 2592000
+}

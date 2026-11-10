@@ -1,0 +1,47 @@
+Planted wrong implementations, one at a time, each run against the area's test files (service: kinds_edit,
+rollback_pins, service_more; config/seeds; tools; routes) with -x, then the source restored from the text the script read
+(~/scratch/ashley/workshop/mutate_skills.py, mutants_skills.json). 71 planted: 67 killed, 3 equivalent, 1 unspecified.
+
+Service (Postgres impl, postgres.py / postgres_rows.py), all KILLED unless noted:
+seed-label-wins-over-household       a seed's label wins over the household's
+kinds-unsorted                       SURVIVED the first pass; killed by test_kinds_come_back_in_slug_order
+add-kind-checks-or-to-and            a bad slug passes when the label is fine
+add-kind-label-not-stripped          SURVIVED: label whitespace is not in the contract (see below)
+add-kind-always-logs                 skills.kind_added logged for an existing kind
+current-none-when-unedited-even-with-seed  an unedited seeded kind reads None
+current-edits-is-version             SURVIVED the first pass; killed by test_edits_count_live_versions_only...
+current-seed-has-no-source           seeded_from dropped on the seed
+fits-off-by-one / fits-allows-nul / fits-allows-blank   body and note limits, NUL and empty
+rollback-seed-wording-for-nonzero    the rollback `what` names the wrong version
+rollback-base-always-zero            rollback's base_version recorded as 0
+rollback-forgets-restored-from       restored_from left empty
+body-of-nonpositive-is-seed          a negative target rolls back to the seed
+write-stale-check-inverted / write-base-of-unedited-is-one   stale compare wrong
+insert-allows-unchanged              an identical body accepted
+insert-pin-binds-persons-not-hers / insert-ignores-pin   pin applied to the wrong author, or never
+next-version-counts-live-only        version numbers collide with waiting/declined ones
+logged-author-swapped                SURVIVED the first pass; killed by test_the_edit_log_line_carries...
+changelog-oldest-first / pin-always-true / decide-declines-on-approve / decide-skips-stale-check
+decide-stale-also-on-decline         SURVIVED the first pass; killed by test_declining_after_the_live_version_moved_on...
+lock-is-a-noop                       concurrent edits from one base no longer yield one version
+head-oldest-live / live-count-counts-all
+proposal-oldest-first                SURVIVED the first pass; killed by test_the_newest_waiting_proposal_is_the_one_shown
+waiting-matches-live / live-body-any-status / insert-kind-always-new / pin-unpin-never-deletes
+Config: slug-length-off-by-one, slug-prefix-match, label-allows-nul, label-allows-blank, count-allows-zero,
+config-allows-extra-keys: KILLED.
+Seeds: seed-close-fence-unchecked, seed-field-order-free, seed-kind-need-not-match-file, seed-source-may-be-empty,
+seed-body-limit-off-by-one, seed-load-reads-dotfiles: KILLED.
+Tools: tool-forgets-waiting-note, tool-loaded-logs-zero-version, tool-none-is-not-clear, tool-label-defaults-to-slug,
+tool-edit-as-person, tool-edit-without-bench, tool-number-accepts-bool, tool-rollback-without-bench,
+tool-refusal-outcome-generic, tool-read-pinned-false, tool-entry-author-swapped, spec-read-not-marked-reads: KILLED.
+Routes: route-refusal-is-400, route-work-refusal-is-409, route-rollback-as-no-person, route-approve-declines,
+route-unknown-kind-is-409, route-start-without-label-allowed, model-author-swapped, model-waiting-body-dropped,
+kinds-route-unreachable-raises: KILLED.
+
+EQUIVALENT (no test can tell them apart):
+count-allows-bool       config.py `_count` accepting True: `int(str(True))` raises ValueError in config_from anyway.
+seed-allows-short-file  seeds.py `len(lines) < 6` -> `< 5`: a 5-line file has an empty body, refused as such either way.
+seed-duplicate-key-allowed  seeds.py duplicate-key check: a repeated key leaves fewer than three keys, which the
+                        field-order check refuses either way.
+NOT IN THE CONTRACT (left unpinned):
+add-kind-label-not-stripped  `add_kind` stores `label.strip()`; no doc says a label is trimmed.

@@ -1,0 +1,98 @@
+Planted one at a time against the head of !317 (app code identical on main), the suite green before each; "caught" is a
+non-zero exit with a failing test (the first one named), run with --hypothesis-seed=0 and .hypothesis removed first.
+72 of 73 caught; 1 equivalent (below). The first pass of 26 mutants was discarded and rerun: a property failure on the
+clean tree (a reference that disagreed with the code on a case the docs leave open) replayed from .hypothesis and made
+every mutant after it read "caught". Mutants that survived a complete pass got directed tests: P11, P13, P27, R2 and
+P7 (strict "over"/"under", the nearest deposit setting the cadence, the rule's minimum, the maximum's edge), then T5 and J4
+(arming needs a turn; a kept-quiet fire is settled).
+
+predicates.py
+ P1   holds inverts non-negated                      caught  test_parsed_predicates_judge_like_hand_built_ones
+ P2   negate ignored                                 caught  test_not_flips_every_non_history_kind
+ P3   exact payee compared as contains               caught  test_a_payee_without_a_match_contains_and_with_exact_is_exac
+ P3b  contains payee compared as exact               caught  test_parsed_predicates_judge_like_hand_built_ones
+ P4   payee text case-sensitive                      caught  test_parsed_predicates_judge_like_hand_built_ones
+ P5   only the first name is a payee                 caught  test_payee_looks_at_every_name_the_record_carries
+ P6   amount minimum exclusive                       caught  test_amount_is_inclusive_at_the_minimum_and_bounded_above
+ P7   amount maximum exclusive                       caught  test_the_amount_maximum_is_inclusive_as_its_words_say_at_mos
+ P7b  amount maximum ignored                         caught  test_amount_is_inclusive_at_the_minimum_and_bounded_above
+ P8   day window first exclusive                     caught  1-1-5-True
+ P9   day window last exclusive                      caught  5-1-5-True
+ P10  payee_new off by one                           caught  test_payee_new_counts_the_payers_earlier_deposits_against_mi
+ P11  above: equal counts                            caught  test_a_deposit_exactly_at_the_percent_over_the_largest_is_no
+ P12  above measured from the smallest               caught  test_amount_vs_usual_is_above_the_largest_or_below_the_small
+ P13  below: equal counts                            caught  test_a_deposit_exactly_at_the_percent_under_the_smallest_is_
+ P14  below measured from the largest                caught  test_amount_vs_usual_is_above_the_largest_or_below_the_small
+ P15  above and below ANDed                          caught  test_parsed_predicates_judge_like_hand_built_ones
+ P16  no history: amount_vs_usual true               caught  test_other_payers_other_accounts_the_other_direction_and_tra
+ P17  uncounted deposits are history                 caught  test_other_payers_other_accounts_the_other_direction_and_tra
+ P18  other direction is history                     caught  test_other_payers_other_accounts_the_other_direction_and_tra
+ P19  other accounts are history                     caught  test_other_payers_other_accounts_the_other_direction_and_tra
+ P20  other payers are history                       caught  test_other_payers_other_accounts_the_other_direction_and_tra
+ P22  later deposits are history                     caught  test_only_the_lookback_window_and_days_up_to_the_deposit_are
+ P23  the deposit is its own history                 caught  test_the_deposit_itself_in_the_read_is_not_its_own_history
+ P24  cadence is the mean gap                        caught  test_the_cadence_is_the_median_gap
+ P25  last_day is the oldest                         caught  test_history_reports_the_payers_pattern
+ P26  tolerance edge counts as off                   caught  test_day_vs_usual_on_a_thirty_day_cadence_and_a_tolerance_of
+ P27  off cadence from the farthest deposit only     caught  test_a_deposit_on_the_cadence_of_its_latest_neighbour_is_on_
+ P28  predicate days ignored                         caught  test_holds_agrees_with_the_reference_written_from_the_docs
+ P29  to_json drops negate                           caught  test_a_predicate_survives_json_and_the_json_is_plain
+deposit_rule.py
+ R1   a deposit on the arming day refused            caught  test_a_rule_still_needs_the_account_the_day_the_direction_an
+ R2   minimum exclusive                              caught  test_a_deposit_exactly_at_the_minimum_matches_and_one_cent_u
+ R3   clauses never checked                          caught  test_a_clause_holds_when_every_predicate_of_it_holds_and_the
+ R4   clause is OR of predicates                     caught  test_a_history_clause_reads_the_transactions_it_is_given_and
+ R5   last holding clause is the reason              caught  test_the_first_clause_that_holds_is_why_it_matched
+ R6   matches never reads history                    caught  test_a_history_clause_reads_the_transactions_it_is_given_and
+ R7   landed never judged                            caught  test_a_judged_rule_lands_judged_with_history_over_at_least_t
+ R8   landed carries no history                      caught  test_landed_survives_json_with_its_reason_and_history
+ R9   landed carries no reason                       caught  test_landed_survives_json_with_its_reason_and_history
+ R10  judge ignores judged days                      caught  test_a_judged_rule_lands_judged_with_history_over_at_least_t
+ R11  history_days is the shortest                   caught  test_a_rule_that_reads_history_lands_with_the_payers_history
+ R12  history_days counts non-history predicates     caught  test_a_rule_that_reads_history_lands_with_the_payers_history
+ R13  to_json drops judge                            caught  test_the_proposal_keeps_the_conditions_and_the_judge_flag_sh
+ R14  minimum never checked                          caught  test_the_minimum_and_the_payee_are_still_anded_with_the_cond
+postgres_deposits.py
+ D1   a new proposal keeps the older ones            caught  test_a_newer_proposal_replaces_the_older_ones_in_the_convers
+ D2   pending is the oldest                          SURVIVED
+ D3   arming does not consume the proposal           caught  test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_la
+ D4   arming never refused                           caught  test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_la
+ D5   pending of anyone                              caught  test_arming_with_nothing_proposed_in_this_conversation_by_th
+ D6   pending of any conversation                    caught  test_arming_with_nothing_proposed_in_this_conversation_by_th
+ D7   old proposals are never dropped                caught  test_proposing_again_drops_proposals_older_than_the_ttl
+ D8   fire stores no landed                          caught  test_a_judged_fire_goes_out_only_when_she_says_it_is_worth_i
+deposits.py
+ D9   same turn may arm                              caught  test_she_cannot_arm_in_the_turn_she_proposed_but_can_in_a_la
+ D10  proposals never expire                         caught  test_a_proposal_older_than_the_ttl_is_expired_when_armed
+reminders.py
+ T1   arm offered in the proposing turn              caught  test_she_is_offered_arming_only_in_a_turn_after_a_proposal_o
+ T2   offered by whoever's proposal                  caught  test_she_is_offered_arming_only_in_a_turn_after_a_proposal_o
+ T3   arm always offered                             caught  test_she_is_offered_arming_only_in_a_turn_after_a_proposal_o
+ T4   arm guidance always offered                    caught  test_the_guidance_for_arming_comes_with_the_tool_and_not_bef
+ T5   no turn: arm offered                           caught  test_without_a_turn_she_proposes_nothing_and_is_offered_no_a
+reminder_turn.py
+ J1   a judged fire is promised                      caught  test_a_judged_fire_is_not_promised_and_an_unjudged_one_is
+ J2   any fire with a deposit is judged              caught  test_a_judged_fire_is_not_promised_and_an_unjudged_one_is
+reminders.py
+ J3   quiet answer is pushed                         caught  test_a_judged_fire_goes_out_only_when_she_says_it_is_worth_i
+ J4   kept-quiet is not recorded                     caught  test_a_judged_fire_goes_out_only_when_she_says_it_is_worth_i
+reminder_conditions.py
+ C1   conditions: not ignored                        caught  test_not_flips_and_is_off_by_default
+ C2   conditions: amounts not in cents               caught  test_amounts_are_given_in_the_accounts_currency_and_stored_i
+ C3   conditions: limit off by one                   caught  test_parsed_predicates_judge_like_hand_built_ones
+ C4   conditions: no defaults                        caught  test_parsed_predicates_judge_like_hand_built_ones
+sure_transactions.py
+ A1   adapter counts transfers                       caught  test_a_transfer_is_read_but_not_counted
+ A2   adapter counts excluded                        caught  test_a_row_sure_marks_excluded_or_a_split_parent_is_read_but
+ A3   adapter counts split parents                   caught  test_a_row_sure_marks_excluded_or_a_split_parent_is_read_but
+ A4   adapter ignores classification                 caught  test_a_row_counts_only_in_the_direction_its_classification_s
+ A5   adapter keeps the sign                         caught  test_an_expense_row_has_unsigned_cents_and_the_direction_out
+ A6   adapter names own name first                   caught  test_an_income_row_is_a_neutral_record_of_its_fields
+
+Equivalent
+ D2   pending is the oldest: `propose` deletes the person's earlier proposals in the conversation first, so a
+      conversation never holds two and the order of `pending` has nothing to choose between. D1 (no delete) is caught.
+
+Not planted
+ The lookback edge (a deposit exactly `days` back): the docs do not say whether the day is in; the suite stays a day clear.
+ The even-count median rounding and the least history for a cadence: likewise unspecified.

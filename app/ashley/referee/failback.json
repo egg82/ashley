@@ -1,0 +1,8 @@
+{
+  "preferred": "asgard",
+  "poll_s": 10,
+  "settle_s": 300,
+  "max_settle_s": 3600,
+  "max_lag_bytes": 1048576,
+  "window_s": 21600
+}

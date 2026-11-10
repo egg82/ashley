@@ -1,0 +1,60 @@
+Planted wrong implementations of the quiet bench (MR !274, head 8d5c0dc), applied one at a time to the file named, tests/bench_quiet_blind run, then restored from the text read. CAUGHT means a test failed (exit 1 with a FAILED line).
+Two first-run survivors were test faults and were fixed: L10 compared against the wrong cap, A19 had no probe at the household's recall (`said_before`); both are CAUGHT below.
+
+R1   CAUGHT   tool_loop.py: reply of exactly the limit is asked again
+R2   CAUGHT   tool_loop.py: a reply one over the limit is sent
+R3   CAUGHT   tool_loop.py: a third reshorten attempt is asked
+R4   CAUGHT   tool_loop.py: only one reshorten attempt
+R5   CAUGHT   tool_loop.py: length measured on spoken, not text
+R6   CAUGHT   tool_loop.py: respond.reply_long not logged
+R7   CAUGHT   tool_loop.py: reply_long log carries her text
+R8   CAUGHT   tool_loop.py: draft not kept for the next step
+R9   CAUGHT   tool_loop.py: she is told a wrong limit
+R10  CAUGHT   tool_loop.py: RESHORTENED is 3
+R11  CAUGHT   tool_loop.py: RESHORTENED is 1
+R12  CAUGHT   turns.json: chat kind gets the reply limit
+R13  CAUGHT   turns.json: brainstorm limit 501
+R14  CAUGHT   turns.json: brainstorm limit 499
+R15  CAUGHT   limits.py: a kind without the key gets a limit
+L1   CAUGHT   bench_tools.py: third add on arrival accepted
+L2   CAUGHT   bench_tools.py: second add on arrival refused
+L3   CAUGHT   bench_tools.py: cap applies to every turn
+L4   CAUGHT   bench_tools.py: accepted adds are not counted
+L5   CAUGHT   bench_tools.py: edits are capped too
+L6   CAUGHT   bench_tools.json: shipped cap 3
+L7   CAUGHT   bench_lead.py: lead guidance ignores its argument
+L8   CAUGHT   turn_tools.py: any arrival is fresh
+L9   CAUGHT   turn_tools.py: a message that opened the bench is not a lead
+L10  CAUGHT   bench_tools.py: lead guidance on every bench turn
+L11  CAUGHT   bench_config.py: lead_adds 0 accepted by parse
+L12  CAUGHT   bench_tools.py: cap refusal has another outcome
+A1   CAUGHT   chat.py: title dropped on the way in
+A2   CAUGHT   person_turn.py: paste not stored on the turn
+A3   CAUGHT   prompt.py: she reads all but the last character
+A4   CAUGHT   prompt.py: she reads the first 1000 characters
+A5   CAUGHT   prompt.py: paste not carried to her
+A6   CAUGHT   person_turn.py: log carries the title
+A7   CAUGHT   person_turn.py: log carries the paste
+A8   CAUGHT   person_turn.py: respond.attached not logged
+A9   CAUGHT   person_turn.py: logged length off by one
+A10  CAUGHT   chat.py: paste never read back
+A11  CAUGHT   chat.py: title not read back
+A12  CAUGHT   chat_models.py: maximum 20001
+A13  CAUGHT   chat_models.py: maximum 19999
+A14  CAUGHT   chat_models.py: title maximum 121
+A15  CAUGHT   chat_models.py: title maximum 119
+A16  CAUGHT   chat.py: route ignores the attachment
+A17  CAUGHT   postgres_queries.py: her turn may carry a paste
+A18  CAUGHT   postgres_queries.py: a blank paste is stored
+A19  CAUGHT   history.py: owner-only turns are stored shared
+A20  CAUGHT   postgres_queries.py: title not stored
+A21  CAUGHT   chat.py: conversation read hides the paste
+A22  CAUGHT   history.py: past conversation read hides the paste
+B1   CAUGHT   bench_talk.py: a piece not on the bench is accepted
+B2   CAUGHT   bench_talk.py: she is not told of the piece
+B3   CAUGHT   bench_talk.py: the first piece stands for the named one
+B4   CAUGHT   chat_models.py: piece_id 0 accepted
+B5   CAUGHT   chat_models.py: messages take unknown fields (a bench message takes an attachment)
+B6   CAUGHT   chat_models.py: a blank paste is valid
+
+Not planted: a held line over the limit (not pinned, the contract is silent).

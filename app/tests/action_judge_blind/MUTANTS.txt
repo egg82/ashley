@@ -1,0 +1,19 @@
+Mutants for the reconciler (plant each in the P3 implementation; the named tests must go red). Each was also planted in a
+scratch reference of P3 (not committed) and killed as listed.
+ 1  judge fault (provider error, refusal, unknown/odd verdict, timeout) mapped to run -> test_aj_verdicts faults, test_aj_logs fault
+ 2  a fault escapes as an exception instead of ask -> same tests
+ 3  VIEW shows a free-text argument (or a tool result) -> test_aj_request plant tests, house data test
+ 4  WORDS include her replies or other authors (visible only with both the author and the speaker filter gone) -> test_aj_request her_replies, another_persons, test_aj_words
+ 5  WORDS not limited to this speaker -> test_aj_request another_persons_messages
+ 6  WORDS of a woken turn are its brief / own text instead of the creating turn's person messages -> test_aj_words (both [False] and [True])
+ 7  explanation read for run (e.g. "refuse" blocks) or for ask ("sure" runs) -> test_aj_verdicts whatever_the_explanation_says
+ 8  verdict not checkpointed, or checkpointed and ignored on resume -> test_aj_resume (both)
+ 9  recipient check skipped, or any text accepted -> test_aj_recipients unknown / read_mail / described
+10  recipient check runs after the judge (judge called for an unknown recipient) -> test_aj_recipients calls == 0
+11  tier-b call judged -> test_aj_verdicts never_call_the_judge, tier_c_same_turn
+12  outside.judged log carries the explanation, words or arguments -> test_aj_logs
+13  HeldCall explanation not stored / held result omits it / run record or done block omits it -> test_aj_verdicts run and ask
+14  no words still judged -> test_aj_words no_person_words
+15  Null judge answers run -> test_aj_verdicts unwired
+16  fault logged with another reason than judge_unavailable -> test_aj_verdicts / test_aj_logs fault
+17  a household address, a sent-to address or an exact address in WORDS blocked -> test_aj_recipients pass cases

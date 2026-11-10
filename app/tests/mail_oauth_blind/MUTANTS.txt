@@ -1,0 +1,198 @@
+Wrong implementations the blind OAuth-secrets suite (app/tests/mail_oauth_blind) must kill. Written from the design alone
+(decisions.md, "A kind's secret can come from OAuth", build part 1), before the implementation existed; each has since been
+applied to the built code. Each line: id, where it would live, the wrong behaviour, and the test that should go red. Equivalent or untestable
+ones are listed at the end with the reason.
+
+Pending row (connect_pending)
+M1   start       pending row stores the state in the clear, not its SHA-256            test_mo_start: ..._keyed_by_the_hash_of_its_state
+M2   start       pending row bound to no person, or to a fixed one                     test_mo_start: ..._keyed_by_the_hash_...; test_mo_callback: another_persons_callback
+M3   start       PKCE verifier stored in the clear                                     test_mo_start: the_verifier_is_not_stored_in_the_clear
+M4   start       challenge sent is the verifier itself (method plain, labelled S256)   test_mo_start: ..._names_the_client_the_scopes_and_a_pkce_challenge; test_mo_callback: ..._verifier_the_challenge_committed_to
+M5   start       the same state or challenge for every start                           test_mo_start: every_start_has_its_own_state_and_challenge
+M6   start       accepts a cross-origin or origin-less POST                            test_mo_start: a_start_from_another_site_is_forbidden
+M7   start       unset client id or secret still starts, with an empty client id       test_mo_start: unset_client_credentials_answer_503
+M8   start       authorization URL omits access_type=offline (no refresh token)        test_mo_start: ..._names_the_client_...; test_mo_callback: grant_with_no_refresh_token
+M9   start       signed-out start answers 201 for nobody                               test_mo_start: a_start_without_a_session_is_401
+M10  start       redirect_uri differs from the one the callback path is registered at  test_mo_start; test_mo_callback: code_is_redeemed_with_the_verifier (fake refuses the code)
+
+Taking the row, once, for its starter
+M11  callback    pending row read but not deleted on take (replay works)               test_mo_callback: a_state_works_once
+M12  callback    state compared unhashed (lookup by the raw state)                     test_mo_start: ..._keyed_by_the_hash_of_its_state; test_mo_callback: a_state_works_once
+M13  callback    wrong-person check skipped                                            test_mo_callback: another_persons_callback_is_refused
+M14  callback    wrong-person check compares households, not people                    test_mo_callback: another_persons_callback_is_refused (Sam, same household)
+M15  callback    person compared by the cookie's household only                        test_mo_callback: callback_for_a_person_in_another_household
+M16  callback    no session on the callback still connects                             test_mo_callback: a_callback_with_no_session_stores_nothing
+M17  callback    expiry of the pending row not enforced                                test_mo_callback: an_expired_pending_row_is_failed
+M18  callback    kind, label or holder read from the query instead of the pending row  test_mo_callback: reads_nothing_but_the_code_and_state
+M19  callback    pending lookup shared with link_pending or signin_pending             test_mo_callback: a_state_from_a_sign_in_or_a_discord_link_cannot_complete_a_connect
+M20  callback    connect state accepted by the Discord link or sign-in callback        test_mo_callback: a_connect_state_cannot_complete_a_discord_link_or_a_sign_in
+M21  callback    a declined consent (error=access_denied) falls through to redeem      test_mo_callback: declining_at_google_is_cancelled
+M22  callback    a missing code is redeemed as an empty string                         test_mo_callback: state_and_no_code_is_failed
+M23  callback    unknown state is treated as a first-time connect                      test_mo_callback: an_unknown_or_missing_state_is_failed
+
+Nothing stored unless the service answers
+M24  callback    connection stored before the userinfo check                           test_mo_callback: nothing_is_stored_unless_userinfo_answers
+M25  callback    userinfo check skipped                                                test_mo_callback: nothing_is_stored_unless_userinfo_answers (401, no_email)
+M26  callback    userinfo read with the code or an old token, not the new access token test_mo_callback: userinfo_is_read_with_the_access_token_just_issued
+M27  callback    userinfo 5xx treated as success                                       test_mo_callback: ..._userinfo_answers (down); the_service_being_down
+M28  callback    connection stored when the grant has no refresh token                 test_mo_callback: a_grant_with_no_refresh_token_stores_nothing
+M29  callback    refused token endpoint answer stored anyway                           test_mo_callback: a_refused_code_stores_nothing
+M30  callback    PKCE verifier not sent to the token endpoint                          test_mo_callback: code_is_redeemed_with_the_verifier; a_wrong_verifier_stores_nothing
+
+Scopes
+M31  callback    scopes stored are the ones asked for, not the ones granted            test_mo_scopes: ..._the_ones_google_answered_not_the_ones_asked
+M32  callback    scope check skipped (missing scope never reported)                    test_mo_scopes: a_scope_the_person_unticked_is_missing
+M33  callback    unticked scope refuses the whole connection                           test_mo_scopes: ..._is_still_stored
+M34  callback    reconnect keeps the old scopes                                        test_mo_scopes: a_reconnect_with_a_wider_grant_replaces_the_stored_scopes
+
+Renewal
+M35  renewal     refreshes on every call                                               test_mo_refresh: far_from_expiry_is_reused
+M36  renewal     never refreshes (expiry ignored)                                      test_mo_refresh: within_the_margin_is_renewed_once
+M37  renewal     refreshes outside the margin (margin applied as expiry + margin)      test_mo_refresh: far_from_expiry_is_reused
+M38  renewal     expiry taken from a constant, not the provider's expires_in           test_mo_refresh: the_expiry_is_the_one_the_provider_answered
+M39  renewal     renewed token not stored (every call refreshes again)                 test_mo_refresh: ..._renewed_once_and_then_reused
+M40  renewal     refresh presents the access token or an empty string                  test_mo_refresh: the_refresh_presents_the_stored_refresh_token
+M41  renewal     new refresh token discarded when the provider rotates                 test_mo_refresh: a_rotated_refresh_token_is_stored_and_used_next
+M42  renewal     refresh token blanked when the provider sends none (Google)           test_mo_refresh: a_renewal_that_sends_no_refresh_token_keeps_the_stored_one
+M43  renewal     secret_version not raised on a renewal                                test_mo_refresh: a_renewal_raises_the_secret_version
+M44  renewal     secret_version raised on a reuse                                      test_mo_refresh: a_reuse_leaves_the_secret_version_alone
+
+Compare-and-set
+M45  renewal     compare-and-set skipped: plain UPDATE by id                           test_mo_refresh: the_loser_of_two_refreshes...; a_stale_rotated_refresh_token_never_overwrites
+M46  renewal     CAS compares the wrong version (the one written, not the one read)    test_mo_refresh: the_loser_of_two_refreshes_rereads
+M47  renewal     loser uses its own token after losing instead of rereading            test_mo_refresh: the_loser_of_two_refreshes_rereads_and_uses_the_winners_token
+M48  renewal     loser rereads but overwrites the rotated refresh token with its own   test_mo_refresh: a_stale_rotated_refresh_token_never_overwrites_the_winners
+M49  renewal     CAS writes the access token and refresh token in separate statements  test_mo_refresh: the_winners_access_token_and_refresh_token_stay_a_pair
+M50  renewal     loser's failed CAS raises the version anyway                          test_mo_refresh: the_loser_of_two_refreshes (version equals the winner's)
+M51  renewal     loser's failed CAS marks needs=reconnect                              test_mo_refresh: the_loser_of_two_refreshes (the call returns the winner's token)
+M52  renewal     renewal opens any person's connection                                 test_mo_refresh: a_person_cannot_renew_another_persons_connection
+
+Refusal and needs
+M53  renewal     invalid_grant deletes the row                                         test_mo_refresh: a_refused_refresh_marks...keeps_the_row
+M54  renewal     invalid_grant leaves needs null                                       test_mo_refresh: a_refused_refresh_marks...
+M55  renewal     invalid_grant clears the stored secret                                test_mo_refresh: a_refused_refresh_marks... (secret kept)
+M56  renewal     5xx, 429 or a connection error marks needs=reconnect                  test_mo_refresh: a_provider_that_fails_without_refusing_the_grant_marks_nothing
+M57  renewal     5xx or a connection error deletes the row or the secret               test_mo_refresh: ..._marks_nothing
+M58  renewal     refusal answers a stale access token instead of raising               test_mo_refresh: a_refused_refresh_marks... (NeedsReconnect expected)
+M59  renewal     a marked connection renews anyway and clears its own mark             test_mo_refresh: a_connection_that_needs_reconnect_answers_so_every_time
+M60  list        needs not shown on the wire                                           test_mo_refresh: a_refused_refresh_marks...; test_mo_reconnect
+
+Reconnect
+M61  callback    reconnect inserts a second row (or 409 too_many)                      test_mo_reconnect: a_second_connect_by_the_same_owner_is_not_a_second_row; reconnecting_replaces
+M62  callback    reconnect keeps the old refresh token                                 test_mo_reconnect: reconnecting_replaces_the_secret
+M63  callback    reconnect leaves needs set                                            test_mo_reconnect: reconnecting_replaces...clears_needs
+M64  callback    reconnect does not raise secret_version                               test_mo_reconnect: reconnecting_replaces_the_secret_keeps_the_row...
+M65  callback    reconnect keeps the old access token (next call returns it)           test_mo_reconnect: the_reconnected_connection_gives_the_new_access_token
+M66  callback    a refused reconnect clears needs or replaces the secret first         test_mo_reconnect: a_refused_reconnect_leaves_the_mark_and_the_old_secret
+M67  callback    reconnect replaces another person's connection of the kind            test_mo_reconnect: reconnecting_never_touches_another_persons_connection
+M68  callback    reconnect deletes and re-adds (new id)                                test_mo_reconnect: ..._keeps_the_row
+
+Unset, and secrets
+M69  wiring      unset client id/secret leaves the start wired to an empty client      test_mo_start: unset_client_credentials_answer_503
+M70  logs        a log line carries an access or refresh token                         test_mo_secrets: no_log_line_carries
+M71  logs        a log line carries the code, the state or the verifier                test_mo_secrets: no_log_line_carries
+M72  logs        a log line carries the client secret (e.g. a logged request form)     test_mo_secrets: no_log_line_carries
+M73  logs        a traceback or exception text carries a token (str(e) of the response) test_mo_secrets: no_log_line_carries
+M74  logs        the refresh path, or a refusal to renew, logs nothing                  test_mo_secrets: the_connect_and_the_renewal_each_leave_a_log_line; a_refusal_to_renew_is_logged
+M75  storage     access token stored unsealed                                          test_mo_secrets: nothing_stored_holds_a_token_in_the_clear
+M76  storage     refresh token stored unsealed                                         test_mo_secrets: nothing_stored_holds_a_token_in_the_clear
+M77  wire        a response or the redirect carries a token, the code or the verifier  test_mo_secrets: no_response_carries_a_token
+M78  http        the client secret sent to the userinfo endpoint                       test_mo_secrets: the_client_secret_is_sent_to_the_token_endpoint_only
+M79  http        a request made to a host that is not Google's                         test_mo_callback: no_request_goes_to_a_host_that_is_not_googles
+
+Equivalent or not killable here (and why)
+E1   callback    take is SELECT then DELETE instead of one DELETE ... RETURNING: two truly simultaneous callbacks could both connect. Needs two
+                 racing HTTP requests with a database barrier; the replay test only proves the sequential case.
+E2   renewal     the exact boundary of refresh_margin_s (refresh at margin vs margin+1 s): the design does not say where the margin lives, so
+                 no test pins its value; 1 s and 30 days bracket any sane margin.
+E3   callback    outcome names other than the ones the Discord model gives (assumption A13).
+E4   start       the pending-row cap (max_pending) for connects: the design names none.
+E5   renewal     a lock around the whole renewal inside one process makes concurrent calls agree without a CAS; the tests cannot tell it from a CAS
+                 within one process, only the interleaved-refresh tests (in_refresh) do, and only if the implementation takes no process lock.
+
+Verdicts: each mutant applied one at a time to the built code (variant ids M6b, M74b are second ways to make the same wrong choice) and run against
+tests/mail_oauth_blind, test_oauth_connect_routes, test_oauth_renewal, test_google_oauth_http and test_mail_config, -x, 150 s cap per run; restored after.
+Mutants are crude edits to the build, so several die on the first connect test rather than the one named above; the file names the first failing test seen.
+
+M1   killed -- mail_oauth_blind/test_mo_callback.py::test_a_callback_with_no_session_stores_nothing
+M2   killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M3   killed -- test_oauth_connect_routes.py::test_the_pending_row_holds_only_hashes_and_a_sealed_verifier
+M4   killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M5   killed -- mail_oauth_blind/test_mo_callback.py::test_two_people_connecting_keep_separate_connections
+M6   killed -- mail_oauth_blind/test_mo_start.py::test_a_start_from_another_site_is_forbidden_and_stores_nothing
+M6b  killed -- mail_oauth_blind/test_mo_start.py::test_a_start_from_another_site_is_forbidden_and_stores_nothing
+M7   equivalent            unset id or secret still starts: Settings refuses an id without a secret (and the reverse) at boot, test_google_oauth_http::test_the_settings_come_as_a_pair_with_public_url; with both unset M69 is killed
+M8   killed -- mail_oauth_blind/test_mo_start.py::test_the_authorization_url_names_the_client_the_scopes_and_a_pkce_challenge
+M10  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M11  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M12  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M13  killed -- mail_oauth_blind/test_mo_callback.py::test_another_persons_callback_is_refused_and_stores_nothing
+M14  killed -- mail_oauth_blind/test_mo_callback.py::test_another_persons_callback_is_refused_and_stores_nothing
+M15  killed -- mail_oauth_blind/test_mo_callback.py::test_another_persons_callback_is_refused_and_stores_nothing
+M16  killed -- mail_oauth_blind/test_mo_callback.py::test_a_callback_with_no_session_stores_nothing
+M17  killed -- mail_oauth_blind/test_mo_callback.py::test_an_expired_pending_row_is_failed
+M18  killed -- mail_oauth_blind/test_mo_callback.py::test_the_callback_reads_nothing_but_the_code_and_state_from_its_query
+M19  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M20  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_state_cannot_complete_a_discord_link_or_a_sign_in
+M21  killed -- mail_oauth_blind/test_mo_callback.py::test_declining_at_google_is_cancelled_and_stores_nothing
+M22  killed -- mail_oauth_blind/test_mo_callback.py::test_a_callback_with_a_state_and_no_code_is_failed
+M23  killed -- mail_oauth_blind/test_mo_callback.py::test_a_state_from_a_sign_in_or_a_discord_link_cannot_complete_a_connect[discord_link]
+M24  killed -- mail_oauth_blind/test_mo_callback.py::test_the_service_being_down_after_the_code_answers_unavailable_not_connected
+M25  killed -- mail_oauth_blind/test_mo_callback.py::test_the_service_being_down_after_the_code_answers_unavailable_not_connected
+M26  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M27  killed -- mail_oauth_blind/test_mo_callback.py::test_the_service_being_down_after_the_code_answers_unavailable_not_connected
+M28  killed -- mail_oauth_blind/test_mo_callback.py::test_a_grant_with_no_refresh_token_stores_nothing
+M29  equivalent            a non-200 token answer is still refused: _grant() finds no tokens in an error body, so OAuthFailed either way; Google's errors carry none
+M30  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M31  killed -- mail_oauth_blind/test_mo_scopes.py::test_a_scope_the_person_unticked_is_missing_and_the_connection_is_still_stored
+M32  killed -- mail_oauth_blind/test_mo_scopes.py::test_a_scope_the_person_unticked_is_missing_and_the_connection_is_still_stored
+M33  killed -- mail_oauth_blind/test_mo_scopes.py::test_a_scope_the_person_unticked_is_missing_and_the_connection_is_still_stored
+M34  killed -- mail_oauth_blind/test_mo_scopes.py::test_a_reconnect_with_a_wider_grant_replaces_the_stored_scopes
+M35  killed -- mail_oauth_blind/test_mo_reconnect.py::test_the_reconnected_connection_gives_the_new_access_token_without_asking_again
+M36  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M37  killed -- mail_oauth_blind/test_mo_reconnect.py::test_the_reconnected_connection_gives_the_new_access_token_without_asking_again
+M38  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M39  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_rotated_refresh_token_is_stored_and_used_next
+M40  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_renewal_that_sends_no_refresh_token_keeps_the_stored_one
+M41  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_rotated_refresh_token_is_stored_and_used_next
+M42  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_renewal_that_sends_no_refresh_token_keeps_the_stored_one
+M43  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_renewal_raises_the_secret_version
+M44  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_reuse_leaves_the_secret_version_alone
+M45  killed -- mail_oauth_blind/test_mo_refresh.py::test_the_loser_of_two_refreshes_rereads_and_uses_the_winners_token
+M46  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_rotated_refresh_token_is_stored_and_used_next
+M47  killed -- mail_oauth_blind/test_mo_refresh.py::test_the_loser_of_two_refreshes_rereads_and_uses_the_winners_token
+M48  killed -- mail_oauth_blind/test_mo_refresh.py::test_the_loser_of_two_refreshes_rereads_and_uses_the_winners_token
+M49  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_stale_rotated_refresh_token_never_overwrites_the_winners
+M50  killed -- mail_oauth_blind/test_mo_refresh.py::test_the_loser_of_two_refreshes_rereads_and_uses_the_winners_token
+M51  killed -- mail_oauth_blind/test_mo_refresh.py::test_the_loser_of_two_refreshes_rereads_and_uses_the_winners_token
+M52  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M53  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M54  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M55  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M56  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_provider_that_fails_without_refusing_the_grant_marks_nothing
+M57  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_provider_that_fails_without_refusing_the_grant_marks_nothing
+M58  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_refused_refresh_marks_the_connection_for_reconnect_and_keeps_the_row
+M59  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_connection_that_needs_reconnect_answers_so_every_time
+M60  killed -- mail_oauth_blind/test_mo_refresh.py::test_a_refused_refresh_marks_the_connection_for_reconnect_and_keeps_the_row
+M61  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M62  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M63  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M64  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M65  killed -- mail_oauth_blind/test_mo_reconnect.py::test_the_reconnected_connection_gives_the_new_access_token_without_asking_again
+M66  killed -- mail_oauth_blind/test_mo_reconnect.py::test_a_refused_reconnect_leaves_the_mark_and_the_old_secret
+M67  killed -- mail_oauth_blind/test_mo_callback.py::test_two_people_connecting_keep_separate_connections
+M68  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M69  killed -- mail_oauth_blind/test_mo_start.py::test_unset_client_credentials_answer_503_and_store_nothing
+M70  killed -- mail_oauth_blind/test_mo_secrets.py::test_no_log_line_carries_a_token_a_code_a_state_a_verifier_or_the_client_secret
+M71  killed -- mail_oauth_blind/test_mo_secrets.py::test_no_log_line_carries_a_token_a_code_a_state_a_verifier_or_the_client_secret
+M72  killed -- mail_oauth_blind/test_mo_secrets.py::test_no_log_line_carries_a_token_a_code_a_state_a_verifier_or_the_client_secret
+M73  killed -- mail_oauth_blind/test_mo_secrets.py::test_no_log_line_carries_a_token_a_code_a_state_a_verifier_or_the_client_secret
+M74  killed -- mail_oauth_blind/test_mo_secrets.py::test_the_connect_and_the_renewal_each_leave_a_log_line
+M74b killed -- mail_oauth_blind/test_mo_secrets.py::test_a_refusal_to_renew_is_logged
+M75  killed -- mail_oauth_blind/test_mo_secrets.py::test_nothing_stored_holds_a_token_in_the_clear
+M76  killed -- mail_oauth_blind/test_mo_reconnect.py::test_reconnecting_replaces_the_secret_keeps_the_row_and_clears_needs
+M77  killed -- mail_oauth_blind/test_mo_secrets.py::test_no_response_carries_a_token_or_the_verifier
+M78  survived then killed  test_google_oauth_http.py::test_userinfo_is_asked_with_the_bearer_alone (the fake did not record headers, so the blind suite could not see a client secret sent as a header)
+M79  killed -- mail_oauth_blind/test_mo_callback.py::test_a_connect_stores_the_connection_the_start_chose_and_shows_it_checked
+M9   not applied           the 401 comes from the shared Person dependency; no OAuth-specific line to mutate (test_a_start_without_a_session_is_401 holds it)
+M6   note                  an origin-less POST with no Sec-Fetch-Site is allowed by the repo's same_site rule (non-browser clients), so test_mo_start sends sec-fetch-site: cross-site for 'another site'

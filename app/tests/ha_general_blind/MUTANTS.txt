@@ -1,0 +1,125 @@
+Planted wrong implementations, one at a time, each applied once to the file named and restored from the text read before
+planting. Each run is `tests/ha_general_blind` against the House port at 0b33c6f (!336), green before the plant (the six strict
+xfails are real defects and do not count as kills). 109 planted, 102 killed, 7 survive and are equivalent or unspecified, with
+the reason below. A kill is pytest exit 1 and a FAILED line that is not a strict-xfail pass. Directed tests were added for the
+seven that survived the first pass (C13, A12, R7, R8, R13, S12, D3); R10's anchor missed the first time and was rerun.
+
+#    file                          mutant -> first test to fail
+G1   proposal_gate.py              the proposing turn itself may take the proposal (turn_id < proposed, not <=) -> killed by test_a_proposal_is_taken_from_a_later_turn_within_its_time_only
+G2   proposal_gate.py              expiry is never judged -> killed by test_a_proposal_is_taken_from_a_later_turn_within_its_time_only
+G3   proposal_gate.py              a proposal exactly at its limit is expired (>= not >) -> SURVIVED
+G4   proposal_gate.py              elapsed time computed backwards, so nothing expires -> killed by test_a_proposal_is_taken_from_a_later_turn_within_its_time_only
+G5   proposal_gate.py              a not-later turn is reported as expired -> killed by test_a_proposal_is_taken_from_a_later_turn_within_its_time_only
+G6   proposal_gate.py              expiry is judged before the turn -> SURVIVED
+G7   proposal_gate.py              only the very next turn may take it (!= proposed + 1) -> killed by test_a_later_turn_inside_the_limit_is_always_allowed
+I1   irreversible.py               covers needs every pattern to match (all, not any) -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I2   irreversible.py               covers is a prefix match on the pattern without its star -> killed by test_an_action_that_only_resembles_a_named_one_is_not_covered
+I3   irreversible.py               covers is always False -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I4   irreversible.py               parse accepts extra keys beside operations -> killed by test_parse_takes_a_non_empty_list_of_non_empty_strings_under_operations_and_nothing_else
+I5   irreversible.py               parse accepts an empty operations list -> killed by test_parse_takes_a_non_empty_list_of_non_empty_strings_under_operations_and_nothing_else
+I6   irreversible.py               parse accepts empty strings in operations -> killed by test_parse_takes_a_non_empty_list_of_non_empty_strings_under_operations_and_nothing_else
+I7   irreversible.json             irreversible.json: recorder.disable removed -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I8   irreversible.json             irreversible.json: backup.* narrowed to backup.create -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I9   irreversible.json             irreversible.json: hassio.* narrowed to one action -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I10  irreversible.json             irreversible.json: remove:* removed (removing an integration) -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I11  irreversible.json             irreversible.json: delete:* narrowed to delete:record:* -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I12  irreversible.json             irreversible.json: write:* added (her own writes need an OK) -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I13  irreversible.json             irreversible.json: homeassistant.stop removed -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+I14  irreversible.json             irreversible.json: homeassistant.restart becomes a prefix -> killed by test_an_action_that_only_resembles_a_named_one_is_not_covered
+I15  irreversible.py               parse keeps only the first pattern -> killed by test_the_shipped_rule_covers_what_cannot_be_undone_and_nothing_he_lets_her_do_alone
+C1   change.py                     a perform's key names its kind (action), not the action -> killed by test_the_key_of_every_change_is_the_ports_operation_key
+C2   change.py                     removing an integration is keyed delete:record:integration -> killed by test_the_key_of_every_change_is_the_ports_operation_key
+C3   change.py                     config and record scopes swapped in the key -> killed by test_the_key_of_every_change_is_the_ports_operation_key
+C4   change.py                     check no longer requires an id for update and delete -> killed by test_a_change_that_names_nothing_to_change_or_no_action_domain_is_not_well_formed
+C5   change.py                     check no longer requires domain.name for a perform -> killed by test_a_change_that_names_nothing_to_change_or_no_action_domain_is_not_well_formed
+C6   change.py                     check no longer requires the kind to suit the op -> killed by test_a_kind_that_does_not_suit_its_op_fails_check_naming_no_data
+C7   change.py                     carry_out does not reject a delete of a config that is not there -> killed by test_deleting_a_config_that_is_not_there_is_rejected_as_having_nothing_to_change
+C8   change.py                     carry_out drops a perform's ids -> killed by test_carry_out_dispatches_each_op_to_the_port_and_names_what_it_did_not_what_it_carried
+C9   change.py                     carry_out drops a write's id (replaces nothing, creates anew) -> killed by test_carry_out_dispatches_each_op_to_the_port_and_names_what_it_did_not_what_it_carried
+C10  change.py                     op_of returns whatever it is given -> killed by test_op_of_names_the_five_ops_and_nothing_else
+C11  change.py                     check no longer tests the kind against KINDS -> SURVIVED
+C12  change.py                     carry_out drops an update's fields -> killed by test_carry_out_dispatches_each_op_to_the_port_and_names_what_it_did_not_what_it_carried
+C13  change.py                     carry_out of a record delete returns the change's data, not its id -> killed by test_carry_out_dispatches_each_op_to_the_port_and_names_what_it_did_not_what_it_carried
+C14  change.py                     check lets an integration be updated -> SURVIVED
+H1   house_change.py               a covered change is carried out, never proposed -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_is_asked[delete-inte
+H2   house_change.py               every change is proposed, none carried out -> killed by test_what_she_changes_on_her_own_is_done_at_once_and_nothing_is_proposed[write-automation-
+H3   house_change.py               a proposal is kept where the reply may be heard by others -> killed by test_where_the_reply_may_be_heard_by_others_nothing_is_proposed_or_confirmed
+H4   house_change.py               house_confirm is offered where the reply may be heard by others -> killed by test_where_the_reply_may_be_heard_by_others_nothing_is_proposed_or_confirmed
+H5   house_change.py               house_confirm is offered in the turn she proposed, or after the limit -> killed by test_she_cannot_confirm_in_the_turn_she_proposed_or_an_earlier_one_and_the_proposal_stays
+H6   house_change.py               house_confirm runs where the reply may be heard by others -> killed by test_where_the_reply_may_be_heard_by_others_nothing_is_proposed_or_confirmed
+H7   house_change.py               house_confirm takes at an always-later turn, so the same turn confirms -> killed by test_she_cannot_confirm_in_the_turn_she_proposed_or_an_earlier_one_and_the_proposal_stays
+H8   house_change.py               the offer looks for a proposal in conversation 0 -> killed by test_in_a_later_turn_she_is_offered_house_confirm_and_it_carries_out_what_was_proposed_onc
+H9   house_change.py               a covered change is proposed and also carried out -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_is_asked[delete-auto
+H10  house_change.py               a proposal is kept with a limit of zero -> killed by test_what_is_covered_is_proposed_and_never_carried_out_in_the_turn_it_is_asked[delete-auto
+H11  house_change.py               the proposal's summary carries the change's data -> killed by test_a_summary_and_the_log_say_what_would_happen_and_never_the_changes_contents
+H12  house_change.py               the tools.call log line carries the call's arguments -> killed by test_a_summary_and_the_log_say_what_would_happen_and_never_the_changes_contents
+H13  house_change.py               house_change carries out an everyday action it should leave to house_do -> killed by test_an_everyday_action_is_not_for_house_change_it_is_house_dos_and_nothing_is_done_or_pro
+H14  house_change.py               an ambiguous name proposes a change instead of an error -> killed by test_a_covered_action_names_its_things_by_name_in_code_and_a_name_that_fits_several_or_non
+H15  house_change.py               a name that matches nothing proposes a change instead of an error -> killed by test_a_covered_action_names_its_things_by_name_in_code_and_a_name_that_fits_several_or_non
+H16  house_change.py               house_confirm carries out the change without its data and ids -> killed by test_a_confirmed_action_runs_with_the_data_and_things_it_was_proposed_with
+H17  house_change.py               the proposal's summary carries the id and data -> killed by test_a_summary_and_the_log_say_what_would_happen_and_never_the_changes_contents
+H18  house_change.py               house_confirm is offered with no turn to answer -> killed by test_house_change_is_offered_to_a_known_speaker_and_house_confirm_only_with_a_proposal_to_
+P1   postgres_house_proposals.py   a new proposal replaces everyone's in the conversation, not only its person's -> killed by test_a_newer_proposal_replaces_the_earlier_of_its_person_and_conversation_only
+P2   postgres_house_proposals.py   a new proposal replaces the person's in every conversation -> killed by test_a_newer_proposal_replaces_the_earlier_of_its_person_and_conversation_only
+P3   postgres_house_proposals.py   a new proposal does not replace the earlier -> killed by test_a_newer_proposal_replaces_the_earlier_of_its_person_and_conversation_only
+P4   postgres_house_proposals.py   the earliest proposal is the one pending and taken -> SURVIVED
+P5   postgres_house_proposals.py   take never judges the turn or the limit -> killed by test_the_turn_that_proposed_it_and_earlier_ones_cannot_take_it_and_it_stays_for_a_later_on
+P6   postgres_house_proposals.py   take does not remove the proposal -> killed by test_a_proposal_is_taken_from_a_later_turn_once_and_leaves_none
+P7   postgres_house_proposals.py   pending and take ignore whose the proposal is -> killed by test_nothing_taken_from_where_nothing_was_proposed
+P8   postgres_house_proposals.py   proposing never drops what is past its limit -> killed by test_proposing_drops_what_is_older_than_the_limit
+P9   postgres_house_proposals.py   the stored change loses its ids -> killed by test_a_proposal_is_kept_whole_and_pending_until_taken
+P10  postgres_house_proposals.py   the stored change loses its data -> killed by test_a_proposal_is_kept_whole_and_pending_until_taken
+P11  postgres_house_proposals.py   pending and take ignore the conversation -> killed by test_nothing_taken_from_where_nothing_was_proposed
+P12  postgres_house_proposals.py   the stored summary is lost -> killed by test_a_proposal_is_kept_whole_and_pending_until_taken
+A1   ha_house.py                   history asks for every thing, not the ones named -> killed by test_history_is_each_requested_things_readings_in_the_window_and_no_others
+A2   ha_house.py                   history does not send the window's end -> killed by test_history_is_each_requested_things_readings_in_the_window_and_no_others
+A3   ha_house.py                   logbook does not narrow to the things named -> killed by test_logbook_of_named_things_holds_only_theirs
+A4   ha_house.py                   logbook entries are not sorted by time -> SURVIVED
+A5   ha_house.py                   perform sends entity_id even when no things are named -> killed by test_an_action_on_nothing_named_sends_no_entity_id
+A6   ha_house.py                   perform does not retry an only-returns-data action for its data -> killed by test_an_action_that_only_returns_data_is_asked_for_it_and_returns_it
+A7   ha_house.py                   perform retries any action that returns data, not only those that only return data -> killed by test_an_action_the_house_refuses_is_asked_once_and_not_retried_for_data
+A8   ha_house.py                   optional and only response modes swapped -> killed by test_actions_list_every_service_with_its_fields_and_whether_it_returns_data
+A9   ha_house.py                   an unattributed logbook entry has id '' instead of None -> killed by test_logbook_entries_in_the_window_with_their_ids_and_the_unattributed_as_none
+A10  ha_house.py                   perform always asks for a response -> killed by test_an_action_runs_on_the_things_named_and_reports_what_changed
+A11  ha_house.py                   perform drops the service response -> killed by test_an_action_that_only_returns_data_is_asked_for_it_and_returns_it
+A12  ha_house.py                   history accepts a window naming no things -> killed by test_a_history_of_no_things_has_the_readings_of_none
+A13  ha_house.py                   diagnostics for an entry that reports nothing is {} not None -> killed by test_diagnostics_are_what_the_integration_reports_or_none
+R1   ha_registry.py                a device's area wins over the entity's own -> killed by test_an_entitys_own_area_wins_over_its_devices
+R2   ha_registry.py                states carry no aliases -> killed by test_an_entitys_aliases_are_written_keeping_its_own_name
+R3   ha_registry.py                states carry no area aliases -> killed by test_an_entity_with_no_area_of_its_own_has_its_devices_and_one_with_neither_has_none
+R4   ha_registry.py                no entity is ever featured -> killed by test_featured_is_what_the_household_exposes
+R5   ha_registry.py                states carry no changed time -> killed by test_states_carry_the_entities_with_their_areas_names_and_changed_time
+R6   ha_registry.py                an entity with no area of its own does not take its device's -> killed by test_an_entity_with_no_area_of_its_own_has_its_devices_and_one_with_neither_has_none
+R7   ha_registry.py                an entity record's area ignores its device's -> killed by test_records_carry_the_fields_the_port_documents
+R8   ha_registry.py                a device record shows its own name, not the household's rename -> killed by test_a_device_the_household_renamed_shows_its_new_name
+R9   ha_registry.py                an entity's hidden field reads disabled_by -> killed by test_records_carry_the_fields_the_port_documents
+R10  ha_registry.py                a device is never disabled -> killed by test_records_carry_the_fields_the_port_documents
+R11  ha_registry.py                entity records carry no aliases -> killed by test_records_carry_the_fields_the_port_documents
+R12  ha_registry.py                an area record carries no floor -> killed by test_records_carry_the_fields_the_port_documents
+R13  ha_registry.py                an integration record's state is always loaded -> killed by test_records_carry_the_fields_the_port_documents
+S1   ha_changes.py                 an entity's aliases are written without the null for its own name -> killed by test_an_entitys_aliases_are_written_keeping_its_own_name
+S2   ha_changes.py                 entity removal and registry delete commands swapped -> killed by test_a_registry_record_is_deleted_and_a_second_delete_is_rejected[area-areas-kitchen]
+S3   ha_changes.py                 a device is removed from its first config entry only -> killed by test_a_device_is_removed_from_every_config_entry_it_belongs_to
+S4   ha_changes.py                 an area or floor that does not exist clears the field instead of being rejected -> killed by test_moving_a_thing_to_an_area_the_house_does_not_have_is_rejected_and_leaves_its_area
+S5   ha_changes.py                 a new automation's id is its alias, without checking an id in use -> killed by test_a_new_automation_with_no_id_never_replaces_one_that_exists
+S6   ha_changes.py                 delete_config always says it deleted -> killed by test_an_automation_is_written_listed_read_back_replaced_and_deleted
+S7   ha_changes.py                 deleting a helper that is not there is not False -> killed by test_a_helper_is_created_listed_read_changed_and_deleted_by_its_typed_id
+S8   ha_changes.py                 helper ids lose their type prefix -> killed by test_a_helper_is_created_listed_read_changed_and_deleted_by_its_typed_id
+S9   ha_changes.py                 scripts are listed from the automation entities -> killed by test_scripts_are_their_own_kind
+S10  ha_changes.py                 a helper change creates another instead of updating -> killed by test_a_helper_is_created_listed_read_changed_and_deleted_by_its_typed_id
+S11  ha_changes.py                 exposing an entity to the assistant is not sent -> killed by test_an_entity_is_exposed_to_the_assistant_and_withdrawn
+S12  ha_changes.py                 a device or entity may be created -> killed by test_only_an_area_a_floor_or_a_label_can_be_created[device]
+S13  ha_changes.py                 update_record does not refuse fields that cannot be set -> SURVIVED
+S14  ha_changes.py                 enabling or unhiding sets disabled_by user -> killed by test_an_entity_is_moved_to_an_area_by_name_and_flags_are_set
+D1   house_act.py                  house_do runs an action that needs the person's OK -> killed by test_house_do_runs_an_everyday_action_and_refuses_what_needs_a_persons_ok_outright
+D2   house_act.py                  house_ask runs an action that changes things -> killed by test_house_ask_does_not_run_an_action_that_needs_a_persons_ok
+D3   house_act.py                  house_do acts when a name matches nothing -> killed by test_house_do_on_a_name_that_matches_nothing_does_nothing_and_says_so
+
+Survivors
+G3: equivalent: the contract says 'within a time limit' and names no second; no test can tell an elapsed time exactly at the limit apart without fixing which side it is on
+G6: equivalent: the order of the two refusals shows only for a proposal that is both from a not-later turn and past its limit, and the contract does not say which is reported
+C11: equivalent: `fits` already refuses every kind that is not in KINDS, so the explicit membership test never decides alone
+C14: survives: the contract does not say whether an integration's fields may be updated (the port's update names device, entity, area, floor, label); no test asserts either
+P4: equivalent: propose replaces the person's earlier proposal in the conversation, so at most one row is ever there to order
+A4: equivalent: the contract names no order for logbook entries
+S13: equivalent as observed: a field the adapter does not name is refused by Home Assistant's own validation (HouseRejected either way), so only the number of commands sent differs

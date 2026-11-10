@@ -1,0 +1,61 @@
+# A published GitHub release names the app image main already built for that commit: `<version>` (the release tag
+# without its leading v) and `latest`, as egg82/fetcharr tags its releases. Nothing is rebuilt, so the release is the
+# image that passed CI on main; a release of a commit main never built fails here.
+
+name: Publish release container
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCKERHUB_REPO: docker.io/${{ vars.DOCKERHUB_USERNAME }}
+  GHCR_REPO: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  retag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repo at release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Name the tags
+        id: tags
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "main=main-${SHA::8}-$(git show -s --format=%ct HEAD)" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag ${{ steps.tags.outputs.version }} and latest
+        env:
+          MAIN_TAG: ${{ steps.tags.outputs.main }}
+          VERSION: ${{ steps.tags.outputs.version }}
+        run: |
+          for repo in "$DOCKERHUB_REPO/ashley" "$GHCR_REPO/ashley"; do
+            docker buildx imagetools create -t "$repo:$VERSION" -t "$repo:latest" "$repo:$MAIN_TAG"
+          done

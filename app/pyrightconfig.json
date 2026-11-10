@@ -1,0 +1,10 @@
+{
+  "include": ["ashley", "tools", "tests", "../bridge/herdr", "../deploy/mail-bridge"],
+  "exclude": ["**/__pycache__", "web"],
+  "pythonVersion": "3.13",
+  "extraPaths": ["tools", "tests", "tests/wakes_blind", "tests/herdr_bridge_blind", "../bridge/herdr", "../deploy/mail-bridge"],
+  "typeCheckingMode": "strict",
+  "strict": ["ashley", "tools", "tests", "../bridge/herdr", "../deploy/mail-bridge"],
+  "enableTypeIgnoreComments": false,
+  "reportUnnecessaryTypeIgnoreComment": true
+}

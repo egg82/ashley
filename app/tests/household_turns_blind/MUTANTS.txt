@@ -1,0 +1,31 @@
+Planted wrong implementations, applied one at a time to the file named, tests/household_turns_blind run, then reverted.
+CAUGHT means the suite goes red. Run against wake-house-author at 959790f.
+
+M1   CAUGHT   conversations/postgres_queries.checked: a household turn with a speaker accepted
+M2   CAUGHT   checked: a household turn marked follows accepted
+M3   CAUGHT   checked: a household turn with answers accepted
+M4   CAUGHT   add_turn: the source pre-check applies to person turns only (survived the first suite; test added:
+              a wake handed in again after its conversation closed returns the stored turn)
+M5   CAUGHT   prompt._said: household turn rendered as bare text
+M6   CAUGHT   prompt._said: household turn not named
+M7   CAUGHT   prompt._role: household turn carried in her role
+M8   CAUGHT   prompt.messages: note dropped from the answered message
+M9   CAUGHT   prompt.messages: note also on carried turns
+M10  CAUGHT   prompt._who: a relevant household turn read as Someone
+M11  CAUGHT   prompt._who: a relevant household turn read as hers
+M12  CAUGHT   history._speaker: household line has no speaker
+M13  CAUGHT   history._speaker: every line with no speaker named for the household
+M14  CAUGHT   write_job: the writer is shown household turns
+M15  CAUGHT   respond._said: Inbound.author ignored, stored as a person turn
+M16  CAUGHT   respond._said: a household turn takes the person as speaker
+M17  CAUGHT   respond._reply: the note is not passed to prompt.messages
+M18  CAUGHT   wake_turn.inbound: the wake is a person turn
+M19  CAUGHT   wake_turn.inbound: the brief is stored in the turn
+M20  CAUGHT   wake_turn.inbound: no note
+M21  CAUGHT   wake_turn.said: the event time is in the stored text
+M22  CAUGHT   wake_turn.inbound: no source
+M23  CAUGHT   0043: converts every sourced person turn, not only wake:%
+M24  CAUGHT   0043: keeps the speaker on converted turns
+
+Equivalent: 0043 converting a turn of hers too (WHERE without author = 'person'); the baseline constraint
+turns_source_person already refuses a source on any turn of hers, so no such row exists.

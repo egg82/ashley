@@ -1,0 +1,471 @@
+{
+  "people": {"alana": 1, "elodie": 2},
+  "profile": "Alana and Elodie live here and are married to each other. Elodie uses \"she\" and \"her\". Mochi is the cat, and must never be knowingly shut out of a room.",
+  "cases": [
+    {
+      "id": "add-food-preference-in-a-task",
+      "source": "authored",
+      "basis": "real usage: facts arrive inside task turns, not as 'remember that'",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Add oat milk to the shopping list. I've gone off regular milk completely, it doesn't agree with me anymore."},
+        {"author": "ashley", "text": "Oat milk's on the list."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "states": "Regular milk no longer agrees with Alana"}
+      ]
+    },
+    {
+      "id": "add-explicit-remember",
+      "source": "authored",
+      "basis": "real usage: Alexa 'remember that'",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Remember that the spare key is in the green watering can by the side gate."},
+        {"author": "ashley", "text": "Green watering can, side gate. Got it."}
+      ],
+      "expect": [
+        {"op": "add", "about": null, "owner": null, "visibility": "shared", "kind": "home", "states": "The spare key is in the green watering can by the side gate"}
+      ]
+    },
+    {
+      "id": "update-changed-preference",
+      "source": "authored",
+      "basis": "Jarvis: the hot-rod red reversal; real usage: updates are where shipped memory fails",
+      "known": [
+        {"ref": "k1", "about": "alana", "owner": "alana", "visibility": "shared", "kind": "preference", "text": "Alana likes the bedroom at 66 degrees for sleeping"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Set the bedroom to 64 tonight. Honestly 66 is too warm, I sleep better cooler now."},
+        {"author": "ashley", "text": "Bedroom's going to 64."}
+      ],
+      "expect": [
+        {"op": "update", "target": "k1", "about": "alana", "kind": "preference", "states": "Alana likes the bedroom at 64 degrees for sleeping"}
+      ]
+    },
+    {
+      "id": "invalidate-ended-routine",
+      "source": "authored",
+      "basis": "real usage: life events change schedules (PersonaMem)",
+      "known": [
+        {"ref": "k1", "about": "elodie", "owner": "elodie", "visibility": "shared", "kind": "routine", "text": "Elodie has a pottery class on Thursday evenings"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "The pottery class finished last week, so Thursdays are free again."},
+        {"author": "ashley", "text": "Thursdays back to yourself, then."}
+      ],
+      "expect": [
+        {"op": "invalidate", "target": "k1"}
+      ]
+    },
+    {
+      "id": "contradiction-other-person",
+      "source": "authored",
+      "basis": "real usage: Alexa stored both the old and the new fact",
+      "known": [
+        {"ref": "k1", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "Mochi is fed at 7am and 6pm"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "The vet wants Mochi on three smaller meals, so it's 7, 1 and 7 now."},
+        {"author": "ashley", "text": "Three meals for Mochi: 7, 1 and 7."}
+      ],
+      "expect": [
+        {"op": "update", "target": "k1", "about": null, "kind": "home", "states": "Mochi is fed three smaller meals, at 7am, 1pm and 7pm"}
+      ]
+    },
+    {
+      "id": "noop-restated",
+      "source": "authored",
+      "basis": "real usage: ChatGPT duplicated restated memories",
+      "known": [
+        {"ref": "k1", "about": "elodie", "owner": "elodie", "visibility": "shared", "kind": "preference", "text": "Elodie takes her coffee black"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "I'm making coffee, black as usual. Is there anything on my calendar this morning?"},
+        {"author": "ashley", "text": "Nothing until noon."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "forget-on-request",
+      "source": "authored",
+      "basis": "real usage: a deleted memory must stay deleted",
+      "known": [
+        {"ref": "k1", "about": "alana", "owner": "alana", "visibility": "discreet", "kind": "plan", "text": "Alana is looking at new jobs in Portland"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Forget what I said about the Portland jobs. I'm not doing that, and I don't want it kept."},
+        {"author": "ashley", "text": "Forgotten."}
+      ],
+      "expect": [
+        {"op": "forget", "target": "k1"}
+      ]
+    },
+    {
+      "id": "forget-household-fact-by-another-member",
+      "source": "authored",
+      "basis": "decisions: any signed-in person of the household may forget a household fact",
+      "known": [
+        {"ref": "k1", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "The spare key is in the green watering can by the side gate"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Please remove the note about the spare key from memory, I don't want it kept anywhere."},
+        {"author": "ashley", "text": "Done, it's gone."}
+      ],
+      "expect": [
+        {"op": "forget", "target": "k1"}
+      ]
+    },
+    {
+      "id": "forget-household-fact-cat-litter",
+      "source": "real",
+      "basis": "asked to move a household note onto the shopping list and forget it, she said she could not delete memories; the fact is the household's",
+      "known": [
+        {"ref": "k1", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "cat litter runs out by the second weekend of the month, so more is needed on the shopping list"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "we can probably move the cat litter note over to the shopping list now, and take it out of memory."},
+        {"author": "ashley", "text": "I've put cat litter on the shopping list. I also can't delete memories from here, so that note stays for now."}
+      ],
+      "expect": [
+        {"op": "forget", "target": "k1"}
+      ]
+    },
+    {
+      "id": "errand-is-not-a-fact",
+      "source": "real",
+      "basis": "an errand for the shopping list was stored as a fact; her line is the sentence of it that was recorded",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "right, cat litter. Two big bags. On the shopping list. Thanks."},
+        {"author": "ashley", "text": "I've asked for the old cat litter note to be removed from memory too."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "forget-not-someone-elses-personal-fact",
+      "source": "authored",
+      "basis": "decisions: only a fact's owner may forget a personal fact",
+      "known": [
+        {"ref": "k1", "about": "alana", "owner": "alana", "visibility": "discreet", "kind": "plan", "text": "Alana is looking at new jobs in Portland"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Forget what Alana said about the Portland jobs, remove it from memory."},
+        {"author": "ashley", "text": "That one is Alana's to ask me to forget."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "correct-household-fact-by-another-member",
+      "source": "authored",
+      "basis": "decisions: any signed-in person of the household may correct a household fact",
+      "known": [
+        {"ref": "k1", "about": null, "owner": null, "visibility": "shared", "kind": "routine", "text": "The bins go out on Tuesday night"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Correct the bins in memory: they go out on Wednesday night now."},
+        {"author": "ashley", "text": "Corrected."}
+      ],
+      "expect": [
+        {"op": "update", "target": "k1", "about": null, "owner": null, "states": "The bins go out on Wednesday night"}
+      ]
+    },
+    {
+      "id": "no-write-hypothetical",
+      "source": "authored",
+      "basis": "Jarvis: the Tennessee flight plan made from an offhand remark",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "What if we went to Lisbon in March? How warm is it there then?"},
+        {"author": "ashley", "text": "Highs around 63, and fairly dry by late March."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "no-write-joke",
+      "source": "authored",
+      "basis": "real usage: 96% of ChatGPT memories were written without being asked",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "If the dishwasher beeps at me one more time I'm moving to the moon."},
+        {"author": "ashley", "text": "I'll pack you a toothbrush. It's done, by the way."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "no-write-passing-one-off",
+      "source": "authored",
+      "basis": "real usage: memory clutter from one-off context",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Turn the office lights up, I'm doing taxes and can't see a thing."},
+        {"author": "ashley", "text": "Office is at full."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "visibility-health-pinned-private",
+      "source": "authored",
+      "basis": "decisions: code pins health to private; Jarvis: Tony keeps the palladium to himself",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Remind me to take my new blood pressure tablet every morning at 8."},
+        {"author": "ashley", "text": "Every morning at 8."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "visibility": "private", "kind": "health", "states": "Alana takes a blood pressure tablet every morning at 8"}
+      ]
+    },
+    {
+      "id": "visibility-finance-household-members",
+      "source": "authored",
+      "basis": "decisions: money is the household's and heard by a member who alone hears the reply, never by a satellite",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Put forty bucks in the house deposit fund, we need six grand by spring."},
+        {"author": "ashley", "text": "Done, forty bucks in the deposit fund."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": null, "visibility": "members", "kind": "finance", "states": "Alana is saving for a house deposit, aiming for six thousand dollars by spring"}
+      ]
+    },
+    {
+      "id": "visibility-therapy-private",
+      "source": "authored",
+      "basis": "decisions: therapy is private",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "I've started seeing a therapist on Tuesday afternoons, so don't book anything for me then."},
+        {"author": "ashley", "text": "Tuesday afternoons stay clear."}
+      ],
+      "expect": [
+        {"op": "add", "about": "elodie", "owner": "elodie", "visibility": "private", "kind": "health", "states": "Elodie sees a therapist on Tuesday afternoons"}
+      ]
+    },
+    {
+      "id": "visibility-gift-private-from-its-subject",
+      "source": "authored",
+      "basis": "Jarvis: withholding scoped by the owner; decisions: 'keep that between us' overrides",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "I ordered Elodie a record player for her birthday. Keep that between us."},
+        {"author": "ashley", "text": "My lips are sealed."}
+      ],
+      "expect": [
+        {"op": "add", "about": "elodie", "owner": "alana", "visibility": "private", "visibility_stated": true, "states": "Alana has bought Elodie a record player for her birthday"}
+      ]
+    },
+    {
+      "id": "visibility-plans-discreet",
+      "source": "authored",
+      "basis": "decisions: texts and plans with friends are discreet",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "I'm getting drinks with Nadia on Friday after work, so I'll be home late."},
+        {"author": "ashley", "text": "Have fun. I'll leave the porch light on."}
+      ],
+      "expect": [
+        {"op": "add", "about": "elodie", "owner": "elodie", "visibility": "discreet", "kind": "plan", "states": "Elodie is having drinks with Nadia on Friday after work"}
+      ]
+    },
+    {
+      "id": "visibility-explicit-share-override",
+      "source": "authored",
+      "basis": "decisions: 'you can tell Elodie' overrides",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "My physio says no running for six weeks. You can tell Elodie if she asks."},
+        {"author": "ashley", "text": "Six weeks off running. Noted."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "visibility": "discreet", "visibility_stated": true, "kind": "health", "states": "Alana is not to run for six weeks, on the physio's advice"}
+      ]
+    },
+    {
+      "id": "unknown-speaker-no-personal-fact",
+      "source": "authored",
+      "basis": "decisions: an unknown speaker gets least privilege",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": null, "text": "I'm allergic to cashews, so don't put them on the list."},
+        {"author": "ashley", "text": "No cashews."}
+      ],
+      "expect": []
+    },
+    {
+      "id": "update-stated-concern-then-choice",
+      "source": "authored",
+      "basis": "Jarvis: 'As you wish' after one objection",
+      "known": [
+        {"ref": "k1", "about": "alana", "owner": "alana", "visibility": "shared", "kind": "preference", "text": "Alana wants a reminder the night before the bins go out"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Stop reminding me about the bins, I've got it."},
+        {"author": "ashley", "text": "You did miss them twice last month. Want me to keep it just for recycling week?"},
+        {"author": "person", "speaker": "alana", "text": "No, really, drop it."},
+        {"author": "ashley", "text": "Dropped."}
+      ],
+      "expect": [
+        {"op": "invalidate", "target": "k1"}
+      ]
+    },
+    {
+      "id": "add-one-of-two-and-noop-other",
+      "source": "authored",
+      "basis": "real usage: an unrelated new memory must not crowd out an old one",
+      "known": [
+        {"ref": "k1", "about": null, "owner": null, "visibility": "shared", "kind": "home", "text": "Mochi must never be shut out of a room"}
+      ],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Leave the guest room door open for Mochi like always. Also, the guest room radiator's broken."},
+        {"author": "ashley", "text": "Door stays open. I'll note the radiator."}
+      ],
+      "expect": [
+        {"op": "add", "about": null, "owner": null, "kind": "home", "states": "The guest room radiator is broken"}
+      ]
+    },
+    {
+      "id": "standing-allergy-said-in-passing",
+      "source": "authored",
+      "basis": "decisions: an allergy is a diet fact, shared and standing; real usage: it arrives inside a task, not as 'remember that'",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Find us somewhere for dinner on Friday, nothing too fancy. I'm allergic to sesame and tree nuts, so skip anywhere that leans on those."},
+        {"author": "ashley", "text": "Looking for somewhere without sesame or nuts."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "kind": "diet", "visibility": "shared", "standing": true, "states": "Alana is allergic to sesame and tree nuts"}
+      ]
+    },
+    {
+      "id": "standing-diet-while-planning-dinner",
+      "source": "authored",
+      "basis": "decisions: a diet is what a household cooks around, so it is standing and shared",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Plan dinner for tonight. I'm vegetarian, so nothing with meat for me, but Alana will want a protein with his."},
+        {"author": "ashley", "text": "How about a stir fry with tofu for you and chicken on the side for Alana?"}
+      ],
+      "expect": [
+        {"op": "add", "about": "elodie", "owner": "elodie", "kind": "diet", "visibility": "shared", "standing": true, "states": "Elodie is vegetarian"}
+      ]
+    },
+    {
+      "id": "standing-pronoun-stated",
+      "source": "authored",
+      "basis": "decisions: a pronoun changes every reply without being mentioned, so it is standing",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Remind me about the dentist on Tuesday at nine. And by the way, I use they and them now, not he, so use that when you talk about me to other people."},
+        {"author": "ashley", "text": "Dentist, Tuesday at nine. They/them noted."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "standing": true, "states": "Alana uses the pronouns they and them"}
+      ]
+    },
+    {
+      "id": "standing-access-need-stated",
+      "source": "authored",
+      "basis": "decisions: an access need changes what a good reply looks like every time, so it is standing",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Read me tomorrow's calendar. Please always read things out to me rather than sending text, I can't read small screens well because of my eyesight."},
+        {"author": "ashley", "text": "Tomorrow you have the vet at ten and lunch with Alana at noon."}
+      ],
+      "expect": [
+        {"op": "add", "about": "elodie", "owner": "elodie", "standing": true, "states": "Elodie has poor eyesight and prefers things read aloud rather than sent as text"}
+      ]
+    },
+    {
+      "id": "not-standing-passing-preference",
+      "source": "authored",
+      "basis": "decisions: standing is for what holds of someone for good and changes every reply; a favourite band does not",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Play some of The Beths in the kitchen. They're my favourite band right now, I can't stop listening."},
+        {"author": "ashley", "text": "The Beths in the kitchen."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "kind": "preference", "standing": false, "states": "Alana's favourite band is The Beths"}
+      ]
+    },
+    {
+      "id": "standing-diet-stated-private",
+      "source": "authored",
+      "basis": "decisions: diet is not pinned private, but an owner who says to keep it private is believed; it is still standing",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Make me a grocery list for the week. I've gone vegan, for my own reasons, so keep that between us."},
+        {"author": "ashley", "text": "Vegan list coming up, and I'll keep it quiet."}
+      ],
+      "expect": [
+        {"op": "add", "about": "alana", "owner": "alana", "kind": "diet", "visibility": "private", "visibility_stated": true, "standing": true, "states": "Alana is vegan"}
+      ]
+    },
+    {
+      "id": "household-routine-said-by-one-person",
+      "source": "real",
+      "basis": "a household routine said by one person was stored with that person as owner, so it showed in his memory rather than the household's, and with the shopping-list request folded in as if it stayed true",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Alana and Elodie's household keeps running out of cat litter by the second weekend of each month, so it should be added to the shopping list."},
+        {"author": "ashley", "text": "Cat litter is on the list."}
+      ],
+      "expect": [
+        {"op": "add", "about": null, "owner": null, "visibility": "shared", "states": "The household runs out of cat litter by the second weekend of each month", "omits": "cat litter should be added to the shopping list"}
+      ]
+    },
+    {
+      "id": "household-supply-said-in-passing",
+      "source": "authored",
+      "basis": "the same defect: a shared supply or pet routine said by one person is the household's",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "elodie", "text": "Put cat litter on the list. We always go through a bag a week with Mochi."},
+        {"author": "ashley", "text": "Cat litter's on the list."}
+      ],
+      "expect": [
+        {"op": "add", "about": null, "owner": null, "visibility": "shared", "states": "The household goes through a bag of cat litter a week", "omits": "Cat litter should be added to the shopping list"}
+      ]
+    },
+    {
+      "id": "household-fact-kept-theirs-when-asked",
+      "source": "authored",
+      "basis": "a household thing a person asked to keep is theirs: owned, and private as stated",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Keep it between us: the spare key is under the loose brick by the shed."},
+        {"author": "ashley", "text": "Between us. Noted."}
+      ],
+      "expect": [
+        {"op": "add", "about": null, "owner": "alana", "visibility": "private", "visibility_stated": true, "kind": "home", "states": "The spare key is under the loose brick by the shed"}
+      ]
+    },
+    {
+      "id": "standing-facts-in-passing-in-a-long-brainstorm",
+      "source": "authored",
+      "basis": "production: a bench brainstorm of many turns carried durable facts inside its requests and Haiku wrote none; every other case is short",
+      "known": [],
+      "turns": [
+        {"author": "person", "speaker": "alana", "text": "Help me think through a workbench. A knock-down Moravian, maybe five feet long, is the design I keep seeing."},
+        {"author": "ashley", "text": "A Moravian is a good first big build if you're patient. The usual path is a laminated top from construction-grade 2x12s, a leg vise on the front left and a row of holdfast holes along the back. Five feet is a sensible length: long enough for most furniture parts, and it comes apart to move. Do you want to start with the top, since everything else is measured from it, or with the base?"},
+        {"author": "person", "speaker": "alana", "text": "Base first, I think. Oh, and it has to go in the basement, and the sump pump sits in the back corner so I can't box that in. What wood for the legs?"},
+        {"author": "ashley", "text": "Leave about a foot of clear floor around the pump and the bench can still sit against the back wall. For legs, laminate four 2x6s of Douglas fir or southern yellow pine into 5 by 5 inch posts. They're cheap, stiff and heavy, which is the point of a bench. Dry them in the house for a couple of weeks first so they stop moving. Flatten each lamination before glue-up, because a twisted leg is very hard to fix after."},
+        {"author": "person", "speaker": "alana", "text": "Fine, pine it is. I'll probably do the glue-ups on Sunday mornings, that's when I have the basement to myself and Elodie's still asleep. What's a decent glue for that, I don't want to rush it?"},
+        {"author": "ashley", "text": "Titebond III gives you about ten minutes of open time and holds up in a cool basement, which matters in winter. Dry-fit everything, mark the order of the boards, and have clamps set to width before you open the bottle. Don't glue more than two or three boards at a time on a first attempt."},
+        {"author": "person", "speaker": "alana", "text": "Makes sense. How many clamps does a top that long need?"},
+        {"author": "ashley", "text": "For a five-foot top you'd want a clamp roughly every ten to twelve inches, so around six for each glue-up, alternating above and below to stop the panel bowing. If you have fewer you can do it in stages: glue two boards, let them cure, then join the halves. It's slower but it works. Pipe clamps are the cheapest way to add more."},
+        {"author": "person", "speaker": "alana", "text": "Okay, staged. Next, the vise. I'm left-handed, so the leg vise goes on the front right, flip whatever you'd normally suggest. Can you put together a shopping list of everything for the base?"},
+        {"author": "ashley", "text": "Mirrored for a left-handed bench: leg vise on the front right, holdfast holes biased towards the left end. Base list: four 2x6x8 pine for the legs, two 2x6x8 for the stretchers, a box of 3/8 inch lag bolts with washers for the draw-bored joints, a quart of Titebond III, and a half-inch drill bit for the dog holes. Want me to add it to the shopping list?"},
+        {"author": "person", "speaker": "alana", "text": "Yes, add all of that to the shopping list."},
+        {"author": "ashley", "text": "Added. That's the full base list on your shopping list."}
+      ],
+      "expect": [
+        {"op": "add", "about": null, "owner": null, "visibility": "shared", "kind": "home", "states": "The basement has a sump pump in its back corner that must not be boxed in"},
+        {"op": "add", "about": "alana", "owner": "alana", "states": "Alana is left-handed"},
+        {"op": "add", "about": "alana", "owner": "alana", "states": "Alana has the basement to himself on Sunday mornings"},
+        {"op": "add", "about": "alana", "owner": "alana", "states": "Alana is building a five-foot knock-down Moravian workbench in the basement"}
+      ]
+    }
+  ]
+}

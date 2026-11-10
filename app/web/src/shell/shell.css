@@ -1,0 +1,93 @@
+/* The shell: field, camera, her travelling mark, top bar, bearing nav, minimap, and the room flight (T1). */
+
+#field { position: fixed; inset: 0; overflow: hidden; z-index: 0; background: radial-gradient(1400px 900px at 50% 40%, #0a1424, var(--ink-0) 70%); }
+#world { position: absolute; left: 0; top: 0; width: 4000px; height: 4000px; transform-origin: 0 0; will-change: transform;
+  transition: transform var(--t-camera) var(--ease-camera); }
+#world svg { width: 4000px; height: 4000px; display: block; }
+.sweep { transform-origin: 2000px 2000px; animation: sweep 14s linear infinite; }
+.drift { animation: drift 6s ease-in-out infinite alternate; }
+@keyframes sweep { to { transform: rotate(360deg); } }
+@keyframes drift { to { opacity: .25; } }
+:root[data-motion="reduced"] .sweep, :root[data-motion="reduced"] .drift { animation: none; }
+/* bearings show only while travelling, never behind a room */
+.f-label { opacity: 0; transition: opacity 300ms; } :root[data-flying] .f-label { opacity: 1; }
+
+/* her one body: sits in a dock, springs to the next dock */
+#her { position: fixed; z-index: 60; left: 0; top: 0; width: 34px; height: 34px; pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(242,180,90,.40));
+  transition: transform var(--t-dock) var(--ease-spring), width var(--t-dock) var(--ease-spring), height var(--t-dock) var(--ease-spring), opacity 200ms; }
+#her.snap { transition: none; }
+#her > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+#her[data-state="unreachable"] { filter: none; }
+#her[data-state="unreachable"]::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1.5px dashed var(--text-3); }
+/* reduced motion: the mark holds a still pose per state */
+:root[data-motion="reduced"] #her svg * { animation: none !important; }
+:root[data-motion="reduced"] #her [data-state="listening"] .am-tilt-a, :root[data-motion="reduced"] #her [data-state="listening"] .am-globe { transform: rotate(0deg); }
+:root[data-motion="reduced"] #her [data-state="thinking"] .am-sb { opacity: 1; offset-distance: 20%; }
+:root[data-motion="reduced"] #her [data-state="speaking"] .am-ripple { opacity: .5; transform: scale(1.6); }
+[data-dock] { visibility: hidden; display: block; } /* a dock is a measured empty spot; the travelling mark draws there */
+.her-word { font: 600 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); }
+.her-word.unreachable { color: var(--text-3); }
+
+.topbar { position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
+  background: linear-gradient(var(--ink-0), rgba(4,7,12,0)); }
+.topbar .home { width: 34px; height: 34px; flex: none; }
+.topbar .home > span { display: block; width: 100%; height: 100%; }
+.bearing { display: flex; gap: 2px; padding: 3px; border-radius: 12px; border: 1px solid var(--line); background: rgba(8,16,26,.85); }
+.bearing a { position: relative; display: flex; align-items: baseline; gap: 7px; padding: 7px 12px; border-radius: 9px; color: var(--text-2); text-decoration: none;
+  font: 600 12.5px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; }
+.bearing a .deg { font: 500 10px/1 var(--f-mono); color: var(--text-3); letter-spacing: 0; }
+.bearing a[aria-current] { background: var(--blue); color: var(--ink-0); } .bearing a[aria-current] .deg { color: rgba(4,7,12,.65); }
+.bearing a.catch { box-shadow: 0 0 0 2px var(--brass), 0 0 22px var(--brass-dim); color: var(--brass); }
+/* new here: a room something is being carried to lights before the pointer reaches it, and its minimap dot with it */
+.bearing a.target:not(.catch) { box-shadow: 0 0 0 1px var(--brass-dim); color: var(--brass); }
+.bearing a.target .deg { color: var(--brass-dim); }
+.minimap .dot.target { fill: var(--brass-dim); } .minimap .dot.catch { fill: var(--brass); }
+.topbar .spacer { flex: 1; }
+.minimap { flex: none; width: 46px; height: 46px; border-radius: 50%; background: rgba(4,7,12,.82); border: 1px solid var(--line-hi); }
+.minimap svg { width: 100%; height: 100%; display: block; }
+.minimap .cam { transition: transform var(--t-camera) var(--ease-camera); }
+.motion-toggle { flex: none; }
+
+.me { position: relative; flex: none; }
+.me > summary { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; list-style: none; padding: 4px; border-radius: var(--r-1); }
+.me > summary::-webkit-details-marker { display: none; }
+.me-menu { position: absolute; right: 0; top: calc(100% + 6px); display: grid; gap: 8px; padding: 10px; min-width: 140px; justify-items: start; }
+
+/* rooms: one visible at a time; during a flight the old one leaves along the travel vector, the new one arrives from the far side */
+.room { position: fixed; inset: 56px 0 0 0; z-index: 10; }
+.room.leaving { animation: leave 280ms var(--ease-in) forwards; pointer-events: none; }
+.room.arriving { animation: arrive 620ms var(--ease-out) both; }
+@keyframes leave { to { opacity: 0; transform: translate(var(--vx), var(--vy)); } }
+@keyframes arrive { from { opacity: 0; transform: translate(calc(var(--vx) * -1), calc(var(--vy) * -1)); } }
+:root[data-motion="reduced"] .room.leaving { animation: fade-out 120ms linear forwards; }
+:root[data-motion="reduced"] .room.arriving { animation: fade-in 160ms linear both; }
+@keyframes fade-out { to { opacity: 0; } } @keyframes fade-in { from { opacity: 0; } }
+.room[data-room="signin"] { inset: 0; }
+
+@media (max-width: 760px) {
+  .topbar { height: 52px; padding: 0 12px; gap: 10px; }
+  .topbar .bearing { position: fixed; left: 0; right: 0; bottom: 0; border-radius: 0; border: 0; border-top: 1px solid var(--line); padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-around; background: rgba(4,7,12,.95); }
+  .bearing a { flex-direction: column; align-items: center; gap: 4px; padding: 7px 2px; flex: 1; min-width: 0; font-size: 9.5px; letter-spacing: 0; }
+  .me .name { display: none; }
+  .minimap { width: 38px; height: 38px; }
+  .minimap .labels { display: none; }
+  .motion-toggle { display: none; }
+  .room { inset: 52px 0 62px 0; }
+}
+
+/* the note by a bearing where a carried thing was just sent (`acknowledge` in carry.ts) */
+.ack { position: fixed; z-index: 95; max-width: min(280px, calc(100vw - 16px)); padding: 7px 12px; border-radius: 9px; background: var(--panel); border: 1px solid var(--brass-dim); color: var(--text); font-size: 12.5px; pointer-events: none; box-shadow: 0 10px 28px rgba(0,0,0,.5); }
+.ack.failed { border-color: var(--line-hi); color: var(--text-2); }
+
+/* new here: she moved the page while the person was busy, so her mark waits on that room's bearing (`her/moves.ts`) and
+   the offer to follow hangs beside it */
+.bearing a.her-there { box-shadow: 0 0 0 1px var(--brass-dim); color: var(--brass); }
+.bearing a.her-there .deg { color: var(--brass-dim); }
+.bearing a[aria-current].her-there { color: var(--ink-0); }
+.away-dock { position: absolute; top: -11px; right: -11px; width: 24px; height: 24px; visibility: hidden; }
+.follow-her { position: fixed; z-index: 95; display: flex; align-items: center; gap: 8px; width: max-content; max-width: calc(100vw - 32px); padding: 6px 6px 6px 12px;
+  border-radius: 10px; background: var(--panel); border: 1px solid var(--brass-dim); color: var(--text); font-size: 12.5px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.5); animation: fade-in 200ms var(--ease-out) both; }
+.follow-her > span { color: var(--brass); }

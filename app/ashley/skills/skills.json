@@ -1,0 +1,8 @@
+{
+  "slug_pattern": "^[a-z0-9][a-z0-9-]*$",
+  "max_slug_chars": 40,
+  "max_label_chars": 60,
+  "max_body_chars": 16000,
+  "max_note_chars": 300,
+  "changelog_read": 20
+}

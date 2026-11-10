@@ -1,0 +1,92 @@
+/* The memory room. Layout, cards, rows, hold and rail are the approved mockup's memory block (rooms.css) copied
+   verbatim, except the toast, which is red only for a forgetting; new here: the forget ring, the supersede on arrival, the rail's source list, and the empty, loading
+   and unreachable states. */
+
+.mem { position: absolute; inset: 0; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; padding: 18px 32px 40px; max-width: 1440px; margin: 0 auto; align-items: start; }
+.mem-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 20px; }
+.mem-head h1 { font-size: 26px; }
+.seg { display: flex; padding: 3px; border-radius: 11px; background: rgba(4,7,12,.9); border: 1px solid var(--line); }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; color: var(--text-2); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--ink-4); color: var(--text); }
+.search { margin-left: auto; flex: 0 1 320px; } .search input { width: 100%; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.9); }
+.sec-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13.5px; }
+.kinds { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; } .kinds .on { border-color: var(--blue); color: var(--blue-hi); }
+.newgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-bottom: 28px; align-items: start; }
+.fact.card { padding: 14px 16px 14px 22px; gap: 8px 12px; overflow: hidden; }
+.fact.card .vis { justify-self: end; }
+.fact.card .text { font-size: 16px; }
+.fact.card.sel { border-color: var(--blue); }
+.acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.forget { position: relative; overflow: hidden; }
+.forget::before { content: ""; position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); background: rgba(255,93,108,.55); }
+.forget span { position: relative; }
+.fact.card.holding { border-color: rgba(255,93,108,.6); background: linear-gradient(90deg, rgba(255,93,108,.22) calc(var(--p) * 100%), var(--ink-2) calc(var(--p) * 100%)); }
+.fact.card.holding .forget { border-color: var(--red); color: #ffd6da; }
+.fact.card.gone { filter: grayscale(1); opacity: 0; transform: scale(.96); transition: opacity var(--t-panel), transform var(--t-panel) var(--ease-in), filter 200ms; }
+.fact .edit { grid-column: 1 / -1; display: flex; gap: 8px; }
+.fact .edit input { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--blue); background: var(--ink-1); }
+.rows { display: grid; gap: 6px; }
+.fact.row { grid-template-columns: 22px minmax(0, 1fr) auto 96px; padding: 10px 14px 10px 20px; gap: 12px; }
+.fact.row > .meta { white-space: nowrap; }
+.fact.row .t { min-width: 0; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
+.was-inline { margin-left: 10px; font-size: 12px; color: var(--text-3); } .was-inline s { text-decoration-color: var(--text-3); }
+.mem-rail { display: grid; gap: 12px; position: sticky; top: 0; }
+.src-panel .ph { gap: 10px; } .src-dock { width: 26px; height: 26px; }
+.src-body { padding: 12px 16px 16px; display: grid; gap: 9px; font-size: 13.5px; }
+.legend { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; padding: 12px 16px 14px; align-items: center; }
+.toast { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 16px; border-radius: 10px; background: var(--ink-1); border: 1px solid var(--line-hi); font-size: 13.5px; max-width: calc(100% - 32px); }
+
+/* new here */
+.fact.row.sel { border-color: var(--blue); }
+.fact.row:hover { border-color: var(--line-hi); }
+.forget { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.forget .ring { position: relative; width: 14px; height: 14px; transform: rotate(-90deg); }
+.forget .ring circle { fill: none; stroke: currentColor; stroke-width: 1.6; opacity: .35; }
+.forget .ring .fill { opacity: 1; stroke: var(--red); stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--p, 0)); }
+.fact.card.holding .forget .ring .fill { stroke: #ffd6da; }
+.hold-says { display: none; }
+.fact.card.holding .hold-says { display: inline; color: #ffd6da; }
+.acts .close { margin-left: auto; }
+.fact .err { grid-column: 1 / -1; font-size: 12.5px; color: var(--text); }
+/* a correction arrives: the old text strikes and slides under, the new text comes in where it stood */
+.fact.superseded .was { animation: was-under var(--t-panel) var(--ease-out) both; }
+.fact.superseded .text { animation: text-arrive var(--t-panel) var(--ease-out) both; animation-delay: calc(var(--t-panel) * .3); }
+@keyframes was-under { from { transform: translateY(-1.6em); color: var(--text); font-size: 16px; } }
+@keyframes text-arrive { from { opacity: 0; transform: translateY(-6px); } }
+.src-of { font-size: 14px; color: var(--text); }
+.src-facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; align-items: center; }
+.src-facts dt { font: 600 10.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); }
+.src-facts dd { margin: 0; font-size: 13px; color: var(--text-2); }
+.toast.forgot { border-color: rgba(255,93,108,.5); }
+.mem-none { margin: 0 0 28px; }
+.mem-empty { display: flex; align-items: center; gap: 16px; margin: 8px 0; font-size: 15px; }
+.mem-down { display: flex; align-items: center; gap: 16px; padding: 18px 22px; max-width: 560px; }
+.down-dock { width: 44px; height: 44px; flex: none; }
+.mem-down-says { display: grid; gap: 8px; justify-items: start; }
+
+@media (max-width: 900px) {
+  .mem { grid-template-columns: 1fr; padding: 12px 16px 30px; gap: 16px; }
+  .mem-rail { position: static; }
+  .search { margin-left: 0; flex-basis: 100%; }
+  .fact.row { grid-template-columns: 22px minmax(0, 1fr) auto; } .fact.row > .meta { display: none; }
+  .was-inline { display: block; margin: 2px 0 0; }
+}
+
+/* the Reminders tab: a row per reminder, its when, what, repeat and whose, with Cancel */
+.fact.rem { grid-template-columns: 150px minmax(0, 1fr) auto auto; padding: 10px 14px 10px 20px; gap: 4px 14px; }
+.rem-when { grid-area: 1 / 1; font: 600 12.5px/1.3 var(--f-mono); color: var(--text); white-space: nowrap; }
+.rem-what { grid-area: 1 / 2; font-size: 14.5px; min-width: 0; overflow-wrap: anywhere; }
+.rem-whose { grid-area: 2 / 2; }
+.fact.rem .pill { grid-area: 1 / 3; }
+.rem-acts { grid-area: 1 / 4 / 3 / 5; display: flex; gap: 6px; justify-content: end; }
+.fact.rem .err { grid-area: 4 / 2 / 5 / 5; }
+.rem-state { grid-area: 3 / 2 / 4 / 4; font-size: 13px; color: var(--text); }
+.fact.rem.undelivered, .fact.rem.failed { --kc: var(--red); border-color: rgba(255,93,108,.45); }
+@media (max-width: 900px) {
+  .fact.rem { grid-template-columns: minmax(0, 1fr) auto; }
+  .rem-when { grid-area: 1 / 1; } .fact.rem .pill { grid-area: 1 / 2; justify-self: end; }
+  .rem-what { grid-area: 2 / 1 / 3 / 3; } .rem-whose { grid-area: 3 / 1; }
+  .rem-acts { grid-area: 3 / 2; }
+  .rem-state { grid-area: 4 / 1 / 5 / 3; }
+  .fact.rem .err { grid-area: 5 / 1 / 6 / 3; }
+}

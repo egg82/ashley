@@ -1,0 +1,12 @@
+# Key material never lives here (CLAUDE.md).
+*.key
+*.crt
+*.csr
+*.srl
+
+# The app
+__pycache__/
+.pytest_cache/
+.hypothesis/
+node_modules/
+app/build/

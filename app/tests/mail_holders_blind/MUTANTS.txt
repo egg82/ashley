@@ -1,0 +1,118 @@
+Wrong implementations the blind holders-and-resources suite (app/tests/mail_holders_blind) must kill. Written from the design
+alone (decisions.md, "Who holds a connection, and who sees what it reaches", build part 3), before the implementation
+existed; Each line: id, where it would live, the wrong behaviour, and the test that
+should go red. Equivalent or untestable ones are listed at the end with the reason.
+
+Holders on the kind
+M1   kind        a kind still carries `personal` beside or instead of `holders`                    test_mh_kinds: a_kind_no_longer_has_a_personal_flag
+M2   kinds       Sure or Home Assistant declared with `person` too                                  test_mh_kinds: the_real_kinds_declare_who_may_hold_them
+M3   kinds       a code host or herdr declared with `household`                                     test_mh_kinds: the_real_kinds_declare_who_may_hold_them
+M4   kinds       Google declared person-only                                                        test_mh_kinds: the_real_kinds_declare_who_may_hold_them
+M5   add         a household-only kind stored with the adder as `person_id`                         test_mh_kinds: a_household_only_kind_is_held_by_the_household
+M6   add         a person-only kind stored with no `person_id`                                      test_mh_kinds: a_person_only_kind_is_held_by_the_person
+M7   add         a kind either may hold is stored as the household's by default                     test_mh_kinds: a_kind_either_may_hold_is_the_persons_until_handed_over
+M8   routes      `holders` left off the offered kinds                                               test_mh_kinds: the_room_offers_each_kind_with_its_holders
+M9   list        a household connection listed to its adder only, or a person's to every member     test_mh_kinds: ..._listed_to_every_member_and_a_persons_to_its_owner
+
+Moving
+M10  move        hand-over writes `person_id = NULL` and leaves the secret sealed to the person     test_mh_move: handing_over_reseals_...; a_handed_over_connection_..._opens_for_them
+M11  move        take-back writes `person_id` and leaves the secret sealed to the household         test_mh_move: taking_it_back_reseals_the_secret_to_the_person
+M12  move        only the refresh token is resealed, the sealed access token is left                test_mh_move: the_access_token_of_an_oauth_connection_is_resealed_...
+M13  move        reseal under the new holder's binding but with the old kind or household           test_mh_move: handing_over_reseals_...; taking_it_back_reseals_...
+M14  move        reseal and holder change in two transactions (reseal first, then too_many aborts)  test_mh_move: a_move_past_the_households_most_is_409_...; taking_back_past_...
+M15  move        any member who can see a household connection takes it back                        test_mh_move: only_the_one_who_added_it_takes_it_back
+M16  move        nobody may take it back (even added_by)                                            test_mh_move: only_the_one_who_added_it_takes_it_back (Alana's final 200)
+M17  move        a move looks the connection up without the visibility filter (Sam hands Alana's)    test_mh_move: nobody_else_can_hand_over_a_persons_connection
+M18  move        a member of another household takes back a household connection                    test_mh_move: a_member_of_another_household_cannot_take_one_back
+M19  move        a household-only kind can be taken by a person                                     test_mh_move: a_kind_that_is_only_the_households_...
+M20  move        a person-only kind can be handed to the household                                  test_mh_move: a_kind_that_is_only_a_persons_...
+M21  move        `most` not checked on a move                                                       test_mh_move: a_move_past_the_households_most_...; taking_back_past_...
+M22  move        `most` checked against the wrong holder's count (household count for a take-back)  test_mh_move: the_households_most_counts_only_the_households_and_a_persons_only_theirs
+M23  move        `most` checked as `<=` (one too many allowed) or `<` less (last slot refused)       test_mh_move: a_move_within_most_is_allowed_until_it_is_reached
+M24  move        the move changes `added_by` to the mover, losing who may take it back              test_mh_move: the_move_keeps_the_row_its_label_and_its_adder; only_the_one_who_added_it_...
+M25  move        the move rewrites the label or the id (delete and insert)                          test_mh_move: the_move_keeps_the_row_its_label_and_its_adder
+M26  move        a refused move still bumps or rewrites a column (too_many, unsupported, 404)       test_mh_move: snapshot comparisons in each refusal
+M27  move        PATCH skips the same-origin or session check on `holder`                           test_mh_move: a_move_across_origins_or_signed_out_is_refused_...
+M28  move        any string is accepted as a holder and stored as a person move                     test_mh_move: any_other_holder_is_refused
+M29  move        holder PATCH drops the label rename (a body with only `label` stops working)       test_mh_move: renaming_still_works_beside_the_holder
+M30  open        `opened` ignores the binding (a person move without reseal still opens)            test_mh_move: a_sealed_value_moved_without_resealing_does_not_open
+M31  replace     replacing a household connection seals with the replacer's person                  test_mh_move: replacing_a_handed_over_connection_seals_it_to_the_household
+
+Resources: listing and sharing
+M32  store       resources not listed when the connection is stored                                 test_mh_resources: a_stored_connection_lists_its_resources_...
+M33  store       the kind's `resources` called with a placeholder secret, not the connection's      test_mh_resources: the_service_is_opened_with_the_connections_own_secret
+M34  store       the service's name replaced by the ref, or the kind rewritten                      test_mh_resources: a_stored_connection_lists_its_resources_...
+M35  store       a person-held connection's resources start shared                                  test_mh_resources: each_resource_of_a_personal_connection_starts_kept
+M36  store       a household-held connection's resources start kept                                 test_mh_resources: every_resource_of_a_household_connection_is_shared
+M37  room        opening the room does not list again (stale resources)                             test_mh_resources: opening_the_room_lists_again_and_drops_what_disappeared
+M38  room        a resource that disappeared is kept                                                test_mh_resources: opening_the_room_lists_again_...; test_mh_gate: a_resource_that_disappeared_...
+M39  room        a reread resets every flag to kept, or re-inserts and loses `shared`               test_mh_resources: a_shared_resource_stays_shared_across_a_reread_...
+M40  room        a reread adds a new resource as shared                                             test_mh_resources: a_shared_resource_stays_shared_...; a_household_connections_new_resource_arrives_shared (the other way)
+M41  room        a renamed resource keeps its old name                                              test_mh_resources: a_resource_the_service_renames_shows_its_new_name
+M42  share       sharing flips every resource of the connection, not the named one                  test_mh_resources: the_owner_shares_a_resource_and_keeps_it_again
+M43  share       sharing keyed by ref alone, across the owner's connections                         test_mh_resources: sharing_a_ref_on_one_connection_does_not_share_it_on_another
+M44  share       unsharing is not possible (PATCH false is ignored)                                 test_mh_resources: the_owner_shares_a_resource_and_keeps_it_again
+M45  share       a household member may share a resource of a connection that is not theirs         test_mh_resources: nobody_but_the_owner_shares_a_persons_resource
+M46  share       an unknown ref creates the row, or answers 200                                     test_mh_resources: a_ref_the_connection_does_not_list_is_404
+M47  share       the ref is looked up across all connections, not this one's                        test_mh_resources: another_connections_ref_is_not_reachable_through_this_one
+M48  share       a household connection's resource can be kept                                      test_mh_resources: a_member_cannot_keep_a_resource_of_a_household_connection
+M49  move        handing over leaves kept flags in place and the listing shows them                 test_mh_resources: handing_a_connection_over_shares_all_its_resources
+M50  share       the share route skips the origin or session check                                  test_mh_resources: sharing_across_origins_or_signed_out_is_refused
+M51  share       a non-boolean `shared` is coerced                                                  test_mh_resources: a_body_that_is_not_a_boolean_is_refused
+M52  delete      deleting a connection leaves its resources (no cascade, or an app-side delete)     test_mh_resources: removing_a_connection_removes_its_resources; test_mh_migration: deleting_the_connection_...
+
+The gate by resource
+M53  gate        a kept resource gated by the household, not the owner                              test_mh_gate: another_member_on_their_own_chat_...; the shared channel
+M54  gate        a kept resource offered where `owner_alone` is false but the speaker is the owner  test_mh_gate: a_shared_channel_naming_a_member_...; the_owners_chat_with_a_screen_...
+M55  gate        a kept resource offered to a satellite because a voice match names its owner       test_mh_gate: a_voice_match_never_makes_anyone_...
+M56  gate        `owner_alone` replaced by `speaker_id is not None`                                 test_mh_gate: the_owners_chat_with_a_screen_...; a_shared_channel_naming_a_member_...
+M57  gate        a shared resource read needs a named speaker (satellite and tablet get nothing)    test_mh_gate: a_satellite_reads_...; the_hallway_tablet_reads_...
+M58  gate        a shared resource changed with no speaker named                                    test_mh_gate: a_satellite_reads_..._changes_nothing; a_shared_channel_naming_nobody_...
+M59  gate        a change by a speaker who is not a member of the household is allowed              test_mh_gate: a_speaker_who_is_not_of_the_household_changes_nothing_there
+M60  gate        a shared resource offered to another household                                     test_mh_gate: another_household_reaches_none_of_it
+M61  gate        reads and changes gated identically (changes ungated like reads, or reads gated like changes)  test_mh_gate: satellite, tablet, shared-channel tests
+M62  gate        a household connection's resource gated by its stored `shared` flag               test_mh_gate: a_household_connection_is_shared_whatever_its_stored_flag
+M63  gate        the connection offered is the wrong one when two list the same ref                 test_mh_gate: the_connection_that_shares_a_ref_is_the_one_offered
+M64  gate        sharing takes effect only after a restart or a room open (read through a cache)    test_mh_gate: sharing_offers_it_to_the_satellite_and_keeping_it_again_withdraws_it
+M65  gate        a hand-over does not offer the formerly kept resources                             test_mh_gate: handing_the_connection_over_offers_all_...
+M66  gate        the signed-in session decides, not the inbound's speaker                           test_mh_gate: the_gate_reads_who_the_channel_names_not_who_signed_in_last
+M67  gate        a removed connection's rows still offered                                          test_mh_gate: a_removed_connection_offers_nothing
+M68  gate        the Null Object offers something, or the real service raises with no connections   test_mh_gate: no_connections_offers_nothing
+
+Migration
+M69  migration   `ref` length check missing, or 0..200, or 1..199                                    test_mh_migration: the two ref length tests
+M70  migration   unique on `ref` alone, or no unique at all                                         test_mh_migration: a_ref_is_unique_within_its_connection; the_same_ref_may_belong_to_two_connections
+M71  migration   no foreign key, or the key without ON DELETE CASCADE                               test_mh_migration: a_resource_needs_a_connection; deleting_the_connection_deletes_its_resources
+M72  migration   `shared` nullable                                                                  test_mh_migration: shared_is_never_null
+M73  migration   the `person_id` CHECK on kind names left in place                                  test_mh_migration: the_person_check_that_personal_implied_is_gone
+M74  migration   downgrade does not drop the table, or upgrade rewrites connections                 test_mh_migration: the_migration_keeps_the_connections_it_finds
+
+Logs
+M75  logs        no `connections.moved` or no `connections.resource_shared`                         test_mh_logs: the first two
+M76  logs        the line carries the ref, name, label, secret or address                           test_mh_logs: no_line_carries_...
+M77  logs        a refused move or share still logs the success line                                test_mh_logs: a_refused_move_or_share_logs_neither_line
+
+Equivalent or untestable from the design
+E1   gate        the order in which usable resources are returned: the design gives none, tests compare sets
+E2   share       idempotence of a hand-over to the holder it already has (200 or no-op): the design is silent
+E3   take-back   what a resource's flag is after a take-back (kept again or shared): the design is silent, no test pins it
+E4   move        a label collision on a move (409 `label_taken`): the design names only `too_many`
+E5   gate        how a turn of another member opens the owner's login for a shared resource: the design is silent (see H11)
+
+Verdicts (each mutant applied one at a time to the built code, run against this suite, the part's own holder, mail-tool and
+connection tests and mail_gmail_blind, -x, per-run timeout 150 s; killed means the run went red)
+Killed: M1-M23b, M25-M27, M29-M39, M41-M64, M68-M77 (a letter suffix is a variant: M9a-b, M23a-b, M26a-b, M49a-c,
+M69a-d, M70a-b, M74a-b, M75a-b, M76a-b, M77a-b; every variant killed). M40 is M35 and M36 (a first listing and a reread
+share one code path, `ConnectionResources.listed`). M65 is M49a. M67 is M52 (the foreign key's cascade is the only way a
+row outlives its connection). M71a removed the key; the cascade variant is M52.
+Killed by a directed test added for it: M68 (the unwired gate answers ConnectionsUnavailable, never an empty offer:
+test_connection_holders_service: the_unwired_gate_is_unavailable...); M77a (a move refused by an exception, not by an
+invisible connection, logs no moved line: test_mh_logs: a_move_the_service_refuses_logs_no_moved_line).
+Equivalent (no test can tell them apart, with the reason):
+M24  move  the move sets `added_by` to the mover: only the owner moves a person's connection and only the adder takes a
+     household's back, and a person's connection is added by its owner, so the mover is always `added_by`.
+M28  move  any string accepted as a holder: the kind's `holders` check refuses it with the same 422 `unsupported`.
+Not applied: M14 was applied as a commit before a late `too_many`; M22's mutant answered by crashing the listing (killed,
+but by a validation error rather than the counted behaviour). M25's delete-and-insert form was applied as a rewritten
+label. M27 and M50 were applied to the shared same-origin check in `ashley.api.person`, since neither route has its own.
+M66 has no code path to mutate (the gate never reads a session); `test_the_gate_reads_who_the_channel_names...` pins it.

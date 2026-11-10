@@ -1,0 +1,13 @@
+{
+  "command": {"max_tool_rounds": 4, "max_tool_result_chars": 8000, "recent_turns": 12, "relevant_turns": 3,
+              "hold_after_s": 4, "deadline_s": 20, "carried_runs": 1, "run_script_chars": 400,
+              "run_output_chars": 400},
+  "chat": {"max_tool_rounds": 6, "max_tool_result_chars": 16000, "recent_turns": 40, "relevant_turns": 5,
+           "hold_after_s": 6, "deadline_s": 40, "carried_runs": 3, "run_script_chars": 800,
+           "run_output_chars": 600,
+           "escalates": true},
+  "brainstorm": {"max_tool_rounds": 24, "max_tool_result_chars": 16000, "recent_turns": 80, "relevant_turns": 5,
+                 "hold_after_s": 15, "deadline_s": 300, "carried_runs": 5, "run_script_chars": 800,
+                 "run_output_chars": 600, "reply_chars": 500, "windows": 2,
+                 "hand_off_after_s": 120, "hand_off_after_rounds": 8}
+}

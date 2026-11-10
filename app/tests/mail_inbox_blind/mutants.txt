@@ -1,0 +1,37 @@
+Planted against a scratch reference build of the spec (not committed); each applied alone, restored byte-identically.
+killed = a FAILED line names a test (exit 2 is xdist -x stopping at the first failure). Unmutated reference: 39 passed.
+
+M01  killed     judge: a syncing read is Failed(unreachable) instead of Later  -- test_a_syncing_mailbox_with_no_baseline_yet_is_later_not_a_baseline_of_nothing
+M02  killed     kind: a syncing mailbox reads as an empty inbox  -- test_a_syncing_mailbox_with_no_baseline_yet_is_later_not_a_baseline_of_nothing
+M03  killed     job: a syncing read is logged as watches.read_failed  -- test_a_syncing_read_logs_no_failure_for_the_kind
+M04  killed     store: Later leaves next_check_at alone  -- test_a_watch_that_answered_later_is_not_due_until_retry_s_has_passed
+M05  killed     store: Later defers by interval_s, not retry_s  -- test_later_defers_the_next_check_by_retry_s_not_interval_s
+M06  killed     store: Later is recorded as a failure  -- test_later_is_accepted_and_changes_nothing_a_check_would
+M07  killed     kind: search without the inbox folder  -- test_only_the_inbox_is_read
+M08  killed     kind: one page only, no cursor loop  -- test_the_read_is_the_newest_max_items_even_when_the_port_answers_in_smaller_pages
+M09  EQUIVALENT kind: reads pages up to twice max_items, then cuts  -- the result is the same; only more pages are asked of the port, which no contract text bounds
+M10  killed     kind: ignores the page cursor  -- test_the_read_is_the_newest_max_items_even_when_the_port_answers_in_smaller_pages
+M11  killed     kind: from tracks the recipient  -- test_a_wake_logs_counts_and_never_what_the_mail_says
+M12  killed     kind: an extra tracked field (snippet)  -- test_a_wake_logs_counts_and_never_what_the_mail_says
+M13  killed     kind: unread inverted  -- test_a_wake_logs_counts_and_never_what_the_mail_says
+M14  killed     kind: items keyed by subject  -- test_only_the_syncing_mailbox_is_later_the_other_in_the_same_tick_reads_normally
+M15  killed     kind: every watch reads the first usable mailbox  -- test_only_the_syncing_mailbox_is_later_the_other_in_the_same_tick_reads_normally
+M16  killed     kind: an unusable mailbox reads as no items  -- test_a_mailbox_the_person_cannot_use_fails_not_connected_and_reaches_no_mail
+M17  killed     kind: a refused/unreachable mailbox reads as no items  -- test_a_failed_read_logs_its_reason_and_never_the_mailbox
+M18  killed     kind: unreachable mapped to refused  -- test_a_failed_read_logs_its_reason_and_never_the_mailbox
+M19  killed     data: outside false  -- test_the_turn_a_mail_inbox_wake_starts_is_tainted_by_the_watch
+M20  killed     data: default when is changed unread  -- test_the_default_when_is_a_new_message_alone
+M21  killed     data: default when is gone  -- test_the_default_when_is_a_new_message_alone
+M22  killed     data: track gains snippet  -- test_the_kind_tracks_from_subject_unread_and_labels_and_nothing_else
+M23  killed     registry: kind not registered  -- test_the_kind_is_registered_under_its_name_and_is_not_the_null_kind
+M24  killed     watch_turn: no taint  -- test_the_turn_a_mail_inbox_wake_starts_is_tainted_by_the_watch
+M25  killed     judge: syncing is Quiet  -- test_a_syncing_mailbox_with_no_baseline_yet_is_later_not_a_baseline_of_nothing
+M26  killed     kind: one syncing mailbox makes the whole group Later  -- test_only_the_syncing_mailbox_is_later_the_other_in_the_same_tick_reads_normally
+M27  killed     job: watches.woke log carries the change's after fields  -- test_a_wake_logs_counts_and_never_what_the_mail_says
+M28  killed     kind: lets a syncing MailFailed raise  -- test_a_syncing_mailbox_is_later_not_every_message_gone_whatever_when_and_until_say_of_gone
+M29  killed     store: Later bumps version  -- test_later_is_accepted_and_changes_nothing_a_check_would
+M30  killed     store: Later resets failures  -- test_later_is_not_a_failure_so_a_run_of_them_never_pauses_and_keeps_the_failures_there_were
+M31  killed     kind: keeps the oldest max_items of the page read  -- test_the_read_is_the_newest_max_items_even_when_the_port_answers_in_smaller_pages
+M32  killed     kind: no max_items cut  -- test_the_read_is_the_newest_max_items_even_when_the_port_answers_in_smaller_pages
+M33  killed     kind: no cut to max_value_chars  -- test_a_subject_longer_than_a_tracked_value_is_cut_to_max_value_chars
+M34  killed     judge: syncing is Later only when a baseline exists  -- test_a_syncing_mailbox_with_no_baseline_yet_is_later_not_a_baseline_of_nothing

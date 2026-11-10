@@ -1,0 +1,77 @@
+{
+ "data": {
+  "print": {
+   "id": "100301",
+   "name": "M5 Washer - 9 variations",
+   "slug": "m5-washer-9-variations",
+   "summary": "M5 Metric style washers in 9 variations of outside diameter: 10, 11, 12, 13, 14, 15, 16, 17, 18 mm.",
+   "likesCount": 372,
+   "downloadCount": 1220,
+   "makesCount": 5,
+   "ratingAvg": "5.0000000000",
+   "user": {
+    "publicUsername": "MakerEight"
+   },
+   "stls": [
+    {
+     "id": "200301",
+     "name": "M5_Washer_OutsideDiameter10mm.stp",
+     "fileSize": 8927
+    },
+    {
+     "id": "4146977",
+     "name": "M5_Washer_OutsideDiameter10mm.stl",
+     "fileSize": 155284
+    },
+    {
+     "id": "4146974",
+     "name": "M5_Washer_OutsideDiameter11mm.stl",
+     "fileSize": 158284
+    },
+    {
+     "id": "4146975",
+     "name": "M5_Washer_OutsideDiameter12mm.stl",
+     "fileSize": 161484
+    },
+    {
+     "id": "4146981",
+     "name": "M5_Washer_OutsideDiameter13mm.stl",
+     "fileSize": 164084
+    },
+    {
+     "id": "4146978",
+     "name": "M5_Washer_OutsideDiameter14mm.stl",
+     "fileSize": 166484
+    },
+    {
+     "id": "4146983",
+     "name": "M5_Washer_OutsideDiameter15mm.stl",
+     "fileSize": 169484
+    },
+    {
+     "id": "4146980",
+     "name": "M5_Washer_OutsideDiameter16mm.stl",
+     "fileSize": 171884
+    },
+    {
+     "id": "4146982",
+     "name": "M5_Washer_OutsideDiameter17mm.stl",
+     "fileSize": 174284
+    },
+    {
+     "id": "4146979",
+     "name": "M5_Washer_OutsideDiameter18mm.stl",
+     "fileSize": 176684
+    }
+   ],
+   "description": "",
+   "datePublished": "2024-08-29T09:18:29.201063+00:00",
+   "license": {
+    "name": "Creative Commons \u2014 Attribution"
+   },
+   "category": {
+    "name": "Mechanical Parts"
+   }
+  }
+ }
+}

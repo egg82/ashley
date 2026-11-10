@@ -1,0 +1,66 @@
+{
+  "tick_s": 5,
+  "batch": 50,
+  "read_timeout_s": 10,
+  "fail_after": 3,
+  "retry_s": 300,
+  "wake_max_age_s": 86400,
+  "keep_s": 604800,
+  "max_live": 20,
+  "max_items": 50,
+  "max_value_chars": 200,
+  "max_alternatives": 4,
+  "max_predicates": 6,
+  "kinds": {
+    "claude_session": {
+      "interval_s": 15,
+      "hours": 24,
+      "max_hours": 168,
+      "handoff_hours": 72,
+      "outside": false,
+      "track": ["status", "seq"],
+      "when": [
+        [
+          {"kind": "one_of", "negate": false, "field": "status", "values": ["blocked", "done"]},
+          {"kind": "changed", "negate": false, "field": "seq"}
+        ],
+        [
+          {"kind": "equals", "negate": false, "field": "status", "value": "idle"},
+          {"kind": "changed", "negate": false, "field": "seq"},
+          {"kind": "equals", "negate": true, "field": "status", "value": "done", "of": "before"}
+        ]
+      ],
+      "handoff_until": [[{"kind": "gone", "negate": false}]]
+    },
+    "bench_job": {
+      "interval_s": 5,
+      "hours": 6,
+      "max_hours": 24,
+      "handoff_hours": 6,
+      "outside": true,
+      "track": ["settled", "blocked", "waiting"],
+      "when": [
+        [
+          {"kind": "equals", "negate": false, "field": "settled", "value": true},
+          {"kind": "changed", "negate": false, "field": "settled"}
+        ],
+        [
+          {"kind": "number", "negate": false, "field": "blocked", "min": 1},
+          {"kind": "changed", "negate": false, "field": "blocked"}
+        ],
+        [{"kind": "changed", "negate": false, "field": "waiting"}]
+      ],
+      "handoff_until": [[{"kind": "equals", "negate": false, "field": "settled", "value": true}]]
+    },
+    "mail_inbox": {
+      "interval_s": 60,
+      "hours": 24,
+      "max_hours": 168,
+      "handoff_hours": 24,
+      "outside": true,
+      "track": ["from", "subject", "unread", "labels"],
+      "when": [[{"kind": "new", "negate": false}]],
+      "handoff_until": [[{"kind": "gone", "negate": false}]]
+    }
+  }
+}

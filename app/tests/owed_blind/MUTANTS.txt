@@ -1,0 +1,45 @@
+MUTANTS.txt: plausible wrong implementations of part 2 (Reply.owed, owe, untold, told, the prompt section, respond.done),
+each applied alone to the implementation (channels/owed.py, channels/respond.py, persona/facts.py, inference/reply.py),
+run against tests/owed_blind and tests/test_respond_errands.py with a 30 s thread-based per-test timeout, then restored
+and checked with git diff --quiet. 'killed' = a test failed, named after '--'. 'first run: survived' = the suite as first
+written let it through and the directed test named kills it. 'equivalent' = no test can tell it apart, with the reason.
+Where the implementation is shaped differently from the line as first written, the line says what was actually applied.
+
+M01      killed     owed.py     kept() without the speaker check  -- test_an_unknown_speaker_owes_nothing_and_the_owed_is_counted_dropped
+M02      killed     owed.py     kept() keeps any owed (ignores unreachable)  -- test_a_key_that_is_not_unreachable_is_dropped_and_counted
+M03      killed     owed.py     kept() keeps a key that is NOT unreachable only  -- test_a_key_that_is_not_unreachable_is_dropped_and_counted
+M04      killed     owed.py     kept() treats no catalogue as everything unreachable  -- first run: survived (the test's catalogue was never absent); killed by test_no_catalogue_at_all_means_nothing_is_owed once it drops the turn's whole tool source
+M05      killed     owed.py     owed_dropped always 0 (a), or counted when owed was null (b)  -- test_a_key_that_is_not_unreachable_is_dropped_and_counted; test_done_says_none_owed_and_zero_dropped_for_an_ordinary_turn
+M06      killed     owed.py     owe called twice in a turn  -- test_a_turn_with_tool_rounds_owes_at_most_once
+M07      killed     owed.py     owe given the conversation id as the turn id  -- test_a_kept_owed_stores_one_errand_for_the_person_turn
+M08      killed     owed.py     owe given a fixed source  -- first run: survived (every test named house); killed by directed test test_ow_the_source_stored_is_whichever_key_is_out
+M09      killed     owed.py     owe household and asker swapped  -- test_a_kept_owed_stores_one_errand_for_the_person_turn
+M10      killed     owed.py     ErrandsUnavailable from owe fails the turn  -- test_a_store_that_is_down_does_not_fail_the_turn
+M11      equivalent -           a kept owed replaces the reply's text  -- owe returns nothing and settle runs after her turn is stored, so no code path exists that could change the reply; test_the_reply_still_goes_out_when_an_errand_is_stored guards the interface
+M12      killed     owed.py     untold read for an unknown speaker  -- test_an_unknown_speaker_carries_none_and_the_store_is_not_read (crash on the missing speaker)
+M13      killed     owed.py     untold limit tell_max - 1 (a) and + 1 (b)  -- test_a_known_speaker_reads_untold_for_themselves_with_the_cap; test_only_those_shown_under_the_cap_are_told
+M14      killed     owed.py     owner_only always True (a) or False (b)  -- test_a_known_speaker_reads_untold_for_themselves_with_the_cap; test_on_a_channel_only_they_hear_the_hearer_is_alone
+M15      killed     facts.py    heading renamed (a) or dropped (b)  -- test_each_result_is_a_line_under_the_heading
+M16      killed     facts.py    results joined by a space (a) or only the first shown (b)  -- test_each_result_is_a_line_under_the_heading
+M17      killed     owed.py     lines() newest first  -- test_the_results_come_oldest_first_as_the_store_gave_them
+M18      killed     facts.py    section (heading) carried when nothing is untold  -- test_no_untold_means_no_heading
+M19      killed     owed.py     cap ignored: tell_max * 2 read  -- test_at_most_tell_max_results_reach_the_prompt; test_only_those_shown_under_the_cap_are_told
+M20      equivalent -           only the first step carries the section  -- the system prompt is built once per turn and every step reuses it; no code path varies it by step. test_every_step_of_the_turn_carries_them guards the interface
+M21      killed     owed.py     untold read twice in a turn  -- test_it_is_read_once_per_turn_however_many_steps (and the cap test)
+M22      killed     owed.py     untold failure not caught  -- test_a_store_that_is_down_costs_the_section_and_not_the_reply
+M23      killed     respond.py  settle run before her turn is stored (hers 0)  -- test_results_are_not_marked_told_when_her_turn_was_not_stored (tests/test_respond_errands.py)
+M24      equivalent -           told with every id read rather than the ones shown  -- away is both what was read and what was shown (one read, capped by the store's limit), so the two sets cannot differ; the cap itself is M13/M19
+M25      killed     owed.py     told run when her turn was not stored  -- test_results_are_not_marked_told_when_her_turn_was_not_stored
+M26      killed     owed.py     told never called (a) or called per id (b)  -- test_the_ids_that_were_shown_are_told; test_said_once_is_not_said_again_on_the_next_turn
+M27      equivalent -           told for an unknown speaker  -- an unknown speaker is shown nothing (away is empty), and told returns at once on an empty set; reachable only together with M12, which is killed
+M28      equivalent -           told after the held reply is stored  -- settle is reached only from _end, after the answer is stored; the held line passes through no code that could call it. test_a_held_reply_tells_after_the_answer_is_stored_not_the_held_line guards the interface
+M29      equivalent -           told twice for a held turn  -- as M28: one call site
+M30      killed     owed.py     told failure unlogged (a) or propagated (b)  -- test_a_failed_told_is_logged_and_the_turn_is_still_answered_and_stored
+M31      killed     owed.py     told_unrecorded logged on success  -- test_a_successful_told_logs_no_told_unrecorded
+M32      killed     owed.py     told failure logs the result text  -- test_the_result_text_is_not_logged_by_a_failed_told
+M33      killed     owed.py     respond.done omits told (a) or lists it reversed (b)  -- test_done_names_the_errand_ids_told_in_the_order_shown
+M34      killed     owed.py     owed_dropped also 1 for a kept one (a); owed logs the raw value when dropped (b)  -- test_a_kept_owed_stores_one_errand_for_the_person_turn; test_a_key_that_is_not_unreachable_is_dropped_and_counted
+M35      killed     owed.py     owed_dropped omitted when zero  -- test_done_says_none_owed_and_zero_dropped_for_an_ordinary_turn
+M36      killed     reply.py    owed not in the provider schema's required  -- test_owed_is_in_the_schema_every_provider_is_sent_and_is_required_there
+M37      killed     reply.py    owed typed as a dict  -- test_owed_is_not_a_free_form_object
+M38      killed     owed.py     never tells (the M26 mutation, fake store)  -- test_said_once_is_not_said_again_on_the_next_turn

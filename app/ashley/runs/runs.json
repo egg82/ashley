@@ -1,0 +1,33 @@
+{
+  "namespace": "ashley-sandbox",
+  "runtime_class": "gvisor",
+  "max_script_chars": 20000,
+  "max_stdin_chars": 20000,
+  "output_chars": 8000,
+  "file_chars": 20000,
+  "max_files": 16,
+  "poll_s": 0.5,
+  "languages": {
+    "python": {
+      "image": "docker.io/library/python:3.13.18-alpine3.24@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8",
+      "script_timeout_s": 10,
+      "pod_deadline_s": 30,
+      "cpu": "500m",
+      "cpu_request": "250m",
+      "memory": "256Mi",
+      "work_mib": 32,
+      "log_bytes": 262144
+    },
+    "build123d": {
+      "script_timeout_s": 60,
+      "pod_deadline_s": 120,
+      "cpu": "1",
+      "cpu_request": "500m",
+      "memory": "1Gi",
+      "work_mib": 32,
+      "log_bytes": 8388608,
+      "artifact_bytes": 16777216,
+      "input_bytes": 786432
+    }
+  }
+}

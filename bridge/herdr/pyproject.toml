@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ashley-herdr-bridge"
+version = "0.3.0"
+description = "A narrowing proxy over the herdr CLI for one person: list, read, prompt, start and close Claude Code sessions and move files through their in/ and out/ over mutual TLS"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+herdr-bridge = "herdr_bridge.cli:main"
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+
+[tool.setuptools]
+packages = ["herdr_bridge"]

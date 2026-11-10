@@ -1,0 +1,1 @@
+Trimmed captures from Home Assistant 2026.10.0: the shapes, tool names, input schemas and error texts are as served; the household's names and descriptions are replaced.

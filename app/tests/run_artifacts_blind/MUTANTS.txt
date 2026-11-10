@@ -1,0 +1,119 @@
+Planted wrong implementations, one at a time, in the worktree (the file restored from the text read before the plant,
+the plant asserted to apply exactly once). Each run is tests/run_artifacts_blind, green before the plant, stopping at the
+first failure. 96 planted, one of them the no-op control (N0). 84 of the 95 real plants were killed by the suite as
+committed; 11 survived. Three of those are now killed by directed tests: S4 (a binary STL of 80 to 83 bytes, in
+test_ra_keep.py's WRONG table), M14 (an output whose outcome is not `ran` but whose exit code is 0, in
+test_ra_report.py's did-not-end-well table) and G4 (a run that finishes after a later one,
+test_a_run_that_finishes_after_a_later_one_is_still_there_with_its_meshes). The 8 left (marked *) are equivalent or
+rest on a contract that does not say; the control survives, as it must.
+
+Survivors left:
+E1   equivalent as to artifacts: with no budget the room is 0, so every file inflates to nothing and is refused; only the names in `skipped` differ, which no contract sentence states for a language with no budget
+E2   equivalent: the inflater may produce one more byte, then `len(data) <= room` refuses it as before
+E14  equivalent for the bytes carried: junk characters base64 drops cannot make a stream that inflates to more than the budget, and the contract does not say how strictly the text is decoded
+K10  equivalent: every file is judged independently, so the order matters only after a store failure, and no contract sentence says in what order the keeping goes
+K13  equivalent through the real path: the runner and the envelope only carry names ending in a lowercase suffix; a fake sandbox could hand keep an upper case one, which no contract sentence covers
+R11  the contract is ambiguous: "in name order while their sizes fit the budget; the rest are named in skipped" is met by both a prefix and by skipping only the file that does not fit (the code does the latter; the total stays inside the budget either way)
+M20  equivalent through the real path: `file_of` already keeps one entry per name, so a measurements.json has no repeated name to order
+F5   equivalent: spacing of JSON the reader parses
+N0   no-op control
+
+#    mutant
+E1   binary files read for a language with no budget  *
+E2   inflate one more byte than room allows (output still checked)  *
+E3   one byte past the room accepted
+E4   no cap on inflation (bomb read whole)
+E5   truncated stream accepted
+E6   empty file accepted
+E7   budget per file, not in total
+E8   room not reduced by what was used
+E9   any name accepted
+E10  names that climb out accepted
+E11  no count cap
+E12  suffix not checked
+E13  refused file not named
+E14  lenient base64  *
+K1   no early return for no artifacts (logs for empty)
+K2   chat run keeps artifacts
+K3   chat run does not name them
+K4   bytes stay on output
+K5   store failure does not stop the rest
+K6   store_down never consulted
+K7   wrong household key
+K8   no declared type (suffix not checked)
+K9   media type recorded wrong
+K10  name order dropped  *
+K11  name logged
+K12  refused file not named in skipped
+K13  suffix case folded away  *
+R1   artifact suffixes still text files for a model run
+R2   budget exact fit refused
+R3   budget per file
+R4   links followed
+R5   not name order
+R6   line exactly at the limit refused
+R7   newline not counted
+R8   files not deflated
+R9   file left out of the line not named
+R10  python line gets artifacts key
+R11  stop at first that does not fit  *
+M1   == strict
+M2   <= without slack
+M3   >= slack the wrong way
+M4   < inclusive
+M5   > inclusive
+M6   negative tolerance accepted
+M7   non-finite numbers accepted
+M8   negative triangles accepted
+M9   any unit accepted
+M10  missing measurement confirms
+M11  all must be guessed
+M12  guess hides a failure
+M13  exit code ignored
+M14  outcome ignored
+M15  bad part dropped silently
+M16  bad check dropped silently
+M17  booleans are numbers
+M18  rests_on elements unchecked
+M19  any op accepted
+M20  sources: first duplicate not kept  *
+F1   a repeated name takes the last value
+F2   tolerance dropped
+F3   ref dropped
+F4   empty file returned when no measurement
+F5   spacing of the file  *
+P1   python run gets measurements and loses files
+P2   old report carried
+P3   old measurements carried
+P4   measurements never given
+P5   wrong kind read as measurements
+P6   layout order reversed
+O1   artifacts not recorded
+O2   Finished without artifacts
+O3   Finished without inputs
+O4   keep never called
+G1   artifacts not stored
+G2   no pruning
+N1   artifacts not referenced
+N2   artifacts referenced under household 1
+S1   binary stl size not exact
+S2   empty stl accepted
+S3   member not required
+S4   short header read
+S5   glb version not checked
+S6   3mf member not required
+A1   link for household 0
+A2   link inline
+A3   link minted with an empty key
+A4   per-second link, not the window
+A5   artifacts not on the wire
+A6   report not on the wire
+A7   report judged without the run's inputs
+T1   tool result leaks the hash
+T2   empty artifacts key always
+T3   null report key always
+G3   latest run that ran is pruned
+G4   the run just finished may be pruned
+N0   no-op control  *
+
+Not mutated: ashley_cad (its tests need build123d and run in the CAD image); the client.

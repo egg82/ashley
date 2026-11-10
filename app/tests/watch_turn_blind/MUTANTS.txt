@@ -1,0 +1,59 @@
+MUTANTS.txt: planted wrong implementations of the Watches switch-over (WatchWake in ashley.senses.wakes and postgres_wakes,
+the wakes runner, ashley.channels.wake.watch_turn, ashley.tools.claude_watching, the watches migration, the deletions), each
+to be applied alone, run against app/tests/watch_turn_blind, then restored.
+One line each: status, file, mutation. 'killed' = a test failed, named after '--'.
+
+M01      killed    postgres_wakes.py    due never returns a kind-watch row  -- test_the_turn_is_unprompted_so_a_reply_set_not_worth_saying_queues_nothing
+M02      killed    runner.py            a watch wake is settled without a turn  -- test_the_turn_is_unprompted_so_a_reply_set_not_worth_saying_queues_nothing
+M03      killed    runner.py            a paused wake is not taken up  -- test_a_paused_wake_is_taken_up_the_same_way
+M04      killed    watch_turn.py        source is a fixed string, not the wake id  -- test_a_block_and_a_finish_get_their_own_notes
+M05      killed    watch_turn.py        source carries the sweep count, so a hand-in again is a new turn  -- test_the_turns_source_is_the_wake_id
+M06      killed    runner.py            a wake whose turn cannot run is settled failed  -- test_a_wake_whose_turn_cannot_run_stays_due_and_runs_once_on_another_pod
+M07      killed    runner.py            a watch wake expires at the house wake's max_age_s  -- test_a_finish_told_an_hour_late_is_still_told
+M08      killed    runner.py            a watch wake never expires  -- test_a_wake_past_its_day_expires_unspoken[changed]
+M09      killed    runner.py            a refused watch turn counted as turn  -- test_a_model_that_refuses_settles_the_wake_failed_and_it_is_not_tried_again
+M10      killed    runner.py            a wake of an ended watch is dropped  -- test_a_wake_of_a_watch_that_ended_is_still_told
+M11      killed    runner.py            the settled log line carries the watch label or target  -- test_nothing_of_the_watch_reaches_a_log_line
+M12      killed    watch_turn.py        the turn is prompted (unprompted false)  -- test_a_closed_bench_or_none_sends_the_wake_to_the_phone_thread_whose_reply_is_the_push
+M13      killed    watch_turn.py        always the phone thread, never the bench  -- test_she_is_told_no_page_is_open_and_a_push_reaches_the_phone_and_her_field_sends_it
+M14      killed    watch_turn.py        the bench is used even when closed  -- test_a_closed_bench_or_none_sends_it_to_the_persons_phone_thread
+M15      killed    watch_turn.py        the note is stored in the household's message  -- test_the_stored_message_is_the_households_written_from_label_and_status_alone
+M16      killed    watch_turn.py        the stored message carries the changes JSON or the screen  -- test_the_stored_message_is_the_households_written_from_label_and_status_alone
+M17      killed    claude_session       kind  blocked gets the done note  -- test_a_block_and_a_finish_get_their_own_notes
+M18      killed    watch_turn.py        the note omits the series number  -- test_the_note_names_which_wake_in_the_series_this_is_and_since_when
+M19      killed    watch_turn.py        the note omits since  -- test_the_note_names_which_wake_in_the_series_this_is_and_since_when
+M20      killed    watch_turn.py        the note never says the watch ended  -- test_the_note_says_whether_the_watch_has_ended
+M21      killed    watch_turn.py        a paused wake is worded as a finish  -- test_a_paused_wake_is_taken_up_the_same_way
+M22      killed    watch_turn.py        tools none-named offers every tool  -- test_a_watch_she_armed_offers_what_changes_nothing_unless_it_names_tools
+M23      killed    watch_turn.py        named tools ignored (reads only instead of Only)  -- test_named_tools_are_the_only_tools_and_others_cannot_be_called
+M24      killed    watch_turn.py        a hand-off watch gets reading-only tools  -- test_a_hand_off_watch_keeps_the_threads_tools[None]
+M25      killed    watch_turn.py        the turn is with nobody (speaker unset)  -- test_with_no_tools_named_only_the_tools_that_read_are_offered
+M26      killed    claude_watching.py   armed_by ashley instead of handoff  -- test_a_prompt_arms_a_hand_off_watch_from_the_state_the_session_was_in_before_it
+M27      killed    claude_watching.py   baseline read after the prompt went  -- test_a_prompt_arms_a_hand_off_watch_from_the_state_the_session_was_in_before_it
+M28      killed    claude_watching.py   until is None, not the kind's handoff_until  -- test_a_hand_off_watch_ends_when_the_session_closes_and_lasts_the_kinds_hand_off_hours
+M29      killed    claude_watching.py   hours is the kind's default 24, not handoff_hours  -- test_a_hand_off_watch_ends_when_the_session_closes_and_lasts_the_kinds_hand_off_hours
+M30      killed    claude_watching.py   the bench is dropped  -- test_a_prompt_arms_a_hand_off_watch_from_the_state_the_session_was_in_before_it
+M31      killed    claude_watching.py   a store failure fails the tool call  -- test_a_store_that_is_down_still_sends_the_prompt_and_says_it_is_not_watched
+M32      killed    claude_watching.py   result says watched true on a store failure  -- test_a_store_that_is_down_still_sends_the_prompt_and_says_it_is_not_watched
+M33      killed    claude_code.py       a session absent from the listing is armed with an empty baseline  -- test_a_session_the_bridge_does_not_list_is_prompted_and_not_watched
+M34      killed    claude_code.py       a refused prompt still arms  -- test_a_prompt_that_is_refused_arms_nothing
+M35      killed    0xxx_watches.py      the data move keeps no baseline (null)  -- test_each_watched_session_becomes_a_hand_off_watch_from_the_state_recorded
+M36      killed    0xxx_watches.py      baseline keyed by label, not session id  -- test_each_watched_session_becomes_a_hand_off_watch_from_the_state_recorded
+M37      killed    0xxx_watches.py      armed_by ashley  -- test_each_watched_session_becomes_a_hand_off_watch_from_the_state_recorded
+M38      killed    0xxx_watches.py      the bench id dropped  -- test_each_watched_session_becomes_a_hand_off_watch_from_the_state_recorded
+M39      killed    0xxx_watches.py      expires_at is 24 hours  -- test_a_moved_watch_lasts_the_hand_off_hours_from_the_migration
+M40      killed    0xxx_watches.py      expires_at counted from the old row's started_at  -- test_a_moved_watch_lasts_the_hand_off_hours_from_the_migration
+M41      killed    0xxx_watches.py      herdr_watched not dropped  -- test_each_watched_session_becomes_a_hand_off_watch_from_the_state_recorded
+M42      killed    0xxx_watches.py      only one row per person moves  -- test_each_watched_session_becomes_a_hand_off_watch_from_the_state_recorded
+M43      killed    0xxx_watches.py      moved watches carry no until  -- test_a_moved_watch_is_armed_with_the_kinds_defaults_and_no_history
+M44      killed    0xxx_watches.py      wakes gains no watch_id or changes columns  -- weak form (FK dropped, column kept) survives this suite; killed by tests/watches_blind test_deleting_a_watch_deletes_its_wakes, which owns migration 0074
+M45      killed    ashley/herdr/watch.py left in place  -- test_the_poll_settings_file_is_gone_and_its_neighbours_stay (alone, the module files: killed by test_wt_the_old_module_file_is_gone_whether_or_not_it_would_import, a directed test; first run, the settings-file test masked them)
+M46      killed    ashley/herdr/watch.json left in place  -- test_the_poll_settings_file_is_gone_and_its_neighbours_stay (alone, the module files: killed by test_wt_the_old_module_file_is_gone_whether_or_not_it_would_import, a directed test; first run, the settings-file test masked them)
+M47      killed    wiring_singletons.py herdr_watch still started  -- test_the_poll_settings_file_is_gone_and_its_neighbours_stay (alone, the module files: killed by test_wt_the_old_module_file_is_gone_whether_or_not_it_would_import, a directed test; first run, the settings-file test masked them)
+M48      killed    channels/wake/herdr_turn.py left in place  -- test_the_poll_settings_file_is_gone_and_its_neighbours_stay (alone, the module files: killed by test_wt_the_old_module_file_is_gone_whether_or_not_it_would_import, a directed test; first run, the settings-file test masked them)
+
+Planted-mutant file names above are the suite's guesses; in the build: runner.py mutants M03-M10 and M12-M25 live in
+channels/wake/watch_turn.py or senses/postgres_wakes.py, M17 in watches/claude_session.py, M33/M34 in tools/claude_code.py,
+M35-M43 in migration 0075. M45b/M48b/M48c: each of watch.py, herdr_turn.py, watched.py restored alone; the first two
+survived the import test (the restored file cannot import) and are killed by the directed test; M48c by the import test.
+All 48 restored byte-identical (git diff clean after each). No survivor is equivalent.

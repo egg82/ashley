@@ -1,0 +1,25 @@
+Planned wrong implementations for the reconciler to plant one at a time against tests/conn_settings_blind (not run:
+the implementation was never opened). Each should turn at least one test red; record survivors and equivalents.
+M1  PUT ignores the version (no compare-and-set)                         -> test_a_stale_version_is_409
+M2  PUT merges into the stored values instead of replacing               -> test_a_put_replaces_the_whole_object
+M3  unknown keys are dropped, not rejected                               -> BAD[unknown key]
+M4  list items not type-checked (numbers accepted)                       -> BAD[reads holds a number], household_reads numbers
+M5  entity id shape unchecked                                            -> BAD[entity not shaped ...]
+M6  entity absent from the catalogue refused                             -> test_an_entity_the_house_does_not_list_is_kept
+M7  settings read without the household check (any household)            -> test_another_household_cannot_see_or_change_it
+M8  write route accepts no-origin / other-site request                   -> test_a_write_from_another_site_is_refused
+M9  new connection seeded with permissive lists                          -> test_a_new_connection_is_maximal_taint
+M10 reader cached across turns (no re-read per turn)                     -> listing/removal taint test
+M11 reader keyed by connection of the first household (not per household)-> test_another_household_gets_none_of_it
+M12 unreadable settings => last known / shipped lists                    -> test_an_unreadable_settings_table_is_maximal_taint
+M13 household_reads: any one listed entity untaints (any, not all)       -> test_one_list_unlisted_among_several_still_taints
+M14 service_reads and reads collapsed to one list                        -> service_reads / reads tests
+M15 consequential_entities ignored by the tier                           -> test_a_consequential_entity_is_held...
+M16 log row written per key even when unchanged                          -> test_an_unchanged_key_is_not_logged_again
+M17 history route serves before/after values                             -> test_the_history_carries_no_value
+M18 log line carries entity ids                                          -> test_the_log_line_carries_ids...
+M19 retention prunes everything / nothing / only on read                 -> the two retention tests
+M20 writer imported by ashley.tools (or a tool exposing a write)         -> test_nothing_her_tools_import_writes_the_settings
+M21 migration seeds every household's HA connection                      -> test_household_one_is_seeded_and_another_is_empty
+M22 migration seeds household 1 but the shipped json keeps the keys      -> test_the_shipped_house_data_names_no_household_entity
+M23 stale write still logs a change                                      -> test_a_stale_write_logs_no_change

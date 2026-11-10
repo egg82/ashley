@@ -1,0 +1,34 @@
+Planted wrong implementations, applied one at a time to the file named, tests/answer_dropped_blind run, then restored.
+CAUGHT means an assertion in the suite fails. Run against answer-dropped at 7a33538.
+
+M1   CAUGHT   unsaid.empty does not strip whitespace
+M2   CAUGHT   unsaid.empty ignores worth_saying
+M3   CAUGHT   unsaid.empty reads the text field whatever the medium
+M4   CAUGHT   the fixed reply fills only text
+M5   CAUGHT   the fixed reply fills only spoken
+M6   CAUGHT   a third empty reply is still asked again
+M7   CAUGHT   the ask note is not added to the entries
+M8   CAUGHT   respond.reply_empty is not logged
+M9   CAUGHT   a second empty reply under tool choice none is delivered as it is
+M10  CAUGHT   respond.reply_empty logs the person's message
+M11  CAUGHT   the tool loop judges every reply by text
+M12  CAUGHT   resume ignores the medium
+M13  CAUGHT   resumed ignores the medium
+M14  CAUGHT   the empty count never rises
+M15  CAUGHT   respond: the first answer ignores the medium
+M16  EQUIVALENT   respond: the steering Going ignores the medium
+M17  CAUGHT   respond: a held turn's finish ignores the medium
+M18  CAUGHT   respond.failed drops cause
+M19  CAUGHT   respond.failed drops check
+M20  CAUGHT   respond.failed on the held-turn path drops cause and check
+M21  CAUGHT   respond.failed on the first-reply path drops cause and check
+M22  CAUGHT   Unstored.check set for every cause
+M23  CAUGHT   Unstored.cause is a constant
+M24  CAUGHT   Unstored raised without the refusing error
+M25  CAUGHT   answering._gone_on resumes at answer.rounds (fails the steered closing-step test)
+M26  CAUGHT   resume.py: a held turn resumed by another pod ignores the medium
+M27  EQUIVALENT   resume.py: the steering Going ignores the medium
+M28  CAUGHT   answering._gone_on ignores the medium
+
+Equivalent: M16 and M27 only change the medium of a turn gone on from after `Unhanded`, which only a bench's steered
+turn reaches, and a bench's talk is always text; the same wiring is pinned at `answering.stored` by M28.

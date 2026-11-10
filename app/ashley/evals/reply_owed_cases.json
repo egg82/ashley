@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {"id": "list-ask-while-house-down", "unreachable": ["house"], "owed": "house",
+     "said": [["person", "Put eggs and oat milk on the shopping list."]]},
+    {"id": "reminder-ask-while-house-down", "unreachable": ["house"], "owed": "house",
+     "said": [["person", "Remind me to call the vet at nine tomorrow."]]},
+    {"id": "list-ask-after-she-said-she-could-not", "unreachable": ["house"], "owed": "house",
+     "said": [["person", "Add bread to the shopping list."], ["ashley", "I can't reach the house just now."], ["person", "Alright, do it when you can."]]},
+    {"id": "list-ask-while-house-answers", "unreachable": [], "owed": null,
+     "said": [["person", "Put eggs and oat milk on the shopping list."]]},
+    {"id": "reminder-ask-while-house-answers", "unreachable": [], "owed": null,
+     "said": [["person", "Remind me to call the vet at nine tomorrow."]]},
+    {"id": "statement-while-house-down", "unreachable": ["house"], "owed": null,
+     "said": [["person", "The bins go out on Tuesday this week."]]},
+    {"id": "question-while-house-down", "unreachable": ["house"], "owed": null,
+     "said": [["person", "What's a good internal temperature for roast chicken?"]]},
+    {"id": "light-now-while-house-down", "unreachable": ["house"], "owed": null,
+     "said": [["person", "Turn the kitchen light on."]]},
+    {"id": "state-now-while-house-down", "unreachable": ["house"], "owed": null,
+     "said": [["person", "Is the garage door closed?"]]},
+    {"id": "other-source-down", "unreachable": ["search"], "owed": null,
+     "said": [["person", "Put eggs and oat milk on the shopping list."]]}
+  ]
+}

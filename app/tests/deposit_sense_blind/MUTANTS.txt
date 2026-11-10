@@ -1,0 +1,70 @@
+Planted against e143b69, one at a time, suite green before each; "caught" is exit 1 with a FAILED line naming a test.
+54 of 54 non-equivalent mutants caught; 2 equivalent (below). R14 survived once (its test input lacked a key, so the
+shape check refused it first) and is caught since the test carries every key.
+
+deposit_rule.py
+ R1  day < since -> <=                         a deposit dated the day the rule was set is refused
+ R2  drop the day check                        a deposit from before the rule was set matches
+ R3  cents < min -> <=                         a deposit exactly at the minimum is refused
+ R4  minimum never checked
+ R5  account never checked
+ R6  `counts` never checked
+ R7  exact payee compared case-sensitively
+ R8  exact payee compared as contains
+ R9  contains payee compared as exact
+ R10 any(names) -> all(names)
+ R11 describe drops the account name
+ R12 describe cannot tell exact from contains
+ R13 describe prints cents as dollars
+ R14 from_json accepts an unknown payee_match
+ R15 a rule with neither minimum nor payee is allowed
+postgres_deposits.py
+ D1b fire's event id drops the transaction id
+ D2  fire's event id drops the armed id
+ D3  fire ignores that the armed reminder is settled
+ D4  fire returns True for a repeat
+ D5  advance can move the cursor back
+ D6  armed() newest first
+ D7  armed() includes cancelled
+ D8  arm accepts a repeat
+ D9  armed_at (due_at column) a day early
+ D10 fired reminder is for the asker, not the person
+ D11 read_through shared across households
+deposit_sense.py
+ S1  cursor ignored, lookback runs from today
+ S2  cursor never recorded
+ S3  cursor advances when Sure could not be read
+ S5  every reminder judged from the household's earliest day
+ S6  day set taken in UTC
+ S7  only the first page read
+ S8a transfer object no longer excludes
+ S8b `excluded` no longer excludes
+ S8c split parent counts
+ S9  an expense counts
+ S11 merchant is not a payee
+ S11b transaction's own name is not a payee
+ S13 id-less / amount-less transaction judged
+ S14 fire log carries the account name
+ S14b fire log carries the payee
+ S19 each household read with every household's reminders
+ S20 household zone ignored
+tools/reminders.py
+ T1  any connection kind offers the tool
+ T2  non-private turn offered the tool
+ T3  amount to cents through a float
+ T4  a call outside a private turn runs
+ T6  made_by is the person, not the asker
+ T7  a call with no Sure connected arms one
+ T8  armed_at is not now
+senses/postgres_wakes.py
+ W1  an armed reminder is due
+api/reminders.py
+ A1  on_deposit never set
+ A2  timed reminder gets an empty on_deposit
+ A3  on_deposit is the account id
+
+Equivalent, no test can tell them apart
+ D1  `'deposit:' || id || ':' || tx` without the ':' separator: ids stay unique per (armed id, transaction) pair for
+     integer armed ids and Sure's transaction ids.
+ S1e drop the lookback start (every read begins at the earliest arming day): the same deposits are found and fire's
+     dedupe stores each once; only the amount read differs, which is not part of the contract.

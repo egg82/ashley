@@ -1,0 +1,19 @@
+{
+  "refresh_margin_s": 300,
+  "timeout_s": 20,
+  "search_max": 25,
+  "labels_max": 200,
+  "snippet_chars": 200,
+  "body_chars": 200000,
+  "message_bytes": 4194304,
+  "message_id_chars": 64,
+  "max_body_chars": 2500,
+  "max_recipients": 5,
+  "max_change_ids": 8,
+  "heartbeat_s": 5,
+  "fence_s": 30,
+  "fence_margin_s": 15,
+  "restart_s": 10,
+  "tick_s": 5,
+  "cache_mib": 2048
+}

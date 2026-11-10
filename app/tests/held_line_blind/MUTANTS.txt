@@ -1,0 +1,36 @@
+Planted wrong implementations, applied one at a time to the file named, tests/held_line_blind (and web owedContract.test.ts for
+M22-M28) run, then reverted. CAUGHT means the suite goes red. Run against held-line-kept at 1302b45.
+
+One mutant survived the first suite (M26) and has a directed test: answered() must name the person line her answer is to,
+not an earlier one nor her own words.
+
+M1   CAUGHT   held line never stored
+M2   CAUGHT   held line stored without the follows mark
+M3   CAUGHT   held line stored in the background, after respond may have returned
+M4   CAUGHT   held line stored as the text field whatever the medium
+M5   CAUGHT   held line stored with the default hearing, not the person's
+M6   CAUGHT   Saved.say stores outside the claim
+M7   CAUGHT   said stores without checking the claim
+M8   CAUGHT   said ends the work like finish
+M9   CAUGHT   said checks the claim but does not renew it
+M10  CAUGHT   said by a holder other than the claim's succeeds
+M11  CAUGHT   a person's turn marked follows is accepted
+M12  CAUGHT   follows not stored
+M13  CAUGHT   follows not read back
+M14  CAUGHT   past conversation route drops follows
+M15  CAUGHT   web conversation route drops follows
+M16  CAUGHT   NullInFlight.said drops the mark
+M17  CAUGHT   the unsaved Work.say stores nothing
+M18  CAUGHT   a resumed turn stores a held line again
+M19  CAUGHT   the answer is stored marked follows too
+M20  CAUGHT   carried history drops the mark
+M21  CAUGHT   said into a closed conversation swallowed (no ConversationClosed)
+M22  CAUGHT   owedAt: a held line counts as an answer
+M23  CAUGHT   owedAt: any line of hers is skipped, answer or not
+M24  CAUGHT   owedAt: returns the index of her line when a person line is not last-before
+M25  CAUGHT   answered: a held line last counts as the answer
+M26  CAUGHT   answered: matches any person line, not the one answered
+M27  CAUGHT   answered: ignores the text
+M28  CAUGHT   owedAt: skips her trailing lines only one deep
+
+Equivalent mutants: none found.

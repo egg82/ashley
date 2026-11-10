@@ -1,0 +1,44 @@
+Mutant run of the blind Proton suite against a throwaway reference adapter (ref/imap_ref.py, written by the suite's author
+from the suite's own assumptions; it is not the build). The reference passes 178 of 180 (the 2 red are the mail_boxes
+`syncing` field, which tools/mail.py hard-codes False: the real build must change the tool). Each mutant is a one-edit
+change to the reference, run on the test files named in ref/run_mutants.py with -x (the first failing test is shown).
+All 22 KILLED, none survived, after one mutant that first survived was made effective (see R1).
+
+S1 syncing never checked                      KILLED  test_the_answers_are_full_once_the_sync_finishes_and_ids_still_resolve
+S2 syncing is "never synced" only             KILLED  test_a_new_epoch_makes_a_synced_mailbox_syncing_again_until_it_finishes
+E2 refused login reported unreachable         KILLED  test_a_bridge_password_bridge_refuses_is_an_error_on_every_read...
+E5 send retried after a drop                  KILLED  test_a_send_cut_off_after_the_data_is_unreachable_and_never_retried
+R1 read fetches BODY[] and selects read-write KILLED  test_an_inbox_search_lists_the_inbox_newest_first_as_neutral_records (unread flag changed by the search)
+   (first attempt changed only PEEK; it SURVIVED because the reference examined read-only, where RFC 3501 sets no \Seen:
+    the fake models that. A real adapter that selects read-write and fetches BODY[] is what the test catches.)
+R7 cursor ignored                             KILLED  test_a_search_cut_at_the_cap_pages_with_the_cursor_and_loses_nothing
+R8 oldest first                               KILLED  test_an_inbox_search_lists_the_inbox_newest_first_as_neutral_records
+R9 no-folder search includes spam/trash       KILLED  test_a_search_without_a_folder_lists_each_message_once_and_not_spam_or_trash
+R10 label keeps the Labels/ prefix            KILLED  test_folders_come_first_in_lower_case_then_the_households_labels
+R15 a search value reaches IMAP unescaped     KILLED  test_a_value_with_search_syntax_in_it_does_not_widen_the_search_or_run_a_command
+P3 folder and label copies listed twice       KILLED  test_a_search_without_a_folder_lists_each_message_once_and_not_spam_or_trash
+D5 send also saves a copy to Sent             KILLED  test_a_send_saves_nothing_itself_so_sent_holds_the_one_copy_bridge_saved
+D6 cc not in RCPT                             KILLED  test_a_send_goes_over_smtp_from_the_mailbox_to_each_recipient_and_no_other
+D8 reply has no In-Reply-To                   KILLED  test_a_reply_draft_is_threaded_under_the_message_it_answers
+D13 refused recipient swallowed               KILLED  test_a_recipient_the_server_refuses_fails_the_send_once_and_saves_nothing
+L1 adding a label moves the message           KILLED  test_adding_a_label_copies_the_message_into_that_label_and_leaves_it_where_it_was
+L3 a folder move copies                       KILLED  test_moving_to_the_archive_takes_it_out_of_the_inbox_and_leaves_its_labels
+L5 unknown label created                      KILLED  test_a_name_that_is_a_folder_or_a_path_is_not_a_label (CREATE issued)
+L7 partial apply before a later refusal       KILLED  test_removing_a_label_deletes_that_copy_only (the mutant also applies twice; the all-or-nothing tests were not run first under -x, so L7 is only weakly shown)
+L8 sender/subject check skipped               KILLED  test_one_message_whose_sender_or_subject_is_not_what_was_shown_refuses_the_whole_call
+G2 login failure logs the server's reply      KILLED  test_no_log_line_carries_an_address_subject_body_label_sender_query_or_server_reply
+O1 mail_read declares outside false (tools)   KILLED  test_the_read_tools_of_a_proton_mailbox_declare_outside_and_the_changes_do_not
+
+Not planted (in mutants.txt for the reconciler): ids by UID (P1, P2, P4-P7), signed-out (S5), S3/S4/S6-S8, E1/E3/E4/E6/E7,
+R2-R6, R11-R14, R16, R17, D1-D4, D7, D9-D12, D14, D15, L2, L4, L6, L9-L13, O2-O5, G1, G3, G4.
+
+Reconciled run against the real adapter (ImapMailbox behind RoutedMailbox, fake Bridge over STARTTLS with the certificate
+pinned). Every mutants.txt entry was planted in the adapter or the tool or gate code it names, split into variants
+where it lists several wrong behaviours (103 plants in all), each run with a per-test watchdog that ends a hung worker.
+First pass: 90 killed by the contract tests, 13 lived: R7, R15a, R15b, D10, D12, L8c, O3b, G2, G2b, Q1, T1, T2, T3.
+Each is killed by test_mp_directed.py (R7 third page, R15 criteria unit, D10 compose, D12 no-recipient draft, L8c blank
+target, O3b duplicate held send, G2/G2b by the contract log test once planted where the fake echoes its secret, Q1 label
+copy flags, T1-T3 wrong pin). Equivalent, with the reason:
+  L12  an id resolved in a label's copy: `locate` consults the six folders only, never `Labels/`, so no code path exists.
+  P5   planted as "found without checking the id" (the adapter holds no UID to find by); killed.
+  Q4   routing: tests/test_mail_proton_tools.py (router) and wire_adapter here register the router.

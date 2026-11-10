@@ -1,0 +1,6 @@
+[
+  {"kind": "clock", "size": "small"},
+  {"kind": "home", "size": "small"},
+  {"kind": "controls", "size": "medium"},
+  {"kind": "conversation", "size": "full"}
+]

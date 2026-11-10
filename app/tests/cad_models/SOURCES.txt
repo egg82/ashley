@@ -1,0 +1,6 @@
+Real model files from github.com/mikedh/trimesh, models/ (MIT), unchanged:
+featuretype.STL (binary), featuretype.3MF (declares inches), featuretype.STEP, idler_riser.STL (binary, header begins "solid"),
+multibody.stl (ASCII, two bodies), teapot.stl (binary, an open mesh).
+
+Ours: strap_reference_report.json, the report the CAD image's helper wrote for deploy/cad/test_ashley_cad.py's STRAP (a
+holder and a strap stand-in naming its form) with its STRAP_ROWS; that test fails when the two drift apart.

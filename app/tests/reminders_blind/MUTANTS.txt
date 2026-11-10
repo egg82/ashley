@@ -1,0 +1,165 @@
+Planted wrong implementations, one at a time, each applied exactly once and reverted after the run. Each run is
+tests/reminders_blind with `-x -n 3` against scheduled-wakes at 97f18cd, green before the plant. 63 planted: 60 caught,
+3 equivalent. R10 (a Repeat built with a frequency that is not one), Q3 (a refused turn settled `turn`) and U10 (a
+remind call with an argument beyond the schema) survived the first pass and are caught by tests added for them.
+
+Files: ashley/senses/repeat.py (R), ashley/senses/postgres_wakes.py (P), ashley/channels/wake/reminder.py (Q),
+reminder_turn.py (T), runner.py (S), ashley/tools/reminders.py (U), ashley/api/reminders.py (V),
+ashley/conversations/postgres_inflight.py (I).
+
+Equivalent, no test can tell them apart:
+R6  next_after starts at the estimate instead of one before it. The estimate counts steps to the month or day of `after`
+    in wall terms, and an occurrence earlier than the estimate is never after `after` (reasoned at the spring-forward
+    and fall-back edges), so the step back only costs one extra loop turn.
+R13 a skipped wall time moved on by an hour before the zone reads it: the zone already reads 02:30 as 03:30 local, the
+    same instant.
+U11 listing with a conditional that always picks the speaker: the same call.
+
+#    mutant
+R1 instant reads a repeated hour as its second instant
+R2 a short month clamps to the 28th
+R3 weekly steps days
+R4 yearly steps months
+R5 next_after returns the instant asked from
+R6 next_after starts at the estimate, not one before
+R8 from_json allows extra keys
+R9 every limit off by one
+R10 any freq allowed
+R12 every bound removed below
+R13 a skipped hour read after the change
+P2 settle always true
+P3 successor loses its repeat
+P4 successor made by the person
+P5 reminders of any household
+P6 reminders only for the person
+P7 reminders latest first
+P8 reminders include settled
+P9 cancel of any household
+P10 cancel only by the person
+P11 cancel of a settled reminder
+P12 prune takes unsettled
+P13 brief limit off by one
+P14 NUL allowed
+P15 due early
+P16 due latest first
+P17 scheduled at arrival, not due_at
+Q1 next occurrence counted from the earlier of now and due
+Q2 only the person need be of the household
+Q3 a refused turn counted as a turn
+Q4 a refused turn ends the series
+Q5 next occurrence in UTC
+Q6 a one-off schedules a next
+T1 not promised
+T2 not unprompted
+T3 thread is shared
+T4 audience is the household
+T5 every tool offered
+T6 conversation remembered
+T7 source constant
+T8 no speaker
+T9 shared
+T10 thread is the maker's
+T11 text without the brief
+S1 runner drops the next occurrence
+S2 a reminder expires
+S3 never prunes
+S4 a deferred reminder is settled
+U1 listing offered where not private
+U2 listing callable where not private
+U4 a time that has passed accepted
+U5 made by the person it is for
+U6 every defaults to 2
+U8 times read in UTC
+U9 a bad repeat is once
+U10 any argument names accepted
+U11 list shows everyone's
+V3 an unknown id is 200
+V4 the cancel log carries the name
+V6 local_at in UTC
+V7 listed log carries a count of what
+V8 list others in household
+I1 begin does not look again after waiting
+
+
+Delivery, refire, dismiss and date-only (scheduled-wakes-2 at 56f8934, suite green before each plant, each plant
+applied once and restored from the text read before it). 54 planted: 53 caught, 1 equivalent. The 63 above were planted
+against the first reminders MR and not replayed here; the suites they pin are the ones kept, with the changes the
+second MR made to them (a fired reminder stays listed until delivered; a refused or personless firing is refired).
+R3 (a personless firing not refired) survived the first pass and is caught by the left-unsettled
+counts in the gone-person runner test.
+
+Files: ashley/channels/push/reminders.py (D), ashley/channels/push/later.py (D11), ashley/senses/postgres_wakes.py (W),
+ashley/channels/wake/runner.py (R1-R6), reminder.py (R7), reminder_turn.py (R8-R11), ashley/api/reminders.py (A),
+ashley/tools/reminders.py and reminder_specs.py (T).
+
+Equivalent, no test can tell them apart:
+R6 `fired == 0 or` dropped from the refire test: 0 means another runner settled the wake meanwhile, and not settling it
+   again is the same as settling it a second time, which changes nothing.
+
+#    mutant
+D1 retry delay passed as 0
+D2 give-up window of 95 years
+D3 delivered only when every browser was reached
+D4 every try counted delivered
+D5 a push service answering gone counted delivered
+D6 the answer read for another wake
+D7 browsers of the wake's id, not its person
+D8 the try never recorded
+D9 deliver counts no try
+D10 body cut to three characters
+D11 the drain never delivers reminders
+W1 undelivered leaves out `sending`
+W2 undelivered window of 100 years
+W3 undelivered ignores the retry delay
+W4 undelivered newest first
+W5 attempts not counted
+W6 try time not recorded
+W7 delivered always undelivered
+W8 refire does not delay
+W9 refire of a settled wake counts
+W10 refire counts two
+W11 dismiss of an unfired reminder
+W12 dismiss by anyone
+W13 dismiss in any household
+W14 dismiss by the person only
+W15 a failed reminder is not listed
+W16 a dismissed reminder is still listed
+W17 a sending reminder is not listed
+W18 prune takes a listed reminder
+W19 undelivered listed as sending
+W20 sending listed as undelivered
+W21 every settled reminder is sending
+W22 a turn-settled reminder has no delivery
+W23 undelivered limit ignored
+W24 undelivered also hands out delivered ones
+R1 a fourth firing allowed
+R2 refire stops at the second
+R3 no_person not refired
+R4 failed not refired
+R5 refire with no delay
+R6 `fired == 0 or` dropped (equivalent)
+R7 a failed occurrence ends its series
+R8 the turn on the maker's push thread
+R9 the turn's source not the wake's
+R10 her answer queued in the outbox
+R11 the conversation remembered
+A1 DELETE never dismisses
+A2 the list always says `scheduled`
+A3 DELETE only dismisses, never cancels
+T1 a date alone is 08:00
+T2 a date alone refused
+T3 the reminders tool leaves out state
+T4 a date alone is midnight
+T5 any text of date length or more read as a date alone
+
+Findings the first run of these tests made, fixed in the reminders MR and now plain tests: a dismissed reminder was
+still pushed; `T9:00` was accepted as an hour; two delivery passes at once sent twice. The claim tests are not
+mutation-run.
+
+Push handover (fix-reminder-takeover at 900c3e1, the handover tests in test_rb_delivery.py with `-n 0`, green before
+each plant; ashley/senses/postgres_wakes.py). 4 planted, 4 caught. H3 survived while the takeover wait was 3 s and is
+caught by bounding it at 1.5 s.
+H1 undelivered leaves out `sending`
+H2 a reached try recorded undelivered
+H3 claim waits ten `retry_s`
+H4 claim ignores the last try (caught by two passes at once)
