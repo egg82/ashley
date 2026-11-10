@@ -164,7 +164,7 @@ A thing is a system only if all four hold:
     (`ashley.channels.left.answer`)
   - the kiosk adapter `app/ashley/api/kiosk.py`, a shared screen paired as a device
     (`ashley.api.kiosk_device.kiosk_signed_in`, its device token kept in its own cookie), showing who is home
-    (`ashley.channels.kiosk.glance.home_names`), the screen's layout (`GET /api/kiosk/layout`, the Workshop's `screen`)
+    and the household's locale and clock for its own clock (`ashley.channels.kiosk.glance.glance`), the screen's layout (`GET /api/kiosk/layout`, the Workshop's `screen`)
     and the buttons of its `controls` piece, each run through Tools by code (`ashley.channels.kiosk.controls.run`)
   - Home Assistant waking her, `app/ashley/channels/wake/`: the `wakes` singleton under `Lease`
     (`ashley.channels.wake.runner`, tunables `app/ashley/channels/wake/wakes.json`) takes each due wake, finds its
@@ -317,9 +317,17 @@ A thing is a system only if all four hold:
     a second, narrower service, `ashley.people.accounts.Accounts` (Postgres
     `ashley.people.postgres_accounts.PostgresAccounts`: their accounts, linking one, unlinking their Discord), kept
     apart so nothing that reads people can write them
+  - a household's own fields (timezone, profile, locale, unit system, clock; `ashley.people.model.Household`) are
+    set by its people on the Devices room's household panel through a third service,
+    `ashley.people.household_write.HouseholdWriter` (Postgres
+    `ashley.people.postgres_household_write.PostgresHouseholdWriter`), which only that route and the wiring import
+    (`app/tests/test_settings_boundary.py`); both it and the admin CLI check values with `app/ashley/people/fields.py`
 - **Who asks, how:**
   - Channels and Presence, through `services.get` on `ashley.people.people.People`
+  - the persona, which says the household's units (`ashley.persona.facts.UNITS`) before its profile
   - the accounts routes (`app/ashley/api/accounts.py`) on `ashley.people.accounts.Accounts`
+  - the household routes (`app/ashley/api/household.py`) on `ashley.people.household_write.HouseholdWriter`; the web
+    client writes every date, time and number in the household's locale and clock (`app/web/src/household/format.ts`)
 
 ### Connections
 

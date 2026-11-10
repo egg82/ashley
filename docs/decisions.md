@@ -878,7 +878,7 @@ the hallway may see, and does what anyone there may do.
   it is not queued in the outbox, since the satellites singleton takes every outbox reply on a `device:` thread. The
   page holds `GET /api/kiosk/live` open, reopened with backoff: her mark follows the shared turns' state and the
   conversation is read back on a stored turn or a resync, with its slow timer only while the feed is down. **The glance**
-  is the screen's own clock and the first names of the household's people who are home (the house's own knowledge, which whoever stands in the hallway can see), and calendar and
+  is the screen's own clock, written in the household's locale and clock, and the first names of the household's people who are home (the house's own knowledge, which whoever stands in the hallway can see), and calendar and
   reminders shown as not connected until a source exists; it is read on its timer whether or not the feed is up, since
   nothing announces a person coming or going.
 - **The tablet's screen is a bench of the device's, laid out by her.** A device of form `other` has at most one screen
