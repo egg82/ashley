@@ -71,6 +71,9 @@ suppression and pyright gates cover it, and its tests are `tests/test_herdr_brid
 `test_shipped_data_household.py` fails when shipped JSON holds a Home Assistant entity id, or any shipped JSON, markdown
 or html links a host outside its `PUBLIC_HOSTS` list: a household's entities and hosts live in its settings, never in the tree.
 Adding a host to that list is only for a public service.
+`test_household_names.py` fails when any tracked file names the household (its people, pets, network, towns, hosts);
+the names are the CI secret `ASHLEY_HOUSEHOLD_NAMES`, so it skips everywhere but CI. Moving a held string to another
+file moves its `KEPT` entry with it, read from CI's "stale" and "over" output (paths and counts, never the names).
 `test_unique_helpers.py` fails when two non-test modules on pytest's `sys.path` share a basename (one session imports
 only the first): name a test helper `<suite>_support.py` after its suite.
 
