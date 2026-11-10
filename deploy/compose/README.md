@@ -77,7 +77,7 @@ The web app at `/` signs people in through an OIDC provider. Authentik is the on
 OIDC application there with the callback `<PUBLIC_URL>/api/auth/callback`, then set `PUBLIC_URL`, `OIDC_ISSUER`,
 `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`. Someone refused at sign-in shows up in
 `python -m ashley.signin unmapped`; link them to a person with
-`python -m ashley.people add-account <person id> authentik <their OIDC subject>`. Without a provider the
+`python -m ashley.people add-account <person id> oidc <their OIDC subject>`. Without a provider the
 web app cannot sign in, but devices and `curl` work.
 
 ## Upgrade
