@@ -110,7 +110,7 @@ the shipped file is, so a mistake stops start-up naming `ROUTES_FILE`. This send
 
 A task whose entry is `{"routes": [...], "fallback": false}` (`memory_write` ships so) runs on its first route only; an
 overlay that gives it a plain list gives it a fallback. `action_judge` is a safety judge: pointing it at a weaker model
-weakens a check, not a convenience.
+weakens a check.
 
 ## Patterns
 
