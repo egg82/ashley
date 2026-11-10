@@ -70,7 +70,7 @@ def waiting_for_the_lock(url: str) -> int:
 def test_the_baseline_creates_households_with_an_identity_key(empty_database: str) -> None:
     migrate(empty_database)
     cols = households_columns(empty_database)
-    assert set(cols) == {"id", "name", "created_at", "timezone", "profile", "locale", "unit_system", "clock"}
+    assert set(cols) == {"id", "name", "created_at", "timezone", "profile", "locale", "unit_system", "clock", "latitude", "longitude"}
     assert cols["id"][0] == "bigint" and cols["id"][3] == "YES/ALWAYS"
     assert cols["name"][:2] == ("text", "NO")
     assert cols["created_at"][0] == "timestamp with time zone" and cols["created_at"][1] == "NO"
@@ -116,7 +116,7 @@ def test_two_concurrent_runs_one_waits_and_the_schema_is_applied_once(
     applied = sorted(["revision_before=none" in child_done, thread_done[0] == "none"])
     assert applied == [False, True], (child_done, thread_done)
     assert f"revision_after={HEAD}" in child_done and "event=migrate.lock_taken" in out
-    assert set(households_columns(empty_database)) == {"id", "name", "created_at", "timezone", "profile", "locale", "unit_system", "clock"}
+    assert set(households_columns(empty_database)) == {"id", "name", "created_at", "timezone", "profile", "locale", "unit_system", "clock", "latitude", "longitude"}
 
 
 def test_conversations_from_before_the_channel_column_keep_it_null(empty_database: str) -> None:

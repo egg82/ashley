@@ -134,7 +134,7 @@ from .codehost.gitlab import GitLabHost
 from .codehost.host import CodeHost
 from .codehost.routed import RoutedCodeHost
 from .codehost.wire import Wire
-from .tools import home_assistant_config, house_look_config, house_state_config, look_up_config, money_config, outside_config, search_config
+from .tools import home_assistant_config, home_location, house_look_config, house_state_config, look_up_config, money_config, outside_config, search_config
 from .tools.action_judge import ActionJudge
 from .tools.action_judge_model import ModelActionJudge
 from .tools.composite import CompositeTools
@@ -313,14 +313,14 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     closers.append(homes.close)
     services.register(Homes, homes)
     services.register(Presence, HomesPresence(services.get(People)))
-    shared, over_house = tools(closers, settings.searxng_url)
+    shared, over_house, without_house = tools(closers, settings.searxng_url)
     services.register(Tools, shared)
     services.register(ActionJudge, ModelActionJudge())
-    services.register(Everyday, HomesEveryday(over_house))
+    services.register(Everyday, HomesEveryday(over_house, without_house))
 
 
 def tools(closers: list[Callable[[], Coroutine[Any, Any, None]]],
-          searxng_url: str) -> tuple[Tools, Callable[[Home], Tools]]:
+          searxng_url: str) -> tuple[Tools, Callable[[Home], Tools], Callable[[int], Tools]]:
     """The look-up over the web, for a household with no house, and what builds a household's tools over its house:
     the house's tools and the look-up with places near it. All share one search client. The web is searched only
     with `searxng_url` set (`SEARXNG_URL`)."""
@@ -341,12 +341,17 @@ def tools(closers: list[Callable[[], Coroutine[Any, Any, None]]],
         return LookUpTools(partial(look_up_sources, web, places, models, search_http, looking), looking)
 
     def over(home: Home) -> Tools:
-        places = PlacesTools(search_http, config, partial(zone.home, home.home_assistant))
+        places = PlacesTools(search_http, config, partial(zone.home, home.home_assistant),
+                              partial(home_location.own, home.household_id))
         return CompositeTools({"house": HouseTools(home.house, rules, look, state, house.guidance, home.household_id,
                                                    values=partial(house_values.read, home.household_id)),
                                "search": look_up(places)})
 
-    return CompositeTools({"search": look_up(None)}), over
+    def without_house(household_id: int) -> Tools:
+        places = PlacesTools(search_http, config, home_location.no_house, partial(home_location.own, household_id))
+        return CompositeTools({"search": look_up(places)})
+
+    return CompositeTools({"search": look_up(None)}), over, without_house
 
 
 def look_up_sources(web: WebSearchTools | None, places: Tools | None, models: PrintablesConfig,

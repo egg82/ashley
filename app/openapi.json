@@ -3444,7 +3444,7 @@
             }
           },
           "422": {
-            "description": "a timezone or locale she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "description": "a timezone, locale or location she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
             "content": {
               "application/json": {
                 "schema": {
@@ -8916,6 +8916,28 @@
               "24h"
             ],
             "title": "Clock"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           }
         },
         "type": "object",
@@ -8927,10 +8949,12 @@
           "profile_limit",
           "locale",
           "unit_system",
-          "clock"
+          "clock",
+          "latitude",
+          "longitude"
         ],
         "title": "Household",
-        "description": "The signed-in person's household as its people set it. `timezone` is an IANA name (`America/Denver`), the\nhousehold's local time for anything said about the time of day. `profile` is what she always knows about the\nhousehold, as prose (empty when none is set), at most `profile_limit` characters. `locale` is a BCP 47 tag (`en-US`)\nfor how dates and numbers are written; `unit_system` the units she speaks in; `clock` whether times are written on\na 12- or 24-hour clock. `name` is set by the admin and only read here."
+        "description": "The signed-in person's household as its people set it. `timezone` is an IANA name (`America/Denver`), the\nhousehold's local time for anything said about the time of day. `profile` is what she always knows about the\nhousehold, as prose (empty when none is set), at most `profile_limit` characters. `locale` is a BCP 47 tag (`en-US`)\nfor how dates and numbers are written; `unit_system` the units she speaks in; `clock` whether times are written on\na 12- or 24-hour clock. `latitude` and `longitude` are the house's own location in degrees, both null until a person\nsets one; place search reads it before Home Assistant's. `name` is set by the admin and only read here."
       },
       "HouseholdConnection": {
         "properties": {
@@ -9044,7 +9068,8 @@
             "type": "string",
             "enum": [
               "timezone",
-              "locale"
+              "locale",
+              "location"
             ],
             "title": "Invalid"
           },
@@ -9059,7 +9084,7 @@
           "detail"
         ],
         "title": "HouseholdRefused",
-        "description": "Why nothing was stored: `invalid` names the field that is not one she can use, `timezone` (not an IANA zone\nname) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`)."
+        "description": "Why nothing was stored: `invalid` names the field that is not one she can use, `timezone` (not an IANA zone\nname) or `locale` (not a BCP 47 tag of language, optional script and optional region, as `en-US`) or `location` (one of\nlatitude and longitude set without the other)."
       },
       "HouseholdRequest": {
         "properties": {
@@ -9093,6 +9118,34 @@
               "24h"
             ],
             "title": "Clock"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude",
+            "description": "Degrees north; null clears the location"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude",
+            "description": "Degrees east; null clears the location"
           }
         },
         "additionalProperties": false,
@@ -9102,7 +9155,9 @@
           "profile",
           "locale",
           "unit_system",
-          "clock"
+          "clock",
+          "latitude",
+          "longitude"
         ],
         "title": "HouseholdRequest",
         "description": "Every field the household page sets, whole: a field left out is refused, never kept or cleared."

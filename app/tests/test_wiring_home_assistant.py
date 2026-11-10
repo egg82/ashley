@@ -53,7 +53,8 @@ def test_without_a_key_household_one_reaches_the_envs_house_and_no_other_househo
     one, two = asyncio.run(homes.of(1)), asyncio.run(homes.of(2))
     assert one is not None and str(one.home_assistant.http.base_url).startswith("http://ha.test:8123") and two is None
     assert getattr(asyncio.run(services.get(Everyday).of(1)), "_sources").keys() == {"house", "search"}
-    assert asyncio.run(services.get(Everyday).of(2)) is services.get(Tools)
+    bare = asyncio.run(services.get(Everyday).of(2))
+    assert bare is not services.get(Tools) and getattr(bare, "_sources").keys() == {"search"}
 
 
 @pytest.mark.parametrize("env", [{"HA_URL": "http://ha.test:8123"}, {"HA_TOKEN": "t"}])

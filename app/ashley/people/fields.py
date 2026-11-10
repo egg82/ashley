@@ -17,6 +17,13 @@ def is_timezone(name: str) -> bool:
     return True
 
 
+def is_location(latitude: float | None, longitude: float | None) -> bool:
+    """Whether the pair is a house's location: both None (none set), or both finite degrees within range."""
+    if latitude is None or longitude is None:
+        return latitude is None and longitude is None
+    return -90 <= latitude <= 90 and -180 <= longitude <= 180
+
+
 def is_locale(tag: str) -> bool:
     """Whether `tag` is a BCP 47 language tag of language, optional script and optional region, in their canonical case:
     `en`, `en-US`, `es-419`, `zh-Hans-CN`. Variants and extensions are refused, since nothing here reads them."""

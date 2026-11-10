@@ -1,6 +1,7 @@
 """The Everyday service (`ashley.services`): the tools every turn of a household shares. A household with a Home
 Assistant (`ashley.home_assistant.homes.Homes`) gets the tools built over its own house, kept while its Home is the
-same, since their catalogue is cached; one without gets the locator's `Tools`, which reach no house.
+same, since their catalogue is cached; one without gets the locator's `Tools`, which reach no house, or, when
+`without_house` is given, that household's own, kept the same way (the look-up with places near its own location).
 `HouseholdTools` is the Proxy a turn holds: it asks for its household's tools once, on first use."""
 
 from abc import abstractmethod
@@ -32,10 +33,12 @@ class NullEveryday(Everyday):
 
 
 class HomesEveryday(Everyday):
-    def __init__(self, build: Callable[[Home], Tools]) -> None:
-        """`build` makes the everyday tools over one household's Home."""
+    def __init__(self, build: Callable[[Home], Tools], without_house: Callable[[int], Tools] | None = None) -> None:
+        """`build` makes the everyday tools over one household's Home; `without_house` those of a household with none."""
         self._build = build
+        self._without_house = without_house
         self._built: dict[int, tuple[Home, Tools]] = {}
+        self._bare: dict[int, Tools] = {}
 
     async def of(self, household_id: int) -> Tools:
         try:
@@ -44,7 +47,12 @@ class HomesEveryday(Everyday):
             raise ToolsUnavailable("the household's house could not be read") from e
         if home is None:
             self._built.pop(household_id, None)
-            return services.get(Tools)
+            if self._without_house is None:
+                return services.get(Tools)
+            if household_id not in self._bare:
+                self._bare[household_id] = self._without_house(household_id)
+            return self._bare[household_id]
+        self._bare.pop(household_id, None)
         built = self._built.get(household_id)
         if built is None or built[0] is not home:
             built = (home, self._build(home))

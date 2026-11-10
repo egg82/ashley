@@ -21,7 +21,8 @@ class Household:
     pronouns, pets, how calendars and lists are named); empty when none is set. Standing facts in memory replace
     it. `people` are ordered by id. `locale` is a BCP 47 tag (`en-US`) for how dates and numbers are written,
     `unit_system` the units she speaks in, and `clock` whether times are written on a 12- or 24-hour clock; a
-    household starts at `en-US`, `imperial` and `24h`."""
+    household starts at `en-US`, `imperial` and `24h`. `latitude` and `longitude` are the house's own location in degrees,
+    both set or both None; people's data, never logged."""
 
     id: int
     name: str
@@ -31,6 +32,8 @@ class Household:
     locale: str = "en-US"
     unit_system: UnitSystem = "imperial"
     clock: Clock = "24h"
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,8 @@ class HouseholdEdit:
     locale: str
     unit_system: UnitSystem
     clock: Clock
+    latitude: float | None
+    longitude: float | None
 
 
 @dataclass(frozen=True)

@@ -131,3 +131,66 @@ def test_distance_is_great_circle_miles() -> None:
 
 def _feature(name: str, lon: float, lat: float) -> dict[str, object]:
     return {"type": "Feature", "properties": {"name": name}, "geometry": {"type": "Point", "coordinates": [lon, lat]}}
+
+
+class Own:
+    """A household's own location source: what a person set, or nothing, or unreadable."""
+
+    def __init__(self, point: Coordinates | None, unreadable: bool = False) -> None:
+        self.reads = 0
+        self._point = point
+        self._unreadable = unreadable
+
+    async def __call__(self) -> Coordinates | None:
+        self.reads += 1
+        if self._unreadable:
+            raise HomeUnknown("unavailable")
+        return self._point
+
+
+def find_own(fake: Fake, own: Own, home: Home, **arguments: object) -> ToolResult:
+    return asyncio.run(PlacesTools(fake.client(), CONFIG, home, own).call(call("find_places", **arguments)))
+
+
+def test_the_households_own_location_wins_over_home_assistants() -> None:
+    fake, home = serving(captured("photon")), Home()
+    result = find_own(fake, Own(Coordinates(51.5072, -0.1276)), home, query="Target")
+    assert not result.is_error and home.reads == 0
+    assert dict(fake.requests[0].url.params) == {"q": "Target", "lat": "51.51", "lon": "-0.13", "limit": "15"}
+    assert json.loads(result.content)["places"][0]["distance_mi"] > 4000
+
+
+def test_the_own_location_is_read_every_call_so_an_edit_applies_at_once() -> None:
+    own, home = Own(Coordinates(51.5072, -0.1276)), Home()
+    tools = PlacesTools(serving(captured("photon")).client(), CONFIG, home, own)
+
+    async def scenario() -> None:
+        for _ in range(3):
+            await tools.call(call("find_places", query="Target"))
+
+    asyncio.run(scenario())
+    assert own.reads == 3 and home.reads == 0
+
+
+def test_with_no_own_location_home_assistants_is_used_as_before() -> None:
+    fake, home = serving(captured("photon")), Home()
+    result = find_own(fake, Own(None), home, query="Target")
+    assert not result.is_error and home.reads == 1
+    assert dict(fake.requests[0].url.params)["lat"] == "40.0"
+
+
+def test_an_unreadable_household_is_an_unknown_location_and_home_assistant_is_not_asked() -> None:
+    fake, home = serving(captured("photon")), Home()
+    result = find_own(fake, Own(None, unreadable=True), home, query="Target")
+    assert result.is_error and result.content == "the house's location is unknown"
+    assert home.reads == 0 and fake.requests == []
+
+
+def test_the_own_location_never_reaches_the_log_or_the_wire_unrounded(capsys: pytest.CaptureFixture[str]) -> None:
+    logs.setup()
+    capsys.readouterr()
+    fake = serving(captured("photon"))
+    find_own(fake, Own(Coordinates(51.507222, -0.127583)), Home(), query="Target")
+    out = re.sub(r"(?m)^ts=\S+ ", "", capsys.readouterr().out)
+    for planted in ("51.507", "0.1275", "0.127583"):
+        assert planted not in out and planted not in str(fake.requests[0].url)
