@@ -246,6 +246,13 @@ A thing is a system only if all four hold:
     `ashley.inference.openai_image.OpenAIImageMaker`), a household's count of them limited before any call by
     `ashley.inference.image_quota.ImageCap` (limit data in `app/ashley/inference/image.json`); her tool for it is
     `ashley.tools.bench_image.BenchImageTools`
+  - the keyed providers (Anthropic, OpenAI with its images, Gemini with its images, ElevenLabs) are built from the keys
+    in force, `ashley.inference.keyed_providers.KeyedProviders`, a per-pod cache read again at most every 30 seconds
+    over `ashley.inference.provider_keys.ConnectionProviderKeys`: the first household's connections of the `inference`
+    port (Connections, below), the env's keys where it has none. Each is a Type Object,
+    `ashley.inference.keyed.KeyedProvider` (`ashley.inference.kinds.KEYED`); the env's keys seed the rows at start
+    (`ashley.inference.key_seed.seed_from_env`). The keyless ones (a local server, Wyoming, the in-process models) are
+    wired from settings by `ashley.wiring_providers.providers`
   - spend kept by `ashley.inference.postgres.PostgresSpendLedger`
   - the spend page (`app/ashley/api/spend.py`, the Usage room) reads it through `ashley.channels.spend_report.SpendReport`
     (`ashley.channels.spend_view.SpendView`): usage per provider and task over today, the last 7 days and the month in the
@@ -346,7 +353,8 @@ A thing is a system only if all four hold:
     every kind today), so `Connections` adds, replaces, renames, removes and opens by id and raises `LabelTaken` and
     `TooMany`; a connection is visible to a person when it is the household's or theirs.
     Nothing else lists kinds; a new service is its adapter's declaration and one line in the wiring
-  - a kind declares the ports it implements, `ashley.connections.model.Port` (house, ledger, code_host, herdr, mail), and
+  - a kind declares the ports it implements, `ashley.connections.model.Port` (house, ledger, code_host, herdr, mail,
+    inference), and
     a consumer opens a port, never a kind: `ashley.connections.ports.opened` and `ashley.connections.ports.opened_all`
     open the visible connections of the kinds of `ConnectionKinds.of_port`, in registration order, then label, then id. A second service
     for a port is its adapter and one line in the wiring; the code host tools alone keep a per-forge choice, since
@@ -395,6 +403,8 @@ A thing is a system only if all four hold:
     Home Assistant's entities (`ashley.tools.house_roster.roster`)
   - Homes (below), which opens the household's Home Assistant connection, and `ashley.home_assistant.seed.seed_from_env`
     at start and again from Homes until household 1's row is seen
+  - Inference (above), which opens the first household's `inference` connections for the model providers' keys; their
+    kinds are `deployment` kinds (`ashley.connections.kinds.ConnectionKinds.offered`), offered to that household alone
 
 ### Ledger
 
