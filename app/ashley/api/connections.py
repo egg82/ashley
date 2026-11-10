@@ -1,8 +1,9 @@
 """The signed-in person's household's connections (`decisions.md`, "A household connects its own services"). Any
 person of the household may see, add, replace, rename and remove them.
 
-`GET /api/connections` lists them with every kind that can be connected (the registered `ConnectionKind`s, which the
-panel draws from). `POST /api/connections` adds one of a kind under a label and `PUT /api/connections/{id}` replaces
+`GET /api/connections` lists them with every kind the household can connect (the registered `ConnectionKind`s it is
+offered, `ConnectionKinds.offered`, which the panel draws from): a model provider's key is a `deployment` kind, offered
+to the deployment's first household alone, and any other household adding one gets 404 as for an unregistered kind. `POST /api/connections` adds one of a kind under a label and `PUT /api/connections/{id}` replaces
 its address and key or token: the key or token is checked against the service first, by the kind's own authenticated
 read, and nothing is stored when that fails (400 `ConnectionRefused`, in the kind's own words). `PATCH` renames it or
 hands it to the household or takes it back (`connection_holders`), and `DELETE` removes it. A connection a person holds
@@ -173,7 +174,7 @@ async def connect(signed_in: Person, body: NewConnectionRequest) -> HouseholdCon
     """201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;
     401 `unauthorized`; 403 `forbidden`; 404 `not_found`, no such kind; 409 `label_taken` or `too_many`; 422
     `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when connections
-    are not set up here."""
+    are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404."""
     person = signed_in.person
     registered = services.get(ConnectionKinds).get(body.kind)
     if registered is None:

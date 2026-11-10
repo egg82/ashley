@@ -14,6 +14,7 @@ from .embedding import EmbedRole, Embedded, EmbedTask
 from .image import Aspect, Imaged
 from .image_quota import ImageCap
 from .image_router import ImageCalls
+from .keyed_providers import KeyedProviders
 from .inference import Inference, InferenceCutOff, InferenceRefused, InferenceRejected, InferenceUnavailable
 from .model import Prompt, Route, Task, ToolCalls, Usage
 from .prices import Prices
@@ -40,12 +41,17 @@ class Failed:
 class RoutedInference(Inference):
     def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, prices: Prices,
                  clock: Callable[[], float] = time.monotonic, today: Callable[[], date] = utc_today,
-                 image_cap: ImageCap | None = None) -> None:
-        """`providers` are the wired ones, by `Wired.name` (two with one name raise ValueError); a route naming any
-        other is unwired. `clock` is monotonic seconds, for resting and for each call's duration; `today` is the UTC
-        date a call is priced on; `image_cap` is what limits pictures, none meaning none may be drawn. Which providers are resting is held in this process only: a restarted pod tries
-        each once again, which costs one failed call."""
+                 image_cap: ImageCap | None = None, keyed: KeyedProviders | None = None) -> None:
+        """`providers` are the wired ones that need no key, by `Wired.name` (two with one name raise ValueError); a
+        route naming any other is unwired. `keyed` adds the providers the keys in force turn on: every call first awaits
+        `KeyedProviders.refresh`, then sees its `current` beside `providers`, so a key added or rotated on any pod is
+        used within its refresh bound; a provider whose build `refresh` reports changed stops resting. A name `keyed`
+        can carry that `providers` also has raises ValueError. `clock` is monotonic seconds, for resting and for each
+        call's duration; `today` is the UTC date a call is priced on; `image_cap` is what limits pictures, none meaning
+        none may be drawn. Which providers are resting is held in this process only: a restarted pod tries each once
+        again, which costs one failed call."""
         self._roster = Roster(routes, providers, ledger, prices, clock, today)
+        self._keyed = keyed
         self._speech = SpeechCalls(self._roster)
         self._embedding = EmbedCalls(self._roster)
         self._voiceprints = VoiceprintCalls(self._roster)

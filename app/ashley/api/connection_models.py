@@ -86,8 +86,8 @@ class ConnectionKindInfo(BaseModel):
 
 
 class ConnectionsResponse(BaseModel):
-    """The signed-in person's household's connections, by kind, and every kind that can be connected, in the order to
-    show them. `can_connect` is whether this app holds the key that seals them; false, none can be added and
+    """The signed-in person's household's connections, by kind, and every kind that household can connect, in the order
+    to show them (a model provider's key only for the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and
     `connections` is empty."""
 
     connections: list[HouseholdConnection]
@@ -96,10 +96,11 @@ class ConnectionsResponse(BaseModel):
 
 
 class ApiKeyConnectionRequest(BaseModel):
-    """Replace a connection of a kind whose `secret_field` is `api_key` (Sure): `base_url` is the address it is served
-    at; `api_key` is a key made in the service's own settings, checked against it before anything is stored."""
+    """Replace a connection of a kind whose `secret_field` is `api_key` (Sure, a model provider): `base_url` is the
+    address it is served at, left out for a kind that has one address (a model provider's); `api_key` is a key made in
+    the service's own settings, checked against it before anything is stored."""
 
-    base_url: NoNul = Field(min_length=1, max_length=500)
+    base_url: NoNul | None = Field(default=None, min_length=1, max_length=500)
     api_key: NoNul = Field(min_length=1, max_length=500, pattern=r"^\S+$")
 
 

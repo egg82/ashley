@@ -11,6 +11,11 @@ from . import address
 from .model import Catalogued, Holder, Listed, Opened, Port
 from .settings import Setting
 
+FIRST_HOUSEHOLD = 1
+"""The deployment's first household: the one its own setup (the env) describes, and the only one that holds a
+`deployment` kind."""
+
+
 @dataclass(frozen=True)
 class Pasted:
     """Connected by a person pasting an address and a secret (Sure, Home Assistant, a code host, herdr)."""
@@ -79,7 +84,9 @@ class ConnectionKind:
     address a person types, so it sets `fixed_address`. `resources` lists what a connection reaches; a kind with none
     reaches the whole service, whoever holds it. `settings` is what a person sets on a connection of the kind
     (`ashley.connections.settings`), none for a kind with nothing to set; `catalogue` lists what the service has for
-    the settings to pick from."""
+    the settings to pick from. A `deployment` kind configures the whole deployment rather than one household (a model
+    provider's key, which pays for every household's calls), so only `FIRST_HOUSEHOLD` holds it: it is offered to no
+    other household and no other can add one (`ConnectionKinds.offered`)."""
 
     name: str
     title: str
@@ -103,6 +110,7 @@ class ConnectionKind:
     resources: Resources | None = None
     settings: tuple[Setting, ...] = ()
     catalogue: Catalogue | None = None
+    deployment: bool = False
 
     def __post_init__(self) -> None:
         if self.most < 1:
@@ -145,6 +153,11 @@ class ConnectionKinds(Service):
 
     def get(self, name: str) -> ConnectionKind | None:
         return self._kinds.get(name)
+
+    def offered(self, household_id: int) -> tuple[ConnectionKind, ...]:
+        """The registered kinds `household_id` may connect, in registration order: every kind, less the `deployment`
+        kinds for any household but `FIRST_HOUSEHOLD`."""
+        return tuple(k for k in self._kinds.values() if not k.deployment or household_id == FIRST_HOUSEHOLD)
 
     def is_personal(self, name: str) -> bool:
         """Whether a connection of this kind made without saying who holds it is a person's own."""
