@@ -12,7 +12,7 @@ from contract.turns_support import ALANA, HOUSEHOLD
 from persona_blind_support import allowed_id, locked_id, shipped_sections, shipped_text, without_markers
 
 from ashley.conversations.model import Kind
-from ashley.persona import errand, persona, sections
+from ashley.persona import errand, facts, persona, sections
 
 MARK = "zqOVERRIDE9931"
 NOW = datetime(2026, 10, 25, 19, 34, tzinfo=ZoneInfo("America/Denver"))
@@ -62,7 +62,7 @@ def test_with_no_overrides_the_prompt_carries_the_shipped_persona_and_no_marker_
     for variant, prompt in persona.system(kind, CONTEXT).items():
         assert not any(ln.startswith("<!-- section") for ln in prompt.stable.splitlines()), variant
     assert persona.system(kind, CONTEXT) == persona.system(kind, replace(CONTEXT, overrides=persona.NO_OVERRIDES))
-    assert sections.render(shipped_text(), {}) in persona.system(kind, CONTEXT)["default"].stable
+    assert facts.in_units(sections.render(shipped_text(), {}), HOUSEHOLD) in persona.system(kind, CONTEXT)["default"].stable
 
 
 def test_an_override_of_an_allowed_section_replaces_its_shipped_body() -> None:
@@ -101,7 +101,7 @@ def test_the_contract_sections_survive_an_override_of_every_allowed_one() -> Non
     out = stable_of(overrides=every)
     for s in shipped_sections():
         if s.override == "locked":
-            assert s.body in out
+            assert facts.in_units(s.body, HOUSEHOLD) in out
 
 
 def test_an_override_changes_only_the_stable_layer_and_is_deterministic() -> None:

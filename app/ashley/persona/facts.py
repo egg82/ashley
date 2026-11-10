@@ -41,6 +41,8 @@ UNITS: dict[UnitSystem, str] = {
     "metric": ("The household uses metric units: temperatures in degrees Celsius, distances in kilometres and metres, "
                "weights in kilograms and grams, volumes in litres and millilitres."),
 }
+THERMOSTAT_STEP: dict[UnitSystem, str] = {"imperial": "five", "metric": "three"}
+STEP_TOKEN = "{thermostat_step}"
 WHILE_AWAY = ("Asks you could not carry out when they were made, because a source was out of reach, and have done since. "
               "Each line is what you did, with when. Tell them so briefly, in your own words, once it fits their message; "
               "do not read the line out.")
@@ -51,6 +53,12 @@ def when(now: datetime) -> str:
     hour = now.hour % 12 or 12
     half = "am" if now.hour < 12 else "pm"
     return f"{now:%A} {now.day} {now:%B %Y}, {hour}:{now:%M} {half}"
+
+
+def in_units(text: str, household: Household) -> str:
+    """`text` with `STEP_TOKEN` (the size of a thermostat change she asks before making) written as a number of degrees
+    in the household's unit system."""
+    return text.replace(STEP_TOKEN, THERMOSTAT_STEP[household.unit_system])
 
 
 def names(household: Household, ids: Iterable[int]) -> str:

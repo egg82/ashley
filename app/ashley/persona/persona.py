@@ -85,7 +85,7 @@ def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
         facts.facts(context.now, context.household, context.speaker, context.home, context.place, context.phone,
                       context.page_open, context.aloud),
     ]
-    return {variant: SystemPrompt(_assemble(variant, kind, context.overrides, stable), _join(moment))
+    return {variant: SystemPrompt(_assemble(variant, kind, context.overrides, context.household, stable), _join(moment))
             for variant in prose.variants()}
 
 
@@ -93,8 +93,9 @@ def _join(parts: list[str | None]) -> str:
     return "\n\n".join(part for part in parts if part)
 
 
-def _assemble(variant: str, kind: Kind, overrides: Mapping[str, str], after: list[str | None]) -> str:
+def _assemble(variant: str, kind: Kind, overrides: Mapping[str, str], household: Household,
+              after: list[str | None]) -> str:
     who, rules = prose.read(variant, sections.FILE), prose.read(variant, f"kinds/{kind}.md")
     if who is None or rules is None:
         raise ValueError(f"no persona text for kind {kind!r} in variant {variant!r}")
-    return _join([sections.render(who, overrides), rules, *after])
+    return _join([facts.in_units(sections.render(who, overrides), household), rules, *after])

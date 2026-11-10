@@ -23,7 +23,7 @@ def system(household: Household, asker: Person, source: str, instructions: str |
         who, errand = prose.read(variant, sections.FILE), prose.read(variant, "errand.md")
         if who is None or errand is None:
             raise ValueError(f"no persona text for an errand in variant {variant!r}")
-        parts = [sections.render(who, overrides), errand.format(name=asker.name, source=source), facts.tools(instructions, True, unreachable),
+        parts = [facts.in_units(sections.render(who, overrides), household), errand.format(name=asker.name, source=source), facts.tools(instructions, True, unreachable),
                  facts.profile(household)]
         prompts[variant] = SystemPrompt("\n\n".join(p for p in parts if p), now_line)
     return prompts
