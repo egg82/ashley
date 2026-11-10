@@ -4352,6 +4352,53 @@ breaking her.
 - **Rejected:** a gateway such as LiteLLM, which adds a service to run on both sites for what two SDKs and a
   list already do; falling through to the next route on a refusal; and one prompt for every provider.
 
+## A model provider's key is a connection
+
+A deployment's keys for Anthropic, OpenAI, Gemini and ElevenLabs are connections, so whoever runs the published image
+adds or rotates one in the connections room, sealed like any other connection's secret, with no redeploy. It is an
+instance of Connections, not a new store: each provider is a kind (`ashley.inference.kinds`) on a new port,
+`inference`, checked by one authenticated read with the key before it is stored (the models list; ElevenLabs'
+subscription, the read the Usage room already makes), and the router opens the port, never a kind.
+
+- **The keys are the deployment's, held by its first household.** Inference is one service for every household and
+  its calls carry no household, so its keys cannot be per household without changing every caller; that belongs with
+  route overrides per household. A kind marked `deployment` (`ConnectionKind.deployment`) is offered to
+  `FIRST_HOUSEHOLD` alone, the household the env describes, as the Home Assistant seed already treats it; any other
+  household is not offered the provider kinds, and adding one is 404 as for a kind nothing registered. Any person of
+  the first household may add, replace or remove a key, as for every household connection (there is no admin role).
+- **A row wins over the env.** The key in force for a provider is the first household's row of its kind when one
+  exists, else the env's (`ANTHROPIC_API_KEY` and the rest), else none (`ashley.inference.provider_keys`). So a key
+  rotated in the room is used and a changed env key is ignored while the row stands; removing the row brings the
+  env's key back, and the next pod start seeds it again. To stop a provider whose key is in the env, remove it from
+  the env too. Without `CONNECTIONS_KEY` the env's keys are used as before.
+- **The env's keys seed the first rows** at each pod's start (`ashley.inference.key_seed`, beside the Home Assistant
+  seed in `wiring.warmups`), never over a row. Every pod on both sites seeds at once, and that is safe with no lease:
+  `Connections.seed` is one `INSERT ... WHERE NOT EXISTS ... ON CONFLICT DO NOTHING` against the unique index on
+  household, kind, owner and label, so one pod writes the row and the rest see `kept`. A seed that fails (the database
+  away during a rollout) changes nothing a call sees, since the env's key is in force while there is no row.
+- **Each pod keeps a cache, not state** (`ashley.inference.keyed_providers.KeyedProviders`): the providers built from
+  the keys in force, read again by the first call once the last read is 30 seconds old (`REFRESH_S`). A key added,
+  rotated or removed on any pod reaches every pod's calls on both sites within that bound, with no restart and no
+  message between pods. A provider is built again only when its key changed, and a rotated provider stops resting, so
+  a spent key replaced in the room is tried on the next call. A read that fails keeps what was wired and is tried again
+  after the same bound; before the first read succeeds the env's keys are wired, so a pod serves while the database is
+  away. A replaced build's clients are closed at shutdown, not at the swap, since a call in flight may still use them.
+- **Routes are checked against every provider a key could turn on**, built once with a placeholder key that is never
+  sent, so a route's parameters fail at start even for a provider whose key arrives later from the room.
+- **Not keys, so not connections:** a local OpenAI-compatible server (`LOCAL_LLM_URL`) and Wyoming speech-to-text
+  (`WYOMING_STT_URL`) stay settings. Each is an address on the operator's own network, usually with no key, while a
+  pasted connection is a secret its service checks; and they run beside the pods, where the env is set anyway.
+- Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
+  Connections already has.
+- Rejected: one `inference_provider` kind with the provider named in the label or address. The provider would then be
+  read from text; as kinds, each provider's address, check and refusal words are a Type Object's fields.
+- Rejected: per-household keys now. Every inference caller would have to carry a household, and a household that
+  added a key would still be answered for calls made on behalf of no household (memory writes, judges).
+- Rejected: telling every pod of a change over LISTEN/NOTIFY. A 30 second bound needs no channel, and a missed
+  message would leave a pod on an old key with nothing to correct it; a bounded refetch corrects itself.
+- Rejected: holding the lease to seed. The unique index already makes the write once, and a seed under the lease would
+  wait for a leader that a single-machine deployment has only by advisory lock.
+
 ## A composer never cuts what was typed
 
 The web composers (her room, a bench's talk) are one-line textareas that grow to about eight lines; Enter sends and

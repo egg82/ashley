@@ -15,14 +15,15 @@ class Settings:
     locks instead (`ashley.referee.postgres_lease`) and fail-back does not run. The three file paths are its CA and this client's certificate and key, needed for `https`.
     `site` is this site's Patroni member name (`site-a`, `site-b`): singletons run only while it leads.
     `patroni_password` is Patroni's REST API password, which the fail-back singleton needs to switch over.
-    `anthropic_api_key`, `openai_api_key`, `gemini_api_key` and `local_llm_url` (with `local_llm_api_key`, which a
-    local server may not need) each wire one inference provider when set; empty, that provider is not wired.
+    `anthropic_api_key`, `openai_api_key`, `gemini_api_key` and `elevenlabs_api_key` are the env's keys for those
+    providers: in force wherever the first household has no connection of the provider's kind, and sealed as that
+    connection at start (`ashley.inference.key_seed`); once a row exists it wins. `local_llm_url` (with
+    `local_llm_api_key`, which a local server may not need) wires a local provider when set.
     `routes_file` is a path to the operator's overlay of the shipped routes (`ashley.inference.routes.overlay`).
     `ha_url` (`http://homeassistant.local:8123`) and `ha_token` (a long-lived access token) wire Home Assistant's tools and
     presence; both or neither, since one without the other can reach nothing (ValueError).
-    `wyoming_stt_url` (`tcp://host:port`) wires the Wyoming speech-to-text provider and `elevenlabs_api_key` the
-    ElevenLabs text-to-speech provider; empty, that provider is not wired. OpenAI transcription needs only
-    `openai_api_key`.
+    `wyoming_stt_url` (`tcp://host:port`) wires the Wyoming speech-to-text provider; empty, it is not wired. OpenAI
+    transcription needs only OpenAI's key, ElevenLabs' speech only its key.
     `voice_clip_base_url` (`https://ashley.example.com`) is where satellites and room speakers fetch her spoken
     replies; set, and with etcd, the satellite connections singleton runs. It needs `esphome_noise_psk`, the satellites'
     ESPHome API encryption key, since their audio never crosses the network unencrypted (ValueError).
