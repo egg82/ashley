@@ -13749,12 +13749,12 @@
       },
       "SpendRoutesResponse": {
         "properties": {
-          "tasks": {
+          "choices": {
             "items": {
               "$ref": "#/components/schemas/TaskRoutes"
             },
             "type": "array",
-            "title": "Tasks"
+            "title": "Choices"
           },
           "refresh_s": {
             "type": "integer",
@@ -13763,11 +13763,11 @@
         },
         "type": "object",
         "required": [
-          "tasks",
+          "choices",
           "refresh_s"
         ],
         "title": "SpendRoutesResponse",
-        "description": "Every task the household may choose for, in task order, then `action_judge`. A choice reaches every reply within\n`refresh_s` seconds."
+        "description": "`choices`: every task the household may choose for, in task order, then `action_judge`. A choice reaches every\nreply within `refresh_s` seconds."
       },
       "SpendSpans": {
         "properties": {
