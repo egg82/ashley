@@ -227,6 +227,9 @@ A thing is a system only if all four hold:
     (`{"routes": [...], "fallback": false}`, `ashley.inference.routes.without_fallback`), as `memory_write` does
   - an operator overlays them from the file `ROUTES_FILE` names (`ashley.inference.routes.overlay`, applied by
     `ashley.inference.routes.load`): a task in the file replaces that task's whole entry
+  - a household chooses the model for a task marked `"household": true` (`ashley.inference.routes.Routes.households`),
+    a third layer laid over those through the same loader (`ashley.inference.route_layers`); `action_judge` never
+    (`ashley.inference.routes.NEVER_HOUSEHOLD`)
 - **Pattern:**
   - Service behind the locator, Postgres-ledgered implementation `ashley.inference.router.RoutedInference` with a
     Strategy per provider (`ashley.inference.providers.AnthropicProvider`,
@@ -253,6 +256,11 @@ A thing is a system only if all four hold:
     `ashley.inference.keyed.KeyedProvider` (`ashley.inference.kinds.KEYED`); the env's keys seed the rows at start
     (`ashley.inference.key_seed.seed_from_env`). The keyless ones (a local server, Wyoming, the in-process models) are
     wired from settings by `ashley.wiring_providers.providers`
+  - a text call's routes are its conversation's household's, `ashley.inference.household_routes.HouseholdRoutes`
+    (`ashley.inference.layered_routes.LayeredRoutes`, a per-pod cache read again at most every 30 seconds over
+    `ashley.inference.postgres_route_choices.PostgresRouteChoices`, table `household_routes`); a person sets a choice
+    through `ashley.inference.route_choice_write.RouteChoiceWriter`, which only the Usage room's route
+    (`app/ashley/api/spend_routes.py`) and the wiring import
   - spend kept by `ashley.inference.postgres.PostgresSpendLedger`
   - the spend page (`app/ashley/api/spend.py`, the Usage room) reads it through `ashley.channels.spend_report.SpendReport`
     (`ashley.channels.spend_view.SpendView`): usage per provider and task over today, the last 7 days and the month in the

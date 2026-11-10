@@ -4406,8 +4406,8 @@ instance of Connections, not a new store: each provider is a kind (`ashley.infer
 subscription, the read the Usage room already makes), and the router opens the port, never a kind.
 
 - **The keys are the deployment's, held by its first household.** Inference is one service for every household and
-  its calls carry no household, so its keys cannot be per household without changing every caller; that belongs with
-  route overrides per household. A kind marked `deployment` (`ConnectionKind.deployment`) is offered to
+  a call reaches a household only through the conversation it serves, and many calls serve none (memory writes,
+  judges), so its keys cannot be per household. A kind marked `deployment` (`ConnectionKind.deployment`) is offered to
   `FIRST_HOUSEHOLD` alone, the household the env describes, as the Home Assistant seed already treats it; any other
   household is not offered the provider kinds, and adding one is 404 as for a kind nothing registered. Any person of
   the first household may add, replace or remove a key, as for every household connection (there is no admin role).
@@ -4443,6 +4443,57 @@ subscription, the read the Usage room already makes), and the router opens the p
   message would leave a pod on an old key with nothing to correct it; a bounded refetch corrects itself.
 - Rejected: holding the lease to seed. The unique index already makes the write once, and a seed under the lease would
   wait for a leader that a single-machine deployment has only by advisory lock.
+
+## A household chooses the model for its chat
+
+A household picks which model carries its chat-facing tasks from the Usage room. It is a third layer of the routes,
+over the shipped `routes.json` and the operator's `ROUTES_FILE`, not a store of its own: the household's entries are
+laid over the deployment's routes data and checked by the same `routes.overlay` and `routes.parse`
+(`ashley.inference.route_layers`), so a household can never make a route the loader would refuse.
+
+- **Which tasks is a field in the routes data.** A task whose entry is `{"household": true, "routes": [...]}` is a
+  household's (`routes.Routes.households`): `command`, `chat` and `brainstorm` ship so, and `escalated` follows
+  `brainstorm` through its `like`. An operator turns a task off by giving it a plain list in `ROUTES_FILE`.
+  `wrap_up` is not one: it recovers from a refusal on another provider than chat's, which a household's choice could
+  undo.
+- **`action_judge` is never a household's, only shown.** It is the check a turn that has read outside words passes
+  before a consequential change, and a weaker model there weakens the check that guards the household itself, while any
+  person of a household can choose (there is no admin role), including one persuaded by those outside words to.
+  `routes.NEVER_HOUSEHOLD` refuses the flag on it even from `ROUTES_FILE`; the room shows its routes read-only. Only
+  the operator moves it, as before.
+- **The household comes from the call's conversation.** Every chat-facing call already carries `conversation_id` to the
+  router for the spend ledger, and a conversation's household never changes, so `RoutedInference` asks
+  `HouseholdRoutes.for_call(conversation_id)` (`ashley.inference.layered_routes.LayeredRoutes`) for the routes to walk.
+  A call serving no conversation walks the deployment's routes.
+- **A household chooses among the deployment's routes, never writes one.** A task's options are its own routes, then
+  those of the other household tasks with a provider and model not yet listed, each with its timeout and params, and
+  only those whose provider is wired now. What is stored is the provider and model (`household_routes`, one row per
+  household and task); the route is resolved from the deployment's routes when they are read, so the operator's tuning
+  reaches everyone who chose that model.
+- **The chosen route goes first and the deployment's follow it.** So a chosen provider whose key is removed is skipped
+  as unwired, one that fails falls through, and a refusal is still final. A stored choice the operator no longer offers
+  is not applied (`inference.choice_dropped`); one whose provider is unwired stays applied and is logged
+  `inference.choice_unwired` at each refresh while it lasts.
+- **Each pod caches every household's layered routes** and reads the choices again on the first call once the last read
+  is 30 seconds old (`layered_routes.REFRESH_S`), so a choice made on any pod reaches every pod on both sites within
+  that bound. A conversation's household is read once and remembered. A read that fails keeps what was built; before
+  any succeeds every call walks the deployment's routes, which is also what a household with no choices gets, exactly.
+- **Only a person chooses.** The writer is its own service (`ashley.inference.route_choice_write`), imported only by
+  `app/ashley/api/spend_routes.py` and the wiring (`tests/test_settings_boundary.py`); the router reads through
+  `ashley.inference.route_choices.RouteChoiceReads`, which cannot write.
+- **Spend needs nothing new.** Each call's ledger row names the route that answered and is priced from `prices.json`,
+  so a household that moves chat to a costlier model shows in the Usage room under that provider at its price; the row
+  carries the conversation, so a household's share can be counted as the picture cap counts it.
+- Rejected: a `household_id` argument on `generate` and `step`. The turn loop hands its step to five helpers and
+  threads `conversation_id` through every one; a second id beside it would say the same thing twice, and a turn resumed
+  on another pod would still have to read the household from the conversation.
+- Rejected: a context variable set per turn. Ambient state that a background task or a resumed turn silently lacks, and
+  that the router would read without any caller saying so.
+- Rejected: free-form routes per household. A household is not the operator: timeouts and token limits are the
+  operator's tuning and bill, and a household's own route would need validating against a provider's parameters it
+  cannot see.
+- Rejected: choosing the tasks by name in code, and overriding `action_judge` behind a confirmation. A confirmation
+  is a tap the person being persuaded would give.
 
 ## A composer never cuts what was typed
 
