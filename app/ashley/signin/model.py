@@ -7,7 +7,7 @@ from ..people.model import Person
 
 @dataclass(frozen=True)
 class Pending:
-    """A sign-in in flight, between sending the browser to authentik and its callback: the PKCE verifier, the nonce
+    """A sign-in in flight, between sending the browser to the provider and its callback: the PKCE verifier, the nonce
     the ID token must carry, and the path on this site to return to."""
 
     verifier: str
@@ -27,7 +27,7 @@ class LinkPending:
 
 @dataclass(frozen=True)
 class Identity:
-    """Who authentik says signed in: `sub`, its stable id for the account (a hashed user id), and `username`, its
+    """Who the provider says signed in: `sub`, its stable id for the account (a hashed user id), and `username`, its
     `preferred_username`, which may change and so names the account to the admin only, never to the code."""
 
     sub: str

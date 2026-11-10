@@ -440,7 +440,7 @@ A thing is a system only if all four hold:
   - Service behind the locator, `ashley.signin.sessions.Sessions`, Postgres implementation
     `ashley.signin.postgres.PostgresSessions` (sign-ins in flight, sessions, refused accounts, and links of a Discord
     account in flight), a Null Object that raises
-  - the provider is a port, `ashley.signin.oidc.Oidc`, whose one implementation `ashley.signin.authentik.AuthentikOidc`
+  - the provider is a port, `ashley.signin.oidc.Oidc`, whose one implementation `ashley.signin.provider.OidcProvider`
     is wired when its settings are (the only module importing joserfc), a Null Object that raises
     `ashley.signin.oidc.OidcUnavailable`
   - Discord's OAuth2, for linking, is a port too, `ashley.signin.discord.DiscordOAuth`, implemented by

@@ -1,5 +1,5 @@
 """Blind contract tests for sign-in, written from `ashley.api.signin`'s docstring, `openapi.json`, `signin.json` and
-`decisions.md` ("People sign in through authentik") without reading the implementation. Each test names the clause it
+`decisions.md` ("People sign in through OIDC") without reading the implementation. Each test names the clause it
 checks. Time passes by shifting stored timestamps (`let_time_pass`), since the contract offers no clock to inject."""
 
 import hashlib
@@ -38,7 +38,7 @@ def query_of(url: str) -> dict[str, str]:
 
 
 def test_start_redirects_to_the_issuer_with_pkce_state_and_nonce(web: Browser) -> None:
-    """GET /api/auth/signin: 302 to authentik, authorization code flow with PKCE S256 for this client."""
+    """GET /api/auth/signin: 302 to the provider, authorization code flow with PKCE S256 for this client."""
     r = web.start("/inbox")
     assert r.status_code == 302
     location: str = r.headers["location"]
@@ -102,7 +102,7 @@ def test_callback_with_missing_code_is_refused(mapped: Browser) -> None:
 
 
 def test_callback_with_provider_error_is_refused(mapped: Browser) -> None:
-    """Authentik's `error` on the query is a refusal, not a 500."""
+    """The provider's `error` on the query is a refusal, not a 500."""
     started = mapped.start()
     _, state = mapped.fake.authorize(started.headers["location"])
     refused(mapped, mapped.client.get("/api/auth/callback", params={"error": "access_denied", "state": state}))
@@ -147,7 +147,7 @@ def test_state_in_flight_is_still_good_just_inside_pending_minutes(mapped: Brows
 
 
 def test_a_refused_code_is_refused(mapped: Browser) -> None:
-    """Authentik rejecting the code at the token endpoint is a refusal."""
+    """The provider rejecting the code at the token endpoint is a refusal."""
     mapped.fake.token_status = 400
     refused(mapped, mapped.signin())
 

@@ -1,6 +1,6 @@
-"""Helpers for the blind sign-in contract tests: an app over a real database with the fake authentik wired in, a
+"""Helpers for the blind sign-in contract tests: an app over a real database with the fake provider wired in, a
 browser that walks the sign-in redirects by hand, and a way to let time pass. The contract is `ashley.api.signin`'s
-docstring, `openapi.json`, `signin.json` and `decisions.md`, "People sign in through authentik"."""
+docstring, `openapi.json`, `signin.json` and `decisions.md`, "People sign in through OIDC"."""
 
 import io
 import os
@@ -20,7 +20,7 @@ from ashley.signin.oidc import Oidc
 from conversations_support import household, person
 from fastapi.testclient import TestClient
 from people_support import account
-from signin_support import CLIENT, ISSUER, FakeAuthentik, oidc_for
+from signin_support import CLIENT, ISSUER, FakeIdp, oidc_for
 
 SITE = "https://ashley.test"
 FAILED = "/?signin=failed"
@@ -47,7 +47,7 @@ class Browser:
     """One browser at the app: its cookie jar is the TestClient's."""
 
     client: TestClient
-    fake: FakeAuthentik
+    fake: FakeIdp
     url: str
     state_cookies: set[str] = field(default_factory=set[str])
 
@@ -95,8 +95,8 @@ def map_account(url: str, sub: str, name: str = "Alana") -> int:
 
 
 @contextmanager
-def browser(url: str, fake: FakeAuthentik | None = None, **kwargs: Any) -> Generator[Browser]:
-    fake = fake or FakeAuthentik()
+def browser(url: str, fake: FakeIdp | None = None, **kwargs: Any) -> Generator[Browser]:
+    fake = fake or FakeIdp()
     with TestClient(create_app(settings(url)), base_url=SITE, follow_redirects=False, **kwargs) as client:
         services.register(Oidc, oidc_for(fake))
         yield Browser(client, fake, url)

@@ -74,7 +74,7 @@ def test_someone_elses_discord_account_is_404_and_stays(w: Web) -> None:
     assert w.discord_rows() == [(w.who["A"], ALANA.id)]
 
 
-def test_an_authentik_account_cannot_be_unlinked_here(w: Web, db_url: str) -> None:
+def test_an_oidc_account_cannot_be_unlinked_here(w: Web, db_url: str) -> None:
     mine = scalar(db_url, "SELECT id FROM accounts WHERE system = 'authentik' AND person_id = %s", (w.who["A"],))
     r = w.unlink("A", mine)
     assert (r.status_code, error_code(r)) == (404, "not_found")

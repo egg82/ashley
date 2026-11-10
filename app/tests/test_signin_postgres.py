@@ -25,7 +25,7 @@ PENDING = Pending("verifier-1", "nonce-1", "/memory")
 
 
 def household(url: str) -> tuple[int, int, int]:
-    """(household, person, account) with the person's authentik account `sub-alana`."""
+    """(household, person, account) with the person's OIDC account `sub-alana`."""
     with psycopg.connect(url) as conn:
         hid = admin.add_household(conn, "home", "America/Denver")
         pid = admin.add_person(conn, hid, "Alana")

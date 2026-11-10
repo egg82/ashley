@@ -1,6 +1,6 @@
-"""`python -m ashley.signin unmapped`: the authentik accounts refused at sign-in because no person has them, most recently
+"""`python -m ashley.signin unmapped`: the OIDC accounts refused at sign-in because no person has them, most recently
 tried first, for the admin's own terminal: the sub, its first 12 hex of SHA-256 (what the refusal's log line carries),
-the authentik username, and when it last tried. Map one with
+the OIDC username, and when it last tried. Map one with
 `python -m ashley.people add-account <person_id> authentik <sub>`; it then leaves this list. Run where DATABASE_URL is
 set (`kubectl exec deploy/app`)."""
 
@@ -16,12 +16,12 @@ from .identity import sub_prefix
 def parser() -> argparse.ArgumentParser:
     top = argparse.ArgumentParser(prog="python -m ashley.signin")
     sub = top.add_subparsers(dest="command", required=True)
-    sub.add_parser("unmapped", help="authentik accounts refused for want of a person")
+    sub.add_parser("unmapped", help="OIDC accounts refused for want of a person")
     return top
 
 
 def unmapped(conn: psycopg.Connection) -> list[tuple[str, str, str]]:
-    """(sub, username, last tried as ISO 8601) for each refused authentik account no person has yet."""
+    """(sub, username, last tried as ISO 8601) for each refused OIDC account no person has yet."""
     rows = conn.execute(
         "SELECT u.external_id, u.username, u.last_seen_at FROM signin_unmapped u "
         "WHERE u.system = 'authentik' AND NOT EXISTS "

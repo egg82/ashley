@@ -47,7 +47,7 @@ steps by hand.
 - **At least one model key.** `ANTHROPIC_API_KEY` alone covers every text task. `GEMINI_API_KEY` alone covers
   every text task except writing memories, which waits for Anthropic instead of falling back. `OPENAI_API_KEY`
   alone does not cover chat.
-- **An OIDC provider for the web app.** Sign-in is built against Authentik, and there are no passwords. Without
+- **An OIDC provider for the web app.** Any OpenID Connect provider works (Authentik, Keycloak, Zitadel and the like), and there are no passwords. Without
   a provider, sign-in answers 503: you can still talk to her through the device API below, but connections such as
   Home Assistant are added in the web app.
 - Docker or Podman. The image is `ghcr.io/egg82/ashley` (or `egg82/ashley` on Docker Hub), linux/amd64. The `dev`

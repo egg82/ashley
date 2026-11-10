@@ -1,6 +1,6 @@
-"""authentik as the OIDC provider: its discovery document and signing keys, fetched on first use and kept for the
+"""Any OIDC provider: its discovery document and signing keys, fetched on first use and kept for the
 life of the pod (a cache, not state: any pod fetches its own), the keys again when a token names one not seen,
-which is authentik rotating its key. The only module that imports joserfc."""
+which is the provider rotating its key. The only module that imports joserfc."""
 
 import asyncio
 import logging
@@ -29,8 +29,8 @@ _KEY_SET = TypeAdapter(KeySetSerialization)
 
 @dataclass(frozen=True)
 class Client:
-    """The confidential client authentik knows: `issuer` as its discovery document names it (a trailing slash is
-    ignored), and `redirect_uri` exactly as registered there, since authentik matches it strictly."""
+    """The confidential client the provider knows: `issuer` as its discovery document names it (a trailing slash is
+    ignored), and `redirect_uri` exactly as registered there, since the provider matches it strictly."""
 
     issuer: str
     client_id: str
@@ -38,7 +38,7 @@ class Client:
     redirect_uri: str
 
 
-class AuthentikOidc(Oidc):
+class OidcProvider(Oidc):
     """`client` is the confidential client it signs in as."""
 
     def __init__(self, client: Client, http: httpx2.AsyncClient) -> None:

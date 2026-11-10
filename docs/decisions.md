@@ -659,16 +659,16 @@ catalogue, and she says in one line that she cannot use it right now, while the 
 - **Rejected: offering her the search tools directly.** Raw snippets, text anyone can write, would sit in her context
   beside every house tool.
 
-## People sign in through authentik
+## People sign in through OIDC
 
-The web app, and anything else of hers with a login, uses authentik OIDC, the household's existing SSO. Each
-authentik account maps explicitly to a person, as each Discord account does, so a web session tells her who is
+The web app, and anything else of hers with a login, uses OIDC, with the household's existing SSO as the provider. Each
+OIDC account maps explicitly to a person, as each Discord account does, so a web session tells her who is
 talking with nothing guessed. She keeps no passwords of her own.
 
 - **Her web address is public from the start** (Cloudflare tunnel and the anycast gateway), so every route
   beyond `/api/health`, `/api/ready` and the page shell requires a signed-in person or device (below) from the day
   it is added, even before the web app has sign-in: an unauthenticated request gets 401, never data.
-- **Who may sign in is the IdM group `ashley_users`**, synced to authentik; the authentik application admits that
+- **Who may sign in is the IdM group `ashley_users`**, synced to the provider; the provider's application admits that
   group only. There is no admin group: what belongs to one person (their memory, their Claude Code sessions) keys on
   the person an account maps to. An `ashley_admins` group is for the day something needs a role several people
   can hold.
@@ -681,12 +681,12 @@ talking with nothing guessed. She keeps no passwords of her own.
   `app/ashley/channels/device_rate.json`. Every refusal is one `api.device_refused` log line with the device id and
   its reason, never the token.
 - **Every device carries every tool** until a device should not; scoping is decided per device then, not in advance.
-- **An authentik account maps to a person by its `sub`, which the admin maps after its first sign-in.** authentik's
-  `sub` is a hash of its user id, so nobody knows it beforehand. A sign-in by an account no person has is refused
-  (`/?signin=unmapped`) and recorded with its authentik username in `signin_unmapped`; the admin reads
+- **An OIDC account maps to a person by its `sub`, which the admin maps after its first sign-in.** The
+  provider's `sub` can be a hash of its user id, so nobody knows it beforehand. A sign-in by an account no person has is refused
+  (`/?signin=unmapped`) and recorded with its OIDC username in `signin_unmapped`; the admin reads
   `python -m ashley.signin unmapped` and maps it with `python -m ashley.people add-account <person> authentik <sub>`.
   Rejected: mapping by username and pinning the `sub` at first sign-in, because a username can change or be reused
-  in authentik, and until that first sign-in whoever holds the name would become that person. The username is only
+  at the provider, and until that first sign-in whoever holds the name would become that person. The username is only
   shown to the admin, never matched by code. The log line carries the first 12 hex of the sub's SHA-256, which the
   listing shows too.
 - **A session is an opaque random token in a `__Host-` cookie** (Secure, HttpOnly, SameSite=Lax), stored as its
@@ -865,7 +865,7 @@ the hallway may see, and does what anyone there may do.
   place). `POST /api/kiosk/session` checks it with `Devices.by_token` and keeps it in a `__Host-ashley_kiosk` cookie
   (Secure, HttpOnly, SameSite=Strict), checked again on every request, so revoking the device unpairs the screen.
   Rejected: a table of kiosk sessions, a second credential to expire and revoke for one screen; and signing the
-  tablet in through authentik, which would make it a person.
+  tablet in through OIDC, which would make it a person.
 - **The device rules hold as on `POST /api/messages`:** a request carrying `Cf-Connecting-IP` is refused with 401, so
   the screen loads her page at `PUBLIC_URL` on the home network, where the gateway serves it. A write must come from
   that origin, as JSON. The kiosk cookie is never a person's session nor a session cookie a kiosk.
