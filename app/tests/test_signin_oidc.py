@@ -26,6 +26,15 @@ def test_a_good_code_is_the_account_it_names() -> None:
     assert sign_in(FakeIdp(sub="sub-9", username="sam")) == Identity("sub-9", "sam")
 
 
+def test_a_token_without_preferred_username_names_the_account_by_its_name() -> None:
+    assert sign_in(FakeIdp(sub="sub-9", claims={"preferred_username": None, "name": "sam"})) == Identity("sub-9", "sam")
+    assert sign_in(FakeIdp(sub="sub-9", claims={"preferred_username": None})) == Identity("sub-9", "")
+
+
+def test_the_preferred_username_wins_over_the_name() -> None:
+    assert sign_in(FakeIdp(username="sam", claims={"name": "Samantha"})).username == "sam"
+
+
 def test_the_authorization_url_asks_for_s256_pkce_and_the_registered_redirect() -> None:
     fake = FakeIdp()
     url = asyncio.run(oidc_for(fake).authorize_url("the-state", "the-nonce", "the-challenge"))

@@ -27,7 +27,6 @@ def test_the_static_user_signs_in_as_an_account_with_a_sub() -> None:
     assert sign_in(dex_client(dex_issuer())).sub
 
 
-@pytest.mark.xfail(strict=True, reason="Dex's static passwords carry the username as `name`, with no `preferred_username`")
 def test_the_account_carries_the_username_dex_names() -> None:
     assert sign_in(dex_client(dex_issuer())).username == USERNAME
 
