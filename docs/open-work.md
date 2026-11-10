@@ -8,8 +8,10 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
 
 42. **Others run her, with their own keys.** Anyone can stand her up from the published image and change what a
     household would want to change from the web; env vars stay for the basics (database, `CONNECTIONS_KEY`, sign-in,
-    public URL). A single-machine lease, routes as an operator file and a compose setup are each in a pull request;
-    what is left, by how soon a new household meets it:
+    public URL). The single-machine lease, `ROUTES_FILE`, `deploy/compose` and generic OIDC naming are built; what is
+    left, by how soon a new household meets it:
+    - **Sign-in checked with a second OIDC provider** end to end (it is built against Authentik), and others (Entra,
+      …) added through an OIDC library when asked. Fits into: Sign-in.
     - **A household page: timezone, profile, language, units, 12/24 h.** Today only the CLI sets timezone and
       profile. Fits into: People (Household), in the Devices room beside the lexicon.
     - **Provider keys as connections.** An `inference_provider` connection kind with sealed keys; env keys seed the
