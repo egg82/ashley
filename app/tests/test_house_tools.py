@@ -279,6 +279,7 @@ def test_the_tool_description_gives_no_temperature_number_to_copy() -> None:
     system's and become the template for all."""
     from ashley.tools.house_act import ASK_SPEC, DO_SPEC
     for spec in (DO_SPEC, ASK_SPEC):
-        data = spec.parameters["properties"]["data"]["description"]
+        schema: dict[str, Any] = json.loads(json.dumps(spec.parameters))
+        data: str = schema["properties"]["data"]["description"]
         assert '"temperature": <' in data
         assert not any(ch.isdigit() for ch in data[data.index('"temperature"'):data.index("climate.set_temperature")])
