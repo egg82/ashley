@@ -81,4 +81,4 @@ def test_with_etcd_the_wiring_starts_the_watches_job_under_the_lease_named_watch
     assert watches_job.NAME == "watches" and "watches" in lease.bodies and "herdr_watch" not in lease.bodies
     lease.bodies.clear()
     asyncio.run(started(Settings(database_url="postgresql://x", build_version="t")))
-    assert lease.bodies == {}
+    assert "watches" in lease.bodies and "fail-back" not in lease.bodies

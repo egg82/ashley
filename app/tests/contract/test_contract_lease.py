@@ -8,6 +8,7 @@ from ashley import logs, services
 from ashley.referee.active_site import PATRONI_LEADER_KEY
 from ashley.referee.etcd_lease import EtcdLease
 from ashley.referee.lease import Lease, NullLease
+from ashley.referee.postgres_lease import PostgresLease
 from ashley.settings import Settings
 from ashley.wiring import wire
 from etcd import etcd_url
@@ -169,6 +170,6 @@ def test_wired_with_an_etcd_url_the_locator_answers_an_etcd_lease_that_works() -
     run(scenario())
 
 
-def test_wired_without_an_etcd_url_the_locator_answers_the_null_lease() -> None:
+def test_wired_without_an_etcd_url_the_locator_answers_the_postgres_lease() -> None:
     wire(Settings(database_url="postgresql://127.0.0.1:1/none", build_version="t", etcd_url=""))
-    assert isinstance(services.get(Lease), NullLease)
+    assert isinstance(services.get(Lease), PostgresLease)

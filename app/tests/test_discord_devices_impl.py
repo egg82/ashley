@@ -150,5 +150,7 @@ def test_the_discord_singleton_runs_only_with_a_token(token: str, count: int) ->
     for coroutine in running:
         coroutine.close()
     assert len(running) == count
-    assert singletons(Settings(database_url="x", build_version="t", discord_bot_token="t")) == [], (
-        "no etcd, no singletons")
+    bare = singletons(Settings(database_url="x", build_version="t", discord_bot_token=token))
+    for coroutine in bare:
+        coroutine.close()
+    assert len(bare) == count - 1, "without etcd, every singleton but fail-back"

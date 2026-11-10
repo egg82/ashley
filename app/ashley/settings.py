@@ -11,8 +11,8 @@ class Settings:
     """`database_url` is a libpq connection string; production lists both sites and sets
     `target_session_attrs=read-write`, so a connection always lands on the primary.
     `build_version` names the image that is running.
-    `etcd_url` is this site's member of the 3-site etcd (`https://<ip>:2379`); empty, nothing holds a lease and no
-    singleton runs. The three file paths are its CA and this client's certificate and key, needed for `https`.
+    `etcd_url` is this site's member of the 3-site etcd (`https://<ip>:2379`); empty, singletons hold Postgres advisory
+    locks instead (`ashley.referee.postgres_lease`) and fail-back does not run. The three file paths are its CA and this client's certificate and key, needed for `https`.
     `site` is this site's Patroni member name (`site-a`, `site-b`): singletons run only while it leads.
     `patroni_password` is Patroni's REST API password, which the fail-back singleton needs to switch over.
     `anthropic_api_key`, `openai_api_key`, `gemini_api_key` and `local_llm_url` (with `local_llm_api_key`, which a

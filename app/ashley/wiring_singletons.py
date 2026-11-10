@@ -1,5 +1,5 @@
-"""The singletons `wire` leaves for the app to start under the wired `Lease` (`ashley.main.create_app`), and the
-etcd TLS both share."""
+"""The `Lease` `wire` registers, the singletons it leaves for the app to start under that lease
+(`ashley.main.create_app`), and the etcd TLS both share."""
 
 import asyncio
 from collections.abc import Coroutine
@@ -36,10 +36,13 @@ from .mail.proton_bridge_job import BridgeKeeping, Keeping
 from .memory import write_job
 from .memory.memory import FactWriter
 from .referee import failback, failback_policy
+from .referee.active_site import ActiveSite
 from .referee.etcd_gateway import EtcdTls
+from .referee.etcd_lease import EtcdLease
 from .referee.hold import EtcdHold
 from .referee.lease import Lease
 from .referee.patroni_etcd import EtcdPatroni
+from .referee.postgres_lease import PostgresLease
 from .senses import deposit_sense
 from .watches import job as watches_job
 from .settings import Settings
@@ -50,17 +53,28 @@ from .workshop.file_references import named_keys
 REPAIRED_PREFIXES: tuple[str, ...] = (FILES_PREFIX, LOOKS_PREFIX)
 
 
+def wire_lease(settings: Settings) -> None:
+    """With `etcd_url`, the etcd lease, held only on the active site (`site` names this site's Patroni member, or
+    ValueError); without it, a Postgres advisory lock per singleton on `database_url`."""
+    if settings.etcd_url:
+        if not settings.site:
+            raise ValueError("SITE must name this site's Patroni member when ETCD_URL is set")
+        services.register(Lease, EtcdLease(settings.etcd_url, ActiveSite(settings.site), etcd_tls(settings)))
+    else:
+        services.register(Lease, PostgresLease(settings.database_url))
+
+
 def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
-    """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`; none
-    without etcd: fail-back, the memory write job, resuming turns whose runner stopped, taking up Home Assistant's
-    wakes, watching each provider's failed share of chat calls, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
+    """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`: fail-back
+    when `etcd_url` is set (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
+    turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
     Discord session when `discord_bot_token` is, and web push when her VAPID identity is (`push_config.vapid`)."""
-    if not settings.etcd_url:
-        return []
-    tls = etcd_tls(settings)
-    patroni = EtcdPatroni(settings.etcd_url, tls, auth=("patroni", settings.patroni_password))
-    body = failback.FailBack(patroni, EtcdHold(settings.etcd_url, tls), failback_policy.load()).run
-    running: list[Coroutine[Any, Any, None]] = [services.get(Lease).run(failback.NAME, body)]
+    running: list[Coroutine[Any, Any, None]] = []
+    if settings.etcd_url:
+        tls = etcd_tls(settings)
+        patroni = EtcdPatroni(settings.etcd_url, tls, auth=("patroni", settings.patroni_password))
+        body = failback.FailBack(patroni, EtcdHold(settings.etcd_url, tls), failback_policy.load()).run
+        running.append(services.get(Lease).run(failback.NAME, body))
     writer = write_job.WriteJob(services.get(FactWriter), write_job.load(), policy.load()).run
     running.append(services.get(Lease).run(write_job.NAME, writer))
     running.append(services.get(Lease).run(errand.NAME, errand.ErrandJob().run))
