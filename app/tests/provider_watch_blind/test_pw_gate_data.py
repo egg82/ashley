@@ -9,9 +9,9 @@ from pydantic import TypeAdapter
 from ashley.inference import anthropic_wire, openai_wire
 from ashley.inference.model import Task
 from ashley.inference.reply import Reply
+from ashley.inference.routes import load
 
 REJECTS = Path(__file__).parents[1] / "provider_schema_rejects.json"
-ROUTES = Path(__file__).parents[2] / "ashley" / "inference" / "routes.json"
 
 
 def rejects() -> dict[str, list[dict[str, str]]]:
@@ -19,8 +19,8 @@ def rejects() -> dict[str, list[dict[str, str]]]:
 
 
 def chat_providers() -> set[str]:
-    tasks = json.loads(ROUTES.read_text())["tasks"]
-    return {r["provider"] for t in get_args(Task) for r in tasks[t] if isinstance(tasks[t], list)}
+    routes = load({}).by_task
+    return {r.provider for t in get_args(Task) for r in routes[t]}
 
 
 OBJECT = TypeAdapter(dict[str, object])
