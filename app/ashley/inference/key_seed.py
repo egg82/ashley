@@ -2,11 +2,16 @@
 so a deployment that ran on env keys shows them in the connections room and keeps every call on them with no person
 step. Never over a row a person added or replaced; every pod on both sites may run it at once."""
 
+import logging
 from collections.abc import Iterable, Mapping
 from typing import Literal
 
-from ..connections.connections import Connections
+from .. import logs
+from ..connections.connections import Connections, ConnectionsUnavailable
+from ..connections.kinds import FIRST_HOUSEHOLD
 from .keyed import KeyedProvider
+
+log = logging.getLogger("ashley.inference")
 
 Outcome = Literal["seeded", "kept", "no_key", "unavailable"]
 
@@ -24,4 +29,25 @@ async def seed_from_env(connections: Connections, keyed: Iterable[KeyedProvider]
     Race-safe with no lease: it rests on `Connections.seed`, one `INSERT ... WHERE NOT EXISTS ... ON CONFLICT DO
     NOTHING` against the unique index on household, kind, owner and label, so of several pods seeding at once exactly
     one row is written and the rest see `kept`."""
-    raise NotImplementedError
+    outcomes: dict[str, Outcome] = {}
+    for provider in keyed:
+        key = env.get(provider.kind.name, "")
+        if key:
+            outcomes[provider.kind.name] = await _seeded(connections, provider, key)
+    return outcomes
+
+
+async def _seeded(connections: Connections, provider: KeyedProvider, key: str) -> Outcome:
+    kind = provider.kind
+    outcome: Outcome
+    if not connections.can_open():
+        outcome = "no_key"
+    else:
+        try:
+            seeded = await connections.seed(FIRST_HOUSEHOLD, kind.name, provider.address, key)
+            outcome = "kept" if seeded is None else "seeded"
+        except ConnectionsUnavailable:
+            outcome = "unavailable"
+    emit = logs.warning if outcome == "unavailable" else logs.info
+    emit(log, "provider_keys.seed", household=FIRST_HOUSEHOLD, kind=kind.name, outcome=outcome)
+    return outcome
