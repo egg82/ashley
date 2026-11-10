@@ -33,14 +33,14 @@ class PostgresPeople(People):
             async with self._database.connection() as conn:
                 await conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
                 cur = await conn.execute(
-                    "SELECT id, name, timezone, profile FROM households WHERE id = %s", (household_id,))
+                    "SELECT id, name, timezone, profile, locale, unit_system, clock FROM households WHERE id = %s", (household_id,))
                 row = await cur.fetchone()
                 if row is None:
                     return None
                 cur = await conn.execute(
                     "SELECT id, household_id, name FROM people WHERE household_id = %s ORDER BY id", (household_id,))
                 people = tuple(Person(*r) for r in await cur.fetchall())
-        return Household(row[0], row[1], row[2], row[3], people)
+        return Household(row[0], row[1], row[2], row[3], people, row[4], row[5], row[6])
 
     async def person_for(self, system: str, external_id: str) -> Person | None:
         with translated():

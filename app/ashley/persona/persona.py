@@ -52,7 +52,7 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
 def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
     """One system prompt per variant found under `variants/`, plus `default`: each is the persona, then the kind's
     rules, then the tool instructions or, when tools are unreachable, one line saying the house cannot be reached right
-    now, then the household profile when non-empty, then her standing facts (`facts.standing`; nothing when there are
+    now, then the household's units and its profile when non-empty, then her standing facts (`facts.standing`; nothing when there are
     none), then what she remembers (`facts.remembered`; nothing when memory recalled nothing), then what was said before
     (`facts.said_before`; nothing when there is none), then what was done while they were away (`facts.while_away`; nothing
     when there is none), then the tools' state (`facts.tools_now`; nothing when there is none), then the facts of the
