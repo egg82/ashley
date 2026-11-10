@@ -53,9 +53,9 @@ def test_nobody_home_is_not_unknown():
     assert "Nobody is home." in system("command", replace(CONTEXT, home=frozenset()))["default"].text
 
 
-def test_an_empty_profile_adds_nothing():
+def test_an_empty_profile_adds_only_the_units():
     prompt = system("command", replace(CONTEXT, household=replace(HOME, profile="  ")))["default"].text
-    assert "# This household" not in prompt and "A profile line." not in prompt
+    assert "# This household\n\n" + facts.UNITS["imperial"] + "\n\n" in prompt and "A profile line." not in prompt
 
 
 @pytest.mark.parametrize(

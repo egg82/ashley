@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from ..memory.model import Recalled
-from ..people.model import Household, Person
+from ..people.model import Household, Person, UnitSystem
 from ..stamp import stamp
 
 UNREACHABLE = "You can't reach the house right now, so you can't read or change anything in it. Say so if asked."
@@ -35,6 +35,12 @@ REMEMBERED = ("What you learned in earlier conversations that may bear on this m
               "and never bring up yourself.")
 SAID_BEFORE = ("Said with you before, in earlier conversations or earlier in this one, that may bear on this message, "
                "each with when it was said.")
+UNITS: dict[UnitSystem, str] = {
+    "imperial": ("The household uses imperial units: temperatures in degrees Fahrenheit, distances in miles and feet, "
+                 "weights in pounds and ounces, volumes in cups and fluid ounces."),
+    "metric": ("The household uses metric units: temperatures in degrees Celsius, distances in kilometres and metres, "
+               "weights in kilograms and grams, volumes in litres and millilitres."),
+}
 WHILE_AWAY = ("Asks you could not carry out when they were made, because a source was out of reach, and have done since. "
               "Each line is what you did, with when. Tell them so briefly, in your own words, once it fits their message; "
               "do not read the line out.")
@@ -86,9 +92,10 @@ def facts(
     return "\n".join(lines)
 
 
-def profile(household: Household) -> str | None:
+def profile(household: Household) -> str:
+    """`# This household`: the units it uses, then its profile when it has one."""
     text = household.profile.strip()
-    return "# This household\n\n" + text if text else None
+    return "# This household\n\n" + UNITS[household.unit_system] + ("\n\n" + text if text else "")
 
 
 def remembered(recalled: tuple[Recalled, ...] | None, now: datetime) -> str | None:

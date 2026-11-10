@@ -1,9 +1,9 @@
 """The writes behind `python -m ashley.people`: plain SQL on a connection the caller owns and commits. People are
 written only here; the `People` service reads."""
 
-from zoneinfo import ZoneInfo
-
 import psycopg
+
+from .fields import is_timezone
 
 
 class NotFound(Exception):
@@ -19,10 +19,8 @@ def _one(cur: psycopg.Cursor[tuple[int]]) -> int:
 
 def add_household(conn: psycopg.Connection, name: str, timezone: str) -> int:
     """Raises ValueError when `timezone` is not an IANA zone name."""
-    try:
-        ZoneInfo(timezone)
-    except (KeyError, ValueError, OSError) as e:
-        raise ValueError(f"not an IANA timezone: {timezone!r}") from e
+    if not is_timezone(timezone):
+        raise ValueError(f"not an IANA timezone: {timezone!r}")
     return _one(conn.execute("INSERT INTO households (name, timezone) VALUES (%s, %s) RETURNING id", (name, timezone)))
 
 

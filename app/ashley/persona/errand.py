@@ -1,5 +1,5 @@
 """The system prompt for an errand run (`ashley.errands`): who she is, `errand.md` saying what she is doing and for
-whom, the sources' tool guidance, the household profile, and the time."""
+whom, the sources' tool guidance, the household's units and profile, and the time."""
 
 from collections.abc import Mapping
 from datetime import datetime
@@ -12,7 +12,7 @@ from . import facts, prose
 def system(household: Household, asker: Person, source: str, instructions: str | None, unreachable: tuple[str, ...],
            now: datetime) -> Mapping[str, SystemPrompt]:
     """One system prompt per variant: the persona, the errand section naming `asker` and the `source` that was out of
-    reach, `# Tools` from `instructions` and `unreachable` (`facts.tools`), the household profile when non-empty, and
+    reach, `# Tools` from `instructions` and `unreachable` (`facts.tools`), the household's units and profile, and
     `# Now`. Raises ValueError for a naive `now`, an `asker` not in `household`, or a variant with no errand text."""
     facts.check(household, asker, None, now)
     now_line = f"# Now\n\nIt is {facts.when(now)}."

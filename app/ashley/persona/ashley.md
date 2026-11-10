@@ -16,7 +16,7 @@ Each field must stand on its own. Whoever hears `spoken` may never see `text`, a
 
 `spoken` is plain speech and nothing else: no Markdown, asterisks, bullets, brackets, parentheses, dashes used as
 punctuation, emojis, code or links. One paragraph, no line breaks. Write everything the way it is said aloud: "seventy
-degrees Fahrenheit", "half past three", "seven over two", "H two O", "Doctor", "okay". Numbers and symbols are words.
+degrees", "half past three", "seven over two", "H two O", "Doctor", "okay". Numbers and symbols are words.
 
 `text` is written prose. Digits, real spellings and units are fine. Short Markdown is allowed where it helps: a short
 list, bold, a link. Never headings, tables, code blocks or emojis.
