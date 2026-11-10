@@ -10,12 +10,14 @@ from ashley.connections.kinds import ConnectionKind, ConnectionKinds
 from ashley.google.kind import GOOGLE
 from ashley.herdr.kind import HERDR
 from ashley.home_assistant.kind import HOME_ASSISTANT
+from ashley.inference.kinds import KEYED
 from ashley.mail.resources import mailboxes
 from ashley.sure.kind import SURE
 from ashley.wiring import CONNECTION_KINDS
 from connection_kinds_blind_support import KIND_NAMES, kind_named
 
 REASONS = ("bad_url", "key_refused", "unreachable", "wrong_service")
+PROVIDERS = ("anthropic", "openai", "gemini", "elevenlabs")
 
 
 async def accepts(base_url: str, secret: str, person_id: int) -> None:
@@ -30,9 +32,10 @@ def custom(name: str, personal: bool = False, fixed: str | None = None) -> Conne
 
 
 def test_the_four_services_and_the_herdr_bridge_are_the_registered_kinds() -> None:
-    assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google"))
+    assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google", *PROVIDERS))
     assert {k.name: k for k in CONNECTION_KINDS} == {"sure": SURE, "home_assistant": HOME_ASSISTANT, "gitlab": GITLAB,
-                                                     "github": GITHUB, "herdr": HERDR, "google": replace(GOOGLE, resources=mailboxes)}
+                                                     "github": GITHUB, "herdr": HERDR, "google": replace(GOOGLE, resources=mailboxes),
+                                                     **{k.kind.name: k.kind for k in KEYED}}
 
 
 @pytest.mark.parametrize(("name", "personal", "field"), [
@@ -52,7 +55,7 @@ def test_every_kind_has_words_for_a_person_and_a_refusal_text_for_each_reason(na
 
 
 def test_only_github_has_one_address() -> None:
-    assert {k.name for k in CONNECTION_KINDS if k.fixed_address is not None} == {"github", "google"}
+    assert {k.name for k in CONNECTION_KINDS if k.fixed_address is not None} == {"github", "google", *PROVIDERS}
     assert GITHUB.fixed_address is not None and GITHUB.fixed_address.startswith("https://")
 
 
