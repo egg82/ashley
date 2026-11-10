@@ -20,10 +20,10 @@
       {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "low"}},
       {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}}
     ],
-    "memory_write": [
+    "memory_write": {"fallback": false, "routes": [
       {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}},
       {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 30, "params": {"max_completion_tokens": 2048}}
-    ],
+    ]},
     "memory_judge": [
       {"provider": "anthropic", "model": "claude-haiku-5-5", "timeout_s": 10, "params": {"max_tokens": 512, "effort": "low"}},
       {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 10, "params": {"max_completion_tokens": 512}}

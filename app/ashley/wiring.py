@@ -61,7 +61,7 @@ from .inference.balance import BalanceSource, ProviderBalances
 from .inference.balance_reader import SourcedBalances
 from .inference.elevenlabs_quota import ElevenLabsQuota
 from .inference.image_quota import ImageCap
-from .inference.routes import Routes, first_only
+from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
 from .inference.postgres import PostgresSpendLedger
 from .inference.provider import Wired
@@ -158,12 +158,6 @@ from .workshop.postgres import PostgresWorkshop
 from .workshop.workshop import Workshop
 
 
-def app_routes(routes: Routes) -> Routes:
-    """The routes as the app runs them: `memory_write` on its first route only, since the write job waits for that
-    model rather than take the weaker fallback, which stays in `routes.json` for the eval to pin."""
-    return first_only(routes, "memory_write")
-
-
 CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
                                                 replace(GOOGLE, resources=mailboxes))  # the panel's order
 
@@ -229,7 +223,7 @@ def _wire_devices() -> None:
     services.register(Voices, PostgresVoices(database))
 
 
-def wire(settings: Settings, narrow: Callable[[Routes], Routes] = app_routes) -> list[Callable[[], Coroutine[Any, Any, None]]]:
+def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallback) -> list[Callable[[], Coroutine[Any, Any, None]]]:
     """Register every service the settings call for. Returns what the process must call on shutdown to release
     the connections `wire` opened itself (the database is closed through its own service). `narrow` reshapes the
     loaded routes before the router is built."""

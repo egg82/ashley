@@ -31,7 +31,9 @@ _REQUIRED = ("provider", "model", "timeout_s")
 @dataclass(frozen=True)
 class Routes:
     """Every text task has at least one route; a speech, embed or voiceprint task has routes when `routes.json` lists
-    it, so a process that never speaks needs none. A provider that failed `unavailable` rests for `cooldown_s` (> 0)."""
+    it, so a process that never speaks needs none. A provider that failed `unavailable` rests for `cooldown_s` (> 0).
+    `waits_for_first` names the text tasks whose entry says `"fallback": false`: the app runs them on their first
+    route only (`without_fallback`), while the list stays whole for an eval to pin."""
 
     by_task: Mapping[Task, tuple[Route, ...]]
     cooldown_s: float
@@ -40,6 +42,7 @@ class Routes:
     voiceprint: Mapping[VoiceprintTask, tuple[Route, ...]] = field(
         default_factory=dict[VoiceprintTask, tuple[Route, ...]])
     image: Mapping[ImageTask, tuple[Route, ...]] = field(default_factory=dict[ImageTask, tuple[Route, ...]])
+    waits_for_first: frozenset[Task] = frozenset()
 
     def for_task(self, task: TaskName) -> tuple[Route, ...]:
         """The task's routes in order; none for a speech, embed or voiceprint task the routes do not list."""
@@ -60,10 +63,11 @@ def only(routes: Routes, task: Task, provider: str) -> Routes:
     return replace(routes, by_task={**routes.by_task, task: kept})
 
 
-def first_only(routes: Routes, task: Task) -> Routes:
-    """`routes` with `task` narrowed to its first route, for a task that waits for its preferred model rather than
-    take the fallback; other tasks untouched."""
-    return replace(routes, by_task={**routes.by_task, task: routes.by_task[task][:1]})
+def without_fallback(routes: Routes) -> Routes:
+    """`routes` with each task in `waits_for_first` narrowed to its first route, for a task that waits for its
+    preferred model rather than take the fallback; other tasks untouched."""
+    return replace(routes, by_task={task: r[:1] if task in routes.waits_for_first else r
+                                    for task, r in routes.by_task.items()})
 
 
 def load(providers: Mapping[str, Wired]) -> Routes:
@@ -75,7 +79,8 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
     """Routes from JSON already parsed:
     `{"cooldown_s": n, "tasks": {"<task>": [{"provider": s, "model": s, "timeout_s": n, "variant"?: s,
     "params"?: {...}}, ...]}}`, one entry per text task (`{"like": "<task>"}` in place of the list takes that task's
-    routes, which must be a list), optionally one per speech task and one each for `embed`, `voiceprint` and `image`, and no others,
+    routes, which must be a list; `{"routes": [...], "fallback": false}` in place of the list is a text task that
+    waits for its first route, see `Routes.waits_for_first`), optionally one per speech task and one each for `embed`, `voiceprint` and `image`, and no others,
     each with at least one route and no keys beyond those. Numbers are finite and > 0 (a bool is not a number); strings are non-empty.
 
     A route naming a provider absent from `providers` is kept: it is skipped at call time, so routes may list a
@@ -92,6 +97,7 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
     if tasks is None:
         raise ValueError("routes: tasks is an object with one entry per task")
     tasks = _likened(tasks)
+    tasks, waits = _unwrapped(tasks)
     missing = [k for k in TASKS if k not in tasks]
     extra = sorted(set(tasks) - set(TASKS) - set(SPEECH_TASKS) - set(EMBED_TASKS) - set(VOICEPRINT_TASKS) - set(IMAGE_TASKS))
     if missing or extra:
@@ -100,7 +106,27 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
                   {task: _routes_of(task, tasks[task], providers) for task in SPEECH_TASKS if task in tasks},
                   {task: _routes_of(task, tasks[task], providers) for task in EMBED_TASKS if task in tasks},
                   {task: _routes_of(task, tasks[task], providers) for task in VOICEPRINT_TASKS if task in tasks},
-                  {task: _routes_of(task, tasks[task], providers) for task in IMAGE_TASKS if task in tasks})
+                  {task: _routes_of(task, tasks[task], providers) for task in IMAGE_TASKS if task in tasks},
+                  waits)
+
+
+def _unwrapped(tasks: dict[str, object]) -> tuple[dict[str, object], frozenset[Task]]:
+    """`tasks` with each `{"routes": [...], "fallback": false}` entry replaced by its list, and the text tasks
+    that had one."""
+    plain: dict[str, object] = {}
+    waits: set[Task] = set()
+    for task, entry in tasks.items():
+        fields = _object(entry)
+        if fields is None or "routes" not in fields:
+            plain[task] = entry
+            continue
+        if set(fields) != {"routes", "fallback"} or fields["fallback"] is not False:
+            raise ValueError(f'{task}: expected exactly "routes" and "fallback": false in place of the list')
+        if task not in TASKS:
+            raise ValueError(f"{task}.fallback: only a text task can wait for its first route")
+        plain[task] = fields["routes"]
+        waits.add(task)
+    return plain, frozenset(waits)
 
 
 def _likened(tasks: dict[str, object]) -> dict[str, object]:
