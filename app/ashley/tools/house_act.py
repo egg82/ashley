@@ -36,7 +36,8 @@ _PARAMETERS = {"type": "object", "properties": {
     "domain": {"type": "string", "description": "Narrows to one domain; the action's own domain is assumed."},
     "data": {"type": "string", "description": "The action's other fields as a JSON object in text: "
                                               "{\"brightness_pct\": 30} for light.turn_on, {\"item\": \"milk\"} for "
-                                              "todo.add_item, {\"temperature\": 70} for climate.set_temperature; "
+                                              "todo.add_item, {\"temperature\": <degrees, in the household's units>} for "
+                                              "climate.set_temperature; "
                                               "house_find kind action gives an action's fields."}},
     "required": ["action"]}
 DO_SPEC = ToolSpec(DO, (
