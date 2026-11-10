@@ -184,7 +184,7 @@ def test_a_finished_run_whose_log_is_lost_closes_unknown_and_tells_her_so(wired:
     book, _ = wired
     fake = FakeKube(tmp_path / "token", Script(log_status=500))
     clock = Clock()
-    services.register(Sandbox, KubernetesSandbox(fake.api(), CONFIG, sleep=clock.sleep, clock=clock))
+    services.register(Sandbox, KubernetesSandbox(fake.api(), CONFIG, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock))
     got = call({"language": "python", "script": "print(1)"})
     assert book.finished == [(41, Output("unknown", None, "", ""))]
     assert not got.is_error

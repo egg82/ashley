@@ -52,7 +52,7 @@ def limits(made: dict[str, Any]) -> dict[str, Any]:
 
 def test_each_pod_carries_its_languages_script_timeout_and_log_limit() -> None:
     cfg = config()
-    python, cad = limits(manifest(job("python"), cfg, "r")), limits(manifest(job("build123d"), cfg, "r"))
+    python, cad = limits(manifest(job("python"), cfg, "r", "gvisor")), limits(manifest(job("build123d"), cfg, "r", "gvisor"))
     assert (python["timeout_s"], python["log_bytes"]) == (10, cfg.languages["python"].log_bytes)
     assert (cad["timeout_s"], cad["log_bytes"]) == (60, 300_000)
 

@@ -89,7 +89,7 @@ def looker_slot() -> Generator[None]:
 
 def wired(env: dict[str, str]) -> Looker:
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    wire_looker(from_env(env), FakeKube(), "ashley-sandbox", "gvisor", closers)
+    wire_looker(from_env(env), FakeKube(), closers)
     return services.get(Looker)
 
 
@@ -110,7 +110,7 @@ def test_the_pod_is_kept_for_the_look_page_of_the_app_and_looks_go_to_the_warm_u
     kube = FakeKube()
     with pod_server(prefix=app_prefix) as pod:
         closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-        wire_looker(from_env({**ENV, "LOOK_WARM_URL": pod.base}), kube, "ashley-sandbox", "gvisor", closers)
+        wire_looker(from_env({**ENV, "LOOK_WARM_URL": pod.base}), kube, closers)
         looker = services.get(Looker)
         assert isinstance(looker, WarmLooker)
 

@@ -46,7 +46,7 @@ def shipped() -> dict[str, Any]:
 
 def box(fake: FakeKube, runs: RunsConfig, clock: Clock | None = None) -> KubernetesSandbox:
     clock = clock or Clock()
-    return KubernetesSandbox(fake.api(), runs, sleep=clock.sleep, clock=clock)
+    return KubernetesSandbox(fake.api(), runs, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock)
 
 
 def test_the_shipped_build123d_profile_is_60_seconds_one_cpu_and_a_gibibyte_with_no_image() -> None:
@@ -104,7 +104,7 @@ def test_python_is_required_under_languages() -> None:
 
 
 def test_the_build123d_pod_has_the_code_run_pods_security_and_its_own_image_and_limits() -> None:
-    py, cad = manifest(PY_JOB, BOTH, "r")["spec"], manifest(CAD_JOB, BOTH, "r")["spec"]
+    py, cad = manifest(PY_JOB, BOTH, "r", "gvisor")["spec"], manifest(CAD_JOB, BOTH, "r", "gvisor")["spec"]
     own = ("activeDeadlineSeconds", "containers", "volumes")
     assert {k: v for k, v in cad.items() if k not in own} == {k: v for k, v in py.items() if k not in own}
     one, two = cad["containers"][0], py["containers"][0]
@@ -120,7 +120,7 @@ def test_the_build123d_pod_has_the_code_run_pods_security_and_its_own_image_and_
 
 def test_a_pod_for_a_language_not_run_is_not_made() -> None:
     with pytest.raises(ValueError):
-        manifest(CAD_JOB, UNIMAGED, "r")
+        manifest(CAD_JOB, UNIMAGED, "r", "gvisor")
 
 
 def test_the_sandbox_runs_a_build123d_job_in_the_cad_image(fake: FakeKube) -> None:

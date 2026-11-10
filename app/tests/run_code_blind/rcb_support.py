@@ -38,6 +38,10 @@ def container(manifest: dict[str, Any]) -> dict[str, Any]:
     return containers[0]
 
 
+NAMESPACE = "ashley-sandbox"
+RUNTIME = "gvisor"
+
+
 def skeleton(manifest: dict[str, Any]) -> dict[str, Any]:
     """The manifest without the job's values: what must be the same whatever the script, input or files say."""
     shape = copy.deepcopy(manifest)
@@ -48,10 +52,10 @@ def skeleton(manifest: dict[str, Any]) -> dict[str, Any]:
 def check_isolated(manifest: dict[str, Any], config: RunsConfig) -> None:
     """Every isolation property of the contract, read from the pod as the Kubernetes API will take it."""
     assert manifest["kind"] == "Pod"
-    assert manifest["metadata"].get("namespace", config.namespace) == config.namespace
+    assert manifest["metadata"].get("namespace", NAMESPACE) == NAMESPACE
     spec = manifest["spec"]
     python = config.languages["python"]
-    assert spec["runtimeClassName"] == config.runtime_class
+    assert spec["runtimeClassName"] == RUNTIME
     assert spec["automountServiceAccountToken"] is False
     for key in ("hostNetwork", "hostPID", "hostIPC", "shareProcessNamespace"):
         assert not spec.get(key, False), key
@@ -102,7 +106,7 @@ class Rig:
     sandbox: KubernetesSandbox = field(init=False)
 
     def __post_init__(self) -> None:
-        self.sandbox = KubernetesSandbox(self.kube.api(), self.config, self.clock.sleep, self.clock)
+        self.sandbox = KubernetesSandbox(self.kube.api(), self.config, NAMESPACE, RUNTIME, self.clock.sleep, self.clock)
 
 
 def rig(tmp_path: Path, script: Script | None = None, config: RunsConfig = CONFIG) -> Rig:

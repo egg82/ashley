@@ -717,10 +717,11 @@ A thing is a system only if all four hold:
 - **Owns (the question it answers):** Run this script once, isolated, and keep what happened.
 - **Where:**
   - `app/ashley/runs/`
-  - the sandbox's tunables are data, `app/ashley/runs/runs.json`: what every run shares at the top level (namespace,
-    RuntimeClass, chars limits, poll), and each language, Python and build123d alike (its image given as `CAD_IMAGE`), as
+  - the sandbox's tunables are data, `app/ashley/runs/runs.json`: what every run shares at the top level (chars
+    limits, poll), and each language, Python and build123d alike (its image given as `CAD_IMAGE`), as
     one `ashley.runs.config.Profile` under `languages`
-  - the cluster side (namespace `ashley-sandbox`, RuntimeClass `gvisor`, the app's ServiceAccount) is in the cluster repo
+  - the cluster side (namespace `ashley-sandbox`, RuntimeClass `gvisor`, the app's ServiceAccount) is in the cluster repo;
+    the app takes the namespace and class as `SANDBOX_NAMESPACE` and `SANDBOX_RUNTIME_CLASS` (those values by default)
 - **Pattern:**
   - the record: Service behind the locator, `ashley.runs.runs.Runs`, Postgres implementation
     `ashley.runs.postgres.PostgresRuns` (table `code_runs`, one row per run tied to the person turn that asked, the

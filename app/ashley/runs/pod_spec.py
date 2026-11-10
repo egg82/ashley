@@ -18,8 +18,8 @@ LABEL = PREFIX + "run"
 NOBODY = 65534
 
 
-def manifest(job: Job, config: RunsConfig, runner: str) -> dict[str, Any]:
-    """`runner` is the program the container runs (`runner.py`'s text). Raises ValueError for a language the config
+def manifest(job: Job, config: RunsConfig, runner: str, runtime_class: str) -> dict[str, Any]:
+    """`runner` is the program the container runs (`runner.py`'s text), `runtime_class` the pod's RuntimeClass. Raises ValueError for a language the config
     does not run."""
     profile = config.profile(job.language)
     if profile is None:
@@ -27,7 +27,7 @@ def manifest(job: Job, config: RunsConfig, runner: str) -> dict[str, Any]:
     return {"apiVersion": "v1", "kind": "Pod",
             "metadata": {"name": job.name, "labels": {LABEL: "true"}},
             "spec": {
-                "runtimeClassName": config.runtime_class,
+                "runtimeClassName": runtime_class,
                 "automountServiceAccountToken": False,
                 "hostNetwork": False, "hostPID": False, "hostIPC": False,
                 "enableServiceLinks": False,

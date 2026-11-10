@@ -40,39 +40,39 @@ def wire_sandbox(settings: Settings, closers: list[Callable[[], Coroutine[Any, A
     if settings.cad_image:
         sandbox = sandbox.with_image("build123d", settings.cad_image)
     api = KubeApi(kube, settings.sandbox_token_file)
-    services.register(Sandbox, KubernetesSandbox(api, sandbox))
+    services.register(Sandbox, KubernetesSandbox(api, sandbox, settings.sandbox_namespace, settings.sandbox_runtime_class))
     if settings.look_image:
-        wire_looker(settings, api, sandbox.namespace, sandbox.runtime_class, closers)
+        wire_looker(settings, api, closers)
     if settings.media_image:
-        wire_media(settings, api, sandbox.namespace, sandbox.runtime_class)
+        wire_media(settings, api)
     return api
 
 
-def wire_looker(settings: Settings, api: KubeApi, namespace: str, runtime_class: str,
+def wire_looker(settings: Settings, api: KubeApi,
                 closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
     """The Looker: a pod per look, fronted by the warm pod when `look_warm_url` is set; and the page browser, a cold pod
     of the same image per page read."""
     if not PINNED.fullmatch(settings.look_image):
         raise ValueError("LOOK_IMAGE must be pinned by a full digest (name@sha256:<64 lowercase hex>)")
     config = looks_config.load()
-    services.register(PageBrowser, KubernetesBrowser(api, namespace, runtime_class, settings.look_image, config))
-    cold = KubernetesLooker(api, namespace, runtime_class, settings.look_image, settings.look_app_url,
+    services.register(PageBrowser, KubernetesBrowser(api, settings.sandbox_namespace, settings.sandbox_runtime_class, settings.look_image, config))
+    cold = KubernetesLooker(api, settings.sandbox_namespace, settings.sandbox_runtime_class, settings.look_image, settings.look_app_url,
                             settings.files_link_key.encode(), config)
     if not settings.look_warm_url:
         services.register(Looker, cold)
         return
     prefix = settings.look_app_url + links.PAGE
-    keeper = WarmPod(api, namespace, runtime_class, settings.look_image, prefix, SHOOTER, config)
+    keeper = WarmPod(api, settings.sandbox_namespace, settings.sandbox_runtime_class, settings.look_image, prefix, SHOOTER, config)
     http = httpx2.AsyncClient()
     closers.append(http.aclose)
     services.register(Looker, WarmLooker(cold, keeper, http, settings.look_warm_url, config))
 
 
-def wire_media(settings: Settings, api: KubeApi, namespace: str, runtime_class: str) -> None:
+def wire_media(settings: Settings, api: KubeApi) -> None:
     """Media jobs in pods beside code runs; the pod reaches the speech service at `wyoming_stt_url`, if there is one."""
     if not PINNED.fullmatch(settings.media_image):
         raise ValueError("MEDIA_IMAGE must be pinned by a full digest (name@sha256:<64 lowercase hex>)")
     config = media_config.load()
-    pods = PodLog(api, namespace, MEDIA_LABEL, config.log_bytes, config.poll_s, logging.getLogger("ashley.runs"), "media")
-    services.register(Media, KubernetesMedia(pods, runtime_class, settings.media_image, settings.media_app_url,
+    pods = PodLog(api, settings.sandbox_namespace, MEDIA_LABEL, config.log_bytes, config.poll_s, logging.getLogger("ashley.runs"), "media")
+    services.register(Media, KubernetesMedia(pods, settings.sandbox_runtime_class, settings.media_image, settings.media_app_url,
                                              settings.files_link_key.encode(), settings.wyoming_stt_url, config))
