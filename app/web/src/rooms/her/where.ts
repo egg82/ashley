@@ -9,7 +9,8 @@ function startOfDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-/** "Today 7:42 pm", "Yesterday 7:42 pm", "Tuesday 7:42 pm" within the week, else "Oct 24 7:42 pm". */
+/** "Today 7:42 pm", "Yesterday 7:42 pm", "Tuesday 7:42 pm" within the week, else "Oct 24 7:42 pm", in the household's
+ * locale and clock. */
 export function when(iso: string, now = new Date()): string {
   const d = new Date(iso);
   const time = d.toLocaleTimeString(locale(), { hour: hour(), minute: '2-digit' }).toLowerCase();
