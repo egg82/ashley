@@ -1,4 +1,4 @@
-"""A signed-in person's notifications on this device (`decisions.md`, "Web push"). `GET /api/push/key` answers her
+"""A signed-in person's notifications on this device (`decisions.md`, "Web push is sent by pigeon"). `GET /api/push/key` answers her
 VAPID public key, which a browser subscribes with; `POST /api/push/subscriptions` keeps this browser's subscription for
 the person; `POST /api/push/subscriptions/find` says whether this browser is theirs (a POST, so the endpoint, a secret,
 never sits in a URL); `DELETE /api/push/subscriptions` stops pushing to it. With push not configured every route
