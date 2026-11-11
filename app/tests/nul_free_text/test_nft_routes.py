@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from nul_free_text_blind_support import NUL, NUL_PATH, ORIGIN
+from nul_free_text_support import NUL, NUL_PATH, ORIGIN
 
 Case = tuple[str, str, dict[str, Any] | None]
 
