@@ -73,6 +73,20 @@ class BenchJobs(Service):
         """Record that the session was prompted. Raises JobsUnavailable."""
 
     @abstractmethod
+    async def idle(self, job_id: int, attempt: int, now: datetime) -> datetime:
+        """Record that the session is idle without a result and return when it was first seen so: `now` unless an earlier
+        tick already recorded it. Raises JobsUnavailable."""
+
+    @abstractmethod
+    async def busy(self, job_id: int, attempt: int) -> bool:
+        """Forget that the session was idle, because it works again. Raises JobsUnavailable."""
+
+    @abstractmethod
+    async def nudged(self, job_id: int, attempt: int) -> bool:
+        """Record that the session was prompted to finish; False when it already was or the job is not live at
+        `attempt`. Raises JobsUnavailable."""
+
+    @abstractmethod
     async def state(self, job_id: int, attempt: int, state: Literal["running", "blocked", "waiting"]) -> bool:
         """Move a Claude Code job between `running` and `blocked` (from `starting`, to `running`), or from `starting` to
         `waiting` when the person's machine did not answer. Raises JobsUnavailable."""
@@ -152,6 +166,15 @@ class NullBenchJobs(BenchJobs):
         raise JobsUnavailable("bench jobs are not wired")
 
     async def prompted(self, job_id: int, attempt: int) -> bool:
+        raise JobsUnavailable("bench jobs are not wired")
+
+    async def idle(self, job_id: int, attempt: int, now: datetime) -> datetime:
+        raise JobsUnavailable("bench jobs are not wired")
+
+    async def busy(self, job_id: int, attempt: int) -> bool:
+        raise JobsUnavailable("bench jobs are not wired")
+
+    async def nudged(self, job_id: int, attempt: int) -> bool:
         raise JobsUnavailable("bench jobs are not wired")
 
     async def state(self, job_id: int, attempt: int, state: Literal["running", "blocked", "waiting"]) -> bool:
