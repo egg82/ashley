@@ -65,8 +65,8 @@ def test_a_person_sets_the_controls_and_the_kiosk_reads_them_in_order(client: Te
     assert [(c["name"], c["entity_id"]) for c in saved.json()["device_controls"]] == [
         ("porch-off", "light.zq_porch"), ("hall-light", "light.zq_hall")]
     assert client.get(f"/api/devices/{mine}/controls").json() == saved.json()
-    assert kiosk_controls(client, "tok-a") == [{"name": "porch-off", "label": "Porch off"},
-                                               {"name": "hall-light", "label": "Hall light"}]
+    assert kiosk_controls(client, "tok-a") == [{"name": "porch-off", "label": "Porch off", "on": None},
+                                               {"name": "hall-light", "label": "Hall light", "on": None}]
 
 
 def test_a_light_the_catalogue_does_not_have_is_refused_and_nothing_is_stored(client: TestClient, db_url: str,
@@ -161,7 +161,6 @@ def toggling(db_url: str, people: People, house: MemoryHouse) -> Generator[TestC
         yield c
 
 
-@pytest.mark.xfail(strict=True, reason="light.toggle is not an action yet")
 def test_a_light_toggle_is_stored_and_a_scene_cannot_take_it(toggling: TestClient, db_url: str, people: People) -> None:
     mine = device(db_url, people.home, "tok-a")
     saved = put(toggling, mine, TOGGLE_HALL)
@@ -171,7 +170,6 @@ def test_a_light_toggle_is_stored_and_a_scene_cannot_take_it(toggling: TestClien
     assert put(toggling, mine, night).status_code == 422
 
 
-@pytest.mark.xfail(strict=True, reason="a toggle's button is not told whether its light is on yet")
 def test_the_kiosk_reads_whether_a_toggles_light_is_on_and_says_nothing_otherwise(toggling: TestClient, db_url: str,
                                                                                   people: People,
                                                                                   house: MemoryHouse) -> None:
@@ -179,11 +177,12 @@ def test_the_kiosk_reads_whether_a_toggles_light_is_on_and_says_nothing_otherwis
     assert put(toggling, mine, TOGGLE_HALL, TOGGLE_PORCH, PORCH).status_code == 200
     assert [(c["name"], c["on"]) for c in kiosk_controls(toggling, "tok-a")] == [
         ("hall", False), ("porch", True), ("porch-off", None)]
+    house.things[0] = state("light.zq_hall", "Hall", "unavailable")
+    assert [c["on"] for c in kiosk_controls(toggling, "tok-a")] == [None, True, None]
     house.down = True
     assert [c["on"] for c in kiosk_controls(toggling, "tok-a")] == [None, None, None]
 
 
-@pytest.mark.xfail(strict=True, reason="light.toggle is not an action yet")
 def test_pressing_a_toggle_runs_light_toggle_on_its_light_through_the_house(toggling: TestClient, db_url: str,
                                                                             people: People, house: MemoryHouse) -> None:
     mine = device(db_url, people.home, "tok-a")

@@ -160,7 +160,7 @@ def test_k19_a_press_reads_the_controls_piece_a_name_in_it_runs_house_do_with_it
     device, token = app.tablet()
     app.put_controls(device, 0, HALL, PORCH)
     assert app.kiosk("/api/kiosk/controls", token).json() == {"controls": [
-        {"name": "hall-light", "label": "Hall light"}, {"name": "porch-off", "label": "Porch off"}]}
+        {"name": "hall-light", "label": "Hall light", "on": None}, {"name": "porch-off", "label": "Porch off", "on": None}]}
     got = app.kiosk("/api/kiosk/controls/hall-light", token, "POST")
     assert got.status_code == 200 and got.json() == {"done": True}
     assert performed(app) == [("light.turn_on", ("light.zq_hall",))]

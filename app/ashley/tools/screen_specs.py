@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from ..inference.model import ToolSpec
 from ..workshop.model import SIZES
 from ..workshop.rules import Rules
+from ..workshop.screen_controls import ACTIONS
 
 INSTRUCTIONS = (
     "You arrange the touch screen in the hall, as you arrange a bench: screen_read shows its pieces in order, each with a "
@@ -27,7 +28,7 @@ _BUTTON: Mapping[str, object] = {
     "type": "object",
     "properties": {"id": {"type": "string", "description": "the button's key when it already has one; left out for a new button"},
                    "label": {"type": "string", "description": "what the button says, 1 to 40 characters"},
-                   "action": {"type": "string", "enum": ["light.turn_on", "light.turn_off", "scene.turn_on"]},
+                   "action": {"type": "string", "enum": list(ACTIONS)},
                    "entity_id": {"type": "string", "description": "the light or scene, as the house calls it"}},
     "required": ["label", "action", "entity_id"]}
 

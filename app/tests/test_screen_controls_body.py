@@ -2,7 +2,6 @@
 
 import json
 
-import pytest
 from ashley.channels.screen_args import buttons_of
 from ashley.tools.screen_specs import specs
 from ashley.workshop.rules import load_screen
@@ -20,12 +19,10 @@ def test_a_button_with_an_empty_entity_id_is_not_well_formed() -> None:
     assert not well_formed(json.dumps([{**ENTRY, "entity_id": ""}]))
 
 
-@pytest.mark.xfail(strict=True, reason="light.toggle is not an action yet")
 def test_a_toggle_button_is_well_formed() -> None:
     assert well_formed(json.dumps([{**ENTRY, "action": "light.toggle"}]))
 
 
-@pytest.mark.xfail(strict=True, reason="light.toggle is not an action yet")
 def test_she_may_ask_for_a_toggle_and_her_tool_names_it() -> None:
     rules = load_screen()
     _, controls = buttons_of({"buttons": [{"label": "Hall", "action": "light.toggle", "entity_id": "light.a"}],

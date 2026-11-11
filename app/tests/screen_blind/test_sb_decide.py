@@ -34,7 +34,7 @@ ENTRY = {"id": "d", "label": "A", "action": "light.turn_on", "entity_id": "light
 BAD_BODIES = [
     "not json", "{}", "[1]", "", json.dumps([{k: v for k, v in ENTRY.items() if k != "entity_id"}]),
     json.dumps([{**ENTRY, "id": f"b{i}"} for i in range(13)]), json.dumps([ENTRY, ENTRY]),
-    json.dumps([{**ENTRY, "action": "light.toggle"}]), json.dumps([{**ENTRY, "label": "A" * 41}]),
+    json.dumps([{**ENTRY, "action": "light.dim"}]), json.dumps([{**ENTRY, "label": "A" * 41}]),
     json.dumps([{**ENTRY, "label": "   "}]), json.dumps([{**ENTRY, "id": "Bad_Id"}]), json.dumps([{**ENTRY, "id": "d" * 41}])]
 
 

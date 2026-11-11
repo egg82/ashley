@@ -18,7 +18,7 @@ export function draftOf(controls: DeviceControl[]): Row[] {
 
 export function added(rows: Row[], first: CatalogueEntityInfo | undefined): Row[] {
   if (rows.length >= MOST || !first) return rows;
-  return [...rows, { name: null, label: first.name.slice(0, LABEL_MOST), action: 'light.turn_on', entity_id: first.entity_id }];
+  return [...rows, { name: null, label: first.name.slice(0, LABEL_MOST), action: 'light.toggle', entity_id: first.entity_id }];
 }
 
 export function changed(rows: Row[], at: number, patch: Partial<Row>): Row[] {
@@ -43,10 +43,10 @@ export function complete(rows: Row[]): boolean {
   return rows.every((r) => r.label.trim().length >= 1 && r.label.trim().length <= LABEL_MOST && r.entity_id !== '');
 }
 
-/** The action that suits `entityId`'s domain: a scene can only be turned on, a light keeps an on or off already chosen. */
+/** The action that suits `entityId`'s domain: a scene can only be turned on, a light keeps the action already chosen, and takes toggle from a scene. */
 export function actionFor(entityId: string, action: Row['action']): Row['action'] {
   if (entityId.startsWith('scene.')) return 'scene.turn_on';
-  return action === 'scene.turn_on' ? 'light.turn_on' : action;
+  return action === 'scene.turn_on' ? 'light.toggle' : action;
 }
 
 /** What the picker calls a light or scene, so a person can tell them apart. */

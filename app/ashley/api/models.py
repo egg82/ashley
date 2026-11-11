@@ -247,10 +247,12 @@ class KioskGlance(BaseModel):
 
 
 class KioskControl(BaseModel):
-    """One touch control: `name` is its stable key, `label` what its button says."""
+    """One touch control: `name` is its stable key, `label` what its button says. `on` is whether the light of a toggle
+    is on now; null for any other control, and for a toggle whose light the house could not say."""
 
     name: str
     label: str
+    on: bool | None
 
 
 class KioskControls(BaseModel):

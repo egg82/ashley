@@ -1,5 +1,6 @@
 // Touch controls: one big button each, carried out by her tools. A press shows running, then done or failed for a
-// moment; none set reads as such.
+// moment; none set reads as such. A button that toggles a light says whether it is on, or nothing when the house
+// could not say.
 import { controls, controlStates, press, type ControlState } from './state';
 
 const SHOWN: Record<ControlState, string> = { running: '…', done: 'Done', failed: "Didn't work", busy: 'Too many, wait' };
@@ -14,16 +15,19 @@ export function Controls() {
       <div class="k-grid">
         {all.map((c) => {
           const state = states[c.name];
+          const lit = c.on === null ? null : c.on ? 'On' : 'Off';
           return (
             <button
               key={c.name}
               type="button"
-              class={`k-control${state ? ` ${state}` : ''}`}
+              class={`k-control${state ? ` ${state}` : ''}${c.on ? ' lit' : ''}`}
+              aria-pressed={c.on ?? undefined}
               disabled={state === 'running'}
               onClick={() => void press(c.name)}
             >
               <span>{c.label}</span>
-              {state && <span class="k-control-state" role="status">{SHOWN[state]}</span>}
+              {state ? <span class="k-control-state" role="status">{SHOWN[state]}</span>
+                : lit && <span class="k-control-state">{lit}</span>}
             </button>
           );
         })}

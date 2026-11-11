@@ -1395,8 +1395,8 @@ export interface paths {
         };
         /**
          * Kiosk Controls
-         * @description 200 `KioskControls`, the buttons of the device's screen's controls piece, read now; 401 `unauthorized`; 503
-         *     `unavailable`.
+         * @description 200 `KioskControls`, the buttons of the device's screen's controls piece, read now, each toggle with whether its
+         *     light is on; 401 `unauthorized`; 503 `unavailable`.
          */
         get: operations["kiosk_controls"];
         put?: never;
@@ -2659,7 +2659,7 @@ export interface components {
         /**
          * DeviceControl
          * @description One control as stored: `name` its stable key on the device, `label` what its button says, `entity_id` the light or
-         *     scene the house calls it, which `action` turns on or off (a scene only on).
+         *     scene the house calls it, which `action` turns on, off or toggles (a scene only on).
          */
         DeviceControl: {
             /** Name */
@@ -2670,7 +2670,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "light.turn_on" | "light.turn_off" | "scene.turn_on";
+            action: "light.turn_on" | "light.turn_off" | "light.toggle" | "scene.turn_on";
             /** Entity Id */
             entity_id: string;
         };
@@ -2700,7 +2700,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "light.turn_on" | "light.turn_off" | "scene.turn_on";
+            action: "light.turn_on" | "light.turn_off" | "light.toggle" | "scene.turn_on";
             /** Entity Id */
             entity_id: string;
         };
@@ -3106,13 +3106,16 @@ export interface components {
         };
         /**
          * KioskControl
-         * @description One touch control: `name` is its stable key, `label` what its button says.
+         * @description One touch control: `name` is its stable key, `label` what its button says. `on` is whether the light of a toggle
+         *     is on now; null for any other control, and for a toggle whose light the house could not say.
          */
         KioskControl: {
             /** Name */
             name: string;
             /** Label */
             label: string;
+            /** On */
+            on: boolean | null;
         };
         /**
          * KioskControlDone
