@@ -1,6 +1,6 @@
 # Engineering
 
-How the code is built and shipped. Design rules live in `decisions.md`; the method behind these rules is the
+How the code is built and shipped. Design rules live in `decisions/`, indexed by `decisions.md`; the method behind these rules is the
 `agentic-engineering` skill.
 
 ## Deploy
@@ -77,6 +77,8 @@ file moves its `KEPT` entry with it, read from CI's "stale" and "over" output (p
 `test_env_tiers.py` fails when `settings.py` reads an environment variable that is not listed with its tier, or a listed one it no longer reads: whether a value is env, a connection or a setting is decided before it is added (`decisions.md`, "Env var, file, connection or setting").
 `test_unique_helpers.py` fails when two non-test modules on pytest's `sys.path` share a basename (one session imports
 only the first): name a test helper `<suite>_support.py` after its suite.
+`test_decision_citations.py` fails when a decision title quoted after a mention of `decisions.md` is not an index entry
+and starts no single heading or bold lead in `docs/decisions/`, or when the index and those files' `##` headings disagree.
 
 Each test gets a CPU ceiling in CI (`tests/time_gate.py`, judged only where `TIME_GATE=1`, since a busy workstation's
 load alone pushes fast tests over); `TIME_GATE=1 python -m pytest -q` lists the ones over 1 s locally. The ceiling is
@@ -138,7 +140,9 @@ alone, never her rules.
   failure that proves it can go red.
 - **Small files, each doing one thing**, grouped in subdirectories. Functions stay under 80 lines.
 - **Comments only where an implementer needs them:** API surfaces carry their contract; implementation carries
-  only "this looks optimizable but isn't, because...". History goes in the commit and `decisions.md`.
+  only "this looks optimizable but isn't, because...". History goes in the commit and the decision files.
+- **The orchestrator edits the shared single-file docs** (`systems.md`, the decisions index, `open-work.md`,
+  `CLAUDE.md`, this file) from the doc deltas its writers report; a writer edits the decision file for its own system.
 - **A refactor goes in byte-identical first**; a fix found on the way is its own commit, with its own test.
 - **Tests come from a different agent than the code**, written blind from the interface and its contract.
 - **A pull request that touches her tools, persona or routes reports `python -m ashley.evals house` before and after** (`--json` to diff the two); it measures and never gates, and no write reaches the house.

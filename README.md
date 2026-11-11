@@ -141,7 +141,8 @@ docs/       design and engineering docs, listed below
 ## Docs
 
 - [`docs/systems.md`](docs/systems.md): each system, the question it answers, where it lives and who calls it.
-- [`docs/decisions.md`](docs/decisions.md): the design decisions, with what was rejected and why.
+- [`docs/decisions.md`](docs/decisions.md): the index of the design decisions, which live in `docs/decisions/`, one
+  file per system, with what was rejected and why.
 - [`docs/engineering.md`](docs/engineering.md): building, testing and shipping, and the gates CI enforces.
 - [`docs/open-work.md`](docs/open-work.md): what is planned and not built yet.
 
