@@ -17,7 +17,7 @@ SPAN = re.compile(r"`([^`\n]+)`")
 PATHLIKE = re.compile(r"[\w.\-]+(/[\w.\-]+)+/?|[\w\-]+\.(md|py|yaml|yml|json|sh|ts|tsx|mjs)")
 SYMBOL = re.compile(r"ashley(\.\w+)+")
 EXTERNAL = re.compile(r"[a-z][\w\-]*:(?!//)\S")
-FLOOR = 3
+FLOOR = 431
 
 
 def symbol_exists(dotted: str) -> bool:
