@@ -109,6 +109,7 @@ class ScriptedTranscriber(Transcriber):
     error: ProviderFailed | None = None
     read: int | None = None
     seen: list[bytes] = field(default_factory=list[bytes])
+    languages: list[str | None] = field(default_factory=list[str | None])
 
     @property
     def name(self) -> str:
@@ -118,7 +119,8 @@ class ScriptedTranscriber(Transcriber):
         return None
 
     async def transcribe(self, model: str, params: Any, format: AudioFormat, chunks: AsyncIterator[bytes],
-                         timeout_s: float) -> str:
+                         timeout_s: float, language: str | None = None) -> str:
+        self.languages.append(language)
         try:
             async for chunk in chunks:
                 self.seen.append(chunk)

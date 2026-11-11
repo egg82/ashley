@@ -29,6 +29,18 @@ def test_the_utterance_goes_over_in_order_and_the_transcript_comes_back() -> Non
     run(scenario())
 
 
+def test_a_language_given_per_call_replaces_the_routes_and_none_leaves_it() -> None:
+    async def scenario() -> None:
+        async with WyomingServer() as server:
+            provider = WyomingTranscriber("wyoming", server.uri)
+            await provider.transcribe("whisper", {"language": "en"}, FORMAT, heard().chunks, 5.0, "de")
+            await provider.transcribe("whisper", {"language": "en"}, FORMAT, heard().chunks, 5.0)
+            await provider.transcribe("whisper", {}, FORMAT, heard().chunks, 5.0)
+            assert [Transcribe.from_event(e).language for e in server.sent(Transcribe)] == ["de", "en", None]
+
+    run(scenario())
+
+
 def test_chunks_reach_the_server_while_the_person_is_still_talking() -> None:
     async def scenario() -> None:
         async with WyomingServer() as server:

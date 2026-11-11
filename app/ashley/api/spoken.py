@@ -54,7 +54,7 @@ async def spoken_limits() -> SpokenLimits:
 async def chat_transcript(signed_in: Speaking, request: Request) -> Transcript | JSONResponse:
     """200 `Transcript`; 401 `unauthorized`; 403 `forbidden`; 413 `too_large`; 415 `unsupported`; 503
     `unavailable`."""
-    return await _heard(request, {"person": signed_in.person.id})
+    return await _heard(request, signed_in.person.household_id, {"person": signed_in.person.id})
 
 
 @router.post("/api/kiosk/transcripts", response_model=Transcript, openapi_extra=_BODY, responses={
@@ -65,10 +65,10 @@ async def kiosk_transcript(device: KioskSpeaking, request: Request) -> Transcrip
     """200 `Transcript`; 401 `unauthorized`; 403 `forbidden`; 413 `too_large`; 415 `unsupported`; 429
     `rate_limited`; 503 `unavailable`."""
     await counted(device)
-    return await _heard(request, {"device": device.id})
+    return await _heard(request, device.household_id, {"device": device.id})
 
 
-async def _heard(request: Request, who: dict[str, int]) -> Transcript | JSONResponse:
+async def _heard(request: Request, household_id: int, who: dict[str, int]) -> Transcript | JSONResponse:
     started = time.perf_counter()
     size, audio_ms, outcome, words = 0, None, "unavailable", ""
     try:
@@ -76,7 +76,7 @@ async def _heard(request: Request, who: dict[str, int]) -> Transcript | JSONResp
         size = len(wav)
         pcm = spoken.pcm_of(wav, CAPS)
         audio_ms = spoken.FORMAT.duration_ms(len(pcm))
-        words = await spoken.words_in(pcm)
+        words = await spoken.words_in(pcm, household_id)
         outcome = "heard" if words else "empty"
         return Transcript(text=words)
     except (_TooLarge, spoken.TooLong):

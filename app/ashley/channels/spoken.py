@@ -14,6 +14,7 @@ from typing import Any
 from .. import services
 from ..inference.inference import Inference, InferenceUnavailable
 from ..inference.speech import AudioFormat, Heard
+from ..people.language import language_for
 
 FORMAT = AudioFormat()
 WAV_HEADER_BYTES = 44
@@ -89,12 +90,14 @@ async def _once(pcm: bytes) -> AsyncIterator[bytes]:
     yield pcm
 
 
-async def words_in(pcm: bytes) -> str:
-    """What was said in `pcm` (16 kHz 16-bit mono), empty when nothing was; no call is made for no audio. Raises
-    SpokenUnavailable."""
+async def words_in(pcm: bytes, household_id: int) -> str:
+    """What was said in `pcm` (16 kHz 16-bit mono) in the language of household `household_id`, empty when nothing was;
+    no call is made for no audio. Raises SpokenUnavailable."""
     if not pcm:
         return ""
+    language = await language_for(household_id)
     try:
-        return (await services.get(Inference).transcribe("transcribe", Heard(FORMAT, _once(pcm)))).text
+        return (await services.get(Inference).transcribe(
+            "transcribe", Heard(FORMAT, _once(pcm), language and language.code))).text
     except InferenceUnavailable as e:
         raise SpokenUnavailable() from e

@@ -19,6 +19,7 @@ from ashley.live.events import HerState
 from ashley.live.live import Live
 from ashley.inference.inference import Inference, InferenceUnavailable
 from contract.conversations_support import db_url as db_url, events, household
+from language_support import unwire, wire
 from live_support import FakeLive
 from contract.conversations_support import migrated_template as migrated_template, scalar
 from voice_support import FRAME, QUIET, SPEECH, FakeLink, FakeSpeaker, FakeSpeech, FakeTurnLoop, pipeline
@@ -35,6 +36,7 @@ def speech_unwired() -> Generator[None]:
     yield
     services.unregister(Inference)
     services.unregister(Clips)
+    unwire()
 
 
 def carry(url: str, satellite: Satellite, speech: FakeSpeech, loop: FakeTurnLoop, speaker: FakeSpeaker | None = None,
@@ -82,6 +84,20 @@ def test_a_wake_is_answered_in_home_assistants_event_order(db_url: str) -> None:
     stored = scalar(db_url, "SELECT body FROM voice_clips WHERE token_sha256 = %s AND device_id = %s",
                     (hashlib.sha256(token.encode()).digest(), satellite.device.id))
     assert stored == "Mowchi is asleep."
+
+
+def test_the_transcript_is_asked_for_in_the_language_of_the_devices_household(db_url: str) -> None:
+    home = household(db_url)
+    wire(home, "de-DE")
+    speech = FakeSpeech()
+    carry(db_url, satellite_row(db_url, home), speech, FakeTurnLoop())
+    assert speech.languages == ["de"]
+
+
+def test_a_household_that_cannot_say_leaves_the_language_to_the_route(db_url: str) -> None:
+    speech = FakeSpeech()
+    carry(db_url, satellite_row(db_url, household(db_url)), speech, FakeTurnLoop())
+    assert speech.languages == [None]
 
 
 def test_she_is_asked_on_the_devices_thread_as_a_shared_spoken_channel(db_url: str) -> None:

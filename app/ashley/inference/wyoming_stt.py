@@ -2,7 +2,7 @@
 connection, sends `Transcribe`, `AudioStart`, one `AudioChunk` per chunk as it arrives and `AudioStop`, and reads the
 `Transcript`, so the server decodes while the person is still talking.
 
-Route `model` is the Wyoming model name sent in `Transcribe`. Params: `language` (non-empty string, optional).
+Route `model` is the Wyoming model name sent in `Transcribe`. Params: `language` (non-empty string, optional; a language given per call replaces it).
 `timeout_s` bounds connecting, each write and the wait for the transcript after `AudioStop`. A refused or dropped
 connection, a timeout, or a server that closes without a transcript fails `unavailable`; anything else `error`."""
 
@@ -38,8 +38,8 @@ class WyomingTranscriber(Transcriber):
             raise ValueError("language must be a non-empty string")
 
     async def transcribe(self, model: str, params: Mapping[str, object], format: AudioFormat,
-                         chunks: AsyncIterator[bytes], timeout_s: float) -> str:
-        language = params.get("language")
+                         chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
+        language = language or params.get("language")
         client = AsyncClient.from_uri(self._uri, connect_timeout=timeout_s, read_timeout=timeout_s)
         try:
             async with client:

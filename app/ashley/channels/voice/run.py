@@ -15,6 +15,8 @@ or unavailable, `tts-failed` when the clip could not be stored. Once there is a 
 (`Inference.warm`) while the reply is made, so the clip's fetch finds a connection open. Before she is asked, the
 voice's speaker step (`identify.Identify`) names who spoke, as the Inbound's `heard_as`, or no one.
 
+The transcript is asked for in the language of the device's household (`people.language`), the route's own when it has none.
+
 Open screens are told through `Mark`: listening to the transcript, speaking from the reply's hand-over.
 
 Logs `voice.run` once per run: device, outcome (`ok`, `room_speaker`, `empty`, `pending`, `aborted`, the failure's
@@ -33,6 +35,7 @@ from aioesphomeapi.model import VoiceAssistantEventType as Event
 from ... import logs, services
 from ...inference.inference import Inference, InferenceUnavailable
 from ...inference.speech import AudioFormat, Heard, Transcript
+from ...people.language import language_for
 from ..model import Inbound, Outbound, Satellite
 from ..respond import RespondRefused, RespondUnavailable
 from .clips import Clips, ClipsUnavailable
@@ -114,7 +117,9 @@ class Run:
         self._send(Event.VOICE_ASSISTANT_RUN_START)
         self._send(Event.VOICE_ASSISTANT_STT_START)
         try:
-            transcript = await services.get(Inference).transcribe("transcribe", Heard(AudioFormat(), self._listen()))
+            language = await language_for(self._satellite.device.household_id)
+            transcript = await services.get(Inference).transcribe(
+                "transcribe", Heard(AudioFormat(), self._listen(), language and language.code))
         except InferenceUnavailable:
             return self._fail("stt-provider-unavailable", "stt_unavailable")
         self._stt_done(transcript)
