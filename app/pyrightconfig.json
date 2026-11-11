@@ -2,7 +2,7 @@
   "include": ["ashley", "tools", "tests", "../bridge/herdr", "../deploy/mail-bridge"],
   "exclude": ["**/__pycache__", "web"],
   "pythonVersion": "3.13",
-  "extraPaths": ["tools", "tests", "tests/wakes_blind", "tests/bench_jobs_blind", "tests/herdr_bridge_blind", "../bridge/herdr", "../deploy/mail-bridge"],
+  "extraPaths": ["tools", "tests", "tests/wakes_blind", "tests/bench_jobs_blind", "tests/admin_role_blind", "tests/herdr_bridge_blind", "../bridge/herdr", "../deploy/mail-bridge"],
   "typeCheckingMode": "strict",
   "strict": ["ashley", "tools", "tests", "../bridge/herdr", "../deploy/mail-bridge"],
   "enableTypeIgnoreComments": false,
