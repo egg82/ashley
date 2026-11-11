@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-Read `README.md`, then `docs/decisions.md`, before designing anything. The queue is `docs/open-work.md`.
+Read `README.md`, then the decisions index `docs/decisions.md` and the files in `docs/decisions/` for the systems
+a change touches, before designing anything. The queue is `docs/open-work.md`.
 How code is built and shipped: `docs/engineering.md`. The inventory of systems: `docs/systems.md`.
 **Load the `agentic-engineering` skill before changing anything here**, and name it in every writer's brief.
 
