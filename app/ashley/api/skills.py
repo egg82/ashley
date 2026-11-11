@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from .. import services
 from ..skills.skills import Edited, SkillRefused, Skills, SkillsUnavailable
+from ..text import NoNul
 from ..workshop.workshop import BenchNotFound, Workshop, WorkshopUnavailable
 from .benches import BENCH_ERRORS, WRITE_ERRORS, not_found, owner_of, summary, unavailable
 from .models import ErrorResponse
@@ -78,14 +79,14 @@ async def set_work(signed_in: Person, bench_id: int, body: WorkRequest) -> Bench
 
 @router.get("/api/skills/{kind}", response_model=SkillDetail, responses={
     401: WRITE_ERRORS[401], 404: _REFUSED[404], 422: BENCH_ERRORS[422], 503: WRITE_ERRORS[503]})
-async def read_skill(signed_in: Person, kind: str) -> SkillDetail | JSONResponse:
+async def read_skill(signed_in: Person, kind: NoNul) -> SkillDetail | JSONResponse:
     """200 `SkillDetail`; 401 `unauthorized`; 404 `not_found` for an unknown kind or one with no skill yet; 503
     `unavailable`."""
     return await _after(signed_in.person.household_id, kind, None)
 
 
 @router.put("/api/skills/{kind}/pin", response_model=SkillDetail, responses=_REFUSED)
-async def pin_skill(signed_in: Person, kind: str, body: PinRequest) -> SkillDetail | JSONResponse:
+async def pin_skill(signed_in: Person, kind: NoNul, body: PinRequest) -> SkillDetail | JSONResponse:
     """200 `SkillDetail`, pinned or not (her edits of a pinned skill wait for approval); 401; 403; 404 `not_found`
     when the kind has no skill to show; 503."""
     household = signed_in.person.household_id
@@ -93,7 +94,7 @@ async def pin_skill(signed_in: Person, kind: str, body: PinRequest) -> SkillDeta
 
 
 @router.post("/api/skills/{kind}/rollback", response_model=SkillDetail, responses=_REFUSED)
-async def rollback_skill(signed_in: Person, kind: str, body: RollbackRequest) -> SkillDetail | JSONResponse:
+async def rollback_skill(signed_in: Person, kind: NoNul, body: RollbackRequest) -> SkillDetail | JSONResponse:
     """200 `SkillDetail` with the earlier text back as a new version; 401; 403; 404; 409 `SkillRefusal`
     (`no_such_version`, `unchanged`); 503."""
     household = signed_in.person.household_id
@@ -102,7 +103,7 @@ async def rollback_skill(signed_in: Person, kind: str, body: RollbackRequest) ->
 
 
 @router.post("/api/skills/{kind}/proposals/{version}/approve", response_model=SkillDetail, responses=_REFUSED)
-async def approve_proposal(signed_in: Person, kind: str, version: int) -> SkillDetail | JSONResponse:
+async def approve_proposal(signed_in: Person, kind: NoNul, version: int) -> SkillDetail | JSONResponse:
     """200 `SkillDetail` with her waiting edit live; 401; 403; 404; 409 `SkillRefusal` (`not_proposed`, or `stale`
     when the skill moved on since she proposed it); 503."""
     household = signed_in.person.household_id
@@ -110,7 +111,7 @@ async def approve_proposal(signed_in: Person, kind: str, version: int) -> SkillD
 
 
 @router.post("/api/skills/{kind}/proposals/{version}/decline", response_model=SkillDetail, responses=_REFUSED)
-async def decline_proposal(signed_in: Person, kind: str, version: int) -> SkillDetail | JSONResponse:
+async def decline_proposal(signed_in: Person, kind: NoNul, version: int) -> SkillDetail | JSONResponse:
     """200 `SkillDetail` with her waiting edit declined; 401; 403; 404; 409 `SkillRefusal` (`not_proposed`); 503."""
     household = signed_in.person.household_id
     return await _after(household, kind, services.get(Skills).decide(household, kind, version, False))

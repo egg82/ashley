@@ -21,6 +21,7 @@ from ..connections.kinds import ConnectionKinds
 from ..connections.model import Connection, Holder, Resource
 from ..connections.resource_sync import sync
 from ..connections.resources import ConnectionResources, HeldByHousehold
+from ..text import NoNul
 from .connection_models import ConnectionResource, ResourceShare
 from .models import ErrorResponse
 from .person import Person
@@ -102,7 +103,7 @@ def _lists(connection: Connection) -> bool:
 
 @router.patch("/api/connections/{connection_id}/resources/{ref:path}", response_model=ConnectionResource,
               responses=_SHARE)
-async def share(signed_in: Person, connection_id: int, ref: str, body: ResourceShare) -> ConnectionResource | JSONResponse:
+async def share(signed_in: Person, connection_id: int, ref: NoNul, body: ResourceShare) -> ConnectionResource | JSONResponse:
     """200 `ConnectionResource`, shared with the household or kept; 401 `unauthorized`; 403 `forbidden`; 404
     `not_found`; 409 `held_by_household`; 503 `unavailable`."""
     person = signed_in.person

@@ -18,6 +18,7 @@ from .. import logs, services
 from ..channels.lexicon import Refusal, refusal
 from ..channels.lexicons import MAX_ENTRIES, Entry, LexiconFull, Lexicons, LexiconUnavailable
 from ..people.people import People, PeopleUnavailable
+from ..text import NoNul
 from .lexicon_models import LexiconRefused, LexiconWord, LexiconWordRequest, LexiconWords
 from .models import ErrorResponse, Person as WirePerson
 from .person import Person
@@ -66,7 +67,7 @@ async def read_lexicon(signed_in: Person) -> LexiconWords | JSONResponse:
 
 
 @router.put("/api/lexicon/{real}", response_model=LexiconWord, responses=_WRITE)
-async def put_word(signed_in: Person, real: str, body: LexiconWordRequest) -> LexiconWord | JSONResponse:
+async def put_word(signed_in: Person, real: NoNul, body: LexiconWordRequest) -> LexiconWord | JSONResponse:
     """200 `LexiconWord` as stored; 401 `unauthorized`; 403 `forbidden`; 422 `LexiconRefused`; 503 `unavailable`."""
     person = signed_in.person
     why = refusal(real, body.spoken)
@@ -82,7 +83,7 @@ async def put_word(signed_in: Person, real: str, body: LexiconWordRequest) -> Le
 
 
 @router.delete("/api/lexicon/{real}", status_code=204, response_class=Response, responses=_DELETE)
-async def delete_word(signed_in: Person, real: str) -> Response:
+async def delete_word(signed_in: Person, real: NoNul) -> Response:
     """204, removed; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`."""
     person = signed_in.person
     try:
