@@ -4410,6 +4410,29 @@ breaking her.
 - **Rejected:** a gateway such as LiteLLM, which adds a service to run on both sites for what two SDKs and a
   list already do; falling through to the next route on a refusal; and one prompt for every provider.
 
+## Env var, file, connection or setting
+
+**A value lives in the tier its changer and its failure name, not where it was easiest to read.** Four tiers:
+
+- **Env var**: what the process needs before it can reach its database, or what names this deployment. The database
+  URL, `CONNECTIONS_KEY`, the sign-in client, `PUBLIC_URL`, infrastructure placement (namespaces, runtime class, images
+  pinned by digest, in-cluster URLs) and etcd and site. A wrong value means she cannot start, or starts as the wrong
+  deployment.
+- **Shipped data file** (`routes.json`, `runs.json`), with an operator's file laid over it, its path named in env
+  (`ROUTES_FILE`). Defaults are versioned with the code.
+- **Connection**: the credentials and addresses of outside services, per household or for the deployment (held by the
+  first household), sealed and rotated from the web. An env value may seed a first row, as the provider keys and Home
+  Assistant do, and then the row wins.
+- **In-app setting**: a household's own choices, edited by a person through the web route and never by her tools.
+
+`app/tests/test_env_tiers.py` lists every variable `from_env` reads with its tier and a reason. A new read fails until it
+is listed, and a listed name nothing reads fails too. A name ending `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must seed a registered connection kind, be a named root secret that cannot live in the database (with its reason), or be recorded debt. The gate cannot judge a tier; it makes the question get asked. The
+variables that fail the rule today are marked "to move" there and queued under open-work item 42.
+
+- **Rejected:** a gate that forbids any new env var. Infrastructure placement is legitimately env, and a ban would push
+  deployment values into connections that have no seal key yet.
+- **Rejected:** a tier for "env-only, optional". It is what an outside service's address becomes when nobody decides.
+
 ## A model provider's key is a connection
 
 A deployment's keys for Anthropic, OpenAI, Gemini and ElevenLabs are connections, so whoever runs the published image

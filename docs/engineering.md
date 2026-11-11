@@ -74,6 +74,7 @@ Adding a host to that list is only for a public service.
 `test_household_names.py` fails when any tracked file names the household (its people, pets, network, towns, hosts);
 the names are the CI secret `ASHLEY_HOUSEHOLD_NAMES`, so it skips everywhere but CI. Moving a held string to another
 file moves its `KEPT` entry with it, read from CI's "stale" and "over" output (paths and counts, never the names).
+`test_env_tiers.py` fails when `settings.py` reads an environment variable that is not listed with its tier, or a listed one it no longer reads: whether a value is env, a connection or a setting is decided before it is added (`decisions.md`, "Env var, file, connection or setting").
 `test_unique_helpers.py` fails when two non-test modules on pytest's `sys.path` share a basename (one session imports
 only the first): name a test helper `<suite>_support.py` after its suite.
 
