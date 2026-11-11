@@ -11,6 +11,7 @@ import './signin/signin.css';
 import './rooms/rooms.css';
 import './rooms/memory/memory.css';
 import './rooms/devices/devices.css';
+import './rooms/household/household.css';
 import './rooms/connections/connections.css';
 import './rooms/spend/spend.css';
 import './rooms/her/chat.css';

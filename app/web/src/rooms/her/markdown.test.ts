@@ -26,7 +26,7 @@ test('an https link keeps its target', () => {
 });
 
 test("a room's own path is a link that stays in the app", () => {
-  for (const path of ['/', '/workshop', '/workshop/12', '/memory', '/devices', '/connections']) {
+  for (const path of ['/', '/workshop', '/workshop/12', '/memory', '/household', '/devices', '/connections']) {
     assert.deepEqual(kids(`[x](${path})`), [{ kind: 'link', href: path, app: true, children: [{ kind: 'text', value: 'x' }] }]);
   }
 });

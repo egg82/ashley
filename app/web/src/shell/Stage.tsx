@@ -5,6 +5,7 @@ import { useLayoutEffect, useRef } from 'preact/hooks';
 import { ConnectionsRoom } from '../rooms/connections/ConnectionsRoom';
 import { DevicesRoom } from '../rooms/devices/DevicesRoom';
 import { HerRoom } from '../rooms/her/HerRoom';
+import { HouseholdRoom } from '../rooms/household/HouseholdRoom';
 import { MemoryRoom } from '../rooms/memory/MemoryRoom';
 import { SpendRoom } from '../rooms/spend/SpendRoom';
 import { WorkshopRoom } from '../rooms/workshop/WorkshopRoom';
@@ -18,6 +19,7 @@ const VIEWS: Record<RoomId, { view: ComponentType; label: string }> = {
   her: { view: HerRoom, label: 'Ashley' },
   memory: { view: MemoryRoom, label: 'Memory' },
   workshop: { view: WorkshopRoom, label: 'Workshop' },
+  household: { view: HouseholdRoom, label: 'Household' },
   devices: { view: DevicesRoom, label: 'Devices' },
   connections: { view: ConnectionsRoom, label: 'Connections' },
   spend: { view: SpendRoom, label: 'Usage' },

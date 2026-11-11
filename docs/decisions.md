@@ -1629,7 +1629,7 @@ treats the symptom.
   language per utterance, since the household has already said which it speaks.
 
 - **The persona's taste is the household's; its contract ships.** The shipped register, wit and examples are one
-  household's taste, so a household replaces them from the Devices room's persona panel. Which sections are taste is
+  household's taste, so a household replaces them from the Household room's persona panel. Which sections are taste is
   an explicit field on each section's marker line in `app/ashley/persona/ashley.md`
   (`<!-- section id=wit override=allowed label="…" -->`, `ashley.persona.sections`), never the words of a heading.
   Everything `locked` stays the shipped text: her reply's fields and their rules, the rules that hold whatever anyone
@@ -2753,7 +2753,7 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
 - **The pronunciation lexicon applies to every spoken reply**, in `render`, so a spoken device on `POST /api/messages`
   gets the same spellings as a satellite.
 - **The pronunciation words are the household's.** A small table beside the household (`household_lexicon`, one row per
-  household and real spelling), edited by any person of it in the Devices room, read by the household a reply renders for
+  household and real spelling), edited by any person of it in the Household room, read by the household a reply renders for
   on every spoken render and held nowhere between renders, so an edit applies to the next reply and no household hears
   another's. A render with no household, a household with none and words that cannot be read are all an unchanged reply,
   logged `lexicon.unreadable` for the last. A new household starts with none. A word is one word-like token with a spelling, each at most 64 characters, and a household holds
