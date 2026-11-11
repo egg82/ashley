@@ -141,3 +141,8 @@ Changes reach `main` through pull requests, and the `ci-ok` check must pass. It 
 needs Postgres 18 with pgvector and an etcd; [`docs/engineering.md`](docs/engineering.md) has the commands),
 pyright, the client checks and the image builds. Much of the code is written with Claude Code, so CI also holds its shape: limits on
 function and file size, an allow-list of which packages may import which, and a time limit per test.
+
+## License
+
+AGPL-3.0 (see [`LICENSE`](LICENSE)). Run it, change it and share it; anyone who distributes or serves a modified copy
+publishes its source under the same licence, with the copyright notices kept.
