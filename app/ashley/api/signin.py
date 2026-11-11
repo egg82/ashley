@@ -23,7 +23,7 @@ from ..signin.identity import SYSTEM, sub_prefix
 from ..signin.model import Identity, Pending
 from ..signin.oidc import Oidc, OidcUnavailable, SignInFailed, pkce
 from ..signin.sessions import Sessions, SessionsUnavailable
-from .models import ErrorResponse, MeResponse, Person as PersonModel
+from .models import ErrorResponse, MeResponse, wire_person
 from .person import SESSION_COOKIE, SIGNIN_COOKIE, CrossSite, Person, clear_cookie, same_site, set_cookie
 
 router = APIRouter()
@@ -152,5 +152,4 @@ async def sign_out(request: Request) -> Response:
     401: {"model": ErrorResponse, "description": "`unauthorized`: no live session"}, **_UNAVAILABLE})
 async def get_me(signed_in: Person) -> MeResponse:
     """200 `MeResponse`; 401 `unauthorized`; 503 `unavailable`."""
-    person = signed_in.person
-    return MeResponse(person=PersonModel(id=person.id, household_id=person.household_id, name=person.name))
+    return MeResponse(person=wire_person(signed_in.person))

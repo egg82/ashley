@@ -194,7 +194,7 @@ def test_a_household_member_makes_a_household_fact_theirs_and_it_leaves_the_othe
     made = move(client, house, "mine")
     assert made.status_code == 201
     new = MemoryFact.model_validate(made.json())
-    assert (new.about, new.owner, new.text) == (None, PersonModel(id=home.ella, household_id=home.id, name="Ella"),
+    assert (new.about, new.owner, new.text) == (None, PersonModel(id=home.ella, household_id=home.id, name="Ella", admin=False),
                                                 "Mochi is fed at six")
     assert scalar(home.url, "SELECT owner_id FROM facts WHERE id = %s", (new.id,)) == home.ella
     assert move(client, new.id, "mine").status_code == 403

@@ -30,12 +30,14 @@ _KEY_SET = TypeAdapter(KeySetSerialization)
 @dataclass(frozen=True)
 class Client:
     """The confidential client the provider knows: `issuer` as its discovery document names it (a trailing slash is
-    ignored), and `redirect_uri` exactly as registered there, since the provider matches it strictly."""
+    ignored), and `redirect_uri` exactly as registered there, since the provider matches it strictly. `admin_group`, when
+    set, is the group in the ID token's `groups` claim whose members are admins (`Identity.admin_group`)."""
 
     issuer: str
     client_id: str
     client_secret: str
     redirect_uri: str
+    admin_group: str = ""
 
 
 def _username(claims: dict[str, Any]) -> str:

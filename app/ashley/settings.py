@@ -39,7 +39,9 @@ class Settings:
     `oidc_issuer`, `oidc_client_id` and `oidc_client_secret` wire sign-in through OIDC, all three or none
     (ValueError); unset, the sign-in routes answer 503. It needs `public_url` (`https://ashley.example.com`), the
     origin people reach her at, which names the callback the provider returns to and the one origin a cookie-signed write
-    may come from (ValueError).
+    may come from (ValueError). `admin_group` names a group in the provider's `groups` claim whose members become admins
+    of the deployment at sign-in (the `groups` scope is asked for when it is set); empty, the first person to sign in
+    on a deployment with no admin becomes one.
     `discord_oauth_client_id` and `discord_oauth_client_secret` are the Discord application's OAuth2 client, through
     which a signed-in person links their own Discord account; both or neither (ValueError), and they need
     `public_url`, which names the redirect Discord returns to (ValueError). Unset, linking answers 503.
@@ -121,6 +123,7 @@ class Settings:
     oidc_issuer: str = ""
     oidc_client_id: str = ""
     oidc_client_secret: str = ""
+    admin_group: str = ""
     discord_oauth_client_id: str = ""
     discord_oauth_client_secret: str = ""
     google_oauth_client_id: str = ""
@@ -253,7 +256,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     esphome_noise_psk=env.get("ESPHOME_NOISE_PSK", ""),
                     discord_bot_token=env.get("DISCORD_BOT_TOKEN", ""),
                     oidc_issuer=env.get("OIDC_ISSUER", ""), oidc_client_id=env.get("OIDC_CLIENT_ID", ""),
-                    oidc_client_secret=env.get("OIDC_CLIENT_SECRET", ""),
+                    oidc_client_secret=env.get("OIDC_CLIENT_SECRET", ""), admin_group=env.get("ADMIN_GROUP", ""),
                     discord_oauth_client_id=env.get("DISCORD_OAUTH_CLIENT_ID", ""),
                     discord_oauth_client_secret=env.get("DISCORD_OAUTH_CLIENT_SECRET", ""),
                     google_oauth_client_id=env.get("GOOGLE_OAUTH_CLIENT_ID", ""),

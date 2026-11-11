@@ -676,9 +676,8 @@ talking with nothing guessed. She keeps no passwords of her own.
   (`app/tests/test_signin_dex.py`) as the second, so nothing in sign-in is Authentik-specific. The account's username is
   `preferred_username`, else `name`.
 - **Who may sign in is the IdM group `ashley_users`**, synced to the provider; the provider's application admits that
-  group only. There is no admin group: what belongs to one person (their memory, their Claude Code sessions) keys on
-  the person an account maps to. An `ashley_admins` group is for the day something needs a role several people
-  can hold.
+  group only. What belongs to one person (their memory, their Claude Code sessions) keys on the person an account
+  maps to; the one role several people hold is admin (below), which the provider's groups may grant.
 - **A device token works only from the LAN and the clusters.** Public traffic arrives only through the Cloudflare
   tunnel, and Cloudflare's edge sets `Cf-Connecting-IP` on what it forwards, which the gateway never does; so
   `POST /api/messages` answers a device token carrying that header with 401. A LAN client adding the header only locks
@@ -705,6 +704,39 @@ talking with nothing guessed. She keeps no passwords of her own.
   with no `Origin` its `Sec-Fetch-Site` must not name another site, and any body must be `application/json`. No CSRF
   token: every browser sends one of the two headers on a cross-site write, and a plain form cannot send JSON. The
   device rule above (`Cf-Connecting-IP`) does not apply to people: a session through the tunnel is the point.
+
+## An admin changes what the deployment shares
+
+Some state is the whole deployment's rather than one household's: a model provider's key pays for every household's
+calls. Only an admin changes it. Admin is a field on the person (`people.admin`), not a system: People holds it, and a
+narrow writer, `Admins` (`ashley.people.admins`), changes it, imported only by the sign-in and people routes and the
+wiring, so nothing she does on her own makes anyone an admin.
+
+- **What is admin-only:** adding, replacing, renaming, removing or setting up a connection of a `deployment` kind
+  (`ashley.api.admin_gate.may_change`), and granting or revoking admin. A route that is admin-only as a whole takes
+  `admin_gate.Admin` as its signed-in person. Anyone else gets 403 `admin_only`. The person API carries `admin`, so the
+  client hides what a person cannot do, but the server checks every change; hiding is never the check.
+- **Not admin-only:** a household's own settings and connections stay any member's, as before. The settings that
+  decide taint or judging are still written only by a person through the web; on a `deployment` connection that person
+  must be an admin, since the setting then applies to every household.
+- **An admin grants and revokes admin from the web** (`PUT /api/people/{id}/admin`), for the people of their own
+  household. Revoking the last admin is refused (409 `last_admin`). Every admin write takes one transaction-scoped
+  advisory lock (`people:admin`) before its conditional write, so two revokes at once on two sites cannot leave none.
+- **The first admin.** With `ADMIN_GROUP` unset, the first person to complete sign-in on a deployment with no admin
+  becomes one: `Admins.claim_first` sets the flag only while no person has it, under the same lock, so of two
+  sign-ins racing on two pods exactly one wins. Sign-in already needs the provider to admit the account, so this is
+  open to no stranger. A deployment that had people when the flag arrived made every person of its first household
+  an admin, which kept what they could do; an admin revokes the rest.
+- **`ADMIN_GROUP`** (env, the sign-in client's tier) names a group in the provider's `groups` claim. Set, the sign-in
+  asks for the `groups` scope as well, a person whose ID token names the group is made an admin at each sign-in, and
+  the first-admin rule above is off, since the provider says who is one. It grants and never revokes: a person taken
+  out of the group stays an admin until an admin revokes them here, because the flag is also granted from the web and
+  a sign-in must not undo that.
+  - Rejected: revoking at sign-in when the group is absent. It would undo every grant made from the web, and could take
+    away the last admin with nothing to refuse it.
+- **Rejected:** "any person of the first household", which let a child or guest rotate the deployment's keys and gave
+  one household control over every household's models and spend; a role per household, since what is gated is not
+  any household's; and a read-then-write for the first admin, which two sign-ins at once both pass.
 
 ## A person links their own Discord account
 
@@ -4383,11 +4415,12 @@ breaking her.
 - **A provider failing most of its chat calls is warned about.** The `inference-watch` singleton
   (`ashley.inference.watch`) reads the ledger every minute and logs the warning `inference.provider_alert` for each
   provider that failed at least half of at least five chat calls in the last ten minutes (`watch.json`). It keeps no
-  state, so a failover only repeats a line. The warning is a log line because the app has no operator to push to (there
-  is no admin role) and exports no metrics; Loki carries it.
+  state, so a failover only repeats a line. The warning is a log line because the app pushes nothing to its admins and
+  exports no metrics; Loki carries it.
   - Rejected: comparing with the provider's own earlier share. It needs history the app does not keep, and a provider
     that has always failed most calls is the case worth hearing about.
-  - Rejected: a Prometheus metric, for want of an exporter in the app; a push to a person, for want of an operator.
+  - Rejected: a Prometheus metric, for want of an exporter in the app; a push to an admin, for want of a channel that
+    reaches one.
 - **A picture is another modality of the same router, and the result is an ordinary `image` piece.**
   `Inference.make_image` takes a prompt and an aspect (`square`, `wide`, `tall`) and returns encoded bytes; the `image` task
   in `routes.json` lists the providers in order (`gemini_image`, then `openai_image`), each an `ImageMaker`
@@ -4462,8 +4495,9 @@ subscription, the read the Usage room already makes), and the router opens the p
   a call reaches a household only through the conversation it serves, and many calls serve none (memory writes,
   judges), so its keys cannot be per household. A kind marked `deployment` (`ConnectionKind.deployment`) is offered to
   `FIRST_HOUSEHOLD` alone, the household the env describes, as the Home Assistant seed already treats it; any other
-  household is not offered the provider kinds, and adding one is 404 as for a kind nothing registered. Any person of
-  the first household may add, replace or remove a key, as for every household connection (there is no admin role).
+  household is not offered the provider kinds, and adding one is 404 as for a kind nothing registered. Only an admin
+  of the first household may add, replace or remove a key ("An admin changes what the deployment shares"); any other
+  person of it sees the keys listed and is offered none of the provider kinds, and a change is 403 `admin_only`.
 - **A row wins over the env.** The key in force for a provider is the first household's row of its kind when one
   exists, else the env's (`ANTHROPIC_API_KEY` and the rest), else none (`ashley.inference.provider_keys`). So a key
   rotated in the room is used and a changed env key is ignored while the row stands; removing the row brings the
@@ -4511,7 +4545,7 @@ laid over the deployment's routes data and checked by the same `routes.overlay` 
   undo.
 - **`action_judge` is never a household's, only shown.** It is the check a turn that has read outside words passes
   before a consequential change, and a weaker model there weakens the check that guards the household itself, while any
-  person of a household can choose (there is no admin role), including one persuaded by those outside words to.
+  person of a household can choose, including one persuaded by those outside words to.
   `routes.NEVER_HOUSEHOLD` refuses the flag on it even from `ROUTES_FILE`; the room shows its routes read-only. Only
   the operator moves it, as before.
 - **The household comes from the call's conversation.** Every chat-facing call already carries `conversation_id` to the

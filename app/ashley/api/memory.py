@@ -24,7 +24,8 @@ from ..memory.model import Fact, Held, NewFact, Update, Visibility
 from ..people.model import Person as PersonValue
 from ..people.people import People, PeopleUnavailable
 from .models import (CorrectionRequest, ErrorResponse, FactSource, ForgetResponse, MemoryFact, MemoryFactsResponse,
-                     MoveRequest, Person as PersonModel, RememberRequest, RememberResponse, ReplacedFact)
+                     MoveRequest, Person as PersonModel, RememberRequest, RememberResponse, ReplacedFact,
+                     wire_person)
 from .person import Person
 
 router = APIRouter()
@@ -53,7 +54,7 @@ def _unavailable() -> JSONResponse:
 async def _people(household_id: int) -> dict[int, PersonModel]:
     household = await services.get(People).household(household_id)
     people = household.people if household is not None else ()
-    return {p.id: PersonModel(id=p.id, household_id=p.household_id, name=p.name) for p in people}
+    return {p.id: wire_person(p) for p in people}
 
 
 def _wire(held: Held, people: dict[int, PersonModel]) -> MemoryFact:

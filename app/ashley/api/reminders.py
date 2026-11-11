@@ -17,7 +17,7 @@ from ..people.people import People, PeopleUnavailable
 from ..senses.deposit_rule import describe
 from ..senses.repeat import LOCAL_FORMAT
 from ..senses.wakes import Scheduled, Wakes, WakesUnavailable
-from .models import ErrorResponse, Person as PersonModel
+from .models import ErrorResponse, Person as PersonModel, wire_person
 from .person import Person
 from .reminder_models import Reminder, ReminderCancelled, RemindersResponse
 
@@ -42,7 +42,7 @@ async def list_reminders(signed_in: Person) -> RemindersResponse | JSONResponse:
         found = await services.get(Wakes).reminders(me.household_id, me.id)
     except (PeopleUnavailable, WakesUnavailable):
         return _error(503, "unavailable", "reminders are unavailable right now; try again shortly")
-    people = {} if household is None else {p.id: PersonModel(id=p.id, household_id=p.household_id, name=p.name)
+    people = {} if household is None else {p.id: wire_person(p)
                                            for p in household.people}
     zone = ZoneInfo("UTC" if household is None else household.timezone)
     items = [_wire(s, people, zone) for s in found if s.reminder.person_id in people and s.reminder.made_by in people]

@@ -36,7 +36,8 @@ class HouseholdConnection(BaseModel):
     that it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or
     kept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household
     (it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they
-    added it and its kind allows a person to hold it)."""
+    added it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it
+    up: false for a deployment's connection (a model provider's key) unless they are an admin."""
 
     id: int
     label: str
@@ -52,6 +53,7 @@ class HouseholdConnection(BaseModel):
     resources: list[ConnectionResource] = []
     can_hand_over: bool = False
     can_take_back: bool = False
+    can_change: bool = True
 
 
 class ConnectionKindInfo(BaseModel):
