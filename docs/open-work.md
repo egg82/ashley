@@ -96,6 +96,10 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
      the history; asking her to do or make something gets a place that outlasts the conversation.
    - **The page reads as talking to someone, not as one conversation's context.** The copy follows `app/web/voice.md`;
      what is left of that is her room's own strings, and the history shows what was said to her on every channel.
+   - **A Household room.** Devices holds three panels that are not about devices: the household's settings
+     (`HouseholdPanel`), her persona in this household (`PersonaPanel`) and its words (`Lexicon`). They move, unchanged, to a
+     Household room any member edits; Devices keeps notifications, the device list and touch controls. Lands before the
+     design pass, so the pass designs Household as its own room.
    - **The settings rooms past tables.** Usage and Connections are tables with styling, and the settings pages look
      alike. Each gets a design pass by three clean-room designers (`ui-craft`): each sees only the room's real payloads,
      its API schema and its purpose, takes a different lens, and the best layers of each are picked or mixed. The
