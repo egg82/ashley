@@ -98,7 +98,6 @@ def test_a_site_is_unknown_until_asked_then_what_its_headers_say(box: Box, db_ur
     assert asking.asked == 1
 
 
-@pytest.mark.xfail(strict=True, reason="a NUL in a page's title is refused by the frames insert, which is lost")
 def test_a_page_title_with_a_nul_is_recorded_with_the_nul_removed(box: Box, db_url: str) -> None:
     title = page_text.title_of("<html><head><title>Cable\x00 holder</title></head></html>")
     asking = Answering(page_fetch.Reply(200, {}, title))

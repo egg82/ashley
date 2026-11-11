@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from math import isfinite
 
 from ..criteria.record import Change, Fields, Scalar, differs
+from ..text import without_nul
 
 Items = Mapping[str, Fields]
 
@@ -23,7 +24,13 @@ def scalar(value: object, max_value_chars: int) -> Scalar:
 
 
 def to_items(raw: Mapping[str, Mapping[str, object]], max_value_chars: int) -> Items:
-    return {i: {k: scalar(v, max_value_chars) for k, v in fields.items()} for i, fields in raw.items()}
+    """A read as items, its text cleaned of NULs, which no jsonb holds."""
+    return {without_nul(i, "watch"): {k: scalar(_clean(v), max_value_chars) for k, v in fields.items()}
+            for i, fields in raw.items()}
+
+
+def _clean(value: object) -> object:
+    return without_nul(value, "watch") if isinstance(value, str) else value
 
 
 def diff(before: Items, after: Items) -> tuple[Change, ...]:

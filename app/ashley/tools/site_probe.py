@@ -2,6 +2,7 @@
 request-forgery checks) judged by `frame_policy`."""
 
 from .. import services
+from ..text import without_nul
 from ..workshop.frame_probe import FrameProbe
 from ..workshop.workshop import SiteFrame
 from . import frame_policy, look_up_config, page_fetch, page_reader
@@ -14,7 +15,7 @@ class PageFrameProbe(FrameProbe):
             reply = await services.get(page_reader.PageReader).reply(url, limits)
         except (page_fetch.Refused, page_fetch.NoPage):
             return SiteFrame(None)
-        return SiteFrame(frame_policy.frameable(reply, origin), reply.title)
+        return SiteFrame(frame_policy.frameable(reply, origin), without_nul(reply.title, "frames"))
 
 
 def register() -> None:

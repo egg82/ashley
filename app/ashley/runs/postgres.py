@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 from .. import logs
 from ..db.database import Database, DatabaseUnavailable
-from ..text import has_nul
+from ..text import has_nul, without_nul
 from .model import Artifact, BenchRun, Language, NewRun, Output, Run
 from .runs import Runs, RunsUnavailable
 
@@ -92,8 +92,9 @@ class PostgresRuns(Runs):
         return int(row[0])
 
     async def finish(self, run_id: int, output: Output, artifacts: Sequence[Artifact] = ()) -> Run:
-        _texts(output.stdout, output.stderr, *output.files, *output.files.values(), *output.skipped,
-               *(a.name for a in artifacts))
+        _texts(*output.files, *output.skipped, *(a.name for a in artifacts))
+        output = replace(output, stdout=without_nul(output.stdout, "runs"), stderr=without_nul(output.stderr, "runs"),
+                         files={n: without_nul(t, "runs") for n, t in output.files.items()})
         with _translated():
             async with self._database.connection() as conn:
                 cur = await conn.execute(
