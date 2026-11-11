@@ -1,6 +1,6 @@
 """Support for the blind tests of the taint fields (`docs/decisions.md`, "A turn that has read outside words asks before
-it changes anything", its first part): the guesses the suite makes, the tools a turn can read, and the scans that
-locate today's specs and call sites. Every guess lives in ASSUMPTIONS."""
+it does anything consequential the person did not ask for", its first part): the guesses the suite makes, the tools a
+turn can read, and the scans that locate today's specs and call sites. Every guess lives in ASSUMPTIONS."""
 
 import ast
 import importlib
