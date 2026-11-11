@@ -3632,7 +3632,7 @@
     "/api/people/{person_id}/admin": {
       "put": {
         "summary": "Put Admin",
-        "description": "200 `Person`, as they are now; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 404 `not_found`; 409\n`last_admin`; 503 `unavailable`.",
+        "description": "200 `Person`, as they are now; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 404 `not_found`; 409\n`last_admin` or `admins_from_provider`; 503 `unavailable`.",
         "operationId": "put_admin",
         "parameters": [
           {
@@ -3707,7 +3707,7 @@
             }
           },
           "409": {
-            "description": "`last_admin`: they are the deployment's last admin; nothing changed",
+            "description": "`last_admin`: they are the deployment's last admin; `admins_from_provider`: the sign-in provider's admin group decides who is an admin here; nothing changed",
             "content": {
               "application/json": {
                 "schema": {
@@ -9025,7 +9025,8 @@
               "not_yours",
               "stale",
               "admin_only",
-              "last_admin"
+              "last_admin",
+              "admins_from_provider"
             ],
             "title": "Code"
           },
@@ -11283,14 +11284,23 @@
             },
             "type": "array",
             "title": "People"
+          },
+          "admins_from": {
+            "type": "string",
+            "enum": [
+              "app",
+              "provider"
+            ],
+            "title": "Admins From"
           }
         },
         "type": "object",
         "required": [
-          "people"
+          "people",
+          "admins_from"
         ],
         "title": "PeopleResponse",
-        "description": "The signed-in person's household's people, ordered by id, each with whether they are an admin."
+        "description": "The signed-in person's household's people, ordered by id, each with whether they are an admin now.\n`admins_from` says who decides that: `app`, an admin here (`PUT /api/people/{id}/admin`); `provider`, the sign-in\nprovider's admin group alone (`ADMIN_GROUP`), read at each sign-in, and nobody grants or revokes here. Under\n`provider`, a person is an admin now while a live session of theirs was opened by a sign-in the group named them\nin."
       },
       "Person": {
         "properties": {

@@ -53,7 +53,7 @@ class FakeSessions(Sessions):
     async def take(self, state: str) -> None:
         raise AssertionError("not used")
 
-    async def open(self, system: str, external_id: str) -> None:
+    async def open(self, system: str, external_id: str, admin_group: bool | None = None) -> None:
         raise AssertionError("not used")
 
     async def close(self, token: str) -> None:

@@ -30,7 +30,7 @@ class Identity:
     """Who the provider says signed in: `sub`, its stable id for the account (a hashed user id), and `username`, its
     `preferred_username`, which may change and so names the account to the admin only, never to the code.
     `admin_group` is whether the provider's `groups` claim names the client's admin group (`ADMIN_GROUP`); None when
-    no admin group is configured, so the deployment's first admin comes from the bootstrap instead."""
+    no admin group is configured, so the app's own record decides who is an admin."""
 
     sub: str
     username: str

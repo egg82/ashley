@@ -1020,7 +1020,7 @@ export interface paths {
         /**
          * Put Admin
          * @description 200 `Person`, as they are now; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 404 `not_found`; 409
-         *     `last_admin`; 503 `unavailable`.
+         *     `last_admin` or `admins_from_provider`; 503 `unavailable`.
          */
         put: operations["put_admin"];
         post?: never;
@@ -2830,7 +2830,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin";
+            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin" | "admins_from_provider";
             /** Detail */
             detail: string;
         };
@@ -3835,11 +3835,20 @@ export interface components {
         };
         /**
          * PeopleResponse
-         * @description The signed-in person's household's people, ordered by id, each with whether they are an admin.
+         * @description The signed-in person's household's people, ordered by id, each with whether they are an admin now.
+         *     `admins_from` says who decides that: `app`, an admin here (`PUT /api/people/{id}/admin`); `provider`, the sign-in
+         *     provider's admin group alone (`ADMIN_GROUP`), read at each sign-in, and nobody grants or revokes here. Under
+         *     `provider`, a person is an admin now while a live session of theirs was opened by a sign-in the group named them
+         *     in.
          */
         PeopleResponse: {
             /** People */
             people: components["schemas"]["Person"][];
+            /**
+             * Admins From
+             * @enum {string}
+             */
+            admins_from: "app" | "provider";
         };
         /**
          * Person
@@ -8413,7 +8422,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `last_admin`: they are the deployment's last admin; nothing changed */
+            /** @description `last_admin`: they are the deployment's last admin; `admins_from_provider`: the sign-in provider's admin group decides who is an admin here; nothing changed */
             409: {
                 headers: {
                     [name: string]: unknown;

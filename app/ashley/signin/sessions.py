@@ -32,9 +32,13 @@ class Sessions(Service):
         policy's `pending_minutes`. Raises SessionsUnavailable."""
 
     @abstractmethod
-    async def open(self, system: str, external_id: str) -> Opened | None:
+    async def open(self, system: str, external_id: str, admin_group: bool | None = None) -> Opened | None:
         """Open a session for the person the account maps to (`accounts`, written by `python -m ashley.people`); None,
         opening nothing, when no person has that account: it is never guessed. Expired sessions are swept first.
+        `admin_group` is what the provider's admin group said at this sign-in (`Identity.admin_group`): None when no
+        group is configured, so the app's own record decides; otherwise it is stored on this session and on every other
+        live session of the person, which alone decide whether they are an admin while those sessions last, and as the
+        person's own flag (`people.admin`), which the app reads if the group is later unset; granting or revoking.
         Raises SessionsUnavailable."""
 
     @abstractmethod
@@ -74,7 +78,7 @@ class NullSessions(Sessions):
     async def take(self, state: str) -> Pending | None:
         raise SessionsUnavailable("Sessions is not wired")
 
-    async def open(self, system: str, external_id: str) -> Opened | None:
+    async def open(self, system: str, external_id: str, admin_group: bool | None = None) -> Opened | None:
         raise SessionsUnavailable("Sessions is not wired")
 
     async def find(self, token: str) -> SignedIn | None:
