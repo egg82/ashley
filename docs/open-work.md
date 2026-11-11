@@ -12,8 +12,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     panel, model provider keys as connections and a household's model choice are built; what is left, by how soon a
     new household meets it:
     - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
-    - **The warm look pod and Proton Bridge without etcd**: their settings still refuse to start without it. Fits
-      into: Failover referee.
     - **A sandbox without Kubernetes**, as an opt-in for one owner who trusts the code (`app/ashley/runs/podman.py`
       behind the `Sandbox` strategy). Fits into: Code runs.
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred

@@ -29,7 +29,8 @@ A thing is a system only if all four hold:
     runs under `Lease.run_on_site`, held on each site at once
   - without etcd (one machine, or replicas sharing one Postgres) the `Lease` is
     `ashley.referee.postgres_lease.PostgresLease`, a Postgres session advisory lock per singleton, with no notion of a
-    site; every singleton but fail-back runs under it
+    site, so `run_on_site` is `run`; every singleton but fail-back runs under it, the warm look pod's and Proton
+    Bridge's keepers included
   - its first singleton, `ashley.referee.failback.FailBack`, reads and drives Patroni through
     `ashley.referee.patroni.Patroni`
 
