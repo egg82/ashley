@@ -96,6 +96,10 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
      the history; asking her to do or make something gets a place that outlasts the conversation.
    - **The page reads as talking to someone, not as one conversation's context.** The copy follows `app/web/voice.md`;
      what is left of that is her room's own strings, and the history shows what was said to her on every channel.
+   - **The settings rooms past tables.** Usage and Connections are tables with styling, and the settings pages look
+     alike. Each gets a design pass by three clean-room designers (`ui-craft`): each sees only the room's real payloads,
+     its API schema and its purpose, takes a different lens, and the best layers of each are picked or mixed. The
+     admin settings page, when the admin role lands, is designed the same way from the start.
    - Fits into: Channels and Live.
 6. **Choose models by measurement, and let several work together.** Search per task over model, params and prompt
    variant, `model-golf` style, across every wired provider; the spend ledger already has cost and outcome per task,
@@ -255,6 +259,9 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
 10. **The hallway tablet, what is left.** Her page for it is built (`/kiosk`, decisions, "The hallway tablet is her
     page, paired as a device"): pairing, its conversation, who is home, touch controls as data, and her arrangement of the
     screen as a Workshop screen bench. Left:
+    - **A touch control that toggles.** A control is a light's turn on or turn off today
+      (`app/web/src/rooms/devices/ControlsEditor.tsx`), so one light takes two buttons. Add toggle as an action, and
+      show on the button whether the light is on, read from the house. Fits into: the kiosk's touch controls.
     - **The device side:** the tablet opens `/kiosk` and is paired. Check that its browser keeps the screen on with
       motion and relaunches on a crash.
     - **Her voice and pictures through the page:** the page can play sound and video, so the tablet is one of her
