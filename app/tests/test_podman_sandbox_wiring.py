@@ -19,7 +19,11 @@ KUBE = {"sandbox_token_file": "/token", "sandbox_ca_file": "/ca"}
 @pytest.fixture(autouse=True)
 def clean(monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
     plain = ssl.create_default_context
-    monkeypatch.setattr(ssl, "create_default_context", lambda cafile: plain())
+
+    def without_file(cafile: str) -> ssl.SSLContext:
+        return plain()
+
+    monkeypatch.setattr(ssl, "create_default_context", without_file)
     services.unregister(Sandbox)
     yield
     services.unregister(Sandbox)
