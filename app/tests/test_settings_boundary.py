@@ -22,7 +22,7 @@ GUARDED: dict[str, tuple[set[str], set[str]]] = {
     "persona": ({"ashley.skills.persona_write", "ashley.skills.postgres_persona_write"},
                 {"ashley.api.persona", "ashley.wiring_skills", "ashley.skills.postgres_persona_write"}),
     "routes": ({"ashley.inference.route_choice_write", "ashley.inference.postgres_route_choice_write"},
-               {"ashley.api.spend_routes", "ashley.wiring", "ashley.inference.postgres_route_choice_write"}),
+               {"ashley.api.spend_routes", "ashley.wiring_inference", "ashley.inference.postgres_route_choice_write"}),
 }
 
 

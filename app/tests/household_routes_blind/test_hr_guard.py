@@ -10,7 +10,7 @@ from source_tree import Parsed
 from test_boundaries import PKG, dotted, package
 
 WRITERS = {"ashley.inference.route_choice_write", "ashley.inference.postgres_route_choice_write"}
-MAY_IMPORT = {"ashley.api.spend_routes", "ashley.wiring", "ashley.inference.postgres_route_choice_write"}
+MAY_IMPORT = {"ashley.api.spend_routes", "ashley.wiring_inference", "ashley.inference.postgres_route_choice_write"}
 HER_OWN = ("tools", "channels", "skills", "persona", "memory", "senses", "initiative", "errands", "watches", "runs",
            "conversations", "inference.router", "inference.layered_routes")
 
