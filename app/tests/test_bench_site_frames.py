@@ -10,7 +10,7 @@ import psycopg
 import pytest
 from ashley import services
 from ashley.api.workshop_models import BenchPiece
-from ashley.tools import page_fetch
+from ashley.tools import page_fetch, page_text
 from ashley.tools import site_probe
 from ashley.tools.page_reader import NullPageReader, PageReader
 from ashley.workshop.frame_probe import FrameProbe
@@ -96,6 +96,18 @@ def test_a_site_is_unknown_until_asked_then_what_its_headers_say(box: Box, db_ur
     assert frameable_of(after) is expected and after.site is not None and after.site.title == title
     piece(client, bench, made)
     assert asking.asked == 1
+
+
+@pytest.mark.xfail(strict=True, reason="a NUL in a page's title is refused by the frames insert, which is lost")
+def test_a_page_title_with_a_nul_is_recorded_with_the_nul_removed(box: Box, db_url: str) -> None:
+    title = page_text.title_of("<html><head><title>Cable\x00 holder</title></head></html>")
+    asking = Answering(page_fetch.Reply(200, {}, title))
+    asking.release.set()
+    services.register(PageReader, asking)
+    client = box(ALANA)
+    bench = opened(client).id
+    piece(client, bench, added(client, bench, "site", URL))
+    assert wait_for_a_record(db_url) == [(True, "Cable holder")]
 
 
 @pytest.mark.parametrize("failure", [page_fetch.NoPage(), page_fetch.Refused()], ids=["no-answer", "refused"])

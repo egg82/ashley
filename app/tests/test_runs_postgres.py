@@ -84,6 +84,19 @@ def test_text_with_a_nul_is_refused_before_the_database(db_url: str) -> None:
     run(scenario())
 
 
+@pytest.mark.xfail(strict=True, reason="a run's output holding a NUL is refused, losing the whole run record")
+def test_output_with_a_nul_is_stored_with_the_nul_removed(db_url: str) -> None:
+    new = turn(db_url)
+    output = Output("ran", 0, "a\x00b", "c\x00", False, {"o\x00.bin": "x\x00y"}, ("s\x00.bin",))
+
+    async def scenario() -> None:
+        async with runs_on(db_url) as runs:
+            done = await runs.finish(await runs.start(new), output)
+            assert done.output == Output("ran", 0, "ab", "c", False, {"o.bin": "xy"}, ("s.bin",))
+
+    run(scenario())
+
+
 def test_logs_carry_ids_and_outcomes_never_the_script_or_output(db_url: str,
                                                                  capsys: pytest.CaptureFixture[str]) -> None:
     logs.setup()
