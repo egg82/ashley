@@ -39,11 +39,11 @@ class WyomingTranscriber(Transcriber):
 
     async def transcribe(self, model: str, params: Mapping[str, object], format: AudioFormat,
                          chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
-        language = language or params.get("language")
+        chosen = language or params.get("language")
         client = AsyncClient.from_uri(self._uri, connect_timeout=timeout_s, read_timeout=timeout_s)
         try:
             async with client:
-                await _send(client, Transcribe(name=model, language=language if isinstance(language, str) else None),
+                await _send(client, Transcribe(name=model, language=chosen if isinstance(chosen, str) else None),
                             timeout_s)
                 await _send(client, AudioStart(format.rate, format.width, format.channels), timeout_s)
                 async for chunk in chunks:
