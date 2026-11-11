@@ -180,3 +180,10 @@ def test_provider_mode_a_sign_in_without_the_groups_claim_in_the_token_is_not_a_
         provider_mode: TestClient, world: World, idp: MultiIdp) -> None:
     done: httpx2.Response = sign_in(provider_mode, idp, world.sub(world.sam), None)
     assert done.status_code == 302 and "failed" not in done.headers["location"]
+
+
+def test_provider_mode_the_list_does_not_show_the_app_s_flag_as_admin(provider_mode: TestClient, db_url: str,
+                                                                      world: World, idp: MultiIdp) -> None:
+    set_admin(db_url, world.alana)
+    sign_in(provider_mode, idp, world.sub(world.sam), [GROUP])
+    assert admin_flags(provider_mode) == {world.alana: False, world.sam: True, world.ivy: False}
