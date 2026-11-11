@@ -318,7 +318,6 @@ def test_c13_the_session_is_left_open_on_finish(db_url: str) -> None:
     scenario(db_url, body)
 
 
-@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
 @pytest.mark.parametrize("status", ["done", "idle"])
 def test_c13_a_stopped_session_without_a_result_md_is_not_a_finished_job(db_url: str, status: Status) -> None:
     async def body(w: World) -> None:

@@ -6,8 +6,6 @@ pieces with `RESULT.md` as the summary; a retake reuses the session and prompts 
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from ashley import services
 from ashley.errands.bench_jobs import BenchJobs, Job, Named
 from ashley.tools import bench_session
@@ -83,7 +81,6 @@ async def working_job(w: Jobs) -> tuple[Job, str]:
     return job, sid
 
 
-@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
 def test_idle_after_working_without_a_result_keeps_it_running_and_with_one_collects_it(db_url: str) -> None:
     async def go() -> None:
         async with jobs_world(db_url) as w:
@@ -98,7 +95,6 @@ def test_idle_after_working_without_a_result_keeps_it_running_and_with_one_colle
     run(go())
 
 
-@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
 def test_a_done_session_without_a_result_keeps_the_job_running(db_url: str) -> None:
     async def go() -> None:
         async with jobs_world(db_url) as w:
@@ -109,7 +105,6 @@ def test_a_done_session_without_a_result_keeps_the_job_running(db_url: str) -> N
     run(go())
 
 
-@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
 def test_a_session_idle_for_the_nudge_time_is_prompted_once_across_reloaded_rows(db_url: str) -> None:
     async def go() -> None:
         async with jobs_world(db_url) as w:
@@ -129,7 +124,6 @@ def test_a_session_idle_for_the_nudge_time_is_prompted_once_across_reloaded_rows
     run(go())
 
 
-@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
 def test_working_again_restarts_the_idle_time_and_the_nudge_is_still_once_per_job(db_url: str) -> None:
     async def go() -> None:
         async with jobs_world(db_url) as w:
@@ -157,7 +151,6 @@ def test_working_again_restarts_the_idle_time_and_the_nudge_is_still_once_per_jo
     run(go())
 
 
-@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
 def test_a_past_deadline_collects_as_it_stands_and_says_whether_a_result_was_written(db_url: str) -> None:
     async def go() -> None:
         async with jobs_world(db_url) as w:

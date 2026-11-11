@@ -79,13 +79,14 @@ async def step(job: Job, listed: Listed | None = None, now: datetime | None = No
         return None
     if access is None:
         return Outcome("failed", "not_connected")
-    late = job.deadline_at is not None and (now or datetime.now(UTC)) > job.deadline_at
+    moment = now or datetime.now(UTC)
+    late = job.deadline_at is not None and moment > job.deadline_at
     try:
         if job.state == "waiting":
             return await _wait(job, access, listed, late)
         if job.state == "starting":
             return await _start(job, access, config)
-        return await _watch(job, access, listed, late, config)
+        return await _watch(job, access, listed, late, moment, config)
     except BridgeFailed as e:
         logs.info(log, "bench_jobs.session_retry", job=job.id, attempt=job.attempts, reason=e.reason)
         if e.reason in REFUSED:
@@ -173,7 +174,7 @@ async def _prompt(job: Job, access: Access, session_id: str, seq: int | None, co
     return True
 
 
-async def _watch(job: Job, access: Access, listed: Listed | None, late: bool,
+async def _watch(job: Job, access: Access, listed: Listed | None, late: bool, now: datetime,
                  config: JobsConfig) -> Outcome | None:
     store = services.get(BenchJobs)
     if job.session_id is None:
@@ -189,19 +190,51 @@ async def _watch(job: Job, access: Access, listed: Listed | None, late: bool,
         await store.state(job.id, job.attempts, "blocked")
         return None
     if session.status == "done" or (session.status == "idle" and session.seq > (job.session_seq or 0)):
-        return await collect(job, access, "done", config)
+        return await _stopped(job, access, now, config)
+    if job.idle_since is not None:
+        await store.busy(job.id, job.attempts)
     await store.state(job.id, job.attempts, "running")
     return None
 
 
-async def collect(job: Job, access: Access, ending: str, config: JobsConfig = CONFIG) -> Outcome:
-    """Read `out/` as it stands: each file the intake takes (at most `max_outputs`) becomes a file piece, `RESULT.md`
-    the summary, the rest counted refused. `ending` is `done` or `timed_out`."""
+async def _stopped(job: Job, access: Access, now: datetime, config: JobsConfig) -> Outcome | None:
+    """A session that stopped after working: collected when `RESULT.md` is in `out/`, else the job goes on running and
+    the session is prompted once to finish once it has been idle `idle_nudge_s`."""
     assert job.session_id is not None
-    bridge = services.get(Bridge)
-    state = "timed_out" if ending == "timed_out" else "done"
-    listed = await bridge.outputs(access, job.session_id)
+    store = services.get(BenchJobs)
+    listed = await services.get(Bridge).outputs(access, job.session_id)
+    if any(o.name == RESULT for o in listed):
+        return await collect(job, access, "done", config, listed)
+    since = job.idle_since or await store.idle(job.id, job.attempts, now)
+    if job.nudged_at is None and (now - since).total_seconds() >= config.idle_nudge_s:
+        await _nudge(job, access)
+    await store.state(job.id, job.attempts, "running")
+    return None
+
+
+async def _nudge(job: Job, access: Access) -> None:
+    assert job.session_id is not None
+    try:
+        await services.get(Bridge).prompt(access, job.session_id, NUDGE)
+    except BridgeFailed as e:
+        if e.reason in TRANSIENT:
+            return
+        if e.reason != "unconfirmed":
+            raise
+    if await services.get(BenchJobs).nudged(job.id, job.attempts):
+        logs.info(log, "bench_jobs.nudged", job=job.id, attempt=job.attempts)
+
+
+async def collect(job: Job, access: Access, ending: str, config: JobsConfig = CONFIG,
+                  listed: tuple[OutFile, ...] | None = None) -> Outcome:
+    """Read `out/` as it stands (`listed` when the caller already has its listing): each file the intake takes (at most
+    `max_outputs`) becomes a file piece, `RESULT.md` the summary, the rest counted refused. `ending` is `done` or
+    `timed_out`, which is `no_result` rather than `deadline` when `RESULT.md` was never written."""
+    assert job.session_id is not None
+    if listed is None:
+        listed = await services.get(Bridge).outputs(access, job.session_id)
     summary: str | None = None
+    wrote = any(o.name == RESULT for o in listed)
     outputs: list[int] = []
     refused = 0
     limit = files_config.load().max_bytes
@@ -218,8 +251,8 @@ async def collect(job: Job, access: Access, ending: str, config: JobsConfig = CO
                 outputs.append(piece)
     logs.info(log, "bench_jobs.collected", job=job.id, attempt=job.attempts, files=len(listed), outputs=len(outputs),
               refused=refused)
-    return Outcome("timed_out" if state == "timed_out" else "done", "deadline" if state == "timed_out" else None, summary,
-                   tuple(outputs), refused)
+    reason = None if ending != "timed_out" else "deadline" if wrote else NO_RESULT
+    return Outcome("timed_out" if ending == "timed_out" else "done", reason, summary, tuple(outputs), refused)
 
 
 async def _summary(access: Access, session_id: str, out: OutFile, config: JobsConfig) -> str | None:
