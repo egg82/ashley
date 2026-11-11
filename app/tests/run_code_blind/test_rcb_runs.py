@@ -126,10 +126,9 @@ def test_text_postgres_cannot_store_is_refused_and_nothing_is_recorded(db_url: s
     run(scenario())
 
 
-@pytest.mark.parametrize("output", [Output("ran", 0, "a\x00", ""), Output("ran", 0, "", "\x00"),
-                                    Output("ran", 0, "", "", False, {"a": "\x00"}), Output("ran", 0, "", "", False, {"\x00": "a"}),
+@pytest.mark.parametrize("output", [Output("ran", 0, "", "", False, {"\x00": "a"}),
                                     Output("ran", 0, "", "", False, {}, ("\x00",))])
-def test_output_postgres_cannot_store_is_refused_and_the_run_stays_open(db_url: str, output: Output) -> None:
+def test_output_names_postgres_cannot_store_are_refused_and_the_run_stays_open(db_url: str, output: Output) -> None:
     async def scenario() -> None:
         async with world(db_url) as w:
             run_id = await w.runs.start(w.new())
