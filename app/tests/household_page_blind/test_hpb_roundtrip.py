@@ -2,7 +2,6 @@
 
 from typing import Any
 
-import pytest
 from fastapi.testclient import TestClient
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
@@ -118,8 +117,6 @@ def test_the_stored_household_carries_every_wire_field(client: TestClient) -> No
                                    "latitude", "longitude"}
 
 
-@pytest.mark.xfail(strict=True, reason="defect: a profile holding a NUL character passes the schema but the write is "
-                   "an unhandled server error (Postgres text cannot hold NUL); it should be stored or refused 422")
 def test_a_profile_with_a_nul_character_is_stored_or_refused_never_a_server_error(client: TestClient) -> None:
     got = put(client, body(profile="a\x00b"))
     assert got.status_code in (200, 422)

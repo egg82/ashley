@@ -34,7 +34,7 @@ class HouseholdRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     timezone: str = Field(max_length=64)
-    profile: str = Field(max_length=PROFILE_MAX)
+    profile: str = Field(max_length=PROFILE_MAX, pattern=r"^[^\x00]*$")
     locale: str = Field(max_length=35)
     unit_system: UnitSystem
     clock: Clock

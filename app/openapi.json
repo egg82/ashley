@@ -9230,6 +9230,7 @@
           "profile": {
             "type": "string",
             "maxLength": 8000,
+            "pattern": "^[^\\x00]*$",
             "title": "Profile"
           },
           "locale": {
