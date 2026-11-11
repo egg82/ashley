@@ -105,7 +105,7 @@ A thing is a system only if all four hold:
     `app/ashley/channels/discord/discord.json`
   - spoken replies pass the household's pronunciation words, read at render (`ashley.channels.render.render`) from
     `ashley.channels.lexicons.Lexicons` (Postgres implementation `ashley.channels.postgres_lexicons.PostgresLexicons`,
-    a Null Object with none), edited by any of its people in the Devices room (`GET /api/lexicon`)
+    a Null Object with none), edited by any of its people in the Household room (`GET /api/lexicon`)
   - replies said outside the response to a message (the answer after "let me check", and later Initiative's) go through
     the outbox, `ashley.channels.outbox.Outbox` (Postgres implementation
     `ashley.channels.postgres_outbox.PostgresOutbox`, a Null Object that raises; tunables
@@ -334,7 +334,7 @@ A thing is a system only if all four hold:
     `ashley.people.postgres_accounts.PostgresAccounts`: their accounts, linking one, unlinking their Discord), kept
     apart so nothing that reads people can write them
   - a household's own fields (timezone, profile, locale, unit system, clock, home location; `ashley.people.model.Household`) are
-    set by its people on the Devices room's household panel through a third service,
+    set by its people on the Household room's settings panel through a third service,
     `ashley.people.household_write.HouseholdWriter` (Postgres
     `ashley.people.postgres_household_write.PostgresHouseholdWriter`), which only that route and the wiring import
     (`app/tests/test_settings_boundary.py`); both it and the admin CLI check values with `app/ashley/people/fields.py`
@@ -722,8 +722,8 @@ A thing is a system only if all four hold:
   - the client's bench bar (`app/web/src/rooms/workshop/bench/Method.tsx`)
   - every reply and errand reads the persona overrides into its prompt (`ashley.channels.taste.overrides`), which
     `ashley.persona.sections.render` applies to the `allowed` sections only
-  - a person's persona routes (`app/ashley/api/persona.py`) and the Devices room's panel
-    (`app/web/src/rooms/devices/PersonaPanel.tsx`)
+  - a person's persona routes (`app/ashley/api/persona.py`) and the Household room's panel
+    (`app/web/src/rooms/household/PersonaPanel.tsx`)
 
 ### Code runs
 

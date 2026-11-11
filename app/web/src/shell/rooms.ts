@@ -1,7 +1,7 @@
 // Where each room sits on the field. Her rooms are on a circle around her at a compass bearing; sign-in is the same
 // centre seen close up, so leaving it is a pure zoom out.
 
-export type RoomId = 'signin' | 'her' | 'memory' | 'workshop' | 'devices' | 'connections' | 'spend';
+export type RoomId = 'signin' | 'her' | 'memory' | 'workshop' | 'household' | 'devices' | 'connections' | 'spend';
 export type NavRoomId = Exclude<RoomId, 'signin'>;
 
 export interface Room {
@@ -38,6 +38,7 @@ export const NAV: readonly NavRoom[] = [
   nav('her', '/', 0, 'Ashley'),
   nav('memory', '/memory', 315, 'Memory'),
   nav('workshop', '/workshop', 180, 'Workshop'),
+  nav('household', '/household', 20, 'Household'),
   nav('devices', '/devices', 70, 'Devices'),
   nav('spend', '/usage', 125, 'Usage'),
   nav('connections', '/connections', 250, 'Connections'),
