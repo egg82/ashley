@@ -2,7 +2,7 @@
 WAV file once the chunks end, so this route cannot decode while the person is talking. Used by
 `OpenAICompatibleProvider` for `transcribe` routes.
 
-Route `model` is the transcription model (`gpt-4o-mini-transcribe`). Params: `language` (non-empty string, optional).
+Route `model` is the transcription model (`gpt-4o-mini-transcribe`). Params: `language` (non-empty string, optional; a language given per call replaces it).
 Failures are classified as for chat (`providers`): a timeout, connection failure, 408, 409, 429, 5xx, 401, 402 or 403
 is `unavailable`, any other status `error`."""
 
@@ -28,9 +28,9 @@ def check_params(params: Mapping[str, object]) -> None:
 
 
 async def transcribe(client: AsyncOpenAI, model: str, params: Mapping[str, object], format: AudioFormat,
-                     chunks: AsyncIterator[bytes], timeout_s: float) -> str:
+                     chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
     audio = _wav(format, b"".join([chunk async for chunk in chunks]))
-    language = params.get("language")
+    language = language or params.get("language")
     try:
         response: object = await client.audio.transcriptions.create(
             model=model, file=("utterance.wav", audio, "audio/wav"), timeout=timeout_s,

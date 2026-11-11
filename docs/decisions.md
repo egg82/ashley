@@ -1615,6 +1615,18 @@ treats the symptom.
   the temperature's shape and no number, since the specs are built once for every household and a quoted number becomes
   the template. A recipe piece's amounts lead with a line's metric equivalent for a metric household
   (`ashley.people.units.metric_of`, `workshop.recipe.scaled`), a line without one being scaled as it was written.
+- **The household's language follows `Household.locale` by field, in two places.** `ashley.people.language.language_of`
+  reads the subtag before the first dash against `people/languages.json` (Whisper's ISO 639-1 languages, which is what
+  Wyoming's faster-whisper and OpenAI transcription accept); a locale outside it has no language and every caller keeps
+  its shipped default. Speech-to-text: where the household is known (a satellite's device, the page's signed-in person
+  or kiosk device) the call's `Heard.language` carries the code, and each `Transcriber` sends it in place of its route's
+  `language` param (Wyoming `Transcribe.language`, OpenAI `language`), so `routes.json` keeps its default for a
+  household that cannot be read. Reply: for a household whose language is not English, `# This household` adds one
+  line naming the language (`ashley.persona.facts.LANGUAGE`); an English household's prompt is byte-identical to
+  before. A person who writes or speaks to her in another language is answered in theirs, the household's language
+  being the default; that is a rule in the prompt, never code over their words. Spoken audio is still transcribed in
+  the household's language, so another language works in a chat, not aloud. Rejected: detecting the spoken
+  language per utterance, since the household has already said which it speaks.
 
 - **The persona's taste is the household's; its contract ships.** The shipped register, wit and examples are one
   household's taste, so a household replaces them from the Devices room's persona panel. Which sections are taste is

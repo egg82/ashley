@@ -86,6 +86,7 @@ class Heard1:
     timeout_s: float
     format: AudioFormat
     pcm: bytes
+    language: str | None = None
 
 
 @dataclass(frozen=True)
@@ -128,7 +129,7 @@ class FakeSpeechProvider(Transcriber, Speaker):
         return None
 
     async def transcribe(self, model: str, params: Mapping[str, object], format: AudioFormat,
-                         chunks: AsyncIterator[bytes], timeout_s: float) -> str:
+                         chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
         step = self._hears[min(len(self.heard) + 1, len(self._hears)) - 1]
         received = bytearray()
         taken = 0
@@ -137,7 +138,7 @@ class FakeSpeechProvider(Transcriber, Speaker):
             taken += 1
             if step.read is not None and taken >= step.read:
                 break
-        self.heard.append(Heard1(model, params, timeout_s, format, bytes(received)))
+        self.heard.append(Heard1(model, params, timeout_s, format, bytes(received), language))
         if self._watching is not None:
             self.pulled_when_done.append(self._watching.pulled)
         if self._clock is not None:

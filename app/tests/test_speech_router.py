@@ -66,6 +66,15 @@ def test_no_route_answering_is_unavailable_and_the_audio_is_still_read_to_its_en
     assert consumed == PCM
 
 
+def test_the_language_of_the_utterance_reaches_every_route_that_is_tried() -> None:
+    first, second = ScriptedTranscriber("a", error=failing("unavailable")), ScriptedTranscriber("b")
+    inference, _ = router("transcribe", first, second)
+    listen(inference, Heard(FORMAT, pcm(PCM), "de"))
+    assert (first.languages, second.languages) == (["de"], ["de"])
+    listen(inference, heard())
+    assert second.languages == ["de", None]
+
+
 def test_an_unwired_route_is_skipped_and_none_wired_is_unavailable() -> None:
     inference, ledger = router("transcribe", ScriptedTranscriber("b"), names=["a", "b"])
     assert listen(inference, heard()).text == "scripted"

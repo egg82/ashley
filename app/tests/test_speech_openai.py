@@ -29,8 +29,15 @@ def answer(status: int = 200, json: object = None, content: bytes | None = None)
                                else httpx.Response(status, content=content))
 
 
-async def transcribe(p: OpenAICompatibleProvider, params: dict[str, object] | None = None) -> str:
-    return await p.transcribe("gpt-4o-mini-transcribe", params or {}, FORMAT, heard().chunks, 5.0)
+async def transcribe(p: OpenAICompatibleProvider, params: dict[str, object] | None = None,
+                     language: str | None = None) -> str:
+    return await p.transcribe("gpt-4o-mini-transcribe", params or {}, FORMAT, heard().chunks, 5.0, language)
+
+
+def language_sent(request: httpx.Request) -> bytes | None:
+    marker = b'name="language"\r\n\r\n'
+    body = request.content
+    return body[body.index(marker) + len(marker):].split(b"\r\n", 1)[0] if marker in body else None
 
 
 def test_the_whole_utterance_goes_up_as_one_wav_and_the_text_comes_back() -> None:
@@ -45,6 +52,14 @@ def test_the_whole_utterance_goes_up_as_one_wav_and_the_text_comes_back() -> Non
     with wave.open(io.BytesIO(body[wav_start:body.index(b"\r\n--", wav_start)]), "rb") as wav:
         assert (wav.getframerate(), wav.getsampwidth(), wav.getnchannels()) == (16000, 2, 1)
         assert wav.readframes(wav.getnframes()) == b"".join(PCM)
+
+
+def test_a_language_given_per_call_replaces_the_routes_and_none_leaves_it() -> None:
+    p, seen = provider(answer(json={"text": "x"}))
+    run(transcribe(p, {"language": "en"}, "de"))
+    run(transcribe(p, {"language": "en"}))
+    run(transcribe(p))
+    assert [language_sent(r) for r in seen] == [b"de", b"en", None]
 
 
 @pytest.mark.parametrize("status", [401, 402, 403, 408, 409, 429, 500, 503])

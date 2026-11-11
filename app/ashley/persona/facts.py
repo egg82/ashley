@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from ..memory.model import Recalled
+from ..people.language import language_of
 from ..people.model import Household, Person, UnitSystem
 from ..stamp import stamp
 
@@ -41,6 +42,8 @@ UNITS: dict[UnitSystem, str] = {
     "metric": ("The household uses metric units: temperatures in degrees Celsius, distances in kilometres and metres, "
                "weights in kilograms and grams, volumes in litres and millilitres."),
 }
+LANGUAGE = ("The household's language is {name}. Write `spoken` and `text` in {name}. When the person writes or speaks to "
+            "you in another language, answer in theirs.")
 THERMOSTAT_STEP: dict[UnitSystem, str] = {"imperial": "five", "metric": "three"}
 STEP_TOKEN = "{thermostat_step}"
 WHILE_AWAY = ("Asks you could not carry out when they were made, because a source was out of reach, and have done since. "
@@ -101,9 +104,13 @@ def facts(
 
 
 def profile(household: Household) -> str:
-    """`# This household`: the units it uses, then its profile when it has one."""
+    """`# This household`: the units it uses, the language it speaks when that is not English (`people.language`), then
+    its profile when it has one."""
     text = household.profile.strip()
-    return "# This household\n\n" + UNITS[household.unit_system] + ("\n\n" + text if text else "")
+    language = language_of(household.locale)
+    spoken = LANGUAGE.format(name=language.name) if language and language.code != "en" else ""
+    return "# This household\n\n" + UNITS[household.unit_system] + ("\n\n" + spoken if spoken else "") + (
+        "\n\n" + text if text else "")
 
 
 def remembered(recalled: tuple[Recalled, ...] | None, now: datetime) -> str | None:

@@ -28,7 +28,7 @@ class SpeechCalls:
             started = self._roster.clock()
             try:
                 text = await provider.transcribe(route.model, route.params, heard.format, utterance.chunks(),
-                                                 route.timeout_s)
+                                                 route.timeout_s, heard.language)
                 await utterance.drain()
             except ProviderFailed as e:
                 _raise_unless_provider_fault(utterance)

@@ -23,9 +23,11 @@ from ashley.inference.inference import Inference, InferenceUnavailable
 from ashley.inference.speech import AudioFormat, Heard, SpeechTask
 from ashley.inference.speech import Transcript as Words
 from ashley.main import create_app
+from ashley.people.people import People
 from ashley.settings import Settings
 from ashley.signin.model import SignedIn
 from fastapi.testclient import TestClient
+from language_support import wire
 from respond_support import ALANA, FakeConversations, FakeInference
 from test_kiosk_routes import DEVICE, TOKEN, FakeDevices
 
@@ -40,10 +42,12 @@ class Hearing(FakeInference):
     words: str = SAID
     error: Exception | None = None
     heard: list[tuple[AudioFormat, bytes]] = field(default_factory=list[tuple[AudioFormat, bytes]])
+    languages: list[str | None] = field(default_factory=list[str | None])
 
     async def transcribe(self, task: SpeechTask, heard: Heard, *, conversation_id: int | None = None) -> Words:
         assert task == "transcribe"
         self.heard.append((heard.format, b"".join([c async for c in heard.chunks])))
+        self.languages.append(heard.language)
         if self.error is not None:
             raise self.error
         return Words(self.words, "fake", "fake")
@@ -63,7 +67,7 @@ def wav(ms: int, rate: int = 16000, width: int = 2, channels: int = 1) -> bytes:
 def hearing(monkeypatch: pytest.MonkeyPatch) -> Generator[Hearing]:
     monkeypatch.setattr(spoken_route, "CAPS", spoken.Caps(max_ms=1000, quiet_rms=0.05, voice_s=120))
     yield Hearing()
-    for interface in (Devices, Conversations, Inference):
+    for interface in (Devices, Conversations, Inference, People):
         services.unregister(interface)
 
 
@@ -115,6 +119,15 @@ def test_a_wav_is_transcribed_as_16k_mono_pcm_and_runs_no_turn(client: TestClien
     assert status == 200 and Transcript.model_validate(body) == Transcript(text=SAID)
     assert hearing.heard == [(AudioFormat(16000, 2, 1), b"\x01\x00" * 8000)]
     assert conversations.calls == [] and hearing.prompts == []
+
+
+@pytest.mark.parametrize("route", ROUTES)
+def test_the_audio_is_transcribed_in_the_callers_household_language(client: TestClient, hearing: Hearing,
+                                                                    route: str) -> None:
+    post(client, route, wav(300))
+    wire(DEVICE.household_id, "de-DE")
+    post(client, route, wav(300))
+    assert hearing.languages == [None, "de"]
 
 
 @pytest.mark.parametrize("route", ROUTES)

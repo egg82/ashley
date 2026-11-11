@@ -31,8 +31,9 @@ class Transcriber(Wired):
 
     @abstractmethod
     async def transcribe(self, model: str, params: Mapping[str, object], format: AudioFormat,
-                         chunks: AsyncIterator[bytes], timeout_s: float) -> str:
-        """The words in the PCM `chunks` (in `format`), read to their end. A streaming provider sends each chunk as it
+                         chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
+        """The words in the PCM `chunks` (in `format`), read to their end, spoken in `language` (ISO 639-1) when one is
+        given, which wins over a `language` param of the route. A streaming provider sends each chunk as it
         arrives; one that needs the whole utterance reads it first. `timeout_s` bounds connecting and, once the
         audio has ended, waiting for the words; it never bounds waiting for `chunks`. The text is as the provider
         returned it. An exception raised by `chunks` itself may surface as a `ProviderFailed`.

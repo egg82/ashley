@@ -33,10 +33,13 @@ class AudioFormat:
 class Heard:
     """One utterance as it arrives: PCM in `format`, chunk by chunk, ending when the speaker stopped (the caller
     decides that). Chunks may be any size; together they are a whole number of frames. `chunks` is read at most once,
-    by `Inference.transcribe`, which keeps what it read so another route can be given the same utterance."""
+    by `Inference.transcribe`, which keeps what it read so another route can be given the same utterance. `language`
+    is the ISO 639-1 code of the language spoken when the caller knows it (a household's), which overrides any language
+    a route's params name; None leaves each route to its own."""
 
     format: AudioFormat
     chunks: AsyncIterator[bytes]
+    language: str | None = None
 
 
 @dataclass(frozen=True)

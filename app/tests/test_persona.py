@@ -25,6 +25,30 @@ def test_stable_sections_come_first_and_the_moment_last():
         assert at == sorted(at)
 
 
+def household_in(locale: str) -> Household:
+    return replace(HOME, locale=locale)
+
+
+def test_an_english_household_gets_no_language_line() -> None:
+    for locale in ("en-US", "en-GB", "en"):
+        for kind in get_args(Kind):
+            assert facts.LANGUAGE.split("{name}")[0] not in system(
+                kind, replace(CONTEXT, household=household_in(locale)))["default"].text
+
+
+def test_a_german_household_prompt_names_german_and_differs_only_by_that_line() -> None:
+    line = facts.LANGUAGE.format(name="German")
+    for kind in get_args(Kind):
+        english = system(kind, CONTEXT)["default"]
+        german = system(kind, replace(CONTEXT, household=household_in("de-DE")))["default"]
+        assert german.stable.count(line) == 1
+        assert german.stable.replace("\n\n" + line, "") == english.stable and german.moment == english.moment
+
+
+def test_a_locale_with_no_known_language_adds_no_line() -> None:
+    assert system("chat", replace(CONTEXT, household=household_in("xx-YY")))["default"] == system("chat", CONTEXT)["default"]
+
+
 def test_with_no_variants_shipped_there_is_only_the_default():
     assert list(system("command", CONTEXT)) == ["default"]
 

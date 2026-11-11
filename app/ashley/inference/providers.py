@@ -226,8 +226,8 @@ class OpenAICompatibleProvider(Provider, Transcriber):
         openai_stt.check_params(params)
 
     async def transcribe(self, model: str, params: Mapping[str, object], format: AudioFormat,
-                         chunks: AsyncIterator[bytes], timeout_s: float) -> str:
-        return await openai_stt.transcribe(self._client, model, params, format, chunks, timeout_s)
+                         chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
+        return await openai_stt.transcribe(self._client, model, params, format, chunks, timeout_s, language)
 
     async def complete(self, model: str, params: Mapping[str, object], system: SystemPrompt, messages: tuple[Entry, ...],
                        tools: tuple[ToolSpec, ...], tool_choice: ToolChoice, output: type[T],

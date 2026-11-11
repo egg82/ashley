@@ -109,6 +109,7 @@ class FakeSpeech(Inference):
     transcript: str | Exception = "what time is it"
     audio: bytes | Exception = b"ID3-audio-bytes"
     heard: list[bytes] = field(default_factory=list[bytes])
+    languages: list[str | None] = field(default_factory=list[str | None])
     spoken: list[str] = field(default_factory=list[str])
     warmed: list[SpeechTask | EmbedTask | VoiceprintTask] = field(
         default_factory=list[SpeechTask | EmbedTask | VoiceprintTask])
@@ -123,6 +124,7 @@ class FakeSpeech(Inference):
     async def transcribe(self, task: SpeechTask, heard: Heard, *, conversation_id: int | None = None) -> Transcript:
         assert task == "transcribe"
         self.heard = [chunk async for chunk in heard.chunks]
+        self.languages.append(heard.language)
         if isinstance(self.transcript, Exception):
             raise self.transcript
         return Transcript(self.transcript, "fake", "fake-stt")
