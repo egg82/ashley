@@ -74,6 +74,7 @@ def test_provider_mode_a_later_sign_in_outside_the_group_takes_power_from_a_sess
     sign_in(provider_mode, idp, world.sub(world.sam), [GROUP])
     live = token_of(provider_mode)
     assert me(provider_mode)["admin"] is True
+    provider_mode.cookies.clear()
     sign_in(provider_mode, idp, world.sub(world.sam), [])
     as_(provider_mode, live)
     assert me(provider_mode)["admin"] is False
@@ -84,6 +85,7 @@ def test_provider_mode_a_session_already_live_loses_the_gated_power_too(provider
     sign_in(provider_mode, idp, world.sub(world.sam), [GROUP])
     live = token_of(provider_mode)
     assert admin_flags(provider_mode)[world.sam] is True
+    provider_mode.cookies.clear()
     sign_in(provider_mode, idp, world.sub(world.sam), [])
     as_(provider_mode, live)
     assert codes(provider_mode.post("/api/connections", headers=ORIGIN,
@@ -95,6 +97,7 @@ def test_provider_mode_a_grant_reaches_a_live_session_opened_before_it(provider_
     sign_in(provider_mode, idp, world.sub(world.sam), [])
     early = token_of(provider_mode)
     assert me(provider_mode)["admin"] is False
+    provider_mode.cookies.clear()
     sign_in(provider_mode, idp, world.sub(world.sam), [GROUP])
     as_(provider_mode, early)
     assert me(provider_mode)["admin"] is True

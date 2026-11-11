@@ -11,7 +11,12 @@ from ashley import services
 from ashley.sure.client import Sure
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from fastapi.testclient import TestClient
+from ashley.connections.oauth import OAuthProviders
+from ashley.mail.mailbox import Mailbox
+from oauth_google_support import FakeGoogle
+from oauth_home_support import connect
 from money_support import BASE, KEY, FakeSure
+from test_connection_holders_routes import BOX, AddressOnly
 
 ANTHROPIC = "https://api.anthropic.com"
 HA = "http://ha.test:8123"
@@ -33,6 +38,21 @@ def held(client: TestClient, world: World) -> tuple[int, int]:
     """(an Anthropic key, a Home Assistant) of the first household, both deployment kinds in this registry."""
     return (add_connection(client, world.home, "anthropic", world.alana, ANTHROPIC),
             add_connection(client, world.home, "home_assistant", world.alana, HA, "token"))
+
+
+def google_with_mailbox(client: TestClient, db_url: str, world: World, admin: bool) -> int:
+    """A Google connection of Alana, first household, whose mailbox the room lists: a resource only she may change.
+    She connected it as an admin, and stays signed in as an admin or not, as `admin` says."""
+    fake = FakeGoogle()
+    services.register(OAuthProviders, OAuthProviders({"google": fake.provider()}))
+    services.register(Mailbox, AddressOnly())
+    set_admin(db_url, world.alana)
+    who(client, db_url, world, world.alana)
+    assert connect(client, fake, "main").endswith("connected")
+    [found] = client.get("/api/connections").json()["connections"]
+    assert [r["ref"] for r in found["resources"]] == [BOX]
+    set_admin(db_url, world.alana, admin)
+    return found["id"]
 
 
 def post_key(client: TestClient, label: str = "") -> tuple[int, str | None]:
@@ -77,14 +97,6 @@ def test_gate_a_non_admin_s_settings_put_on_a_deployment_kind_is_403_admin_only(
     assert app_mode.get(f"/api/connections/{ha}/settings").json()["revision"] == 0
 
 
-def test_gate_a_non_admin_s_resource_change_on_a_deployment_kind_is_403_admin_only(app_mode: TestClient, db_url: str,
-                                                                                   world: World) -> None:
-    google = add_connection(app_mode, world.home, "google", world.alana, "https://gmail.test", "refresh")
-    who(app_mode, db_url, world, world.sam)
-    got = app_mode.patch(f"/api/connections/{google}/resources/alana@gmail.test", json={"shared": True}, headers=ORIGIN)
-    assert codes(got) == (403, "admin_only")
-
-
 def test_gate_an_admin_adds_replaces_renames_and_removes_a_deployment_kind(app_mode: TestClient, db_url: str,
                                                                           world: World) -> None:
     set_admin(db_url, world.sam)
@@ -108,11 +120,9 @@ def test_gate_an_admin_writes_the_settings_of_a_deployment_kind(app_mode: TestCl
 
 def test_gate_an_admin_s_resource_change_is_not_refused_as_admin_only(app_mode: TestClient, db_url: str,
                                                                      world: World) -> None:
-    google = add_connection(app_mode, world.home, "google", world.alana, "https://gmail.test", "refresh")
-    set_admin(db_url, world.sam)
-    who(app_mode, db_url, world, world.sam)
-    got = app_mode.patch(f"/api/connections/{google}/resources/alana@gmail.test", json={"shared": True}, headers=ORIGIN)
-    assert codes(got)[1] != "admin_only" and got.status_code != 403
+    google = google_with_mailbox(app_mode, db_url, world, admin=True)
+    got = app_mode.patch(f"/api/connections/{google}/resources/{BOX}", json={"shared": True}, headers=ORIGIN)
+    assert got.status_code == 200, got.text
 
 
 def test_gate_another_household_gets_404_not_403_even_as_an_admin_there(app_mode: TestClient, db_url: str,

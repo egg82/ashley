@@ -58,7 +58,8 @@ def test_app_mode_two_sign_ins_at_once_leave_exactly_one_new_admin(db_url: str, 
     async def one_round(subs: tuple[str, str]) -> None:
         async with AsyncClient(transport=ASGITransport(app), base_url=PUBLIC) as a, \
                 AsyncClient(transport=ASGITransport(app), base_url=PUBLIC) as b:
-            started = await asyncio.gather(a.get("/api/auth/signin"), b.get("/api/auth/signin"))
+            started = [await a.get("/api/auth/signin"), await b.get("/api/auth/signin")]
+            assert [x.status_code for x in started] == [302, 302], [x.text for x in started]
             grants = [idp.authorize_as(s.headers["location"], sub) for s, sub in zip(started, subs)]
             done = await asyncio.gather(*(c.get("/api/auth/callback", params={"code": code, "state": state})
                                           for c, (code, state) in zip((a, b), grants)))
