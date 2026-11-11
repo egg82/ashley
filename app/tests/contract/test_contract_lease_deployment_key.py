@@ -12,7 +12,7 @@ from ashley.wiring_singletons import wire_lease
 from etcd import etcd_url
 from lease_support import Arena, campaign, delete, holder_of, put, run, unique_name
 
-MEMBER = "asgard-pg"
+MEMBER = "site-a-pg"
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +22,7 @@ def clean() -> Generator[None]:
 
 
 def wired(key: str) -> Lease:
-    wire_lease(from_env({"DATABASE_URL": "postgresql://nobody@127.0.0.1:1/none", "ETCD_URL": etcd_url(), "SITE": "iss",
+    wire_lease(from_env({"DATABASE_URL": "postgresql://nobody@127.0.0.1:1/none", "ETCD_URL": etcd_url(), "SITE": "willow",
                          "ACTIVE_SITE_LEADER_PATH": key, "ACTIVE_SITE_MEMBER": MEMBER}))
     return services.get(Lease)
 
@@ -48,7 +48,7 @@ def test_the_site_is_active_while_the_key_holds_its_member() -> None:
     run(scenario())
 
 
-@pytest.mark.parametrize("value", ["iss-pg", None])
+@pytest.mark.parametrize("value", ["site-b-pg", None])
 def test_the_site_is_inactive_for_another_member_or_an_absent_key(value: str | None) -> None:
     name, arena, key = unique_name(), Arena(), key_for(value)
 
