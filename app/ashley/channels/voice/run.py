@@ -36,6 +36,7 @@ from ... import logs, services
 from ...inference.inference import Inference, InferenceUnavailable
 from ...inference.speech import AudioFormat, Heard, Transcript
 from ...people.language import language_for
+from ...text import without_nul
 from ..model import Inbound, Outbound, Satellite
 from ..respond import RespondRefused, RespondUnavailable
 from .clips import Clips, ClipsUnavailable
@@ -124,11 +125,12 @@ class Run:
             return self._fail("stt-provider-unavailable", "stt_unavailable")
         self._stt_done(transcript)
         self._mark.heard()
-        if not transcript.text:
+        text = without_nul(transcript.text, "voice")
+        if not text:
             self._send(Event.VOICE_ASSISTANT_RUN_END)
             return "empty"
-        self._send(Event.VOICE_ASSISTANT_STT_END, {"text": transcript.text})
-        return await self._answer(transcript.text)
+        self._send(Event.VOICE_ASSISTANT_STT_END, {"text": text})
+        return await self._answer(text)
 
     async def _answer(self, text: str) -> str:
         self._send(Event.VOICE_ASSISTANT_INTENT_START)

@@ -11,6 +11,7 @@ from email.message import EmailMessage, Message as RawMessage
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 
+from ..text import without_nul
 from . import body
 from .model import Attachment, Header, Message
 
@@ -63,7 +64,7 @@ def text_and_attachments(message: EmailMessage) -> tuple[str, tuple[Attachment, 
         elif part.get_content_type() == "text/html":
             html.append(_decoded(raw, part.get_content_charset()))
     text = "\n".join(plain) if plain else "\n".join(body.html_text(h) for h in html)
-    return text.strip(), tuple(files)
+    return without_nul(text, "mail").strip(), tuple(files)
 
 
 def full(message: EmailMessage, head: Header, body_chars: int) -> Message:

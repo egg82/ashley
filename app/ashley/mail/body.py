@@ -5,6 +5,7 @@ import base64
 import binascii
 from html.parser import HTMLParser
 
+from ..text import without_nul
 from .gmail_shapes import Part
 from .model import Attachment
 
@@ -88,4 +89,4 @@ def text_and_attachments(payload: Part) -> tuple[str, tuple[Attachment, ...]]:
     files: list[Attachment] = []
     _walk(payload, plain, html, files)
     text = "\n".join(plain) if plain else "\n".join(html_text(h) for h in html)
-    return text.strip(), tuple(files)
+    return without_nul(text, "mail").strip(), tuple(files)
