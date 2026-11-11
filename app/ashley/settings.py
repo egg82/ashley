@@ -56,8 +56,8 @@ class Settings:
     (`ashley.looks.kubernetes`); both or neither, and they need the sandbox settings and the download-link key
     (ValueError); wiring refuses an image not pinned by digest (ValueError). Unset, she can look at an image piece but not draw a bench.
     `look_warm_url` (the Service of the warm look pod in the sandbox namespace, `http://host:port`) keeps one such pod up
-    per site and sends looks to it (`ashley.looks.warm_looker`); it needs `look_image` and `etcd_url` (ValueError), whose
-    lease holds the pod. Unset, every look has a pod of its own.
+    per site and sends looks to it (`ashley.looks.warm_looker`); it needs `look_image` (ValueError); the wired `Lease` holds the pod,
+    per site under etcd and once under Postgres advisory locks. Unset, every look has a pod of its own.
     `cad_image` (Python with build123d and `ashley_cad`, pinned by digest) is the image of the build123d language of the same
     sandbox, run in pods of the same namespace under the same rules; it needs the sandbox settings (ValueError) and wiring
     refuses an image not pinned by digest (ValueError). Unset, the sandbox runs Python only.
@@ -71,7 +71,8 @@ class Settings:
     (`https://host`, a certificate the image's trust store accepts); the room's login reaches the keeper at
     `mail_bridge_keeper_url`, a comma-separated list of `https://host:port` addresses of each site's own Service for the
     Bridge pod (this site's first; the pod runs in one cluster, so no one address reaches it from both): the login and
-    the mail ports try them in order. Every entry is refused unless `https` (ValueError). All five, and the sandbox settings, `etcd_url`, `site` and `connections_key`, or none (ValueError);
+    the mail ports try them in order. Every entry is refused unless `https` (ValueError). All five, and the sandbox settings and `connections_key`, or none (ValueError);
+    the wired `Lease` holds the pod, and the keeper's site is `site`, or `local` without etcd;
     wiring refuses an image not pinned by digest (ValueError). Unset, no Proton kind is offered.
     `connections_key` is the app's key for households' connections (`ashley.connections.sealing`), standard base64
     of 32 bytes (wiring raises ValueError otherwise); unset, no connection can be added or read.
@@ -191,8 +192,8 @@ class Settings:
             raise ValueError("LOOK_IMAGE and LOOK_APP_URL must be set together")
         if self.look_image and not (self.sandbox_token_file and self.files_link_key):
             raise ValueError("LOOK_IMAGE needs SANDBOX_TOKEN_FILE and FILES_LINK_KEY")
-        if self.look_warm_url and not (self.look_image and self.etcd_url):
-            raise ValueError("LOOK_WARM_URL needs LOOK_IMAGE and ETCD_URL")
+        if self.look_warm_url and not self.look_image:
+            raise ValueError("LOOK_WARM_URL needs LOOK_IMAGE")
         if self.cad_image and not self.sandbox_token_file:
             raise ValueError("CAD_IMAGE needs SANDBOX_TOKEN_FILE")
         bridge = (self.mail_bridge_image, self.mail_bridge_namespace, self.mail_bridge_app_url, self.mail_bridge_keeper_url)
@@ -201,8 +202,8 @@ class Settings:
                              "must be set together")
         if not all(u.startswith("https://") for u in (*self.mail_bridge_keeper_urls, self.mail_bridge_app_url or "https://")):
             raise ValueError("MAIL_BRIDGE_APP_URL and MAIL_BRIDGE_KEEPER_URL must be https")
-        if self.mail_bridge_image and not (self.sandbox_token_file and self.etcd_url and self.site and self.connections_key):
-            raise ValueError("MAIL_BRIDGE_IMAGE needs SANDBOX_TOKEN_FILE, ETCD_URL, SITE and CONNECTIONS_KEY")
+        if self.mail_bridge_image and not (self.sandbox_token_file and self.connections_key):
+            raise ValueError("MAIL_BRIDGE_IMAGE needs SANDBOX_TOKEN_FILE and CONNECTIONS_KEY")
         if bool(self.herdr_client_cert_file) != bool(self.herdr_client_key_file):
             raise ValueError("HERDR_CLIENT_CERT_FILE and HERDR_CLIENT_KEY_FILE must be set together")
         if bool(self.media_image) != bool(self.media_app_url):

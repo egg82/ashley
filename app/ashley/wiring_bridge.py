@@ -16,9 +16,13 @@ from .runs.kube_api import KubeApi
 from .settings import Settings
 
 
+LOCAL_SITE = "local"
+
+
 def wire_mail_bridge(settings: Settings, api: KubeApi) -> None:
     """Register Bridge's record, login and upkeep. Raises ValueError for an image not pinned by
-    digest, or a connections key that is not base64 of 32 bytes."""
+    digest, or a connections key that is not base64 of 32 bytes. The keeper names its site `settings.site`, or
+    `LOCAL_SITE` where there is no etcd and so no site."""
     if not PINNED.fullmatch(settings.mail_bridge_image):
         raise ValueError("MAIL_BRIDGE_IMAGE must be pinned by a full digest (name@sha256:<64 lowercase hex>)")
     config = mail_config.load()
@@ -26,4 +30,4 @@ def wire_mail_bridge(settings: Settings, api: KubeApi) -> None:
     services.register(ProtonBridge, bridge)
     services.register(ProtonLogin, KeeperLogin(settings.mail_bridge_keeper_urls, bridge, config.timeout_s))
     services.register(Keeping, BridgeKeeping(bridge, api, settings.mail_bridge_namespace, settings.mail_bridge_image,
-                                             settings.mail_bridge_app_url, settings.site, config))
+                                             settings.mail_bridge_app_url, settings.site or LOCAL_SITE, config))

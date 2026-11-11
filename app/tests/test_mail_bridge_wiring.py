@@ -1,4 +1,4 @@
-"""Proton Bridge is wired only with all four of its settings and what holds its lease; wired, the Proton kind is offered, the
+"""Proton Bridge is wired only with all four of its settings, the sandbox and the connections key; wired, the Proton kind is offered, the
 record, login and upkeep are registered and a singleton keeps the pod; unwired, none of that is."""
 
 import base64
@@ -40,11 +40,15 @@ def test_the_four_settings_come_together() -> None:
     assert Settings(**BASE, **BRIDGE).mail_bridge_image == IMAGE
 
 
-@pytest.mark.parametrize("missing", ["sandbox_token_file", "etcd_url", "site", "connections_key"])
-def test_the_image_needs_the_sandbox_the_lease_the_site_and_the_key(missing: str) -> None:
+@pytest.mark.parametrize("missing", ["sandbox_token_file", "connections_key"])
+def test_the_image_needs_the_sandbox_and_the_key(missing: str) -> None:
     base = {**BASE, "sandbox_ca_file": "/ca", missing: ""}
     with pytest.raises(ValueError, match="MAIL_BRIDGE_IMAGE needs|SANDBOX_TOKEN_FILE needs"):
         Settings(**base, **BRIDGE)
+
+
+def test_the_image_does_not_need_etcd_or_a_site() -> None:
+    assert Settings(**{**BASE, "etcd_url": "", "site": ""}, **BRIDGE).mail_bridge_image == IMAGE
 
 
 def test_the_settings_come_from_the_environment_without_a_trailing_slash() -> None:

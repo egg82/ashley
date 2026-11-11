@@ -1,4 +1,4 @@
-"""The warm look pod is wired only with its Service address, the look image and etcd behind it; wired, the Looker is the
+"""The warm look pod is wired only with its Service address, the look image behind it; wired, the Looker is the
 warm one and a singleton keeps the pod; unwired, a look has a pod of its own and nothing keeps one."""
 
 import asyncio
@@ -29,11 +29,10 @@ def api(tmp_path: Path) -> Generator[KubeApi]:
     services.unregister(Looker)
 
 
-def test_the_warm_pod_needs_the_look_image_and_etcd() -> None:
-    with pytest.raises(ValueError, match="LOOK_WARM_URL needs"):
-        Settings(look_warm_url=WARM, **BASE)
+def test_the_warm_pod_needs_the_look_image_and_not_etcd() -> None:
     with pytest.raises(ValueError, match="LOOK_WARM_URL needs"):
         Settings(look_warm_url=WARM, **{**BASE, **ETCD, "look_image": "", "look_app_url": ""})
+    assert Settings(look_warm_url=WARM, **BASE).look_warm_url == WARM
     assert Settings(look_warm_url=WARM, **BASE, **ETCD).look_warm_url == WARM
 
 

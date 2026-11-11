@@ -4064,8 +4064,9 @@ and the image built by CI as `apps/ashley-mail-bridge:<hash>`, pinned as the oth
 (`MAIL_BRIDGE_NAMESPACE`) in which the app's ServiceAccount may `create`, `get`, `list` and `delete` pods and Secrets; a
 Service selecting `ashley.yggdrasil.pub/mail-bridge=true` on ports 8080 (keeper), 2143 (IMAP) and 2025 (SMTP), whose
 `https` address, with the other site's, is `MAIL_BRIDGE_KEEPER_URL`; a network policy admitting the app alone to the keeper port, the pod to the app
-(`MAIL_BRIDGE_APP_URL`, an `https` address with a certificate the image trusts) and to Proton, and nothing else; the image digest as `MAIL_BRIDGE_IMAGE`; and `SANDBOX_TOKEN_FILE`,
-`ETCD_URL`, `SITE` and `CONNECTIONS_KEY` set where it is. The pod runs as uid 1000 with a read-only root. The app pins
+(`MAIL_BRIDGE_APP_URL`, an `https` address with a certificate the image trusts) and to Proton, and nothing else; the image digest as `MAIL_BRIDGE_IMAGE`; and `SANDBOX_TOKEN_FILE`
+and `CONNECTIONS_KEY` set where it is. Its keeper runs under whichever `Lease` is wired; without etcd there is no `SITE`,
+so the pod's site is `local`. The pod runs as uid 1000 with a read-only root. The app pins
 Bridge's TLS certificate by the fingerprint the keeper reports, as it pins a herdr bridge's.
 
 ### The mail port and her tools
