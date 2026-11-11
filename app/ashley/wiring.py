@@ -162,7 +162,7 @@ CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GI
                                                 *(k.kind for k in KEYED))  # the panel's order
 
 
-def _configured_kinds(settings: Settings) -> tuple[ConnectionKind, ...]:
+def configured_kinds(settings: Settings) -> tuple[ConnectionKind, ...]:
     """`CONNECTION_KINDS` and Proton, each marked `configured` by the settings it needs: herdr's client certificate,
     and `MAIL_BRIDGE_IMAGE` for Proton."""
     return (*(replace(k, configured=bool(settings.herdr_client_cert_file)) if k is HERDR else k
@@ -254,7 +254,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Looks, PostgresLooks(services.get(Database)))
     register_tidy(services.get(Database))
     services.register(Installs, PostgresInstalls(services.get(Database)))
-    services.register(ConnectionKinds, ConnectionKinds(_configured_kinds(settings)))
+    services.register(ConnectionKinds, ConnectionKinds(configured_kinds(settings)))
     if settings.connections_key:
         closers.extend(_wire_connections(settings))
     register_herdr(settings.herdr_client_cert_file, settings.herdr_client_key_file)

@@ -23,7 +23,7 @@ from ashley.mail.proton_kind import ADDRESS, PROTON
 from ashley.main import create_app
 from ashley.people import admin
 from ashley.settings import Settings
-from ashley.wiring import CONNECTION_KINDS, _configured_kinds
+from ashley.wiring import CONNECTION_KINDS, configured_kinds
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from fastapi.testclient import TestClient
 
@@ -113,7 +113,7 @@ def test_a_stored_row_of_an_unoffered_kind_is_listed_and_removable(db_url: str, 
 
 def test_the_kinds_are_configured_by_their_settings() -> None:
     def configured(**settings: str) -> dict[str, bool]:
-        return {k.name: k.configured for k in _configured_kinds(Settings(database_url="x", build_version="t", **settings))
+        return {k.name: k.configured for k in configured_kinds(Settings(database_url="x", build_version="t", **settings))
                 if k.name in ("herdr", "proton")}
     assert configured() == {"herdr": False, "proton": False}
     assert configured(herdr_client_cert_file="/c", herdr_client_key_file="/k")["herdr"]
