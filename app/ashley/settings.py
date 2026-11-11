@@ -49,6 +49,10 @@ class Settings:
     `sandbox_token_file` is where the app's ServiceAccount token for the sandbox is projected, and `sandbox_ca_file`
     the cluster's CA beside it; set, code runs in pods in the sandbox namespace (`ashley.runs.kubernetes`) through the
     API server at `sandbox_api_url`. Unset, she runs no code. The token file needs its CA (ValueError).
+    `sandbox_podman` is `trusted` to run code with podman on this machine (`ashley.runs.podman`) instead, with no
+    Kubernetes: podman has no gVisor, so code she runs gets this machine's kernel; it is for one owner who trusts every
+    script as much as their own. It excludes the sandbox settings (ValueError), and the screenshots, media and CAD
+    image that need them stay off. Any other value is a ValueError; unset, nothing changes.
     `sandbox_namespace` is the namespace every sandbox, look and media pod is made in and `sandbox_runtime_class` the
     RuntimeClass they run under (gVisor); a Kubernetes name each, as the API takes it (ValueError).
     `look_image` (a browser image with Playwright for Python, pinned by digest) and `look_app_url` (where a pod in the
@@ -123,6 +127,7 @@ class Settings:
     vapid_subject: str = ""
     sandbox_token_file: str = ""
     sandbox_ca_file: str = ""
+    sandbox_podman: str = ""
     sandbox_api_url: str = "https://kubernetes.default.svc"
     sandbox_namespace: str = "ashley-sandbox"
     sandbox_runtime_class: str = "gvisor"
@@ -186,6 +191,10 @@ class Settings:
             raise ValueError("SANDBOX_NAMESPACE must be a Kubernetes namespace name (lowercase letters, digits and '-')")
         if not DNS_NAME.fullmatch(self.sandbox_runtime_class):
             raise ValueError("SANDBOX_RUNTIME_CLASS must be a Kubernetes name (lowercase letters, digits, '-' and '.')")
+        if self.sandbox_podman not in ("", "trusted"):
+            raise ValueError("SANDBOX_PODMAN must be `trusted` or unset")
+        if self.sandbox_podman and (self.sandbox_token_file or self.sandbox_ca_file):
+            raise ValueError("SANDBOX_PODMAN and SANDBOX_TOKEN_FILE (or SANDBOX_CA_FILE) are two different sandboxes; set one")
         if self.sandbox_token_file and not self.sandbox_ca_file:
             raise ValueError("SANDBOX_TOKEN_FILE needs SANDBOX_CA_FILE")
         if bool(self.look_image) != bool(self.look_app_url):
@@ -242,6 +251,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     vapid_subject=env.get("VAPID_SUBJECT", "").strip(),
                     sandbox_token_file=env.get("SANDBOX_TOKEN_FILE", ""),
                     sandbox_ca_file=env.get("SANDBOX_CA_FILE", ""),
+                    sandbox_podman=env.get("SANDBOX_PODMAN", "").strip(),
                     sandbox_api_url=env.get("SANDBOX_API_URL", Settings.sandbox_api_url).rstrip("/"),
                     sandbox_namespace=env.get("SANDBOX_NAMESPACE", Settings.sandbox_namespace).strip(),
                     sandbox_runtime_class=env.get("SANDBOX_RUNTIME_CLASS", Settings.sandbox_runtime_class).strip(),

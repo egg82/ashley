@@ -746,8 +746,8 @@ A thing is a system only if all four hold:
     `artifact_bytes`), record the end with the artifacts; a model run is started with the STL, 3MF and STEP
     file pieces its `inputs` name (all of the bench's when it names none) as binary inputs (`ashley.workshop.model_inputs`, within the profile's `input_bytes`)
   - where it runs: a Strategy behind the locator, `ashley.runs.sandbox.Sandbox`, whose Null Object runs no language,
-    so `run_code` is not offered; `ashley.runs.podman.PodmanSandbox` runs the same pod's container with podman on a
-    workstation, for an eval run off the cluster (no gVisor); the app's implementation, `ashley.runs.kubernetes.KubernetesSandbox`, runs the languages
+    so `run_code` is not offered; `ashley.runs.podman.PodmanSandbox` runs the same pod's container with podman, for an eval run off the cluster or an
+    owner's `SANDBOX_PODMAN=trusted` (no gVisor, so the machine's own kernel; code runs only, never the looker, media or CAD image); the app's implementation, `ashley.runs.kubernetes.KubernetesSandbox`, runs the languages
     its config has an image for (`ashley.runs.config.RunsConfig.offered`) and makes one pod per
     run (`ashley.runs.pod_spec.manifest`, from the job's language profile) through `ashley.runs.kube_api.KubeApi`, runs `app/ashley/runs/runner.py` in
     it, reads its one marked line from the log (`ashley.runs.envelope.parse`) and deletes the pod however the run ends

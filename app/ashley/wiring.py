@@ -98,7 +98,7 @@ from .settings import Settings
 from .wiring_inference import wire_inference
 from .wiring_providers import env_keys
 from .wiring_bridge import wire_mail_bridge
-from .wiring_sandbox import wire_sandbox
+from .wiring_sandbox import wire_podman_sandbox, wire_sandbox
 from .wiring_skills import wire_skills
 from .wiring_singletons import wire_lease
 from .signin import policy as signin_policy
@@ -263,6 +263,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
         api = wire_sandbox(settings, closers)
         if settings.mail_bridge_image:
             wire_mail_bridge(settings, api)
+    elif settings.sandbox_podman:
+        wire_podman_sandbox()
     live = PostgresLive(settings.database_url, services.get(Database), live_config.load())
     closers.append(live.close)
     services.register(Live, live)
