@@ -2,7 +2,8 @@
 
 `tick_s` between runner ticks; `claim_s` before a claimed job is called lapsed; `max_attempts` claims before a lapsed
 job fails; `max_group` jobs one hand-off may start; `group_timeout_min` a group may stay unsettled; per worker
-`max_running` jobs a person may have unfinished and `deadline_min` a job may take; `max_pieces_in`, `max_bytes_in` and
+`max_running` jobs a person may have unfinished and `deadline_min` a job may take; `idle_nudge_s` a Claude Code
+session may sit idle without a `RESULT.md` before it is prompted, once, to finish; `max_pieces_in`, `max_bytes_in` and
 `brief_chars` a job is given at most; `max_outputs` files and `result_chars` of summary taken back; `agent_max_tool_rounds`
 of an agent's loop and `tool_result_chars` of each tool result it reads; `max_runs_per_turn` bench runs her own turn makes before the next is handed off; `kind_extensions`, the file
 extension a text piece of each kind goes as (`txt` for a kind not listed), and `extensions`, the one of each media type
@@ -25,6 +26,7 @@ _COUNTS = ("max_attempts", "max_group", "group_timeout_min", "max_pieces_in", "m
 class JobsConfig:
     tick_s: float
     claim_s: float
+    idle_nudge_s: float
     max_attempts: int
     max_group: int
     group_timeout_min: int
@@ -53,12 +55,13 @@ def parse(data: object) -> JobsConfig:
     if not isinstance(data, dict):
         raise ValueError("jobs config is an object")
     raw = dict[str, Any](loose)
-    names = {*_COUNTS, "tick_s", "claim_s", "max_running", "deadline_min", "kind_extensions", "extensions"}
+    names = {*_COUNTS, "tick_s", "claim_s", "idle_nudge_s", "max_running", "deadline_min", "kind_extensions", "extensions"}
     if set(raw) != names:
         raise ValueError(f"jobs.json has exactly {sorted(names)}")
     c = {n: _count(n, raw[n]) for n in _COUNTS}
     return JobsConfig(
-        _number("tick_s", raw["tick_s"]), _number("claim_s", raw["claim_s"]), c["max_attempts"], c["max_group"],
+        _number("tick_s", raw["tick_s"]), _number("claim_s", raw["claim_s"]),
+        _number("idle_nudge_s", raw["idle_nudge_s"]), c["max_attempts"], c["max_group"],
         c["group_timeout_min"], _workers("max_running", raw["max_running"]),
         _workers("deadline_min", raw["deadline_min"]), c["max_pieces_in"], c["max_bytes_in"], c["max_outputs"],
         c["brief_chars"], c["result_chars"], c["agent_max_tool_rounds"], c["tool_result_chars"],

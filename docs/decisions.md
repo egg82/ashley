@@ -2383,6 +2383,16 @@ the pieces it made, never its transcript ("A call carries only what this reply n
   can change lies outside them. A Claude Code job is stepped through `starting` (session started, files uploaded,
   prompted) to `running`, and survives a pod the same way: the session is reused and prompted again only when its
   state-change count has not moved. Deadlines and the group timeout are data (`jobs.json`).
+- **A Claude Code job is finished when `out/RESULT.md` exists, not when its session goes quiet.** A worker may start
+  long background work, end its turn and go `idle` while it runs, so `idle` or `done` without `RESULT.md` keeps the job
+  `running` and its session open. A session that stays idle for `idle_nudge_s` without one is prompted once ("wait for
+  the background work, then write it"); `idle_since` and `nudged_at` on the job row make that once across pods and
+  sites. With `RESULT.md` present and the session stopped, the job is collected `done`. The deadline still collects
+  whatever `out/` holds and ends `timed_out`, reason `deadline` with a result and `no_result` without, which her
+  watch note turns into "stopped before writing its result; its work may be in its folder", not "empty". The worker's
+  footer states the contract (finished only when `RESULT.md` is written; keep the work inside the job folder), and her
+  hand-off guidance tells her to write briefs that stay inside it. A tick costs nothing extra while the session works
+  and one `outputs` listing while it is idle or done.
 - **A Claude Code job waits for a machine that is not answering.** A bridge that cannot be reached (`herdr_unavailable`:
   down, no TLS, or herdr stopped behind it) does not fail the hand-off or the start: the job is recorded `waiting`, with
   its deadline counted from the hand-off, and its card says so. The runner steps it each tick; when the bridge answers

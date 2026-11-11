@@ -27,7 +27,7 @@ INSTRUCTIONS = (
     "it. The worker `agent` does a job with bench tools alone, in a few minutes; `claude_code`, when offered, "
     "runs a session on the person's own machine, for repositories, many files, tools the bench lacks or work that takes "
     "longer. A bench turn makes only a couple of runs of its own, and the next is refused: that is the point at which "
-    "the loop becomes a job. If a result says watched is false, tell the person you could not arm the watch. If it says "
+    "the loop becomes a job. A claude_code brief keeps all of the work inside its job folder, since nothing outside it comes back. If a result says watched is false, tell the person you could not arm the watch. If it says "
     "waiting is true, the person's machine is not answering: tell them the claude_code job is waiting for it, starts by "
     "itself when it answers and ends as failed if it does not in time, and that you will be told either way. "
     "bench_job_cancel stops a job when the person asks.")

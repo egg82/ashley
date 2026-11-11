@@ -1,6 +1,7 @@
 {
   "tick_s": 5,
   "claim_s": 600,
+  "idle_nudge_s": 300,
   "max_attempts": 3,
   "max_group": 3,
   "group_timeout_min": 200,

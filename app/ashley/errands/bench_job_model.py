@@ -39,7 +39,8 @@ class NewJob:
 
 @dataclass(frozen=True)
 class Outcome:
-    """How a job ended: `reason` a slug when it did not finish well, `summary` what the worker says it did, `outputs`
+    """How a job ended: `reason` a slug when it did not finish well (a Claude Code job that ran to its deadline without
+    writing `RESULT.md` is `timed_out` with `no_result`, one that wrote it `deadline`), `summary` what the worker says it did, `outputs`
     the pieces it made that the person should look at, `refused` how many files it returned that were not taken."""
 
     state: Ending
@@ -53,7 +54,8 @@ class Outcome:
 class Job:
     """One job as stored. `attempts` is how many times it has been claimed; `made` the pieces its worker added, across
     attempts. `session_id` and `prompted_at` are a Claude Code job's progress through `starting`, `session_seq` the session's
-    state-change count when it was started."""
+    state-change count when it was started. `idle_since` is when its session was first seen idle without a result since
+    it last worked, and `nudged_at` when it was prompted to finish, which happens once."""
 
     id: int
     household_id: int
@@ -80,6 +82,8 @@ class Job:
     summary: str | None
     outputs: tuple[int, ...]
     refused: int
+    idle_since: datetime | None = None
+    nudged_at: datetime | None = None
 
     @property
     def final(self) -> bool:

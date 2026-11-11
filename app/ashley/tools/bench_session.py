@@ -1,7 +1,10 @@
 """A Claude Code worker for a bench job (`ashley.errands.bench_jobs`): a session on the person's herdr bridge, started
 under `<first root>/ashley-jobs/j<job id>`, given the job's pieces as files in `in/`, prompted with her brief and a footer
 code writes, and, once it stops, read back from `out/` alone: each file the bench's intake accepts becomes a file
-piece, `RESULT.md` the summary. She never answers a dialog it is blocked on: the job becomes `blocked` and the person
+piece, `RESULT.md` the summary. The job is finished when `out/RESULT.md` exists and the session has stopped (`idle`
+or `done`), never before: a session that stops without it may be waiting on background work, so the job stays `running`,
+the session is prompted once after `idle_nudge_s` idle to wait for that work and write it, and the deadline collects
+whatever is there, ending `timed_out` with reason `no_result` when `RESULT.md` is not. She never answers a dialog it is blocked on: the job becomes `blocked` and the person
 answers where it runs. The runner closes the session once the job has ended, so nothing is left open in herdr.
 
 `step` does one tick of one job and every write names the attempt, so a pod that dies between steps is retaken
@@ -30,6 +33,9 @@ from .tainted import her
 log = logging.getLogger("ashley.tools")
 RULES = workshop_rules.load()
 RESULT = "RESULT.md"
+NO_RESULT = "no_result"
+NUDGE = (f"You stopped without writing ./out/{RESULT}, and the job is not finished until it exists. If background work is "
+         f"still running, wait for it to finish, then write ./out/{RESULT} as the summary the brief asked for.")
 TRANSIENT = ("busy", "unknown_state", "person_typing", "blocked")
 REFUSED = ("bad_token", "wrong_person", "pin_mismatch")
 
@@ -52,9 +58,11 @@ async def listed_for(job: Job) -> Listed | None:
 
 def footer(config: JobsConfig = CONFIG) -> str:
     """What code adds to every brief: where the pieces are and where the results go."""
-    return (f"\n\n---\nThe pieces this job gives you are files in ./in. Put what the person should get in ./out, at "
-            f"most {config.max_outputs} files, and write ./out/{RESULT} as a summary of what you did and found, under "
-            f"{config.result_chars} characters. Nothing outside ./out comes back.")
+    return (f"\n\n---\nThe pieces this job gives you are files in ./in. Do all the work inside this folder: nothing "
+            f"outside ./out comes back. Put what the person should get in ./out, at most {config.max_outputs} files, and "
+            f"write ./out/{RESULT} as a summary of what you did and found, under {config.result_chars} characters. The "
+            f"job is finished only when ./out/{RESULT} is written, so when you start work that runs in the background, "
+            f"wait for it to finish before you end a turn, and write ./out/{RESULT} last.")
 
 
 def directory(root: str, job: Job) -> str:
