@@ -142,3 +142,52 @@ def test_the_migration_seeds_no_controls_not_even_on_household_ones_hallway_tabl
         rows = conn.execute("SELECT device_id, name, position, action, entity_id FROM device_controls "
                             "ORDER BY device_id, position").fetchall()
     assert {tablet, kitchen, theirs} and rows == []
+
+
+TOGGLE_HALL: dict[str, str | None] = {"label": "Hall", "action": "light.toggle", "entity_id": "light.zq_hall"}
+TOGGLE_PORCH: dict[str, str | None] = {"label": "Porch", "action": "light.toggle", "entity_id": "light.zq_porch"}
+
+
+@pytest.fixture
+def house() -> MemoryHouse:
+    return lit_house()
+
+
+@pytest.fixture
+def toggling(db_url: str, people: People, house: MemoryHouse) -> Generator[TestClient]:
+    with app_client(db_url, people, {people.home: house, people.other: lit_house()}) as c:
+        as_(c, people, "alana")
+        connect_ha(c)
+        yield c
+
+
+@pytest.mark.xfail(strict=True, reason="light.toggle is not an action yet")
+def test_a_light_toggle_is_stored_and_a_scene_cannot_take_it(toggling: TestClient, db_url: str, people: People) -> None:
+    mine = device(db_url, people.home, "tok-a")
+    saved = put(toggling, mine, TOGGLE_HALL)
+    assert saved.status_code == 200, saved.text
+    assert [c["action"] for c in saved.json()["device_controls"]] == ["light.toggle"]
+    night: dict[str, str | None] = {"label": "Night", "action": "light.toggle", "entity_id": "scene.zq_night"}
+    assert put(toggling, mine, night).status_code == 422
+
+
+@pytest.mark.xfail(strict=True, reason="a toggle's button is not told whether its light is on yet")
+def test_the_kiosk_reads_whether_a_toggles_light_is_on_and_says_nothing_otherwise(toggling: TestClient, db_url: str,
+                                                                                  people: People,
+                                                                                  house: MemoryHouse) -> None:
+    mine = device(db_url, people.home, "tok-a")
+    assert put(toggling, mine, TOGGLE_HALL, TOGGLE_PORCH, PORCH).status_code == 200
+    assert [(c["name"], c["on"]) for c in kiosk_controls(toggling, "tok-a")] == [
+        ("hall", False), ("porch", True), ("porch-off", None)]
+    house.down = True
+    assert [c["on"] for c in kiosk_controls(toggling, "tok-a")] == [None, None, None]
+
+
+@pytest.mark.xfail(strict=True, reason="light.toggle is not an action yet")
+def test_pressing_a_toggle_runs_light_toggle_on_its_light_through_the_house(toggling: TestClient, db_url: str,
+                                                                            people: People, house: MemoryHouse) -> None:
+    mine = device(db_url, people.home, "tok-a")
+    assert put(toggling, mine, TOGGLE_PORCH).status_code == 200
+    pressed = toggling.post("/api/kiosk/controls/porch", headers={**ORIGIN, "cookie": f"{KIOSK}=tok-a"})
+    assert pressed.status_code == 200 and pressed.json() == {"done": True}
+    assert [d[2:4] for d in house.done] == [("light.toggle", ("light.zq_porch",))]
