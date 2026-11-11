@@ -12,12 +12,12 @@ from connection_routes_support import delete_kind, put_kind
 
 def test_the_list_serves_every_registered_kind_in_order(client: TestClient) -> None:
     kinds = listed(client).offered
-    assert [k.name for k in kinds] == ["home_assistant", "sure", "gitlab", "github", "herdr", "google", "anthropic",
-                                       "openai", "gemini", "elevenlabs"]
+    assert [k.name for k in kinds] == ["home_assistant", "sure", "gitlab", "github", "google", "anthropic", "openai",
+                                       "gemini", "elevenlabs"]
     sure_kind = kinds[1]
     assert sure_kind.secret_field == "api_key" and sure_kind.takes_address and sure_kind.holders == ["household"]
-    assert [k.takes_address for k in kinds] == [True, True, True, False, True, False, False, False, False, False]
-    assert [k.holders for k in kinds] == [["household"], ["household"], ["person"], ["person"], ["person"],
+    assert [k.takes_address for k in kinds] == [True, True, True, False, False, False, False, False, False]
+    assert [k.holders for k in kinds] == [["household"], ["household"], ["person"], ["person"],
                                           ["household", "person"], *[["household"]] * 4]
 
 
