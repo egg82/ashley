@@ -14,6 +14,17 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
     - **A sandbox without Kubernetes**, as an opt-in for one owner who trusts the code (`app/ashley/runs/podman.py`
       behind the `Sandbox` strategy). Fits into: Code runs.
+    - **Env values that belong in a connection or a setting** (`decisions.md`, "Env var, file, connection or setting"; the
+      `TO_MOVE` set in `app/tests/test_env_tiers.py`, which fails if one is not named here). To connections, each seeding
+      its first row: `WYOMING_STT_URL` and `SEARXNG_URL` (outside services' addresses), `DISCORD_BOT_TOKEN`, and the
+      `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY` and `FILES_SECRET_KEY` of the S3-compatible store.
+      `ESPHOME_NOISE_PSK` is the household's own devices' key, so it moves to the household's settings. `FILES_LINK_KEY`,
+      `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are deployment secrets that could be generated on first start into a
+      sealed deployment row. Fits into: Connections.
+    - **Any OpenAI-compatible model provider** as a connection kind: a name, a base URL and a key, many per deployment,
+      with routes naming the connection. It covers OpenRouter, Groq, Together, Mistral, DeepSeek, Ollama and vLLM without
+      a wrapper library; Anthropic and Gemini keep their native adapters for caching and structured output.
+      `LOCAL_LLM_URL` and `LOCAL_LLM_API_KEY` become the seed of one such row. Fits into: Connections, Inference.
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
       site, and the room names in `app/ashley/evals/house_cases.json`.
 

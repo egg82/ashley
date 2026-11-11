@@ -23,6 +23,7 @@ Rules that must hold even if nothing else was read:
 - **Kubernetes changes go in the cluster repo** (the deployment's Kubernetes manifests, kept outside this repo), in
   a worktree off a fresh `origin/main`, following that repo's own rules; both sites get the change through the
   shared base.
+- **A new env var is for what the process needs before it reaches its database, or what names this deployment.** Outside services' credentials are connections, a household's choices are settings (`decisions.md`, "Env var, file, connection or setting"; gated by `test_env_tiers.py`).
 - **Behaviour keys on fields, never on words in natural-language text.** Model output carries structured fields.
 - **Logs carry ids and counts, never conversation content, people's data or secrets.**
 - **Nothing household-specific in shipped code or data.** Entity ids, scripts, device and room names, pet names and hosts go in a connection's settings or the household's own data, edited by a person in the room; a new household starts with them empty. Settings that decide taint or judging are written only by a person through the web route, never by her tools.
