@@ -5,8 +5,8 @@ a cluster goes down, and never becomes two assistants with two memories.
 
 A decision says how a part of her works now and why, with what was rejected. They live in `docs/decisions/`, one file
 per system or group of systems (the systems are `systems.md`). Read this index, then the files for the systems a change
-touches; `principles.md` and `two-sites.md` bind every change. Code and docs cite a decision as `decisions.md`, "Title":
-the title is an entry below, or a `###` heading or bold lead inside one of the files, found with
+touches; `principles.md` and `two-sites.md` bind every change. Code and docs cite a decision by its title, quoted after a
+mention of `decisions.md`: the title is an entry below, or a `###` heading or bold lead inside one of the files, found with
 `grep -rn "Title" docs/decisions/`. `app/tests/test_decision_citations.py` fails when a cited title resolves to nothing.
 
 ## Principles
