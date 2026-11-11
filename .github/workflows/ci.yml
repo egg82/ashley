@@ -34,7 +34,7 @@ jobs:
   # The suite on the Postgres major production runs (18, with pgvector) and the etcd release the referee runs. Each
   # shard takes every SHARDS-th test file in name order, so the shards together run exactly the files pytest collects.
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -103,7 +103,7 @@ jobs:
 
   # Pyright's error count against the held one in app/tools/held/pyright.json: it may only go down.
   pyright:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +118,7 @@ jobs:
 
   # The client's generated API types in step with openapi.json, its TypeScript, its tests, and that it builds.
   web:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
@@ -139,7 +139,7 @@ jobs:
   # The app image, built beside the tests. On main it is pushed by digest alone, a tag Flux never sees; `release` names
   # it once everything is green.
   app-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -190,7 +190,7 @@ jobs:
   # registry lacks that tag; the CAD and mail bridge images run their tests inside the image, as their pods run it,
   # before anything is pushed. The cluster repo pins their digests.
   hashed-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -288,7 +288,7 @@ jobs:
   ci-ok:
     if: always()
     needs: [tests, pyright, web, app-image, hashed-images]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - env:
           NEEDS: ${{ toJSON(needs) }}
@@ -300,7 +300,7 @@ jobs:
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [ci-ok, app-image]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
