@@ -168,7 +168,8 @@ def test_app_mode_two_admins_revoking_each_other_at_once_leave_one(db_url: str, 
                 set_admin(db_url, world.alana)
                 set_admin(db_url, world.sam)
                 answers = await asyncio.gather(revoke(world.alana, world.sam), revoke(world.sam, world.alana))
-                assert sorted(answers) == [200, 409], answers
+                # The loser is 409 last_admin if it checks before the winner commits, 403 admin_only if after.
+                assert sorted(answers) in ([200, 403], [200, 409]), answers
                 assert len(admin_ids(db_url)) == 1, "two revokes at once must never leave the deployment with no admin"
 
     asyncio.run(scenario())
