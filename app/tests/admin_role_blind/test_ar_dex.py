@@ -16,7 +16,7 @@ from contract.conversations_support import db_url as db_url, migrated_template a
 from fastapi.testclient import TestClient
 from signin_dex_support import PASSWORD, dex_issuer, log_in
 
-DEX_GROUP = "ashley-admins"
+DEX_GROUP = "ashley-test-admins"
 NOT_DEX_GROUP = "a-group-dex-does-not-name"
 
 
