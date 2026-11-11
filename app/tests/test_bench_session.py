@@ -6,6 +6,8 @@ pieces with `RESULT.md` as the summary; a retake reuses the session and prompts 
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from ashley import services
 from ashley.errands.bench_jobs import BenchJobs, Job, Named
 from ashley.tools import bench_session
@@ -72,26 +74,102 @@ def test_it_goes_blocked_and_back_and_collects_out_when_the_session_is_done(db_u
     run(go())
 
 
-def test_idle_after_working_ends_it_and_a_past_deadline_collects_as_it_stands(db_url: str) -> None:
+async def working_job(w: Jobs) -> tuple[Job, str]:
+    """A claude_code job whose session has been started and prompted."""
+    job = await coded(w)
+    await bench_session.step(job)
+    sid = (await fresh(w, job)).session_id
+    assert sid is not None
+    return job, sid
+
+
+@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
+def test_idle_after_working_without_a_result_keeps_it_running_and_with_one_collects_it(db_url: str) -> None:
     async def go() -> None:
         async with jobs_world(db_url) as w:
-            job = await coded(w)
-            await bench_session.step(job)
-            (sid,) = w.bridge.listed
+            job, sid = await working_job(w)
             w.bridge.files[sid] = {"a.txt": b"x"}
             w.bridge.state(sid, "idle", 9)
+            assert await bench_session.step(await fresh(w, job)) is None
+            assert (await fresh(w, job)).state == "running"
+            w.bridge.files[sid] = {"a.txt": b"x", "RESULT.md": b"all done"}
             out = await bench_session.step(await fresh(w, job))
-            assert out is not None and (out.state, len(out.outputs)) == ("done", 1)
-            other = await coded(w)
-            await bench_session.step(other)
-            late = (await fresh(w, other)).deadline_at
-            assert late is not None
-            sid2 = (await fresh(w, other)).session_id
-            assert sid2 is not None
-            w.bridge.files[sid2] = {"RESULT.md": b"partial", "b.txt": b"y"}
-            w.bridge.state(sid2, "working", 10)
-            out = await bench_session.step(await fresh(w, other), now=late + timedelta(minutes=1))
-            assert out is not None and (out.state, out.reason, out.summary) == ("timed_out", "deadline", "partial")
+            assert out is not None and (out.state, out.reason, out.summary, len(out.outputs)) == ("done", None, "all done", 1)
+    run(go())
+
+
+@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
+def test_a_done_session_without_a_result_keeps_the_job_running(db_url: str) -> None:
+    async def go() -> None:
+        async with jobs_world(db_url) as w:
+            job, sid = await working_job(w)
+            w.bridge.files[sid] = {"a.txt": b"x"}
+            w.bridge.state(sid, "done", 9)
+            assert await bench_session.step(await fresh(w, job)) is None and (await fresh(w, job)).state == "running"
+    run(go())
+
+
+@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
+def test_a_session_idle_for_the_nudge_time_is_prompted_once_across_reloaded_rows(db_url: str) -> None:
+    async def go() -> None:
+        async with jobs_world(db_url) as w:
+            job, sid = await working_job(w)
+            nudge_s = bench_session.CONFIG.idle_nudge_s
+            w.bridge.state(sid, "idle", 9)
+            start = datetime.now(UTC)
+            assert await bench_session.step(await fresh(w, job), now=start) is None
+            assert await bench_session.step(await fresh(w, job), now=start + timedelta(seconds=nudge_s - 1)) is None
+            assert len(w.bridge.prompts) == 1
+            assert await bench_session.step(await fresh(w, job), now=start + timedelta(seconds=nudge_s + 1)) is None
+            assert w.bridge.prompts[1:] == [bench_session.NUDGE]
+            assert (await fresh(w, job)).nudged_at is not None
+            for later in (nudge_s + 60, nudge_s * 3):
+                assert await bench_session.step(await fresh(w, job), now=start + timedelta(seconds=later)) is None
+            assert len(w.bridge.prompts) == 2
+    run(go())
+
+
+@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
+def test_working_again_restarts_the_idle_time_and_the_nudge_is_still_once_per_job(db_url: str) -> None:
+    async def go() -> None:
+        async with jobs_world(db_url) as w:
+            job, sid = await working_job(w)
+            nudge_s = bench_session.CONFIG.idle_nudge_s
+            start = datetime.now(UTC)
+            w.bridge.state(sid, "idle", 9)
+            await bench_session.step(await fresh(w, job), now=start)
+            w.bridge.state(sid, "working", 10)
+            await bench_session.step(await fresh(w, job), now=start + timedelta(seconds=nudge_s - 1))
+            assert (await fresh(w, job)).idle_since is None
+            w.bridge.state(sid, "idle", 11)
+            second = start + timedelta(seconds=nudge_s + 10)
+            await bench_session.step(await fresh(w, job), now=second)
+            await bench_session.step(await fresh(w, job), now=second + timedelta(seconds=nudge_s - 1))
+            assert len(w.bridge.prompts) == 1
+            await bench_session.step(await fresh(w, job), now=second + timedelta(seconds=nudge_s + 1))
+            w.bridge.state(sid, "working", 12)
+            await bench_session.step(await fresh(w, job), now=second + timedelta(seconds=nudge_s + 5))
+            w.bridge.state(sid, "idle", 13)
+            third = second + timedelta(seconds=nudge_s * 5)
+            await bench_session.step(await fresh(w, job), now=third)
+            await bench_session.step(await fresh(w, job), now=third + timedelta(seconds=nudge_s + 1))
+            assert len(w.bridge.prompts) == 2
+    run(go())
+
+
+@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
+def test_a_past_deadline_collects_as_it_stands_and_says_whether_a_result_was_written(db_url: str) -> None:
+    async def go() -> None:
+        async with jobs_world(db_url) as w:
+            for files, expected in (({"RESULT.md": b"partial", "b.txt": b"y"}, ("timed_out", "deadline", "partial")),
+                                    ({"b.txt": b"y"}, ("timed_out", "no_result", None))):
+                job, sid = await working_job(w)
+                late = (await fresh(w, job)).deadline_at
+                assert late is not None
+                w.bridge.files[sid] = files
+                w.bridge.state(sid, "working", 10)
+                out = await bench_session.step(await fresh(w, job), now=late + timedelta(minutes=1))
+                assert out is not None and (out.state, out.reason, out.summary) == expected and len(out.outputs) == 1
     run(go())
 
 
