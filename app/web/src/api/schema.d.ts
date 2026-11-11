@@ -989,6 +989,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List People
+         * @description 200 `PeopleResponse`; 401 `unauthorized`; 503 `unavailable`.
+         */
+        get: operations["list_people"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{person_id}/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Admin
+         * @description 200 `Person`, as they are now; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 404 `not_found`; 409
+         *     `last_admin`; 503 `unavailable`.
+         */
+        put: operations["put_admin"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/persona": {
         parameters: {
             query?: never;
@@ -2020,6 +2061,14 @@ export interface components {
             size: "small" | "medium" | "large" | "full";
         };
         /**
+         * AdminRequest
+         * @description Whether the person is to be an admin of the deployment.
+         */
+        AdminRequest: {
+            /** Admin */
+            admin: boolean;
+        };
+        /**
          * AgreeReply
          * @description What agreeing did: `agreed`, what became of each held call, also kept on the agreeing turn in `conversation_id`
          *     (`ChatConversationTurn.agreed`). No turn of hers is stored.
@@ -2781,7 +2830,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale";
+            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin";
             /** Detail */
             detail: string;
         };
@@ -2892,7 +2941,8 @@ export interface components {
          *     that it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or
          *     kept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household
          *     (it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they
-         *     added it and its kind allows a person to hold it).
+         *     added it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it
+         *     up: false for a deployment's connection (a model provider's key) unless they are an admin.
          */
         HouseholdConnection: {
             /** Id */
@@ -2943,6 +2993,11 @@ export interface components {
              * @default false
              */
             can_take_back: boolean;
+            /**
+             * Can Change
+             * @default true
+             */
+            can_change: boolean;
         };
         /**
          * HouseholdRefused
@@ -3779,8 +3834,18 @@ export interface components {
             speaker: string | null;
         };
         /**
+         * PeopleResponse
+         * @description The signed-in person's household's people, ordered by id, each with whether they are an admin.
+         */
+        PeopleResponse: {
+            /** People */
+            people: components["schemas"]["Person"][];
+        };
+        /**
          * Person
-         * @description One person of a household, as they are known to her. `name` is theirs to see; it is never logged.
+         * @description One person of a household, as they are known to her. `name` is theirs to see; it is never logged. `admin` is
+         *     whether they may change what the whole deployment shares (a model provider's key, who else is an admin); the
+         *     server checks it on every such change, so a client uses it only to show or hide those actions.
          */
         Person: {
             /** Id */
@@ -3789,6 +3854,8 @@ export interface components {
             household_id: number;
             /** Name */
             name: string;
+            /** Admin */
+            admin: boolean;
         };
         /**
          * PersonaChange
@@ -8244,6 +8311,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseholdRefused"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_people: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    put_admin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Person"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no person of the signed-in person's household has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `last_admin`: they are the deployment's last admin; nothing changed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a body or id outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description `unavailable`: the database could not be reached */

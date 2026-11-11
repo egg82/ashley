@@ -30,7 +30,7 @@ from ..people.people import People, PeopleUnavailable
 from . import connection_holders
 from .connection_models import (ApiKeyConnectionRequest, ConnectionChange, ConnectionKindInfo, ConnectionRefused,
                                 ConnectionRequest, ConnectionsResponse, HouseholdConnection, NewConnectionRequest)
-from .models import ErrorResponse, Person as WirePerson
+from .models import ErrorResponse, Person as WirePerson, wire_person
 from .person import Person
 
 router = APIRouter()
@@ -98,7 +98,7 @@ def _kinds(household_id: int) -> list[ConnectionKindInfo]:
 async def _people(household_id: int) -> dict[int, WirePerson]:
     found = await services.get(People).household(household_id)
     return {} if found is None else {
-        p.id: WirePerson(id=p.id, household_id=p.household_id, name=p.name) for p in found.people}
+        p.id: wire_person(p) for p in found.people}
 
 
 def _missing_scopes(c: Connection) -> list[str]:

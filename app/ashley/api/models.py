@@ -15,6 +15,7 @@ from ..text import NoNul
 from .chat_models import ChatAttachment
 from .chat_models import ChatRequest as ChatRequest
 from .look_models import ChatLook
+from .people_models import MeResponse as MeResponse, Person as Person, wire_person as wire_person
 from .receipt_models import WireAgreed, WireReceipts
 from .run_models import ChatRun
 
@@ -59,22 +60,8 @@ class ErrorResponse(BaseModel):
 
     code: Literal["database_unavailable", "unauthorized", "refused", "unavailable", "not_found", "rate_limited", "forbidden",
                   "too_large", "unsupported", "closed", "label_taken", "too_many", "held_by_household", "version_conflict",
-                  "gone", "expired", "not_yours", "stale"]
+                  "gone", "expired", "not_yours", "stale", "admin_only", "last_admin"]
     detail: str
-
-
-class Person(BaseModel):
-    """One person of a household, as they are known to her. `name` is theirs to see; it is never logged."""
-
-    id: int
-    household_id: int
-    name: str
-
-
-class MeResponse(BaseModel):
-    """Who this browser is signed in as."""
-
-    person: Person
 
 
 class LinkedAccount(BaseModel):

@@ -20,7 +20,7 @@ from ..channels.lexicons import MAX_ENTRIES, Entry, LexiconFull, Lexicons, Lexic
 from ..people.people import People, PeopleUnavailable
 from ..text import NoNul
 from .lexicon_models import LexiconRefused, LexiconWord, LexiconWordRequest, LexiconWords
-from .models import ErrorResponse, Person as WirePerson
+from .models import ErrorResponse, wire_person
 from .person import Person
 
 router = APIRouter()
@@ -43,8 +43,7 @@ def _unavailable() -> JSONResponse:
 
 async def _words(household_id: int, entries: tuple[Entry, ...]) -> list[LexiconWord]:
     found = await services.get(People).household(household_id)
-    named = {p.id: WirePerson(id=p.id, household_id=p.household_id, name=p.name)
-             for p in (found.people if found is not None else ())}
+    named = {p.id: wire_person(p) for p in (found.people if found is not None else ())}
     return [LexiconWord(real=e.real, spoken=e.spoken, updated_at=e.updated_at,
                         edited_by=None if e.updated_by is None else named.get(e.updated_by)) for e in entries]
 

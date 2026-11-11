@@ -3590,6 +3590,145 @@
         }
       }
     },
+    "/api/people": {
+      "get": {
+        "summary": "List People",
+        "description": "200 `PeopleResponse`; 401 `unauthorized`; 503 `unavailable`.",
+        "operationId": "list_people",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeopleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/people/{person_id}/admin": {
+      "put": {
+        "summary": "Put Admin",
+        "description": "200 `Person`, as they are now; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 404 `not_found`; 409\n`last_admin`; 503 `unavailable`.",
+        "operationId": "put_admin",
+        "parameters": [
+          {
+            "name": "person_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Person Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no person of the signed-in person's household has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`last_admin`: they are the deployment's last admin; nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a body or id outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/persona": {
       "get": {
         "summary": "Read Persona",
@@ -7065,6 +7204,21 @@
         "title": "AddPieceRequest",
         "description": "Add a piece of `kind` last on the bench. Its id is the command's `seq`."
       },
+      "AdminRequest": {
+        "properties": {
+          "admin": {
+            "type": "boolean",
+            "title": "Admin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "admin"
+        ],
+        "title": "AdminRequest",
+        "description": "Whether the person is to be an admin of the deployment."
+      },
       "AgreeReply": {
         "properties": {
           "conversation_id": {
@@ -8869,7 +9023,9 @@
               "gone",
               "expired",
               "not_yours",
-              "stale"
+              "stale",
+              "admin_only",
+              "last_admin"
             ],
             "title": "Code"
           },
@@ -9182,6 +9338,11 @@
             "type": "boolean",
             "title": "Can Take Back",
             "default": false
+          },
+          "can_change": {
+            "type": "boolean",
+            "title": "Can Change",
+            "default": true
           }
         },
         "type": "object",
@@ -9196,7 +9357,7 @@
           "personal"
         ],
         "title": "HouseholdConnection",
-        "description": "One of the household's connections. `id` is what addresses it; `label` is what its owner calls it, empty for one\nnever named. `kind` is the service, the `name` of a registered connection kind; `base_url` where it is\nreached; `added_by` the person who added it, null once they are not among the household's people or for one\ncarried over from her own setup; `personal` whether it is the signed-in person's own (a code host) and not the\nhousehold's; `checked_at` when the service last answered with it, at its adding or on one of\nher reads since. `needs` is set while its person must act before it works again (`reconnect`: the service\nrefused its grant, so connect it again); `scopes` are what an OAuth service granted and `missing_scopes` what its kind asks for\nthat it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or\nkept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household\n(it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they\nadded it and its kind allows a person to hold it)."
+        "description": "One of the household's connections. `id` is what addresses it; `label` is what its owner calls it, empty for one\nnever named. `kind` is the service, the `name` of a registered connection kind; `base_url` where it is\nreached; `added_by` the person who added it, null once they are not among the household's people or for one\ncarried over from her own setup; `personal` whether it is the signed-in person's own (a code host) and not the\nhousehold's; `checked_at` when the service last answered with it, at its adding or on one of\nher reads since. `needs` is set while its person must act before it works again (`reconnect`: the service\nrefused its grant, so connect it again); `scopes` are what an OAuth service granted and `missing_scopes` what its kind asks for\nthat it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or\nkept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household\n(it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they\nadded it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it\nup: false for a deployment's connection (a model provider's key) unless they are an admin."
       },
       "HouseholdRefused": {
         "properties": {
@@ -11114,6 +11275,23 @@
         "title": "PastTurn",
         "description": "A turn of an earlier conversation. `speaker` is the first name the household knows the person by who said it,\nthe household's name on its own turn, null for her turns and a speaker no one identified."
       },
+      "PeopleResponse": {
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            },
+            "type": "array",
+            "title": "People"
+          }
+        },
+        "type": "object",
+        "required": [
+          "people"
+        ],
+        "title": "PeopleResponse",
+        "description": "The signed-in person's household's people, ordered by id, each with whether they are an admin."
+      },
       "Person": {
         "properties": {
           "id": {
@@ -11127,16 +11305,21 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "admin": {
+            "type": "boolean",
+            "title": "Admin"
           }
         },
         "type": "object",
         "required": [
           "id",
           "household_id",
-          "name"
+          "name",
+          "admin"
         ],
         "title": "Person",
-        "description": "One person of a household, as they are known to her. `name` is theirs to see; it is never logged."
+        "description": "One person of a household, as they are known to her. `name` is theirs to see; it is never logged. `admin` is\nwhether they may change what the whole deployment shares (a model provider's key, who else is an admin); the\nserver checks it on every such change, so a client uses it only to show or hide those actions."
       },
       "PersonaChange": {
         "properties": {

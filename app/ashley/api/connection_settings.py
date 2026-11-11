@@ -32,7 +32,7 @@ from .connection_settings_models import (ActionIds, ActionListField, CatalogueAc
                                          ConnectionCatalogue, ConnectionSettings, ConnectionSettingsRequest,
                                          EntityListField, EntityPerActionField, SettingChange, SettingChanges,
                                          SettingEntry, SettingField, SettingInfo, SettingsRefused)
-from .models import ErrorResponse, Person as WirePerson
+from .models import ErrorResponse, Person as WirePerson, wire_person
 from .person import Person
 
 router = APIRouter()
@@ -101,7 +101,7 @@ async def _person(household_id: int, person_id: int | None) -> WirePerson | None
         return None
     found = await services.get(People).household(household_id)
     person = None if found is None else next((p for p in found.people if p.id == person_id), None)
-    return None if person is None else WirePerson(id=person.id, household_id=person.household_id, name=person.name)
+    return None if person is None else wire_person(person)
 
 
 async def _wire(connection: Connection, kind: ConnectionKind, stored: StoredSettings) -> ConnectionSettings:

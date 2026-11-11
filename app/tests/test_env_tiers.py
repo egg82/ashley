@@ -28,6 +28,7 @@ ENV: dict[str, tuple[str, str]] = {
     "OIDC_ISSUER": (D, "the web sign-in client, needed before anyone can sign in"),
     "OIDC_CLIENT_ID": (D, "the web sign-in client"),
     "OIDC_CLIENT_SECRET": (D, "the web sign-in client"),
+    "ADMIN_GROUP": (D, "the web sign-in client: which of the provider's groups makes a person an admin"),
     "DISCORD_OAUTH_CLIENT_ID": (D, "this deployment's Discord sign-in client"),
     "DISCORD_OAUTH_CLIENT_SECRET": (D, "this deployment's Discord sign-in client"),
     "GOOGLE_OAUTH_CLIENT_ID": (D, "this deployment's Google OAuth client; the logins are connections"),

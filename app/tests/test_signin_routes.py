@@ -75,7 +75,7 @@ def test_a_browser_signs_in_is_named_and_signs_out(client: TestClient, fake: Fak
     me = client.get("/api/me")
     assert me.status_code == 200
     assert MeResponse.model_validate(me.json()) == MeResponse(person=Person(id=people[1], household_id=people[0],
-                                                                            name="Alana"))
+                                                                            name="Alana", admin=False))
     out = client.post("/api/auth/signout", headers=ORIGIN)
     assert out.status_code == 204
     cleared = next(v for v in out.headers.get_list("set-cookie") if v.startswith(SESSION_COOKIE + "="))

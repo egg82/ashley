@@ -9,9 +9,13 @@ Clock = Literal["12h", "24h"]
 
 @dataclass(frozen=True)
 class Person:
+    """`admin` is whether they may change what the whole deployment shares (`ashley.people.admins`); False unless the
+    read that built this person selected it."""
+
     id: int
     household_id: int
     name: str
+    admin: bool = False
 
 
 @dataclass(frozen=True)
