@@ -18,6 +18,10 @@ class Settings:
     `etcd_url` is this site's member of the 3-site etcd (`https://<ip>:2379`); empty, singletons hold Postgres advisory
     locks instead (`ashley.referee.postgres_lease`) and fail-back does not run. The three file paths are its CA and this client's certificate and key, needed for `https`.
     `site` is this site's Patroni member name (`site-a`, `site-b`): singletons run only while it leads.
+    `active_site_leader_path` is the etcd key the referee keeps the database leader in, and `active_site_member` the value that
+    names this site there (`ACTIVE_SITE_MEMBER`, defaulting to `site`; `active_member` reads it); defaults are the Patroni
+    layout. `failback` is `on` or `off` (ValueError otherwise): off, the fail-back singleton does not run, for a Postgres
+    whose own operator decides the preferred site.
     `patroni_password` is Patroni's REST API password, which the fail-back singleton needs to switch over.
     `anthropic_api_key`, `openai_api_key`, `gemini_api_key` and `elevenlabs_api_key` are the env's keys for those
     providers: in force wherever the first household has no connection of the provider's kind, and sealed as that
@@ -97,6 +101,9 @@ class Settings:
     etcd_cert_file: str = ""
     etcd_key_file: str = ""
     site: str = ""
+    active_site_leader_path: str = "/service/postgres/leader"
+    active_site_member: str = ""
+    failback: str = "on"
     patroni_password: str = ""
     anthropic_api_key: str = ""
     openai_api_key: str = ""
@@ -162,7 +169,14 @@ class Settings:
         """The host of each address in `mail_bridge_keeper_urls`, in order: where Bridge's IMAP and SMTP are."""
         return tuple(h for h in (urlsplit(u).hostname for u in self.mail_bridge_keeper_urls) if h)
 
+    @property
+    def active_member(self) -> str:
+        """The value of `active_site_leader_path` that makes this site the active one."""
+        return self.active_site_member or self.site
+
     def __post_init__(self) -> None:
+        if self.failback not in ("on", "off"):
+            raise ValueError("FAILBACK must be on or off")
         if bool(self.ha_url) != bool(self.ha_token):
             raise ValueError("HA_URL and HA_TOKEN must be set together")
         if self.voice_clip_base_url and not self.esphome_noise_psk:
@@ -226,7 +240,9 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
     return Settings(database_url=env["DATABASE_URL"], build_version=env.get("BUILD_VERSION", "dev"),
                     etcd_url=env.get("ETCD_URL", ""), etcd_ca_file=env.get("ETCD_CA_FILE", ""),
                     etcd_cert_file=env.get("ETCD_CERT_FILE", ""), etcd_key_file=env.get("ETCD_KEY_FILE", ""),
-                    site=env.get("SITE", ""), patroni_password=env.get("PATRONI_RESTAPI_PASSWORD", ""),
+                    site=env.get("SITE", ""), active_site_leader_path=env.get("ACTIVE_SITE_LEADER_PATH", Settings.active_site_leader_path),
+                    active_site_member=env.get("ACTIVE_SITE_MEMBER", ""), failback=env.get("FAILBACK", "on"),
+                    patroni_password=env.get("PATRONI_RESTAPI_PASSWORD", ""),
                     anthropic_api_key=env.get("ANTHROPIC_API_KEY", ""), openai_api_key=env.get("OPENAI_API_KEY", ""),
                     gemini_api_key=env.get("GEMINI_API_KEY", ""), local_llm_url=env.get("LOCAL_LLM_URL", ""),
                     local_llm_api_key=env.get("LOCAL_LLM_API_KEY", ""), routes_file=env.get("ROUTES_FILE", "").strip(),
