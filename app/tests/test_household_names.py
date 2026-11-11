@@ -35,7 +35,9 @@ KEPT: dict[str, int] = {
     "app/tests/test_runs_pod_log.py": 1,
     "app/tests/warm_look_blind/test_wl_keeper.py": 1,
     "app/tests/warm_look_blind/test_wl_spec.py": 2,
-    "docs/decisions.md": 4,
+    "docs/decisions/bench-files.md": 2,
+    "docs/decisions/mail.md": 1,
+    "docs/decisions/tools.md": 1,
 }
 
 
