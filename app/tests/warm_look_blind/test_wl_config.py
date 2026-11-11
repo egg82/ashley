@@ -1,5 +1,5 @@
 """The warm pod's settings: `warm_tick_s`, `warm_max_age_s` and `warm_connect_s` are data in `looks.json` (`parse`
-rejects them missing or not positive), `Settings.look_warm_url` needs `look_image` and `etcd_url` and loses a trailing
+rejects them missing or not positive), `Settings.look_warm_url` needs `look_image` and loses a trailing
 slash, and wiring puts the warm looker in front of the pod-per-look one only when it is set."""
 
 import json
@@ -66,14 +66,17 @@ def test_the_warm_url_loses_a_trailing_slash_and_is_empty_when_unset() -> None:
     assert Settings(database_url="x", build_version="t").look_warm_url == ""
 
 
-@pytest.mark.parametrize("without", ["LOOK_IMAGE", "ETCD_URL"])
-def test_the_warm_url_needs_the_look_image_and_etcd(without: str) -> None:
+def test_the_warm_url_needs_the_look_image() -> None:
     env = {**ENV, "LOOK_WARM_URL": WARM}
-    del env[without]
-    if without == "LOOK_IMAGE":
-        del env["LOOK_APP_URL"]
+    del env["LOOK_IMAGE"], env["LOOK_APP_URL"]
     with pytest.raises(ValueError):
         from_env(env)
+
+
+def test_the_warm_url_does_not_need_etcd() -> None:
+    env = {**ENV, "LOOK_WARM_URL": WARM}
+    del env["ETCD_URL"]
+    assert from_env(env).look_warm_url == WARM
 
 
 def test_the_warm_url_alone_is_refused() -> None:
