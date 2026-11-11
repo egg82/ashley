@@ -1,0 +1,24 @@
+Planted wrong implementations for the finish blind suite. Each was applied to the implementation alone, the suite run, and
+the edit reverted. K = killed (a test went red), E = equivalent.
+
+M01 K | _stopped | the nudge is sent on every idle tick (the nudged_at check dropped)
+M02 K | _stopped | a stopped session is collected whether or not RESULT.md exists
+M03 K | collect | a timed-out job's reason is always `deadline`, even without RESULT.md
+M04 K | _stopped | the nudge goes out at once (threshold 0 instead of idle_nudge_s)
+M05 K | _watch | the idle clock is not reset when the session works again
+M06 E | _nudge | a transient refusal falls through to `raise` instead of returning: step's caller already treats it as
+      |        | "try again next tick", so nothing observable differs. M06b below is the observable form.
+M06b K | _nudge | every refusal of the nudge is recorded as nudged, so a transient one is never retried
+M07 K | _stopped | boundary: `>` instead of `>=`, so exactly idle_nudge_s does not nudge
+M08 K | _watch | a working session is treated as stopped (collected, or its idle clock started)
+M09 K | _stopped | idle is measured from the job's creation, not from when idle was first seen
+M10 K | collect | `wrote` is always False: `no_result` even when RESULT.md exists
+M11 K | _stopped | the wait is a hard-coded 300 instead of config.idle_nudge_s
+M12 K | _nudge | the nudge is never recorded, so another tick (or pod) sends it again
+M13 K | jobs_config._number | zero is accepted as a positive tunable
+M14 E | jobs_config.parse | `raw.get("idle_nudge_s", 300)` alone: the exact-key-set check before it still refuses a missing key
+M14b K | jobs_config.parse | the key is optional with a default: a missing idle_nudge_s loads
+M15 K | _stopped | the nudge never fires (an idle session is never prompted)
+M16 E | collect | `reason = no_result` for an ending of `done` without RESULT.md: a `done` collect only happens with
+      |        | RESULT.md listed, so `wrote` is True there
+M16b K | collect | a timed-out job with RESULT.md gets no reason instead of `deadline`

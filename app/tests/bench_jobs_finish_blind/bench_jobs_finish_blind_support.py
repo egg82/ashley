@@ -3,18 +3,14 @@ Claude Code job on the bench-jobs blind suite's world, stepped through `bench_se
 the idle clock is driven by the `now` the tick is given and never by sleeping. Every tick re-reads the job from the
 store, as another pod would."""
 
-import sys
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bench_jobs_blind"))
-
-from bjb_support import MARK_BRIEF, World, bench_session, cfg, state_of  # noqa: E402
-from ashley.errands.bench_job_model import Outcome  # noqa: E402
-from ashley.errands.jobs_config import JobsConfig  # noqa: E402
-from ashley.herdr.model import Status  # noqa: E402
+from bjb_support import MARK_BRIEF, World, bench_session, cfg, state_of
+from ashley.errands.bench_job_model import Outcome
+from ashley.errands.jobs_config import JobsConfig
+from ashley.herdr.model import Status
 
 NUDGE = bench_session.NUDGE
 NO_RESULT = bench_session.NO_RESULT
@@ -34,6 +30,7 @@ class Run:
     async def tick(self, at: float = 0.0, with_config: JobsConfig | None = None) -> Outcome | None:
         """One step, `at` seconds after the first one."""
         job = await self.w.jobs.get(self.w.owner.household_id, self.w.owner.person_id, self.job_id)
+        assert job is not None
         return await bench_session.step(job, now=self.t0 + timedelta(seconds=at), config=with_config or cfg())
 
     def settle(self, status: Status) -> None:
