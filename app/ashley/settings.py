@@ -39,9 +39,9 @@ class Settings:
     `oidc_issuer`, `oidc_client_id` and `oidc_client_secret` wire sign-in through OIDC, all three or none
     (ValueError); unset, the sign-in routes answer 503. It needs `public_url` (`https://ashley.example.com`), the
     origin people reach her at, which names the callback the provider returns to and the one origin a cookie-signed write
-    may come from (ValueError). `admin_group` names a group in the provider's `groups` claim whose members become admins
-    of the deployment at sign-in (the `groups` scope is asked for when it is set); empty, the first person to sign in
-    on a deployment with no admin becomes one.
+    may come from (ValueError). `admin_group` names a group in the provider's `groups` claim: set, that group alone
+    decides who is an admin of the deployment, read at each sign-in (the `groups` scope is asked for too); empty, the
+    app keeps its own record, the first person to sign in on a deployment with no admin becoming one.
     `discord_oauth_client_id` and `discord_oauth_client_secret` are the Discord application's OAuth2 client, through
     which a signed-in person links their own Discord account; both or neither (ValueError), and they need
     `public_url`, which names the redirect Discord returns to (ValueError). Unset, linking answers 503.

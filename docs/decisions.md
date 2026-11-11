@@ -708,9 +708,9 @@ talking with nothing guessed. She keeps no passwords of her own.
 ## An admin changes what the deployment shares
 
 Some state is the whole deployment's rather than one household's: a model provider's key pays for every household's
-calls. Only an admin changes it. Admin is a field on the person (`people.admin`), not a system: People holds it, and a
-narrow writer, `Admins` (`ashley.people.admins`), changes it, imported only by the sign-in and people routes and the
-wiring, so nothing she does on her own makes anyone an admin.
+calls. Only an admin changes it. Who is an admin has two modes, chosen by `ADMIN_GROUP` (env, the sign-in client's
+tier), and `GET /api/people` says which is in force (`admins_from`), so the client shows the grant controls only where
+they work.
 
 - **What is admin-only:** adding, replacing, renaming, removing or setting up a connection of a `deployment` kind
   (`ashley.api.admin_gate.may_change`), and granting or revoking admin. A route that is admin-only as a whole takes
@@ -719,24 +719,41 @@ wiring, so nothing she does on her own makes anyone an admin.
 - **Not admin-only:** a household's own settings and connections stay any member's, as before. The settings that
   decide taint or judging are still written only by a person through the web; on a `deployment` connection that person
   must be an admin, since the setting then applies to every household.
-- **An admin grants and revokes admin from the web** (`PUT /api/people/{id}/admin`), for the people of their own
-  household. Revoking the last admin is refused (409 `last_admin`). Every admin write takes one transaction-scoped
-  advisory lock (`people:admin`) before its conditional write, so two revokes at once on two sites cannot leave none.
-- **The first admin.** With `ADMIN_GROUP` unset, the first person to complete sign-in on a deployment with no admin
-  becomes one: `Admins.claim_first` sets the flag only while no person has it, under the same lock, so of two
-  sign-ins racing on two pods exactly one wins. Sign-in already needs the provider to admit the account, so this is
-  open to no stranger. A deployment that had people when the flag arrived made every person of its first household
-  an admin, which kept what they could do; an admin revokes the rest.
-- **`ADMIN_GROUP`** (env, the sign-in client's tier) names a group in the provider's `groups` claim. Set, the sign-in
-  asks for the `groups` scope as well, a person whose ID token names the group is made an admin at each sign-in, and
-  the first-admin rule above is off, since the provider says who is one. It grants and never revokes: a person taken
-  out of the group stays an admin until an admin revokes them here, because the flag is also granted from the web and
-  a sign-in must not undo that.
-  - Rejected: revoking at sign-in when the group is absent. It would undo every grant made from the web, and could take
-    away the last admin with nothing to refuse it.
+- **The app decides (`ADMIN_GROUP` unset).** Admin is a field on the person (`people.admin`), not a system: People
+  reads it and a narrow writer, `Admins` (`ashley.people.admins`), changes it, imported only by the sign-in and people
+  routes and the wiring, so nothing she does on her own makes anyone an admin.
+  - An admin grants and revokes admin from the web (`PUT /api/people/{id}/admin`), for the people of their own
+    household. Revoking the last admin is refused (409 `last_admin`). Every admin write takes one transaction-scoped
+    advisory lock (`people:admin`) before its conditional write, so two revokes at once on two sites cannot leave none.
+  - Whenever no person is an admin, the earliest person of the first household (the lowest id) becomes one: each
+    sign-in calls `Admins.ensure_one`, one conditional write under the same lock, so sign-ins racing on two pods make
+    one admin, and always the same person. On a new deployment that person is the first to sign in. Sign-in already
+    needs the provider to admit the account, so this is open to no stranger.
+  - A deployment that had people when the flag arrived made every person of its first household an admin, which kept
+    what they could do; an admin revokes the rest.
+- **The provider decides (`ADMIN_GROUP` set).** The group of that name in the ID token's `groups` claim is the only
+  source of truth; the sign-in asks for the `groups` scope as well. Each sign-in stores what the claim said on the
+  session it opens and on every other live session of that person (`sessions.admin`), granting or revoking, and a
+  person is an admin while that says so. It is written to `people.admin` too, but that is not read in this mode, so
+  no earliest-person rule, no backfill and no grant made in the app carries over: a session opened before the group
+  was set is no admin's, and every grant or revoke from the web is 409 `admins_from_provider`.
+  - Unsetting `ADMIN_GROUP` returns to the app's own record: each person's flag as the group last set it at their
+    sign-in (or as the app had it, for someone who has not signed in since the group was set), and if that leaves no
+    admin, the earliest person of the first household becomes one at the next sign-in, whoever signs in.
+  - **A change in the group takes effect at the person's next sign-in, not sooner.** Someone taken out of the group in
+    the provider stays an admin on their open sessions until they sign in again or those sessions end (at most
+    `session_days`, sooner when idle for `idle_days`; `app/ashley/signin/signin.json`). To revoke at once, remove them
+    from the group and end their sessions (removing their account here ends every one).
+  - Rejected: reading the claim again during a session. The app keeps no provider token to ask with, and a session
+    would then depend on the provider being reachable for every request.
+  - Rejected: reading `people.admin` in this mode as well. Grants made in the app before the group was set would then
+    stand on every session not yet signed in again, for up to `session_days`.
 - **Rejected:** "any person of the first household", which let a child or guest rotate the deployment's keys and gave
   one household control over every household's models and spend; a role per household, since what is gated is not
-  any household's; and a read-then-write for the first admin, which two sign-ins at once both pass.
+  any household's; making the first person to sign in the admin, which on a deployment the group had managed would
+  hand it to whoever signed in next; a read-then-write for the first admin, which two sign-ins at once both pass; and
+  the provider's group only granting, beside grants made here, which left anyone taken out of the group an admin for
+  good.
 
 ## A person links their own Discord account
 

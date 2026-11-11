@@ -66,7 +66,7 @@ class PostgresSessions(Sessions):
             row = await cur.fetchone()
         return None if row is None or not row[3] else Pending(row[0], row[1], row[2])
 
-    async def open(self, system: str, external_id: str) -> Opened | None:
+    async def open(self, system: str, external_id: str, admin_group: bool | None = None) -> Opened | None:
         token = secrets.token_urlsafe(32)
         async with self._conn() as conn:
             await conn.execute("DELETE FROM sessions WHERE expires_at <= now() "

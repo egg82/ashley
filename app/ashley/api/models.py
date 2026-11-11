@@ -60,7 +60,7 @@ class ErrorResponse(BaseModel):
 
     code: Literal["database_unavailable", "unauthorized", "refused", "unavailable", "not_found", "rate_limited", "forbidden",
                   "too_large", "unsupported", "closed", "label_taken", "too_many", "held_by_household", "version_conflict",
-                  "gone", "expired", "not_yours", "stale", "admin_only", "last_admin"]
+                  "gone", "expired", "not_yours", "stale", "admin_only", "last_admin", "admins_from_provider"]
     detail: str
 
 
