@@ -29,6 +29,7 @@ from ..connections.pending import ConnectPending, Pending
 from ..signin.oidc import pkce
 from . import connection_holders
 from .connection_models import OAuthStartRequest, OAuthStartResponse
+from .admin_gate import may_change, refused
 from .models import ErrorResponse
 from .person import Person, callback_person
 
@@ -38,7 +39,8 @@ Outcome = Literal["connected", "cancelled", "wrong_person", "refused", "label_ta
                   "failed"]
 _START: dict[int | str, dict[str, Any]] = {
     401: {"model": ErrorResponse, "description": "`unauthorized`: no live session"},
-    403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"},
+    403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site; `admin_only`: a "
+          "`deployment` kind, which only an admin connects"},
     404: {"model": ErrorResponse, "description": "`not_found`: no such kind, or it is not connected through that "
           "provider"},
     422: {"model": ErrorResponse, "description": "`unsupported`: a personal kind held by the household; or a body "
@@ -74,6 +76,8 @@ async def start_oauth_connect(signed_in: Person, provider: str, body: OAuthStart
         return _error(404, "not_found", "there is no such kind of connection")
     if body.holder not in kind.holders:
         return _error(422, "unsupported", f"{kind.title} cannot be held by {_WHO[body.holder]}")
+    if not may_change(signed_in, kind):
+        return refused(signed_in, "connections.oauth")
     registered = services.get(OAuthProviders).get(provider)
     if registered is None or not services.get(Connections).can_open():
         return _unavailable()

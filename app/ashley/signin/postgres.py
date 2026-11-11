@@ -16,7 +16,8 @@ from .policy import Policy
 from .sessions import Sessions, SessionsUnavailable
 
 _FIND = (
-    "SELECT s.id, p.id, p.household_id, p.name, s.last_seen_at < now() - make_interval(mins => %(touch)s) "
+    "SELECT s.id, p.id, p.household_id, p.name, CASE WHEN %(provider)s THEN s.admin ELSE p.admin END, "
+    "s.last_seen_at < now() - make_interval(mins => %(touch)s) "
     "FROM sessions s JOIN accounts a ON a.id = s.account_id "
     "JOIN people p ON p.id = a.person_id AND p.household_id = a.household_id "
     "WHERE s.token_sha256 = %(hash)s AND s.expires_at > now() AND s.last_seen_at > now() - make_interval(days => %(idle)s)"
@@ -27,15 +28,32 @@ _CLOSE = (
     "JOIN people p ON p.id = a.person_id AND p.household_id = a.household_id"
 )
 
+_OPEN = (
+    "WITH made AS (INSERT INTO sessions (token_sha256, account_id, household_id, expires_at, admin) "
+    "SELECT %s, a.id, a.household_id, now() + make_interval(days => %s), %s FROM accounts a "
+    "WHERE a.system = %s AND a.external_id = %s RETURNING id, account_id) "
+    "SELECT m.id, p.id, p.household_id, p.name, p.admin FROM made m JOIN accounts a ON a.id = m.account_id "
+    "JOIN people p ON p.id = a.person_id AND p.household_id = a.household_id"
+)
+_FROM_GROUP = (
+    "WITH theirs AS (UPDATE sessions SET admin = %(admin)s WHERE account_id IN "
+    "(SELECT id FROM accounts WHERE person_id = %(person)s)) "
+    "UPDATE people SET admin = %(admin)s WHERE id = %(person)s"
+)
+
 
 def sha256(value: str) -> bytes:
     return hashlib.sha256(value.encode()).digest()
 
 
 class PostgresSessions(Sessions):
-    def __init__(self, database: Database, policy: Policy) -> None:
+    """`admins_from_provider` is whether the sign-in provider's group decides who is an admin (`ADMIN_GROUP` set): a
+    session's person is then one as the session says (`sessions.admin`), else as `people.admin` says."""
+
+    def __init__(self, database: Database, policy: Policy, admins_from_provider: bool = False) -> None:
         self._database = database
         self._policy = policy
+        self._admins_from_provider = admins_from_provider
 
     @asynccontextmanager
     async def _conn(self) -> AsyncGenerator[psycopg.AsyncConnection[tuple[Any, ...]]]:
@@ -71,26 +89,26 @@ class PostgresSessions(Sessions):
         async with self._conn() as conn:
             await conn.execute("DELETE FROM sessions WHERE expires_at <= now() "
                                "OR last_seen_at <= now() - make_interval(days => %s)", (self._policy.idle_days,))
-            cur = await conn.execute(
-                "WITH made AS (INSERT INTO sessions (token_sha256, account_id, household_id, expires_at) "
-                "SELECT %s, a.id, a.household_id, now() + make_interval(days => %s) FROM accounts a "
-                "WHERE a.system = %s AND a.external_id = %s RETURNING id, account_id) "
-                "SELECT m.id, p.id, p.household_id, p.name FROM made m JOIN accounts a ON a.id = m.account_id "
-                "JOIN people p ON p.id = a.person_id AND p.household_id = a.household_id",
-                (sha256(token), self._policy.session_days, system, external_id))
+            cur = await conn.execute(_OPEN, (sha256(token), self._policy.session_days, bool(admin_group), system,
+                                             external_id))
             row = await cur.fetchone()
-        return None if row is None else Opened(token, SignedIn(row[0], Person(row[1], row[2], row[3])))
+            if row is not None and admin_group is not None:
+                await conn.execute(_FROM_GROUP, {"person": row[1], "admin": admin_group})
+        if row is None:
+            return None
+        admin = row[4] if admin_group is None else admin_group
+        return Opened(token, SignedIn(row[0], Person(row[1], row[2], row[3], admin)))
 
     async def find(self, token: str) -> SignedIn | None:
         if not token:
             return None
         async with self._conn() as conn:
             cur = await conn.execute(_FIND, {"hash": sha256(token), "touch": self._policy.touch_minutes,
-                                             "idle": self._policy.idle_days})
+                                             "idle": self._policy.idle_days, "provider": self._admins_from_provider})
             row = await cur.fetchone()
-            if row is not None and row[4]:
+            if row is not None and row[5]:
                 await conn.execute("UPDATE sessions SET last_seen_at = now() WHERE id = %s", (row[0],))
-        return None if row is None else SignedIn(row[0], Person(row[1], row[2], row[3]))
+        return None if row is None else SignedIn(row[0], Person(row[1], row[2], row[3], row[4]))
 
     async def close(self, token: str) -> SignedIn | None:
         if not token:

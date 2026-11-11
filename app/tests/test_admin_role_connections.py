@@ -3,10 +3,14 @@ routes and database with the provider's read faked; a household's own connection
 "An admin changes what the deployment shares"). Alana is the first household's admin, Sam is of it and is not."""
 
 from collections.abc import Generator
+from dataclasses import replace
 
 import pytest
 from ashley.inference import kinds
-from ashley.inference.kinds import ANTHROPIC_API
+from ashley.api.admin_gate import may_change
+from ashley.inference.kinds import ANTHROPIC, ANTHROPIC_API
+from ashley.people.model import Person
+from ashley.signin.model import SignedIn
 from connection_routes_support import delete_kind, put_kind
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import scalar
@@ -49,7 +53,6 @@ def _key_row(client: TestClient) -> int:
     return row
 
 
-@pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 def test_a_non_admin_of_the_first_household_is_offered_no_provider_kind_and_adding_one_is_admin_only(
         client: TestClient, alana_admin: Homes, reads: list[str], db_url: str) -> None:
     as_(client, alana_admin.sam_token)
@@ -58,7 +61,6 @@ def test_a_non_admin_of_the_first_household_is_offered_no_provider_kind_and_addi
     assert reads == [] and scalar(db_url, "SELECT count(*) FROM connections") == 0
 
 
-@pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 def test_a_non_admin_cannot_replace_rename_or_remove_a_providers_key_and_is_told_so(
         client: TestClient, alana_admin: Homes, reads: list[str], db_url: str) -> None:
     row = _key_row(client)
@@ -71,7 +73,6 @@ def test_a_non_admin_cannot_replace_rename_or_remove_a_providers_key_and_is_told
     assert scalar(db_url, "SELECT count(*) FROM connections WHERE label = ''") == 1
 
 
-@pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 def test_an_admin_adds_replaces_and_removes_a_providers_key(client: TestClient, alana_admin: Homes,
                                                             reads: list[str]) -> None:
     me = client.get("/api/me").json()["person"]
@@ -93,3 +94,15 @@ def test_a_households_own_connection_is_still_any_members(client: TestClient, al
     assert put_kind(client, "sure", json={"base_url": BASE, "api_key": KEY}, headers=ORIGIN).status_code == 200
     as_(client, alana_admin.sam_token)
     assert delete_kind(client, "sure", headers=ORIGIN).status_code == 204
+
+
+def test_only_an_admin_of_the_first_household_may_change_a_deployment_kind() -> None:
+    deployment_kind = ANTHROPIC.kind
+    household_kind = replace(ANTHROPIC.kind, deployment=False)
+
+    def who(household: int, is_admin: bool) -> SignedIn:
+        return SignedIn(1, Person(1, household, "x", is_admin))
+    assert may_change(who(1, True), deployment_kind)
+    assert not may_change(who(1, False), deployment_kind)
+    assert not may_change(who(2, True), deployment_kind)
+    assert may_change(who(2, False), household_kind)

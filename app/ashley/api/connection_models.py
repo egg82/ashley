@@ -88,8 +88,8 @@ class ConnectionKindInfo(BaseModel):
 
 
 class ConnectionsResponse(BaseModel):
-    """The signed-in person's household's connections, by kind, and every kind that household can connect, in the order
-    to show them (a model provider's key only for the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and
+    """The signed-in person's household's connections, by kind, and every kind they can connect, in the order to show
+    them (a model provider's key only for an admin of the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and
     `connections` is empty."""
 
     connections: list[HouseholdConnection]

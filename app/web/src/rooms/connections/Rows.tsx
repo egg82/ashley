@@ -120,12 +120,12 @@ export function KindRow({ kind, c }: { kind: ConnectionKindInfo; c: HouseholdCon
     <Row title={c.label || kind.title} mine={c.personal} menu={`${c.label || kind.title} actions`}
       sub={<KindSub kind={kind} c={c} />}
       when={<><div><i class={`cn-dot${c.needs ? ' stale' : ''}`} />{c.needs ? 'Needs attention' : 'Working'} · checked {checked}</div><div class="cn-added">{added} · {addedOn(c.added_at)}</div></>}
-      actions={[
+      actions={c.can_change ? [
         replaceAction(kind, c),
         ...moveActions(c),
         { label: 'Rename', onPick: () => openRename(c) },
         { label: 'Remove', onPick: () => void disconnect(c) },
-      ]} />
+      ] : undefined} />
   );
 }
 

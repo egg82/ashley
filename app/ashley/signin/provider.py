@@ -22,6 +22,7 @@ log = logging.getLogger("ashley.signin")
 
 ALGORITHMS = ["RS256", "RS384", "RS512", "ES256", "ES384"]   # signed by the provider's key; never HS* or none
 SCOPE = "openid profile email"
+GROUPS_SCOPE = "groups"   # Dex puts the `groups` claim in the ID token only for it; Authentik's `profile` carries it
 LEEWAY_S = 60
 _OBJECT = TypeAdapter(dict[str, Any])
 _KEY_SET = TypeAdapter(KeySetSerialization)
@@ -49,6 +50,15 @@ def _username(claims: dict[str, Any]) -> str:
     return ""
 
 
+def _in_group(claims: dict[str, Any], group: str) -> bool | None:
+    """Whether the `groups` claim, a list of group names, names `group`; None when no group is asked about. A claim
+    that is absent or not a list names none."""
+    if not group:
+        return None
+    named: object = claims.get("groups")
+    return isinstance(named, list) and group in named
+
+
 class OidcProvider(Oidc):
     """`client` is the confidential client it signs in as."""
 
@@ -61,8 +71,9 @@ class OidcProvider(Oidc):
 
     async def authorize_url(self, state: str, nonce: str, challenge: str) -> str:
         meta = await self._discovery()
+        scope = f"{SCOPE} {GROUPS_SCOPE}" if self.client.admin_group else SCOPE
         query = {"response_type": "code", "client_id": self.client.client_id,
-                 "redirect_uri": self.client.redirect_uri, "scope": SCOPE, "state": state, "nonce": nonce,
+                 "redirect_uri": self.client.redirect_uri, "scope": scope, "state": state, "nonce": nonce,
                  "code_challenge": challenge, "code_challenge_method": "S256"}
         return f"{meta['authorization_endpoint']}?{urlencode(query)}"
 
@@ -76,7 +87,7 @@ class OidcProvider(Oidc):
         if not isinstance(id_token, str):
             raise SignInFailed("no id_token in the token answer")
         claims = await self._verify(id_token, meta["issuer"], nonce)
-        return Identity(claims["sub"], _username(claims))
+        return Identity(claims["sub"], _username(claims), _in_group(claims, self.client.admin_group))
 
     async def _discovery(self) -> dict[str, Any]:
         async with self._lock:

@@ -9,7 +9,6 @@ from admin_role_support import (GROUP, Deployment, admins, app_client, as_browse
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from signin_support import FakeIdp
 
-pytestmark = pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 
 
 @pytest.fixture

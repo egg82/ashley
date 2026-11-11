@@ -10,7 +10,7 @@ from fastapi import Depends, Request
 from fastapi.responses import JSONResponse
 
 from .. import logs
-from ..connections.kinds import ConnectionKind
+from ..connections.kinds import FIRST_HOUSEHOLD, ConnectionKind
 from ..signin.model import SignedIn
 from .models import ErrorResponse
 from .person import person_signed_in
@@ -36,8 +36,9 @@ async def not_admin(_: Request, __: Exception) -> JSONResponse:
 
 def may_change(signed_in: SignedIn, kind: ConnectionKind) -> bool:
     """Whether the signed-in person may add, replace, rename, remove or set up a connection of `kind`: any person for a
-    household's or a person's kind, only an admin for a `deployment` kind."""
-    return not kind.deployment or signed_in.person.admin
+    household's or a person's kind; for a `deployment` kind, which only the first household holds, an admin of it."""
+    person = signed_in.person
+    return not kind.deployment or (person.admin and person.household_id == FIRST_HOUSEHOLD)
 
 
 def refused(signed_in: SignedIn, what: str) -> JSONResponse:
