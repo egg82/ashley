@@ -30,11 +30,11 @@ def check_params(params: Mapping[str, object]) -> None:
 async def transcribe(client: AsyncOpenAI, model: str, params: Mapping[str, object], format: AudioFormat,
                      chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
     audio = _wav(format, b"".join([chunk async for chunk in chunks]))
-    language = language or params.get("language")
+    chosen = language or params.get("language")
     try:
         response: object = await client.audio.transcriptions.create(
             model=model, file=("utterance.wav", audio, "audio/wav"), timeout=timeout_s,
-            language=language if isinstance(language, str) else omit)
+            language=chosen if isinstance(chosen, str) else omit)
     except openai.APIStatusError as e:
         raise ProviderFailed(status_failure(e.status_code), f"{type(e).__name__} status={e.status_code}") from e
     except openai.APIConnectionError as e:
