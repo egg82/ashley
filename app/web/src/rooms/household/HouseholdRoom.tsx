@@ -1,10 +1,12 @@
-// Household, at bearing 020: the household's own settings, her persona in it and its pronunciation words, edited by any of its people.
+// Household, at bearing 020: the household's own settings, its people and who of them is an admin, her persona in it and its pronunciation words.
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { loadHousehold } from '../../household/household';
 import { dockIn } from '../../shell/her/dock';
 import { herRoomLeft } from '../../shell/her/state';
 import { HouseholdPanel } from './HouseholdPanel';
 import { Lexicon } from './Lexicon';
+import { PeoplePanel } from './PeoplePanel';
+import { loadPeople } from './people';
 import { loadLexicon } from './lexiconWords';
 import { PersonaPanel } from './PersonaPanel';
 
@@ -12,6 +14,7 @@ export function HouseholdRoom() {
   useEffect(() => {
     void loadLexicon();
     void loadHousehold();
+    void loadPeople();
     return herRoomLeft;
   }, []);
   const here = useRef<HTMLDivElement>(null);
@@ -31,6 +34,7 @@ export function HouseholdRoom() {
         </div>
         <div class="set-col">
           <HouseholdPanel />
+          <PeoplePanel />
           <Lexicon />
         </div>
       </div>
