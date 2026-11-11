@@ -40,7 +40,7 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
      voice's first byte. Measured since, on the active site: the 700 ms end-of-speech wait, STT 0.5 s after speech
      (whisper `base` int8 on CPU), the reply call about 1.0 s (the rest of a turn is under 50 ms), and TTS first byte
      120-150 ms, its connection opened while she thinks (290-550 ms cold). The
-     call's parameters are settled (`decisions.md`, "the reply call's shape"); what is left, by size:
+     call's parameters are settled (`decisions.md`, "Looked at, and fine: the reply call's shape"); what is left, by size:
      - The end-of-speech silence (`voice.json`): every 100 ms off it is 100 ms off every wake; tune on real speech.
      - Streaming the `spoken` field into TTS saves the reply's tail, about 0.3 s on a short reply; the clip is served by
        any pod, so the stream cannot live in the singleton's.

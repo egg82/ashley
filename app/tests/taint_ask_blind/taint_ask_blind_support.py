@@ -1,6 +1,7 @@
 """Helpers for the blind tests of the tainted turn's wrapper (`decisions.md`, "A turn that has read outside words asks
-before it changes anything", second part): a migrated database with the real proposals store, a scripted inner source
-that records which calls reach it, builders for the turn's `Inbound`, specs and results, and the wrapper itself.
+before it does anything consequential the person did not ask for", second part): a migrated database with the real
+proposals store, a scripted inner source that records which calls reach it, builders for the turn's `Inbound`, specs
+and results, and the wrapper itself.
 
 Every guess beyond the design is in ASSUMPTIONS below and only here; they are listed with the spec phrase each rests
 on in `~/scratch/ashley/taint/taint-ask-blind/assumptions.txt`. Names part 1 of the item adds (`Inbound.taint`,
