@@ -16,7 +16,7 @@ from ashley.mail.proton_login import ProtonLogin
 from ashley.mail.proton_login_http import KeeperLogin
 from ashley.runs.kube_api import KubeApi
 from ashley.settings import Settings, from_env
-from ashley.wiring import _configured_kinds
+from ashley.wiring import configured_kinds
 
 IMAGE = "registry.example/ashley-mail-bridge@sha256:" + "d" * 64
 KEY = base64.b64encode(os.urandom(32)).decode()
@@ -55,7 +55,7 @@ def test_the_settings_come_from_the_environment_without_a_trailing_slash() -> No
 
 def test_wired_the_proton_kind_is_offered_and_a_singleton_keeps_the_pod(api: KubeApi) -> None:
     settings = Settings(**BASE, **BRIDGE)
-    services.register(ConnectionKinds, ConnectionKinds(_configured_kinds(settings)))
+    services.register(ConnectionKinds, ConnectionKinds(configured_kinds(settings)))
     bare = wiring_singletons.singletons(Settings(database_url="x", build_version="t", etcd_url=BASE["etcd_url"]))
     wiring_bridge.wire_mail_bridge(settings, api)
     assert "proton" in [k.name for k in services.get(ConnectionKinds).offered(1)]
@@ -69,7 +69,7 @@ def test_wired_the_proton_kind_is_offered_and_a_singleton_keeps_the_pod(api: Kub
 
 def test_unwired_the_proton_kind_is_not_offered_and_nothing_keeps_a_pod() -> None:
     unwired = Settings(database_url="x", build_version="t", etcd_url=BASE["etcd_url"])
-    services.register(ConnectionKinds, ConnectionKinds(_configured_kinds(unwired)))
+    services.register(ConnectionKinds, ConnectionKinds(configured_kinds(unwired)))
     assert services.get(ConnectionKinds).get("proton") is not None
     assert "proton" not in [k.name for k in services.get(ConnectionKinds).offered(1)]
     assert "proton" not in [k.name for k in services.get(ConnectionKinds).of_port("mail")]
