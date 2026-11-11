@@ -64,6 +64,7 @@ ENV: dict[str, tuple[str, str]] = {
     "HERDR_CLIENT_KEY_FILE": (D, "the TLS identity this deployment presents to herdr"),
     "SANDBOX_TOKEN_FILE": (D, "infra placement: the cluster credential for code runs"),
     "SANDBOX_CA_FILE": (D, "infra placement: the cluster's CA"),
+    "SANDBOX_PODMAN": (D, "infra placement: an owner's opt-in to run code with podman on this machine"),
     "SANDBOX_API_URL": (D, "infra placement: the in-cluster API"),
     "SANDBOX_NAMESPACE": (D, "infra placement"),
     "SANDBOX_RUNTIME_CLASS": (D, "infra placement"),

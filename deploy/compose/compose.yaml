@@ -41,7 +41,7 @@ services:
         condition: service_completed_successfully
     ports:
       - "${ASHLEY_PORT:-8080}:8080"
-    # Opt-in code running through podman (README, "Code running with podman"): an image of your own that adds the
+    # Opt-in code running through podman (README, "Running code without Kubernetes"): an image of your own that adds the
     # `podman` command, your rootless socket, and SANDBOX_PODMAN and CONTAINER_HOST in `.env`.
     # image: my-ashley-with-podman
     # user: "1000:1000"   # your uid, the owner of the socket
