@@ -16,6 +16,7 @@ from ashley.looks import warm_pod
 from ashley.looks.looker import Looker
 from ashley.looks.browser import PageBrowser
 from ashley.mail import proton_bridge_job
+from ashley.mail.config import MailConfig
 from ashley.mail.proton_bridge import ProtonBridge
 from ashley.mail.proton_bridge_job import BridgeKeeping, Keeping
 from ashley.mail.proton_login import ProtonLogin
@@ -40,26 +41,38 @@ ETCD = {"etcd_url": "http://127.0.0.1:1", "site": "willow"}
 STARTED: list[tuple[str, str]] = []
 
 
+SITES: list[str] = []
+
+
+class SiteRecordingKeeping(BridgeKeeping):
+    def __init__(self, bridge: ProtonBridge, api: KubeApi, namespace: str, image: str, app_url: str, site: str,
+                 config: MailConfig) -> None:
+        SITES.append(site)
+        super().__init__(bridge, api, namespace, image, app_url, site, config)
+
+
 class RecordingPostgres(PostgresLease):
     async def run(self, name: str, body: Body) -> None:
         STARTED.append((type(self).__name__, name))
 
 
 async def _record_etcd(self: EtcdLease, name: str, body: Body) -> None:
-    STARTED.append((type(self).__name__, f"{name}|gated={self._gated}"))
+    STARTED.append((type(self).__name__, name))
 
 
 @pytest.fixture
 def clean(tmp_path: Path) -> Generator[KubeApi]:
     STARTED.clear()
+    SITES.clear()
     services.register(ConnectionKinds, ConnectionKinds(CONNECTION_KINDS))
     yield KubeApi(httpx2.AsyncClient(base_url="https://kube.test"), str(tmp_path / "token"))
     for interface in (Lease, Looker, PageBrowser, ProtonBridge, ProtonLogin, Keeping, Database, ConnectionKinds):
         services.unregister(interface)
 
 
-def wire_pods(settings: Settings, api: KubeApi) -> None:
+def wire_pods(settings: Settings, api: KubeApi, monkeypatch: pytest.MonkeyPatch) -> None:
     wiring_sandbox.wire_looker(settings, api, [])
+    monkeypatch.setattr(wiring_bridge, "BridgeKeeping", SiteRecordingKeeping)
     wiring_bridge.wire_mail_bridge(settings, api)
 
 
@@ -70,28 +83,27 @@ def run_all(settings: Settings) -> None:
     asyncio.run(go())
 
 
-def test_without_etcd_the_settings_start_and_both_keepers_run_on_the_postgres_lease(clean: KubeApi) -> None:
+def test_without_etcd_the_settings_start_and_both_keepers_run_on_the_postgres_lease(
+        clean: KubeApi, monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(**BASE)
-    wire_pods(settings, clean)
+    wire_pods(settings, clean, monkeypatch)
     services.register(Lease, RecordingPostgres(URL))
     run_all(settings)
     assert ("RecordingPostgres", warm_pod.NAME) in STARTED
     assert ("RecordingPostgres", proton_bridge_job.NAME) in STARTED
-    keeping = services.get(Keeping)
-    assert isinstance(keeping, BridgeKeeping) and keeping._site == wiring_bridge.LOCAL_SITE
+    assert isinstance(services.get(Keeping), BridgeKeeping) and SITES == [wiring_bridge.LOCAL_SITE]
 
 
 def test_with_etcd_the_same_lease_names_and_keepers_are_wired(clean: KubeApi, monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(**BASE, **ETCD)
-    wire_pods(settings, clean)
+    wire_pods(settings, clean, monkeypatch)
     wiring_singletons.wire_lease(settings)
     assert type(services.get(Lease)) is EtcdLease
     monkeypatch.setattr(EtcdLease, "run", _record_etcd)
     run_all(settings)
-    assert ("EtcdLease", f"{warm_pod.NAME}@willow|gated=False") in STARTED
-    assert ("EtcdLease", f"{proton_bridge_job.NAME}|gated=True") in STARTED
-    keeping = services.get(Keeping)
-    assert isinstance(keeping, BridgeKeeping) and keeping._site == "willow"
+    assert ("EtcdLease", f"{warm_pod.NAME}@willow") in STARTED
+    assert ("EtcdLease", proton_bridge_job.NAME) in STARTED
+    assert isinstance(services.get(Keeping), BridgeKeeping) and SITES == ["willow"]
 
 
 def test_without_etcd_the_postgres_lease_is_wired_for_these_settings(clean: KubeApi) -> None:
