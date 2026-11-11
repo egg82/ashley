@@ -3,6 +3,8 @@ what goes up, the prompt, and what comes back into the bench when the session is
 
 from typing import Any
 
+import pytest
+
 from bjb_support import (ACCESS, MARK_BODY, MARK_BRIEF, MARK_TITLE, ROOT, World, bench_session, limit, named, out_file, row,
                          scenario, state_of)
 from files_support import ELF, PNG
@@ -284,6 +286,7 @@ def test_c13_result_md_is_the_summary_cut_to_result_chars_and_is_not_a_piece(db_
 def test_c13_at_most_max_outputs_files_become_pieces(db_url: str) -> None:
     async def body(w: World) -> None:
         many = {f"f{i}.txt": f"file {i}\n".encode() for i in range(limit("max_outputs") + 4)}
+        many["RESULT.md"] = b"r"
         _, got = await finished_session(w, many)
         assert got.state == "done" and 1 <= len(got.outputs) <= limit("max_outputs")
 
@@ -315,10 +318,13 @@ def test_c13_the_session_is_left_open_on_finish(db_url: str) -> None:
     scenario(db_url, body)
 
 
-def test_c13_a_done_session_with_nothing_in_out_is_still_a_done_job_with_no_outputs(db_url: str) -> None:
+@pytest.mark.xfail(strict=True, reason="a stopped session without RESULT.md is still running")
+@pytest.mark.parametrize("status", ["done", "idle"])
+def test_c13_a_stopped_session_without_a_result_md_is_not_a_finished_job(db_url: str, status: Status) -> None:
     async def body(w: World) -> None:
-        _, got = await finished_session(w, {})
-        assert got is not None and got.state == "done" and got.outputs == () and got.refused == 0
+        job, got = await finished_session(w, {"a.txt": b"made\n"}, status=status)
+        assert got is None and state_of(w.url, job.id) == "running"
+        assert w.bridge.closed == [] and len(w.bridge.sessions_) == 1
 
     scenario(db_url, body)
 
@@ -328,7 +334,7 @@ def test_c13_a_file_over_the_ceiling_is_refused_not_downloaded_into_a_piece(db_u
         job = await claude_job(w, [])
         await step(w, job)
         sid = only_session(w)
-        w.bridge.out[sid] = {"ok.txt": b"fine\n"}
+        w.bridge.out[sid] = {"ok.txt": b"fine\n", "RESULT.md": b"r"}
         w.bridge.settle(sid, "done")
         w.bridge.phantom[sid] = [out_file("huge.bin", limit("max_bytes_in") + 1)]
         got = await step(w, job)

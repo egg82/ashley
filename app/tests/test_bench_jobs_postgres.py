@@ -179,6 +179,29 @@ def test_the_sweep_leaves_a_running_claude_code_job_and_ends_a_late_group(db_url
     run(go())
 
 
+def test_idle_is_recorded_once_until_the_session_works_again_and_a_nudge_is_recorded_once(db_url: str) -> None:
+    s = setting(db_url)
+
+    async def go() -> None:
+        async with store(db_url) as jobs:
+            (code,) = (await jobs.start_group((s.new("claude_code"),)))[1]
+            assert await jobs.claim("claude_code", 600) is not None
+            first = datetime.now(UTC)
+            assert await jobs.idle(code, 1, first) == first
+            assert await jobs.idle(code, 1, first + timedelta(seconds=30)) == first
+            assert await jobs.busy(code, 1)
+            later = first + timedelta(seconds=90)
+            assert await jobs.idle(code, 1, later) == later
+            assert await jobs.nudged(code, 1) and not await jobs.nudged(code, 1) and not await jobs.nudged(code, 0)
+            row = await jobs.get(s.household, s.person, code)
+            assert row is not None and row.idle_since == later and row.nudged_at is not None
+            assert await jobs.busy(code, 1)
+            assert not await jobs.nudged(code, 1)
+            row = await jobs.get(s.household, s.person, code)
+            assert row is not None and row.idle_since is None and row.nudged_at is not None
+    run(go())
+
+
 def test_the_null_store_raises_and_an_unknown_group_is_not_settled(db_url: str) -> None:
     async def go() -> None:
         async with store(db_url) as jobs:
