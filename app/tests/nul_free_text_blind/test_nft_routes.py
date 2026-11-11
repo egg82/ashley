@@ -32,21 +32,7 @@ def test_the_same_request_without_the_nul_is_answered(client: TestClient, case: 
     assert send(client, case, "", "").status_code < 500
 
 
-def unrefused(reason: str) -> Any:
-    return pytest.mark.xfail(strict=True, reason=reason)
-
-
-REFUSED = [
-    pytest.param("lexicon_spoken", marks=unrefused("the write fails in the store and is answered 503")),
-    pytest.param("lexicon_real_removed", marks=unrefused("the delete fails in the store and is answered 503")),
-    pytest.param("connection_resource_ref", marks=unrefused("the lookup fails in the store and is answered 503")),
-    pytest.param("skill_kind_rolled_back", marks=unrefused("psycopg.DataError escapes as a 500")),
-    pytest.param("skill_kind_proposal_approved", marks=unrefused("psycopg.DataError escapes as a 500")),
-    pytest.param("skill_kind_proposal_declined", marks=unrefused("psycopg.DataError escapes as a 500")),
-]
-
-
-@pytest.mark.parametrize("case", REFUSED)
+@pytest.mark.parametrize("case", CASES)
 def test_a_nul_in_a_request_is_refused_as_invalid(client: TestClient, case: str) -> None:
     got = send(client, case, NUL, NUL_PATH)
     assert got.status_code == 422, got.text

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..people.fields import PROFILE_MAX
 from ..people.model import Clock, UnitSystem
+from ..text import NoNul
 
 
 class Household(BaseModel):
@@ -34,7 +35,7 @@ class HouseholdRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     timezone: str = Field(max_length=64)
-    profile: str = Field(max_length=PROFILE_MAX, pattern=r"^[^\x00]*$")
+    profile: NoNul = Field(max_length=PROFILE_MAX)
     locale: str = Field(max_length=35)
     unit_system: UnitSystem
     clock: Clock

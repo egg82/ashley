@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from ..channels.lexicon import Refusal
+from ..text import NoNul
 from .models import Person
 
 
@@ -29,7 +30,7 @@ class LexiconWords(BaseModel):
 class LexiconWordRequest(BaseModel):
     """The spelling to say for the word in the path."""
 
-    spoken: str = Field(max_length=500)
+    spoken: NoNul = Field(max_length=500)
 
 
 class LexiconRefused(BaseModel):
