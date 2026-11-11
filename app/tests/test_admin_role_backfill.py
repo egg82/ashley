@@ -5,7 +5,6 @@ does; downgrading takes the flag away."""
 import asyncio
 
 import psycopg
-import pytest
 from alembic import command
 from ashley.db.migrate import alembic_config
 from ashley.db.pool import PoolDatabase
@@ -38,7 +37,6 @@ def served(url: str, household: int) -> dict[int, bool]:
     return asyncio.run(scenario())
 
 
-@pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 def test_every_person_of_the_first_household_becomes_an_admin_and_no_one_else(empty_database: str) -> None:
     this, before = revision_named("people_admin")
     command.upgrade(alembic_config(empty_database), before)

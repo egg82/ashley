@@ -477,9 +477,9 @@ export interface paths {
         /**
          * Connect
          * @description 201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;
-         *     401 `unauthorized`; 403 `forbidden`; 404 `not_found`, no such kind; 409 `label_taken` or `too_many`; 422
-         *     `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when connections
-         *     are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.
+         *     401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or
+         *     `too_many`; 422 `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when
+         *     connections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.
          */
         post: operations["connect"];
         delete?: never;
@@ -499,13 +499,13 @@ export interface paths {
         /**
          * Replace
          * @description 200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;
-         *     403 `forbidden`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`.
+         *     403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`.
          */
         put: operations["replace"];
         post?: never;
         /**
          * Disconnect
-         * @description 204, removed; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`.
+         * @description 204, removed; 401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`; 503 `unavailable`.
          */
         delete: operations["disconnect"];
         options?: never;
@@ -513,8 +513,9 @@ export interface paths {
         /**
          * Change
          * @description 200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401
-         *     `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add; 404 `not_found`; 409
-         *     `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503 `unavailable`.
+         *     `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404
+         *     `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503
+         *     `unavailable`.
          */
         patch: operations["change"];
         trace?: never;
@@ -597,7 +598,8 @@ export interface paths {
         get: operations["read_settings"];
         /**
          * Write Settings
-         * @description 200 `ConnectionSettings` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `version_conflict`;
+         * @description 200 `ConnectionSettings` as stored; 401 `unauthorized`; 403 `forbidden`, or `admin_only` on a `deployment` kind's
+         *     connection for anyone but an admin; 404 `not_found`; 409 `version_conflict`;
          *     422 `SettingsRefused`; 503 `unavailable`.
          */
         put: operations["write_settings"];
@@ -2665,8 +2667,8 @@ export interface components {
         };
         /**
          * ConnectionsResponse
-         * @description The signed-in person's household's connections, by kind, and every kind that household can connect, in the order
-         *     to show them (a model provider's key only for the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and
+         * @description The signed-in person's household's connections, by kind, and every kind they can connect, in the order to show
+         *     them (a model provider's key only for an admin of the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and
          *     `connections` is empty.
          */
         ConnectionsResponse: {
@@ -6443,7 +6445,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `forbidden`: the request came from another site */
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6532,7 +6534,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `forbidden`: the request came from another site */
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6597,7 +6599,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `forbidden`: the request came from another site */
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6668,7 +6670,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `forbidden`: the request came from another site */
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6748,7 +6750,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `forbidden`: the request came from another site */
+            /** @description `forbidden`: the request came from another site; `admin_only`: a `deployment` kind, which only an admin connects */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6976,7 +6978,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `forbidden`: the request came from another site */
+            /** @description `forbidden`: the request came from another site; `admin_only`: the connection is a `deployment` kind's, which only an admin changes */
             403: {
                 headers: {
                     [name: string]: unknown;

@@ -75,9 +75,11 @@ from .home_assistant.homes import Home, Homes
 from .home_assistant.kind import HOME_ASSISTANT
 from .home_assistant.seed import seed_from_env
 from .people.accounts import Accounts
+from .people.admins import Admins
 from .people.household_write import HouseholdWriter
 from .people.people import People
 from .people.postgres_accounts import PostgresAccounts
+from .people.postgres_admins import PostgresAdmins
 from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
 from .senses.homes_presence import HomesPresence
@@ -234,7 +236,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Database, PoolDatabase(settings.database_url))
     services.register(Conversations, PostgresConversations(services.get(Database), policy.load()))
     services.register(InFlight, PostgresInFlight(services.get(Database), policy.load(), resume.CONFIG.claim_s))
-    services.register(People, PostgresPeople(services.get(Database)))
+    services.register(People, PostgresPeople(services.get(Database), bool(settings.admin_group)))
+    services.register(Admins, PostgresAdmins(services.get(Database)))
     services.register(Accounts, PostgresAccounts(services.get(Database)))
     services.register(HouseholdWriter, PostgresHouseholdWriter(services.get(Database)))
     services.register(Memory, PostgresMemory(services.get(Database)))
@@ -242,7 +245,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     _wire_devices()
     services.register(Lexicons, PostgresLexicons(services.get(Database)))
     services.register(Outbox, PostgresOutbox(services.get(Database), outbox.load().stale_s, policy.load()))
-    services.register(Sessions, PostgresSessions(services.get(Database), signin_policy.load()))
+    services.register(Sessions, PostgresSessions(services.get(Database), signin_policy.load(),
+                                                 bool(settings.admin_group)))
     services.register(Workshop, PostgresWorkshop(services.get(Database), workshop_rules.load()))
     wire_skills()
     services.register(Runs, PostgresRuns(services.get(Database)))
@@ -278,7 +282,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
         closers.append(oidc_http.aclose)
         services.register(Oidc, OidcProvider(Client(settings.oidc_issuer, settings.oidc_client_id,
                                                      settings.oidc_client_secret,
-                                                     settings.public_url + "/api/auth/callback"), oidc_http))
+                                                     settings.public_url + "/api/auth/callback",
+                                                     settings.admin_group), oidc_http))
     if settings.discord_oauth_client_id:
         discord_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
         closers.append(discord_http.aclose)

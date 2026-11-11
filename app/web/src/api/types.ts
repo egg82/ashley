@@ -6,6 +6,7 @@ export type ReadyResponse = components['schemas']['ReadyResponse'];
 export type ErrorResponse = components['schemas']['ErrorResponse'];
 export type MeResponse = components['schemas']['MeResponse'];
 export type Person = components['schemas']['Person'];
+export type PeopleResponse = components['schemas']['PeopleResponse'];
 export type MemoryFact = components['schemas']['MemoryFact'];
 export type FactKind = MemoryFact['kind'];
 export type Visibility = MemoryFact['visibility'];

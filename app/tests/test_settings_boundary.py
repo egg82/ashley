@@ -5,7 +5,9 @@ its Postgres writer) and its model choices (`ashley.inference.route_choice_write
 only by their person route and the wiring that registers them, so no tool, channel or model call can reach
 `SettingsWriter`, `HouseholdWriter`, `PersonaWriter` or `RouteChoiceWriter` (`decisions.md`, "A connection has settings
 its person sets", "A household may override her taste, never her contract", "A household chooses the model for its
-chat"). An import of any by another module fails here, whatever package it is in."""
+chat"). Who is an admin (`ashley.people.admins` and its Postgres writer) is written only by the people and sign-in routes
+and the wiring ("An admin changes what the deployment shares"). An import of any by another module fails here, whatever
+package it is in."""
 
 import ast
 from pathlib import Path
@@ -23,6 +25,8 @@ GUARDED: dict[str, tuple[set[str], set[str]]] = {
                 {"ashley.api.persona", "ashley.wiring_skills", "ashley.skills.postgres_persona_write"}),
     "routes": ({"ashley.inference.route_choice_write", "ashley.inference.postgres_route_choice_write"},
                {"ashley.api.spend_routes", "ashley.wiring_inference", "ashley.inference.postgres_route_choice_write"}),
+    "admins": ({"ashley.people.admins", "ashley.people.postgres_admins"},
+               {"ashley.api.people", "ashley.api.signin", "ashley.wiring", "ashley.people.postgres_admins"}),
 }
 
 

@@ -1,9 +1,11 @@
 """The signed-in person's household's connections (`decisions.md`, "A household connects its own services"). Any
-person of the household may see, add, replace, rename and remove them.
+person of the household may see, add, replace, rename and remove them, but for a `deployment` kind's (a model provider's
+key), which only an admin changes (`admin_gate.may_change`; 403 `admin_only` for anyone else).
 
-`GET /api/connections` lists them with every kind the household can connect (the registered `ConnectionKind`s it is
-offered, `ConnectionKinds.offered`, which the panel draws from): a model provider's key is a `deployment` kind, offered
-to the deployment's first household alone, and any other household adding one gets 404 as for an unregistered kind. `POST /api/connections` adds one of a kind under a label and `PUT /api/connections/{id}` replaces
+`GET /api/connections` lists them with every kind the person can connect (the registered `ConnectionKind`s the household
+is offered, `ConnectionKinds.offered`, less the `deployment` kinds for a person who may not change them), which the panel
+draws from: a `deployment` kind is offered to the deployment's first household alone, and any other household adding
+one gets 404 as for an unregistered kind. `POST /api/connections` adds one of a kind under a label and `PUT /api/connections/{id}` replaces
 its address and key or token: the key or token is checked against the service first, by the kind's own authenticated
 read, and nothing is stored when that fails (400 `ConnectionRefused`, in the kind's own words). `PATCH` renames it or
 hands it to the household or takes it back (`connection_holders`), and `DELETE` removes it. A connection a person holds
@@ -30,6 +32,7 @@ from ..people.people import People, PeopleUnavailable
 from . import connection_holders
 from .connection_models import (ApiKeyConnectionRequest, ConnectionChange, ConnectionKindInfo, ConnectionRefused,
                                 ConnectionRequest, ConnectionsResponse, HouseholdConnection, NewConnectionRequest)
+from .admin_gate import ADMIN_ONLY, may_change, refused
 from .models import ErrorResponse, Person as WirePerson, wire_person
 from .person import Person
 
@@ -39,8 +42,7 @@ _READ: dict[int | str, dict[str, Any]] = {
     401: {"model": ErrorResponse, "description": "`unauthorized`: no live session"},
     503: {"model": ErrorResponse, "description": "`unavailable`: the database could not be reached, or connections "
           "are not set up here"}}
-_WRITE: dict[int | str, dict[str, Any]] = {
-    **_READ, 403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"}}
+_WRITE: dict[int | str, dict[str, Any]] = {**_READ, **ADMIN_ONLY}
 _PUT: dict[int | str, dict[str, Any]] = {
     **_WRITE, 400: {"model": ConnectionRefused, "description": "the service did not answer with that address and "
                     "key or token, or the address is not one; nothing was stored"},
@@ -85,14 +87,14 @@ def _connect_of(kind: ConnectionKind) -> Literal["pasted", "oauth", "bridge"]:
     return "bridge" if isinstance(kind.connect, BridgeLogin) else "pasted"
 
 
-def _kinds(household_id: int) -> list[ConnectionKindInfo]:
+def _kinds(signed_in: Person) -> list[ConnectionKindInfo]:
     return [ConnectionKindInfo(
         name=k.name, title=k.title, what=k.what, blurb=k.blurb, connected=k.connected, removed=k.removed,
         holders=sorted(k.holders), most=k.most, takes_address=k.fixed_address is None,
         address_placeholder=k.address_placeholder, secret_field=k.secret_field, secret_label=k.secret_label,
         secret_noun=k.secret_noun, connect=_connect_of(k), has_settings=bool(k.settings),
         set_up=not isinstance(k.connect, OAuth) or services.get(OAuthProviders).get(k.connect.provider) is not None)
-        for k in services.get(ConnectionKinds).offered(household_id)]
+        for k in services.get(ConnectionKinds).offered(signed_in.person.household_id) if may_change(signed_in, k)]
 
 
 async def _people(household_id: int) -> dict[int, WirePerson]:
@@ -108,8 +110,9 @@ def _missing_scopes(c: Connection) -> list[str]:
     return kind.connect.missing(c.scopes)
 
 
-def _wire(c: Connection, people: dict[int, WirePerson], me: int,
+def _wire(c: Connection, people: dict[int, WirePerson], signed_in: Person,
           resources: tuple[Resource, ...] = ()) -> HouseholdConnection:
+    me = signed_in.person.id
     added_by = people.get(c.added_by) if c.added_by is not None else None
     kind = services.get(ConnectionKinds).get(c.kind)
     holders: frozenset[str] = frozenset() if kind is None else kind.holders
@@ -118,7 +121,8 @@ def _wire(c: Connection, people: dict[int, WirePerson], me: int,
                                needs=c.needs, scopes=list(c.scopes), missing_scopes=_missing_scopes(c),
                                resources=[connection_holders.wire_resource(r) for r in resources],
                                can_hand_over=c.person_id == me and "household" in holders,
-                               can_take_back=c.person_id is None and c.added_by == me and "person" in holders)
+                               can_take_back=c.person_id is None and c.added_by == me and "person" in holders,
+                               can_change=kind is None or may_change(signed_in, kind))
 
 
 def _secret(body: ConnectionRequest | NewConnectionRequest, kind: ConnectionKind) -> str | JSONResponse:
@@ -155,7 +159,7 @@ async def list_connections(signed_in: Person, after: BackgroundTasks) -> Connect
     household = signed_in.person.household_id
     connections = services.get(Connections)
     if not connections.can_open():
-        return ConnectionsResponse(connections=[], offered=_kinds(household), can_connect=False)
+        return ConnectionsResponse(connections=[], offered=_kinds(signed_in), can_connect=False)
     me = signed_in.person.id
     try:
         found = await connections.of_household(household, me)
@@ -164,22 +168,24 @@ async def list_connections(signed_in: Person, after: BackgroundTasks) -> Connect
         return _unavailable()
     after.add_task(connection_holders.refreshed, household, me, found)
     logs.info(log, "connections.listed", household=household, count=len(found))
-    return ConnectionsResponse(connections=[_wire(c, people, me, resources.get(c.id, ())) for c in found],
-                               offered=_kinds(household), can_connect=True)
+    return ConnectionsResponse(connections=[_wire(c, people, signed_in, resources.get(c.id, ())) for c in found],
+                               offered=_kinds(signed_in), can_connect=True)
 
 
 @router.post("/api/connections", status_code=201, response_model=HouseholdConnection, responses={
     **_PUT, **_NOT_FOUND, **_CONFLICT})
 async def connect(signed_in: Person, body: NewConnectionRequest) -> HouseholdConnection | JSONResponse:
     """201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;
-    401 `unauthorized`; 403 `forbidden`; 404 `not_found`, no such kind; 409 `label_taken` or `too_many`; 422
-    `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when connections
-    are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404."""
+    401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or
+    `too_many`; 422 `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when
+    connections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404."""
     person = signed_in.person
     registered = next((k for k in services.get(ConnectionKinds).offered(person.household_id) if k.name == body.kind),
                       None)
     if registered is None:
         return _not_found("there is no such kind of connection")
+    if not may_change(signed_in, registered):
+        return refused(signed_in, "connections.add")
     secret = _secret(body, registered)
     if isinstance(secret, JSONResponse):
         return secret
@@ -206,11 +212,19 @@ async def _visible(signed_in: Person, connection_id: int) -> Connection | None:
     return next((c for c in found if c.id == connection_id), None)
 
 
+async def _changeable(signed_in: Person, connection_id: int, held: Connection | None = None) -> bool:
+    """False only for a connection the person sees whose kind they may not change; one they do not see is the
+    caller's 404. Raises ConnectionsUnavailable."""
+    found = held or await _visible(signed_in, connection_id)
+    kind = None if found is None else services.get(ConnectionKinds).get(found.kind)
+    return kind is None or may_change(signed_in, kind)
+
+
 @router.put("/api/connections/{connection_id}", response_model=HouseholdConnection, responses={
     **_PUT, **_NOT_FOUND})
 async def replace(signed_in: Person, connection_id: int, body: ConnectionRequest) -> HouseholdConnection | JSONResponse:
     """200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;
-    403 `forbidden`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`."""
+    403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`."""
     person = signed_in.person
     try:
         held = await _visible(signed_in, connection_id)
@@ -219,6 +233,8 @@ async def replace(signed_in: Person, connection_id: int, body: ConnectionRequest
     registered = None if held is None else services.get(ConnectionKinds).get(held.kind)
     if held is None or registered is None:
         return _not_found()
+    if not may_change(signed_in, registered):
+        return refused(signed_in, "connections.replace")
     secret = _secret(body, registered)
     if isinstance(secret, JSONResponse):
         return secret
@@ -246,17 +262,20 @@ async def _shown(signed_in: Person, connection: Connection) -> HouseholdConnecti
     person = signed_in.person
     people = await _people(person.household_id)
     resources = await services.get(ConnectionResources).of_household(person.household_id, person.id)
-    return _wire(connection, people, person.id, resources.get(connection.id, ()))
+    return _wire(connection, people, signed_in, resources.get(connection.id, ()))
 
 
 @router.patch("/api/connections/{connection_id}", response_model=HouseholdConnection, responses={
     **_WRITE, **_INVALID, **_NOT_FOUND, **_CONFLICT})
 async def change(signed_in: Person, connection_id: int, body: ConnectionChange) -> HouseholdConnection | JSONResponse:
     """200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401
-    `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add; 404 `not_found`; 409
-    `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503 `unavailable`."""
+    `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404
+    `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503
+    `unavailable`."""
     person = signed_in.person
     try:
+        if not await _changeable(signed_in, connection_id):
+            return refused(signed_in, "connections.change")
         if body.holder is not None:
             changed = await connection_holders.moved(signed_in, connection_id, body.holder)
             return changed if isinstance(changed, JSONResponse) else await _shown(signed_in, changed)
@@ -277,10 +296,12 @@ async def change(signed_in: Person, connection_id: int, body: ConnectionChange) 
 @router.delete("/api/connections/{connection_id}", status_code=204, response_class=Response, responses={
     **_WRITE, **_INVALID, **_NOT_FOUND})
 async def disconnect(signed_in: Person, connection_id: int) -> Response:
-    """204, removed; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`."""
+    """204, removed; 401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`; 503 `unavailable`."""
     person = signed_in.person
     try:
         held = await _visible(signed_in, connection_id)
+        if not await _changeable(signed_in, connection_id, held):
+            return refused(signed_in, "connections.remove")
         gone = held is not None and await services.get(Connections).remove(connection_id, person.household_id,
                                                                            person.id)
     except ConnectionsUnavailable:

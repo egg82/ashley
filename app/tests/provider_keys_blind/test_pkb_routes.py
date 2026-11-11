@@ -1,5 +1,5 @@
 """The connections routes and deployment kinds: only the first household is offered a model provider's kind and any other
-household adding one gets 404 with nothing stored; the first adds one at its fixed address with no `base_url`; a key the
+household adding one gets 404 with nothing stored; the first household's admin adds one at its fixed address with no `base_url`; a key the
 kind's `check` refuses is 400 and stores nothing; a key is in no response (add, list, replace) and in no log line."""
 
 import base64
@@ -51,7 +51,9 @@ def homes(db_url: str) -> Homes:
     with psycopg.connect(db_url) as conn:
         first, other = admin.add_household(conn, "home", "UTC"), admin.add_household(conn, "other", "UTC")
         assert first == FIRST_HOUSEHOLD
-        return Homes(_session(conn, admin.add_person(conn, first, "Alana"), first, "sub-a"),
+        alana = admin.add_person(conn, first, "Alana")
+        conn.execute("UPDATE people SET admin = true WHERE id = %s", (alana,))
+        return Homes(_session(conn, alana, first, "sub-a"),
                      _session(conn, admin.add_person(conn, other, "Kim"), other, "sub-k"))
 
 

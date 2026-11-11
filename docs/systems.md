@@ -338,12 +338,18 @@ A thing is a system only if all four hold:
     `ashley.people.household_write.HouseholdWriter` (Postgres
     `ashley.people.postgres_household_write.PostgresHouseholdWriter`), which only that route and the wiring import
     (`app/tests/test_settings_boundary.py`); both it and the admin CLI check values with `app/ashley/people/fields.py`
+  - who is an admin of the deployment is a field on the person, `people.admin`, written by a fourth service,
+    `ashley.people.admins.Admins` (Postgres `ashley.people.postgres_admins.PostgresAdmins`, every write behind one
+    advisory lock), which only the people and sign-in routes and the wiring import; while `ADMIN_GROUP` is set the
+    provider's group decides instead, at each sign-in, through `ashley.signin.sessions.Sessions.open`
 - **Who asks, how:**
   - Channels and Presence, through `services.get` on `ashley.people.people.People`
   - the persona, which says the household's units (`ashley.persona.facts.UNITS`) before its profile
   - the accounts routes (`app/ashley/api/accounts.py`) on `ashley.people.accounts.Accounts`
   - the household routes (`app/ashley/api/household.py`) on `ashley.people.household_write.HouseholdWriter`; the web
     client writes every date, time and number in the household's locale and clock (`app/web/src/household/format.ts`)
+  - the people routes (`app/ashley/api/people.py`) on `ashley.people.admins.Admins`; what only an admin may change is
+    asked of `ashley.api.admin_gate.may_change`, or a route takes `ashley.api.admin_gate.Admin`
 
 ### Connections
 
@@ -414,6 +420,7 @@ A thing is a system only if all four hold:
     at start and again from Homes until household 1's row is seen
   - Inference (above), which opens the first household's `inference` connections for the model providers' keys; their
     kinds are `deployment` kinds (`ashley.connections.kinds.ConnectionKinds.offered`), offered to that household alone
+    and changed only by an admin of it (`ashley.api.admin_gate.may_change`)
   - a kind whose deployment-side setting is absent is not `configured` (`ashley.wiring.configured_kinds`: herdr's client
     certificate, `MAIL_BRIDGE_IMAGE` for Proton): it stays registered, so a stored row is still listed and removable, but
     it is not offered, cannot be added and opens through no port

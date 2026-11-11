@@ -9,7 +9,6 @@ from contract.conversations_support import db_url as db_url, migrated_template a
 from fastapi.testclient import TestClient
 from signin_support import FakeIdp
 
-XFAIL = pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 
 
 @pytest.fixture
@@ -25,7 +24,6 @@ def put(client: TestClient, person: int, admin: bool) -> tuple[int, dict[str, ob
     return got.status_code, body
 
 
-@XFAIL
 def test_any_person_lists_their_households_people_with_who_is_admin(home: Deployment) -> None:
     for client in app_client(home.url, FakeIdp()):
         as_browser(client, session_for(home.url, home.ben))
@@ -35,7 +33,6 @@ def test_any_person_lists_their_households_people_with_who_is_admin(home: Deploy
                                                                     (home.cy, False)]
 
 
-@XFAIL
 def test_an_admin_grants_and_revokes(home: Deployment) -> None:
     for client in app_client(home.url, FakeIdp()):
         as_browser(client, session_for(home.url, home.ana))
@@ -47,7 +44,6 @@ def test_an_admin_grants_and_revokes(home: Deployment) -> None:
         assert admins(home.url) == [home.ana]
 
 
-@XFAIL
 def test_the_last_admin_cannot_be_revoked(home: Deployment) -> None:
     for client in app_client(home.url, FakeIdp()):
         as_browser(client, session_for(home.url, home.ana))
@@ -64,7 +60,6 @@ def test_a_non_admin_cannot_grant(home: Deployment) -> None:
     assert admins(home.url) == [home.ana]
 
 
-@XFAIL
 def test_another_households_person_is_not_found(home: Deployment) -> None:
     for client in app_client(home.url, FakeIdp()):
         as_browser(client, session_for(home.url, home.ana))
@@ -73,7 +68,6 @@ def test_another_households_person_is_not_found(home: Deployment) -> None:
     assert admins(home.url) == [home.ana]
 
 
-@XFAIL
 def test_under_the_group_grant_and_revoke_are_refused(home: Deployment) -> None:
     for client in app_client(home.url, FakeIdp(), GROUP):
         as_browser(client, session_for(home.url, home.ana, admin_now=True))

@@ -3,6 +3,7 @@
 import logging
 from collections.abc import Generator
 from contextlib import contextmanager
+from typing import LiteralString
 
 import psycopg
 
@@ -24,9 +25,20 @@ def translated() -> Generator[None]:
         raise PeopleUnavailable("database unreachable") from e
 
 
+_APP_ADMIN = "p.admin"
+_PROVIDER_ADMIN = (
+    "EXISTS (SELECT 1 FROM sessions s JOIN accounts a ON a.id = s.account_id "
+    "WHERE a.person_id = p.id AND s.admin AND s.expires_at > now())"
+)
+
+
 class PostgresPeople(People):
-    def __init__(self, database: Database) -> None:
+    """`admins_from_provider` is whether the sign-in provider's group decides who is an admin (`ADMIN_GROUP` set): a
+    person is then one while a live session of theirs says so (`sessions.admin`), else as `people.admin` says."""
+
+    def __init__(self, database: Database, admins_from_provider: bool = False) -> None:
         self._database = database
+        self._admin: LiteralString = _PROVIDER_ADMIN if admins_from_provider else _APP_ADMIN
 
     async def household(self, household_id: int) -> Household | None:
         with translated():
@@ -39,7 +51,8 @@ class PostgresPeople(People):
                 if row is None:
                     return None
                 cur = await conn.execute(
-                    "SELECT id, household_id, name FROM people WHERE household_id = %s ORDER BY id", (household_id,))
+                    f"SELECT p.id, p.household_id, p.name, {self._admin} FROM people p WHERE p.household_id = %s "
+                    "ORDER BY p.id", (household_id,))
                 people = tuple(Person(*r) for r in await cur.fetchall())
         return Household(row[0], row[1], row[2], row[3], people, row[4], row[5], row[6], row[7], row[8])
 

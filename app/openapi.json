@@ -1208,7 +1208,7 @@
       },
       "post": {
         "summary": "Connect",
-        "description": "201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;\n401 `unauthorized`; 403 `forbidden`; 404 `not_found`, no such kind; 409 `label_taken` or `too_many`; 422\n`unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when connections\nare not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.",
+        "description": "201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;\n401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or\n`too_many`; 422 `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when\nconnections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.",
         "operationId": "connect",
         "requestBody": {
           "content": {
@@ -1260,7 +1260,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the request came from another site",
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
             "content": {
               "application/json": {
                 "schema": {
@@ -1315,7 +1315,7 @@
     "/api/connections/{connection_id}": {
       "put": {
         "summary": "Replace",
-        "description": "200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;\n403 `forbidden`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`.",
+        "description": "200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;\n403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`.",
         "operationId": "replace",
         "parameters": [
           {
@@ -1378,7 +1378,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the request came from another site",
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
             "content": {
               "application/json": {
                 "schema": {
@@ -1421,7 +1421,7 @@
       },
       "patch": {
         "summary": "Change",
-        "description": "200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401\n`unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add; 404 `not_found`; 409\n`label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503 `unavailable`.",
+        "description": "200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401\n`unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404\n`not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503\n`unavailable`.",
         "operationId": "change",
         "parameters": [
           {
@@ -1476,7 +1476,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the request came from another site",
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
             "content": {
               "application/json": {
                 "schema": {
@@ -1519,7 +1519,7 @@
       },
       "delete": {
         "summary": "Disconnect",
-        "description": "204, removed; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`.",
+        "description": "204, removed; 401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`; 503 `unavailable`.",
         "operationId": "disconnect",
         "parameters": [
           {
@@ -1557,7 +1557,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the request came from another site",
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
             "content": {
               "application/json": {
                 "schema": {
@@ -1637,7 +1637,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the request came from another site",
+            "description": "`forbidden`: the request came from another site; `admin_only`: a `deployment` kind, which only an admin connects",
             "content": {
               "application/json": {
                 "schema": {
@@ -1871,7 +1871,7 @@
       },
       "put": {
         "summary": "Write Settings",
-        "description": "200 `ConnectionSettings` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `version_conflict`;\n422 `SettingsRefused`; 503 `unavailable`.",
+        "description": "200 `ConnectionSettings` as stored; 401 `unauthorized`; 403 `forbidden`, or `admin_only` on a `deployment` kind's\nconnection for anyone but an admin; 404 `not_found`; 409 `version_conflict`;\n422 `SettingsRefused`; 503 `unavailable`.",
         "operationId": "write_settings",
         "parameters": [
           {
@@ -1946,7 +1946,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the request came from another site",
+            "description": "`forbidden`: the request came from another site; `admin_only`: the connection is a `deployment` kind's, which only an admin changes",
             "content": {
               "application/json": {
                 "schema": {
@@ -8702,7 +8702,7 @@
           "can_connect"
         ],
         "title": "ConnectionsResponse",
-        "description": "The signed-in person's household's connections, by kind, and every kind that household can connect, in the order\nto show them (a model provider's key only for the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and\n`connections` is empty."
+        "description": "The signed-in person's household's connections, by kind, and every kind they can connect, in the order to show\nthem (a model provider's key only for an admin of the deployment's first household, whose keys pay for every call). `can_connect` is whether this app holds the key that seals them; false, none can be added and\n`connections` is empty."
       },
       "ControlsRefused": {
         "properties": {

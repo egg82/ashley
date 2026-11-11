@@ -4,8 +4,10 @@
 which must carry the state this browser was sent with (its cookie), once, within the policy's `pending_minutes`, so a
 callback from someone else's sign-in never signs this browser in. A sign-in returns to `next`; one refused returns to
 `/?signin=failed`, or `/?signin=unmapped` when the provider vouched for an account no person here has yet (the admin
-maps it: `python -m ashley.signin unmapped`). `POST /api/auth/signout` ends the session; `GET /api/me` names the
-person. Unconfigured or unreachable, sign-in answers 503 and the rest of the app runs.
+maps it: `python -m ashley.signin unmapped`). A sign-in also settles who is an admin (`decisions.md`, "An admin changes
+what the deployment shares"): the provider's admin group, when one is configured, says so for this person; otherwise,
+if nobody is an admin, the earliest person of the first household becomes one. `POST /api/auth/signout` ends the
+session; `GET /api/me` names the person. Unconfigured or unreachable, sign-in answers 503 and the rest of the app runs.
 
 One log line per sign-in, refusal and sign-out, with session and person ids and, for an unmapped account, a 12-hex
 hash of its sub; never a token, code, state, email or username."""
@@ -18,6 +20,9 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from .. import logs, services
+from ..connections.kinds import FIRST_HOUSEHOLD
+from ..people.admins import Admins
+from ..people.people import PeopleUnavailable
 from ..signin import policy as signin_policy
 from ..signin.identity import SYSTEM, sub_prefix
 from ..signin.model import Identity, Pending
@@ -111,18 +116,29 @@ async def finish_signin(request: Request) -> Response:
         return _unavailable()
 
 
+async def _one_admin() -> None:
+    """While the app decides who is an admin, make sure someone is (`Admins.ensure_one`). A failure leaves the sign-in
+    standing; the next sign-in tries again."""
+    try:
+        await services.get(Admins).ensure_one(FIRST_HOUSEHOLD)
+    except PeopleUnavailable as e:
+        logs.warning(log, "signin.admin_unchecked", why=type(e).__name__)
+
+
 async def _open(request: Request, identity: Identity, to: str) -> Response:
     sessions = services.get(Sessions)
-    opened = await sessions.open(SYSTEM, identity.sub)
+    opened = await sessions.open(SYSTEM, identity.sub, identity.admin_group)
     if opened is None:
         await sessions.refused(SYSTEM, identity.sub, identity.username)
         return _refused("unmapped", "unmapped", sub=sub_prefix(identity.sub))
+    if identity.admin_group is None:
+        await _one_admin()
     old = request.cookies.get(SESSION_COOKIE, "")
     if old:
         await sessions.close(old)
     signed_in = opened.signed_in
     logs.info(log, "signin.ok", session=signed_in.session_id, person=signed_in.person.id,
-              household=signed_in.person.household_id)
+              household=signed_in.person.household_id, admin=signed_in.person.admin)
     response = RedirectResponse(to, status_code=302)
     clear_cookie(response, SIGNIN_COOKIE)
     set_cookie(response, SESSION_COOKIE, opened.token, _POLICY.session_days * 86400)

@@ -56,6 +56,7 @@ def homes(db_url: str) -> Homes:
         home, other = admin.add_household(conn, "home", "America/Denver"), admin.add_household(conn, "other", "UTC")
         alana, sam, kim = (admin.add_person(conn, home, "Alana"), admin.add_person(conn, home, "Sam"),
                           admin.add_person(conn, other, "Kim"))
+        conn.execute("UPDATE people SET admin = true WHERE id = %s", (alana,))
         return Homes(alana, sam, _session(conn, alana, home, "sub-alana"), _session(conn, sam, home, "sub-sam"),
                      _session(conn, kim, other, "sub-kim"))
 

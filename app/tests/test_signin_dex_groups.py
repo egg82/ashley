@@ -6,13 +6,11 @@ import asyncio
 from urllib.parse import parse_qs, urlsplit
 
 import httpx2
-import pytest
 from ashley.signin.model import Identity
 from ashley.signin.oidc import pkce
 from ashley.signin.provider import Client, OidcProvider
 from signin_dex_support import REDIRECT_URI, dex_issuer, log_in
 
-XFAIL = pytest.mark.xfail(strict=True, reason="the admin role is not implemented yet")
 
 
 def sign_in(admin_group: str) -> tuple[Identity, list[str]]:
@@ -28,13 +26,11 @@ def sign_in(admin_group: str) -> tuple[Identity, list[str]]:
     return asyncio.run(run())
 
 
-@XFAIL
 def test_a_member_of_the_admin_group_is_said_to_be_one() -> None:
     identity, scopes = sign_in("ashley-test-admins")
     assert identity.admin_group is True and "groups" in scopes
 
 
-@XFAIL
 def test_an_account_outside_the_admin_group_is_said_not_to_be() -> None:
     identity, scopes = sign_in("some-other-group")
     assert identity.admin_group is False and "groups" in scopes

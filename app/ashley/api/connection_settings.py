@@ -32,6 +32,7 @@ from .connection_settings_models import (ActionIds, ActionListField, CatalogueAc
                                          ConnectionCatalogue, ConnectionSettings, ConnectionSettingsRequest,
                                          EntityListField, EntityPerActionField, SettingChange, SettingChanges,
                                          SettingEntry, SettingField, SettingInfo, SettingsRefused)
+from .admin_gate import may_change, refused
 from .models import ErrorResponse, Person as WirePerson, wire_person
 from .person import Person
 
@@ -46,7 +47,8 @@ _READ: dict[int | str, dict[str, Any]] = {
     503: {"model": ErrorResponse, "description": "`unavailable`: the database could not be reached, or the service "
           "did not answer"}}
 _WRITE: dict[int | str, dict[str, Any]] = {
-    **_READ, 403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"},
+    **_READ, 403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site; "
+                   "`admin_only`: the connection is a `deployment` kind's, which only an admin changes"},
     409: {"model": ErrorResponse, "description": "`version_conflict`: the settings changed since the version sent"},
     422: {"model": SettingsRefused, "description": "the settings are not ones the kind takes; nothing was stored. A "
           "body outside the request's schema gets FastAPI's own validation error, which is not this schema"}}
@@ -129,13 +131,16 @@ async def read_settings(signed_in: Person, connection_id: int) -> ConnectionSett
 @router.put("/api/connections/{connection_id}/settings", response_model=ConnectionSettings, responses=_WRITE)
 async def write_settings(signed_in: Person, connection_id: int,
                          body: ConnectionSettingsRequest) -> ConnectionSettings | JSONResponse:
-    """200 `ConnectionSettings` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `version_conflict`;
+    """200 `ConnectionSettings` as stored; 401 `unauthorized`; 403 `forbidden`, or `admin_only` on a `deployment` kind's
+    connection for anyone but an admin; 404 `not_found`; 409 `version_conflict`;
     422 `SettingsRefused`; 503 `unavailable`."""
     person = signed_in.person
     try:
         held = await _held(signed_in, connection_id)
         if held is None:
             return _not_found()
+        if not may_change(signed_in, held[1]):
+            return refused(signed_in, "connections.settings")
         stored = await services.get(SettingsWriter).put(held[1], connection_id, person.household_id, person.id,
                                                         body.revision, _values(body.values))
         if stored is None:

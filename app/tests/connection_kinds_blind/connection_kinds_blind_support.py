@@ -229,6 +229,7 @@ def make_people(url: str) -> People:
         home, other = admin.add_household(conn, "home", "America/Denver"), admin.add_household(conn, "other", "UTC")
         alana, sam, kim = (admin.add_person(conn, home, "Alana"), admin.add_person(conn, home, "Sam"),
                           admin.add_person(conn, other, "Kim"))
+        conn.execute("UPDATE people SET admin = true WHERE id = %s", (alana,))
         return People(url, home, other, alana, sam, kim, {"alana": _session(conn, alana, home, "a"),
                                                          "sam": _session(conn, sam, home, "s"),
                                                          "kim": _session(conn, kim, other, "k")})
