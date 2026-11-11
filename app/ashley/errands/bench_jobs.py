@@ -1,6 +1,8 @@
 """The BenchJobs service (`ashley.services`): jobs she hands to a worker from a bench (`decisions.md`, "She hands a bench
 job to workers and stays with the person"). A job is `due`, then `running` (a Claude Code job passes through `starting`
-first), may be `blocked` on the person or `waiting` for their machine to answer, and ends `done`, `failed`, `timed_out` or `cancelled`. Jobs started together
+first), may be `blocked` on the person or `waiting` for their machine to answer, and ends `done`, `failed`, `timed_out` or `cancelled`. A Claude Code
+job is `done` only once its worker has written `out/RESULT.md`; a session that goes idle without one is prompted once to
+finish, and a job that reaches its deadline without one ends `timed_out` with reason `no_result`. Jobs started together
 form a group, which settles when every job of it is final.
 
 Every method that changes a claimed job takes the `attempt` it was claimed at and changes nothing, answering False,

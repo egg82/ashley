@@ -25,7 +25,8 @@ SETTLED_NOTE = ("Every job you handed to a worker in one hand-off has ended: don
                 "another job, say which. "
                 "Tell the person once, in plain words, what the jobs came to and what you did about it, naming each piece "
                 "by what it is. A failure comes as a reason code: say what it means for them (the session could not "
-                "start, the bridge did not answer, it ran out of time), never quote it.")
+                "start, the bridge did not answer, it ran out of time, it stopped before writing its result so what it "
+                "made may be in its folder), never quote it.")
 BLOCKED_NOTE = ("A job you handed to a Claude Code session is waiting on a dialog only the person can answer, in their "
                 "own herdr; you cannot answer it. The other jobs of its hand-off go on. Tell the person it needs them, "
                 "unless that is not worth interrupting for.")

@@ -13,7 +13,7 @@ from .jobs_config import CONFIG, JobsConfig
 
 _COLUMNS: Final = ("id, household_id, person_id, bench_id, conversation_id, turn_id, group_id, worker, title, brief, pieces, "
             "made, piece_id, state, attempts, session_id, session_seq, prompted_at, created_at, deadline_at, finished_at, reason, "
-            "summary, outputs, refused")
+            "summary, outputs, refused, idle_since, nudged_at")
 _FINAL: Final = "('done', 'failed', 'timed_out', 'cancelled')"
 _LIVE: Final = "state IN ('waiting', 'starting', 'running', 'blocked')"
 _AT: Final = "id = %(id)s AND attempts = %(attempt)s"
@@ -121,6 +121,19 @@ class PostgresBenchJobs(BenchJobs):
         return await self._changed(f"UPDATE bench_jobs SET prompted_at = now() WHERE {_AT} AND state = 'starting' "
                                    "AND session_id IS NOT NULL RETURNING 1", {"id": job_id, "attempt": attempt})
 
+    async def idle(self, job_id: int, attempt: int, now: datetime) -> datetime:
+        rows = await self._run(f"UPDATE bench_jobs SET idle_since = coalesce(idle_since, %(now)s) WHERE {_AT} AND {_LIVE} "
+                               "RETURNING idle_since", {"id": job_id, "attempt": attempt, "now": now})
+        return rows[0][0] if rows else now
+
+    async def busy(self, job_id: int, attempt: int) -> bool:
+        return await self._changed(f"UPDATE bench_jobs SET idle_since = NULL WHERE {_AT} AND {_LIVE} RETURNING 1",
+                                   {"id": job_id, "attempt": attempt})
+
+    async def nudged(self, job_id: int, attempt: int) -> bool:
+        return await self._changed(f"UPDATE bench_jobs SET nudged_at = now() WHERE {_AT} AND {_LIVE} "
+                                   "AND nudged_at IS NULL RETURNING 1", {"id": job_id, "attempt": attempt})
+
     async def state(self, job_id: int, attempt: int, state: Literal["running", "blocked", "waiting"]) -> bool:
         before = {"running": ["starting", "blocked"], "blocked": ["starting", "running"], "waiting": ["starting"]}[state]
         return await self._changed(_STATE.format(at=_AT), {"id": job_id, "attempt": attempt, "to": state,
@@ -197,4 +210,4 @@ def _job(r: tuple[Any, ...]) -> Job:
                str(r[9]), pieces, tuple(int(m) for m in r[11]), int(r[12]), state, int(r[14]),
                None if r[15] is None else str(r[15]), None if r[16] is None else int(r[16]), r[17], r[18], r[19], r[20],
                None if r[21] is None else str(r[21]), None if r[22] is None else str(r[22]),
-               tuple(int(o) for o in r[23]), int(r[24]))
+               tuple(int(o) for o in r[23]), int(r[24]), r[25], r[26])
