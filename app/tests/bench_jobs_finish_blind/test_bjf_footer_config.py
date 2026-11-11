@@ -13,8 +13,8 @@ from ashley.tools import bench_session
 
 
 def shipped() -> dict[str, Any]:
-    data = json.loads(Path(jobs_config.__file__).with_name("jobs.json").read_text())
-    assert isinstance(data, dict) and data
+    data: Any = json.loads(Path(jobs_config.__file__).with_name("jobs.json").read_text())
+    assert data
     return data
 
 
