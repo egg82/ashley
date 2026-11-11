@@ -2,10 +2,11 @@
 capabilities, user 65534, the profile's limits), and the job's variables are named on it, never valued, since a process
 listing shows every argument."""
 
+import pytest
 from ashley.runs import config
 from ashley.runs.model import Job
 from ashley.runs.pod_spec import manifest
-from ashley.runs.podman import RUNNER, PodmanSandbox, cpus, memory
+from ashley.runs.podman import RUNNER, PodmanSandbox, cpus, host_environment, memory
 
 IMAGE = "registry.example/cad@sha256:" + "0" * 64
 
@@ -28,3 +29,11 @@ def test_the_container_is_cut_off_and_its_variables_are_named_not_valued() -> No
 
 def test_kubernetes_quantities_become_podman_ones() -> None:
     assert (memory("256Mi"), memory("1Gi"), cpus("500m"), cpus("1")) == ("256m", "1g", "0.5", "1")
+
+
+def test_podman_gets_the_socket_it_is_pointed_at_and_nothing_else(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CONTAINER_HOST", "unix:///run/user/1000/podman/podman.sock")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-not-for-the-job")
+    found = host_environment()
+    assert found["CONTAINER_HOST"] == "unix:///run/user/1000/podman/podman.sock"
+    assert "ANTHROPIC_API_KEY" not in found

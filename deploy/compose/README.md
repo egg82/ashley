@@ -9,7 +9,8 @@ described in `docs/engineering.md`; there is no etcd, Patroni or failover here.
 Her background work (memory writing, reminders, Discord, voice satellites, web push) runs here under a Postgres
 lock, so one app container or several share it safely. Handing the database back to a preferred site after a
 failover needs the two-site deployment. Code running, bench screenshots, media and Proton Mail launch pods in
-Kubernetes and are not available here.
+Kubernetes and are not available here. The one exception is code running: an owner who trusts every script as much as
+their own can opt in to podman on the host (see the end of this file).
 
 ## Start
 
@@ -94,3 +95,17 @@ version to stay on it; `dev` follows main.
 
 `docker compose down` stops everything and keeps the data. `docker compose down -v` also deletes the database and
 the other volumes.
+
+## Code running with podman
+
+Code running is the one Kubernetes piece you can have here, and only if you trust every script she writes as much as
+your own: podman has no gVisor, so each script runs in a container on your kernel. The published image has no
+`podman` command, so build an image of your own from it that adds podman. Then:
+
+1. Start your rootless podman socket: `systemctl --user enable --now podman.socket`.
+2. In `compose.yaml`, uncomment the `image`, `user` and `volumes` lines under `app`, with your own image, uid and socket
+   path. A mounted socket lets the app start containers as that user.
+3. In `.env`, set `SANDBOX_PODMAN=trusted` and `CONTAINER_HOST=unix://<the socket path inside the container>`.
+
+She logs a `runs.sandbox_podman` warning at every start. Bench screenshots, media, build123d and Proton Mail stay
+Kubernetes-only.

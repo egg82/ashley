@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx2
 
-from . import services
+from . import logs, services
 from .looks import config as looks_config
 from .looks import links
 from .looks.browser import PageBrowser
@@ -26,6 +26,7 @@ from .runs.media import Media
 from .runs.media_kubernetes import KubernetesMedia
 from .runs.media_pod import LABEL as MEDIA_LABEL
 from .runs.pod_log import PodLog
+from .runs.podman import PodmanSandbox
 from .runs.sandbox import Sandbox
 from .settings import Settings
 
@@ -46,6 +47,13 @@ def wire_sandbox(settings: Settings, closers: list[Callable[[], Coroutine[Any, A
     if settings.media_image:
         wire_media(settings, api)
     return api
+
+
+def wire_podman_sandbox() -> None:
+    """Register `PodmanSandbox` as the sandbox, for `SANDBOX_PODMAN=trusted`; logs a warning each start, since code she runs
+    gets this machine's kernel. No looker or media: those are pods."""
+    logs.warning(logging.getLogger("ashley.runs"), "runs.sandbox_podman", isolation="none", kernel="host")
+    services.register(Sandbox, PodmanSandbox(runs_config.load()))
 
 
 def wire_looker(settings: Settings, api: KubeApi,

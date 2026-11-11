@@ -2,7 +2,7 @@
 (the same image, environment, command and limits), with no network, a read-only root, no capabilities, user 65534 and
 the two size-limited scratch directories; its output read from the container's stdout as a pod's log is read. A
 container's name adds a random suffix to the job's, since two processes on one machine number their runs alike. For a
-process off the cluster (an eval run on a workstation); it has no gVisor, so it runs only code its caller trusts as
+process off the cluster (an eval run on a workstation, or `SANDBOX_PODMAN=trusted`); it has no gVisor, so it runs only code its caller trusts as
 much as its own. Logs `runs.sandbox` with the container's name, the outcome and duration_ms, never the script."""
 
 import asyncio
@@ -24,8 +24,7 @@ log = logging.getLogger("ashley.runs")
 RUNNER = resources.files("ashley.runs").joinpath("runner.py").read_text()
 PODMAN_FAILED = 125
 KILLED = 137
-_HOST = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "XDG_RUNTIME_DIR", "CONTAINERS_CONF", "USER")}
-"""What podman itself needs from this process's environment; nothing else of it reaches the job."""
+_HOST_VARIABLES = ("PATH", "HOME", "XDG_RUNTIME_DIR", "CONTAINERS_CONF", "USER", "CONTAINER_HOST")
 
 
 class PodmanSandbox(Sandbox):
@@ -64,7 +63,7 @@ class PodmanSandbox(Sandbox):
     async def _ran(self, name: str, arguments: list[str], env: Mapping[str, str], profile: Profile) -> Output:
         try:
             proc = await asyncio.create_subprocess_exec(*arguments, stdout=asyncio.subprocess.PIPE,
-                                                        stderr=asyncio.subprocess.DEVNULL, env={**_HOST, **env})
+                                                        stderr=asyncio.subprocess.DEVNULL, env={**host_environment(), **env})
         except OSError as e:
             logs.warning(log, "runs.sandbox", pod=name, outcome="unavailable", error=type(e).__name__)
             raise SandboxUnavailable(type(e).__name__) from e
@@ -80,6 +79,12 @@ class PodmanSandbox(Sandbox):
         if found is not None:
             return found
         return Output("out_of_memory" if proc.returncode == KILLED else "failed", None, "", "")
+
+
+def host_environment() -> dict[str, str]:
+    """What podman itself needs from this process's environment (`CONTAINER_HOST` points its client at a socket); nothing
+    else of it reaches the job."""
+    return {k: v for k, v in os.environ.items() if k in _HOST_VARIABLES}
 
 
 def memory(quantity: str) -> str:

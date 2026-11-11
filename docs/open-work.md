@@ -12,8 +12,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     panel, model provider keys as connections and a household's model choice are built; what is left, by how soon a
     new household meets it:
     - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
-    - **A sandbox without Kubernetes**, as an opt-in for one owner who trusts the code (`app/ashley/runs/podman.py`
-      behind the `Sandbox` strategy). Fits into: Code runs.
     - **Env values that belong in a connection or a setting** (`decisions.md`, "Env var, file, connection or setting"; the
       `TO_MOVE` set in `app/tests/test_env_tiers.py`, which fails if one is not named here). To connections, each seeding
       its first row: `WYOMING_STT_URL` and `SEARXNG_URL` (outside services' addresses), `DISCORD_BOT_TOKEN`, and the

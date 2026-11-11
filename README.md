@@ -107,6 +107,16 @@ app at start-up when one of them is missing.
 | Log detail | `LOG_LEVEL` (default `info`); logs are one `key=value` line per event |
 | Two sites | `ETCD_URL` (with `ETCD_CA_FILE`, `ETCD_CERT_FILE`, `ETCD_KEY_FILE`), `SITE`, `PATRONI_RESTAPI_PASSWORD` |
 | Code sandbox, screenshots, media, Proton Bridge (Kubernetes only) | `SANDBOX_*`, `CAD_IMAGE`, `LOOK_*`, `MEDIA_*`, `MAIL_BRIDGE_*` |
+| Code sandbox with podman instead (see below) | `SANDBOX_PODMAN=trusted` |
+
+**Running code without Kubernetes.** `SANDBOX_PODMAN=trusted` runs each script she writes in a podman container on
+the machine she runs on, with no network, a read-only root and the profile's limits. Podman has no gVisor, so the
+script shares the machine's kernel: set it only if you trust every script as much as your own. It cannot be set with
+`SANDBOX_TOKEN_FILE`, and it logs a `runs.sandbox_podman` warning at every start. Only code runs move: build123d
+(`CAD_IMAGE`), screenshots (`LOOK_*`), media (`MEDIA_*`) and Proton Bridge stay Kubernetes-only. The app calls the
+`podman` command, so it needs podman on its `PATH`. The published image does not have it; on a host install, that
+is enough. In a container, build your own image that adds podman, mount your rootless podman socket and set
+`CONTAINER_HOST=unix://<socket path>`; a mounted socket lets the app start containers as that user.
 
 ## How she is built
 
