@@ -151,3 +151,7 @@ def test_a_household_s_listed_entity_is_judged_through_the_house_source() -> Non
     ask = {"action": "switch.turn_on", "ids": ["switch.lamp"]}
     assert asyncio.run(house_tier.of_call(house, ask, CONFIG, ("switch.lamp",))) == "judged"
     assert asyncio.run(house_tier.of_call(house, ask, CONFIG)) == "runs"
+
+
+def test_a_light_toggle_runs_unjudged() -> None:
+    assert of_house_do("light.toggle", (target("light.hall", "light"),)) == "runs"

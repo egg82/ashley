@@ -64,3 +64,10 @@ def test_the_most_controls_a_device_may_have_are_accepted() -> None:
 def test_a_scene_is_accepted_with_its_own_action() -> None:
     got = validate([Wanted(None, "Night", "scene.turn_on", "scene.zq_night")], HOUSE)
     assert got == (Control("night", "Night", "scene.turn_on", "scene.zq_night"),)
+
+
+def test_a_toggle_is_accepted_for_a_light_and_refused_for_a_scene() -> None:
+    got = validate([Wanted(None, "Hall", "light.toggle", "light.zq_hall")], HOUSE)
+    assert got == (Control("hall", "Hall", "light.toggle", "light.zq_hall"),)
+    with pytest.raises(ControlRefused):
+        validate([Wanted(None, "Night", "light.toggle", "scene.zq_night")], HOUSE)
