@@ -1,10 +1,15 @@
 """App mode (`ADMIN_GROUP` unset): the people routes, who may grant and revoke admin, the last admin, and another
 household's people."""
 
-from admin_role_blind_support import (ORIGIN, World, admin_flags, admin_ids, app_mode as app_mode, as_, codes, idp as idp,
+import asyncio
+
+import pytest
+from admin_role_blind_support import (ORIGIN, PUBLIC, MultiIdp, World, build, admin_flags, admin_ids, app_mode as app_mode, as_, codes, idp as idp,
                                       people_listing, put_admin, session_for, set_admin, world as world)
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
+from ashley.api.person import SESSION_COOKIE
 from fastapi.testclient import TestClient
+from httpx2 import ASGITransport, AsyncClient
 
 
 def sign_in_as(client: TestClient, db_url: str, world: World, person: int) -> None:
@@ -145,3 +150,25 @@ def test_app_mode_a_body_with_more_than_admin_is_422(app_mode: TestClient, db_ur
     got = app_mode.put(f"/api/people/{world.sam}/admin", json={"admin": True, "name": "x"}, headers=ORIGIN)
     assert got.status_code == 422
     assert admin_ids(db_url) == [world.alana]
+
+
+def test_app_mode_two_admins_revoking_each_other_at_once_leave_one(db_url: str, world: World, idp: MultiIdp,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    app = build(db_url, idp, monkeypatch)
+    tokens = {p: session_for(db_url, world, p) for p in (world.alana, world.sam)}
+
+    async def revoke(by: int, target: int) -> int:
+        async with AsyncClient(transport=ASGITransport(app), base_url=PUBLIC,
+                               cookies={SESSION_COOKIE: tokens[by]}) as c:
+            return (await c.put(f"/api/people/{target}/admin", json={"admin": False}, headers=ORIGIN)).status_code
+
+    async def scenario() -> None:
+        async with app.router.lifespan_context(app):
+            for _ in range(8):
+                set_admin(db_url, world.alana)
+                set_admin(db_url, world.sam)
+                answers = await asyncio.gather(revoke(world.alana, world.sam), revoke(world.sam, world.alana))
+                assert sorted(answers) == [200, 409], answers
+                assert len(admin_ids(db_url)) == 1, "two revokes at once must never leave the deployment with no admin"
+
+    asyncio.run(scenario())
