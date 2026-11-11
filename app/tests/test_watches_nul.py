@@ -5,7 +5,6 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from ashley.criteria.condition import Condition
 from ashley.criteria.items import ItemPredicate
 from ashley.db.pool import PoolDatabase
@@ -40,7 +39,6 @@ def armed(home: int, who: int) -> Arm:
                None, 15, datetime.now(UTC) + timedelta(hours=1))
 
 
-@pytest.mark.xfail(strict=True, reason="a NUL in a read item is refused by the jsonb of the baseline and of the wake")
 def test_a_read_with_a_nul_is_stored_in_the_baseline_and_the_wake_without_it(db_url: str) -> None:
     home = household(db_url)
     who = person(db_url, home)

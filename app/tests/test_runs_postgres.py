@@ -70,7 +70,7 @@ def test_a_run_goes_with_the_turn_that_asked_for_it(db_url: str) -> None:
     run(scenario())
 
 
-def test_text_with_a_nul_is_refused_before_the_database(db_url: str) -> None:
+def test_a_script_and_names_with_a_nul_are_refused_before_the_database(db_url: str) -> None:
     new = turn(db_url)
 
     async def scenario() -> None:
@@ -79,15 +79,14 @@ def test_text_with_a_nul_is_refused_before_the_database(db_url: str) -> None:
                 await runs.start(NewRun(new.household_id, new.conversation_id, new.turn_id, "c", "python", "a\x00"))
             run_id = await runs.start(new)
             with pytest.raises(ValueError):
-                await runs.finish(run_id, Output("ran", 0, "\x00", ""))
+                await runs.finish(run_id, Output("ran", 0, "", "", skipped=("a\x00",)))
 
     run(scenario())
 
 
-@pytest.mark.xfail(strict=True, reason="a run's output holding a NUL is refused, losing the whole run record")
 def test_output_with_a_nul_is_stored_with_the_nul_removed(db_url: str) -> None:
     new = turn(db_url)
-    output = Output("ran", 0, "a\x00b", "c\x00", False, {"o\x00.bin": "x\x00y"}, ("s\x00.bin",))
+    output = Output("ran", 0, "a\x00b", "c\x00", False, {"o.bin": "x\x00y"}, ("s.bin",))
 
     async def scenario() -> None:
         async with runs_on(db_url) as runs:

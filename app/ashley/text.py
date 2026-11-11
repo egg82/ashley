@@ -34,8 +34,8 @@ def has_nul(text: str) -> bool:
     return "\x00" in text
 
 
-def without_nul(text: str, channel: Literal["voice", "mail"]) -> str:
-    """`text` with every NUL removed, for outside text no person can retype (a transcript, a mail body); one
+def without_nul(text: str, channel: Literal["voice", "mail", "watch", "frames", "runs"]) -> str:
+    """`text` with every NUL removed, for outside text no person can retype (a transcript, a mail body, a page title, what a watch reads, what a program prints); one
     `text.nul_stripped` line says how many went, never what was around them."""
     count = text.count("\x00")
     if count:
