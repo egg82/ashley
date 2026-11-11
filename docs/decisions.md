@@ -2986,6 +2986,8 @@ sites. The site the house is at is preferred.
   in the referee's etcd that expires on its own); failover itself is never held. Drilled on production both ways: failover
   in 14 to 31 s, writes unavailable 14 to 16 s, fail-back writes unavailable 4 to 8 s, no acknowledged write lost
   (numbers per drill: the cluster repo's `kustomization/ashley-postgres/README.md`).
+- **`FAILBACK=off` turns fail-back off** (default `on`), for a Postgres whose own operator decides the preferred site;
+  every other singleton still runs under the lease.
 - **Asynchronous on purpose:** an unplanned failover can lose the last few seconds of writes. Synchronous
   replication would stall every write whenever the other site is down.
 - **Backed up to both sites' NAS.** WAL-G on the primary pushes every WAL segment to both sites' MinIO and
@@ -3001,6 +3003,8 @@ sites. The site the house is at is preferred.
 A singleton runs only while its process holds a lease in the same etcd. Kubernetes leases are per-cluster and
 can't see the other site. The lease and the database primary are decided by one referee, so they agree.
 
+- **The leader key and the member it must equal are deployment settings** (`ACTIVE_SITE_LEADER_PATH`, `ACTIVE_SITE_MEMBER`),
+  defaulting to Patroni's key (`/service/postgres/leader`) and `SITE`, so another operator's etcd layout needs no code.
 - **A site campaigns only while its own Patroni member leads**, read from Patroni's leader key in the same etcd. The
   claim transaction compares that key too, and every keepalive re-reads it, so when the primary moves the old holder
   cancels its singletons and releases within a few seconds, and the new site takes them.

@@ -1,4 +1,4 @@
-"""The wired etcd lease follows the deployment's `ACTIVE_SITE_KEY` and `ACTIVE_SITE_MEMBER`, against a real etcd."""
+"""The wired etcd lease follows the deployment's `ACTIVE_SITE_LEADER_PATH` and `ACTIVE_SITE_MEMBER`, against a real etcd."""
 
 import asyncio
 import uuid
@@ -23,7 +23,7 @@ def clean() -> Generator[None]:
 
 def wired(key: str) -> Lease:
     wire_lease(from_env({"DATABASE_URL": "postgresql://nobody@127.0.0.1:1/none", "ETCD_URL": etcd_url(), "SITE": "iss",
-                         "ACTIVE_SITE_KEY": key, "ACTIVE_SITE_MEMBER": MEMBER}))
+                         "ACTIVE_SITE_LEADER_PATH": key, "ACTIVE_SITE_MEMBER": MEMBER}))
     return services.get(Lease)
 
 
@@ -36,7 +36,6 @@ def key_for(value: str | None) -> str:
     return key
 
 
-@pytest.mark.xfail(strict=True, reason="the wired lease still reads the Spilo key and SITE")
 def test_the_site_is_active_while_the_key_holds_its_member() -> None:
     name, arena, key = unique_name(), Arena(), key_for(MEMBER)
 

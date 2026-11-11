@@ -2,11 +2,12 @@
 (`ashley.main.create_app`), and the etcd TLS both share."""
 
 import asyncio
+import logging
 from collections.abc import Coroutine
 from functools import partial
 from typing import Any
 
-from . import services
+from . import logs, services
 from .channels import bench_job, errand, outbox, resume
 from .channels.discord import bot as discord_bot, client as discord_client, config as discord_config
 from .channels.discord.postgres_seen import PostgresSeen
@@ -49,28 +50,33 @@ from .settings import Settings
 from .workshop import rules as workshop_rules
 from .workshop.file_references import named_keys
 
+log = logging.getLogger("ashley.wiring_singletons")
+
 # The key prefixes the files repair keeps whole on every site; the sweep lists the files' prefix alone.
 REPAIRED_PREFIXES: tuple[str, ...] = (FILES_PREFIX, LOOKS_PREFIX)
 
 
 def wire_lease(settings: Settings) -> None:
-    """With `etcd_url`, the etcd lease, held only on the active site (`site` names this site's Patroni member, or
-    ValueError); without it, a Postgres advisory lock per singleton on `database_url`."""
+    """With `etcd_url`, the etcd lease, held only on the active site (`active_site_leader_path` holding `active_member`, which
+    is `site` unless set; neither set is a ValueError); without it, a Postgres advisory lock per singleton on `database_url`."""
     if settings.etcd_url:
-        if not settings.site:
-            raise ValueError("SITE must name this site's Patroni member when ETCD_URL is set")
-        services.register(Lease, EtcdLease(settings.etcd_url, ActiveSite(settings.site), etcd_tls(settings)))
+        if not settings.active_member:
+            raise ValueError("SITE or ACTIVE_SITE_MEMBER must name this site's database member when ETCD_URL is set")
+        site = ActiveSite(settings.active_member, settings.active_site_leader_path)
+        services.register(Lease, EtcdLease(settings.etcd_url, site, etcd_tls(settings)))
     else:
         services.register(Lease, PostgresLease(settings.database_url))
 
 
 def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`: fail-back
-    when `etcd_url` is set (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
+    when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
     turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
     Discord session when `discord_bot_token` is, and web push when her VAPID identity is (`push_config.vapid`)."""
     running: list[Coroutine[Any, Any, None]] = []
-    if settings.etcd_url:
+    if settings.etcd_url and settings.failback == "off":
+        logs.info(log, "failback.off")
+    elif settings.etcd_url:
         tls = etcd_tls(settings)
         patroni = EtcdPatroni(settings.etcd_url, tls, auth=("patroni", settings.patroni_password))
         body = failback.FailBack(patroni, EtcdHold(settings.etcd_url, tls), failback_policy.load()).run
