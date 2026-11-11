@@ -13,7 +13,7 @@ Label = Annotated[str, StringConstraints(max_length=200)]
 
 class DeviceControl(BaseModel):
     """One control as stored: `name` its stable key on the device, `label` what its button says, `entity_id` the light or
-    scene the house calls it, which `action` turns on or off (a scene only on)."""
+    scene the house calls it, which `action` turns on, off or toggles (a scene only on)."""
 
     name: str
     label: str

@@ -900,7 +900,10 @@ the hallway may see, and does what anyone there may do.
 - **The touch controls are the screen's `controls` piece**, its body the button list. A person edits it in the
   Devices room and she edits it when asked, both as an Edit naming the version read, so one of two concurrent edits
   is refused `stale_base` and redone on the other. Each light or scene must be in the house's catalogue, checked by
-  the caller before the Command. A press still runs `house_do` by code. `device_controls` holds a device's list only
+  the caller before the Command. A press still runs `house_do` by code. A light's action is turn on, turn off or toggle
+  (`light.toggle`, the default for a new row). A toggle's button says whether its light is on: `GET /api/kiosk/controls`
+  gives each toggle `on` from the house's state, null when the house cannot say, and the kiosk reads it again with its
+  glance and after each press, so nothing is stored for it. `device_controls` holds a device's list only
   until its screen bench exists.
 - **An open page follows the server's build, the person shell and the kiosk alike** (`web/src/session/update.ts`,
   `watch.ts`). It remembers the `version` `GET /api/health` gave when it booted, asks again on each live resync and every

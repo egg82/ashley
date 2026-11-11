@@ -37,6 +37,7 @@
 .k-control:active { transform: scale(.98); border-color: var(--blue); }
 .k-control:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
 .k-control-state { font: 500 12px/1 var(--f-mono); color: var(--text-2); letter-spacing: .04em; }
+.k-control.lit { border-color: var(--blue); background: linear-gradient(160deg, var(--blue-glow), var(--ink-2)); } .k-control.lit .k-control-state { color: var(--blue-hi); }
 .k-control.running { border-color: var(--brass-dim); }
 .k-control.done { border-color: var(--ok); } .k-control.done .k-control-state { color: var(--ok); }
 .k-control.failed, .k-control.busy { border-style: dashed; }

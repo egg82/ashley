@@ -259,9 +259,6 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
 10. **The hallway tablet, what is left.** Her page for it is built (`/kiosk`, decisions, "The hallway tablet is her
     page, paired as a device"): pairing, its conversation, who is home, touch controls as data, and her arrangement of the
     screen as a Workshop screen bench. Left:
-    - **A touch control that toggles.** A control is a light's turn on or turn off today
-      (`app/web/src/rooms/devices/ControlsEditor.tsx`), so one light takes two buttons. Add toggle as an action, and
-      show on the button whether the light is on, read from the house. Fits into: the kiosk's touch controls.
     - **The device side:** the tablet opens `/kiosk` and is paired. Check that its browser keeps the screen on with
       motion and relaunches on a crash.
     - **Her voice and pictures through the page:** the page can play sound and video, so the tablet is one of her

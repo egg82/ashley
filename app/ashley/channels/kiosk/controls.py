@@ -1,4 +1,4 @@
-"""A device's touch controls: each a button that turns one light of the house on or off, or starts one of its scenes, carried out by code through the
+"""A device's touch controls: each a button that turns one light of the house on, off or the other way round, or starts one of its scenes, carried out by code through the
 device's household's tools as `house_do` with the entity's id, never by the model and never by a name matched loosely.
 The list is the body of the device's screen's `controls` piece (`workshop.screen_controls`; until the device's screen
 exists, its `DeviceControls` rows), edited by a person in the Devices room and by her, each light picked from the
@@ -20,9 +20,10 @@ from typing import Literal
 from ... import logs
 from ...inference.model import ToolCall
 from ...tools.everyday import HouseholdTools
+from ...tools.light_state import lights_on
 from ...workshop.screen_controls import ACTIONS, ID, MAX_CONTROLS, Action, Control
 
-__all__ = ["ACTIONS", "Action", "Control", "ControlRefused", "MAX_CONTROLS", "Reason", "Wanted", "run", "validate"]
+__all__ = ["ACTIONS", "Action", "Control", "ControlRefused", "MAX_CONTROLS", "Reason", "Wanted", "lights_on", "run", "validate"]
 
 Reason = Literal["too_many", "bad_label", "bad_id", "duplicate_id", "unknown_entity"]
 log = logging.getLogger("ashley.channels.kiosk")

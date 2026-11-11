@@ -4782,7 +4782,7 @@
     "/api/kiosk/controls": {
       "get": {
         "summary": "Kiosk Controls",
-        "description": "200 `KioskControls`, the buttons of the device's screen's controls piece, read now; 401 `unauthorized`; 503\n`unavailable`.",
+        "description": "200 `KioskControls`, the buttons of the device's screen's controls piece, read now, each toggle with whether its\nlight is on; 401 `unauthorized`; 503 `unavailable`.",
         "operationId": "kiosk_controls",
         "responses": {
           "200": {
@@ -8629,6 +8629,7 @@
             "enum": [
               "light.turn_on",
               "light.turn_off",
+              "light.toggle",
               "scene.turn_on"
             ],
             "title": "Action"
@@ -8646,7 +8647,7 @@
           "entity_id"
         ],
         "title": "DeviceControl",
-        "description": "One control as stored: `name` its stable key on the device, `label` what its button says, `entity_id` the light or\nscene the house calls it, which `action` turns on or off (a scene only on)."
+        "description": "One control as stored: `name` its stable key on the device, `label` what its button says, `entity_id` the light or\nscene the house calls it, which `action` turns on, off or toggles (a scene only on)."
       },
       "DeviceControlList": {
         "properties": {
@@ -8693,6 +8694,7 @@
             "enum": [
               "light.turn_on",
               "light.turn_off",
+              "light.toggle",
               "scene.turn_on"
             ],
             "title": "Action"
@@ -9604,15 +9606,27 @@
           "label": {
             "type": "string",
             "title": "Label"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
           }
         },
         "type": "object",
         "required": [
           "name",
-          "label"
+          "label",
+          "on"
         ],
         "title": "KioskControl",
-        "description": "One touch control: `name` is its stable key, `label` what its button says."
+        "description": "One touch control: `name` is its stable key, `label` what its button says. `on` is whether the light of a toggle\nis on now; null for any other control, and for a toggle whose light the house could not say."
       },
       "KioskControlDone": {
         "properties": {

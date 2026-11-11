@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 
 from .. import logs, services
 from ..channels.kiosk import controls
-from ..channels.kiosk.controls import Control
+from ..channels.kiosk.controls import Control, lights_on
 from ..channels.kiosk.screen_controls_of import controls_piece
 from ..channels.kiosk.glance import glance
 from ..channels.model import Device, Inbound
@@ -152,12 +152,15 @@ def _unpaired() -> JSONResponse:
 
 @router.get("/api/kiosk/controls", response_model=KioskControls, responses=_PAIRED)
 async def kiosk_controls(device: Kiosk) -> KioskControls | JSONResponse:
-    """200 `KioskControls`, the buttons of the device's screen's controls piece, read now; 401 `unauthorized`; 503
-    `unavailable`."""
+    """200 `KioskControls`, the buttons of the device's screen's controls piece, read now, each toggle with whether its
+    light is on; 401 `unauthorized`; 503 `unavailable`."""
     found = await _controls_of(device)
     if isinstance(found, JSONResponse):
         return found
-    return KioskControls(controls=[KioskControl(name=c.id, label=c.label) for c in found])
+    lit = await lights_on(device.household_id, (c.entity_id for c in found if c.action == "light.toggle"))
+    return KioskControls(controls=[
+        KioskControl(name=c.id, label=c.label, on=lit.get(c.entity_id) if c.action == "light.toggle" else None)
+        for c in found])
 
 
 @router.post("/api/kiosk/controls/{name}", response_model=KioskControlDone, responses={

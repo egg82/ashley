@@ -268,7 +268,7 @@ def test_the_glance_says_nobody_home_as_an_empty_list(client: TestClient, wired:
 
 def test_a_control_runs_its_tool_by_code_and_is_counted(client: TestClient, wired: Fakes, devices: FakeDevices,
                                                         capsys: pytest.CaptureFixture[str]) -> None:
-    assert client.get("/api/kiosk/controls").json() == {"controls": [{"name": "hall-light", "label": "Hall light"}]}
+    assert client.get("/api/kiosk/controls").json() == {"controls": [{"name": "hall-light", "label": "Hall light", "on": None}]}
     capsys.readouterr()
     response = client.post("/api/kiosk/controls/hall-light")
     out = capsys.readouterr().out

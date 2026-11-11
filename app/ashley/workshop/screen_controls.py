@@ -11,7 +11,7 @@ from typing import Literal, get_args
 
 from .json_shape import list_of, object_of
 
-Action = Literal["light.turn_on", "light.turn_off", "scene.turn_on"]
+Action = Literal["light.turn_on", "light.turn_off", "light.toggle", "scene.turn_on"]
 ACTIONS: dict[str, Action] = {a: a for a in get_args(Action)}
 MAX_CONTROLS = 12
 ID = re.compile(r"[a-z0-9-]{1,40}")

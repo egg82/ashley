@@ -13,9 +13,9 @@ test('a stored list is a draft that keeps each name', () => {
   assert.deepEqual(draftOf(stored).map((r) => r.name), ['a', 'b']);
 });
 
-test('a new row has no name and starts on the light picked', () => {
+test('a new row has no name and toggles the light picked', () => {
   const rows = added(draftOf(stored), light);
-  assert.deepEqual(rows[2], { name: null, label: 'Light C', action: 'light.turn_on', entity_id: 'light.c' });
+  assert.deepEqual(rows[2], { name: null, label: 'Light C', action: 'light.toggle', entity_id: 'light.c' });
 });
 
 test('nothing is added past the most, or when there is no light to pick', () => {
@@ -51,10 +51,11 @@ test('only a text screen that is nothing else carries controls', () => {
   assert.equal(showsControls({ ...base, medium: 'spoken' }), false);
 });
 
-test('a scene can only be turned on, and a light taking over from a scene is turned on', () => {
+test('a scene can only be turned on, and a light taking over from a scene toggles', () => {
   assert.equal(actionFor('scene.night', 'light.turn_off'), 'scene.turn_on');
-  assert.equal(actionFor('light.hall', 'scene.turn_on'), 'light.turn_on');
+  assert.equal(actionFor('light.hall', 'scene.turn_on'), 'light.toggle');
   assert.equal(actionFor('light.hall', 'light.turn_off'), 'light.turn_off');
+  assert.equal(actionFor('light.hall', 'light.toggle'), 'light.toggle');
 });
 
 test('the picker tells a scene from a light', () => {

@@ -1,4 +1,4 @@
-// A device's touch controls: each a button for one light of the house, picked from its catalogue, on or off.
+// A device's touch controls: each a button for one light of the house, picked from its catalogue, to toggle, turn on or turn off.
 import { useEffect, useState } from 'preact/hooks';
 import { getDeviceControls, putDeviceControls } from '../../api/deviceControls';
 import { onResync, onScreenChanged } from '../../session/live';
@@ -19,6 +19,7 @@ function RowEditor({ row, at, last, onRow }: { row: Row; at: number; last: boole
         onChange={(e) => onRow((rows) => changed(rows, at, { action: e.currentTarget.value as Row['action'] }))}>
         {row.entity_id.startsWith('scene.') ? <option value="scene.turn_on">Turn on</option> : (
           <>
+            <option value="light.toggle">Toggle</option>
             <option value="light.turn_on">Turn on</option>
             <option value="light.turn_off">Turn off</option>
           </>

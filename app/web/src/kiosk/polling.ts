@@ -1,4 +1,4 @@
-// Which kiosk parts are read on a timer. The glance is read always, since nothing announces a person coming or going;
+// Which kiosk parts are read on a timer. The glance is read always, since nothing announces a person coming or going, and a toggle's light is read with it;
 // the conversation and the layout only while the live feed is down, since the feed says when they change.
 
 export type Part = 'conversation' | 'glance' | 'layout';

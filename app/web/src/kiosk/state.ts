@@ -96,6 +96,7 @@ export async function refresh(part: Part): Promise<void> {
       glance.value = await getKioskGlance();
       const { locale, clock } = glance.value;
       if (locale && clock) writing.value = { locale, clock };
+      if (controls.value.some((c) => c.on !== null)) await loadControls();
       return;
     }
     if (part === 'layout') {
@@ -252,12 +253,13 @@ function setControl(name: string, state: ControlState | null): void {
   controlStates.value = next;
 }
 
-/** Carries out control `name`, showing it running, then done or failed for a moment. */
+/** Carries out control `name`, showing it running, then done or failed for a moment, and reads the controls again for the light's new state. */
 export async function press(name: string): Promise<void> {
   setControl(name, 'running');
   let shown: ControlState;
   try {
     shown = (await runKioskControl(name)) ? 'done' : 'failed';
+    await loadControls();
   } catch (error) {
     if (unpairedBy(error)) return;
     shown = error instanceof ApiError && error.status === 429 ? 'busy' : 'failed';
