@@ -53,8 +53,8 @@ def test_the_defaults_are_the_spilo_leader_key_and_this_sites_member() -> None:
 
 
 def test_the_key_and_member_come_from_the_environment() -> None:
-    config = settings(**ETCD, ACTIVE_SITE_LEADER_PATH="/multisite/ashley/pg/leader", ACTIVE_SITE_MEMBER="asgard-pg")
-    assert (config.active_site_leader_path, config.active_member) == ("/multisite/ashley/pg/leader", "asgard-pg")
+    config = settings(**ETCD, ACTIVE_SITE_LEADER_PATH="/multisite/ashley/pg/leader", ACTIVE_SITE_MEMBER="site-a-pg")
+    assert (config.active_site_leader_path, config.active_member) == ("/multisite/ashley/pg/leader", "site-a-pg")
     assert config.site == "willow"
 
 
