@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 from ashley.inference import routes
+from ashley.inference.layered_routes import REFRESH_S
 from ashley.inference.model import Route, Task
 from ashley.inference.route_choices import Choice
 from ashley.inference.routes import Routes
@@ -152,7 +153,7 @@ def test_the_operator_turns_a_task_off_by_giving_it_a_plain_list() -> None:
     conversation = served(w)
     with_choice(w, 1, "chat", ("b", "m2"))
     assert first(w.for_call(conversation), "chat") == ("a", "m1")
-    assert not own_choices(w.layered, 1)["chat"].household
+    assert "chat" not in own_choices(w.layered, 1)
 
 
 def test_the_deployments_narrowing_applies_to_a_households_routes_too() -> None:
@@ -162,6 +163,7 @@ def test_the_deployments_narrowing_applies_to_a_households_routes_too() -> None:
     conversation = served(w)
     assert [keys(r) for r in w.for_call(conversation).by_task["chat"]] == [("a", "m1")]
     with_choice(w, 1, "chat", ("b", "m2"))
+    w.clock[0] += REFRESH_S
     assert [keys(r) for r in w.for_call(conversation).by_task["chat"]] == [("b", "m2")]
     assert [keys(r) for r in w.layered.deployment().by_task["chat"]] == [("a", "m1")]
 
