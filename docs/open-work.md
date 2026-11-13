@@ -309,7 +309,7 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     The field is `Reply.says` (`ashley.inference.reply.Says`), shared by every channel; Discord adds `react`, voice takes `reply`, `offer` or `none`. Rejected: reading every channel and replying
     when she has something to say, which is a model call per message and a rate a stateless call cannot keep, and would
     have memory distil every channel.
-    - Fits into: Tools (a Discord tool provider beside Home Assistant's, `planned:ashley.tools.discord_read`) and Initiative (when she tends it: a seeded
+    - Fits into: Tools (a Discord tool provider beside Home Assistant's, `ashley.tools.discord_read`) and Initiative (when she tends it: a seeded
       roll and a score in code, never "now and then" in a prompt); her posts go through the outbox (`ashley.channels.outbox.Outbox`).
 16. **Bench camera** as a sense, on request first.
 17. **Split the API from the web client**, as sibling apps in the cluster repo do: the same
