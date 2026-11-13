@@ -32,6 +32,7 @@ def unavailable() -> JSONResponse:
 @router.post("/api/screens/visibility", status_code=204, response_class=Response, responses={
     401: {"model": ErrorResponse, "description": "`unauthorized`: no live session"},
     403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site or was not JSON"},
+    422: {"description": "FastAPI's validation error: a body outside `ScreenVisibility`"},
     **UNAVAILABLE})
 async def report_visibility(body: ScreenVisibility, signed_in: Person) -> Response:
     """204; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error for a body outside

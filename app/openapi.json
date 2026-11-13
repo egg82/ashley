@@ -4590,22 +4590,15 @@
               }
             }
           },
+          "422": {
+            "description": "FastAPI's validation error: a `screen` that is not a UUID"
+          },
           "503": {
             "description": "`unavailable`: no live feed; look for changes by asking again",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -4896,22 +4889,15 @@
               }
             }
           },
+          "422": {
+            "description": "FastAPI's validation error: a body outside `ScreenVisibility`"
+          },
           "503": {
             "description": "`unavailable`: the record of open screens could not be reached",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -5202,14 +5188,7 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "description": "FastAPI's validation error: a `screen` that is not a UUID"
           }
         }
       }
@@ -5264,14 +5243,7 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "description": "FastAPI's validation error: a body outside `ScreenVisibility`"
           }
         }
       }
@@ -9753,19 +9725,6 @@
         ],
         "title": "ForgetResponse",
         "description": "How many facts were deleted: the one forgotten and every earlier version it replaced. None of them is kept."
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
       },
       "HealthResponse": {
         "properties": {
@@ -15820,46 +15779,6 @@
         ],
         "title": "UndoRequest",
         "description": "Undo command `seq`, while what it changed has not changed since. Refused `nothing_to_undo` when `seq` is an undo\n(there is no redo) or older than the bench's last `undo_window` commands, and `changed_since` when it was already\nundone. Undoing an install takes it back out of the house before it is answered (`automation.last_install` of the\npiece)."
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
       },
       "VaultWrite": {
         "properties": {
