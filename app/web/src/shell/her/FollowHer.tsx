@@ -5,6 +5,11 @@ import { bearingOf } from '../carry';
 import { NAV } from '../rooms';
 import { followHer, stayHere, waiting, type Waiting } from './moves';
 
+function said(to: Waiting): string {
+  if (to.kind === 'working') return to.title ? `Ashley is working on “${to.title}”` : 'Ashley is working on a bench';
+  return `Ashley went ${wentTo(to)}`;
+}
+
 function wentTo(to: Waiting): string {
   if (to.room === 'her') return 'back to chat';
   if (to.path !== NAV.find((r) => r.id === to.room)!.path) return 'to a bench';
@@ -28,7 +33,7 @@ export function FollowHer() {
   if (!to) return null;
   return (
     <div class="follow-her" role="status" style={placeBy(to)}>
-      <span>Ashley went {wentTo(to)}</span>
+      <span>{said(to)}</span>
       <button class="btn sm primary" type="button" onClick={followHer}>Follow</button>
       <button class="btn sm ghost" type="button" onClick={stayHere}>Stay</button>
     </div>

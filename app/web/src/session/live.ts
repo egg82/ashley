@@ -4,7 +4,7 @@
 // may have missed something), and her cue of a video piece's player, go to whoever listens. While it is down, `liveUp`
 // is false and a room that shows something live looks for itself.
 import { liveFeed } from '../api/client';
-import { herMoved } from '../shell/her/moves';
+import { benchChangedBy, herMoved } from '../shell/her/moves';
 import { herLive, herLiveLost } from '../shell/her/state';
 import type { Cue } from '../rooms/workshop/pieces/player';
 import { createFeed } from './feed';
@@ -21,7 +21,10 @@ const feed = createFeed(liveFeed, {
     if (event.type === 'state') herLive(event.turn, event.state, event.at_most_s * 1000);
     else if (event.type === 'turn') threadTurns.forEach((h) => h(event.thread));
     else if (event.type === 'failed') threadFailures.forEach((h) => h(event.thread, event.why));
-    else if (event.type === 'bench') benchChanges.forEach((h) => h(event.bench_id, event.seq));
+    else if (event.type === 'bench') {
+      benchChanges.forEach((h) => h(event.bench_id, event.seq));
+      benchChangedBy(event.bench_id, event.by);
+    }
     else if (event.type === 'screen') screenChanges.forEach((h) => h(event.device_id, event.seq));
     else if (event.type === 'cue') benchCues.forEach((h) => h(event.bench_id, event.piece_id, event, 'her'));
     else if (event.type === 'page') herMoved(event.room, event.bench_id ?? null);

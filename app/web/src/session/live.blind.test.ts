@@ -12,7 +12,7 @@ type CueBy = Live.CueBy;
 // api client) read browser globals on load and none is exercised here, so each is replaced by an empty stand-in.
 const stubs: Record<string, string> = {
   '../api/client': 'export const liveFeed = () => null;',
-  '../shell/her/moves': 'export const herMoved = () => {};',
+  '../shell/her/moves': 'export const herMoved = () => {}; export const benchChangedBy = (...a) => { (globalThis.bench ??= []).push(a); };',
   '../shell/her/state': 'export const herLive = () => {}; export const herLiveLost = () => {};',
   './feed': 'export const createFeed = (_open, handlers) => { globalThis.feedHandlers = handlers; return { up: () => false, open: () => {}, close: () => {} }; };',
 };
@@ -97,7 +97,14 @@ test('a person and she are told apart by the tag alone, through one listener', (
 
 test('a bench change on the feed is no cue', () => {
   const { heard, stop } = listen();
-  feedHandlers().heard({ type: 'bench', bench_id: 1, seq: 2 });
+  feedHandlers().heard({ type: 'bench', bench_id: 1, seq: 2, by: null });
   stop();
   assert.deepEqual(heard, []);
+});
+
+test('a bench change on the feed hands the bench and who made it to her mark', () => {
+  (globalThis as { bench?: unknown[] }).bench = [];
+  feedHandlers().heard({ type: 'bench', bench_id: 7, seq: 2, by: 'her' });
+  feedHandlers().heard({ type: 'bench', bench_id: 8, seq: 3, by: 'person' });
+  assert.deepEqual((globalThis as { bench?: unknown[] }).bench, [[7, 'her'], [8, 'person']]);
 });
