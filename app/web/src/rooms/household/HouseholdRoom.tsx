@@ -1,5 +1,5 @@
 // Household, at bearing 020: the household's own settings read back as a sentence, where and when the house is, what she
-// always knows about it, her manner in it, its pronunciation words and, for an admin, its people.
+// always knows about it, her manner in it, its pronunciation words, the signed-in person's own quiet hours and, for an admin, its people.
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { household, householdSaid, householdState, loadHousehold } from '../../household/household';
 import { person } from '../../session/session';
@@ -10,6 +10,7 @@ import { loadLexicon } from './lexiconWords';
 import { Manner } from './Manner';
 import { Notebook } from './Notebook';
 import { PeoplePanel } from './PeoplePanel';
+import { QuietPanel } from './QuietPanel';
 import { SayLine } from './SayLine';
 import { SaveBar } from './SaveBar';
 import { Sentence } from './Sentence';
@@ -45,6 +46,7 @@ function Cards() {
         <div class="hh-o2"><Where /></div>
         <div class="hh-o3"><SayLine /></div>
         <div class="hh-o6"><Lexicon /></div>
+        <div class="hh-o8"><QuietPanel /></div>
         {person.value?.admin && <div class="hh-o7"><PeoplePanel /></div>}
       </div>
     </div>

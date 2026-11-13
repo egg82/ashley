@@ -3,13 +3,13 @@
 import logging
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import LiteralString
+from typing import Any, LiteralString
 
 import psycopg
 
 from .. import logs
 from ..db.database import Database, DatabaseUnavailable
-from .model import Account, Household, Person
+from .model import Account, Household, Person, QuietHours
 from .people import People, PeopleUnavailable
 
 log = logging.getLogger("ashley.people")
@@ -23,6 +23,15 @@ def translated() -> Generator[None]:
         raise PeopleUnavailable("no database connection") from e
     except psycopg.OperationalError as e:
         raise PeopleUnavailable("database unreachable") from e
+
+
+QUIET_COLUMNS = "p.quiet_from, p.quiet_to, p.quiet_timezone"
+
+
+def person_of(row: tuple[Any, ...]) -> Person:
+    """A `Person` from `id, household_id, name, admin, quiet_from, quiet_to, quiet_timezone`."""
+    quiet = None if row[4] is None else QuietHours(row[4], row[5], row[6])
+    return Person(row[0], row[1], row[2], row[3], quiet)
 
 
 _APP_ADMIN = "p.admin"
@@ -51,22 +60,22 @@ class PostgresPeople(People):
                 if row is None:
                     return None
                 cur = await conn.execute(
-                    f"SELECT p.id, p.household_id, p.name, {self._admin} FROM people p WHERE p.household_id = %s "
-                    "ORDER BY p.id", (household_id,))
-                people = tuple(Person(*r) for r in await cur.fetchall())
+                    f"SELECT p.id, p.household_id, p.name, {self._admin}, {QUIET_COLUMNS} FROM people p "
+                    "WHERE p.household_id = %s ORDER BY p.id", (household_id,))
+                people = tuple(person_of(r) for r in await cur.fetchall())
         return Household(row[0], row[1], row[2], row[3], people, row[4], row[5], row[6], row[7], row[8])
 
     async def person_for(self, system: str, external_id: str) -> Person | None:
         with translated():
             async with self._database.connection() as conn:
                 cur = await conn.execute(
-                    "SELECT p.id, p.household_id, p.name FROM accounts a "
+                    f"SELECT p.id, p.household_id, p.name, false, {QUIET_COLUMNS} FROM accounts a "
                     "JOIN people p ON p.id = a.person_id AND p.household_id = a.household_id "
                     "WHERE a.system = %s AND a.external_id = %s",
                     (system, external_id),
                 )
                 row = await cur.fetchone()
-        return None if row is None else Person(*row)
+        return None if row is None else person_of(row)
 
     async def accounts(self, household_id: int, system: str) -> tuple[Account, ...]:
         with translated():

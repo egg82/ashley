@@ -115,7 +115,9 @@ class Inbound:
     household reported (a wake), stored as a turn of the household with no speaker, never as the words of the person it is
     about; `note` is words for her alone, added to this turn's message in her prompt and never stored (a wake's brief), so
     never shown or carried. `promised` says the person asked for this turn earlier (a reminder firing): it goes out whatever
-    `Initiative` would say, and her reply only words it. `tools_only` narrows what the turn offers to the tools named
+    `Initiative` would say, and her reply only words it. `quiet` says the person this turn is for was in their own quiet
+    hours when it was made (`ashley.people.quiet.holds`, gathered before the turn so a resumer decides the same): an
+    unprompted turn goes out in none, and a turn for no one in particular has none. `tools_only` narrows what the turn offers to the tools named
     (`ashley.tools.only.Only`); None offers all. `reads_only` narrows it to the tools that change nothing
     (`ashley.tools.reading.Reading`), and only where `audience.owner_alone`; elsewhere it offers none. `moved_to` is the bench this turn has taken the speaker's page to
     (`channels.landing`): the rest of the turn is that bench's, its tools offered and her reply said in its talk. `steers`: a message that arrives while
@@ -172,6 +174,7 @@ class Inbound:
     author: Literal["person", "household"] = "person"
     note: str | None = None
     promised: bool = False
+    quiet: bool = False
     tools_only: tuple[str, ...] | None = None
     reads_only: bool = False
     moved_to: int | None = None

@@ -16,10 +16,10 @@ from .weights import Weights
 FILE = Path(__file__).with_name("remark.json")
 DAY_S = 86400.0
 
-Verdict = Literal["allowed", "rolled_out", "unknown", "night", "typing", "capped"]
+Verdict = Literal["allowed", "rolled_out", "unknown", "night", "quiet", "typing", "capped"]
 """What a chance came to: `allowed`, she is asked for a remark; `rolled_out`, the seeded roll missed the chance;
 `unknown`, a fact the cap or focus needs could not be read, so she stays out of it; `night`, the household's night
-hours (`score.json`'s `night`); `typing`, the person typed into a Claude Code session of theirs within
+hours (`score.json`'s `night`); `quiet`, the person's own quiet hours hold; `typing`, the person typed into a Claude Code session of theirs within
 `typing_within_s`; `capped`, she already made `per_day` remarks for them in the last day."""
 
 
@@ -46,13 +46,14 @@ class Chance:
     when unknown; `sent`, the remarks she made for the person in the last day that went out or may yet, None when they
     could not be read; `since_typed_s`, how long since the person last typed into a Claude Code session, None when she
     sees no typing (no bridge, or it records none); `typing_known` is False when their bridge could not be read;
-    `said`, the fingerprints (`fingerprint`) of the lines she sent as remarks within `repeat_within_days`."""
+    `quiet`, whether the person's own quiet hours hold now, None when that could not be told; `said`, the fingerprints (`fingerprint`) of the lines she sent as remarks within `repeat_within_days`."""
 
     seed: str
     hour: int | None
     sent: int | None
     since_typed_s: float | None
     typing_known: bool
+    quiet: bool | None
     said: tuple[str, ...] = ()
 
 
@@ -62,13 +63,15 @@ def rolls(seed: str, rates: Rates) -> bool:
 
 
 def verdict(chance: Chance, rates: Rates, weights: Weights) -> Verdict:
-    """The first of: the roll missed; a fact unknown; night; typing; capped; else allowed."""
+    """The first of: the roll missed; a fact unknown; night; their quiet hours; typing; capped; else allowed."""
     if not rolls(chance.seed, rates):
         return "rolled_out"
-    if chance.hour is None or chance.sent is None or not chance.typing_known:
+    if chance.hour is None or chance.sent is None or not chance.typing_known or chance.quiet is None:
         return "unknown"
     if at_night(chance.hour, weights):
         return "night"
+    if chance.quiet:
+        return "quiet"
     if chance.since_typed_s is not None and chance.since_typed_s < rates.typing_within_s:
         return "typing"
     if chance.sent >= rates.per_day:

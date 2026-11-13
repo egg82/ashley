@@ -16,6 +16,7 @@ from ... import logs, services
 from ...initiative.initiative import Initiative
 from ...initiative.remark import DAY_S, RATES, Chance, fingerprint
 from ...people.model import Person
+from ...people.quiet import holds
 from ...people.zone import zone_of
 from ...senses.focus import Focus, FocusUnavailable
 from ...text import has_nul
@@ -60,7 +61,7 @@ async def offered(message: Message, servers: Mapping[int, DiscordServer], person
 
 
 async def gathered(seed: str, person: Person, now: datetime) -> Chance:
-    """The facts at `now` for a remark to `person`: the hour in the household's zone, what `Remarks` holds of the last
+    """The facts at `now` for a remark to `person`: the hour in the household's zone, whether their own quiet hours hold, what `Remarks` holds of the last
     day and the repeat window, and when they last typed into a session (`Focus`). A fact that cannot be read is
     unknown, never a value."""
     household_id = person.household_id
@@ -76,7 +77,8 @@ async def gathered(seed: str, person: Person, now: datetime) -> Chance:
         since_typed, known = (None if typed is None else (now - typed).total_seconds()), True
     except FocusUnavailable:
         since_typed, known = None, False
-    return Chance(seed, None if zone is None else now.astimezone(zone).hour, sent, since_typed, known, said)
+    return Chance(seed, None if zone is None else now.astimezone(zone).hour, sent, since_typed, known,
+                  holds(person.quiet, now), said)
 
 
 async def settle(household_id: int, source: str, sent: str | None) -> None:

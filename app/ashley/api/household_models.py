@@ -50,3 +50,31 @@ class HouseholdRefused(BaseModel):
 
     invalid: Literal["timezone", "locale", "location"]
     detail: str
+
+
+class QuietWindow(BaseModel):
+    """A daily window of whole hours in the zone `timezone` (an IANA name): from hour `start` up to, not including, hour
+    `end`, each 0 to 23 and never the same. It runs across midnight when `start` is the later hour."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start: int = Field(ge=0, le=23)
+    end: int = Field(ge=0, le=23)
+    timezone: str = Field(max_length=64)
+
+
+class QuietHours(BaseModel):
+    """The signed-in person's own quiet hours, `quiet` null when they have none. While the window holds, nothing she
+    says on her own initiative reaches them; a reply to what they say is never held. A request replaces them whole,
+    null clearing them."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    quiet: QuietWindow | None
+
+
+class QuietRefused(BaseModel):
+    """Why nothing was stored: `invalid` is `hours` (the same hour twice) or `timezone` (not an IANA zone name)."""
+
+    invalid: Literal["hours", "timezone"]
+    detail: str

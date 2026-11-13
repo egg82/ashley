@@ -226,8 +226,8 @@ SCORED = Scored(WEIGHTS)
 
 
 def test_worth_saying_is_the_replys_own_field_and_pure() -> None:
-    assert SCORED.speaks(WORTH, None) is True and SCORED.speaks(NOT_WORTH, None) is False
-    assert [SCORED.speaks(NOT_WORTH, None) for _ in range(3)] == [False] * 3
+    assert SCORED.speaks(WORTH, None, False) is True and SCORED.speaks(NOT_WORTH, None, False) is False
+    assert [SCORED.speaks(NOT_WORTH, None, False) for _ in range(3)] == [False] * 3
 
 
 def test_a_reply_defaults_to_worth_saying() -> None:
@@ -237,11 +237,11 @@ def test_a_reply_defaults_to_worth_saying() -> None:
 def test_the_words_never_decide_it() -> None:
     quiet = Reply(spoken="I have nothing to say.", text="", says="reply")
     loud = Reply(spoken="", text="", says="none")
-    assert SCORED.speaks(quiet, None) is True and SCORED.speaks(loud, None) is False
+    assert SCORED.speaks(quiet, None, False) is True and SCORED.speaks(loud, None, False) is False
 
 
 def test_the_unwired_initiative_never_speaks() -> None:
-    assert NullInitiative().speaks(WORTH, None) is False and Initiative.null().speaks(WORTH, None) is False
+    assert NullInitiative().speaks(WORTH, None, False) is False and Initiative.null().speaks(WORTH, None, False) is False
 
 
 def inbound(**changes: Any) -> Inbound:

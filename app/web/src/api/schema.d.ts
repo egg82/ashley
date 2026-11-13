@@ -1082,6 +1082,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/household/quiet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Quiet
+         * @description 200 `QuietHours`; 401 `unauthorized`; 404 `not_found`; 503 `unavailable`.
+         */
+        get: operations["read_quiet"];
+        /**
+         * Write Quiet
+         * @description 200 `QuietHours` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 `QuietRefused`; 503
+         *     `unavailable`.
+         */
+        put: operations["write_quiet"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/people": {
         parameters: {
             query?: never;
@@ -4812,6 +4837,41 @@ export interface components {
             /** Endpoint */
             endpoint: string;
             keys: components["schemas"]["PushKeys"];
+        };
+        /**
+         * QuietHours
+         * @description The signed-in person's own quiet hours, `quiet` null when they have none. While the window holds, nothing she
+         *     says on her own initiative reaches them; a reply to what they say is never held. A request replaces them whole,
+         *     null clearing them.
+         */
+        QuietHours: {
+            quiet: components["schemas"]["QuietWindow"] | null;
+        };
+        /**
+         * QuietRefused
+         * @description Why nothing was stored: `invalid` is `hours` (the same hour twice) or `timezone` (not an IANA zone name).
+         */
+        QuietRefused: {
+            /**
+             * Invalid
+             * @enum {string}
+             */
+            invalid: "hours" | "timezone";
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * QuietWindow
+         * @description A daily window of whole hours in the zone `timezone` (an IANA name): from hour `start` up to, not including, hour
+         *     `end`, each 0 to 23 and never the same. It runs across midnight when `start` is the later hour.
+         */
+        QuietWindow: {
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+            /** Timezone */
+            timezone: string;
         };
         /**
          * ReadyResponse
@@ -9100,6 +9160,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseholdRefused"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_quiet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuietHours"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: the session's household no longer exists */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    write_quiet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuietHours"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuietHours"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: the session's household no longer exists */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description hours or a zone she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuietRefused"];
                 };
             };
             /** @description `unavailable`: the database could not be reached */

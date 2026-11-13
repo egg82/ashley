@@ -85,8 +85,8 @@ def test_a_recent_greeting_silences_a_moment_that_would_speak() -> None:
     assert planned(at(), w).outcome == "full", "control: with no greeting the moment speaks"
     got = planned(at(since_greeted_s=60), w)
     assert got.outcome == "silent" and got.roll is None
-    assert Scored(w).speaks(WORTH, at(since_greeted_s=60)) is False
-    assert Scored(w).speaks(WORTH, at()) is True
+    assert Scored(w).speaks(WORTH, at(since_greeted_s=60), False) is False
+    assert Scored(w).speaks(WORTH, at(), False) is True
 
 
 def test_the_shipped_weights_silence_a_greeting_a_minute_after_the_last() -> None:
@@ -147,19 +147,19 @@ def test_the_roll_picks_short_between_full_and_silent() -> None:
 
 
 def test_a_turn_with_no_moment_goes_out_on_her_says_alone() -> None:
-    assert Scored(WEIGHTS).speaks(WORTH, None) is True and Scored(WEIGHTS).speaks(NOT_WORTH, None) is False
-    assert Scored(WEIGHTS).speaks(OFFER, None) is True
+    assert Scored(WEIGHTS).speaks(WORTH, None, False) is True and Scored(WEIGHTS).speaks(NOT_WORTH, None, False) is False
+    assert Scored(WEIGHTS).speaks(OFFER, None, False) is True
 
 
 def test_nothing_goes_out_that_she_says_none_to_whatever_the_moment() -> None:
     w = parse(weights())
-    assert Scored(w).speaks(WORTH, at()) is True, "control: this moment lets a reply out"
-    assert Scored(w).speaks(OFFER, at()) is True
-    assert Scored(w).speaks(NOT_WORTH, at()) is False
+    assert Scored(w).speaks(WORTH, at(), False) is True, "control: this moment lets a reply out"
+    assert Scored(w).speaks(OFFER, at(), False) is True
+    assert Scored(w).speaks(NOT_WORTH, at(), False) is False
 
 
 def test_the_unwired_policy_plans_silence() -> None:
-    assert NullInitiative().planned(at()).outcome == "silent" and NullInitiative().speaks(WORTH, at()) is False
+    assert NullInitiative().planned(at()).outcome == "silent" and NullInitiative().speaks(WORTH, at(), False) is False
 
 
 # ---- the loader

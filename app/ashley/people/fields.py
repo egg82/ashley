@@ -28,3 +28,8 @@ def is_locale(tag: str) -> bool:
     """Whether `tag` is a BCP 47 language tag of language, optional script and optional region, in their canonical case:
     `en`, `en-US`, `es-419`, `zh-Hans-CN`. Variants and extensions are refused, since nothing here reads them."""
     return _LOCALE.fullmatch(tag) is not None
+
+
+def is_quiet_window(start: int, end: int, timezone: str) -> bool:
+    """Whether the hours are a quiet window: each a whole hour from 0 to 23, not the same one, in a zone this host knows."""
+    return 0 <= start <= 23 and 0 <= end <= 23 and start != end and is_timezone(timezone)

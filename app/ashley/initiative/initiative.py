@@ -5,7 +5,7 @@
 The decision keys on measured facts and structured fields of her reply, never on its words. A turn a wake from the
 house starts carries the facts of its moment (`moment.Moment`), gathered before the turn, and is planned from them
 before she is asked (`planned`): the plan's outcome reaches her as that call's instruction. Every other unprompted turn
-carries none, and goes out on her `Reply.says` alone, except a remark nobody asked for (`remark.Chance`): code allows
+carries none, and goes out on her `Reply.says` alone unless the person's own quiet hours hold (`Inbound.quiet`), except a remark nobody asked for (`remark.Chance`): code allows
 one before she is asked (`remark`), and lets it out only when she says it is worth saying and it is no line she
 already sent. Whether she tends her home channel in a slot of time (`tend.Tending`) is decided the same way: a roll
 first (`tend_rolls`), then the slot's facts (`tend`); what she writes on that turn goes out on her `says`."""
@@ -32,9 +32,10 @@ class Initiative(Service):
         """What `moment` comes to before her turn runs. Pure: the same moment always gets the same plan."""
 
     @abstractmethod
-    def speaks(self, reply: Reply, moment: Moment | None) -> bool:
-        """Whether `reply`, said on her own initiative at `moment` (None for a turn that carries no facts), goes out.
-        Pure: the same reply and moment always get the same answer."""
+    def speaks(self, reply: Reply, moment: Moment | None, quiet: bool) -> bool:
+        """Whether `reply`, said on her own initiative at `moment` (None for a turn that carries no facts), goes out;
+        `quiet` is whether the person it is for is in their own quiet hours (`Inbound.quiet`), which nothing goes out
+        in. Pure: the same reply, moment and quiet always get the same answer."""
 
     @abstractmethod
     def rolls(self, seed: str) -> bool:
@@ -63,7 +64,7 @@ class NullInitiative(Initiative):
     def planned(self, moment: Moment) -> Plan:
         return Plan(0.0, None, "silent")
 
-    def speaks(self, reply: Reply, moment: Moment | None) -> bool:
+    def speaks(self, reply: Reply, moment: Moment | None, quiet: bool) -> bool:
         return False
 
     def rolls(self, seed: str) -> bool:
@@ -95,8 +96,8 @@ class Scored(Initiative):
     def planned(self, moment: Moment) -> Plan:
         return planned(moment, self._weights)
 
-    def speaks(self, reply: Reply, moment: Moment | None) -> bool:
-        return reply.says != "none" and (moment is None or self.planned(moment).outcome != "silent")
+    def speaks(self, reply: Reply, moment: Moment | None, quiet: bool) -> bool:
+        return reply.says != "none" and not quiet and (moment is None or self.planned(moment).outcome != "silent")
 
     def rolls(self, seed: str) -> bool:
         return rolls(seed, self._rates)

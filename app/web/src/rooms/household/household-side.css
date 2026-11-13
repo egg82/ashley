@@ -43,6 +43,14 @@
 .hh-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
 .hh-add .btn { grid-column: 1 / -1; justify-self: start; }
 
+/* quiet hours: the form's inputs, with its selects styled to match */
+.hh-quiet { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+.hh-quiet select { min-width: 0; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.9); color: var(--text); }
+.hh-quiet select:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 1px; }
+.hh-quiet label:nth-of-type(3), .hh-quiet-acts { grid-column: 1 / -1; }
+.hh-quiet-acts { display: flex; gap: 6px; }
+.hh-quietp .dc-note { margin-top: 10px; }
+
 /* people */
 .hh-person { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 16px; border-top: 1px solid var(--line); }
 .hh-person:first-of-type { border-top: 0; }

@@ -165,7 +165,7 @@ def _moment(raw: dict[str, Any]) -> Moment:
 
 def _remark(raw: dict[str, Any]) -> Chance:
     return Chance(str(raw["seed"]), raw["hour"], raw["sent"], raw["since_typed_s"], bool(raw["typing_known"]),
-                  tuple(str(f) for f in raw["said"]))
+                  raw.get("quiet", False), tuple(str(f) for f in raw["said"]))
 
 
 def _judged(raw: Any) -> dict[str, Verdict]:
