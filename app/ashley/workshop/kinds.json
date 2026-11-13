@@ -9,6 +9,7 @@
   "facts": {"family": "stored", "label": "Facts", "max_chars": 50000, "format": "facts"},
   "site": {"family": "live", "label": "Site", "max_chars": 2000, "format": "site", "outside": true},
   "video": {"family": "live", "label": "Video", "max_chars": 2200, "format": "video", "outside": true},
+  "session": {"family": "live", "label": "Session", "max_chars": 200, "format": "session"},
   "reader": {"family": "stored", "label": "Reader", "max_chars": 200000, "format": "reader", "outside": true},
   "recipe": {"family": "stored", "label": "Recipe", "max_chars": 200000, "format": "recipe", "outside": true},
   "image": {"family": "large", "label": "Image", "max_chars": 1000, "format": "image", "outside": true},

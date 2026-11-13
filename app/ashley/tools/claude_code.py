@@ -38,6 +38,8 @@ INSTRUCTIONS = (
     "something you have not read. A session that is working or blocked takes no prompt, and you cannot answer a "
     "dialog it is blocked on: tell the person. A session you start or prompt is watched: when it finishes or blocks "
     "you are woken to read it and tell them, unless the result says watched is false, which you tell them instead. "
+    "On a bench, a session the person wants to watch as it runs goes up as a session piece (bench_add, kind session, "
+    'body {"source": "herdr", "session": "<its id>"}): their screen shows its output live, and you see only the id. '
     "These act on their machine, so do what they asked and nothing more.")
 _HINTS: dict[Reason, str] = {
     "bad_request": "the bridge refused the arguments; a label is a lowercase letter then up to 31 of a-z, 0-9, _ and -, "

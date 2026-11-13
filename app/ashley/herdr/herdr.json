@@ -1,5 +1,9 @@
 {
   "timeout_s": 20,
   "start_timeout_s": 120,
-  "response_max_bytes": 1048576
+  "response_max_bytes": 1048576,
+  "screen_lines": 160,
+  "screen_working_s": 1.5,
+  "screen_still_s": 6,
+  "screen_away_s": 20
 }

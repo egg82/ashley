@@ -6,7 +6,8 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
                  "nothing_to_undo", "changed_since", "not_runnable", "bad_automation", "bad_site", "bad_video",
                  "not_installable", "incomplete", "no_proposal", "needs_person", "bad_wake", "not_video", "bad_cue",
                  "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_facts", "bad_controls",
-                 "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body", "bad_citation", "bad_rows"]
+                 "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body", "bad_citation", "bad_rows",
+                 "bad_session"]
 """Why a command was refused:
 - `unknown_kind`: an Add of a kind `kinds.json` does not have.
 - `bad_title`: a title (a piece's, or a Rename's) empty, only whitespace, or longer than `title_max_chars`.
@@ -26,6 +27,8 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
 - `bad_site`: an Add or Edit of a site piece whose body is not empty and not one https URL, or is a YouTube or Vimeo
   page, which is a video piece (`workshop.embed`).
 - `bad_video`: an Add or Edit of a video piece whose body is not empty and not a video body (`workshop.embed`).
+- `bad_session`: an Add or Edit of a session piece whose body is not empty and not a session reference
+  (`workshop.session_piece`).
 - `not_installable`: a Propose or Install of a piece whose kind's format is not `automation`.
 - `incomplete`: a Propose of an automation with no alias, trigger or action.
 - `no_proposal`: an Install naming a `seq` that is not an accepted Propose of that piece, or one an Install already

@@ -5,7 +5,8 @@ and the bench's limits (`workshop.json`). Both files sit beside this module.
 `outside` (a boolean, false when left out) for a kind whose body or page text is written outside the household, and
 `by_code` (a boolean, false when left out) for a kind only the bench jobs' runner makes and changes (`model.RUNNER`):
 - `family` is `stored`, whose piece body is its content, kept in Postgres; or `live`, whose body is a reference to a
-  source the client shows in a frame (`site`, `video`); or `large`, whose body names bytes kept in the object store
+  source the client shows as it is now: a page or player it frames (`site`, `video`), or a Claude Code session whose
+  screen the server reads for it (`session`); or `large`, whose body names bytes kept in the object store
   (`image`, `file`; `stored_file`).
 - `label` is what a screen calls the kind.
 - `max_chars` is the longest body a piece of the kind may have, at least 1.
@@ -16,7 +17,8 @@ and the bench's limits (`workshop.json`). Both files sit beside this module.
   `video` (a JSON object of a url and a start; both in `embed`), `screen` (a piece of a device's screen drawn by the
   client from its own sources, whose body is empty) or `controls` (a screen's touch buttons as JSON,
   `screen_controls`) or `reader` (a page's text and where it came from as
-  JSON, `reader`), `recipe` (a published recipe and the headcount to scale it to as JSON, `recipe`), `job` (a bench job's state as JSON, `job_body`), `image` or `file` (a large piece's body: the hash, size, media type and name of its bytes,
+  JSON, `reader`), `recipe` (a published recipe and the headcount to scale it to as JSON, `recipe`), `job` (a bench job's state as JSON, `job_body`), `session` (a Claude Code session's reference as JSON,
+  `session_piece`), `image` or `file` (a large piece's body: the hash, size, media type and name of its bytes,
   `stored_file`).
 - family `screen` is a piece of a device's screen, not of a bench: `load` leaves those kinds out and `load_screen`
   keeps only them.
@@ -41,7 +43,7 @@ LIMITS_FILE = Path(__file__).with_name("workshop.json")
 SCREEN_FILE = Path(__file__).with_name("screen.json")
 
 Family = Literal["stored", "live", "large", "screen"]
-BodyFormat = Literal["markdown", "plain", "code", "automation", "wake", "facts", "diagram", "site", "video", "reader", "recipe", "image", "file", "clip", "audio", "screen", "controls", "job"]
+BodyFormat = Literal["markdown", "plain", "code", "automation", "wake", "facts", "diagram", "site", "video", "reader", "recipe", "image", "file", "clip", "audio", "screen", "controls", "job", "session"]
 
 
 @dataclass(frozen=True)

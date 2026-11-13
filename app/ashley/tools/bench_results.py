@@ -76,6 +76,8 @@ HINTS: dict[Reason, str] = {
                 "handed off with bench_hand_off and cancelled with bench_job_cancel",
     "bad_cue": "seek takes seconds from the start, 0 or more and under 100 hours; play and pause take none",
     "bad_rows": "only a facts piece's current choice rows can be shown, each once; read the piece again",
+    "bad_session": 'a session piece\'s body is {"source": "herdr", "session": "<id>"}, a session id as claude_sessions '
+                   "lists it",
 }
 
 
