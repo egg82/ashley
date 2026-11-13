@@ -40,11 +40,14 @@ class LiveFailed(BaseModel):
 
 
 class LiveBench(BaseModel):
-    """Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back."""
+    """Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back. `by` is
+    who made the command (null when no one did): a page not showing the bench says she is working there when it is
+    `her`."""
 
     type: Literal["bench"]
     bench_id: int
     seq: int
+    by: Literal["her", "person"] | None
 
 
 class LiveCue(BaseModel):

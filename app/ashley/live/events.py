@@ -9,6 +9,8 @@ from typing import Any, Literal, get_args
 HerStateName = Literal["listening", "thinking", "speaking", "idle"]
 PageRoom = Literal["her", "workshop", "memory", "devices", "connections"]
 """The rooms of a person's page, as the client names them."""
+ChangedBy = Literal["her", "person"]
+"""Who made the command behind a `BenchChanged`."""
 
 
 @dataclass(frozen=True)
@@ -91,11 +93,13 @@ class TurnFailed:
 @dataclass(frozen=True)
 class BenchChanged:
     """Command `seq` changed bench `bench_id`, so a page showing the bench reads it back; `seq` 0 is no command but a
-    site on the bench newly measured (`api.bench_frames`). Shown to the bench's owner alone."""
+    site on the bench newly measured (`api.bench_frames`). `by` is who made the command, None when it was no one's
+    (a measurement, or a change carried out after the command). Shown to the bench's owner alone."""
 
     shown: Shown
     bench_id: int
     seq: int
+    by: ChangedBy | None = None
 
     def __post_init__(self) -> None:
         if self.shown.person_id is None:
@@ -187,7 +191,7 @@ def encode(event: Event) -> str:
         return json.dumps({**base, "type": "state", "turn": event.turn, "state": event.state,
                            "at_most_s": event.at_most_s})
     if isinstance(event, BenchChanged):
-        return json.dumps({**base, "type": "bench", "bench_id": event.bench_id, "seq": event.seq})
+        return json.dumps({**base, "type": "bench", "bench_id": event.bench_id, "seq": event.seq, "by": event.by})
     if isinstance(event, BenchCued):
         return json.dumps({**base, "type": "cue", "bench_id": event.bench_id, "piece_id": event.piece_id,
                            "action": event.action, "seconds": event.seconds})
@@ -213,7 +217,8 @@ def decode(payload: str) -> Event | None:
         if raw["type"] == "failed" and raw["why"] in get_args(FailedWhy):
             return TurnFailed(shown, str(raw["thread"]), raw["why"])
         if raw["type"] == "bench":
-            return BenchChanged(shown, int(raw["bench_id"]), int(raw["seq"]))
+            by = raw.get("by")
+            return BenchChanged(shown, int(raw["bench_id"]), int(raw["seq"]), by if by in get_args(ChangedBy) else None)
         if raw["type"] == "cue" and raw["action"] in get_args(CueName):
             return BenchCued(shown, int(raw["bench_id"]), int(raw["piece_id"]), raw["action"],
                              None if raw["seconds"] is None else float(raw["seconds"]))

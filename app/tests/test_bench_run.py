@@ -51,7 +51,7 @@ def test_a_run_is_logged_then_run_once_and_recorded_against_its_command(db_url: 
             log = await shop.log(alana, bench.id)
             assert (log[-1].seq, log[-1].outcome, log[-1].piece_id) == (2, "accepted", 1)
             seen = Shown(alana.household_id, alana.person_id)
-            assert w.heard.events[-2:] == [BenchChanged(seen, bench.id, 2), BenchChanged(seen, bench.id, 2)]
+            assert w.heard.events[-2:] == [BenchChanged(seen, bench.id, 2, "person")] * 2
             view = await shop.read(alana, bench.id)
             assert view.pieces[0].version == 1 and view.pieces[0].changed_by == 1
 

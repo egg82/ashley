@@ -289,7 +289,7 @@ def test_live_gets_the_bench_and_seq_to_the_owner_after_an_accepted_command_and_
     rig.as_("sam")
     command(rig, b, add_body("d"))
     owner = Shown(rig.w.alana.household_id, rig.w.alana.person_id)
-    assert rig.live.published == [BenchChanged(owner, b, 1), BenchChanged(owner, b, 3)]
+    assert rig.live.published == [BenchChanged(owner, b, 1, "person"), BenchChanged(owner, b, 3, "person")]
 
 
 # --- the bench's talk --------------------------------------------------------------------------------------------------

@@ -71,13 +71,13 @@ def _text_of(command: Command) -> str:
     return f"{command.text.title}{command.text.body}" if isinstance(command, Edit) else ""
 
 
-def _announced(owner: Owner, bench_id: int, decision: Accepted) -> Event:
+def _announced(owner: Owner, bench_id: int, decision: Accepted, command: Command) -> Event:
     """A cue is told to the open screens as it is (`BenchCued`) and is no change of the bench; any other accepted
     command is a `BenchChanged`."""
     shown, effect = Shown(owner.household_id, owner.person_id), decision.effect
     if isinstance(effect, Cued):
         return BenchCued(shown, bench_id, effect.piece_id, effect.action, effect.seconds)
-    return BenchChanged(shown, bench_id, decision.seq)
+    return BenchChanged(shown, bench_id, decision.seq, "her" if command.by.person_id is None else "person")
 
 
 class PostgresWorkshop(Workshop):
@@ -208,7 +208,7 @@ class PostgresWorkshop(Workshop):
         applied = self._applied(decision)
         self._logged(bench_id, command, decision, applied, started)
         if isinstance(decision, Accepted):
-            services.get(Live).publish(_announced(owner, bench_id, decision))
+            services.get(Live).publish(_announced(owner, bench_id, decision, command))
         return applied
 
     async def screen(self, household_id: int, device_id: int) -> ScreenView:

@@ -153,7 +153,7 @@ def test_an_accepted_command_is_shown_to_the_owner_and_a_refusal_to_no_one(
             bench = await shop.open(alana, SECRET[:12])
             await shop.apply(alana, bench.id, add(alana, SECRET[:12], SECRET))
             await shop.apply(alana, bench.id, Remove(HER, 5))
-            assert heard.events == [BenchChanged(Shown(alana.household_id, alana.person_id), bench.id, 1)]
+            assert heard.events == [BenchChanged(Shown(alana.household_id, alana.person_id), bench.id, 1, "person")]
 
     run(scenario())
     out = capsys.readouterr().out

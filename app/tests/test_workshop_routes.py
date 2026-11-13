@@ -238,7 +238,8 @@ def test_a_bench_message_takes_no_attachment_since_its_paste_is_a_piece(signed_i
 
 def test_a_benchs_change_is_a_bench_event_on_the_feed() -> None:
     got = wire(BenchChanged(Shown(ALANA.household_id, ALANA.id), 4, 9)).root
-    assert got == LiveBench(type="bench", bench_id=4, seq=9)
+    assert got == LiveBench(type="bench", bench_id=4, seq=9, by=None)
+    assert wire(BenchChanged(Shown(ALANA.household_id, ALANA.id), 4, 9, "her")).root.by == "her"
 
 
 def test_an_unwired_workshop_is_503(wired: Fakes) -> None:
