@@ -21,13 +21,15 @@ DESCRIPTION = (
     "Values are text; a number is tested with number. Example, until it is closed: [[gone]].")
 
 
-def schema(tracked: Collection[str]) -> dict[str, object]:
+def schema(tracked: Collection[str] | None, description: str = DESCRIPTION) -> dict[str, object]:
+    """`tracked` enumerates the fields a predicate may name; None leaves them free, for a kind whose watches say which
+    fields they track."""
     predicate: dict[str, object] = {
         "type": "object",
         "properties": {
             "kind": {"type": "string", "enum": list(KINDS)},
             "not": {"type": "boolean"},
-            "field": {"type": "string", "enum": sorted(tracked)},
+            "field": {"type": "string"} if tracked is None else {"type": "string", "enum": sorted(tracked)},
             "value": {"type": "string", "maxLength": MAX_TEXT},
             "values": {"type": "array", "items": {"type": "string", "maxLength": MAX_TEXT}},
             "min": {"type": "number"},
@@ -37,7 +39,7 @@ def schema(tracked: Collection[str]) -> dict[str, object]:
         },
         "required": ["kind"],
     }
-    return {"type": "array", "description": DESCRIPTION, "items": {"type": "array", "minItems": 1, "items": predicate}}
+    return {"type": "array", "description": description, "items": {"type": "array", "minItems": 1, "items": predicate}}
 
 
 def parse(raw: object, track: tuple[str, ...]) -> Condition | None:

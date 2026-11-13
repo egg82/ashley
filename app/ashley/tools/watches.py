@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from .. import services
 from ..connections.connections import ConnectionsUnavailable
 from ..inference.model import ToolCall, ToolResult, ToolSpec
+from ..criteria.condition import Condition
 from ..senses.deposit_config import CONFIG as DEPOSITS
 from ..senses.proposal_payloads import WatchSchedule
 from ..senses.wakes import Reminder
@@ -22,8 +23,11 @@ from ..watches.arming import Ask
 from ..watches.config import CONFIG
 from ..watches.model import Watch
 from ..watches.registry import KINDS
+from ..watches.tool_target import target_of
+from ..watches.tool_watch import NAME as TOOL
 from ..watches.watches import Watches, WatchesUnavailable
-from . import bench_results, reminder_shape as shape, tainted, watch_agreed, watch_conditions, watch_sort, watch_specs as specs
+from . import (bench_results, reminder_shape as shape, tainted, watch_agreed, watch_conditions, watch_read, watch_sort,
+               watch_specs as specs)
 from .bench_args import BadArguments, check_names
 from .tools import Catalogue, Tools, ToolsUnavailable
 
@@ -86,13 +90,14 @@ class WatchTools(Tools):
     async def _watch(self, call: ToolCall, started: float, kinds: tuple[str, ...]) -> ToolResult:
         args = call.arguments
         check_names(args, specs.watch(kinds, (), 1, True))
-        kind, target = _kind(args.get("kind"), kinds), _target(args.get("target"))
-        until = watch_conditions.parse(args.get("until"), CONFIG.kinds[kind].track)
+        kind = _kind(args.get("kind"), kinds)
+        target, track, when = _aimed(kind, args)
+        until = watch_conditions.parse(args.get("until"), track or CONFIG.kinds[kind].track)
         hours = _hours(kind, args.get("hours"))
         usable = await self._usable_specs()
         tools = shape.tools_of(args.get("tools"), usable)
         ask = Ask(self._household_id, self._speaker_id, self._bench_id, kind, target, until, tools, hours,
-                  watch_sort.brief(args), watch_sort.standing(args), tainted.current(), tainted.made_in())
+                  watch_sort.brief(args), watch_sort.standing(args), tainted.current(), tainted.made_in(), track, when)
         if shape.acts(tools, usable):
             return await self._proposed(call, started, ask, tools or ())
         return await watch_agreed.arm(call, started, ask)
@@ -108,7 +113,7 @@ class WatchTools(Tools):
         reminder = Reminder(ask.household_id, ask.person_id, self._speaker_id, seen.label, now, None, tools=tools,
                             taint=ask.taint, made_in=ask.made_in)
         schedule = WatchSchedule(reminder, ask.kind, ask.target, ask.until, ask.hours, ask.bench_id, ask.brief,
-                                 ask.standing)
+                                 ask.standing, ask.when)
         try:
             await services.get(Proposals).propose(
                 Proposal(ask.household_id, self._speaker_id, *self._turn, now, schedule), DEPOSITS.proposal_ttl_s)
@@ -141,6 +146,19 @@ def _kind(raw: object, kinds: tuple[str, ...]) -> str:
         if raw == k:
             return k
     raise BadArguments("kind is one of " + ", ".join(kinds))
+
+
+def _aimed(kind: str, args: Mapping[str, object]) -> tuple[str, tuple[str, ...] | None, Condition | None]:
+    """The target, tracked fields and `when` of a watch of `kind`: for `tool` they come from `read` and `when`, for any
+    other kind the target from `target` and the rest are the kind's own. Raises BadArguments."""
+    if kind != TOOL:
+        if args.get("read") is not None or args.get("when") is not None:
+            raise BadArguments(f"read and when are for kind {TOOL} only")
+        return _target(args.get("target")), None, None
+    if args.get("target") is not None:
+        raise BadArguments(f"kind {TOOL} takes read, not target")
+    spec = watch_read.parse(args.get("read"))
+    return target_of(spec), spec.track, watch_conditions.parse(args.get("when"), spec.track)
 
 
 def _target(raw: object) -> str:

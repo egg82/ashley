@@ -4,11 +4,14 @@ kinds the person can use, and `until`'s fields are enumerated from those kinds' 
 from collections.abc import Collection
 
 from ..inference.model import ToolSpec
-from . import watch_conditions, watch_sort
+from ..watches.model import MAX_TARGET
+from ..watches.tool_watch import NAME as TOOL
+from . import watch_conditions, watch_read, watch_sort
 from .reminder_shape import TOOLS
 
 WATCH, UNWATCH, WATCHES = "watch", "unwatch", "watches"
-MAX_TARGET = 200
+WHEN = ("For kind tool: what wakes you, in the shape of until, over the fields read.track names (hash when it has no "
+        "path). Left out, any change wakes you.")
 
 INSTRUCTIONS = (
     "You can keep watch on something the person has connected and be woken when it changes, with no one asking you "
@@ -30,7 +33,10 @@ ACTING = (" A watch can do something when it wakes you instead of only telling t
 
 
 def watch(kinds: Collection[str], tracked: Collection[str], max_hours: float, acting: bool) -> ToolSpec:
-    """`kinds` are the ones the person can use, `tracked` their tracked fields, `acting` offers `tools`."""
+    """`kinds` are the ones the person can use, `tracked` their tracked fields, `acting` offers `tools`. Kind `tool`
+    takes its target from `read` and its fields from `read.track`, so then `until`'s fields are not enumerated."""
+    reads = TOOL in kinds
+    fields = None if reads else tracked
     return ToolSpec(WATCH, "Start watching a target: you read it now, and are woken when it changes (or, with until, "
                     "when that happens), until it ends or its time runs out. Returns what it reads now and when it "
                     "ends, or for a watch that acts a proposal to tell them, which is not set until they agree.", {
@@ -39,13 +45,14 @@ def watch(kinds: Collection[str], tracked: Collection[str], max_hours: float, ac
                             "kind": {"type": "string", "enum": sorted(kinds)},
                             "target": {"type": "string", "maxLength": MAX_TARGET,
                                        "description": "what to watch; for a session its id from claude_sessions"},
-                            "until": watch_conditions.schema(tracked),
+                            **({"read": watch_read.READ, "when": watch_conditions.schema(None, WHEN)} if reads else {}),
+                            "until": watch_conditions.schema(fields),
                             "hours": {"type": "number", "minimum": 1, "maximum": max_hours,
                                       "description": "how long to watch at most; the kind's usual time if left out"},
                             **watch_sort.PROPERTIES,
                             **({"tools": TOOLS} if acting else {}),
                         },
-                        "required": ["kind", "target"],
+                        "required": ["kind"] if reads else ["kind", "target"],
                     }, outside=True, tier="runs", label="Started watching something")
 
 

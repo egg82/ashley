@@ -151,6 +151,21 @@ a herdr bridge). Arguments and results are never logged.
 `handoff`, the kind's `handoff_until` and `handoff_hours`, and the session's state as the baseline. Their result says
 `watched`.
 
+**The `tool` kind watches one of her read-only tools.** Its target is canonical JSON (`ashley.watches.tool_target`): the
+tool, its fixed `arguments`, the fields to `track` and, for an answer that holds a list, the `path` of keys down to it.
+The same read in another key order is the same target, so one watch. A read runs through
+`ashley.watches.tool_reads.ToolReads`, whose implementation (`ashley.channels.watch_reads.ChannelToolReads`) offers the
+person's own tools as an unprompted turn for them would and narrows them to `ToolSpec.reads` with
+`ashley.tools.reading.Reading`, so a tool that changes anything is refused (`refused`) and never run. With a `path` each
+list entry is an item keyed by its first tracked field (equal names get `#2`, `#3` by order) and holding the tracked
+fields; without one the whole answer is one item, `result`, holding the hash of its canonical JSON. An answer that is an
+error, not JSON, or lacks the path fails `bad_result`; one past `max_items` fails `too_many_items`; neither is every item
+gone. Her `watch` takes `read` (tool, arguments, path, track) in place of `target`, and a `when` over the tracked
+fields, since this kind has no default that knows what matters: left out, any change wakes her. The woken turn's note
+lists each change with its tracked values, as text from outside. The kind is `outside`: a tool's marking is per result and
+a wake has no result, so a watch is never taken as inside. A calendar watch is `house_ask` with `calendar.get_events` and
+the path `response`, the calendar's id, `events`.
+
 **Settings are data**, `app/ashley/watches/watches.json`: `tick_s`, `batch`, `read_timeout_s`, `fail_after`,
 `retry_s`, `wake_max_age_s`, `keep_s`, `max_live`, `max_items`, `max_value_chars`, `max_alternatives`,
 `max_predicates`, and `kinds`, one entry per kind. The `claude_session` entry holds `interval_s` (15, as `poll_s`
@@ -159,7 +174,7 @@ was), `hours` (24), `max_hours` (168), `handoff_hours` (72), `track` (`status`, 
 **The tables:**
 
 - `watches`: id, `household_id`, `person_id` (a foreign key to `people (id, household_id)`, cascading), `kind`
-  (a slug), `target` (1 to 200 characters), `label` (1 to 100), `bench_id` (nullable), `armed_by` (`ashley`,
+  (a slug), `target` (1 to 500 characters), `label` (1 to 100), `bench_id` (nullable), `armed_by` (`ashley`,
   `handoff`), `track` (text array of 1 to 8), `when_clauses` (a JSON array), `until_clauses` (a JSON array or null),
   `tools` (text array or null), `interval_s` (positive), `expires_at`, `state` (`armed`, `paused`, `ended`), `reason`
   (null exactly when armed; for ended, `until`, `expired` or `disarmed`; for paused, a failure slug), `failures`,
@@ -206,12 +221,9 @@ flight survives its pod").
 
 **Not built yet** (queued in `docs/open-work.md`; each is data plus one `Kind` implementation and no rework):
 
-1. A polled read-only tool: any `ToolSpec.reads` tool with fixed arguments, its result's list turned into items by
-   `track`, whose first field is the identity. This covers the calendar (`house_ask` `calendar.get_events`) and a
-   list. Her tool gains `when` here, since a tool kind has no default that knows what matters.
-2. A house entity, subscribed through Home Assistant's WebSocket (`subscribe_trigger`) by the job instead of polled.
+1. A house entity, subscribed through Home Assistant's WebSocket (`subscribe_trigger`) by the job instead of polled.
    That needs a held connection, which `ashley.home_assistant.ha_socket` does not have (one command per connection).
-3. The ledger: the armed money reminder becomes a watch whose items are `ashley.criteria.record.Transaction`s, its
+2. The ledger: the armed money reminder becomes a watch whose items are `ashley.criteria.record.Transaction`s, its
    rule judged by the money predicates. `ashley.senses.deposit_sense` and its `deposit_reads` cursor are then deleted.
 
 - **Rejected: running the checks inside the `wakes` sweep.** That would keep one singleton, but a turn takes minutes
@@ -234,6 +246,6 @@ flight survives its pod").
 - **Rejected: pausing on the first failed read.** A laptop that sleeps would pause every watch on its bridge within a
   poll, and the watches would stay paused after it woke. `fail_after` absorbs blips, and a paused watch resumes when
   its source answers.
-- **Rejected for this slice: polling Home Assistant for house entities.** They will come by subscription (item 2 above). Polling every entity a person watches every few seconds costs a REST call each, and
+- **Rejected for this slice: polling Home Assistant for house entities.** They will come by subscription (item 1 above). Polling every entity a person watches every few seconds costs a REST call each, and
   misses a change that flips and flips back between polls (a door opened and closed). A subscription is told of
   each change.

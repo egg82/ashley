@@ -14,6 +14,8 @@ from ..watches import arming
 from ..watches.arming import Ask, Seen
 from ..watches.model import FailReason, ReadFailed
 from ..watches.registry import KINDS
+from ..watches.tool_target import parse as parse_target
+from ..watches.tool_watch import NAME as TOOL
 from ..watches.watches import WatchesUnavailable
 from . import bench_results, watch_conditions
 from .bench_args import BadArguments
@@ -74,8 +76,9 @@ async def arm(call: ToolCall, started: float, ask: Ask) -> ToolResult:
 async def arm_agreed(call: ToolCall, started: float, schedule: WatchSchedule) -> ToolResult:
     """The watch she proposed, armed now that the person agreed."""
     r = schedule.reminder
+    track = parse_target(schedule.target).track if schedule.kind == TOOL else None
     ask = Ask(r.household_id, r.person_id, schedule.bench_id, schedule.kind, schedule.target, schedule.until, r.tools,
-              schedule.hours, schedule.brief, schedule.standing, r.taint, r.made_in)
+              schedule.hours, schedule.brief, schedule.standing, r.taint, r.made_in, track, schedule.when)
     return await arm(call, started, ask)
 
 

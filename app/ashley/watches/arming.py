@@ -65,7 +65,8 @@ def hours_of(kind: str, hours: float | None) -> float:
 class Ask:
     """A person's request to watch `target` of `kind`, for `hours` (None: the kind's default), ending at `until`, its
     turn using `tools` (None: only the ones that read), on the talk of bench `bench_id` if any. `brief`, `standing`,
-    `taint` and `made_in` are as `Arm` has them."""
+    `taint` and `made_in` are as `Arm` has them. `track` and `when` are the kind's own when None; `tool` gives them, its
+    target saying which fields it tracks."""
 
     household_id: int
     person_id: int
@@ -79,6 +80,8 @@ class Ask:
     standing: bool = False
     taint: str | None = None
     made_in: tuple[int, int] | None = None
+    track: tuple[str, ...] | None = None
+    when: Condition | None = None
 
 
 async def start(ask: Ask, seen: Seen | None, now: datetime) -> Armed:
@@ -86,9 +89,10 @@ async def start(ask: Ask, seen: Seen | None, now: datetime) -> Armed:
     `hours_of` and `Watches.arm` do, WatchesUnavailable."""
     config, chosen = CONFIG.kinds[ask.kind], hours_of(ask.kind, ask.hours)
     label = (seen.label if seen else ask.target)[:100] or ask.target[:100]
-    arm = Arm(ask.household_id, ask.person_id, ask.kind, ask.target, label, ask.bench_id, "ashley", config.track,
-              config.when, ask.until, ask.tools, config.interval_s, now + timedelta(hours=chosen),
-              None if seen is None else seen.items, ask.brief, ask.standing, ask.taint, ask.made_in)
+    arm = Arm(ask.household_id, ask.person_id, ask.kind, ask.target, label, ask.bench_id, "ashley",
+              ask.track or config.track, ask.when or config.when, ask.until, ask.tools, config.interval_s,
+              now + timedelta(hours=chosen), None if seen is None else seen.items, ask.brief, ask.standing, ask.taint,
+              ask.made_in)
     armed = await services.get(Watches).arm(arm)
     logs.info(log, "watches.armed", watch=armed.id, kind=ask.kind, person=ask.person_id, armed_by="ashley",
               new=armed.new, hours=chosen)
