@@ -38,7 +38,7 @@ class Recurring:
     behind it when known, the `account_id` it comes out of or into, `cents` the amount it is expected at, unsigned,
     `due` the day it is next expected (YYYY-MM-DD, None when the backend has no date), `kind` (`expense` for a bill or a
     subscription, `income` for money that comes in), `autopay` whether it pays itself, and `ended` whether the backend
-    has stopped expecting it. One the backend has only suggested is not `ended`."""
+    has stopped expecting it (paused, retired or finished). One the backend has only suggested is not `ended`."""
 
     id: str
     name: str
