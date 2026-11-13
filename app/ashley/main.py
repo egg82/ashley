@@ -18,6 +18,14 @@ from .web import legal
 from .web.static import mount_client
 
 
+_ROUTED = (health, ready, messages, wakes, voice_clips, voice_turns, signin, memory, outside_actions, reminders,
+           accounts, connections, connection_oauth, connection_holders, connection_settings, mail_bridge,
+           mail_bridge_login, devices, device_controls, spend, spend_routes, model_catalogue, lexicon, household,
+           people, persona, chat, history, live, push, screens, kiosk, spoken, benches, bench_talk, bench_runs,
+           bench_choices, bench_jobs, bench_files, files, look, skills, legal)
+"""Every route module, included in this order (an earlier path wins a clash)."""
+
+
 def create_app(settings: settings_module.Settings | None = None, database: Database | None = None) -> FastAPI:
     """Wire the services and build the app; `settings` defaults to the environment's, and `database` to a pool over
     `settings.database_url` with production's timeouts."""
@@ -45,49 +53,8 @@ def create_app(settings: settings_module.Settings | None = None, database: Datab
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(AccessLog)
-    app.include_router(health.router)
-    app.include_router(ready.router)
-    app.include_router(messages.router)
-    app.include_router(wakes.router)
-    app.include_router(voice_clips.router)
-    app.include_router(voice_turns.router)
-    app.include_router(signin.router)
-    app.include_router(memory.router)
-    app.include_router(outside_actions.router)
-    app.include_router(reminders.router)
-    app.include_router(accounts.router)
-    app.include_router(connections.router)
-    app.include_router(connection_oauth.router)
-    app.include_router(connection_holders.router)
-    app.include_router(connection_settings.router)
-    app.include_router(mail_bridge.router)
-    app.include_router(mail_bridge_login.router)
-    app.include_router(devices.router)
-    app.include_router(device_controls.router)
-    app.include_router(spend.router)
-    app.include_router(spend_routes.router)
-    app.include_router(model_catalogue.router)
-    app.include_router(lexicon.router)
-    app.include_router(household.router)
-    app.include_router(people.router)
-    app.include_router(persona.router)
-    app.include_router(chat.router)
-    app.include_router(history.router)
-    app.include_router(live.router)
-    app.include_router(push.router)
-    app.include_router(screens.router)
-    app.include_router(kiosk.router)
-    app.include_router(spoken.router)
-    app.include_router(benches.router)
-    app.include_router(bench_talk.router)
-    app.include_router(bench_runs.router)
-    app.include_router(bench_choices.router)
-    app.include_router(bench_jobs.router)
-    app.include_router(bench_files.router)
-    app.include_router(files.router)
-    app.include_router(look.router)
-    app.include_router(skills.router)
-    app.include_router(legal.router)
+    for module in _ROUTED:
+        app.include_router(module.router)
     app.add_exception_handler(messages.Unauthorized, messages.unauthorized)
     app.add_exception_handler(messages.Unavailable, messages.unavailable)
     app.add_exception_handler(messages.RateLimited, messages.rate_limited)
