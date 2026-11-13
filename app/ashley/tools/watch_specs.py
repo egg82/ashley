@@ -44,7 +44,8 @@ def watch(kinds: Collection[str], tracked: Collection[str], max_hours: float, ac
                         "properties": {
                             "kind": {"type": "string", "enum": sorted(kinds)},
                             "target": {"type": "string", "maxLength": MAX_TARGET,
-                                       "description": "what to watch; for a session its id from claude_sessions"},
+                                       "description": "what to watch; for a session its id from claude_sessions, for "
+                                                      "a thing in the house its entity id from house_find"},
                             **({"read": watch_read.READ, "when": watch_conditions.schema(None, WHEN)} if reads else {}),
                             "until": watch_conditions.schema(fields),
                             "hours": {"type": "number", "minimum": 1, "maximum": max_hours,

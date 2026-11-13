@@ -166,6 +166,23 @@ lists each change with its tracked values, as text from outside. The kind is `ou
 a wake has no result, so a watch is never taken as inside. A calendar watch is `house_ask` with `calendar.get_events` and
 the path `response`, the calendar's id, `events`.
 
+**The `ha_entity` kind watches one thing in the household's Home Assistant, by subscription, so she needs no automation
+installed in the house.** Its target is an entity id (her `watch` names it from `house_find`); its item is keyed by that id
+and tracks `state`, and any change of it wakes her by default. Its states come from
+`ashley.home_assistant.held_states.HeldStates`, which the job holds: `Kind.hold` runs beside the ticks for as long as
+the job runs, so only under the lease. While held (`ashley.home_assistant.ha_held.SocketStates`), the household's
+first ask opens one WebSocket to its house (from its `home_assistant` connection through `Homes`, re-read on every ask,
+so a replaced connection gets a new socket) and each thing asked about gets a `subscribe_trigger` state trigger on
+state changes alone, then one `get_states`. After that a read answers from what the house last told, which costs the
+house nothing, so the kind's `interval_s` is 1 and every tick checks it, and each change the house tells nudges a tick
+at once. A thing unasked for `idle_s` is unsubscribed. A dropped socket reconnects after `backoff_s`, doubling to
+`max_backoff_s` and reset by a session that came up; it subscribes every thing again and reads their states once, so
+a change made while it was down is caught against the baseline. Reads while it is down fail `unreachable`, and
+`fail_after` absorbs a blip. Where it is not held (her arming read on another pod) each thing is read once over REST.
+A change and its reversal that both arrive between two reads of one watch (within about `interval_s`, or while a wake
+of it waits) read as no change, as the baseline rule has it. The kind is not `outside`: a state is the house's own
+value, as `house_state` shows it. Tunables are data, `app/ashley/home_assistant/ha_held.json`.
+
 **Settings are data**, `app/ashley/watches/watches.json`: `tick_s`, `batch`, `read_timeout_s`, `fail_after`,
 `retry_s`, `wake_max_age_s`, `keep_s`, `max_live`, `max_items`, `max_value_chars`, `max_alternatives`,
 `max_predicates`, and `kinds`, one entry per kind. The `claude_session` entry holds `interval_s` (15, as `poll_s`
@@ -192,13 +209,17 @@ transaction. A check cut short records nothing, and the next holder repeats the 
 change made while nobody holds the lease is found by the next check against the baseline. A holder that loses the
 lease between reading and recording fails the `version` condition, or its write fails on a read-only primary.
 Either way nothing is recorded twice. Turns are `wakes` rows, so they resume as every wake's turn does ("Work in
-flight survives its pod").
+flight survives its pod"). A house subscription lives only in the holder's memory: the next holder's first check of
+each `ha_entity` watch subscribes it again and reads its state, so a change while nobody held it is found against the
+baseline, and only a change that came and went in the gap is lost.
 
 **Logs:** `watches.tick` (expired, pruned, due, baselines, quiet, woke, failed, paused, resumed, ended, duration_ms);
 `watches.armed` (watch id, kind, person, `armed_by`, new, hours); `watches.ended` (watch id, reason);
 `watches.woke` (watch id, wake id, series, counts of new, changed and gone items); `watches.paused` and
 `watches.resumed` (watch id, reason, failures); `watches.read_failed` (kind, reason, how many watches); and
-`watches.unavailable`, logged once per run of failed ticks. Never a target, label, field value or condition value.
+`watches.unavailable`, logged once per run of failed ticks. The house subscriptions log `ha_held.connected`,
+`ha_held.subscribed` and `ha_held.resubscribed` (household, entities, subscriptions), `ha_held.released` and
+`ha_held.dropped` (household, reason, subscriptions, retry_s). Never a target, label, field value or condition value.
 
 **Measured by:**
 
@@ -215,14 +236,13 @@ flight survives its pod").
   status unchanged wakes her (`changed seq`); the turn stays quiet when there is nothing to say. The baseline moves
   only on a wake, so after a finish she was told, a later `working` then `idle` reads as the person looking at that
   finish and wakes nothing.
+- The house cases (`app/tests/test_ha_held.py`, `app/tests/test_watches_ha_entity.py`) run against a stand-in Home
+  Assistant served in-process: a state change it tells wakes her through the job at once, a dropped socket is
+  subscribed again and a change made meanwhile wakes her, backoff doubles and resets, an idle thing is let go, a
+  replaced connection gets a new socket, and a thing the house lacks is refused at arming.
 - An eval, `python -m ashley.evals` over cases in data, measuring and never gating. "Keep an eye on that one" arms
   `watch` on the session named, with no `until`. "Tell me when it's closed" gives `until` `[[gone]]`. "Stop watching
-  it" calls `unwatch`. "Tell me when the dryer's done" arms nothing, since no kind reads the house.
-
-**Not built yet** (queued in `docs/open-work.md`; each is data plus one `Kind` implementation and no rework):
-
-1. A house entity, subscribed through Home Assistant's WebSocket (`subscribe_trigger`) by the job instead of polled.
-   That needs a held connection, which `ashley.home_assistant.ha_socket` does not have (one command per connection).
+  it" calls `unwatch`. "Tell me when the dryer's done" arms nothing where no house is connected.
 
 - **Rejected: the ledger as a kind.** A balance fires once per fall until it recovers, which a baseline moved only on a
   wake cannot record; history predicates read the payer's whole history, not one item's change; and a money reminder
@@ -248,6 +268,11 @@ flight survives its pod").
 - **Rejected: pausing on the first failed read.** A laptop that sleeps would pause every watch on its bridge within a
   poll, and the watches would stay paused after it woke. `fail_after` absorbs blips, and a paused watch resumes when
   its source answers.
-- **Rejected for this slice: polling Home Assistant for house entities.** They will come by subscription (item 1 above). Polling every entity a person watches every few seconds costs a REST call each, and
-  misses a change that flips and flips back between polls (a door opened and closed). A subscription is told of
-  each change.
+- **Rejected: polling Home Assistant for house entities.** Polling every entity a person watches every few seconds
+  costs a REST call each, and misses a change that flips and flips back between polls (a door opened and closed). A
+  subscription is told of each change.
+- **Rejected: holding the socket in `ashley.home_assistant.ha_socket`.** It opens a socket per command so none goes
+  stale between pods; a held socket has another lifetime (the lease) and owner (the job), so it is a module beside it
+  that shares its handshake.
+- **Rejected: recording a check from the subscription itself, outside the tick.** It would skip `due`, which keeps a
+  watch to one outstanding wake; a nudge runs the ordinary tick instead.

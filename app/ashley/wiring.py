@@ -78,6 +78,8 @@ from .live import live as live_config
 from .live.live import Live
 from .live.postgres import PostgresLive
 from .home_assistant.connected_homes import ConnectedHomes
+from .home_assistant.ha_held import SocketStates
+from .home_assistant.held_states import HeldStates
 from .home_assistant.homes import Home, Homes
 from .home_assistant.kind import HOME_ASSISTANT
 from .people.accounts import Accounts
@@ -318,6 +320,7 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     homes = ConnectedHomes(services.get(Connections), env=env)
     closers.append(homes.close)
     services.register(Homes, homes)
+    services.register(HeldStates, SocketStates())
     services.register(Presence, HomesPresence(services.get(People)))
     services.register(Calendar, HomesCalendar())
     shared, over_house, without_house = tools(closers, settings.searxng_url)
