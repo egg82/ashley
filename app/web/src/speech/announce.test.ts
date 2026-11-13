@@ -8,7 +8,7 @@ import type * as Announce from './announce.ts';
 // bundle, with the api client replaced by a stand-in whose lines `lines` scripts, and the browser's audio and page
 // visibility by the fakes below.
 const stubs: Record<string, string> = {
-  '../api/client': `export const clipVoiceUrl = (clip) => '/clip/' + clip;
+  '../api/speech': `export const clipVoiceUrl = (clip) => '/clip/' + clip;
     export const getClipLine = async (clip) => {
       const line = globalThis.lines[clip];
       if (line === undefined) throw new Error('404');

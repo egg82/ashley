@@ -4,7 +4,8 @@
 // and a message that got no reply. A stored "let me check" (`follows`) stays, with the answer under it once it lands. Her state is reported to `shell/her/state.ts` from here and nowhere else in
 // the room.
 import { computed, effect, signal } from '@preact/signals';
-import { ApiError, chatVoiceUrl, getChat, sendChat, transcribeChat } from '../../api/client';
+import { ApiError, getChat, sendChat } from '../../api/client';
+import { chatVoiceUrl, transcribeChat } from '../../api/speech';
 import type { ChatAttachment } from '../../api/types';
 import { liveUp, onResync, onThreadTurn, onTurnFailed, type TurnFailedWhy } from '../../session/live';
 import { load as reloadSession } from '../../session/session';

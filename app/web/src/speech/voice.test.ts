@@ -7,7 +7,7 @@ import type * as Voice from './voice.ts';
 // voice.ts imports an extensionless sibling, so it is bundled as the client's own build does and loaded from that
 // bundle, with the api client replaced by a stand-in and the browser's audio by the fakes below.
 const stubs: Record<string, string> = {
-  '../api/client': `export const chatVoiceUrl = (id) => '/chat/' + id;
+  '../api/speech': `export const chatVoiceUrl = (id) => '/chat/' + id;
     export const getSpokenLimits = async () => ({ max_ms: 30000, voice_s: 120 });`,
 };
 const built = await build({

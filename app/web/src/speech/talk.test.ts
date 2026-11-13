@@ -8,7 +8,8 @@ import type * as Talk from './talk.ts';
 // Its neighbours are stand-ins that write what they were asked to `globalThis.calls`, in order: the point is what the
 // record tap does before the microphone is awaited.
 const stubs: Record<string, string> = {
-  '../api/client': `export class ApiError extends Error {} export const getSpokenLimits = async () => ({ max_ms: 30000 });`,
+  '../api/client': `export class ApiError extends Error {}`,
+  '../api/speech': `export const getSpokenLimits = async () => ({ max_ms: 30000 });`,
   './voice': `export const primeVoice = () => globalThis.calls.push('prime'); export const stopVoice = () => globalThis.calls.push('stop');`,
   './record': `export class MicRefused extends Error {}
     export const record = async () => { globalThis.calls.push('mic'); return { stop: async () => new Blob([]), cancel() {} }; };`,

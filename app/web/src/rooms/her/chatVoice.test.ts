@@ -9,11 +9,11 @@ import type * as Chat from './chat.ts';
 // what the room tells the voice owner when a message is sent, typed or said aloud, and what it offers it on a read.
 const stubs: Record<string, string> = {
   '../../api/client': `export class ApiError extends Error {}
-    export const chatVoiceUrl = (id) => '/chat/' + id;
     export const sendChat = async (body) => { globalThis.calls.push(['send', body.said_aloud]); return { conversation_id: 1, body: 'ok', follows: false }; };
     export const getChat = async () => globalThis.conversation;
-    export const transcribeChat = async () => ({ text: '' });
     export const rememberTurn = async () => ({});`,
+  '../../api/speech': `export const chatVoiceUrl = (id) => '/chat/' + id;
+    export const transcribeChat = async () => ({ text: '' });`,
   '../../session/live': `export const liveUp = { value: true }; export const onResync = () => () => {};
     export const onThreadTurn = () => () => {}; export const onTurnFailed = () => () => {};`,
   '../../session/session': `export const load = async () => {};`,
