@@ -94,6 +94,17 @@ the hallway may see, and does what anyone there may do.
   gives each toggle `on` from the house's state, null when the house cannot say, and the kiosk reads it again with its
   glance and after each press, so nothing is stored for it. `device_controls` holds a device's list only
   until its screen bench exists.
+- **The hallway's announcements play on the screens someone is looking at.** A reply the outbox holds for a screen
+  device's thread (`device:<id>` of the kiosk) is taken with every `device:` reply by the satellites singleton, which
+  hands it to `ashley.channels.kiosk.announce.announce` instead of dropping it as no satellite: that kiosk when its
+  page is in the foreground and someone is home or Presence cannot say, and the foregrounded web page of each person
+  known to be away (one Presence cannot place counts as away), from `Screens.open_screens` on either site. Each chosen
+  screen is sent `ashley.live.events.Announced` naming one clip (`Clips`, with the reply as plain text in its `line`);
+  the page plays `GET /api/voice/clips/{token}` and shows `GET /api/voice/clips/{token}/line`
+  (`web/src/speech/announce.ts`), and nothing is kept for a screen that was not looking. Rejected: a thread kind and
+  singleton of its own for screens, a second delivery path beside the outbox's `device:` routing; storing the
+  announcement as a turn on each away person's web thread, which would put the hallway's words in their own
+  conversation; the line in the Live event, which carries no text.
 - **An open page follows the server's build, the person shell and the kiosk alike** (`web/src/session/update.ts`,
   `watch.ts`). It remembers the `version` `GET /api/health` gave when it booted, asks again on each live resync and every
   few minutes, and when the served build differs reloads at a quiet moment: no pointer, touch or key for a while (a page

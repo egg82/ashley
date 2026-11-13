@@ -13,7 +13,9 @@ and fans out to its own streams; nothing about a screen is kept beyond its open 
   turn token; a satellite's wake publishes `listening` until the transcript and `speaking` from handing over the reply
   to the room until an estimate of its playing, `voice.json`'s `playback`, since neither a satellite nor a room speaker
   reports its end), "this thread of yours got a turn", "a turn on this thread of yours ended with no reply", "this bench of yours changed" and "she moved your page to this
-  room or bench". A page refetches what it shows; the feed is a nudge, not the data.
+  room or bench", and "play this announced clip" (`ashley.live.events.Announced`, whose clip token is its only
+  credential, so it goes to one person's screens or one device's). A page refetches what it shows; the feed is a nudge,
+  not the data.
 - **Who sees it is the channel's audience.** A turn on an `owner` channel (a DM, the person's web chat) is shown to that
   person only; one on a shared channel (satellites, a shared Discord channel, devices) to everyone signed in to the
   household. Neither says which room or who is talking. A shared channel's stored turns are announced only to the
