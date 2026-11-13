@@ -57,8 +57,7 @@ a bench's Install, logged and then recorded before it writes to the house, never
   result runs again; a change with its result is not run; a change started with no result is never run again, and she
   is given an error saying it may or may not have taken effect, so she checks before acting again. A resumed turn
   never holds, since its answer reaches the person as a stored turn, and its deadline counts the work done in its
-  current window (`Checkpoint.worked_s`), never the time it waited to be resumed. A clock that included the 120 s retry gave
-  resumed turns no rounds at all. A row claimed `max_attempts` times is given up, logged `respond.failed reason=gave_up`, with no reply.
+  current window (`Checkpoint.worked_s`), never the time it waited to be resumed. A row claimed `max_attempts` times is given up, logged `respond.failed reason=gave_up`, with no reply.
 - **A turn fails to the person only once its row is known to be gone.** A runner whose turn fails (unavailable,
   refused) deletes its row and then says so, since a reply after "she cannot answer" is worse than the gap. When the
   row may survive (the database unreachable, or another runner holding it), she does not say the turn failed: the
@@ -72,11 +71,11 @@ a bench's Install, logged and then recorded before it writes to the house, never
   (`respond.failed reason=unstorable`, with `cause`, the refusing error's class, and for a refused turn `check`, its
   fixed phrase: never text), and the turn is never resumed.
 - **A reply with nothing to deliver is never stored empty.** A step whose reply has no text for the medium
-  (`unsaid.empty`; `Reply.worth_saying` false is exempt) is asked again once as a wrap-up (tool choice `none`, with a person note
-  from `unsaid.json`, the same note every closing step after a lookup carries, at the last round or the deadline, saying she has no more lookups and to say what she found and what she still needs), and an empty wrap-up is replaced
-  by the line in `unsaid.json`, so the turn answers, held line or not (`respond.reply_empty`, ids and a count).
-  Without it the conversation refuses the empty turn and a person after a held line is left with the held line.
-  Rejected: storing an empty turn, which shows a blank bubble.
+  (`unsaid.empty`; `Reply.worth_saying` false is exempt) is asked again once as a wrap-up (tool choice `none`, with the
+  person note from `unsaid.json` that every closing step after a lookup carries: no more lookups, say what she found
+  and still needs), and an empty wrap-up is replaced by the line in `unsaid.json`, so the turn answers, held line or
+  not (`respond.reply_empty`, ids and a count). Otherwise the conversation refuses the empty turn and the person is
+  left with the held line. Rejected: storing an empty turn, which shows a blank bubble.
 - **A turn that ended after its first line went out is never left with nothing.** Logged once as `respond.ended` with the
   reason and the recovery taken (ids only).
   - *A refusal* is wrapped up on the `wrap_up` task, whose routes in `routes.json` are other providers' than chat's, under
@@ -90,8 +89,7 @@ a bench's Install, logged and then recorded before it writes to the house, never
     on her held line, nothing is thinking or in flight (`working`, not believed past a read that failed), for `STALL_MS`
     (`app/web/src/rooms/her/stalled.ts`). An answer that lands later replaces the mark.
   - *An answer older than the outbox's `stale_s`* is not lost: her turn was stored with it, so the thread and her
-    history hold it, and only the push is dropped, logged `outbox.stale_dropped`. Telling it at the next chance is the
-    errands slice (open-work, item 7).
+    history hold it, and only the push is dropped, logged `outbox.stale_dropped`.
   - Rejected: a retry loop in the runner. It would hold the answer to one pod and repeat a change; the checkpointed
     sweep already resumes without repeating.
   - Rejected: a client timer alone. The server says when it can (`TurnFailed`); the timer covers only the ending it
@@ -176,8 +174,8 @@ sites. The site the house is at is preferred.
   hours doubles that wait, up to an hour, so a flapping preferred site gets the primary back ever more slowly instead of ping-ponging.
   The thresholds are data (`app/ashley/referee/failback.json`). A maintenance switch holds it for a while (a key
   in the referee's etcd that expires on its own); failover itself is never held. Drilled on production both ways: failover
-  in 14 to 31 s, writes unavailable 14 to 16 s, fail-back writes unavailable 4 to 8 s, no acknowledged write lost
-  (numbers per drill: the cluster repo's `kustomization/ashley-postgres/README.md`).
+  in 14 to 31 s with writes unavailable 14 to 16 s, fail-back writes unavailable 4 to 8 s, no acknowledged write lost
+  (per drill: the cluster repo's `kustomization/ashley-postgres/README.md`).
 - **`FAILBACK=off` turns fail-back off** (default `on`), for a Postgres whose own operator decides the preferred site;
   every other singleton still runs under the lease.
 - **Asynchronous on purpose:** an unplanned failover can lose the last few seconds of writes. Synchronous
