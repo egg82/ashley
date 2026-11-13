@@ -8,7 +8,7 @@ from dataclasses import replace
 import pytest
 from ashley import logs
 from ashley.live import live
-from ashley.live.events import (BenchChanged, BenchCued, DeviceViewer, HerState, HerStateName, Shown, ThreadTurn, Viewer, decode, encode,
+from ashley.live.events import (Announced, BenchChanged, BenchCued, DeviceViewer, HerState, HerStateName, Shown, ThreadTurn, Viewer, decode, encode,
                                 shown_for, shown_to)
 from ashley.live.fanout import RESYNC, Fanout
 
@@ -155,3 +155,16 @@ def test_who_changed_a_bench_survives_the_wire_and_an_unknown_one_reads_as_no_on
     raw = json.loads(encode(BenchChanged(Shown(1, 10), 5, 2, "her")))
     assert decode(json.dumps({**raw, "by": "stranger"})) == BenchChanged(Shown(1, 10), 5, 2, None)
     assert decode(json.dumps({k: v for k, v in raw.items() if k != "by"})) == BenchChanged(Shown(1, 10), 5, 2, None)
+
+
+def test_an_announcement_survives_the_wire_and_reaches_its_one_screen_owner_alone() -> None:
+    for shown in (Shown(1, 10), Shown(1, None, 7)):
+        event = Announced(shown, "tok-en")
+        assert decode(encode(event)) == event
+    to_ann = Announced(Shown(1, 10), "t")
+    assert shown_to(to_ann, Viewer(1, 10)) and not shown_to(to_ann, Viewer(1, 11))
+    assert shown_to(Announced(Shown(1, None, 7), "t"), DeviceViewer(1, 7))
+    assert not shown_to(Announced(Shown(1, None, 7), "t"), DeviceViewer(1, 8))
+    assert not shown_to(Announced(Shown(1, None, 7), "t"), Viewer(1, 10))
+    with pytest.raises(ValueError):
+        Announced(Shown(1, None), "t")

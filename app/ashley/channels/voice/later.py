@@ -1,14 +1,17 @@
 """Replies the `Outbox` holds for satellites, said by the satellites singleton: each taken reply for a thread
 `device:<id>` becomes a clip, played on the satellite's room speaker when it names one and Home Assistant accepts, else
-on the satellite's own media player as an announcement. A reply for a satellite not connected now is dropped.
+on the satellite's own media player as an announcement. A reply for a screen device (the kiosk) is announced on the
+screens someone is looking at (`ashley.channels.kiosk.announce`). A reply for a satellite not connected now is dropped.
 
 Logs `voice.later` per reply taken: device (None when the thread names no satellite), outcome (`room_speaker`,
-`announced`, `no_media_player`, `not_connected`, `clips_unavailable`), clip id and `age_ms`, how long it waited; and
+`announced`, `no_media_player`, `not_connected`, `clips_unavailable`, or for a screen device `announce.announce`'s),
+clip id, `age_ms`, how long it waited, and for a screen device how many `screens` it was sent to; and
 `voice.outbox_unavailable` once per run of failed takes. Never text."""
 
 import logging
 
 from ... import logs, services
+from ..kiosk import announce
 from ..outbox import Later, Outbox, OutboxUnavailable
 from . import reminders
 from .run import Pipeline
@@ -42,8 +45,12 @@ async def drain(links: Links, pipeline: Pipeline, poll_s: float, sleep: Sleep) -
 
 async def say(later: Later, links: Links, pipeline: Pipeline) -> None:
     device = _device(later.thread)
-    outcome, clip = await said(later.outbound.body, later.age_ms, links.get(device) if device is not None else None,
-                               pipeline)
+    link = links.get(device) if device is not None else None
+    if link is None and device is not None and await announce.is_screen(later.household_id, device):
+        outcome, clip, screens = await announce.announce(later, device)
+        logs.info(log, "voice.later", device=device, outcome=outcome, clip=clip, age_ms=later.age_ms, screens=screens)
+        return
+    outcome, clip = await said(later.outbound.body, later.age_ms, link, pipeline)
     logs.info(log, "voice.later", device=device, outcome=outcome, clip=clip, age_ms=later.age_ms)
 
 

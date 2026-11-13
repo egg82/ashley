@@ -5,15 +5,21 @@ media player cannot send a header); it is random, short-lived (`voice.json`, `cl
 Logs `voice.clip` per fetch that started streaming: clip and device ids, `tts_provider` and `tts_model` (the route
 that spoke), `tts_first_byte_ms` (request to the first
 audio byte), `total_ms` (the wake to that byte, by the database's clock and then this process's), bytes sent, and
-whether the stream ended `complete`."""
+whether the stream ended `complete`.
+
+`GET /api/voice/clips/{token}/line`: the line a screen shows beside a clip announced there
+(`ashley.channels.kiosk.announce`), under the same token. Never logged."""
 
 import time
 from typing import Literal
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
+from .. import services
 from ..channels.voice import playback
+from ..channels.voice.clips import Clips, ClipsUnavailable
 from .models import ErrorResponse
 from .voice_stream import timed
 
@@ -47,6 +53,26 @@ async def get_voice_clip(request: Request) -> StreamingResponse | JSONResponse:
     return StreamingResponse(timed(speech.chunks, asked, speech.provider, speech.model, "voice.clip",
                                    {"clip": clip.id, "device": clip.device_id}, clip.since_wake_ms),
                              media_type=speech.media_type)
+
+
+class ClipLine(BaseModel):
+    """The line a screen shows while her voice for the clip plays: plain text, as she wrote it."""
+
+    line: str
+
+
+@router.get("/api/voice/clips/{token}/line", response_model=ClipLine, openapi_extra={"parameters": [_TOKEN]},
+            responses={404: {"model": ErrorResponse}, 503: {"model": ErrorResponse}})
+async def get_voice_clip_line(request: Request) -> ClipLine | JSONResponse:
+    """200 `ClipLine`; 404 `not_found` for a token that names no clip, an expired one, or one no screen shows (a
+    satellite's); 503 `unavailable` when the clip could not be read."""
+    try:
+        clip = await services.get(Clips).get(request.path_params["token"])
+    except ClipsUnavailable:
+        return _error(503, "unavailable", "try again shortly")
+    if clip is None or clip.line is None:
+        return _error(404, "not_found", "no such clip")
+    return ClipLine(line=clip.line)
 
 
 def _error(status: int, code: Literal["not_found", "unavailable"], detail: str) -> JSONResponse:

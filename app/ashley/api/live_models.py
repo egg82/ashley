@@ -80,6 +80,16 @@ class LiveScreen(BaseModel):
     seq: int
 
 
+class LiveAnnounce(BaseModel):
+    """She announced something to this screen (on a person's, they are away; on the hallway tablet, someone is home):
+    a page in the foreground plays her voice from `GET /api/voice/clips/{clip}` and shows the line
+    `GET /api/voice/clips/{clip}/line` gives. `clip` is the clip's token, its only credential, fetchable for a short
+    while; nothing is kept for a screen that did not hear it."""
+
+    type: Literal["announce"]
+    clip: str
+
+
 class LiveResync(BaseModel):
     """Something may have been missed (the feed reconnected, or this stream fell behind): read back what is shown, and
     forget the turns heard so far."""
@@ -87,7 +97,7 @@ class LiveResync(BaseModel):
     type: Literal["resync"]
 
 
-class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LivePage | LiveScreen | LiveResync, Field(discriminator="type")]]):
+class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LivePage | LiveScreen | LiveAnnounce | LiveResync, Field(discriminator="type")]]):
     """One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`."""
 
 
