@@ -1,0 +1,32 @@
+Planted wrong implementations of what the Workshop's install and her bench automation tools rely on from the house's
+automations, one at a time, in a scratch copy of app/ by `automations_house_mutants.py` (the plant asserted to apply
+exactly once, the file restored after, the unplanted copy green first). Suites: tests/automation_blind,
+test_install_piece.py, test_bench_automations.py, test_workshop_install_routes.py and test_automations_house_pins.py,
+which are the callers' tests and outlive the implementation behind them.
+
+Pass R, before the move onto the House port, planted in home_assistant/rest_automations.py. 21 planted. Without the
+pins R1, R7, R14, R16 and R19 survived; test_automations_house_pins.py kills R1, R7 and R16. R14 and R19 survive and no
+caller can tell them apart: the install ignores what a delete returns, and no caller reads the listing's order.
+
+#    mutant
+R1   the written automation is looked for once, never waited for
+R2   any automation's entity is taken as the written one's
+R3   the written automation is never found
+R4   the config is written under another id
+R5   turn on and turn off swapped
+R6   the entity to turn on or off not sent
+R7   an error answer to turn on or off taken as done
+R8   every automation read as on
+R9   last triggered never read
+R10  no automation's config id read
+R11  the alias read as the entity id
+R12  automations with no config id (YAML) left out
+R13  a missing config raises instead of None
+R14  deleting a missing automation reads as deleted       (survives, equivalent for the callers)
+R15  HA's refusal of a config read as out of reach
+R16  any status taken as success
+R17  a house out of reach says the wake is not wired
+R18  every service reads as wired
+R19  the listing not sorted                                (survives, equivalent for the callers)
+R20  delete sends nothing
+R21  a transport error escapes as itself

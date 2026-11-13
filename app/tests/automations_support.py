@@ -34,6 +34,8 @@ class FakeHouse:
     """Whether `rest_command.ashley_wake` is set up in this HA's configuration."""
     services: Any = None
     """When set, what `/api/services` answers in place of the domains `wake` describes."""
+    failing: set[tuple[str, str]] = field(default_factory=set[tuple[str, str]])
+    """(method, path) pairs answered 500, as HA does when it errors."""
     requests: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     writes: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     """Every request that changed something: (method, path)."""
@@ -58,6 +60,8 @@ class FakeHouse:
         self.requests.append((method, path))
         if method != "GET":
             self.writes.append((method, path))
+        if (method, path) in self.failing:
+            return httpx2.Response(500, json={"message": "Internal Server Error"})
         if path == "/api/states":
             return httpx2.Response(200, json=self._states())
         if path == "/api/services" and self.services is not None:
