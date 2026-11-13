@@ -121,7 +121,8 @@ Which model carries which task is `app/ashley/inference/routes.json`. To change 
 `ROUTES_FILE` to a JSON file that overlays it: each task in the file replaces that task's whole route list, a task
 it leaves out keeps the shipped list, and `cooldown_s` is replaced only if given. The result is validated exactly as
 the shipped file is, so a mistake stops start-up naming `ROUTES_FILE`. This sends `chat` to an OpenAI model and
-`errand` to a local OpenAI-compatible server (`provider: "local"`, wired by `LOCAL_LLM_URL`):
+`errand` to a local OpenAI-compatible server (`provider: "local"`, the OpenAI-compatible connection labelled `local`, which `LOCAL_LLM_URL` seeds; any other such
+connection is named by its label):
 
 ```json
 {
