@@ -10,7 +10,7 @@ anything is worth saying) and the model's structured `worth_saying` and importan
 clears a threshold. Weights and thresholds are data, tuned from real use.
 
 - **She never repeats herself:** what she recently said unprompted goes into the prompt as already said, so
-  greetings and asides don't go same-y the way the old hardcoded greeting did.
+  greetings and asides don't go same-y.
 - **Asides (unprompted wit) are the lowest importance**, capped per person per day in code, and never interrupt
   that person's focus: not while they are on a call, have just been prompting a Claude Code session themselves, or
   it is late by their own quiet hours. A session merely running is not focus: a person can have sessions working almost
@@ -71,8 +71,7 @@ person, and to ask only what the house cannot tell her.
   owns, a device of its own) takes the same author. Rejected: the brief in the stored turn, which put her prompt on the person's page; marking it in the message text, which keys behaviour on
   words; an author of its own for the house device, since the house is the household's; hiding it from the person's
   history, which leaves her unprompted message with no visible cause; a column for who the household is, since the
-  turn's `household_id` already says. The wake's conversation stays unremembered; that is no longer what keeps the
-  household's turn from being learned as theirs.
+  turn's `household_id` already says. The wake's conversation stays unremembered.
 - **Settled wakes are kept a week** (`keep_s`), pruned by the singleton each sweep, logged `wakes.pruned`.
 
 ## Reminders are wakes she sets for herself
@@ -140,9 +139,9 @@ same `wakes` singleton under the lease and run through the same turn loop. There
 A person's OK to something she proposed is one primitive: a **proposal** is a pending OK for a typed payload, taken only
 from a later person turn of the conversation it was made in. It is a Command awaiting confirmation (the record is
 the command, `take` is its `decide`) whose kinds are a Type Object: money rule, reminder to schedule, change to a
-reminder, change to the house. A new user of the pattern adds a payload kind, not a table: one store holds what two
-tables and two services, copying the same replace, expire and take-once code, once did. Fits into: Senses (the
-gate `proposal_gate` already lived there), Tools (`ReminderTools`, `HouseChangeTools`).
+reminder, change to the house. A new user of the pattern adds a payload kind, not a table: one store holds what
+would otherwise be a table and a service per kind, each copying the same replace, expire and take-once code. Fits into:
+Senses (which owns the gate `proposal_gate`), Tools (`ReminderTools`, `HouseChangeTools`).
 
 - **One service, `ashley.senses.proposals.Proposals`** (`propose`, `pending`, `take`; table `proposals`), whose payload
   is a tagged record that code decodes, never her words (`ashley.senses.proposal_payloads`: `MoneyRule`,
@@ -150,7 +149,7 @@ gate `proposal_gate` already lived there), Tools (`ReminderTools`, `HouseChangeT
   thing she asks OK for is a payload record and its stored form, not a table or a service.
 - **A topic is a family that replaces itself.** A person has one pending proposal per conversation *per topic*
   (`REMINDERS`, `HOUSE`): proposing in a topic replaces that topic's earlier one, and a house change and a reminder
-  proposed in one conversation are agreed or refused apart, as they were with two tables. `propose` drops only its
+  proposed in one conversation are agreed or refused apart. `propose` drops only its
   own topic's proposals older than `ttl_s`. The replace is one transaction under a Postgres advisory lock on the
   (person, conversation, topic) key, so proposals made at once serialize and the later one is the only row left.
 - **Taking is one gate.** `take` refuses `none`, `same_turn` or `expired` by `ashley.senses.proposals.refusal`: turn
@@ -197,8 +196,8 @@ Tools (`ReminderTools`, with `Only` as a wake turn uses it); nothing new is a sy
   with tools that change something stores a proposal and returns it; the reminder exists only after the person's next
   message and her `arm_reminder`, within `proposal_ttl_s` and before its first time. Tools that only read, and edits that
   add no acting tool, take effect at once. It is for the speaker only: acting on another person's phone thread under
-  their name is refused. In three of nine live runs she answered "yes" by proposing again, which replaced the proposal
-  and left nothing to agree; the guidance now says agreeing is `arm_reminder` alone, and six of six runs after it armed.
+  their name is refused. Left unsaid, she answered "yes" by proposing again, which replaced the proposal and left nothing to
+  agree; the guidance says agreeing is `arm_reminder` alone.
   Rejected: a second proposal store ("Her proposals are one store"); arming in the same call; a `confirmed` argument.
 - **An edit keeps the reminder's row and the occurrences already fired.** `change_reminder` rewrites the unsettled
   occurrence's time, what, repeat, route and tools (`Wakes.edit`); the next occurrences copy it. Giving `at` moves the
@@ -226,25 +225,23 @@ deposit into the household's Sure.
   `proposal_ttl_s` (`ashley.senses.proposals.refusal`: turn ids, never her words or theirs); it consumes the proposal. The guidance tells
   her to read `money_accounts` once and one `money_transactions` search, work out the account (the person's name for it,
   or where the regular income lands when no account is so named, put in the proposal to confirm, never declared not
-  connected) and what counts, and say that in one line in the person's words (never the tool's field names). Two live
-  runs in six armed a guess in the turn they proposed it, so confirmation is code, not prose. She is offered `arm_reminder`, and
-  its guidance, only in a turn after a proposal of hers (`ReminderTools.catalogue`): when it was always offered she
+  connected) and what counts, and say that in one line in the person's words (never the tool's field names). Live runs
+  armed a guess in the turn they proposed it, so confirmation is code, not prose. She is offered `arm_reminder`, and
+  its guidance, only in a turn after a proposal of hers (`ReminderTools.catalogue`): always offered, she
   tried it in the turn she proposed, was refused, and worded the reply as if it had worked. A new proposal replaces her
   earlier ones in the conversation, so one agreement arms one rule (two had armed in one turn). It covers every rule,
   also one the person gave a payee or amount for, so there is one path and no field to claim "they already agreed". What it
   cannot tell is whether the later turn agreed. Rejected: arming in the same call with her description shown to the
   person afterwards; a `confirmed` argument, which she would set herself; arming by a proposal id, which she lost between messages and answered by asking for a second confirmation; reading the person's reply for "yes", which
-  keys behaviour on words. The payee-only case: she armed a rule that would have fired on every paycheck straight after
-  the person answered a question about the account. A bonus has no payee or
+  keys behaviour on words. A bonus has no payee or
   amount to ask for, so the rule says what is unusual instead (below). The bound is the guidance's count of lookups,
   since the tool loop caps rounds for the whole turn and nothing per tool. Rejected: asking for a payee or a minimum on
   a deposit that has never landed (it has neither, and the account's history is hers to read); arming a guessed payee
   or amount (a proposal the person confirms is not a guess armed silently); searching on until the round limit, which
   in production spent all six rounds and set nothing; asking the person for the account, which is the lookup she exists
   to do; `anyOf` in the schema, which not every provider adapter accepts.
-- **The fired reminder's turn gets the transaction, not only her brief.** The tool description said she would see only
-  `what`; she also gets the amount, day, payer, account, which predicates held and the payer's history
-  (`ashley.channels.wake.reminder_turn`), so `what` need not carry them.
+- **The fired reminder's turn gets the transaction, not only her brief.** She gets the amount, day, payer,
+  account, which predicates held and the payer's history (`ashley.channels.wake.reminder_turn`), so `what` need not carry them.
 - **An armed reminder is a `wakes` row, trigger `event`, unsettled and never due**, listed on the Reminders tab with its
   rule in words and cancelled like any reminder. Each match stores an ordinary once reminder beside it, so her turn and
   the push singleton's durable delivery are the existing reminder path, and the armed one stays armed: every match
@@ -260,7 +257,7 @@ deposit into the household's Sure.
   the same lease, cursor, lookback and per-transaction event id. `Landed` carries `direction`, and her turn on it says
   the money left, to the payee, from that field. Unverified against a live Sure:
   that an outgoing transfer carries `transfer`, that a card payment is not classed expense without it, and the
-  `type=expense` filter on the real endpoint; the fake follows the shape the deposit work recorded. Rejected: a second
+  `type=expense` filter on the real endpoint; the fake follows the deposit shape. Rejected: a second
   tool and sense for withdrawals (two near-copies of one rule, poll and cursor); a separate cursor per direction (a
   rule armed later reads from its own day, so one day per household is enough); a direction defaulting to `in` in the
   tool (a missing field is a question to ask, not a guess). Names kept: `Deposit`, `DepositRule`, `Deposits`,
