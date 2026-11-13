@@ -62,9 +62,10 @@ the entity's own name, and plain strings drop it from Assist.
   `house_state.json`'s cap shows names or counts instead, with `complete` false and `narrow_by`. `name` matches the entities'
   own fields, every word; `matched` 0 is final.
 - **Structured reads that code acts on go through HA's REST API**, not a tool: presence decides who is talking, so no
-  model sits between the state and the decision. The event stream will use HA's websocket. The Workshop's installed
-  automations still go through `ashley.home_assistant.automations.Automations` (a subset of the House's automation configs;
-  folding it into the port is open work).
+  model sits between the state and the decision. The event stream will use HA's websocket. The Workshop's install goes
+  through the House port like her tools: `configs("automation")` names each automation's thing, whether it is on and
+  when it last ran (one written in YAML has no config id), `write_config` writes it, `shown_as` waits for the house to
+  show it (`house.json`'s `entity_tries` and `entity_wait_s`) and `set_enabled` turns it on or off.
 - **Rejected: HA's MCP server as a second adapter, and as the first.** Measured on a scratch HA 2026.10.4 with aliases and
   areas, twelve asks (ten everyday, two names the house lacks): MCP's intents resolved 10, the registry-backed resolver 12; the two MCP misses were area
   aliases ("the lounge lights", "the main bath light"). Reads are the same matcher either way. MCP also reaches only what is

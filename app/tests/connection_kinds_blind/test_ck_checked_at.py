@@ -19,7 +19,7 @@ async def her_read(who: People, kind: str) -> None:
     elif kind == "home_assistant":
         home = await services.get(Homes).of(who.home)
         assert home is not None
-        await home.automations.listed()
+        await home.house.configs("automation")
     else:
         got = await CodeHostTools(who.home, who.alana, None, CODE_HOSTS, 8000).call(ToolCall("c", "git_projects", {"host": kind}))
         assert not got.is_error

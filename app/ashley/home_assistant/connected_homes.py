@@ -24,7 +24,6 @@ from .ha_house import HaHouse
 from .homes import Home, HomeAssistantFailed, Homes, HomesUnavailable
 from .house import House
 from .house_settings import load as load_house_settings
-from .rest_automations import AutomationsConfig, RestAutomations
 from .seed import FALLBACK_HOUSEHOLD, seed_from_env
 
 log = logging.getLogger("ashley.home_assistant")
@@ -55,7 +54,7 @@ def _record_answers(client: HomeAssistant, connection_id: int) -> HomeAssistant:
 
 
 class ConnectedHomes(Homes):
-    def __init__(self, connections: Connections, config: AutomationsConfig,
+    def __init__(self, connections: Connections,
                  connect: Callable[[str, str], HomeAssistant] = connect_client,
                  env: tuple[str, str] | None = None, fallback_household: int = FALLBACK_HOUSEHOLD,
                  clock: Callable[[], float] = time.monotonic,
@@ -64,7 +63,6 @@ class ConnectedHomes(Homes):
         (base URL, token), answering for `fallback_household` alone while its connection is not settled. `house` makes the
         House over a client; by default Home Assistant's (`ha_house.HaHouse`)."""
         self._connections = connections
-        self._config = config
         settings = load_house_settings()
 
         def over_home_assistant(client: HomeAssistant) -> House:
@@ -82,7 +80,7 @@ class ConnectedHomes(Homes):
         client = self._connect(base_url, token)
         if connection_id is not None:
             client = _record_answers(client, connection_id)
-        return Home(household_id, client, RestAutomations(client, self._config), self._house(client))
+        return Home(household_id, client, self._house(client))
 
     def _falls_back(self, household_id: int) -> bool:
         return self._fallback is not None and household_id == self._fallback.household_id

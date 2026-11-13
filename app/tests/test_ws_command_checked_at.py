@@ -21,7 +21,6 @@ from ashley.home_assistant.ha_socket import Commands
 from ashley.home_assistant.homes import Homes
 from ashley.home_assistant.house import HouseRejected, HouseUnavailable
 from ashley.home_assistant.house_settings import load as load_house_settings
-from ashley.home_assistant.rest_automations import AutomationsConfig
 from ashley.people import admin
 from ashley.wiring import CONNECTION_KINDS
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
@@ -32,7 +31,6 @@ from connection_legacy_support import put_of
 
 T = TypeVar("T")
 
-CONFIG = AutomationsConfig(timeout_s=2.0, entity_tries=1, entity_wait_s=0.0)
 LIST = {"type": "config/area_registry/list"}
 KEY = os.urandom(32)
 
@@ -84,7 +82,7 @@ async def commands_over(c: Connections, db_url: str, base_url: str, token: str) 
         home = admin.add_household(conn, "home", "America/Denver")
         alana = admin.add_person(conn, home, "Alana")
     await put_of(c, home, "home_assistant", base_url, token, alana)
-    services.register(Homes, ConnectedHomes(c, CONFIG))
+    services.register(Homes, ConnectedHomes(c))
     house = await services.get(Homes).of(home)
     assert house is not None
     return Commands(house.home_assistant, load_house_settings()), home

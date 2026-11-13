@@ -13,9 +13,7 @@ from ashley import logs
 from ashley.connections.connections import NullConnections
 from ashley.home_assistant.connected_homes import ConnectedHomes
 from ashley.home_assistant.homes import HomeAssistantFailed, HomesUnavailable, NullHomes
-from ashley.home_assistant.rest_automations import RestAutomations
 from ashley.home_assistant.seed import seed_from_env
-from automations_support import CONFIG
 from homes_support import TOKEN, StandIn
 from money_support import HeldConnections
 from connection_legacy_support import opened_of, remove_of
@@ -26,7 +24,7 @@ WILLOW, BIRCH = "http://ha.willow.test:8123", "https://ha.birch.test"
 
 def homes(connections: HeldConnections | NullConnections, stand: StandIn, fallback: str | None = None,
           ) -> ConnectedHomes:
-    return ConnectedHomes(connections, CONFIG, stand.connect, env=(fallback, TOKEN) if fallback else None)
+    return ConnectedHomes(connections, stand.connect, env=(fallback, TOKEN) if fallback else None)
 
 
 def held(**by_household: tuple[str, str]) -> HeldConnections:
@@ -45,7 +43,6 @@ def test_each_household_reaches_its_own_home_assistant_with_its_own_token() -> N
         assert one is not None and two is not None and one.household_id == ONE and two.household_id == TWO
         await one.home_assistant.http.get("/api/states/person.alana")
         await two.home_assistant.http.get("/api/states/person.kim")
-        assert isinstance(one.automations, RestAutomations)
         assert await found.of(3) is None
 
     asyncio.run(scenario())

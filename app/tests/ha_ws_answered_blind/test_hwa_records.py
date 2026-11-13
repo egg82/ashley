@@ -9,7 +9,7 @@ from ashley.home_assistant.ha_socket import Commands
 from ashley.home_assistant.house import HouseRejected, HouseUnavailable
 from ashley.home_assistant.homes import Home
 from contract.conversations_support import scalar
-from ha_ws_answered_support import (HA_CONFIG, TOKEN, Ha, World, age, all_logs, client_for, connections, count_writes, go,
+from ha_ws_answered_support import (TOKEN, Ha, World, age, all_logs, client_for, connections, count_writes, go,
                                     hold, homes, log_text, settings, stored_at, writes)
 
 LIST = {"type": "config/area_registry/list"}
@@ -201,7 +201,7 @@ def test_a_house_without_a_stored_connection_moves_nobody_elses(world: World, ha
     async def scenario() -> None:
         async with connections(world.url) as c:
             await hold(c, world, world.other)
-            service = ConnectedHomes(Connections.null(), HA_CONFIG, lambda url, token: client_for(ha.url, token),
+            service = ConnectedHomes(Connections.null(), lambda url, token: client_for(ha.url, token),
                                      env=(ha.url, TOKEN), fallback_household=world.home)
             home = await service.of(world.home)
             assert home is not None

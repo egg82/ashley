@@ -14,7 +14,6 @@ from zoneinfo import ZoneInfo
 from ashley import services
 from psycopg import AsyncConnection
 from ashley.db.pool import PoolDatabase
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.change import Change
 from ashley.home_assistant.client import connect
 from ashley.home_assistant.homes import Home, Homes
@@ -223,7 +222,7 @@ async def world(url: str) -> AsyncGenerator[World]:
     people = Household(home, "home", DENVER.key, "", (Person(alana, home, "Alana"), Person(sam, home, "Sam")))
     held, proposals, wakes = RecordingHouse(), PostgresProposals(db), PostgresWakes(db)
     services.register(People, Folk(people))
-    services.register(Homes, HouseHomes({home: Home(home, connect("http://127.0.0.1:9", "t"), NullAutomations(), held)}))
+    services.register(Homes, HouseHomes({home: Home(home, connect("http://127.0.0.1:9", "t"), held)}))
     services.register(Proposals, proposals)
     services.register(Wakes, wakes)
     try:

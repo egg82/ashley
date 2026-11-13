@@ -15,7 +15,6 @@ from ashley.home_assistant import connected_homes
 from ashley.home_assistant.connected_homes import ConnectedHomes
 from ashley.home_assistant.seed import seed_from_env
 from ashley.people import admin
-from automations_support import CONFIG
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import scalar
 from homes_support import TOKEN, StandIn
@@ -59,7 +58,7 @@ def base_of(home: object) -> str:
 def test_without_a_row_the_env_answers_and_a_later_read_seeds_it_once_per_interval(
         capsys: pytest.CaptureFixture[str]) -> None:
     connections, clock = SeedFails(failures=2), Clock()
-    found = ConnectedHomes(connections, CONFIG, StandIn().connect, env=(ENV, TOKEN), clock=clock)
+    found = ConnectedHomes(connections, StandIn().connect, env=(ENV, TOKEN), clock=clock)
     logs.setup()
     capsys.readouterr()
 
@@ -85,7 +84,7 @@ def test_without_a_row_the_env_answers_and_a_later_read_seeds_it_once_per_interv
 def test_once_a_row_has_been_seen_a_removal_is_respected() -> None:
     connections, clock = SeedFails(), Clock()
     connections.connect(1, "http://ha.own.test", "own", "home_assistant")
-    found = ConnectedHomes(connections, CONFIG, StandIn().connect, env=(ENV, TOKEN), clock=clock)
+    found = ConnectedHomes(connections, StandIn().connect, env=(ENV, TOKEN), clock=clock)
 
     async def scenario() -> None:
         own = await found.of(1)
@@ -99,7 +98,7 @@ def test_once_a_row_has_been_seen_a_removal_is_respected() -> None:
 
 def test_connections_unreadable_with_nothing_seen_give_household_one_the_env() -> None:
     connections = SeedFails(down=True)
-    found = ConnectedHomes(connections, CONFIG, StandIn().connect, env=(ENV, TOKEN), clock=Clock())
+    found = ConnectedHomes(connections, StandIn().connect, env=(ENV, TOKEN), clock=Clock())
     home = asyncio.run(found.of(1))
     assert home is not None and base_of(home) == ENV
 
@@ -127,7 +126,7 @@ def test_a_seed_before_the_migration_is_unavailable_and_a_read_after_it_seeds_th
     async def scenario() -> None:
         async with connections_on(db_url) as connections:
             await seed_from_env(connections, ENV, TOKEN)
-            found = ConnectedHomes(connections, CONFIG, StandIn().connect, env=(ENV, TOKEN), clock=clock)
+            found = ConnectedHomes(connections, StandIn().connect, env=(ENV, TOKEN), clock=clock)
             home = await found.of(1)
             assert home is not None and base_of(home) == ENV
             widen_kinds(db_url)

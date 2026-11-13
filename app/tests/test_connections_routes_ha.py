@@ -16,7 +16,6 @@ from ashley.home_assistant.homes import Homes
 from ashley.main import create_app
 from ashley.settings import Settings
 from ashley.sure.client import Sure
-from automations_support import CONFIG
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import scalar
 from fastapi.testclient import TestClient
@@ -39,7 +38,7 @@ def client(db_url: str, homes: People, stand: StandIn) -> Generator[TestClient]:
     services.unregister(Connections)
     app = create_app(Settings(database_url=db_url, build_version="t", public_url=PUBLIC, connections_key=APP_KEY))
     services.register(Sure, FakeSure().client())
-    services.register(Homes, ConnectedHomes(services.get(Connections), CONFIG, stand.connect))
+    services.register(Homes, ConnectedHomes(services.get(Connections), stand.connect))
     with TestClient(app, base_url=PUBLIC, follow_redirects=False) as c:
         as_(c, homes.alana_token)
         yield c

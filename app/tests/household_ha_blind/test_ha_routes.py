@@ -22,7 +22,7 @@ from ashley.people import admin
 from ashley.settings import Settings
 from contract.conversations_support import scalar
 from fastapi.testclient import TestClient
-from hha_blind_support import CONFIG, FakeHouses, HeldConnections
+from hha_blind_support import FakeHouses, HeldConnections
 from connection_routes_support import delete_kind, put_kind
 
 PUBLIC = "https://ashley.test"
@@ -65,7 +65,7 @@ def houses() -> FakeHouses:
 
 def app_client(db_url: str, houses: FakeHouses, key: str) -> Generator[TestClient]:
     app = create_app(Settings(database_url=db_url, build_version="t", public_url=PUBLIC, connections_key=key))
-    services.register(Homes, ConnectedHomes(HeldConnections(), CONFIG, houses.connect))
+    services.register(Homes, ConnectedHomes(HeldConnections(), houses.connect))
     with TestClient(app, base_url=PUBLIC, follow_redirects=False) as c:
         yield c
 

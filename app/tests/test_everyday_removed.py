@@ -12,7 +12,6 @@ from ashley.home_assistant.homes import Home, Homes
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.tools.everyday import Everyday, HomesEveryday, HouseholdTools
 from ashley.tools.tools import Catalogue, Tools
-from automations_support import CONFIG
 from homes_support import StandIn
 from money_support import HeldConnections
 from connection_legacy_support import remove_of
@@ -46,7 +45,7 @@ class Web(Tools):
 @pytest.fixture
 def wired() -> Generator[tuple[HeldConnections, StandIn]]:
     connections, stand = HeldConnections(), StandIn(token="old-token")
-    services.register(Homes, ConnectedHomes(connections, CONFIG, stand.connect))
+    services.register(Homes, ConnectedHomes(connections, stand.connect))
     services.register(Everyday, HomesEveryday(OverHouse))
     services.register(Tools, Web())
     yield connections, stand

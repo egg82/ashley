@@ -67,7 +67,7 @@ from .inference.inference import Inference
 from .memory.inference_writer import InferenceFactWriter
 from .memory.memory import FactWriter, Memory
 from .memory.postgres import PostgresMemory
-from .home_assistant import house_values, irreversible, rest_automations, zone
+from .home_assistant import house_values, irreversible, zone
 from .initiative.initiative import Initiative, Scored
 from .initiative.weights import WEIGHTS
 from .live import live as live_config
@@ -308,7 +308,7 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     while its connection is not settled; presence and the everyday tools over each household's own, and the action judge
     that a turn which has read outside words asks about a consequential change."""
     env = (settings.ha_url, settings.ha_token) if settings.ha_url else None
-    homes = ConnectedHomes(services.get(Connections), rest_automations.load(), env=env)
+    homes = ConnectedHomes(services.get(Connections), env=env)
     closers.append(homes.close)
     services.register(Homes, homes)
     services.register(Presence, HomesPresence(services.get(People)))

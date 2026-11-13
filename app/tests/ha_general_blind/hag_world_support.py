@@ -9,7 +9,6 @@ from typing import Any
 
 from ashley import services
 from ashley.db.pool import PoolDatabase
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import connect
 from ashley.home_assistant.homes import Home, Homes
 from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, HouseRejected, HouseUnavailable, LogEntry,
@@ -116,7 +115,7 @@ class HagHomes(Homes):
         self.homes: dict[int, Home] = {}
 
     def give(self, household_id: int, house: House) -> None:
-        self.homes[household_id] = Home(household_id, connect("http://127.0.0.1:9", TOKEN), NullAutomations(), house)
+        self.homes[household_id] = Home(household_id, connect("http://127.0.0.1:9", TOKEN), house)
 
     async def of(self, household_id: int) -> Home | None:
         return self.homes.get(household_id)

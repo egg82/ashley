@@ -12,11 +12,9 @@ from ashley.connections.connections import Connections, ConnectionsUnavailable
 from ashley.connections.model import Connection, Holder, Kind, Opened
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.house import ConfigItem, ConfigKind, House, HouseUnavailable, Performed, State
-from ashley.home_assistant.rest_automations import AutomationsConfig
 from house_double_support import MemoryHouse, state
 
 EPOCH = datetime(2026, 10, 31, tzinfo=UTC)
-CONFIG = AutomationsConfig(timeout_s=2.0, entity_tries=1, entity_wait_s=0.0)
 ENV = ("http://env-ha.test:8123", "env-token")
 A_URL, A_TOKEN = "http://a-house.test:8123", "token-of-a"
 B_URL, B_TOKEN = "http://b-house.test:8123", "token-of-b"

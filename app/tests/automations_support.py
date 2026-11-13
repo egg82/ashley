@@ -1,5 +1,5 @@
-"""A fake Home Assistant for the automation tests, served through httpx2's MockTransport so `RestAutomations` runs its
-real HTTP code with no network. It keeps configs by id and an entity per config (`automation.<id>`, on when written,
+"""A fake Home Assistant for the automation tests, served through httpx2's MockTransport so `HaHouse` runs its real
+HTTP code with no network (`house`). It keeps configs by id and an entity per config (`automation.<id>`, on when written,
 as HA's are), answers a write it is told to refuse with HA's 400 shape, and can go down from a given request on.
 Shapes follow the live API read 2026-10-31: `/api/states` entities with `attributes.id`, `friendly_name` and
 `last_triggered`; config bodies with their `id`; 404 for a missing id."""
@@ -14,9 +14,7 @@ import httpx2
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.ha_house import HaHouse
 from ashley.home_assistant.house_settings import HouseSettings
-from ashley.home_assistant.rest_automations import AutomationsConfig, RestAutomations
 
-CONFIG = AutomationsConfig(timeout_s=1, entity_tries=3, entity_wait_s=0)
 SETTINGS = HouseSettings(timeout_s=1, socket_max_bytes=1_000_000, entity_tries=3, entity_wait_s=0)
 
 
@@ -37,8 +35,8 @@ class FakeHouse:
     """Whether `rest_command.ashley_wake` is set up in this HA's configuration."""
     services: Any = None
     """When set, what `/api/services` answers in place of the domains `wake` describes."""
-    failing: set[tuple[str, str]] = field(default_factory=set[tuple[str, str]])
-    """(method, path) pairs answered 500, as HA does when it errors."""
+    failing: dict[tuple[str, str], int] = field(default_factory=dict[tuple[str, str], int])
+    """(method, path) pairs answered with an error status and HA's message shape."""
     requests: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     writes: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
     """Every request that changed something: (method, path)."""
@@ -52,10 +50,6 @@ class FakeHouse:
     def entity_of(self, automation_id: str) -> str:
         return f"automation.{automation_id}"
 
-    def client(self) -> RestAutomations:
-        http = httpx2.AsyncClient(base_url="http://ha.test:8123", transport=httpx2.MockTransport(self.handle))
-        return RestAutomations(HomeAssistant(http), CONFIG, sleep=_no_sleep)
-
     def house(self) -> HaHouse:
         http = httpx2.AsyncClient(base_url="http://ha.test:8123", transport=httpx2.MockTransport(self.handle))
         return HaHouse(HomeAssistant(http), SETTINGS)
@@ -68,7 +62,7 @@ class FakeHouse:
         if method != "GET":
             self.writes.append((method, path))
         if (method, path) in self.failing:
-            return httpx2.Response(500, json={"message": "Internal Server Error"})
+            return httpx2.Response(self.failing[method, path], json={"message": "Home Assistant could not do that"})
         if path == "/api/states":
             return httpx2.Response(200, json=self._states())
         if path == "/api/services" and self.services is not None:
@@ -121,6 +115,3 @@ class FakeHouse:
             self.enabled[entity] = True
         return httpx2.Response(200, json={"result": "ok"})
 
-
-async def _no_sleep(_: float) -> None:
-    return None
