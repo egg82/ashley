@@ -1,7 +1,9 @@
 """The catalogue's stored layers in Postgres: tables `model_catalogue_fetch` (one row) and `model_catalogue_overrides`
 (one row per field of one model). Contract: `catalogue_store.CatalogueStore`; the override writer is
-`postgres_catalogue_override_write`."""
+`postgres_catalogue_override_write`. The stored fetch is read into records off the event loop: the whole list takes
+about half a second."""
 
+import asyncio
 import logging
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -53,7 +55,7 @@ class PostgresCatalogue(CatalogueStore):
         if row is None:
             return None
         try:
-            return catalogue_from_json(row[0]), row[1]
+            return await asyncio.to_thread(catalogue_from_json, row[0]), row[1]
         except ValueError:
             logs.error(log, "catalogue.fetch_unreadable", exc=True)
             return None
