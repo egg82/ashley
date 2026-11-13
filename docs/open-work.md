@@ -498,9 +498,6 @@ The next makes an existing system general (`engineering.md`, "Her systems are ge
 
 30. **The ledger's events.** "Balance below" and "bill due" become events her rules can match. Fits into: Ledger and
     Senses.
-32. **Wake rules matched by who and what.** A wake rule matches on the event alone, and two for one event run no turn
-    (`ashley.channels.wake.rule.rule_for`); an optional who/what match lets her keep rules per person or situation,
-    the most specific winning. Fits into: Senses (wakes) and Workshop (the wake piece).
 34. **Music on the house's speakers.** She plays, pauses, skips, sets the volume of, and searches music from the
     household's services (Spotify, Apple Music, YouTube Music and the like) on its speakers, by room or group: "play
     something mellow in the kitchen", "what's playing upstairs", "pause everything". Playback state is a read anyone
