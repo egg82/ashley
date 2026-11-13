@@ -135,6 +135,10 @@ class ToolResult:
     images: tuple[Image, ...] = ()
     outside: bool | None = None
 
+    def taints(self, spec_outside: bool) -> bool:
+        """Whether this result can carry text written outside the household: `outside` when set, else `spec_outside`."""
+        return spec_outside if self.outside is None else self.outside
+
 
 @dataclass(frozen=True)
 class ToolResults:
