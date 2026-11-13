@@ -2,7 +2,7 @@
 (`runner`). Every sweep, `Workshop.unseen` names the open benches where a person's commands, after the last she has
 seen, have been quiet for `pause_s`; each gets one turn on its own thread (`bench_react_turn`) through the shared turn
 loop, so it is checkpointed and any pod on either site can finish it. A bench that reacted `max_reactions` times in
-`window_s` waits. Her reply carries `worth_saying`, which `Initiative` decides on: false stores her staying quiet and
+`window_s` waits. Her reply carries `says`, which `Initiative` decides on: none stores her staying quiet and
 posts nothing.
 
 The reaction is recorded (`Workshop.reacted`) once the turn is handed to the loop, which is also what moves the mark of
@@ -79,7 +79,7 @@ async def _reacted(unseen: Unseen) -> bool:
         return False
     try:
         out = await respond(inbound(unseen, zone))
-        what = "pending" if out.follows else "none" if out.quiet else "reply"
+        what = "pending" if out.follows else out.says
     except RespondRefused:
         logs.warning(log, "bench_reacts.refused", bench=unseen.bench_id)
         what = "refused"

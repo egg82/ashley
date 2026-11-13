@@ -35,7 +35,7 @@ def test_a_label_added_runs_and_reaches_the_port_whatever_it_is(add: list[str], 
         assert not got.is_error and not held(got), got.content
         assert turn.ran() == [(11, tuple(m["id"] for m in who), tuple(add))]
         reply = await turn.ends()
-        assert reply.text == "Sorted." and turn.landing.receipts is None and reply.worth_saying is False
+        assert reply.text == "Sorted." and turn.landing.receipts is None and reply.says == "none"
         assert rig.proposals.proposed == []
 
     scenario(body)
@@ -60,8 +60,8 @@ def test_a_move_to_the_archive_spam_or_trash_is_held_with_or_without_a_label(
         turn = sort(rig)
         got = await turn.label(M1, M2, folder=folder, **change)
         assert held(got) and turn.ran() == [] and rig.mailbox.written == []
-        reply = await turn.ends(worth_saying=False)
-        assert reply.text == "Sorted." and reply.worth_saying is True
+        reply = await turn.ends(says="none")
+        assert reply.text == "Sorted." and reply.says == "reply"
         assert turn.landing.receipts is not None and turn.landing.receipts.done == ()
         assert "m1" in held_text(turn.landing.receipts) and "m2" in held_text(turn.landing.receipts)
 

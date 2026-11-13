@@ -1,5 +1,5 @@
 """The turn a watch's wake starts (`ashley.watches`): an `Inbound` nobody is waiting on (`unprompted`), so whether it goes
-out at all is `Initiative`'s, from her `worth_saying`: set false, nothing is posted to any thread or pushed, and she may
+out at all is `Initiative`'s, from her `says`: set to none, nothing is posted to any thread or pushed, and she may
 still act. It runs on the talk of the bench whose turn armed the watch, while that bench is open, and otherwise on the
 person's phone thread (`push:<person id>`), with the person as the one it is with so the reply reaches them alone.
 Whether it also reaches their phone is hers to set (`Reply.to_phone`, offered with the facts by `channels.to_phone`).
@@ -34,7 +34,7 @@ log = logging.getLogger("ashley.channels.wake")
 
 PAUSED_NOTE = ("A watch you keep could not read its source several times in a row and is paused; it checks again "
                "and goes on if the source answers. The message names it and why. Tell the person if they would want "
-               "to know. With worth_saying false nothing is posted or pushed to anyone.")
+               "to know. With `says` none nothing is posted or pushed to anyone.")
 
 
 def said(watch: Watch, wake: WatchWake) -> str:

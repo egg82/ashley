@@ -121,7 +121,7 @@ def facts_of(w: Watching) -> str:
     return w.home.model.prompts[0].system["default"].moment
 
 
-WITH_PUSH = Reply(spoken="Done.", text="The session finished.", worth_saying=True, to_phone=True)
+WITH_PUSH = Reply(spoken="Done.", text="The session finished.", says="reply", to_phone=True)
 
 
 def test_a_closed_bench_or_none_sends_the_wake_to_the_phone_thread_whose_reply_is_the_push(
@@ -236,7 +236,7 @@ def test_a_silent_wake_posts_nothing_to_any_thread_and_pushes_nothing_and_says_s
         async with watching(db_url) as w:
             bench = await w.home.bench()
             w.subscribe()
-            w.home.model.script = [WITH_PUSH.model_copy(update={"worth_saying": False})]   # the push field is set too
+            w.home.model.script = [WITH_PUSH.model_copy(update={"says": "none"})]   # the push field is set too
             assert await tell(w, bench)
             assert pushes(db_url) == []
             assert [t for a, t, _ in turns_on(db_url, f"bench:{bench}") if a == "ashley"] == [unprompted.QUIET]

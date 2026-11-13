@@ -19,7 +19,7 @@ from contract.test_inflight_resume import CLAIM_S, HANG, World
 from repeat_support import next_of as next_after
 from rb_support import DONE, PLANTED, SECOND, ZONE, monthly_first, now, stack
 
-QUIET_REPLY = Reply(spoken="Nothing.", text="Nothing.", worth_saying=False)
+QUIET_REPLY = Reply(spoken="Nothing.", text="Nothing.", says="none")
 
 
 def seen(prompt: object) -> str:

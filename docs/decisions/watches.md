@@ -121,7 +121,7 @@ telling, unlike an arrival greeting), and a refusal settles it `failed`. Its tur
 runner killed mid-turn resumes the same turn.
 
 **The woken turn** (`ashley.channels.wake.watch_turn`) is `unprompted`, so
-Initiative decides from `worth_saying` whether it goes out. It runs on the talk of the bench that armed the watch
+Initiative decides from `says` whether it goes out. It runs on the talk of the bench that armed the watch
 while that bench is open, otherwise on the person's phone thread, with the person as the one it is with. The stored
 message is the household's turn, written by the kind from fields alone (for a session: its label and status, never
 its screen). Her brief arrives only as the turn's `note`: the kind's note for the change (the `claude_session` kind's done and blocked

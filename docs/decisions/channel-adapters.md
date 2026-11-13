@@ -29,12 +29,12 @@ and the rest runs.
   and code never pushes on its own. She is given facts, per call, in `# Now`: whether the person has a page open on any
   device (`ashley.channels.to_phone.looking`), told only when that can be read, and that a push reaches their phone.
   Both are offered only to a known speaker with a subscribed browser; with no browser the field is ignored, as on a
-  spoken turn. Her choices are three, by fields: `worth_saying` false posts and pushes nothing (the turn is stored as
-  her staying quiet, and what she did with her tools stands); true, the reply is on the thread; `to_phone` also true,
+  spoken turn. Her choices are three, by fields: `says` none posts and pushes nothing (the turn is stored as
+  her staying quiet, and what she did with her tools stands); `reply`, the reply is on the thread; `to_phone` also true,
   its `text` is queued for `push:<person id>` in the transaction that stores her turn, as for a spoken turn. A reply
   kept quiet never pushes (`unprompted.as_said`). The outcome is logged `wake.outcome` (`silent`, `thread` or `phone`)
   with the conversation id.
-  Initiative decides only whether a woken reply goes out (`speaks`, from `worth_saying`); the channel and the
+  Initiative decides only whether a woken reply goes out (`speaks`, from `says`); the channel and the
   moment are this field, which is the seam a scored Initiative would take over. Urgency is not a field. Presence is
   Live's per-pod fan-out and cannot say who is looking across both sites, so an open stream (`GET /api/live`) holds
   a row of `live_screens` (`ashley.live.screens.Screens`), refreshed at the stream's heartbeat and removed when it

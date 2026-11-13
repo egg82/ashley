@@ -56,8 +56,8 @@ def test_the_schema_of_the_asked_for_output_is_a_strict_json_schema_response_for
     assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", spec["name"])
     schema = spec["schema"]
     assert schema["type"] == "object"
-    assert set(schema["properties"]) == {"answers", "spoken", "text", "offer", "to_phone", "aloud", "memory", "used_facts", "escalate", "owed", "worth_saying"}
-    assert set(schema["required"]) == {"answers", "spoken", "text", "offer", "to_phone", "aloud", "memory", "used_facts", "escalate", "owed", "worth_saying"}
+    assert set(schema["properties"]) == {"answers", "spoken", "text", "offer", "to_phone", "aloud", "memory", "used_facts", "escalate", "owed", "says"}
+    assert set(schema["required"]) == {"answers", "spoken", "text", "offer", "to_phone", "aloud", "memory", "used_facts", "escalate", "owed", "says"}
     assert schema["additionalProperties"] is False
     act = schema["$defs"]["MemoryAct"]
     assert act["additionalProperties"] is False and set(act["required"]) == set(act["properties"]) == {"action", "facts"}

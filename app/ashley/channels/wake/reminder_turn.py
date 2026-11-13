@@ -73,7 +73,7 @@ def _history(landed: Landed) -> str:
 
 
 def _judge(landed: Landed) -> str:
-    return ("Decide whether this is what they meant: set worth_saying false if it is not, and nothing is sent. "
+    return ("Decide whether this is what they meant: set `says` to none if it is not, and nothing is sent. "
             if landed.judged else "")
 
 

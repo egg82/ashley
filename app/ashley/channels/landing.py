@@ -121,12 +121,12 @@ class Landing(Tools):
         return await self._outside.agreed(call_id, proposal_id)
 
     async def closing(self, reply: Reply) -> Reply:
-        """`reply` as it is stored: her words untouched, and worth saying whatever she set when the turn held calls, since
-        a held change nobody sees is lost. What code shows beside it is built here (`receipts`)."""
+        """`reply` as it is stored: her words untouched, and said (`says` `reply`) whatever she set when the turn held
+        calls, since a held change nobody sees is lost. What code shows beside it is built here (`receipts`)."""
         self._receipts = await self._outside.receipts()
-        if self._receipts is None or not self._receipts.held:
+        if self._receipts is None or not self._receipts.held or reply.says != "none":
             return reply
-        return reply.model_copy(update={"worth_saying": True})
+        return reply.model_copy(update={"says": "reply"})
 
     async def call(self, call: ToolCall) -> ToolResult:
         """The call, run by the turn's tools as they are; if it moved the page, the turn is saved as the bench's before

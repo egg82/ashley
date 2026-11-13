@@ -32,8 +32,8 @@ from contract.conversations_support import POLICY, household, person, scalar
 from wake_support import Model, Nobody, Switchboard
 
 SECRET = "plans-for-the-shed"
-SAYS = Reply(spoken="That draft reads well.", text="That draft reads well.", worth_saying=True)
-QUIETLY = Reply(spoken="Nothing to add.", text="Nothing to add.", worth_saying=False)
+SAYS = Reply(spoken="That draft reads well.", text="That draft reads well.", says="reply")
+QUIETLY = Reply(spoken="Nothing to add.", text="Nothing to add.", says="none")
 
 
 @dataclass

@@ -84,7 +84,7 @@ def test_the_medium_defaults_to_text(loop: Model) -> None:
 
 @pytest.mark.parametrize("medium", MEDIA)
 def test_a_reply_that_is_not_worth_saying_is_not_asked_again(loop: Model, medium: Medium) -> None:
-    quiet = Reply(worth_saying=False, spoken="", text="")
+    quiet = Reply(says="none", spoken="", text="")
     out = answered(medium, quiet, model=loop)
     assert out.reply == quiet and loop.steps == 1
 

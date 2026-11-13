@@ -37,6 +37,6 @@ def _one(done: Done, zone: tzinfo) -> str:
 
 NOTE = ("The person has stopped changing the bench for a moment. The message lists what they did by command number, "
         "kind of change and piece, with none of their words; read a piece with your bench tools if you need what it "
-        "says. Set worth_saying true only if you have something worth telling them now. If not, set it false and "
+        "says. Set `says` to reply only if you have something worth telling them now. If not, set it to none and "
         "nothing is posted. While you work, the person sees your aside line to them, so make it say what you are "
         "doing.")

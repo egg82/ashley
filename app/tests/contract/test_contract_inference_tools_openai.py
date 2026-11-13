@@ -45,7 +45,7 @@ def test_no_tools_means_no_tools_and_no_tool_choice_in_the_request() -> None:
 
 def test_the_reply_schema_is_still_sent_when_tools_are() -> None:
     fmt = sent(tool_prompt(ASK))["response_format"]
-    assert fmt["type"] == "json_schema" and set(fmt["json_schema"]["schema"]["properties"]) == {"answers", "spoken", "text", "offer", "to_phone", "aloud", "memory", "used_facts", "escalate", "owed", "worth_saying"}
+    assert fmt["type"] == "json_schema" and set(fmt["json_schema"]["schema"]["properties"]) == {"answers", "spoken", "text", "offer", "to_phone", "aloud", "memory", "used_facts", "escalate", "owed", "says"}
 
 
 def test_history_is_translated_in_order_with_ids_names_json_arguments_and_results() -> None:

@@ -141,7 +141,7 @@ async def use(tools: ReminderTools, name: str, args: dict[str, object] | None = 
 
 
 DONE = Reply(spoken="Time to put the bins out.", text="Time to put the bins out.")
-SILENT = Reply(spoken="Nothing to add.", text="Nothing to add.", worth_saying=False)
+SILENT = Reply(spoken="Nothing to add.", text="Nothing to add.", says="none")
 LANDED = Landed(250_000, date(2026, 11, 3), "RSH-Checking", "RSH-Payer")
 RULE = DepositRule("acct-1", "RSH-Checking", 100_000, "Acme", "contains")
 

@@ -37,7 +37,7 @@ ALLOWED = ToolSpec("lamp_on", "turn the lamp on", {"type": "object"}, reads=Fals
 FORBIDDEN = ToolSpec("garage_open", "open the garage", {"type": "object"}, reads=False, outside=False)
 GREET = "Say hello and nothing else, PLANTED-BRIEF-zq."
 DONE = Reply(spoken="Welcome home.", text="Welcome home.")
-SILENT = Reply(spoken="Nothing to say.", text="Nothing to say.", worth_saying=False)
+SILENT = Reply(spoken="Nothing to say.", text="Nothing to say.", says="none")
 
 
 @dataclass

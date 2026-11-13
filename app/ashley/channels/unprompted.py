@@ -7,7 +7,7 @@ import logging
 
 from .. import logs, services
 from ..conversations.quiet import QUIET, shown as shown
-from ..inference.reply import Reply
+from ..inference.reply import Reply, Says
 from ..initiative.initiative import Initiative
 from .model import Inbound
 
@@ -21,6 +21,11 @@ def speaks(reply: Reply, inbound: Inbound) -> bool:
 
 def _initiative_decides(inbound: Inbound) -> bool:
     return inbound.unprompted and not inbound.promised
+
+
+def says(reply: Reply, inbound: Inbound) -> Says:
+    """`reply.says` as the turn honours it: `none` when it does not go out (`speaks`), else `reply`."""
+    return "reply" if speaks(reply, inbound) else "none"
 
 
 def as_said(reply: Reply, inbound: Inbound) -> Reply:
