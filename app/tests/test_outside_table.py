@@ -14,7 +14,7 @@ PACKAGE = Path(__file__).resolve().parent.parent / "ashley"
 OUTSIDE = {
     "look_up", "read_page", "printables_files", "git_projects", "git_tree", "git_read_file", "claude_read", "house_ask",
     "money_transactions", "bench_frames", "bench_transcribe", "bench_read", "bench_read_piece", "bench_shelf",
-    "bench_look", "watch", "mail_search", "mail_read", "send_readers",
+    "bench_look", "watch", "mail_search", "mail_read", "send_readers", "discord_recent",
 }
 OWN = {
     "house_state", "house_find", "house_history", "house_automations", "house_automation", "money_accounts",
