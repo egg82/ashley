@@ -38,7 +38,8 @@ Seen = tuple[str, str, dict[str, str], str | None, str]
 
 
 def account(id_: str, name: str, balance: str, classification: str = "asset") -> dict[str, object]:
-    return {"id": id_, "name": name, "balance": balance, "balance_cents": 0, "cash_balance": balance,
+    cents = round(float(balance.replace("$", "").replace(",", "")) * 100)
+    return {"id": id_, "name": name, "balance": balance, "balance_cents": cents, "cash_balance": balance,
             "currency": "USD", "classification": classification, "account_type": "depository",
             "subtype": "checking", "status": "active", "institution_name": "Bank"}
 
