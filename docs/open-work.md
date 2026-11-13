@@ -174,26 +174,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
       a house entity subscribed, a herdr session, the ledger). `ashley.senses.deposits` is
       a copy of it today and folds in, deleted. It hands its wakes to the `wakes` queue (Senses), arms
       and disarms beside her reminder tools (Tools), and wakes item 7's standing errands.
-36. **Mail.** She reads, searches, drafts, labels and sends a person's Gmail and Proton mail, and a standing watch
-    over their inbox sorts it and tells them what matters. Designed in `decisions.md`, "Her mail is a port with two
-    adapters, and Proton's runs as a leased Bridge". Every mail change goes through `Outside`. The parts, in
-    order, each one MR with its own blind suite:
-    1. OAuth secrets: built (the Google kind, its connect flow in the connections room, renewal by
-       compare-and-set, `needs`). Trying it live needs the Google OAuth client in the deployment's secret store.
-    2. The mail port and Gmail's read tools (`mail_boxes`, `mail_labels`, `mail_search`, `mail_read`): built, offered
-       by the resource gate (part 3).
-    3. Holders and resources: built (a connection handed to the household or taken back, each mailbox shared or kept,
-       the gate by resource, the connections room's hand-over and sharing).
-    4. Proton Bridge as a leased singleton: built (the record, the epoch fence, the singleton, the pod and its keeper, the
-       room's login, sync state). Turning it on needs the cluster repo's part (`decisions.md`, "What the app needs from the
-       cluster repo") and a digest for `MAIL_BRIDGE_IMAGE`.
-    5. Proton's mailbox over IMAP and SMTP behind the same tools: built (`ImapMailbox` behind `RoutedMailbox`).
-    6. Changes to mail: `mail_draft`, `mail_label`, `mail_send`: built on both adapters. Existing Google
-       connections reconnect once for `gmail.modify`.
-    7. The `mail_inbox` watch kind: built, with the `Later` check.
-    8. The sort: built (`brief` and `standing` on watches, armed with `watch` and agreed with `arm_reminder`).
-    - Fits into: Connections (holders, resources, OAuth), a new system Mail (the port and its adapters), Tools (a
-      source), Watches (a kind), Channels' errands (the sort, as a standing watch).
 38. **A browser of her own.** For the services with no API, a Chromium she drives in a gVisor pod: a session of
     minutes with egress, unlike a code run's seconds with none. She acts on the page's accessibility tree with
     element references checked again against a fresh snapshot before each action (Rakazo's `browser_snapshot` and
@@ -214,7 +194,7 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     change she then makes is an ask. Rejected: readers that message each other, or a leader they negotiate with;
     each hop re-reads its whole context, and work that does not split into independent reads is better done by one
     turn holding all of it. Fits into: Tools (`ashley.tools.look_up.LookUpTools` generalised, over `Only` and
-    `Reading`), Inference (the step loop each reader runs); item 36 first.
+    `Reading`), Inference (the step loop each reader runs).
 P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A turn that has read outside words asks before it
     does anything consequential the person did not ask for"). Left: (1) a move to trash or spam goes to the judge only when
     every target carries the provider's own spam or promotions label, which the adapter reads; (2) a page listing
