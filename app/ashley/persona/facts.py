@@ -50,9 +50,10 @@ LANGUAGE = ("The household's language is {name}. Write `spoken` and `text` in {n
             "you in another language, answer in theirs.")
 THERMOSTAT_STEP: dict[UnitSystem, str] = {"imperial": "five", "metric": "three"}
 STEP_TOKEN = "{thermostat_step}"
-WHILE_AWAY = ("Asks you could not carry out when they were made, because a source was out of reach, and have done since. "
-              "Each line is what you did, with when. Tell them so briefly, in your own words, once it fits their message; "
-              "do not read the line out.")
+WHILE_AWAY = ("Asks you could not carry out when they were made, because a source was out of reach, and have done since, "
+              "and answers you reached them too late to hear. "
+              "Each line is what you did or found, with when. Tell them so briefly, in your own words, once it fits "
+              "their message; do not read the line out.")
 
 
 def when(now: datetime) -> str:

@@ -153,7 +153,8 @@ async def _stored(work: Saved, reply: Reply, showing: Showing, landing: Landing)
     act = keep.act(reply, saved.inbound, saved.offered, saved.conversation_id)
     speaker = await _speaker(saved)
     said, queued = stored(reply, saved.inbound, speaker, saved.phone, saved.conversation_id, saved.said_id,
-                          await pushed(reply, saved.inbound, saved.conversation_id, landing.receipts), landing.receipts)
+                          await pushed(reply, saved.inbound, saved.conversation_id, landing.receipts, saved.said_id),
+                          landing.receipts)
     said = work.answering(said)
     said = await continued.said_on_bench(landing.inbound, speaker, saved.said_id, said, saved.conversation_id,
                                          showing)
