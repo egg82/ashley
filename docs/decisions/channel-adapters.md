@@ -34,8 +34,8 @@ and the rest runs.
   its `text` is queued for `push:<person id>` in the transaction that stores her turn, as for a spoken turn. A reply
   kept quiet never pushes (`unprompted.as_said`). The outcome is logged `wake.outcome` (`silent`, `thread` or `phone`)
   with the conversation id.
-  Initiative today decides only whether a woken reply goes out (`speaks`, from `worth_saying`); the channel and the
-  moment are this field, which is the seam a scored Initiative takes over. Urgency is not a field yet. Presence is
+  Initiative decides only whether a woken reply goes out (`speaks`, from `worth_saying`); the channel and the
+  moment are this field, which is the seam a scored Initiative would take over. Urgency is not a field. Presence is
   Live's per-pod fan-out and cannot say who is looking across both sites, so an open stream (`GET /api/live`) holds
   a row of `live_screens` (`ashley.live.screens.Screens`), refreshed at the stream's heartbeat and removed when it
   ends; one not refreshed within `live.json`'s `present_s` is a pod that died and counts as closed. Rejected: code
@@ -152,9 +152,9 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
 - **A satellite connection is a singleton**: the active site holds it under the etcd lease, or both sites answer.
   One singleton (`satellites`) holds every household's satellites.
 - **End of speech is a wait tuned as data**, not code: microVAD scores each 10 ms frame and the silence window,
-  speech needed to start, and longest utterance live in `app/ashley/channels/voice/voice.json`. They start at Home
-  Assistant's segmenter: a low bar (0.2) for speech to start, tolerating gaps under a second, a higher one (0.5) to
-  keep it going, then 700 ms of silence; tuned from the `voice.run` line's durations.
+  speech needed to start, and longest utterance live in `app/ashley/channels/voice/voice.json`. They are Home
+  Assistant's segmenter's values: a low bar (0.2) for speech to start, tolerating gaps under a second, a higher one
+  (0.5) to keep it going, then 700 ms of silence; tuned from the `voice.run` line's durations.
 - **Her reply clip is text, synthesised when it is fetched.** A run stores the reply in `voice_clips` under a random
   token kept only as its SHA-256, commits it, and only then sends the URL; `GET /api/voice/clips/{token}` streams
   `Inference.speak` of it. Any pod on either site can serve the fetch, so nothing is held in the singleton's pod.
@@ -175,8 +175,8 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
   conversation without a constant stream.
 - **Rejected: always-on listening.** Every room's audio streamed to two clusters is a privacy and bandwidth cost
   the household didn't ask for.
-- **A tablet on HA Assist can stay a satellite while her own pipeline runs beside it** on an Atom Echo; the tablet
-  moves to her own page later (open-work, "The hallway tablet").
+- **A tablet on HA Assist can stay a satellite while her own pipeline runs beside it** on an Atom Echo; the hallway
+  tablet itself is her own page ("The hallway tablet is her page, paired as a device").
 - **A room's ears and voice can be different devices.** A satellite can be only the microphone while her reply
   plays on that room's Nest or a better speaker; Nests are output only anyway (HA cannot reach their
   microphones). An Atom Echo cube (one mic, no echo cancellation, a tiny speaker) is cheap enough for
@@ -190,8 +190,8 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
 - **Looked at, and fine: the reply call's shape.** Measured in the pod on the real command prompt (Haiku, 10.5k tokens
   cached): first token about 0.7 s and the whole short reply about 1.0 s. Leaving out the tools saved about 70 ms,
   inside the noise, so neither a tool-using sub-agent nor tools offered on demand is a latency fix: each adds a model
-  round (about 1 s) when a tool is needed. Both stay token levers (open-work, "Golf the system prompt"). Dropping the JSON schema changed nothing, nor did a spoken-only schema
-  (half the output tokens, no faster). `effort: low` stays: without it a reply ran to 300 tokens and 2.4 s.
+  round (about 1 s) when a tool is needed. Both stay token levers (open-work, "Golf the system prompt"). Dropping the JSON schema changed nothing, nor did a
+  spoken-only schema (half the output tokens, no faster). `effort: low` stays: without it a reply ran to 300 tokens and 2.4 s.
 - **Rejected: HA's Assist pipeline pointed at her.** Text-only input rules out voice identification, and
   continuing a conversation hinges on HA's heuristics (a reply ending in "?").
 
