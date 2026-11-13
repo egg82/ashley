@@ -95,7 +95,8 @@ def elsewhere() -> Generator[Service]:
 
 
 def sender() -> WebPushSender:
-    identity = push_config.vapid(settings())
+    given = settings()
+    identity = push_config.vapid(given.vapid_public_key, given.vapid_private_key, given.vapid_subject)
     assert identity is not None
     return WebPushSender(identity, TTL, TIMEOUT)
 

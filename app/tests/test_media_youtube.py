@@ -120,7 +120,7 @@ def worker(fake: FakeKube) -> KubernetesMedia:
     clock = Clock()
     pods = PodLog(fake.api(), "ashley-sandbox", LABEL, CONFIG.log_bytes, CONFIG.poll_s, logging.getLogger("ashley.runs"),
                   "media", sleep=clock.sleep, clock=clock)
-    return KubernetesMedia(pods, "gvisor", IMAGE, "http://ashley.test:8080", b"k" * 32, _whisper, CONFIG)
+    return KubernetesMedia(pods, "gvisor", IMAGE, "http://ashley.test:8080", lambda: b"k" * 32, _whisper, CONFIG)
 
 
 def captions(fake: FakeKube) -> Transcribed:

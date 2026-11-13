@@ -24,11 +24,11 @@ FAILED = "ashley-look-failed "
 
 
 class KubernetesLooker(Looker):
-    def __init__(self, api: KubeApi, namespace: str, runtime_class: str, image: str, app_url: str, link_key: bytes,
-                 config: LooksConfig, sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    def __init__(self, api: KubeApi, namespace: str, runtime_class: str, image: str, app_url: str,
+                 link_key: Callable[[], bytes], config: LooksConfig, sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
                  clock: Callable[[], float] = time.monotonic, wall: Callable[[], float] = time.time) -> None:
-        """`app_url` is where a pod in the namespace reaches the app, no trailing slash; `link_key` signs the page's
-        link (`links`)."""
+        """`app_url` is where a pod in the namespace reaches the app, no trailing slash; `link_key` gives the key that
+        signs the page's link (`links`), read for each look."""
         self._pods = PodLog(api, namespace, LABEL, config.log_bytes, config.poll_s, log, "looks", sleep, clock,
                             exclude=WARM_LABEL, done="drawn")
         self._runtime_class = runtime_class
@@ -55,7 +55,7 @@ class KubernetesLooker(Looker):
         grant = links.Grant(target.household_id, target.person_id, target.bench_id, target.piece_id,
                             int(self._wall()) + self._config.link_ttl_s)
         side = "" if target.view is None else f"?view={target.view}"
-        return f"{self._app_url}{links.PAGE}{links.mint(self._link_key, grant)}{side}"
+        return f"{self._app_url}{links.PAGE}{links.mint(self._link_key(), grant)}{side}"
 
 
 def picture(log_text: str) -> Shot:

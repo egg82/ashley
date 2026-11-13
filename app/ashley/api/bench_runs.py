@@ -7,6 +7,8 @@ from typing import Literal
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
+from .. import services
+from ..connections.deployment_secrets import DeploymentSecrets
 from ..runs.runs import RunsUnavailable
 from ..workshop.commands import Run
 from ..workshop.model import By
@@ -55,6 +57,6 @@ async def run_bench_piece(signed_in: Person, bench_id: int, body: RunRequest, re
         return unavailable()
     assert applied.piece_id is not None
     done = got.finished
-    key = request.app.state.settings.files_link_key.encode()
+    key = services.get(DeploymentSecrets).link_key().encode()
     return RunApplied(seq=applied.seq, piece_id=applied.piece_id, run_id=done.run_id,
                       run_output=output_of(done.output, owner.household_id, done.artifacts, done.inputs, key))

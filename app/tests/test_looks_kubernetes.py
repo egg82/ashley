@@ -25,7 +25,7 @@ LINE = MARK + base64.b64encode(JPEG).decode()
 
 def looker(fake: FakeKube, clock: Clock | None = None) -> KubernetesLooker:
     clock = clock or Clock()
-    return KubernetesLooker(fake.api(), "ashley-sandbox", "gvisor", IMAGE, "http://ashley.test:8080", KEY, CONFIG,
+    return KubernetesLooker(fake.api(), "ashley-sandbox", "gvisor", IMAGE, "http://ashley.test:8080", lambda: KEY, CONFIG,
                             sleep=clock.sleep, clock=clock, wall=lambda: 1000.0)
 
 

@@ -5,14 +5,15 @@ list stays what the code is. The names are found by parsing `settings.py` (`env.
 `env["NAME"]`), never by matching text.
 
 Tiers: `deployment` (the process needs it before it can reach its database, or it names this deployment), `overlay`
-(the path of an operator file laid over a shipped data file), `seed` (an env value that seeds a connection row, after
-which the row wins). A name whose identifier ends `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must be a `seed` naming a registered
-connection kind, a `ROOT_SECRETS` entry with its reason, or `TO_MOVE` debt recorded in `docs/open-work.md` item 42."""
+(the path of an operator file laid over a shipped data file), `seed` (an env value that seeds a connection row or a deployment
+secret's row, after which the row wins). A name whose identifier ends `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must be a `seed`
+naming a registered connection kind or a deployment secret, a `ROOT_SECRETS` entry with its reason, or `TO_MOVE` debt recorded in `docs/open-work.md` item 42."""
 
 import ast
 from pathlib import Path
 
 import pytest
+from ashley.connections.deployment_secrets import LINK_KEY, VAPID
 
 pytestmark = pytest.mark.reads_docs  # run on a docs-only pull request (ci.yml)
 
@@ -63,10 +64,10 @@ ENV: dict[str, tuple[str, str]] = {
     "FILES_BUCKET": (S, "the first household's file storage connection; the row wins"),
     "FILES_ACCESS_KEY": (S, "the first household's file storage connection; the row wins"),
     "FILES_SECRET_KEY": (S, "the first household's file storage connection; the row wins"),
-    "FILES_LINK_KEY": (D, "signs this deployment's file links"),
+    "FILES_LINK_KEY": (S, "the deployment's file link key; the row wins"),
     "VOICE_CLIP_BASE_URL": (D, "names where this deployment serves clips to satellites"),
-    "VAPID_PUBLIC_KEY": (D, "this deployment's web-push identity"),
-    "VAPID_PRIVATE_KEY": (D, "this deployment's web-push identity"),
+    "VAPID_PUBLIC_KEY": (S, "the deployment's web-push key pair; the row wins"),
+    "VAPID_PRIVATE_KEY": (S, "the deployment's web-push key pair; the row wins"),
     "VAPID_SUBJECT": (D, "this deployment's web-push identity"),
     "HERDR_CLIENT_CERT_FILE": (D, "the TLS identity this deployment presents to herdr"),
     "HERDR_CLIENT_KEY_FILE": (D, "the TLS identity this deployment presents to herdr"),
@@ -100,6 +101,12 @@ SEEDS: dict[str, str] = {
 }
 """The connection kind each seed names; it must be a kind the app registers."""
 
+SECRET_SEEDS: dict[str, str] = {
+    "FILES_LINK_KEY": LINK_KEY, "VAPID_PUBLIC_KEY": VAPID, "VAPID_PRIVATE_KEY": VAPID,
+}
+"""The deployment secret each of these seeds (`ashley.connections.deployment_secrets`): a value the deployment makes for
+itself, which no outside service holds, so no connection kind."""
+
 ROOT_SECRETS: dict[str, str] = {
     "CONNECTIONS_KEY": "seals the connections table, so it cannot be read from it",
     "PATRONI_RESTAPI_PASSWORD": "controls the database cluster the process must reach first",
@@ -110,9 +117,7 @@ ROOT_SECRETS: dict[str, str] = {
 """Secrets that cannot live in the database. Each needs its reason; a credential an outside service holds for a
 person or a household is a connection, never an entry here."""
 
-TO_MOVE: set[str] = {
-    "FILES_LINK_KEY", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY",
-}
+TO_MOVE: set[str] = set()
 """Names that fail the rule today: debt, not approval. Each must be named in backticks in `docs/open-work.md`, and
 an entry is removed when its value moves."""
 
@@ -201,15 +206,22 @@ def recorded_in_open_work() -> set[str]:
 
 
 def test_credentials_are_seeds_roots_or_recorded_debt() -> None:
-    problems = secret_problems(ENV, SEEDS, ROOT_SECRETS, TO_MOVE, registered_kinds(), recorded_in_open_work())
+    problems = secret_problems(ENV, {**SEEDS, **SECRET_SEEDS}, ROOT_SECRETS, TO_MOVE, registered_kinds() | {LINK_KEY, VAPID},
+                               recorded_in_open_work())
     assert not problems, "\n".join(problems)
     assert sum(is_secret(n) for n in ENV) >= 10
 
 
 def test_the_markers_name_listed_variables_only() -> None:
-    for group in (SEEDS.keys(), ROOT_SECRETS.keys(), TO_MOVE):
+    for group in (SEEDS.keys(), SECRET_SEEDS.keys(), ROOT_SECRETS.keys(), TO_MOVE):
         assert not sorted(set(group) - ENV.keys())
-    assert not sorted(k for k, t in ENV.items() if (k in SEEDS) != (t[0] == "seed"))
+    assert not sorted(k for k, t in ENV.items() if (k in SEEDS or k in SECRET_SEEDS) != (t[0] == "seed"))
+
+
+def test_a_seed_names_its_own_kind_of_row() -> None:
+    assert not SEEDS.keys() & SECRET_SEEDS.keys()
+    assert set(SEEDS.values()) <= registered_kinds()
+    assert set(SECRET_SEEDS.values()) <= {LINK_KEY, VAPID} and not set(SECRET_SEEDS.values()) & registered_kinds()
 
 
 def test_an_unlisted_credential_shape_fails() -> None:

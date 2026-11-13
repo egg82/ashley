@@ -28,10 +28,10 @@ FAILED = "ashley-media-failed "
 
 
 class KubernetesMedia(Media):
-    def __init__(self, pods: PodLog, runtime_class: str, image: str, app_url: str, link_key: bytes,
+    def __init__(self, pods: PodLog, runtime_class: str, image: str, app_url: str, link_key: Callable[[], bytes],
                  whisper: Callable[[], Awaitable[str]],
                  config: MediaConfig, wall: Callable[[], float] = time.time) -> None:
-        """`app_url` is where a pod in the namespace reaches the app, no trailing slash; `link_key` signs the file's link;
+        """`app_url` is where a pod in the namespace reaches the app, no trailing slash; `link_key` gives the key that signs the file's link, read for each job;
         `whisper` gives the speech service's Wyoming address as the pod reaches it, read for each transcription, empty for
         none (captions only)."""
         self._pods = pods
@@ -96,7 +96,7 @@ class KubernetesMedia(Media):
     async def _job(self, name: str, source: Source, task: dict[str, Any], deadline_s: int) -> dict[str, Any]:
         grant = links.Grant(source.household_id, source.sha256, source.media_type, False,
                             int(self._wall()) + self._config.link_ttl_s)
-        url = self._app_url + links.mint(self._link_key, grant).url
+        url = self._app_url + links.mint(self._link_key(), grant).url
         task = {**task, "size": source.size, "sha256": source.sha256}
         pod = manifest(name, url, task, deadline_s, self._config, self._image, self._runtime_class, RUNNER)
         return await self._answer(pod, deadline_s)

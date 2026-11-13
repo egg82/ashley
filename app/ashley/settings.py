@@ -53,8 +53,9 @@ class Settings:
     Google answers 503.
     `operator_name` (who runs the deployment and for whom: `Sam Doe for the Doe household`) and `operator_contact` (an
     email address) fill the public privacy and terms pages; unset, they name the deployment's operator generically.
-    `vapid_public_key`, `vapid_private_key` and `vapid_subject` (`mailto:...`) are her Web Push identity; unset, the
-    push routes answer 503 and nothing is pushed (`ashley.channels.push.config.vapid` says whether they are usable).
+    `vapid_subject` (`mailto:...`) is the contact in her Web Push identity; unset, the push routes answer 503 and
+    nothing is pushed. `vapid_public_key` and `vapid_private_key` seed the identity's key pair, the deployment secret
+    `vapid` (`ashley.wiring_secrets`): with neither set and `connections_key` set, a pair is generated once.
     `sandbox_token_file` is where the app's ServiceAccount token for the sandbox is projected, and `sandbox_ca_file`
     the cluster's CA beside it; set, code runs in pods in the sandbox namespace (`ashley.runs.kubernetes`) through the
     API server at `sandbox_api_url`. Unset, she runs no code. The token file needs its CA (ValueError).
@@ -92,8 +93,9 @@ class Settings:
     `files_endpoints` (comma-separated `http(s)://host:port` of S3-compatible storage, this site's first and the
     other sites' after), `files_bucket`, `files_access_key` and `files_secret_key` seed the object store connection at
     start (`ashley.files.store_seed`); all four or none (ValueError). Once a connection exists it wins, and with none
-    and no row no file can be taken. `files_link_key` is a secret shared by every pod, base64 or any text of 32 or
-    more characters, that signs download links; unset, no link is minted.
+    and no row no file can be taken. `files_link_key`, base64 or any text of 32 or more characters (ValueError),
+    seeds the key that signs download links, the deployment secret `files_link_key` (`ashley.wiring_secrets`): unset
+    with `connections_key` set, a key is generated once; with neither, no link is minted.
     `herdr_client_cert_file` and `herdr_client_key_file` are the client certificate (issued by the `ashley-bridges` CA)
     and key she presents to a person's herdr bridge (`ashley.herdr`); both or neither (ValueError). Unset, no bridge
     can be reached.
@@ -216,8 +218,8 @@ class Settings:
             raise ValueError("SANDBOX_TOKEN_FILE needs SANDBOX_CA_FILE")
         if bool(self.look_image) != bool(self.look_app_url):
             raise ValueError("LOOK_IMAGE and LOOK_APP_URL must be set together")
-        if self.look_image and not (self.sandbox_token_file and self.files_link_key):
-            raise ValueError("LOOK_IMAGE needs SANDBOX_TOKEN_FILE and FILES_LINK_KEY")
+        if self.look_image and not (self.sandbox_token_file and (self.files_link_key or self.connections_key)):
+            raise ValueError("LOOK_IMAGE needs SANDBOX_TOKEN_FILE, and FILES_LINK_KEY or CONNECTIONS_KEY")
         if self.look_warm_url and not self.look_image:
             raise ValueError("LOOK_WARM_URL needs LOOK_IMAGE")
         if self.cad_image and not self.sandbox_token_file:
@@ -234,8 +236,8 @@ class Settings:
             raise ValueError("HERDR_CLIENT_CERT_FILE and HERDR_CLIENT_KEY_FILE must be set together")
         if bool(self.media_image) != bool(self.media_app_url):
             raise ValueError("MEDIA_IMAGE and MEDIA_APP_URL must be set together")
-        if self.media_image and not (self.sandbox_token_file and self.files_link_key):
-            raise ValueError("MEDIA_IMAGE needs SANDBOX_TOKEN_FILE and FILES_LINK_KEY")
+        if self.media_image and not (self.sandbox_token_file and (self.files_link_key or self.connections_key)):
+            raise ValueError("MEDIA_IMAGE needs SANDBOX_TOKEN_FILE, and FILES_LINK_KEY or CONNECTIONS_KEY")
 
 
 def from_env(env: Mapping[str, str] = os.environ) -> Settings:
