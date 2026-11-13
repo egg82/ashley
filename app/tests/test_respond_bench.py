@@ -17,6 +17,8 @@ from later_support import until
 from respond_support import ALANA, HOME, Fakes, inbound, wired as wired
 
 REPLY = Reply(spoken="Done.", text="Done.")
+ASKED = 100
+"""The id the conversation fake gives the person's turn, the first it stores; her commands carry it."""
 BENCH = replace(inbound(thread="bench:4", speaker_id=ALANA.id, kind="brainstorm"), audience="owner", shared=False,
                 place=None, channel="web", bench_id=4)
 
@@ -30,7 +32,7 @@ def test_a_bench_tool_she_calls_reaches_the_workshop_as_her_command_on_the_speak
     services.register(Workshop, shop)
     wired.inference.script = [remove(3), REPLY]
     asyncio.run(respond(BENCH))
-    assert shop.applied == [(Owner(HOME.id, ALANA.id), 4, Remove(HER, 3))]
+    assert shop.applied == [(Owner(HOME.id, ALANA.id), 4, Remove(replace(HER, turn=ASKED), 3))]
     assert wired.tools.called == []
     offered = [s.name for s in wired.inference.prompts[0].tools]
     assert offered[0] == "lights" and "bench_remove" in offered
@@ -47,4 +49,4 @@ def test_the_answer_a_held_reply_stood_for_reaches_the_bench_too(wired: Fakes) -
         await until(lambda: shop.applied)
 
     asyncio.run(scenario())
-    assert shop.applied == [(Owner(HOME.id, ALANA.id), 4, Remove(HER, 5))]
+    assert shop.applied == [(Owner(HOME.id, ALANA.id), 4, Remove(replace(HER, turn=ASKED), 5))]
