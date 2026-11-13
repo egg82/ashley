@@ -23,6 +23,9 @@ log = logging.getLogger("ashley.sure")
 _REASON: dict[SureReason, Reason] = {"refused": "refused", "unreachable": "unreachable", "not_sure": "unrecognised",
                                      "not_found": "unrecognised", "rejected": "unrecognised"}
 _ONE: dict[SureReason, Categorised] = {"not_found": "not_found", "rejected": "rejected"}
+_EXPECTED = frozenset({"suggested", "active"})
+"""Sure's statuses of a series it still expects; `paused`, `inactive` and `ended` it does not. A `transfer` series
+moves money between the household's own accounts, so it is no payment and is not read as one."""
 
 
 class SureLedger(Ledger):
@@ -49,7 +52,8 @@ class SureLedger(Ledger):
 
     async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
         got = await _read(household_id, "/api/v1/recurring_transactions", {"per_page": limit}, wire.RecurringTransactions)
-        return Page(tuple(_recurring_from(r) for r in got.recurring_transactions), _total(got.pagination))
+        return Page(tuple(_recurring_from(r) for r in got.recurring_transactions if r.bill_type != "transfer"),
+                    _total(got.pagination))
 
     async def categorise(self, household_id: int, category_id: str,
                          transaction_ids: Sequence[str]) -> Mapping[str, Categorised]:
@@ -100,7 +104,7 @@ def _recurring_from(r: wire.RecurringTransaction) -> Recurring:
         id=r.id, name=r.name, merchant=r.merchant.name if r.merchant else None,
         account_id=r.account.id if r.account else None, cents=int((abs(r.amount) * 100).to_integral_value()),
         due=r.next_expected_date, kind="income" if r.bill_type == "income" else "expense", autopay=r.autopay,
-        ended=r.status == "inactive")
+        ended=r.status not in _EXPECTED)
 
 
 async def _set(sure: Sure, base: str, key: str, transaction_id: str, category_id: str) -> Categorised:
