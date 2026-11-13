@@ -75,7 +75,10 @@ class Reminder:
     starts tainted `inherited` when it is set, since its `brief` was written under outside words. `made_in` is the
     conversation and turn that made it when `taint` is set, which the judge's words for that firing turn are read from;
     None for a reminder made before it was kept. `device_id` is the satellite or screen a `room` or `screen` route names,
-    None for any other route and once that device is removed."""
+    None for any other route and once that device is removed. `ends_at` makes it an **errand**, an ask she carries out
+    over checks: each occurrence is one check, whose turn may set the next (`Wakes.follow_up`) no later than `ends_at`,
+    and it never repeats by rule; None for a reminder. `plan` is what she noted for this check at the one before (1 to
+    `MAX_BRIEF` characters; people's data, never logged), None on an errand's first check and on every reminder."""
 
     household_id: int
     person_id: int
@@ -89,6 +92,8 @@ class Reminder:
     taint: str | None = None
     made_in: tuple[int, int] | None = None
     device_id: int | None = None
+    ends_at: datetime | None = None
+    plan: str | None = None
 
 
 @dataclass(frozen=True)
@@ -181,7 +186,8 @@ class Wakes(Service):
     async def schedule(self, reminder: Reminder) -> int:
         """Store `reminder` as a wake due at its `due_at`; its id. Raises ValueError for a brief outside 1 to
         `MAX_BRIEF` characters or holding a NUL, more than `MAX_TOOLS` tools, or a `landed` deposit (only
-        `Deposits.fire` sets one), before anything is written; WakesUnavailable."""
+        `Deposits.fire` sets one), and for an errand that repeats, carries a `plan` or falls due after its `ends_at`,
+        before anything is written; WakesUnavailable."""
 
     @abstractmethod
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
@@ -190,6 +196,16 @@ class Wakes(Service):
         fired are untouched, and the next ones follow the new rule. An armed money reminder keeps its time and has no
         repeat. False, changing nothing, when it is settled, not theirs or does not exist. Raises ValueError as
         `schedule` does; WakesUnavailable."""
+
+    @abstractmethod
+    async def follow_up(self, household_id: int, wake_id: int, due_at: datetime, plan: str) -> int | None:
+        """Set the next check of the household's errand whose occurrence `wake_id` is: an occurrence like it, due at
+        `due_at` and carrying `plan`, that follows `wake_id`. The same occurrence again moves that next check instead of
+        storing a second, so one occurrence has at most one successor however often its turn is run. The occurrence
+        may be settled already (its turn finished by another runner after this one settled it), but not cancelled.
+        Its id; None, changing nothing, when `wake_id` is not the household's errand, it was cancelled, `due_at` is
+        past its `ends_at`, or its next check has fired or been cancelled. Raises ValueError for a plan outside 1 to
+        `MAX_BRIEF` characters or holding a NUL, before anything is written; WakesUnavailable."""
 
     @abstractmethod
     async def due(self, limit: int) -> tuple[Due, ...]:
@@ -270,6 +286,9 @@ class NullWakes(Wakes):
         raise WakesUnavailable("wakes are not wired")
 
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
+        raise WakesUnavailable("wakes are not wired")
+
+    async def follow_up(self, household_id: int, wake_id: int, due_at: datetime, plan: str) -> int | None:
         raise WakesUnavailable("wakes are not wired")
 
     async def due(self, limit: int) -> tuple[Due, ...]:

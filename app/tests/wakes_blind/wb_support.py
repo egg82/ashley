@@ -79,6 +79,9 @@ class MemoryWakes(Wakes):
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
         return False
 
+    async def follow_up(self, household_id: int, wake_id: int, due_at: datetime, plan: str) -> int | None:
+        return None
+
     async def refire(self, wake_id: int, after_s: float) -> int:
         return 0
 

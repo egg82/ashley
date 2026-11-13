@@ -134,7 +134,10 @@ class Inbound:
     `text`. `overhears` says what she heard may not have been meant for her (a satellite's wake word fires on room audio),
     set only by the voice adapter: it offers her `Reply.says` `offer` and `none`, and code honours them
     (`channels.unprompted.says`).     `moment` is the facts `Initiative` plans an unprompted turn from, gathered before it starts (a house wake's,
-    `channels.wake.moment`), so whichever runner finishes it decides the same; None on every other turn."""
+    `channels.wake.moment`), so whichever runner finishes it decides the same; None on every other turn. `errand` is
+    the wake id of the errand occurrence this turn is a check of, set only by the reminder turn
+    (`channels.wake.reminder_turn`): it offers her `check_again` (`ashley.tools.errand_step`) whatever else narrows the
+    turn's tools; None on every other turn."""
 
     household_id: int
     thread: str
@@ -172,6 +175,7 @@ class Inbound:
     said_aloud: bool = False
     overhears: bool = False
     moment: Moment | None = None
+    errand: int | None = None
 
     @property
     def lands_on(self) -> int | None:
