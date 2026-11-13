@@ -471,10 +471,6 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
 
 The next makes an existing system general (`engineering.md`, "Her systems are general, and she wires them").
 
-30. **The ledger's bill events.** "Bill due" becomes an event a money rule can match: Sure 0.7.6's
-    `GET /api/v1/recurring_transactions` gives `next_expected_date`, deduped by
-    `bill:<armed>:<recurring id>:<next_expected_date>`. First check the household's Sure has detected recurring
-    transactions. Fits into: Ledger and Senses (the deposit sense and `DepositRule`).
 34. **Music on the house's speakers.** She plays, pauses, skips, sets the volume of, and searches music from the
     household's services (Spotify, Apple Music, YouTube Music and the like) on its speakers, by room or group: "play
     something mellow in the kitchen", "what's playing upstairs", "pause everything". Playback state is a read anyone
