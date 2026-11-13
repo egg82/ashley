@@ -67,6 +67,13 @@ class Mailbox(Service):
         only where `can_change` says the connection may. Raises MailFailed."""
 
 
+    async def junk(self, account: Account, targets: tuple[Target, ...]) -> bool:
+        """Whether the provider itself marks every target as spam or promotions, a field it reads from the provider and
+        never from the message's words. False for a target it cannot find or an adapter that reads no such mark. Raises
+        MailFailed."""
+        return False
+
+
 class NullMailbox(Mailbox):
     def supports(self, kind: str) -> bool:
         return False

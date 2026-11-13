@@ -201,3 +201,14 @@ def test_a_change_in_a_mailbox_syncing_changes_nothing_and_says_so(bridge: Bridg
     assert failure(box().draft(ACCOUNT, Draft(("a@b.test",), "s", "b"))) == "syncing"
     assert failure(box().send(ACCOUNT, Draft(("a@b.test",), "s", "b"))) == "syncing"
     assert snapshot(bridge) == before and bridge.sent == [] and bridge.logins == 0
+
+
+def test_a_message_is_junk_only_when_bridge_holds_it_in_spam_and_every_target_must_be(bridge: Bridge) -> None:
+    bridge.add("Spam", mail("Sale", sender="Shop <shop@store.test>", message_id="<sale@store.test>"), (),
+               "07-Nov-2026 10:00:00 +0000")
+    sale = Target("sale@store.test", "Shop", "Sale")
+    assert asyncio.run(box().junk(ACCOUNT, (sale,))) is True
+    assert asyncio.run(box().junk(ACCOUNT, (target(),))) is False, "a message in the inbox"
+    assert asyncio.run(box().junk(ACCOUNT, (sale, target()))) is False
+    assert asyncio.run(box().junk(ACCOUNT, (Target("sale@store.test", "Shop", "Another"),))) is False
+    assert asyncio.run(box().junk(ACCOUNT, (Target("none@x.test", "", ""),))) is False

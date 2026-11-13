@@ -383,7 +383,8 @@ offered a watch that could not read.
 **The sort's changes go by their tier.** A label added or removed, a read state and a draft are tier b, so the woken turn
 makes them without asking and each is recorded and shown under her reply (`decisions.md`, "A turn that has read outside
 words asks before it does anything consequential the person did not ask for"). A move to the archive, spam or trash
-and a send are tier c: no judge is built, so they wait for the person's OK. The household's labels are the mailbox's user
+and a send are tier c: they go to the action judge, and a move to spam or trash only when the provider marks every message
+as spam or promotions (`Mailbox.junk`), else it waits for the person's OK. The household's labels are the mailbox's user
 labels, which a label call names, and a system label can only be reached through `folder`, so a stranger's message can
 choose which messages get a label but cannot reach a move. The brief need not name the mailbox for a label to run.
 

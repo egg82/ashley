@@ -47,6 +47,9 @@ class RoutedMailbox(Mailbox):
     async def change(self, account: Account, targets: tuple[Target, ...], change: MailChange) -> int:
         return await self._of(account).change(account, targets, change)
 
+    async def junk(self, account: Account, targets: tuple[Target, ...]) -> bool:
+        return await self._of(account).junk(account, targets)
+
     def _of(self, account: Account) -> Mailbox:
         adapter = self._adapters.get(account.kind)
         if adapter is None:

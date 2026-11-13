@@ -125,7 +125,10 @@ class MailTools(Tools):
 
     async def vetted(self, call: ToolCall, words: Sequence[str]) -> Vetting | None:
         """A send's recipients checked (`mail_vet`), and its view as the judge sees it; None for any other call, and for
-        a send that cannot be read or has no mailbox it may use, which fails when it runs."""
+        a send that cannot be read or has no mailbox it may use, which fails when it runs. A move to spam or trash is
+        asked as `not_junk` unless the provider marks every message as spam or promotions (`mail_vet.not_junk`)."""
+        if call.name == mail_change_specs.LABEL:
+            return await self._vetted_move(call)
         if call.name != mail_change_specs.SEND:
             return None
         try:
@@ -136,6 +139,16 @@ class MailTools(Tools):
             return None
         strange = await mail_vet.unknown(services.get(Mailbox), box.account, (*written.to, *written.cc), known, words)
         return mail_vet.vetting(written, box.resource.ref, strange)
+
+    async def _vetted_move(self, call: ToolCall) -> Vetting | None:
+        try:
+            if mail_args.change(call.arguments).folder not in mail_vet.JUNK_MOVES:
+                return None
+            targets = mail_args.targets(call.arguments, self._config)
+            box = await self._changeable(call.arguments)
+        except (BadArguments, MailFailed, ToolsUnavailable):
+            return None
+        return await mail_vet.not_junk(services.get(Mailbox), box.account, targets)
 
     async def _household_addresses(self) -> frozenset[str]:
         """The addresses of the mailboxes the household's connections reach, in lower case. Raises ConnectionsUnavailable."""

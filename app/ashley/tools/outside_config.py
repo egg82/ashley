@@ -25,7 +25,7 @@ _SECONDS = ("proposal_ttl_s", "actions_keep_s", "writes_keep_s")
 _TEXTS = ("held", "needs_private", "too_long", "too_many", "agreeing_tainted", "nothing_to_carry_out", "not_run",
           "unavailable",
           "carry_out_description", "unlabelled", "done_label", "held_label", "history_line", "history_done", "history_held", "unknown_recipient",
-          "no_words", "why_held", "why_ran", "agreed_turn", "agreed_ran", "agreed_failed", "history_agreed",
+          "no_words", "not_junk", "why_held", "why_ran", "agreed_turn", "agreed_ran", "agreed_failed", "history_agreed",
           "history_agreed_interrupted", "history_facts")
 
 
@@ -56,6 +56,7 @@ class OutsideConfig:
     history_held: str
     unknown_recipient: str
     no_words: str
+    not_junk: str
     why_held: str
     why_ran: str
     agreed_turn: str

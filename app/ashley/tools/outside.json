@@ -24,6 +24,7 @@
   "history_facts": "Shown to them to confirm or change with a tap, each by its label and the value you set: {items}",
   "unavailable": "That change could not be held right now, so it was not made.",
   "unknown_recipient": "That address is not one I was given, nor one this mailbox has written to before, so it waits for your OK",
+  "not_junk": "Your mail service does not mark all of these as spam or promotions, so moving them waits for your OK",
   "no_words": "There are no words of yours here to check it against, so it waits for your OK",
   "why_held": "Why it waits: {why}",
   "why_ran": "It was done without asking, because: {why}\nSay in your own words what you changed and why.",
