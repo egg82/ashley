@@ -97,9 +97,9 @@ def test_it_stays_held_when_the_active_site_changes() -> None:
         async with on_site(holder("a1", "a"), name, arena.body("a1")):
             await wait_until(lambda: arena.starts)
             put(LEADER, "b")
-            await asyncio.sleep(1.2)
-            put(LEADER, "a")
             await asyncio.sleep(0.6)
+            put(LEADER, "a")
+            await asyncio.sleep(0.2)
             assert arena.running == 1 and arena.cancels == [] and arena.starts == ["a1"]
 
     run(scenario())

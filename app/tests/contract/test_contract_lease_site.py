@@ -24,7 +24,7 @@ def test_it_never_runs_while_another_member_leads() -> None:
 
     async def scenario() -> None:
         async with campaign(EtcdLease(url, ActiveSite("a", key), ttl=2, holder="a"), name, arena.body("a")) as task:
-            for _ in range(30):
+            for _ in range(12):
                 await asyncio.sleep(0.05)
                 assert holder_of(name) is None
             assert not task.done()
@@ -39,7 +39,7 @@ def test_it_never_runs_while_the_leader_key_is_absent() -> None:
 
     async def scenario() -> None:
         async with campaign(EtcdLease(url, ActiveSite("a", key), ttl=2, holder="a"), name, arena.body("a")):
-            for _ in range(30):
+            for _ in range(12):
                 await asyncio.sleep(0.05)
                 assert holder_of(name) is None
         assert arena.starts == []

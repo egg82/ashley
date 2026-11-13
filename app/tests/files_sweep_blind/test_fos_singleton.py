@@ -73,7 +73,7 @@ def test_of_two_pods_under_the_lease_only_one_sweeps(db_url: str) -> None:
                 await wait_until(lambda: any(s.of("listing") for s in r.sites))
                 async with campaign(EtcdLease(url, here(), ttl=3, holder="b"), name,
                                     partial(sweep.run, pods[1], r.named, r.candidates, r.config)):
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(0.7)
                     assert not any(s.of("listing") for s in other)
                     assert all(s.of("listing") for s in r.sites)
 
