@@ -23,17 +23,8 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
       with routes naming the connection. It covers OpenRouter, Groq, Together, Mistral, DeepSeek, Ollama and vLLM without
       a wrapper library; Anthropic and Gemini keep their native adapters for caching and structured output.
       `LOCAL_LLM_URL` and `LOCAL_LLM_API_KEY` become the seed of one such row. Adding one is a picker over models.dev's
-      providers (each one's `api` base URL prefills) or a custom base URL. Prices and capabilities come from models.dev,
-      and `app/ashley/inference/prices.json` goes, natives included. The owner agreed this design (2026-11-10). It has
-      three layers, the later winning: a snapshot of models.dev's `api.json` baked into the image at build; the last
-      good fetch in Postgres, refreshed by one lease-holding singleton on an interval from a data file, where a failed
-      fetch keeps the previous result and the page shows the snapshot's age; and a person's overrides, deployment-wide
-      and admin-only, edited through the web route alone. An override can add a model, hide one, change any field or
-      define a provider; it stores only the fields the person changed, so upstream updates to the rest still flow in,
-      and the page shows default against yours per field with a reset and who set it. No price in any layer is
-      "unpriced", never $0; models.dev's 0/0 is "listed as $0" until a person marks it free; every price names its
-      source. A task that uses tools refuses a model listed without tool calls. Write the delta rule into
-      `docs/decisions/` beside "Env var, file, connection or setting". Fits into: Connections, Inference.
+      providers (each one's `api` base URL prefills) or a custom base URL. Prices come from the model catalogue (built); left with this bullet: an override that defines a provider, an
+      admin page over `/api/catalogue`, and a price for `gpt-image-2.5-flare`, which models.dev does not list. Fits into: Connections, Inference.
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
       site, and the room names in `app/ashley/evals/house_cases.json`.
 

@@ -46,7 +46,8 @@ that digest `dev` and `main-<sha8>-<commit-timestamp>`, so the deploy waits for 
 the same image `<version>` and `latest` (`.github/workflows/container-release.yml`). Flux image automation on one site writes
 the `main-` tag into `kustomization/ashley-app` in the cluster repo, and the deploy runs `python -m ashley.db migrate`
 from the same image. The image runs as uid 1000 on a read-only root filesystem with only `/tmp` writable, and carries
-the embedding model in `/opt/ashley/models`, fetched when it is built, since nothing is fetched at runtime. Commit
+the embedding model in `/opt/ashley/models`, fetched when it is built, since no model is fetched at runtime, and
+models.dev's catalogue as it was at build in `/opt/ashley/catalogue` (none when models.dev could not be reached). Commit
 timestamps may not go backwards, because the tags are ordered by string; `release` refuses a commit older than its parent.
 
 The repository needs one variable, `DOCKERHUB_USERNAME`, and one secret, `DOCKERHUB_TOKEN` (a Docker Hub access token
