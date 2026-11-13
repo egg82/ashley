@@ -2,10 +2,11 @@
 fake house: what the house holds afterwards, what the bench shows on the piece, the refusals as 409, a retried request
 that writes nothing twice, and that no route lets her install."""
 
-from collections.abc import Awaitable, Generator
+from collections.abc import Generator
 
 import pytest
 from ab_support import CONFIG, body, edit, propose
+from app_loop_support import on_app_loop
 from ashley import services
 from ashley.api.workshop_models import BenchDetail, CommandRefused
 from ashley.home_assistant.homes import Homes
@@ -36,17 +37,6 @@ def house(signed_in: As) -> Generator[FakeHouse]:
 
 def read(client: TestClient, bench: int) -> BenchDetail:
     return BenchDetail.model_validate(client.get(f"/api/benches/{bench}").json())
-
-
-async def _await[T](awaitable: Awaitable[T]) -> T:
-    return await awaitable
-
-
-def on_app_loop[T](client: TestClient, awaitable: Awaitable[T]) -> T:
-    """Awaits on the app's own event loop: the database pool wakes its waiters from that loop's thread, so another loop
-    awaiting it sleeps until its next timer, production's 5 s connect timeout."""
-    assert client.portal is not None
-    return client.portal.call(_await, awaitable)
 
 
 def by_her(client: TestClient, bench: int, piece: int = 1, version: int = 1, enabled: bool = False, turn_off: str | None = None) -> int:
