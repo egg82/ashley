@@ -56,6 +56,13 @@ class ConnectedStore(ObjectStore):
             raise StoreUnavailable("no object store is connected")
         return self._store
 
+    async def available(self) -> bool:
+        try:
+            await self.current()
+        except StoreUnavailable:
+            return False
+        return True
+
     async def put(self, key: str, data: bytes) -> int:
         return await (await self.current()).put(key, data)
 

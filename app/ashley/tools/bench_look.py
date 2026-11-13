@@ -13,7 +13,7 @@ from dataclasses import replace
 
 from .. import services
 from ..files.intake import key_of as file_key
-from ..files.store import NullStore, ObjectStore, StoreUnavailable
+from ..files.store import ObjectStore, StoreUnavailable
 from ..inference.model import Image, ToolCall, ToolResult, ToolSpec
 from ..looks import config as looks_config
 from ..looks import pictures
@@ -70,7 +70,7 @@ class BenchLookTools(Tools):
 
     async def catalogue(self) -> Catalogue:
         """Empty when no object store is wired: a picture is kept before she is given it."""
-        if isinstance(services.get(ObjectStore), NullStore):
+        if not await services.get(ObjectStore).available():
             return Catalogue((), None)
         return Catalogue((SPEC,), instructions(services.get(Looker).renders()))
 

@@ -19,7 +19,7 @@ from typing import Any
 
 from .. import services
 from ..files import config as files_config
-from ..files.store import NullStore, ObjectStore, StoreUnavailable
+from ..files.store import ObjectStore, StoreUnavailable
 from ..inference.model import Image, ToolCall, ToolResult, ToolSpec
 from ..looks import config as looks_config
 from ..looks.looks import LooksUnavailable
@@ -90,7 +90,7 @@ class BenchMediaTools(Tools):
 
     async def catalogue(self) -> Catalogue:
         """Empty unless an object store and a media worker are wired."""
-        if isinstance(services.get(ObjectStore), NullStore) or not services.get(Media).available():
+        if not await services.get(ObjectStore).available() or not services.get(Media).available():
             return Catalogue((), None)
         return Catalogue((FRAMES_SPEC, TRANSCRIBE_SPEC), INSTRUCTIONS)
 

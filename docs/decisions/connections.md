@@ -215,8 +215,9 @@ subscription, the read the Usage room already makes), and the router opens the p
   var. The store is `ashley.files.connected_store.ConnectedStore`, a cache and not state: it reads the row again by the
   first call once the last read is `REFRESH_S` old, so a store added, replaced or removed in the room reaches every pod
   within that bound, and a read that fails keeps what was wired. It is registered whenever the env names a store or
-  `CONNECTIONS_KEY` is set, so with a key the bench file tools are offered before a store is connected and fail as
-  unavailable until one is. Rejected: a connection per endpoint, which would make a person keep one bucket's keys in
+  `CONNECTIONS_KEY` is set, and answers `ObjectStore.available()` with whether it holds a store now, which the bench
+  file, look, media and printables tools ask before they are offered; the sweep and repair start with any real store
+  and idle under their lease while none is held. Rejected: a connection per endpoint, which would make a person keep one bucket's keys in
   step across rows and leave "this site's first" to row order.
 - Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
   Connections already has.

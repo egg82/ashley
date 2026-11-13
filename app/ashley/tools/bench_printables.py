@@ -17,7 +17,7 @@ from collections.abc import Mapping
 from .. import services
 from ..files.intake import Refused as FileRefused
 from ..files.sniff import sniff
-from ..files.store import NullStore, ObjectStore, StoreUnavailable
+from ..files.store import ObjectStore, StoreUnavailable
 from ..inference.model import ToolCall, ToolResult, ToolSpec
 from ..printables.model import Detail, ModelFile
 from ..printables.printables import NullPrintables, Printables, PrintablesFailed, model_id_of
@@ -76,7 +76,7 @@ class BenchPrintablesTools(Tools):
 
     async def catalogue(self) -> Catalogue:
         """Empty when no object store or no Printables is wired."""
-        if isinstance(services.get(ObjectStore), NullStore) or isinstance(services.get(Printables), NullPrintables):
+        if not await services.get(ObjectStore).available() or isinstance(services.get(Printables), NullPrintables):
             return Catalogue((), None)
         return Catalogue((LIST, ADD_SPEC), INSTRUCTIONS)
 

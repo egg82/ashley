@@ -9,7 +9,7 @@ from collections.abc import Mapping
 
 from .. import services
 from ..files.intake import Refused as FileRefused
-from ..files.store import ObjectStore, NullStore, StoreUnavailable
+from ..files.store import ObjectStore, StoreUnavailable
 from ..inference.model import ToolCall, ToolResult, ToolSpec
 from ..runs.runs import Runs, RunsUnavailable
 from ..workshop import bench_file
@@ -46,7 +46,7 @@ class BenchFileTools(Tools):
 
     async def catalogue(self) -> Catalogue:
         """Empty when no object store is wired."""
-        if isinstance(services.get(ObjectStore), NullStore):
+        if not await services.get(ObjectStore).available():
             return Catalogue((), None)
         return Catalogue((SPEC,), INSTRUCTIONS)
 
