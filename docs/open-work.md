@@ -99,9 +99,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
    has no `claude` binary yet) and `opencode`. Then routes that ask several models at once and keep the best answer,
    and an orchestrator that picks a model per step for agentic work. Planning on a bench already goes to a slower,
    more capable model than chat's (`brainstorm`, Opus).
-   OpenAI's tool use needs the Responses API: Chat
-   Completions refuses tools with `reasoning_effort` (and `gpt-6.1-sol` refuses `none`), so only `gpt-6-luna` routes, at `none`, until an
-   `OpenAIResponsesProvider` exists.
    The speech tasks get the same pass once her voice pipeline is live, research first: read what people report about
    ElevenLabs' v4 models (latency, quality, which voices and settings carry over) and the STT options before
    choosing what to golf, then measure first-audio latency and how she sounds on real replies.
