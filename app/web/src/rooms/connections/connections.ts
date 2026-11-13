@@ -33,6 +33,7 @@ export type ConnectionsSaid =
   | 'remove_failed'
   | 'label_taken'
   | 'too_many'
+  | 'bad_label'
   | 'failed';
 
 export const kinds = signal<ConnectionKindInfo[]>([]);
@@ -76,24 +77,26 @@ export async function loadConnections(): Promise<void> {
   }
 }
 
-function secretOf(kind: ConnectionKindInfo, baseUrl: string, secret: string) {
+function secretOf(kind: ConnectionKindInfo, baseUrl: string, secret: string, catalogueProvider?: string | null) {
   const base_url = kind.takes_address ? baseUrl : undefined;
-  return kind.secret_field === 'api_key' ? { base_url, api_key: secret } : { base_url, token: secret };
+  return kind.secret_field === 'api_key' ? { base_url, api_key: secret, catalogue_provider: catalogueProvider } : { base_url, token: secret };
 }
 
 function refusedBy(error: unknown): ConnectionsSaid {
   if (!(error instanceof ApiError)) return 'failed';
-  return error.code === 'too_many' || error.code === 'label_taken' ? error.code : 'failed';
+  return error.code === 'too_many' || error.code === 'label_taken' || error.code === 'bad_label' ? error.code : 'failed';
 }
 
-/** Adds a connection of `info` under `label`, or with `replacing` gives that one a new address and key or token. True
- * when it was stored; the caller clears the key or token either way. */
-export async function connect(info: ConnectionKindInfo, label: string, baseUrl: string, secret: string, replacing?: number): Promise<boolean> {
+/** Adds a connection of `info` under `label`, or with `replacing` gives that one a new address and key or token. For a
+ * kind that picks a catalogue provider, `catalogueProvider` is the one picked (null: a custom address). True when it was
+ * stored; the caller clears the key or token either way. */
+export async function connect(info: ConnectionKindInfo, label: string, baseUrl: string, secret: string, replacing?: number,
+  catalogueProvider?: string | null): Promise<boolean> {
   const kind = info.name;
   connecting.value = kind;
   connectionsSaid.value = null;
   try {
-    const body = secretOf(info, baseUrl, secret);
+    const body = secretOf(info, baseUrl, secret, catalogueProvider);
     const got = replacing === undefined ? await addConnection({ ...body, kind, label }) : await replaceConnection(replacing, body);
     if ('reason' in got) {
       connectionsSaid.value = { kind, said: got.reason, detail: got.detail };

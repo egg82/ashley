@@ -48,6 +48,7 @@ const FAILED: Record<string, string> = {
   failed: 'That didn’t go through. Nothing changed.',
   label_taken: 'You already have one of those under that name. Nothing changed.',
   too_many: 'You already have as many of those as can be connected. Nothing changed.',
+  bad_label: 'That name is what routes call it: lowercase letters, digits, - and _, and not a provider’s own. Nothing changed.',
 };
 
 function Line({ text, tone, onDismiss }: { text: string; tone: 'ok' | 'bad' | ''; onDismiss: () => void }) {

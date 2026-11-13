@@ -10,7 +10,8 @@ export async function getConnections(): Promise<ConnectionsResponse> {
   return answer(await fetch('/api/connections'), 200, 'GET /api/connections');
 }
 
-/** Adds a connection; a 400 answers why nothing was stored, a 409 why the owner cannot hold another (`ApiError.status`). */
+/** Adds a connection; a 400 answers why nothing was stored, a 409 why the owner cannot hold another, a 422 a label or
+ * catalogue provider the kind does not take (`ApiError.code`: `bad_label`, `unsupported`). */
 export async function addConnection(body: NewConnectionRequest): Promise<HouseholdConnection | ConnectionRefused> {
   const response = await fetch('/api/connections', {
     method: 'POST',
@@ -18,7 +19,9 @@ export async function addConnection(body: NewConnectionRequest): Promise<Househo
     body: JSON.stringify(body),
   });
   if (response.status === 400) return (await response.json()) as ConnectionRefused;
-  if (response.status === 409) throw new ApiError(409, 'POST /api/connections', ((await response.json()) as ErrorResponse).code);
+  if (response.status === 409 || response.status === 422) {
+    throw new ApiError(response.status, 'POST /api/connections', ((await response.json()) as Partial<ErrorResponse>).code);
+  }
   return answer(response, 201, 'POST /api/connections');
 }
 
@@ -33,14 +36,17 @@ export async function replaceConnection(id: number, body: ConnectionRequest): Pr
   return answer(response, 200, 'PUT /api/connections/{id}');
 }
 
-/** Renames connection `id`; a 409 means the owner already uses that label for the kind. */
+/** Renames connection `id`; a 409 means the owner already uses that label for the kind, a 422 `bad_label` that the kind
+ * does not take it. */
 export async function relabelConnection(id: number, label: string): Promise<HouseholdConnection> {
   const response = await fetch(`/api/connections/${id}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ label }),
   });
-  if (response.status === 409) throw new ApiError(409, 'PATCH /api/connections/{id}', ((await response.json()) as ErrorResponse).code);
+  if (response.status === 409 || response.status === 422) {
+    throw new ApiError(response.status, 'PATCH /api/connections/{id}', ((await response.json()) as Partial<ErrorResponse>).code);
+  }
   return answer(response, 200, 'PATCH /api/connections/{id}');
 }
 
