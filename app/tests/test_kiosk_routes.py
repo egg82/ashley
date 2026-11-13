@@ -25,6 +25,7 @@ from ashley.inference.reply import Reply
 from ashley.live.events import DeviceViewer, HerState, Shown
 from ashley.live.fanout import RESYNC
 from ashley.live.live import Live
+from ashley.live.screens import Screens
 from ashley.main import create_app
 from ashley.people.people import People
 from ashley.runs.runs import NullRuns, Runs
@@ -35,6 +36,7 @@ from ashley.tools.tools import Tools
 from ashley.workshop.workshop import Workshop
 from fastapi.testclient import TestClient
 from live_support import FakeLive
+from test_live_route import RecordingScreens
 from device_controls_support import FakeScreenControls
 from respond_support import ALANA, HOME, Fakes, wired as wired
 
@@ -191,6 +193,16 @@ def test_the_kiosk_live_feed_is_the_devices_own_events(client: TestClient, live:
     assert [LiveEvent.model_validate_json(line.removeprefix("data: ")).root for line in lines
             if line.startswith("data:")] == [LiveState(type="state", turn="a1b2", state="thinking", at_most_s=180.0),
                                              LiveResync(type="resync")]
+
+
+def test_the_kiosk_live_feed_is_recorded_as_the_devices_open_screen(client: TestClient, live: FakeLive) -> None:
+    screens = RecordingScreens()
+    services.register(Screens, screens)
+    live.scripted = (RESYNC,)
+    with client.stream("GET", "/api/kiosk/live") as response:
+        list(response.iter_lines())
+    assert screens.calls[0] == ("device_opened", DEVICE.id) and screens.calls[-1] == ("closed", 42)
+    assert not any(kind == "opened" for kind, _ in screens.calls)
 
 
 def test_no_live_feed_is_503_so_the_kiosk_reads_for_itself(wired: Fakes, devices: FakeDevices) -> None:

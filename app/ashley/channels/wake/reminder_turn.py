@@ -1,48 +1,68 @@
 """The turn a reminder starts when it falls due: an `Inbound` nobody is waiting on (`unprompted`) that the person asked
 for earlier (`promised`), so it goes out whatever Initiative would say; on the phone thread of the person it is for
 (`push:<person id>`), with that person as the one it is with, so it reaches where they alone read it
-(`audience.owner_alone`), never a satellite, the tablet or Discord. Her answer is only stored (`later_by` `turn`), not
-queued in the outbox, which drops what waits too long: the push singleton sends it and records the delivery on the
-reminder (`ashley.channels.push.reminders`). It offers only the tools that change nothing (`Inbound.reads_only`), so she can look at their money before she words it
+(`audience.owner_alone`), never Discord. A reminder routed to a room or screen runs on that device's thread
+(`device:<id>`) instead, with the device's audience and place, so what she says is fit for whoever is there: spoken for
+a satellite, which the satellites singleton says (`ashley.channels.voice.reminders`), text for a screen, which its
+page shows as it does any turn of its thread (`Inbound.device_id`). Her answer is only stored (`later_by` `turn`), not
+queued in the outbox, which drops what waits too long; each delivery is recorded on the reminder, and one not reached
+at its room or screen is pushed to the phone (`ashley.channels.push.reminders`). It offers only the tools that change nothing (`Inbound.reads_only`), so she can look at their money before she words it
 and never act on it unattended, unless the reminder names the tools its turn may use (`Reminder.tools`, which its maker
 agreed to: `Inbound.tools_only`), when it carries them out and says what it did. Its conversation is not remembered. A reminder a deposit or withdrawal fired carries it
 (`Reminder.landed`), which she states from its fields. A reminder a tainted turn made starts tainted `inherited`
 (`Reminder.taint`), since its brief was written under outside words. The wake's id is the turn's `source`, so an occurrence handed in twice is one turn."""
 
+from dataclasses import replace
+
 from ...people.model import Person
 from ...senses.deposit_rule import Landed
 from ...senses.wakes import Reminder
-from ..model import Inbound
+from ..model import Device, Inbound
 
 
-def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person) -> Inbound:
-    return Inbound(household_id=reminder.household_id, thread=f"push:{person.id}",
-                   text=said(reminder, person, made_by), kind="chat", medium="text", audience="owner",
-                   speaker_id=person.id, shared=False, place=None, channel="device", remembers=False, later=True,
-                   later_by="turn", source=f"wake:{wake_id}", unprompted=True, promised=not _judged(reminder),
-                   tools_only=reminder.tools, reads_only=reminder.tools is None,
-                   taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in)
+def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, device: Device | None = None) -> Inbound:
+    """The turn; `device` is the satellite or screen its route names (`reminder_device.of`), None for the phone."""
+    phone = Inbound(household_id=reminder.household_id, thread=f"push:{person.id}",
+                    text=said(reminder, person, made_by, device), kind="chat", medium="text", audience="owner",
+                    speaker_id=person.id, shared=False, place=None, channel="device", remembers=False, later=True,
+                    later_by="turn", source=f"wake:{wake_id}", unprompted=True, promised=not _judged(reminder),
+                    tools_only=reminder.tools, reads_only=reminder.tools is None,
+                    taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in)
+    if device is None:
+        return phone
+    room = reminder.route == "room"
+    return replace(phone, thread=f"device:{device.id}", medium="spoken" if room else "text", audience=device.audience,
+                   shared=True, place=device.place, channel="voice" if room else "web",
+                   device_id=None if room else device.id)
 
 
 def _judged(reminder: Reminder) -> bool:
     return reminder.landed is not None and reminder.landed.judged
 
 
-def said(reminder: Reminder, person: Person, made_by: Person) -> str:
+def said(reminder: Reminder, person: Person, made_by: Person, device: Device | None = None) -> str:
     """The reminder as she reads it."""
     asked = "they asked" if made_by.id == person.id else f"{made_by.name} asked"
     return (f"[A reminder you set, not words anyone said: for {person.name}; {asked} you to remind them.]\n"
             f"What to remind them of: {reminder.brief}\n"
-            f"{_landed(reminder.landed)}{_what_to_do(reminder, person)}")
+            f"{_landed(reminder.landed)}{_what_to_do(reminder, person, _where(reminder, device))}")
 
 
-def _what_to_do(reminder: Reminder, person: Person) -> str:
+def _where(reminder: Reminder, device: Device | None) -> str:
+    if device is None:
+        return "It goes to their phone."
+    if reminder.route == "room":
+        return f"It is said aloud in the {device.place}, where others may hear it: say nothing private."
+    return f"It shows on the screen in the {device.place}, where others may see it: say nothing private."
+
+
+def _what_to_do(reminder: Reminder, person: Person, where: str) -> str:
     if reminder.tools is not None:
         return ("They asked you to do this, and agreed to the tools you have now. Do it now with them, then say "
                 "briefly what you did or why you could not.\n")
     return ("If it depends on their money, look first with the tools you have (they only read) and say what you "
             "found, how much or that there is nothing to do. It goes out whatever you find.\n"
-            f"Remind {person.name} of it now, briefly, in your own words. It goes to their phone.")
+            f"Remind {person.name} of it now, briefly, in your own words. {where}")
 
 
 def _landed(landed: Landed | None) -> str:

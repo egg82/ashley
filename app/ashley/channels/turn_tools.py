@@ -3,6 +3,7 @@ turn of the household shares, plus the sources this turn's `Inbound` fields call
 and gone when it ends. A turn that calls for none gets the household's everyday tools alone. Chosen from fields the adapter set, never from what was said."""
 
 from collections.abc import Callable, Mapping
+from functools import partial
 
 from .. import services
 from ..connections.connections import Connections
@@ -44,6 +45,7 @@ from .limits import load as load_limits, smallest_result_chars
 from .devices_tool import DeviceTools
 from .screen_tools import ScreenTools
 from .model import Inbound
+from .wake import reminder_device
 
 EVERYDAY = "everyday"
 """The key the household's everyday tools go under when a turn adds sources; first, so its tools and instructions lead."""
@@ -155,7 +157,8 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["code_host"] = CodeHostTools(household, person, bench, _CODE_HOST, READABLE_CHARS)
         found["claude_code"] = ClaudeCodeTools(household, person, _CLAUDE_CODE, READABLE_CHARS, bench)
         found["watches"] = WatchTools(household, person, bench_id=bench, turn=turn, usable=usable)
-    found["reminders"] = ReminderTools(household, person, private=owner_alone(inbound), turn=turn, usable=usable)
+    found["reminders"] = ReminderTools(household, person, private=owner_alone(inbound), turn=turn, usable=usable,
+                                       routable=partial(reminder_device.takes, household))
     found["devices"] = DeviceTools(household)
     found.update(_screen(inbound))
     found["house_change"] = HouseChangeTools(household, person, private=owner_alone(inbound), turn=turn)

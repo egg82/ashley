@@ -21,12 +21,12 @@ class PostgresDeposits(Deposits):
             raise ValueError(f"an armed reminder's brief is 1 to {MAX_BRIEF} characters, without a NUL, and it has no repeat")
         made = await self._one(
             "INSERT INTO wakes (household_id, kind, trigger, event_id, event, at, due_at, person_id, made_by, brief, "
-            "deposit_rule, route, tools, taint, made_conversation_id, made_turn_id) VALUES (%s, 'reminder', 'event', "
-            "'armed:' || gen_random_uuid(), 'reminder', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "deposit_rule, route, tools, taint, made_conversation_id, made_turn_id, route_device_id) VALUES (%s, 'reminder', "
+            "'event', 'armed:' || gen_random_uuid(), 'reminder', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (reminder.household_id, reminder.due_at, reminder.due_at, reminder.person_id, reminder.made_by,
              reminder.brief, Jsonb(to_json(rule)), reminder.route,
              None if reminder.tools is None else list(reminder.tools), reminder.taint,
-             *((None, None) if reminder.made_in is None else reminder.made_in)))
+             *((None, None) if reminder.made_in is None else reminder.made_in), reminder.device_id))
         if made is None:
             raise DepositsUnavailable("the reminder was not stored")
         return int(made[0])
@@ -39,9 +39,9 @@ class PostgresDeposits(Deposits):
     async def fire(self, armed_id: int, transaction_id: str, landed: Landed | None = None) -> bool:
         made = await self._one(
             "INSERT INTO wakes (household_id, kind, event_id, event, at, due_at, person_id, made_by, brief, landed, "
-            "route, tools, taint, made_conversation_id, made_turn_id) "
+            "route, tools, taint, made_conversation_id, made_turn_id, route_device_id) "
             "SELECT household_id, 'reminder', 'deposit:' || id || ':' || %s, 'reminder', now(), now(), person_id, "
-            "made_by, brief, %s, route, tools, taint, made_conversation_id, made_turn_id FROM wakes WHERE id = %s AND trigger = 'event' AND settled_at IS NULL "
+            "made_by, brief, %s, route, tools, taint, made_conversation_id, made_turn_id, route_device_id FROM wakes WHERE id = %s AND trigger = 'event' AND settled_at IS NULL "
             "ON CONFLICT (household_id, event_id) DO NOTHING RETURNING id",
             (transaction_id, None if landed is None else Jsonb(landed_to_json(landed)), armed_id))
         return made is not None

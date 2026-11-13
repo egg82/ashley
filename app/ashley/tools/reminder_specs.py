@@ -7,7 +7,7 @@ from ..inference.model import ToolSpec
 from ..senses.deposit_rule import DIRECTIONS, MAX_NAME, PAYEE_MATCHES
 from . import reminder_conditions as conditions
 from ..senses.wakes import MAX_BRIEF
-from .reminder_shape import DELIVERY, PROPERTIES, TOOLS
+from .reminder_shape import DELIVERY, DEVICE, PROPERTIES, TOOLS
 
 REMIND, LIST, CANCEL, ON_MONEY, ARM, CHANGE = ("remind", "reminders", "cancel_reminder", "remind_on_money",
                                                "arm_reminder", "change_reminder")
@@ -17,9 +17,10 @@ DEFAULT_TIME = "09:00"
 
 def remind(names: Sequence[str], acting: bool = True) -> ToolSpec:
     """`acting` offers `tools`, the tools its turn may use when it falls due."""
-    return ToolSpec(REMIND, "Set a reminder: at that time you will remind the person of it on their phone, once or "
-                    "repeating, or do what they asked with the tools you name. Returns its id, or for one that acts "
-                    "a proposal to tell them, which is not set until they agree.", {
+    return ToolSpec(REMIND, "Set a reminder: at that time you will remind the person of it (on their phone unless "
+                    "delivery says otherwise), once or repeating, or do what they asked with the tools you name. "
+                    "Returns its id, or for one that acts a proposal to tell them, which is not set until they "
+                    "agree.", {
                         "type": "object",
                         "properties": {
                             "for": {"type": "string", "enum": list(names),
@@ -33,6 +34,7 @@ def remind(names: Sequence[str], acting: bool = True) -> ToolSpec:
                                      "description": "what to remind them of, or what to do, with any amounts and "
                                                     "names they need"},
                             "delivery": DELIVERY,
+                            "device": DEVICE,
                             **({"tools": TOOLS} if acting else {}),
                         },
                         "required": ["for", "at", "what"],
@@ -58,6 +60,7 @@ def change_reminder(acting: bool = True) -> ToolSpec:
                             **{k: _bare(v) for k, v in PROPERTIES.items()},
                             "what": {"type": "string", "maxLength": MAX_BRIEF},
                             "delivery": _bare(DELIVERY),
+                            "device": _bare(DEVICE),
                             **({"tools": _bare(TOOLS)} if acting else {}),
                         },
                         "required": ["id"],

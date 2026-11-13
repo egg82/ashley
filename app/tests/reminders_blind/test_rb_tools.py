@@ -12,7 +12,7 @@ from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.people.model import Household, Person
 from ashley.people.people import People
 from ashley.senses.repeat import Repeat
-from ashley.senses.wakes import Delivery, Due, Outcome, State, Received, Reminder, SaidBefore, Scheduled, Wake, Wakes, WakesUnavailable
+from ashley.senses.wakes import Delivery, Due, Outcome, State, Received, Reminder, Route, SaidBefore, Scheduled, Wake, Wakes, WakesUnavailable
 from ashley.tools.reminders import ReminderTools
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template, run
 from datetime import datetime
@@ -72,10 +72,12 @@ class Memory(Wakes):
     async def refire(self, wake_id: int, after_s: float) -> int:
         return 0
 
-    async def undelivered(self, limit: int, retry_s: float, within_s: float) -> tuple[Delivery, ...]:
+    async def undelivered(self, limit: int, retry_s: float, within_s: float, *, at: Route = "phone", device_tries: int = 0,
+                          device_retry_s: float = 0.0) -> tuple[Delivery, ...]:
         return ()
 
-    async def claim(self, wake_id: int, retry_s: float) -> bool:
+    async def claim(self, wake_id: int, retry_s: float, *, at: Route = "phone", device_tries: int = 0,
+                    device_retry_s: float = 0.0) -> bool:
         return False
 
     async def delivered(self, wake_id: int, reached: bool) -> None:

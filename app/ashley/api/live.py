@@ -4,8 +4,9 @@ at least every `heartbeat_s`, which keeps the Cloudflare tunnel and proxies from
 stream ends after `stream_s`, so the browser reconnects and its session is checked again. Nothing about the screen is
 kept beyond the open connection: a screen that reconnects reads back what it shows, as on a `resync`.
 
-A person's stream is also recorded as an open screen (`ashley.live.screens.Screens`), refreshed at the heartbeat, so a
-turn nobody watches can tell they are away; the record failing never ends the stream (`live.screens_unavailable`).
+A person's stream, and a device's (the kiosk's), is also recorded as an open screen (`ashley.live.screens.Screens`),
+refreshed at the heartbeat, so a turn nobody watches can tell they are away and a reminder routed to the kiosk whether
+it was shown; the record failing never ends the stream (`live.screens_unavailable`).
 
 Logs `live.opened` with the person id; `live.closed` (`fanout`) when it ends. `stream_to` is shared with the kiosk's own
 feed (`kiosk_live`)."""
@@ -58,12 +59,13 @@ def stream_to(viewer: Watcher, **opened: int) -> Response:
         body = ErrorResponse(code="unavailable", detail="no live feed; ask again for changes")
         return JSONResponse(status_code=503, content=body.model_dump())
     logs.info(log, "live.opened", **opened)
-    return EventStream(_stream(subscription, viewer if isinstance(viewer, Viewer) else None), headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return EventStream(_stream(subscription, viewer), headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-async def _stream(subscription: Subscription, person: Viewer | None) -> AsyncIterator[bytes]:
+async def _stream(subscription: Subscription, viewer: Watcher) -> AsyncIterator[bytes]:
     ends = time.monotonic() + CONFIG.stream_s
-    screen = None if person is None else await _screen(lambda s: s.opened(person.household_id, person.person_id))
+    screen = await _screen(lambda s: s.opened(viewer.household_id, viewer.person_id) if isinstance(viewer, Viewer)
+                           else s.device_opened(viewer.household_id, viewer.device_id))
     beat_at = time.monotonic()
     try:
         async with subscription:

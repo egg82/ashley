@@ -8,7 +8,7 @@ from ..db.database import Database, DatabaseUnavailable
 from .screens import Screens, ScreensUnavailable
 
 LEFT_BEHIND_S = 86400
-"""How long a row survives with no heartbeat before the next opening by that person removes it."""
+"""How long a row survives with no heartbeat before the next opening by that person or device removes it."""
 
 
 class PostgresScreens(Screens):
@@ -22,6 +22,13 @@ class PostgresScreens(Screens):
                            (household_id, person_id))
         return int(made[0][0])
 
+    async def device_opened(self, household_id: int, device_id: int) -> int:
+        await self._run("DELETE FROM live_screens WHERE device_id = %s AND seen_at < now() - make_interval(secs => %s)",
+                        (device_id, LEFT_BEHIND_S))
+        made = await self._run("INSERT INTO live_screens (household_id, device_id) VALUES (%s, %s) RETURNING id",
+                               (household_id, device_id))
+        return int(made[0][0])
+
     async def beat(self, screen_id: int) -> None:
         await self._run("UPDATE live_screens SET seen_at = now() WHERE id = %s", (screen_id,))
 
@@ -31,6 +38,11 @@ class PostgresScreens(Screens):
     async def looking(self, person_id: int, within_s: float) -> bool:
         found = await self._run("SELECT EXISTS (SELECT 1 FROM live_screens WHERE person_id = %s "
                                 "AND seen_at > now() - make_interval(secs => %s))", (person_id, within_s))
+        return bool(found[0][0])
+
+    async def showing(self, device_id: int, within_s: float) -> bool:
+        found = await self._run("SELECT EXISTS (SELECT 1 FROM live_screens WHERE device_id = %s "
+                                "AND seen_at > now() - make_interval(secs => %s))", (device_id, within_s))
         return bool(found[0][0])
 
     async def _run(self, query: LiteralString, params: tuple[Any, ...]) -> list[tuple[Any, ...]]:

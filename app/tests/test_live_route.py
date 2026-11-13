@@ -100,6 +100,10 @@ class RecordingScreens(Screens):
         self.calls.append(("opened", person_id))
         return 41
 
+    async def device_opened(self, household_id: int, device_id: int) -> int:
+        self.calls.append(("device_opened", device_id))
+        return 42
+
     async def beat(self, screen_id: int) -> None:
         self.calls.append(("beat", screen_id))
 
@@ -108,6 +112,9 @@ class RecordingScreens(Screens):
 
     async def looking(self, person_id: int, within_s: float) -> bool:
         return any(c == ("opened", person_id) for c in self.calls) and ("closed", 41) not in self.calls
+
+    async def showing(self, device_id: int, within_s: float) -> bool:
+        return any(c == ("device_opened", device_id) for c in self.calls) and ("closed", 42) not in self.calls
 
 
 def test_a_persons_open_stream_is_recorded_refreshed_while_it_lives_and_removed_when_it_ends(fake: FakeLive) -> None:

@@ -1,4 +1,4 @@
-"""Saying one reply on a satellite, for the outbox's replies (`later`): a clip,
+"""Saying one reply on a satellite, for the outbox's replies (`later`) and fired reminders (`reminders`): a clip,
 played on the satellite's room speaker when it names one and Home Assistant accepts, else on the satellite's own media
 player as an announcement."""
 

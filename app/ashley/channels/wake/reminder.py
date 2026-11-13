@@ -11,13 +11,14 @@ from ...people.people import People
 from ...senses.repeat import next_after
 from ...senses.wakes import Outcome, Reminder
 from ..respond import RespondRefused, respond
-from . import reminder_turn
+from . import reminder_device, reminder_turn
 
 
 async def fired(wake_id: int, reminder: Reminder) -> tuple[Outcome, datetime | None]:
     """What came of it (`turn`, `failed` when the model refused, `no_person` when whom it is for or who asked is no
-    longer of the household) and its next occurrence, or None for a one-off. Raises PeopleUnavailable and
-    RespondUnavailable, which leave it due."""
+    longer of the household) and its next occurrence, or None for a one-off. Its turn is on the device its route names
+    when that device still fits (`reminder_device.of`), else the phone's. Raises PeopleUnavailable, DevicesUnavailable
+    and RespondUnavailable, which leave it due."""
     household = await services.get(People).household(reminder.household_id)
     if household is None:
         return "no_person", None
@@ -28,7 +29,9 @@ async def fired(wake_id: int, reminder: Reminder) -> tuple[Outcome, datetime | N
     if person is None or made_by is None:
         return "no_person", nxt
     try:
-        await respond(reminder_turn.inbound(wake_id, reminder, person, made_by))
+        listed = await reminder_device.of(reminder)
+        await respond(reminder_turn.inbound(wake_id, reminder, person, made_by,
+                                            None if listed is None else listed.device))
     except RespondRefused:
         return "failed", nxt
     return "turn", nxt

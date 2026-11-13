@@ -1,5 +1,6 @@
 """The open screens in Postgres: a screen counts while it is beating and not once it closes or goes quiet, and the rows
-dead pods left behind are removed by the next opening."""
+dead pods left behind are removed by the next opening. A device's screen (the kiosk) is recorded the same way, apart
+from any person's."""
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -11,6 +12,7 @@ from ashley.live.screens import Screens, ScreensUnavailable
 from contract.contract_support import unreachable_conninfo
 from contract.conversations_support import db_url as db_url, household, migrated_template as migrated_template
 from contract.conversations_support import person, run, scalar
+from screen_bench_support import device
 
 
 @asynccontextmanager
@@ -63,4 +65,24 @@ def test_rows_left_by_dead_pods_are_removed_by_the_next_opening_and_current_ones
             await screens.opened(home, alana)
             ids = scalar(db_url, "SELECT coalesce(json_agg(id ORDER BY id), '[]') FROM live_screens")
             assert dead not in ids and live in ids and len(ids) == 2
+    run(go())
+
+
+def test_a_devices_screen_counts_while_open_and_is_no_persons(db_url: str) -> None:
+    home = household(db_url)
+    alana = person(db_url, home)
+    kiosk, other = device(db_url, home, "hall"), device(db_url, home, "den")
+
+    async def go() -> None:
+        async with stores(db_url) as screens:
+            shown = await screens.device_opened(home, kiosk)
+            assert await screens.showing(kiosk, 60) and not await screens.showing(other, 60)
+            assert not await screens.looking(alana, 60)
+            scalar(db_url, "WITH u AS (UPDATE live_screens SET seen_at = now() - interval '2 minutes' WHERE id = %s "
+                           "RETURNING 1) SELECT count(*) FROM u", (shown,))
+            assert not await screens.showing(kiosk, 60)
+            await screens.beat(shown)
+            assert await screens.showing(kiosk, 60)
+            await screens.closed(shown)
+            assert not await screens.showing(kiosk, 60)
     run(go())
