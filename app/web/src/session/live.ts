@@ -4,10 +4,12 @@
 // may have missed something), and her cue of a video piece's player, go to whoever listens. While it is down, `liveUp`
 // is false and a room that shows something live looks for itself.
 import { liveFeed } from '../api/client';
+import { reportVisibility } from '../api/screens';
 import { benchChangedBy, herMoved } from '../shell/her/moves';
 import { herLive, herLiveLost } from '../shell/her/state';
 import type { Cue } from '../rooms/workshop/pieces/player';
 import { createFeed } from './feed';
+import { createReporting, screenToken } from './screen';
 
 const threadTurns = new Set<(thread: string) => void>();
 const threadFailures = new Set<(thread: string, why: TurnFailedWhy) => void>();
@@ -16,7 +18,7 @@ const screenChanges = new Set<(device: number, seq: number) => void>();
 const benchCues = new Set<(bench: number, piece: number, cue: Cue, by: CueBy) => void>();
 const resyncs = new Set<() => void>();
 
-const feed = createFeed(liveFeed, {
+const feed = createFeed(() => liveFeed(screenToken), {
   heard(event) {
     if (event.type === 'state') herLive(event.turn, event.state, event.at_most_s * 1000);
     else if (event.type === 'turn') threadTurns.forEach((h) => h(event.thread));
@@ -38,10 +40,19 @@ const feed = createFeed(liveFeed, {
 
 /** Whether the feed is open; while it is not, nothing it would have said is heard. */
 export const liveUp = feed.up;
-/** Opens the feed, unless it is open or opening. */
-export const openLive = feed.open;
+const reporting = createReporting(feed.up, (visible) => reportVisibility(screenToken, visible));
+
+/** Opens the feed, unless it is open or opening, and reports whether the page is in the foreground while it is up. */
+export function openLive(): void {
+  feed.open();
+  reporting.start();
+}
+
 /** Closes the feed and stops reopening it (signed out). */
-export const closeLive = feed.close;
+export function closeLive(): void {
+  reporting.stop();
+  feed.close();
+}
 
 /** Calls `heard` with the thread each time one of the person's threads gets a turn; returns the unsubscribe. */
 export function onThreadTurn(heard: (thread: string) => void): () => void {

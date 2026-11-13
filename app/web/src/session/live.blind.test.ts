@@ -14,6 +14,8 @@ const stubs: Record<string, string> = {
   '../api/client': 'export const liveFeed = () => null;',
   '../shell/her/moves': 'export const herMoved = () => {}; export const benchChangedBy = (...a) => { (globalThis.bench ??= []).push(a); };',
   '../shell/her/state': 'export const herLive = () => {}; export const herLiveLost = () => {};',
+  '../api/screens': 'export const reportVisibility = async () => {};',
+  './screen': 'export const screenToken = "t"; export const createReporting = () => ({ start() {}, stop() {} });',
   './feed': 'export const createFeed = (_open, handlers) => { globalThis.feedHandlers = handlers; return { up: () => false, open: () => {}, close: () => {} }; };',
 };
 const built = await build({

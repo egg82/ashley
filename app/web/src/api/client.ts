@@ -254,16 +254,17 @@ export async function getBenchConversation(id: number): Promise<Ok<'/api/benches
   return answer(await fetch(`/api/benches/${id}/conversation`), 200, 'GET /api/benches/{id}/conversation');
 }
 
-/** The live feed for the signed-in person: Server-Sent Events, one `LiveEvent` per message. */
-export function liveFeed(): EventSource {
+/** The live feed for the signed-in person: Server-Sent Events, one `LiveEvent` per message. `screen` is this page's
+ * token (`session/screen.ts`), the name its visibility reports go by. */
+export function liveFeed(screen: string): EventSource {
   const path: keyof paths = '/api/live';
-  return new EventSource(path);
+  return new EventSource(`${path}?screen=${screen}`);
 }
 
 /** The live feed for the paired kiosk, as its device: Server-Sent Events, one `LiveEvent` per message. */
-export function kioskLiveFeed(): EventSource {
+export function kioskLiveFeed(screen: string): EventSource {
   const path: keyof paths = '/api/kiosk/live';
-  return new EventSource(path);
+  return new EventSource(`${path}?screen=${screen}`);
 }
 
 /** Her VAPID public key, which this browser subscribes with. 503 when push is not set up here. */

@@ -1279,7 +1279,8 @@ export interface paths {
         };
         /**
          * Live
-         * @description 200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`.
+         * @description 200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`. `screen` is the token the page made at load,
+         *     which names this screen when it reports its visibility (`POST /api/screens/visibility`).
          */
         get: operations["live"];
         put?: never;
@@ -1349,6 +1350,27 @@ export interface paths {
          * @description 200 `PushStateResponse`; changes nothing. 401; 403; 422; 503.
          */
         post: operations["find_push_subscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/screens/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Visibility
+         * @description 204; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error for a body outside
+         *     `ScreenVisibility`; 503 `unavailable`.
+         */
+        post: operations["report_visibility"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1447,11 +1469,33 @@ export interface paths {
         /**
          * Kiosk Live
          * @description 200 a stream of `LiveEvent` for the device; 401 `unauthorized`; 503 `unavailable`: no live feed, so the page
-         *     reads for itself.
+         *     reads for itself. `screen` is as for `GET /api/live`.
          */
         get: operations["kiosk_live"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosk/screen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kiosk Screen
+         * @description 204, the device's screen that opened its feed under `body.screen` is in the foreground or not (as
+         *     `POST /api/screens/visibility`); 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
+         *     `unavailable`.
+         */
+        post: operations["kiosk_screen"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2993,6 +3037,11 @@ export interface components {
         ForgetResponse: {
             /** Deleted */
             deleted: number;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
         };
         /**
          * HealthResponse
@@ -5124,6 +5173,20 @@ export interface components {
             run_language: string;
         };
         /**
+         * ScreenVisibility
+         * @description What a page reports about itself: `screen` is the token it made at load and opened its feed under, `visible`
+         *     whether it is in the foreground now (the Page Visibility API's `visible`). Sent on every change and on a heartbeat.
+         */
+        ScreenVisibility: {
+            /**
+             * Screen
+             * Format: uuid
+             */
+            screen: string;
+            /** Visible */
+            visible: boolean;
+        };
+        /**
          * SettingChange
          * @description One key a write changed: the values themselves are not listed. `edited_by` is null once the person is gone.
          */
@@ -5545,6 +5608,19 @@ export interface components {
             type: "undo";
             /** Seq */
             seq: number;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * VaultWrite
@@ -9543,7 +9619,9 @@ export interface operations {
     };
     live: {
         parameters: {
-            query?: never;
+            query?: {
+                screen?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9566,6 +9644,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description `unavailable`: no live feed; look for changes by asking again */
@@ -9797,6 +9884,64 @@ export interface operations {
             };
         };
     };
+    report_visibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenVisibility"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description `unavailable`: the record of open screens could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     kiosk_pair: {
         parameters: {
             query?: never;
@@ -10004,7 +10149,9 @@ export interface operations {
     };
     kiosk_live: {
         parameters: {
-            query?: never;
+            query?: {
+                screen?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -10029,6 +10176,15 @@ export interface operations {
                     "text/event-stream": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
             /** @description `unavailable`: a system it needs could not be reached */
             503: {
                 headers: {
@@ -10036,6 +10192,64 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kiosk_screen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenVisibility"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthorized`: not paired, a revoked device, or from the public internet */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: from another site, or not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description `unavailable`: a system it needs could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
