@@ -67,6 +67,8 @@ NOT_HOUSEHOLD_DATA = {
     "signin_pending": "a sign-in in flight: hashed state, a PKCE verifier, a nonce and a path, before anyone is known",
     "signin_unmapped": "OIDC accounts refused because no person has them, so no household either",
     "proton_bridge": "the one Bridge the deployment runs: its vault holds every household's Proton sessions at once, and its epoch and heartbeat say nothing about any one",
+    "model_catalogue_fetch": "models.dev's public list of models and prices, one row for the deployment",
+    "model_catalogue_overrides": "an admin's deployment-wide corrections to that list: a model's field and who set it",
     "file_orphans": "object-store keys the sweep found unreferenced, which name their household and file hash and span households",
 }
 
