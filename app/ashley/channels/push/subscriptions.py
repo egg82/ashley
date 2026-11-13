@@ -1,5 +1,6 @@
 """The Subscriptions service (`ashley.services`): which browsers each person has asked to be pushed to. Callers import
-only this module; the Postgres implementation lives beside it. Wired only when push is (`config.vapid`); otherwise the
+only this module; the Postgres implementation lives beside it. Wired once the deployment's secrets are settled and push is
+(`config.identity`); otherwise the
 Null Object raises, so the routes answer 503 and the turn loop offers no phone.
 
 An endpoint is a secret URL that lets anyone push to that browser, and the keys are its encryption keys: none of them
