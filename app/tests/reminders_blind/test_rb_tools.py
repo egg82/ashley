@@ -12,7 +12,7 @@ from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.people.model import Household, Person
 from ashley.people.people import People
 from ashley.senses.repeat import Repeat
-from ashley.senses.wakes import Delivery, Due, Outcome, State, Received, Reminder, Scheduled, Wake, Wakes, WakesUnavailable
+from ashley.senses.wakes import Delivery, Due, Outcome, State, Received, Reminder, SaidBefore, Scheduled, Wake, Wakes, WakesUnavailable
 from ashley.tools.reminders import ReminderTools
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template, run
 from datetime import datetime
@@ -83,6 +83,9 @@ class Memory(Wakes):
 
     async def dismiss(self, household_id: int, person_id: int, wake_id: int) -> bool:
         return False
+
+    async def said_before(self, wake_id: int, person_id: int) -> SaidBefore:
+        raise AssertionError("a tool never reads a house wake's history")
 
 
 @pytest.fixture

@@ -54,7 +54,7 @@ ALLOWED: dict[str, set[str]] = {
     "criteria": set[str](),
     "watches": {"connections", "criteria", "db", "errands", "herdr", "logs", "mail", "services", "text"},
     "ledger": {"services"},
-    "senses": {"criteria", "db", "home_assistant", "ledger", "logs", "people", "services"},
+    "senses": {"conversations", "criteria", "db", "home_assistant", "ledger", "logs", "people", "services"},
     "services": {"logs"},
     "signin": {"db", "logs", "people", "services", "settings"},
     "skills": {"db", "logs", "services", "text"},

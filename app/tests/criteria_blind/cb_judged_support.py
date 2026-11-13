@@ -13,7 +13,8 @@ from ashley.channels.push import reminders as push_reminders
 from ashley.channels.push.config import load as load_push_config
 from ashley.channels.push.sender import Notification, Sender, Sent
 from ashley.channels.push.subscriptions import Browser, Subscription, Subscriptions
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.live.live import Live
 from ashley.people.model import Account, Household, Person
@@ -117,7 +118,7 @@ async def stack(world: World) -> AsyncGenerator[Stack]:
         services.register(Workshop, PostgresWorkshop(db, workshop_rules.load()))
         services.register(Live, FakeLive())
         services.register(Outbox, PostgresOutbox(db, 600.0, POLICY))
-        services.register(Initiative, WorthSaying())
+        services.register(Initiative, speaking())
         home = Household(world.who.household_id, "home", "America/Denver", "", (world.who, sam))
         services.register(People, Folk(home))
         for pod in (world.first, world.second):

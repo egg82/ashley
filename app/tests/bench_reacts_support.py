@@ -18,7 +18,8 @@ from ashley.db.pool import PoolDatabase
 from ashley.inference.inference import Inference
 from ashley.inference.model import Message, Prompt, ToolSpec
 from ashley.inference.reply import Reply
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.people.model import Account, Household, Person
 from ashley.people.people import People
 from ashley.senses.presence import Presence
@@ -122,7 +123,7 @@ async def world(url: str) -> AsyncGenerator[World]:
     services.register(Tools, tools)
     services.register(Inference, model)
     services.register(Workshop, w.workshop)
-    services.register(Initiative, WorthSaying())
+    services.register(Initiative, speaking())
     try:
         yield w
     finally:

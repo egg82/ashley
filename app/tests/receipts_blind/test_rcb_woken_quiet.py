@@ -7,7 +7,8 @@ from datetime import UTC, datetime
 import pytest
 from ashley import services
 from ashley.channels.landing import Landing
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.inference.reply import Reply
 from ashley.senses.outside_record import DoneAction, OutsideRecord
 from ashley.senses.proposals import Proposals
@@ -21,7 +22,7 @@ QUIET_REPLY = Reply(spoken="Handled.", text="Handled.", says="none")
 
 @pytest.fixture(autouse=True)
 def initiative() -> Generator[None]:
-    services.register(Initiative, WorthSaying())
+    services.register(Initiative, speaking())
     yield
     services.unregister(Initiative)
 

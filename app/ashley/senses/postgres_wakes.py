@@ -10,7 +10,9 @@ from ..db.database import Database, DatabaseUnavailable
 from .deposit_rule import from_json as rule_from_json
 from .deposit_rule import landed_from_json
 from .repeat import from_json, to_json
-from .wakes import MAX_BRIEF, MAX_TOOLS, Delivery, Due, Outcome, Received, Reminder, Scheduled, Wake, Wakes, WakesUnavailable, WatchWake
+from ..conversations.quiet import QUIET
+from .wakes import (MAX_BRIEF, MAX_TOOLS, Delivery, Due, Outcome, Received, Reminder, SaidBefore, Scheduled, Wake, Wakes,
+                    WakesUnavailable, WatchWake)
 
 _DUE = ("SELECT id, kind, household_id, event_id, event, who, what, at, person_id, made_by, brief, due_at, repeat, "
         "extract(epoch FROM clock_timestamp() - due_at), landed, route, tools, watch_id, changes, taint, made_conversation_id, made_turn_id FROM wakes WHERE settled_at IS NULL AND trigger = 'time' "
@@ -36,6 +38,18 @@ _SETTLE_AND_NEXT = (
     "made_by, brief, "
     "repeat, route, tools, taint, made_conversation_id, made_turn_id FROM s WHERE kind = 'reminder' AND repeat IS NOT NULL RETURNING id) "
     "SELECT (SELECT count(*) FROM s), (SELECT count(*) FROM n)")
+
+_HERS: LiteralString = (
+    "SELECT max(a.at) FROM wakes o "
+    "JOIN turns h ON h.household_id = o.household_id AND h.source = 'wake:' || o.id "
+    "JOIN turns a ON a.conversation_id = h.conversation_id AND a.answers = h.id AND a.author = 'ashley' "
+    "WHERE o.household_id = w.household_id AND o.kind = 'house' AND o.who = w.who AND o.id <> w.id")
+_SAID_BEFORE = (
+    "SELECT (SELECT max(t.at) FROM turns t WHERE t.household_id = w.household_id AND t.author = 'person' "
+    "AND t.speaker_id = %(person)s), "
+    "(" + _HERS + " AND o.event = w.event), "
+    "(" + _HERS + " AND a.text <> %(quiet)s) "
+    "FROM wakes w WHERE w.id = %(wake)s AND w.kind = 'house'")
 
 
 def _due(r: tuple[Any, ...]) -> Due:
@@ -184,6 +198,10 @@ class PostgresWakes(Wakes):
     async def prune(self, older_than_s: float) -> int:
         return await self._count("DELETE FROM wakes WHERE settled_at < now() - make_interval(secs => %s) "
                                  "AND NOT coalesce(" + _LISTED + ", false)", (older_than_s,))
+
+    async def said_before(self, wake_id: int, person_id: int) -> SaidBefore:
+        row = await self._one(_SAID_BEFORE, {"wake": wake_id, "person": person_id, "quiet": QUIET})
+        return SaidBefore(None, None, None) if row is None else SaidBefore(row[0], row[1], row[2])
 
     async def _one(self, query: LiteralString, params: tuple[Any, ...] | dict[str, Any]) -> tuple[Any, ...] | None:
         try:

@@ -67,7 +67,8 @@ from .memory.inference_writer import InferenceFactWriter
 from .memory.memory import FactWriter, Memory
 from .memory.postgres import PostgresMemory
 from .home_assistant import house_values, irreversible, rest_automations, zone
-from .initiative.initiative import Initiative, WorthSaying
+from .initiative.initiative import Initiative, Scored
+from .initiative.weights import WEIGHTS
 from .live import live as live_config
 from .live.live import Live
 from .live.postgres import PostgresLive
@@ -264,7 +265,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Wakes, PostgresWakes(services.get(Database)))
     services.register(Deposits, PostgresDeposits(services.get(Database)))
     register_proposals(services.get(Database), *outside_config.keeps())
-    services.register(Initiative, WorthSaying())
+    services.register(Initiative, Scored(WEIGHTS))
     if settings.sandbox_token_file:
         api = wire_sandbox(settings, closers)
         if settings.mail_bridge_image:

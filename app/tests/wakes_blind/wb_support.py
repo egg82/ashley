@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 import psycopg
-from ashley.senses.wakes import Delivery, Due, Outcome, Received, Reminder, Scheduled, Wake, Wakes
+from ashley.senses.wakes import Delivery, Due, Outcome, Received, Reminder, SaidBefore, Scheduled, Wake, Wakes
 
 NOW = datetime(2026, 10, 31, 12, 0, tzinfo=UTC)
 
@@ -90,6 +90,9 @@ class MemoryWakes(Wakes):
 
     async def dismiss(self, household_id: int, person_id: int, wake_id: int) -> bool:
         return False
+
+    async def said_before(self, wake_id: int, person_id: int) -> SaidBefore:
+        return SaidBefore(None, None, None)
 
 
 def ago(seconds: float) -> datetime:

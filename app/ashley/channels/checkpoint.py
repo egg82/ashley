@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any, get_args
 
 from ..inference.model import Entry, Image, Message, SystemPrompt, ToolCall, ToolCalls, ToolResult, ToolResults
+from ..initiative.moment import Moment
 from ..tools.action_judge import JudgeUnavailable, Verdict, checked
 from .escalation import Trigger
 from .keep import Act
@@ -150,7 +151,13 @@ def _inbound(raw: dict[str, Any]) -> Inbound:
     if origin is not None and origin not in get_args(Taint):
         raise ValueError("not a taint origin")
     made = _pair(fields.pop("made_in", None))
-    return Inbound(**fields, taint=origin, made_in=made)
+    moment = fields.pop("moment", None)
+    return Inbound(**fields, taint=origin, made_in=made, moment=None if moment is None else _moment(moment))
+
+
+def _moment(raw: dict[str, Any]) -> Moment:
+    return Moment(str(raw["seed"]), raw["hour"], raw["others_home"], raw["since_heard_s"], raw["since_greeted_s"],
+                  raw["since_spoke_s"])
 
 
 def _judged(raw: Any) -> dict[str, Verdict]:

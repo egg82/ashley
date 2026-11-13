@@ -13,6 +13,7 @@ from ashley.people.model import Person
 from ashley.watches.registry import KINDS
 from ashley.senses.wakes import Reminder, Wake, WatchWake
 from ashley.workshop.wake_rule import WakeRule
+from ashley.initiative.moment import Moment
 from discord_support import ALANA, CHANNEL, DM_CHANNEL, FAMILY, GUILD, ME, message
 from watch_job_support import watch as a_watch
 
@@ -27,7 +28,7 @@ def test_an_inbound_is_untainted_unless_its_builder_says_so() -> None:
 
 def test_a_house_wake_is_untainted() -> None:
     wake = Wake(1, "e1", "arrived", "person.alana", "home", datetime(2026, 11, 6, tzinfo=UTC))
-    assert wake_turn.inbound(5, wake, WakeRule("arrived", "greet", ()), PERSON).taint is None
+    assert wake_turn.inbound(5, wake, WakeRule("arrived", "greet", ()), PERSON, Moment("wake:5"), "full").taint is None
 
 
 def test_a_watch_of_an_outside_kind_is_tainted_on_the_phone_thread_and_on_its_bench() -> None:
