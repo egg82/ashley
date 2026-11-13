@@ -12,7 +12,6 @@ from fastapi.testclient import TestClient
 from house_double_support import MemoryHouse, state
 from oauth_home_support import ORIGIN, Home as People, as_, client as client, google as google, home as home
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import HomeAssistant
 import httpx2
 
@@ -138,7 +137,7 @@ class OneHouse(Homes):
         self._house = house
 
     async def of(self, household_id: int) -> Home | None:
-        return Home(household_id, HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test:8123")), NullAutomations(), self._house)
+        return Home(household_id, HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test:8123")), self._house)
 
     async def check(self, base_url: str, token: str) -> None:
         raise AssertionError("not checked here")

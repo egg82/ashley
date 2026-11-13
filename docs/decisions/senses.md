@@ -44,8 +44,8 @@ a call of HA's `rest_command.ashley_wake` with structured data only: the event (
 (`ashley.workshop.wake_action`) refuses anything else as `bad_automation`, and the intake refuses it again as rendered.
 The rest command is set up once in HA's configuration, posting to `/api/wakes` with the house's device token.
 Her automation guidance (`bench_automation_specs.instructions`) carries the exact action and says, from the house
-(`Automations.has_service`, reading HA's service list: wired, not wired, or unknown when HA cannot be read), whether
-this house has the rest command; she is told to look the house's setup up with her house tools before asking the
+(`ashley.home_assistant.house.has_action`, reading the house's actions: wired, not wired, or unknown when the house
+cannot be read), whether this house has the rest command; she is told to look the house's setup up with her house tools before asking the
 person, and to ask only what the house cannot tell her.
 
 - **The intake is a device route, for the house's device alone.** HA is a device of the household

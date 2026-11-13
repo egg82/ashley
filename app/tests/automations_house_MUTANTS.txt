@@ -4,9 +4,14 @@ exactly once, the file restored after, the unplanted copy green first). Suites: 
 test_install_piece.py, test_bench_automations.py, test_workshop_install_routes.py and test_automations_house_pins.py,
 which are the callers' tests and outlive the implementation behind them.
 
-Pass R, before the move onto the House port, planted in home_assistant/rest_automations.py. 21 planted. Without the
-pins R1, R7, R14, R16 and R19 survived; test_automations_house_pins.py kills R1, R7 and R16. R14 and R19 survive and no
-caller can tell them apart: the install ignores what a delete returns, and no caller reads the listing's order.
+Pass R ran at the commit that added this list, before the move onto the House port, on
+home_assistant/rest_automations.py (since deleted; check out that commit to plant it again). 21 planted. Without the pins R1, R7, R14, R16 and R19 survived;
+test_automations_house_pins.py kills R1, R7 and R16. R14 and R19 survive and no caller can tell them apart: the install
+ignores what a delete returns, and no caller reads the listing's order (the House lists in Home Assistant's).
+
+Pass A, the script's list now, plants the same behaviours in the House adapter (ha_house.py, ha_changes.py,
+ha_rest.py) and `house.has_action`, after the move. 21 planted. A7 (HA's 400 to turn on or off taken as done, a path
+the REST client never had) survived and the 400 case of the turn-off pin kills it. A14 survives, equivalent as R14.
 
 #    mutant
 R1   the written automation is looked for once, never waited for
@@ -30,3 +35,25 @@ R18  every service reads as wired
 R19  the listing not sorted                                (survives, equivalent for the callers)
 R20  delete sends nothing
 R21  a transport error escapes as itself
+
+A1   the written automation is looked for once, never waited for
+A2   any automation's thing is taken as the written one's
+A3   the written automation is never found
+A4   the config is written under another id
+A5   turn on and turn off swapped
+A6   the thing to turn on or off not sent
+A7   HA's 400 to turn on or off taken as done
+A8   every automation read as on
+A9   last ran never read
+A10  no automation's thing read
+A11  the name read as the thing
+A12  automations with no config id (YAML) left out
+A13  a missing config read as an empty one
+A14  deleting a missing automation reads as deleted       (survives, equivalent for the callers)
+A15  HA's refusal of a config read as out of reach
+A16  any status taken as success
+A17  a house out of reach says the action is not offered
+A18  every action reads as offered
+A19  no automation's config id read
+A20  delete sends nothing
+A21  a transport error escapes as itself

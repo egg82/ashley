@@ -6,7 +6,6 @@ one Home per household given, which can go down."""
 from dataclasses import dataclass, field
 
 import httpx2
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes, HomesUnavailable
 from ashley.home_assistant.house import House, NullHouse
@@ -57,7 +56,7 @@ class AnyHousehold(Homes):
         self._home_assistant = home_assistant or HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test:8123"))
 
     async def of(self, household_id: int) -> Home | None:
-        return Home(household_id, self._home_assistant, NullAutomations(), self._house)
+        return Home(household_id, self._home_assistant, self._house)
 
     async def check(self, base_url: str, token: str) -> None:
         raise NotImplementedError
@@ -70,7 +69,7 @@ class ByHousehold(Homes):
         self.asked: list[int] = []
 
     def give(self, household_id: int, base: str, stand: StandIn | None = None) -> Home:
-        home = Home(household_id, (stand or StandIn()).connect(base, "t"), NullAutomations(), NullHouse())
+        home = Home(household_id, (stand or StandIn()).connect(base, "t"), NullHouse())
         self.homes[household_id] = home
         return home
 

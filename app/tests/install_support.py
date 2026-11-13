@@ -1,5 +1,5 @@
 """A world for installing a bench's automation pieces over a real database: the Postgres Workshop and Installs on one
-pool, a fake Home Assistant (`automations_support.FakeHouse`) as the house's automations, and a Live that keeps what it
+pool, a fake Home Assistant (`automations_support.FakeHouse`) as the household's house, and a Live that keeps what it
 heard; and the commands that put a proposed automation piece on a bench."""
 
 import json

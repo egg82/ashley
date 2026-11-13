@@ -23,7 +23,7 @@ from ashley.tools.everyday import Everyday, HomesEveryday, HouseholdTools
 from ashley.tools.house_act import Rules
 from ashley.tools.house_tools import HouseTools
 from ashley.tools.tools import Catalogue, Tools
-from hha_blind_support import A_TOKEN, A_URL, B_TOKEN, B_URL, CONFIG, ENV, FakeHouses, HeldConnections
+from hha_blind_support import A_TOKEN, A_URL, B_TOKEN, B_URL, ENV, FakeHouses, HeldConnections
 from connection_legacy_support import remove_of
 
 A, B, NONE = 2, 3, 4
@@ -71,7 +71,7 @@ class World:
         self.held = HeldConnections()
         self.held.connect(A, A_URL, A_TOKEN)
         self.held.connect(B, B_URL, B_TOKEN)
-        self.homes = ConnectedHomes(self.held, CONFIG, self.houses.connect, env=ENV, house=self.houses.house)
+        self.homes = ConnectedHomes(self.held, self.houses.connect, env=ENV, house=self.houses.house)
         house = home_assistant_config.load()
         services.register(Homes, self.homes)
         services.register(Tools, Web())

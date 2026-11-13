@@ -13,7 +13,6 @@ from ashley.evals import house, house_report
 from ashley.evals.house import Billed, Seat
 from ashley.evals.house_guard import Attempt, GuardedTools
 from ashley.evals.house_readonly import ReadOnlyHomes, ReadOnlyHouse
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes
 from ashley.inference.inference import Inference
@@ -86,7 +85,7 @@ def test_the_house_under_her_per_turn_tools_reads_through_and_keeps_every_change
 
 def test_every_household_gets_the_read_only_house_for_the_run() -> None:
     refused: list[Attempt] = []
-    home = Home(1, HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test")), NullAutomations(), MemoryHouse())
+    home = Home(1, HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test")), MemoryHouse())
     got = asyncio.run(ReadOnlyHomes(AnyHome(home), refused).of(1))
     assert got is not None and isinstance(got.house, ReadOnlyHouse) and got.household_id == 1
 

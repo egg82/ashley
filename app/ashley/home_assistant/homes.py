@@ -1,4 +1,4 @@
-"""The Homes service (`ashley.services`): which Home Assistant a household reaches, and its automations there. A
+"""The Homes service (`ashley.services`): which Home Assistant a household reaches, and its house there. A
 household's HA is its `home_assistant` connection (`ashley.connections`); every caller that touches a house asks with
 the household it already holds, so no household reaches another's. `connected_homes.ConnectedHomes` implements it.
 
@@ -10,7 +10,6 @@ from typing import Literal
 
 from .. import services
 from ..services import Service
-from .automations import Automations
 from .client import HomeAssistant
 from .house import House, NullHouse
 
@@ -36,12 +35,11 @@ class HomesUnavailable(Exception):
 
 @dataclass(frozen=True, eq=False)
 class Home:
-    """One household's Home Assistant: the client for its instance, its automations over that client, and the house as a
-    `House`. The same object while the household's connection is unchanged, so what is built on it may be kept with it."""
+    """One household's Home Assistant: the client for its instance, and the house over that client as a `House`. The same
+    object while the household's connection is unchanged, so what is built on it may be kept with it."""
 
     household_id: int
     home_assistant: HomeAssistant
-    automations: Automations
     house: House
 
 

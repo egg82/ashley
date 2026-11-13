@@ -11,7 +11,6 @@ from typing import Any
 import pytest
 from ashley import services
 from ashley.db.pool import PoolDatabase
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes
 from ashley.home_assistant.house import Record
@@ -65,7 +64,7 @@ async def world(url: str) -> AsyncGenerator[World]:
     house.configs_of = {"automation": {"arrive": {"alias": "Arrival"}}, "helper": {}, "script": {}}
     house.records_of = {"area": [Record("area", "attic", "Attic", {})]}
     client = HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test:8123"))
-    services.register(Homes, OneHome(Home(home, client, NullAutomations(), house)))
+    services.register(Homes, OneHome(Home(home, client, house)))
     services.register(Proposals, PostgresProposals(db))
     try:
         yield World(url, home, alana, sam, house)

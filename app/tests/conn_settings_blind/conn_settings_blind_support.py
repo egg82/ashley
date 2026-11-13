@@ -50,7 +50,6 @@ import httpx2
 import psycopg
 from ashley import services
 from ashley.channels.steps import NO_STEPS
-from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes
 from ashley.home_assistant.house import ActionInfo, Performed
@@ -168,7 +167,7 @@ class FixedHomes(Homes):
             return None
         client = HomeAssistant(httpx2.AsyncClient(transport=httpx2.MockTransport(lambda r: httpx2.Response(200, json={})),
                                                   base_url=HA_URL))
-        return Home(household_id, client, NullAutomations(), house)
+        return Home(household_id, client, house)
 
     async def check(self, base_url: str, token: str) -> None:
         return None

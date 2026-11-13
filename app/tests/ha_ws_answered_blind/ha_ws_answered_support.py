@@ -27,7 +27,6 @@ from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.connected_homes import ConnectedHomes
 from ashley.home_assistant import house_settings
 from ashley.home_assistant.house_settings import HouseSettings
-from ashley.home_assistant.rest_automations import AutomationsConfig
 from ashley.wiring import CONNECTION_KINDS
 from contract.conversations_support import scalar
 from starlette.applications import Starlette
@@ -41,7 +40,6 @@ T = TypeVar("T")
 Json = dict[str, Any]
 
 TOKEN = "ha-token-0001-SECRETKEY"
-HA_CONFIG = AutomationsConfig(timeout_s=2.0, entity_tries=1, entity_wait_s=0.0)
 KEY = os.urandom(32)
 
 
@@ -249,7 +247,7 @@ def homes(c: Connections, ha: Ha) -> ConnectedHomes:
     def connect(base_url: str, token: str) -> HomeAssistant:
         return HomeAssistant(httpx2.AsyncClient(base_url=ha.url, headers={"Authorization": f"Bearer {token}"}))
 
-    return ConnectedHomes(c, HA_CONFIG, connect)
+    return ConnectedHomes(c, connect)
 
 
 def stored_at(url: str, household: int) -> datetime:

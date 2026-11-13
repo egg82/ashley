@@ -3,6 +3,7 @@
 answer from HA at any step is a failure naming that step, never taken as done. Run through `carry_out` over the fake
 HA, so they hold whichever implementation of the house answers."""
 
+import pytest
 from ashley import services
 from ashley.workshop.install_piece import NO_ENTITY, PART_WAY, UNREACHABLE, automation_id_for, carry_out
 from ashley.workshop.installs import InstallRecord
@@ -64,9 +65,10 @@ def test_an_automation_home_assistant_never_shows_ends_failed_and_is_not_turned_
     run(scenario())
 
 
-def test_home_assistant_erroring_on_the_turn_off_ends_the_install_failed_from_that_step(db_url: str) -> None:
+@pytest.mark.parametrize("status", [500, 400])
+def test_home_assistant_erroring_on_the_turn_off_ends_the_install_failed_from_that_step(db_url: str, status: int) -> None:
     alana = owner(db_url)
-    house = FakeHouse(failing={("POST", "/api/services/automation/turn_off")})
+    house = FakeHouse(failing={("POST", "/api/services/automation/turn_off"): status})
 
     async def scenario() -> None:
         async with world(db_url, house):
@@ -83,7 +85,7 @@ def test_home_assistant_erroring_on_the_config_write_ends_the_install_failed_fro
     async def scenario() -> None:
         async with world(db_url, house):
             bench, applied = await installed(alana, enabled=True)
-            house.failing.add(("POST", CONFIG_PATH + automation_id_for(bench, 1)))
+            house.failing["POST", CONFIG_PATH + automation_id_for(bench, 1)] = 500
             assert ended(await carry_out(alana, bench, applied)) == ("failed", PART_WAY.format(step="write"))
 
     run(scenario())
@@ -96,7 +98,7 @@ def test_home_assistant_erroring_on_the_read_before_the_install_writes_nothing(d
     async def scenario() -> None:
         async with world(db_url, house):
             bench, applied = await installed(alana)
-            house.failing.add(("GET", CONFIG_PATH + automation_id_for(bench, 1)))
+            house.failing["GET", CONFIG_PATH + automation_id_for(bench, 1)] = 500
             assert ended(await carry_out(alana, bench, applied)) == ("failed", UNREACHABLE)
             assert house.writes == []
 

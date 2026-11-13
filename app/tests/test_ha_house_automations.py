@@ -45,7 +45,8 @@ def test_set_enabled_turns_the_named_automation_on_or_off() -> None:
     assert fake.enabled == {first: False, second: True}
 
 
-@pytest.mark.parametrize("fake", [FakeHouse(failing={TURN_OFF}), FakeHouse(down_after=0)])
+@pytest.mark.parametrize("fake", [FakeHouse(failing={TURN_OFF: 500}), FakeHouse(failing={TURN_OFF: 400}),
+                                  FakeHouse(down_after=0)])
 def test_a_switch_the_house_does_not_carry_out_is_unavailable(fake: FakeHouse) -> None:
     with pytest.raises(HouseUnavailable, match="^turn_off: "):
         asyncio.run(fake.house().set_enabled("automation.a", False))

@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from ashley.home_assistant.connected_homes import RETRY_S, ConnectedHomes
 from ashley.home_assistant.homes import Home, HomeAssistantFailed, Homes, HomesUnavailable
-from hha_blind_support import A_TOKEN, A_URL, B_TOKEN, B_URL, CONFIG, ENV, Clock, FakeHouses, HeldConnections
+from hha_blind_support import A_TOKEN, A_URL, B_TOKEN, B_URL, ENV, Clock, FakeHouses, HeldConnections
 from connection_legacy_support import remove_of
 
 
@@ -23,7 +23,7 @@ def base_of(home: Home | None) -> str:
 
 def build(houses: FakeHouses, connections: HeldConnections, env: tuple[str, str] | None = ENV,
           clock: Clock | None = None) -> ConnectedHomes:
-    return ConnectedHomes(connections, CONFIG, houses.connect, env=env, clock=clock or Clock())
+    return ConnectedHomes(connections, houses.connect, env=env, clock=clock or Clock())
 
 
 def test_it_is_a_homes() -> None:

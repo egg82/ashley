@@ -33,7 +33,6 @@ from ashley.db.pool import PoolDatabase
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.connected_homes import ConnectedHomes
 from ashley.home_assistant.homes import Homes
-from ashley.home_assistant.rest_automations import AutomationsConfig
 from ashley.main import create_app
 from ashley.people import admin
 from ashley.settings import Settings
@@ -49,7 +48,6 @@ PUBLIC = "https://ashley.test"
 ORIGIN = {"origin": PUBLIC}
 APP_KEY = base64.b64encode(os.urandom(32)).decode()
 CODE_HOSTS = CodeHostConfig(timeout_s=5.0, projects_max=5, tree_max=5, read_bytes=64, snapshot_max_bytes=2000)
-HA_CONFIG = AutomationsConfig(timeout_s=2.0, entity_tries=1, entity_wait_s=0.0)
 
 KIND_NAMES = ("sure", "home_assistant", "gitlab", "github")
 ADDRESSES = {"sure": "https://money.test", "home_assistant": "http://ha.test:8123", "gitlab": "https://gitlab.test"}
@@ -187,7 +185,7 @@ class Fakes:
             return HomeAssistant(httpx2.AsyncClient(transport=httpx2.MockTransport(self.handle), base_url=base_url,
                                                     headers={"Authorization": f"Bearer {token}"}))
 
-        return ConnectedHomes(connections, HA_CONFIG, connect)
+        return ConnectedHomes(connections, connect)
 
     def wire_into(self, connections: Connections) -> None:
         services.register(Sure, self.sure())

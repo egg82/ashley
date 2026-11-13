@@ -55,7 +55,6 @@ from pathlib import Path
 from .. import logs, services, wiring
 from ..connections.connections import NullConnections
 from ..db.database import Database
-from ..home_assistant import rest_automations
 from ..home_assistant.connected_homes import ConnectedHomes
 from ..home_assistant.homes import Homes
 from ..inference.inference import InferenceError
@@ -161,7 +160,7 @@ async def _house(settings: Settings, args: argparse.Namespace) -> str:
     await database.open()
     seat = house_live.seat(settings.database_url)
     if settings.ha_url:
-        homes = ConnectedHomes(NullConnections(), rest_automations.load(), env=(settings.ha_url, settings.ha_token),
+        homes = ConnectedHomes(NullConnections(), env=(settings.ha_url, settings.ha_token),
                                fallback_household=seat.household_id)
         services.register(Homes, homes)
         closers.append(homes.close)
