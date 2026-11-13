@@ -14,6 +14,8 @@ from ashley.inference.compatible import KIND as COMPATIBLE
 from ashley.inference.kinds import KEYED
 from ashley.mail.resources import mailboxes
 from ashley.sure.kind import SURE
+from ashley.inference.wyoming_kind import KIND as WYOMING
+from ashley.tools.search_connection import KIND as SEARXNG
 from ashley.wiring import CONNECTION_KINDS
 from connection_kinds_blind_support import KIND_NAMES, kind_named
 
@@ -34,10 +36,11 @@ def custom(name: str, personal: bool = False, fixed: str | None = None) -> Conne
 
 def test_the_four_services_and_the_herdr_bridge_are_the_registered_kinds() -> None:
     assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google", *PROVIDERS,
-                                                                    "openai_compatible"))
+                                                                    "openai_compatible", "wyoming", "searxng"))
     assert {k.name: k for k in CONNECTION_KINDS} == {"sure": SURE, "home_assistant": HOME_ASSISTANT, "gitlab": GITLAB,
                                                      "github": GITHUB, "herdr": HERDR, "google": replace(GOOGLE, resources=mailboxes),
-                                                     **{k.kind.name: k.kind for k in KEYED}, COMPATIBLE.name: COMPATIBLE}
+                                                     **{k.kind.name: k.kind for k in KEYED}, COMPATIBLE.name: COMPATIBLE,
+                                                     WYOMING.name: WYOMING, SEARXNG.name: SEARXNG}
 
 
 @pytest.mark.parametrize(("name", "personal", "field"), [

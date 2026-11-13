@@ -22,6 +22,22 @@ class Built:
 
 
 @dataclass(frozen=True)
+class AddressedProvider:
+    """A provider reached at an address a person gives and no key (Wyoming speech-to-text): `kind` is its connection
+    kind, a `deployment` kind of the `inference` port whose `name` is also the slot its address is read under; `names`
+    are the route names every build of it carries; `build` turns an address into its `Built`, raising ValueError for
+    an address it cannot reach."""
+
+    kind: ConnectionKind
+    names: frozenset[str]
+    build: Callable[[str], Built]
+
+    def __post_init__(self) -> None:
+        if not self.kind.deployment or "inference" not in self.kind.ports or self.kind.name not in self.names:
+            raise ValueError("an addressed provider's kind is a deployment kind of the inference port, named as a route")
+
+
+@dataclass(frozen=True)
 class KeyedProvider:
     """`kind` is the connection kind a person adds the key as (its `name` is the provider's: `anthropic`, `openai`,
     `gemini`, `elevenlabs`; it is a `deployment` kind implementing the `inference` port). `names` are the route names

@@ -15,6 +15,7 @@ from ashley.runs.config import FILE
 from ashley.runs.model import Job
 from ashley.runs.kubernetes import KubernetesSandbox
 from ashley.runs.media import Media, Source
+from speech_support import no_whisper
 from ashley.settings import Settings, from_env
 from sandbox_support import CONFIG, FakeKube, Script, envelope_line
 
@@ -81,7 +82,7 @@ def test_a_media_pod_is_made_in_the_set_namespace_under_the_set_class(tmp_path: 
 
     line = MARK + json.dumps({"kind": "frames", "duration": 61.5, "count": 2, "jpeg": base64.b64encode(JPEG).decode()})
     fake = FakeKube(tmp_path / "token", Script(log=line))
-    wiring_sandbox.wire_media(Settings(**BASE, **OTHER), fake.api())
+    wiring_sandbox.wire_media(Settings(**BASE, **OTHER), fake.api(), no_whisper)
     source = Source(household_id=3, sha256="a" * 64, size=1234, media_type="video/mp4")
     asyncio.run(services.get(Media).frames("media-a1", source, (1.0, 2.0)))
     assert fake.created[0]["metadata"]["namespace"] == "elsewhere" and fake.created[0]["spec"]["runtimeClassName"] == "kata"

@@ -176,8 +176,17 @@ subscription, the read the Usage room already makes), and the router opens the p
   proxied endpoint of a listed provider would go unpriced or be priced as another.
 - Rejected: routes naming a connection by its id. `routes.json` and `ROUTES_FILE` are written before any row exists;
   the label is the name both sides can know.
-- **Not keys, so not connections:** Wyoming speech-to-text (`WYOMING_STT_URL`) stays a setting until it moves
-  (`open-work.md`): an address on the operator's own network with no key, beside the pods, where the env is set anyway.
+- **An address with no key is still a connection**: Wyoming speech-to-text (`ashley.inference.wyoming_kind`, an
+  `inference` kind) and SearXNG (`ashley.tools.search_connection`, a `search` kind) are `deployment` kinds held by the
+  first household, one each, at an address on the operator's own network. A connection stores a secret, so each stores
+  placeholder text (`address_seed.NO_SECRET`) and its room form says any text will do, as the local OpenAI-compatible
+  server's does. Each is checked by one read before it is stored: Wyoming answers `describe` with `info`, SearXNG answers
+  a JSON search. `WYOMING_STT_URL` and `SEARXNG_URL` seed the rows at each pod's start (`ashley.connections.address_seed`),
+  never over a row, and the row then wins; with no row the env's address answers, as the provider keys' do.
+- **Wyoming is read as a provider is, SearXNG on each use.** Wyoming's transcriber is built from the address by the keys
+  cache (`KeyedProviders`, `AddressedProvider`), so a row changed in the room reaches every pod within its 30 seconds; the
+  media pod's address and the web search read the row on each use (`ashley.connections.address_in_force`), so a change is
+  seen by the next transcription or search, and with no address the search is not offered.
 - Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
   Connections already has.
 - Rejected: one `inference_provider` kind with the provider named in the label or address. The provider would then be

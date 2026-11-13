@@ -10,6 +10,7 @@ from ashley import services, wiring_sandbox as wiring
 from ashley.runs.kubernetes import KubernetesSandbox
 from ashley.runs.podman import PodmanSandbox
 from ashley.runs.sandbox import Sandbox
+from speech_support import no_whisper
 from ashley.settings import Settings, from_env
 
 BASE = {"database_url": "postgresql://x", "build_version": "t"}
@@ -57,7 +58,7 @@ def test_the_opt_in_alone_wires_the_podman_sandbox(caplog: pytest.LogCaptureFixt
 
 def test_the_kubernetes_settings_without_it_still_wire_the_kubernetes_sandbox() -> None:
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    wiring.wire_sandbox(Settings(**BASE, **KUBE), closers)
+    wiring.wire_sandbox(Settings(**BASE, **KUBE), closers, no_whisper)
     assert isinstance(services.get(Sandbox), KubernetesSandbox)
 
 

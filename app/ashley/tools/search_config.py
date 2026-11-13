@@ -1,5 +1,5 @@
 """The search sources' tunables, data in `search.json` beside this module: where Photon (places) answers (SearXNG's
-address is the deployment's, `Settings.searxng_url`), how long a search may take, how much of each answer she is
+address is the deployment's, its connection: `ashley.tools.search_connection`), how long a search may take, how much of each answer she is
 shown, and how the house's location is used: its coordinates are rounded to `bias_decimals` before they are sent,
 and read again from Home Assistant every `home_ttl_s`."""
 

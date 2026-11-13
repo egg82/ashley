@@ -8,7 +8,7 @@ import binascii
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from importlib import resources
 from typing import Any
 
@@ -28,16 +28,18 @@ FAILED = "ashley-media-failed "
 
 
 class KubernetesMedia(Media):
-    def __init__(self, pods: PodLog, runtime_class: str, image: str, app_url: str, link_key: bytes, whisper_uri: str,
+    def __init__(self, pods: PodLog, runtime_class: str, image: str, app_url: str, link_key: bytes,
+                 whisper: Callable[[], Awaitable[str]],
                  config: MediaConfig, wall: Callable[[], float] = time.time) -> None:
         """`app_url` is where a pod in the namespace reaches the app, no trailing slash; `link_key` signs the file's link;
-        `whisper_uri` is the speech service's Wyoming address as the pod reaches it, empty for none (captions only)."""
+        `whisper` gives the speech service's Wyoming address as the pod reaches it, read for each transcription, empty for
+        none (captions only)."""
         self._pods = pods
         self._runtime_class = runtime_class
         self._image = image
         self._app_url = app_url
         self._link_key = link_key
-        self._whisper = whisper_uri
+        self._whisper = whisper
         self._config = config
         self._wall = wall
 
@@ -61,7 +63,7 @@ class KubernetesMedia(Media):
         duration."""
         started = time.monotonic()
         task: dict[str, Any] = {"task": "transcribe", "window_s": self._config.window_s,
-                                "max_audio_s": self._config.max_audio_s, "whisper": self._whisper,
+                                "max_audio_s": self._config.max_audio_s, "whisper": await self._whisper(),
                                 "model": self._config.whisper_model, "language": language}
         done = await self._job(name, source, task, self._config.transcribe_deadline_s)
         said = _transcribed(done)

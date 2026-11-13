@@ -25,8 +25,8 @@ catalogue, and she says in one line that she cannot use it right now, while the 
 - **Its steps record no conversation in the spend ledger:** `Tools.call` carries no conversation id, so a look-up's
   rows are by task alone.
 
-- **The web is SearXNG** (JSON API), at the deployment's address (`SEARXNG_URL`, set in the cluster repo); without it
-  she has no web search. The look-up is shown the first few results' titles, snippets and sites, each with a result
+- **The web is SearXNG** (JSON API), at the deployment's address (its SearXNG connection, seeded from `SEARXNG_URL`; `decisions/connections.md`); without
+  one she has no web search. The look-up is shown the first few results' titles, snippets and sites, each with a result
   number, and SearXNG's direct answers.
 - **The look-up reads a page by result number, never by URL.** `read_page` takes a number that a `search_web` of this
   turn returned; the numbers run on across the turn's searches and look-ups, and the table from number to URL is the

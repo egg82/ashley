@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Mapping
 
 from .. import logs
 from .balance import BalanceSource
-from .keyed import Built, KeyedProvider
+from .keyed import AddressedProvider, Built, KeyedProvider
 from .provider import Wired
 from .provider_keys import KeyInForce, KeysUnavailable, ProviderKeys
 
@@ -25,6 +25,9 @@ that was rotated or removed elsewhere."""
 PLACEHOLDER = "unset"
 """The key `checkers` are built with: never sent anywhere."""
 
+PLACEHOLDER_ADDRESS = "tcp://unset.invalid:1"
+"""The address an addressed provider's `checkers` are built with: never connected to."""
+
 
 class KeyedProviders:
     """`keyed` are the providers a key turns on (two sharing a kind name or a route name raise ValueError); `keys` says
@@ -34,12 +37,18 @@ class KeyedProviders:
 
     `compatible` builds an OpenAI-compatible provider (`ashley.inference.compatible.build`): each key `keys` gives under a
     name that is not a keyed kind's is one such provider, wired under that name (its label), built again when its key or
-    address changes; `compatible_env` (label to key) is wired before the first read as `env` is. None wires none."""
+    address changes; `compatible_env` (label to key) is wired before the first read as `env` is. None wires none.
+
+    `addressed` are the providers an address turns on, with no key: each `keys` gives under an addressed kind's name
+    is built from its `base_url`, and `addressed_env` (kind name to the env's address, empty when unset) is wired
+    before the first read."""
 
     def __init__(self, keyed: Iterable[KeyedProvider], keys: ProviderKeys, env: Mapping[str, str],
                  clock: Callable[[], float] = time.monotonic, refresh_s: float = REFRESH_S,
                  compatible: Callable[[KeyInForce], Built] | None = None,
-                 compatible_env: Mapping[str, KeyInForce] | None = None) -> None:
+                 compatible_env: Mapping[str, KeyInForce] | None = None,
+                 addressed: Iterable[AddressedProvider] = (),
+                 addressed_env: Mapping[str, str] | None = None) -> None:
         self._keyed: dict[str, KeyedProvider] = {}
         names: set[str] = set()
         for provider in keyed:
@@ -47,6 +56,12 @@ class KeyedProviders:
                 raise ValueError(f"two keyed providers share the kind or a route name of {provider.kind.name!r}")
             self._keyed[provider.kind.name] = provider
             names |= provider.names
+        self._addressed: dict[str, AddressedProvider] = {}
+        for found in addressed:
+            if found.kind.name in self._addressed or found.kind.name in self._keyed or names & found.names:
+                raise ValueError(f"two providers share the kind or a route name of {found.kind.name!r}")
+            self._addressed[found.kind.name] = found
+            names |= found.names
         self._names = frozenset(names)
         self._keys = keys
         self._compatible = compatible
@@ -60,7 +75,9 @@ class KeyedProviders:
         self._checkers: dict[str, Built] = {}
         self._wired: dict[str, Wired] = {}
         self._rebuild({**{kind: KeyInForce(kind, secret, None) for kind, secret in env.items()
-                          if secret and kind in self._keyed}, **(compatible_env or {})})
+                          if secret and kind in self._keyed}, **(compatible_env or {}),
+                       **{kind: KeyInForce(kind, "", None, address) for kind, address in (addressed_env or {}).items()
+                          if address and kind in self._addressed}})
 
     def names(self) -> frozenset[str]:
         """Every route name a build of the keyed providers can carry, wired now or not. An OpenAI-compatible provider's
@@ -70,13 +87,14 @@ class KeyedProviders:
     def catalogue_providers(self) -> Mapping[str, str | None]:
         """The OpenAI-compatible providers wired now, by route name, each with the catalogue provider its calls are
         priced as (None: unpriced)."""
-        return {slot: key.catalogue_provider for slot, key in self._in_force.items() if slot not in self._keyed}
+        return {slot: key.catalogue_provider for slot, key in self._in_force.items() if not self._fixed(slot)}
 
     def checkers(self) -> Mapping[str, Wired]:
         """One provider per name in `names`, built with `PLACEHOLDER` for its key, so the routes' params can be checked
         at start for a provider whose key is not set yet (`ashley.inference.routes.load`). Never call one."""
         if not self._checkers:
             self._checkers = {kind: p.build(PLACEHOLDER) for kind, p in self._keyed.items()}
+            self._checkers |= {kind: p.build(PLACEHOLDER_ADDRESS) for kind, p in self._addressed.items()}
         return {w.name: w for built in self._checkers.values() for w in built.wired}
 
     def current(self) -> Mapping[str, Wired]:
@@ -121,10 +139,10 @@ class KeyedProviders:
         """Each kind's and each OpenAI-compatible provider's build made to match `keys`; the route names whose build
         appeared, changed or went."""
         changed: set[str] = set()
-        compatible: set[str] = {slot for slot in self._in_force if slot not in self._keyed}
+        compatible: set[str] = {slot for slot in self._in_force if not self._fixed(slot)}
         if self._compatible is not None:
-            compatible |= {slot for slot in keys if slot not in self._keyed}
-        for slot in [*self._keyed, *sorted(compatible)]:
+            compatible |= {slot for slot in keys if not self._fixed(slot)}
+        for slot in [*self._keyed, *self._addressed, *sorted(compatible)]:
             key, had = keys.get(slot), self._in_force.get(slot)
             if _reach(key) == _reach(had):
                 if key is not None:
@@ -137,7 +155,7 @@ class KeyedProviders:
             if key is not None:
                 self._builds[slot] = self._build(slot, key)
                 self._in_force[slot] = key
-            changed |= self._keyed[slot].names if slot in self._keyed else {slot}
+            changed |= self._names_of(slot)
         self._wired = {w.name: w for built in self._builds.values() for w in built.wired}
         if changed:
             logs.info(log, "inference.keys", changed=len(changed), sources=",".join(
@@ -145,9 +163,19 @@ class KeyedProviders:
                 for _, key in sorted(self._in_force.items())))
         return frozenset(changed)
 
+    def _fixed(self, slot: str) -> bool:
+        return slot in self._keyed or slot in self._addressed
+
+    def _names_of(self, slot: str) -> frozenset[str]:
+        if slot in self._keyed:
+            return self._keyed[slot].names
+        return self._addressed[slot].names if slot in self._addressed else frozenset({slot})
+
     def _build(self, slot: str, key: KeyInForce) -> Built:
         if slot in self._keyed:
             return self._keyed[slot].build(key.secret)
+        if slot in self._addressed:
+            return self._addressed[slot].build(key.base_url)
         assert self._compatible is not None, "a slot outside the keyed kinds is read only with a compatible builder"
         return self._compatible(key)
 

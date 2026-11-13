@@ -29,11 +29,15 @@ SPEECH_LINE = MARK + json.dumps({"kind": "speech", "duration": 40, "segments": [
 CAPTIONS_LINE = MARK + json.dumps({"kind": "captions", "duration": 9, "srt": "1\n00:00:01,000 --> 00:00:02,000\nhi\n"})
 
 
+async def _whisper() -> str:
+    return "tcp://whisper.test:10300"
+
+
 def worker(fake: FakeKube, clock: Clock | None = None) -> KubernetesMedia:
     clock = clock or Clock()
     pods = PodLog(fake.api(), "ashley-sandbox", LABEL, CONFIG.log_bytes, CONFIG.poll_s, logging.getLogger("ashley.runs"),
                   "media", sleep=clock.sleep, clock=clock)
-    return KubernetesMedia(pods, "gvisor", IMAGE, "http://ashley.test:8080", KEY, "tcp://whisper.test:10300", CONFIG,
+    return KubernetesMedia(pods, "gvisor", IMAGE, "http://ashley.test:8080", KEY, _whisper, CONFIG,
                            wall=lambda: 1000.0)
 
 

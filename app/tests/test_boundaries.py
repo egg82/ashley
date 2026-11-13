@@ -67,7 +67,7 @@ ALLOWED: dict[str, set[str]] = {
     "wiring_bridge": {"connections", "db", "mail", "runs", "services", "settings"},
     "wiring_sandbox": {"logs", "looks", "runs", "services", "settings"},
     "wiring_skills": {"db", "persona", "services", "skills"},
-    "wiring_seeds": {"connections", "home_assistant", "inference", "services", "settings", "wiring_providers"},
+    "wiring_seeds": {"connections", "home_assistant", "inference", "services", "settings", "tools", "wiring_providers"},
     "wiring_inference": {"connections", "db", "inference", "services", "settings", "wiring_providers"},
     "wiring_singletons": {"channels", "conversations", "db", "files", "home_assistant", "inference", "logs", "looks", "mail", "memory",
                           "referee", "senses", "services", "settings", "watches", "workshop"},

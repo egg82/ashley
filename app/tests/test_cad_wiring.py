@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 from ashley import services, wiring_sandbox as wiring
 from ashley.runs.sandbox import Sandbox
+from speech_support import no_whisper
 from ashley.settings import Settings, from_env
 
 CAD = "registry.example/ashley-cad@sha256:" + "c" * 64
@@ -28,7 +29,7 @@ def no_ca(monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
 
 def wired(settings: Settings) -> Sandbox:
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    wiring.wire_sandbox(settings, closers)
+    wiring.wire_sandbox(settings, closers, no_whisper)
     return services.get(Sandbox)
 
 

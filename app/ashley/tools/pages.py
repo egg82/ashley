@@ -20,7 +20,7 @@ from ..workshop import recipe
 from . import page_fetch, page_reader, results, youtube
 from .look_up_config import LookUpConfig
 from .tools import Catalogue, Tools
-from .web_search import WebSearchTools
+from .web_search import WebSearch
 
 log = logging.getLogger("ashley.tools")
 
@@ -37,7 +37,7 @@ MAX_LINKS = 20
 
 
 class Pages(Tools):
-    def __init__(self, web: WebSearchTools, http: httpx2.AsyncClient, config: LookUpConfig,
+    def __init__(self, web: WebSearch, http: httpx2.AsyncClient, config: LookUpConfig,
                  resolve: page_fetch.Resolve = page_fetch.resolve, numbered: results.Results | None = None) -> None:
         self._web = web
         self._http = http
@@ -49,8 +49,10 @@ class Pages(Tools):
         self._links = youtube.Links(self._numbered, MAX_LINKS)
 
     async def catalogue(self) -> Catalogue:
-        """The web search's tools and `read_page`."""
+        """The web search's tools and `read_page`; none while there is no search to reach."""
         web = await self._web.catalogue()
+        if not web.specs:
+            return Catalogue((), None)
         return Catalogue((*web.specs, ToolSpec(NAME, DESCRIPTION, PARAMETERS, outside=True, tier="runs")), None)
 
     async def call(self, call: ToolCall) -> ToolResult:

@@ -112,11 +112,15 @@ def test_the_limits_a_pod_is_given_hold_the_captions_timeout() -> None:
 LINE = MARK + json.dumps({"kind": "youtube", "duration": 573.3, "segments": [[1.3, "secret words"], [4.0, "more"]]})
 
 
+async def _whisper() -> str:
+    return "tcp://whisper.test:10300"
+
+
 def worker(fake: FakeKube) -> KubernetesMedia:
     clock = Clock()
     pods = PodLog(fake.api(), "ashley-sandbox", LABEL, CONFIG.log_bytes, CONFIG.poll_s, logging.getLogger("ashley.runs"),
                   "media", sleep=clock.sleep, clock=clock)
-    return KubernetesMedia(pods, "gvisor", IMAGE, "http://ashley.test:8080", b"k" * 32, "tcp://whisper.test:10300", CONFIG)
+    return KubernetesMedia(pods, "gvisor", IMAGE, "http://ashley.test:8080", b"k" * 32, _whisper, CONFIG)
 
 
 def captions(fake: FakeKube) -> Transcribed:

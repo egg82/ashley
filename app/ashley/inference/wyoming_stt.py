@@ -29,6 +29,10 @@ class WyomingTranscriber(Transcriber):
     def name(self) -> str:
         return self._name
 
+    @property
+    def uri(self) -> str:
+        return self._uri
+
     def check_transcribe_params(self, params: Mapping[str, object]) -> None:
         unknown = sorted(set(params) - {"language"})
         if unknown:
