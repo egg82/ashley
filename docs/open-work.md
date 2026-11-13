@@ -137,37 +137,17 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
      work.
    - Fits into: Initiative (when to act) over the orchestrator loop (`Inference.step` with its own task), Senses for
      checks, Tools for actions. A new kind of thing: durable plans with due times.
-35. **Watches: a wake when what a read returns changes.** The first slice is built (`decisions.md`, "Watches wake her
-    when what a read returns changes, until a condition or a time"): one kind, a Claude Code session. Its next slices,
-    in order, are listed at the end of that section: a polled read-only tool, a Home Assistant subscription, the ledger.
-    She can be woken by something changing that has no event
-    to send her: a new email, a calendar event added or moved, a price, a page, a list. A watch is a read-only tool
-    (`ToolSpec.reads`) with fixed arguments and an interval, run by the `wakes` singleton with no model in the check.
-    It keeps a hash of the result, or of only the `track` fields of each item when the result is a list (the first
-    field is the item's identity). The first check is a baseline and wakes nothing. A changed check wakes her turn
-    with which items are new, changed or gone, and a failed check pauses the watch and says why. This is how Rakazo
-    does "when something changes" (`packages/adapters/src/routine-watch.ts`), and it suits her better than it suits
-    them: the deposit sense is already one particular watch over the Ledger, and becomes an instance of this. A
-    calendar watch is a watch over `house_ask` `calendar.get_events`, which also gives the kiosk's glance its
-    calendar source. **She arms one herself, mid-conversation**, as Claude Code arms a Monitor: "tell me when the
-    dryer's done", "keep an eye on that package". A watch she arms carries an `until` (a structured condition over
-    its tracked fields, never prose) and an expiry, and disarms itself once either is met. Each wake carries what
-    changed since the last one, so the turn reads as part of a series. Arming one is a read, so it needs no OK, but
-    what its turns may do beyond reading and speaking is agreed as a reminder's tools are (`arm_reminder`). For the
-    house, a watch subscribes through HA's WebSocket (`subscribe_trigger`) instead of polling, held by the singleton,
-    so she needs no automation installed to watch an entity. The session sense was the first to convert, and the one wanted
-    first: a session is watched only after her own `claude_start` or `claude_prompt`, so a session the person
-    nudged themselves finishes again unseen. With her tools, she arms it on any of the
-    person's sessions ("keep an eye on that one"), and it stays armed past `done` until its `until` or expiry. Its
-    end is a time, never "every shell has returned": a shell that hangs can keep a session alive for days, while
-    Claude Code's Monitors expire on their own. Each
-    finish or block is still her turn, which may act (`claude_read`, `claude_prompt`) or stay quiet.
-    - Fits into: a new system, Watches, since it meets all four tests in `systems.md` (many callers; one question,
-      "wake her when what this returns changes, until X"; polling and HA's subscription as two implementations behind
-      a Null Object; it owns each watch's baseline and last hash). Its kinds are Type Objects (a read-only tool polled,
-      a house entity subscribed, a herdr session, the ledger). `ashley.senses.deposits` is
-      a copy of it today and folds in, deleted. It hands its wakes to the `wakes` queue (Senses), arms
-      and disarms beside her reminder tools (Tools), and wakes item 7's standing errands.
+35. **Watches, what is left** (`decisions.md`, "Watches wake her when what a read returns changes, until a condition or
+    a time"). Built: the Claude Code session, mail inbox, bench job and polled read-only tool kinds, which she arms
+    herself mid-conversation with a structured `until` and an expiry. Left, in order:
+    - **A Home Assistant subscription**: a watch on a house entity subscribes through HA's WebSocket
+      (`subscribe_trigger`) instead of polling, held by the singleton, so she needs no automation installed to watch an
+      entity.
+    - **The ledger**: `ashley.senses.deposits` is one particular watch over the Ledger today; it becomes a kind of this,
+      and the copy is deleted.
+    - **The kiosk's calendar glance** takes its calendar from a `tool` watch over `house_ask` `calendar.get_events`.
+    - Fits into: Watches (its kinds are Type Objects), Senses (the `wakes` queue), Tools (arming), and item 7's
+      standing errands, which watches wake.
 38. **A browser of her own.** For the services with no API, a Chromium she drives in a gVisor pod: a session of
     minutes with egress, unlike a code run's seconds with none. She acts on the page's accessibility tree with
     element references checked again against a fresh snapshot before each action (Rakazo's `browser_snapshot` and
