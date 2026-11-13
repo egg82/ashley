@@ -9,7 +9,7 @@ const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
 });
 const kind = (over: Partial<ConnectionKindInfo>): ConnectionKindInfo => ({
-  name: 'sure', title: 'Sure', what: 'finances', blurb: '', connected: '', removed: '', holders: ['household'], most: 1, takes_address: true,
+  name: 'sure', title: 'Sure', what: 'finances', blurb: '', connected: '', removed: '', holders: ['household'], most: 1, picks_catalogue_provider: false, takes_address: true,
   address_placeholder: '', secret_field: 'api_key', secret_label: '', secret_noun: 'key', connect: 'pasted', set_up: true, has_settings: false, ...over,
 });
 const text = (s: ReturnType<typeof sentenceOf>) => `${s.before}${s.name}${s.after}`;

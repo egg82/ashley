@@ -11,7 +11,7 @@ const conn = (id: number, kind: string, over: Partial<HouseholdConnection> = {})
   scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
 });
 const kind = (name: string, holders: ('household' | 'person')[], most = 1): ConnectionKindInfo => ({
-  name, title: name, what: '', blurb: '', connected: '', removed: '', holders, most, takes_address: false, address_placeholder: '',
+  name, title: name, what: '', blurb: '', connected: '', removed: '', holders, most, picks_catalogue_provider: false, takes_address: false, address_placeholder: '',
   secret_field: 'token', secret_label: '', secret_noun: 'token', connect: 'pasted', set_up: true, has_settings: false,
 });
 
