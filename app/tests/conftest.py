@@ -68,7 +68,15 @@ def unwired() -> Generator[None]:
     yield
     services.clear()
     if next(TESTS_RUN) % SWEEP_EVERY == 0:
-        gc.collect()
+        sweep()
+
+
+def sweep() -> None:
+    """Collect, then freeze what survived, so the next pass walks only what later tests made. Session caches (the
+    structural gates' parsed tree alone is millions of objects) otherwise cost every full pass seconds. Frozen objects
+    are still freed by their reference counts; only a cycle among them is never collected."""
+    gc.collect()
+    gc.freeze()
 
 
 @pytest.fixture(autouse=True)
