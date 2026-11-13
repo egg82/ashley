@@ -63,7 +63,6 @@ from .inference.balance import ProviderBalances
 from .connections.address_in_force import AddressInForce
 from .inference.compatible import KIND as COMPATIBLE
 from .inference.wyoming_kind import KIND as WYOMING
-from .channels.discord.token_in_force import TokenInForce
 from .channels.discord.token_kind import KIND as DISCORD
 from .channels.voice.key_kind import KIND as SATELLITE_KEY
 from .inference.kinds import KEYED
@@ -108,6 +107,7 @@ from .runs.postgres import PostgresRuns
 from .runs.runs import Runs
 from .tidy.register import register as register_tidy
 from .settings import Settings
+from .wiring_discord import wire_discord
 from .wiring_inference import wire_inference
 from .wiring_secrets import register as register_secrets, settle as settle_secrets
 from .wiring_seeds import seeds
@@ -117,8 +117,6 @@ from .wiring_skills import wire_skills
 from .wiring_singletons import wire_lease
 from .signin import policy as signin_policy
 from .signin.provider import OidcProvider, Client
-from .signin.discord import CALLBACK_PATH as DISCORD_CALLBACK, DiscordOAuth
-from .signin.discord_http import App as DiscordApp, HttpDiscordOAuth
 from .signin.oidc import Oidc
 from .signin.postgres import PostgresSessions
 from .signin.sessions import Sessions
@@ -148,8 +146,6 @@ from .tools import home_assistant_config, home_location, house_look_config, hous
 from .tools.action_judge import ActionJudge
 from .tools.action_judge_model import ModelActionJudge
 from .tools.composite import CompositeTools
-from .tools.discord_posts import ChannelPosts
-from .tools.discord_posts_http import HttpChannelPosts
 from .tools.everyday import Everyday, HomesEveryday
 from .tools.house_act import Rules
 from .tools.house_tools import HouseTools
@@ -301,16 +297,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
                                                      settings.oidc_client_secret,
                                                      settings.public_url + "/api/auth/callback",
                                                      settings.admin_group), oidc_http))
-    if settings.discord_oauth_client_id:
-        discord_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
-        closers.append(discord_http.aclose)
-        services.register(DiscordOAuth, HttpDiscordOAuth(DiscordApp(
-            settings.discord_oauth_client_id, settings.discord_oauth_client_secret,
-            settings.public_url + DISCORD_CALLBACK), discord_http))
-    posts_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
-    closers.append(posts_http.aclose)
-    services.register(ChannelPosts, HttpChannelPosts(
-        TokenInForce(lambda: services.get(Connections), settings.discord_bot_token), posts_http))
+    wire_discord(settings, closers)
     _wire_homes(settings, closers)
     wire_inference(settings, narrow, closers)
     services.register(SpendReport, SpendView(services.get(Database), lambda: services.get(People),
