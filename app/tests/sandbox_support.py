@@ -34,6 +34,7 @@ class Script:
     terminated: str | None = None
     log_status: int = 200
     init_exit: int | None = None
+    init_state: dict[str, Any] = field(default_factory=lambda: {"running": {}})
 
 
 @dataclass
@@ -95,6 +96,8 @@ class FakeKube:
                 status["initContainerStatuses"] = [{"state": {"terminated": {"exitCode": self.script.init_exit}}}]
             if self.script.terminated:
                 status["containerStatuses"] = [{"state": {"terminated": {"reason": self.script.terminated}}}]
+        elif self.pods[name].get("spec", {}).get("initContainers"):
+            status["initContainerStatuses"] = [{"state": self.script.init_state}]
         return {**self.pods[name], "status": status}
 
     def leftover(self, name: str, created: str) -> None:

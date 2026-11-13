@@ -1,173 +1,298 @@
-"""Binary inputs reach a run by reference. The app signs a short-lived link for each (`input_links`); the pod's init
-container (`fetcher`) fetches them into an emptyDir the run container mounts read-only at `inputs/`, and that container
-holds no link. A job without inputs makes the pod it always did."""
+"""Binary inputs reach a run by reference and travel as a tar on its init container's standard input, which the app
+pushes through the Kubernetes API (`KubeApi.attach_stdin`): the pod has no network at all, and the run container
+mounts what the init container verified, read-only."""
 
 import asyncio
 import base64
 import hashlib
 import io
 import json
+import tarfile
+from collections.abc import AsyncIterable, Generator
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import httpx2
 import pytest
-from ashley.files import links
-from ashley.runs import fetcher, input_links
+from ashley import services
+from ashley.files.intake import key_of
+from ashley.files.memory import MemoryStore
+from ashley.files.store import ObjectStore
+from ashley.runs import inputs, unpack
 from ashley.runs.config import Profile
-from ashley.runs.kubernetes import FETCHER, KubernetesSandbox
-from ashley.runs.model import InputFile, Job
-from ashley.runs.pod_spec import FETCH_LABEL, LABEL, manifest
-from ashley.runs.sandbox import SandboxUnavailable
-from ashley.settings import Settings
+from ashley.runs.kube_api import KubeApi, KubeError
+from ashley.runs.kubernetes import UNPACKER, KubernetesSandbox
+from ashley.runs.model import InputFile, Job, Output
+from ashley.runs.pod_spec import LABEL, manifest
+from httpx2.websockets import ASGIWebSocketTransport
 from sandbox_support import CONFIG, PYTHON, Clock, FakeKube, Script
+from starlette.applications import Starlette
+from starlette.routing import WebSocketRoute
+from starlette.websockets import WebSocket
 
-KEY = b"k" * 32
-APP = "http://10.0.0.5:8000"
 CAD_IMAGE = "registry.test/cad@sha256:" + "c" * 64
 CAD = Profile(CAD_IMAGE, 60, 120, "1", "500m", "1Gi", 32, 4096, 1024, 16 * 1024 * 1024)
 RUNS = replace(CONFIG, languages={"python": PYTHON, "build123d": CAD})
-DATA = {"7.stl": b"solid seven", "8.3mf": b"\x00" * 5000}
+DATA = {"7.stl": b"solid seven", "8.3mf": bytes(range(256)) * 700}
+HOME = 3
 
 
 def stored(data: bytes) -> InputFile:
-    return InputFile(3, hashlib.sha256(data).hexdigest(), len(data))
+    return InputFile(HOME, hashlib.sha256(data).hexdigest(), len(data))
 
 
 JOB = Job("run-9", "build123d", "show(1)", inputs={name: stored(data) for name, data in DATA.items()})
+WANT = {name: (f.size, f.sha256) for name, f in JOB.inputs.items()}
 
 
-def pod_of(job: Job = JOB) -> dict[str, Any]:
-    return manifest(job, RUNS, "RUNNER", "gvisor", "FETCHER", input_links.sign(job.inputs, APP, KEY, 2_000_000_000))
+@pytest.fixture
+def store() -> Generator[MemoryStore]:
+    held = MemoryStore()
+    services.register(ObjectStore, held)
+    for data in DATA.values():
+        asyncio.run(held.put(key_of(HOME, hashlib.sha256(data).hexdigest()), data))
+    yield held
+    services.unregister(ObjectStore)
 
 
-def test_a_job_with_inputs_gets_an_init_container_that_fills_a_volume_the_run_mounts_read_only() -> None:
-    pod = pod_of()
+async def collected(chunks: AsyncIterable[bytes]) -> bytes:
+    return b"".join([c async for c in chunks])
+
+
+def tar_of(files: dict[str, bytes], **kinds: Any) -> bytes:
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w") as tar:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            for key, value in kinds.items():
+                setattr(info, key, value)
+            tar.addfile(info, io.BytesIO(data))
+    return buffer.getvalue()
+
+
+# --- the pod ---
+
+def test_a_job_with_inputs_gets_an_init_container_with_stdin_and_a_volume_the_run_mounts_read_only() -> None:
+    pod = manifest(JOB, RUNS, "RUNNER", "gvisor", "UNPACKER")
     spec = pod["spec"]
     (init,), (run,) = spec["initContainers"], spec["containers"]
-    assert init["command"][-1] == "FETCHER" and init["volumeMounts"] == [{"name": "inputs", "mountPath": "/inputs"}]
+    assert init["command"][-1] == "UNPACKER" and init["stdin"] is True and init["stdinOnce"] is True
+    assert init["volumeMounts"] == [{"name": "inputs", "mountPath": "/inputs"}]
     assert {"name": "inputs", "mountPath": "/work/inputs", "readOnly": True} in run["volumeMounts"]
     assert {"name": "inputs", "emptyDir": {"sizeLimit": "16Mi"}} in spec["volumes"]
-    assert pod["metadata"]["labels"] == {LABEL: "true", FETCH_LABEL: "true"}
-    assert spec["automountServiceAccountToken"] is False and spec["dnsConfig"] == {"nameservers": ["127.0.0.1"]}
     assert init["securityContext"]["readOnlyRootFilesystem"] and init["securityContext"]["capabilities"] == {"drop": ["ALL"]}
 
 
-def test_the_run_container_holds_no_link_and_no_bytes() -> None:
-    run = pod_of()["spec"]["containers"][0]
-    assert not any(APP in str(e["value"]) or "ASHLEY_BLOB" in str(e["name"]) for e in run["env"])
-    assert "/api/files/" not in json.dumps(run)
+def test_the_pod_with_inputs_has_no_network_route_label_url_or_bytes() -> None:
+    pod = manifest(JOB, RUNS, "RUNNER", "gvisor", "UNPACKER")
+    assert pod["metadata"]["labels"] == {LABEL: "true"}
+    assert pod["spec"]["dnsConfig"] == {"nameservers": ["127.0.0.1"]} and pod["spec"]["hostNetwork"] is False
+    text = json.dumps(pod)
+    assert "http" not in text.replace("https://", "") and "/api/files/" not in text and "ASHLEY_BLOB" not in text
+    names = {e["name"] for c in (*pod["spec"]["initContainers"], *pod["spec"]["containers"]) for e in c["env"]}
+    assert names == {"ASHLEY_INPUTS", "ASHLEY_SCRIPT", "ASHLEY_STDIN", "ASHLEY_LIMITS"}
 
 
-def test_each_input_is_one_link_naming_its_object_valid_until_the_deadline() -> None:
-    init = pod_of()["spec"]["initContainers"][0]
-    task = json.loads(base64.b64decode(init["env"][0]["value"]))
-    assert [f["name"] for f in task["files"]] == sorted(DATA)
-    for item in task["files"]:
-        assert item["url"].startswith(APP + links.PATH)
-        token = item["url"].removeprefix(APP + links.PATH)
-        grant = links.check(KEY, token, 1_999_999_999)
-        assert grant is not None and (grant.household_id, grant.sha256) == (3, item["sha256"])
-        assert links.check(KEY, token, 2_000_000_000) is None and links.check(b"x" * 32, token, 1) is None
-
-
-def test_a_job_without_inputs_makes_no_init_container_volume_or_label() -> None:
+def test_a_job_without_inputs_makes_no_init_container_or_volume() -> None:
     pod = manifest(Job("run-1", "python", "x"), RUNS, "RUNNER", "gvisor")
     assert "initContainers" not in pod["spec"] and [v["name"] for v in pod["spec"]["volumes"]] == ["work", "out"]
-    assert pod["metadata"]["labels"] == {LABEL: "true"}
 
 
-def test_inputs_and_links_must_name_the_same_files() -> None:
-    with pytest.raises(ValueError):
-        manifest(JOB, RUNS, "RUNNER", "gvisor", "FETCHER", {"7.stl": APP})
+# --- the init container's program ---
 
-
-def run_with(tmp_path: Path, job: Job, script: Script | None = None, app_url: str = APP) -> tuple[FakeKube, Any]:
-    fake, clock = FakeKube(tmp_path / "token", script or Script()), Clock()
-    sandbox = KubernetesSandbox(fake.api(), RUNS, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock,
-                                app_url=app_url, link_key=KEY if app_url else b"", wall=lambda: 1000.0)
-    try:
-        return fake, asyncio.run(sandbox.run(job))
-    except SandboxUnavailable as e:
-        return fake, e
-
-
-def test_the_sandbox_signs_links_that_end_with_the_pods_deadline(tmp_path: Path) -> None:
-    fake, _ = run_with(tmp_path, JOB)
-    task = json.loads(base64.b64decode(fake.created[0]["spec"]["initContainers"][0]["env"][0]["value"]))
-    token = task["files"][0]["url"].removeprefix(APP + links.PATH)
-    assert links.check(KEY, token, 1000 + CAD.pod_deadline_s - 1) is not None
-    assert links.check(KEY, token, 1000 + CAD.pod_deadline_s) is None
-    assert fake.created[0]["spec"]["initContainers"][0]["command"][-1] == FETCHER
-
-
-def test_inputs_without_an_app_address_are_unavailable_and_no_pod_is_made(tmp_path: Path) -> None:
-    fake, got = run_with(tmp_path, JOB, app_url="")
-    assert isinstance(got, SandboxUnavailable) and fake.created == []
-
-
-def test_an_input_that_could_not_be_fetched_says_so_instead_of_unknown(tmp_path: Path) -> None:
-    _, got = run_with(tmp_path, JOB, Script(phases=["Failed"], log="", log_status=400, init_exit=1))
-    assert (got.outcome, got.exit_code) == ("failed", None) and "input" in got.stderr
-
-
-class Reply(io.BytesIO):
-    def __enter__(self) -> "Reply":
-        return self
-
-    def __exit__(self, *_: object) -> None:
-        self.close()
-
-
-def serve(monkeypatch: pytest.MonkeyPatch, bodies: dict[str, bytes]) -> list[str]:
-    asked: list[str] = []
-
-    def urlopen(url: str, timeout: int) -> Reply:
-        asked.append(url)
-        return Reply(bodies[url])
-
-    monkeypatch.setattr(fetcher.urllib.request, "urlopen", urlopen)
-    return asked
-
-
-def task_env(files: list[dict[str, object]]) -> dict[str, str]:
-    return {"ASHLEY_FETCH": base64.b64encode(json.dumps({"timeout_s": 5, "files": files}).encode()).decode()}
-
-
-def item(file: str, data: bytes, url: str = "http://a/x", **over: object) -> dict[str, object]:
-    return {"name": file, "url": url, "size": len(data), "sha256": hashlib.sha256(data).hexdigest(), **over}
-
-
-def test_the_fetcher_writes_each_file_read_only_when_size_and_digest_match(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    serve(monkeypatch, {"http://a/1": DATA["7.stl"], "http://a/2": DATA["8.3mf"]})
-    monkeypatch.setattr(fetcher, "INPUTS", tmp_path)
-    monkeypatch.setattr(fetcher.os, "environ", task_env([item("7.stl", DATA["7.stl"], "http://a/1"),
-                                                       item("8.3mf", DATA["8.3mf"], "http://a/2")]))
-    fetcher.main()
+def test_the_unpacker_keeps_exactly_the_named_files_when_size_and_digest_match(tmp_path: Path) -> None:
+    unpack.unpack(io.BytesIO(tar_of(DATA)), WANT, tmp_path)
     assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == DATA
     assert all(not (p.stat().st_mode & 0o222) for p in tmp_path.iterdir())
 
 
-@pytest.mark.parametrize("over", [{"size": 3}, {"sha256": "0" * 64}, {"size": 10_000}, {"name": "../x"}, {"name": "a/b"}])
-def test_the_fetcher_fails_the_pod_for_a_file_that_is_not_what_was_named(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-                                                                         over: dict[str, object], capsys: pytest.CaptureFixture[str]) -> None:
-    serve(monkeypatch, {"http://a/1": DATA["7.stl"]})
-    monkeypatch.setattr(fetcher, "INPUTS", tmp_path)
-    monkeypatch.setattr(fetcher.os, "environ", task_env([item("7.stl", DATA["7.stl"], "http://a/1", **over)]))
+def altered(name: str, data: bytes) -> dict[str, bytes]:
+    return {**DATA, name: data}
+
+
+@pytest.mark.parametrize("files,why", [
+    (altered("7.stl", b"solid sevex"), "digest"),
+    (altered("7.stl", b"solid seven and more"), "size"),
+    ({"7.stl": DATA["7.stl"]}, "missing"),
+    ({**DATA, "9.stl": b"x"}, "extra"),
+    ({"../7.stl": DATA["7.stl"], "8.3mf": DATA["8.3mf"]}, "climbing name"),
+])
+def test_the_unpacker_fails_for_a_stream_that_is_not_what_was_named(tmp_path: Path, files: dict[str, bytes], why: str) -> None:
+    with pytest.raises(ValueError):
+        unpack.unpack(io.BytesIO(tar_of(files)), WANT, tmp_path)
+
+
+def test_the_unpacker_refuses_a_link_in_place_of_a_file(tmp_path: Path) -> None:
+    link = tar_of({"7.stl": b""}, type=tarfile.SYMTYPE, linkname="/etc/passwd")
+    with pytest.raises(ValueError):
+        unpack.unpack(io.BytesIO(link), {"7.stl": (0, hashlib.sha256(b"").hexdigest())}, tmp_path)
+
+
+def test_the_unpacker_exits_1_with_a_message_naming_no_name_when_it_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                                                         capsys: pytest.CaptureFixture[str]) -> None:
+    task = {"files": [{"name": "7.stl", "size": 3, "sha256": "0" * 64}]}
+    monkeypatch.setattr(unpack, "INPUTS", tmp_path)
+    monkeypatch.setattr(unpack.os, "environ", {"ASHLEY_INPUTS": base64.b64encode(json.dumps(task).encode()).decode()})
+    monkeypatch.setattr(unpack.sys, "stdin", io.TextIOWrapper(io.BytesIO(tar_of({"7.stl": b"abc"}))))
     with pytest.raises(SystemExit) as stopped:
-        fetcher.main()
-    assert stopped.value.code == 1 and list(tmp_path.iterdir()) == [] and "http" not in capsys.readouterr().err
+        unpack.main()
+    assert stopped.value.code == 1 and "7.stl" not in capsys.readouterr().err
 
 
-SANDBOX = {"database_url": "postgresql://x", "build_version": "t", "sandbox_token_file": "/token", "sandbox_ca_file": "/ca",
-           "files_endpoints": "http://nas.test", "files_bucket": "b", "files_access_key": "k", "files_secret_key": "s",
-           "files_link_key": "l" * 40}
+# --- the app's end: the tar ---
+
+def test_the_tar_streams_each_file_in_name_order_and_the_unpacker_accepts_it(store: MemoryStore, tmp_path: Path) -> None:
+    data = asyncio.run(collected(inputs.tar(JOB.inputs)))
+    unpack.unpack(io.BytesIO(data), WANT, tmp_path)
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == DATA
 
 
-def test_the_address_inputs_are_fetched_from_is_an_ip_address_and_port_since_the_pod_has_no_resolver() -> None:
-    assert Settings(sandbox_app_url="http://10.96.0.12:8080", **SANDBOX).sandbox_app_url == "http://10.96.0.12:8080"
-    for bad in ("http://ashley.svc:8080", "https://10.96.0.12:8080", "http://10.96.0.12", "http://10.96.0.12:8080/x"):
-        with pytest.raises(ValueError, match="SANDBOX_APP_URL must be"):
-            Settings(sandbox_app_url=bad, **SANDBOX)
-    with pytest.raises(ValueError, match="SANDBOX_APP_URL needs"):
-        Settings(sandbox_app_url="http://10.96.0.12:8080", database_url="postgresql://x", build_version="t")
+def test_the_tar_reads_one_file_at_a_time_and_in_small_chunks(store: MemoryStore) -> None:
+    async def scenario() -> None:
+        reads: list[str] = []
+        real = store.get
+
+        async def counting(key: str) -> bytes | None:
+            reads.append(key)
+            return await real(key)
+
+        store.get = counting  # type: ignore[method-assign]
+        chunks = inputs.tar(JOB.inputs)
+        await anext(chunks)
+        assert len(reads) == 1
+        sizes = [len(c) async for c in chunks]
+        assert len(reads) == 2 and max(sizes) <= inputs.CHUNK and len(DATA["8.3mf"]) > 2 * inputs.CHUNK
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("damage", ["gone", "other bytes", "store down"])
+def test_the_tar_raises_for_an_input_the_store_does_not_give_intact(store: MemoryStore, damage: str) -> None:
+    key = key_of(HOME, JOB.inputs["7.stl"].sha256)
+    if damage == "gone":
+        asyncio.run(store.delete(key))
+    elif damage == "other bytes":
+        asyncio.run(store.put(key, b"solid sevex"))
+    else:
+        store.down = True
+    with pytest.raises(inputs.InputUnavailable):
+        asyncio.run(collected(inputs.tar(JOB.inputs)))
+
+
+# --- the app's end: the attach ---
+
+class Attached(KubeApi):
+    """A KubeApi whose attach is recorded instead of made: the bytes the init container would have read."""
+
+    sent: bytes = b""
+    refuse: bool = False
+
+    async def attach_stdin(self, namespace: str, name: str, container: str, chunks: AsyncIterable[bytes],
+                           timeout_s: float) -> None:
+        self.target = (namespace, name, container)
+        self.sent = await collected(chunks)
+        if self.refuse:
+            raise KubeError("http 403")
+
+
+def run_with(tmp_path: Path, script: Script | None = None, refuse: bool = False, job: Job = JOB) -> tuple[FakeKube, Attached, Output]:
+    fake, clock = FakeKube(tmp_path / "token", script or Script()), Clock()
+    (tmp_path / "token").write_text("t")
+    api = Attached(httpx2.AsyncClient(base_url="https://kube.test", transport=httpx2.MockTransport(fake.handle)),
+                   str(tmp_path / "token"))
+    api.refuse = refuse
+    done = asyncio.run(KubernetesSandbox(api, RUNS, "ashley-sandbox", "gvisor", sleep=clock.sleep, clock=clock).run(job))
+    return fake, api, done
+
+
+def test_the_sandbox_pushes_the_inputs_into_the_running_init_container_and_the_run_goes_on(store: MemoryStore, tmp_path: Path,
+                                                                                              ) -> None:
+    fake, api, done = run_with(tmp_path)
+    assert api.target == ("ashley-sandbox", "run-9", "unpack") and done.outcome == "ran"
+    unpack.unpack(io.BytesIO(api.sent), WANT, tmp_path)
+    assert fake.created[0]["spec"]["initContainers"][0]["command"][-1] == UNPACKER
+
+
+def test_the_sandbox_waits_for_the_init_container_to_run_before_it_attaches(store: MemoryStore, tmp_path: Path) -> None:
+    fake, api, done = run_with(tmp_path, Script(phases=["Pending"], init_state={"waiting": {}}))
+    assert api.sent == b"" and (done.outcome, done.exit_code) == ("failed", None)
+    assert "did not run" in done.stderr and fake.deleted == ["run-9"]
+
+
+def test_an_attach_the_api_refuses_is_a_failed_run_and_the_pod_is_deleted(store: MemoryStore, tmp_path: Path) -> None:
+    fake, _, done = run_with(tmp_path, refuse=True)
+    assert (done.outcome, done.exit_code) == ("failed", None) and "did not run" in done.stderr and fake.deleted == ["run-9"]
+
+
+def test_an_input_that_is_not_what_it_was_when_named_fails_the_run_before_any_byte_is_sent_on(store: MemoryStore, tmp_path: Path) -> None:
+    asyncio.run(store.put(key_of(HOME, JOB.inputs["7.stl"].sha256), b"solid sevex"))
+    fake, _, done = run_with(tmp_path)
+    assert done.outcome == "failed" and "did not run" in done.stderr and fake.deleted == ["run-9"]
+
+
+def test_an_init_container_that_rejected_the_stream_is_reported_failed_not_unknown(store: MemoryStore, tmp_path: Path) -> None:
+    _, _, done = run_with(tmp_path, Script(phases=["Pending", "Failed"], log="", log_status=400, init_exit=1))
+    assert (done.outcome, done.exit_code) == ("failed", None) and "input" in done.stderr
+
+
+# --- the attach over a WebSocket ---
+
+def test_attach_stdin_sends_stdin_frames_then_the_close_signal_and_reads_the_status(tmp_path: Path) -> None:
+    seen: list[Any] = []
+
+    async def socket(ws: WebSocket) -> None:
+        await ws.accept(subprotocol="v5.channel.k8s.io")
+        seen.append((ws.url.path, dict(ws.query_params), ws.headers["authorization"], ws.scope["subprotocols"]))
+        while (frame := await ws.receive())["type"] != "websocket.disconnect":
+            seen.append(frame["bytes"])
+            if frame["bytes"] == bytes([255, 0]):
+                await ws.send_bytes(b'\x03{"status":"Success"}')
+                await ws.close()
+                return
+
+    async def chunks() -> AsyncIterable[bytes]:
+        yield b"ab"
+        yield b"cd"
+
+    async def scenario() -> None:
+        (tmp_path / "t").write_text("tok\n")
+        app = Starlette(routes=[WebSocketRoute("/api/v1/namespaces/ns/pods/p/attach", socket)])
+        async with httpx2.AsyncClient(base_url="http://kube.test", transport=ASGIWebSocketTransport(app)) as http:
+            await KubeApi(http, str(tmp_path / "t")).attach_stdin("ns", "p", "unpack", chunks(), 5)
+
+    asyncio.run(scenario())
+    path, query, auth, protocols = seen[0]
+    assert (path, auth) == ("/api/v1/namespaces/ns/pods/p/attach", "Bearer tok")
+    assert query == {"container": "unpack", "stdin": "true", "stdout": "false", "stderr": "false", "tty": "false"}
+    assert protocols[0] == "v5.channel.k8s.io" and seen[1:] == [b"\x00ab", b"\x00cd", bytes([255, 0])]
+
+
+def test_attach_stdin_raises_when_the_container_reports_a_failure_or_the_source_fails(tmp_path: Path) -> None:
+    async def socket(ws: WebSocket) -> None:
+        await ws.accept(subprotocol="v5.channel.k8s.io")
+        while (frame := await ws.receive())["type"] != "websocket.disconnect":
+            if frame["bytes"] == bytes([255, 0]):
+                await ws.send_bytes(b'\x03{"status":"Failure"}')
+                await ws.close()
+                return
+
+    async def good() -> AsyncIterable[bytes]:
+        yield b"ab"
+
+    async def bad() -> AsyncIterable[bytes]:
+        yield b"ab"
+        raise inputs.InputUnavailable("gone")
+
+    async def scenario() -> None:
+        (tmp_path / "t").write_text("tok")
+        app = Starlette(routes=[WebSocketRoute("/api/v1/namespaces/ns/pods/p/attach", socket)])
+        async with httpx2.AsyncClient(base_url="http://kube.test", transport=ASGIWebSocketTransport(app)) as http:
+            api = KubeApi(http, str(tmp_path / "t"))
+            with pytest.raises(KubeError):
+                await api.attach_stdin("ns", "p", "unpack", good(), 5)
+            with pytest.raises(inputs.InputUnavailable):
+                await api.attach_stdin("ns", "p", "unpack", bad(), 5)
+
+    asyncio.run(scenario())

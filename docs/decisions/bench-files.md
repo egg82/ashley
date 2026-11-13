@@ -191,7 +191,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     STL, 3MF or STEP as a file piece; a `build123d` run is handed the ones its `bench_run` names in `inputs` (a list
     of piece ids; the person's Run button names none, so it takes every such piece that is not shelved), in layout
     order while the bytes fit the profile's `input_bytes` (16 MiB), as the job's binary `inputs`: references to the stored
-    files, which the pod's init container fetches (see "Code runs": the app signs a short-lived link for each) and the
+    files, which the app pushes into the pod's init container (see "Code runs") and the
     run container sees read-only as `inputs/<piece id>.<ext>`, never carried back as output. The bytes are not recorded
     with the run: its files hold `inputs.json`, the index (piece id, name, path, size, sha256, and `left_out` with why:
     `too_large` or `unavailable`), without the last run's. A script names a piece by id, `ashley_cad.existing(7)`; the
@@ -202,8 +202,8 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     shut each other out. Her script text is never read for `existing(...)`. The cap is 16 MiB, the size a run may
     carry back (`artifact_bytes`), so a model one run makes can be an input to the next, and about 300,000 STL
     triangles. Rejected: the bytes in the pod spec, deflated into environment strings, which Kubernetes held to about
-    768 KiB in all, too little for two ordinary STLs. Rejected: an init container with the store's credentials; it has
-    a link and no credential. Rejected: a field on the model piece naming its
+    768 KiB in all, too little for two ordinary STLs. Rejected: an init container that reaches the store or the app, which
+    gives the pod a network. Rejected: a field on the model piece naming its
     inputs, a second place beside the pieces for the same fact. Rejected: finding `existing(...)` calls in the script
     text, which is regex over what she wrote.
   - **`existing` makes a mesh into a solid that can be changed.** build123d's `import_stl` gives one face with no volume,

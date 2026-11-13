@@ -3,14 +3,12 @@ namespaces, no service environment, no resolver, never restarted, CPU and memory
 locked-down non-root container on the language's pinned image with a read-only root, and two size-limited emptyDirs (`/work`, the
 script's working directory, and `/out`, where its output streams go). The job is in the container's environment, one
 variable per value, each base64 (`runner`). A job with binary inputs also gets a third emptyDir, `inputs`, filled before
-the script starts by an init container (`fetcher`) from the short-lived links the app signed for them, and mounted
-read-only at `/work/inputs` in the run container, which holds no link. Such a pod alone carries `FETCH_LABEL`, which the
-cluster's network policy admits to the app's address and nothing else; any other pod can reach nothing. No host path,
-ConfigMap or Secret is mounted. The namespace denies all other traffic."""
+the script starts by an init container (`unpack`), which reads a tar of them from its standard input, pushed by the app
+through the Kubernetes API (`KubernetesSandbox`), and mounted read-only at `/work/inputs` in the run container. So no pod has a network. No host path,
+ConfigMap or Secret is mounted. The namespace denies all traffic."""
 
 import base64
 import json
-from collections.abc import Mapping
 from typing import Any
 
 from .config import Profile, RunsConfig
@@ -18,23 +16,18 @@ from .labels import PREFIX
 from .model import Job
 
 LABEL = PREFIX + "run"
-FETCH_LABEL = PREFIX + "run-inputs"
 NOBODY = 65534
+INIT = "unpack"
 MIB = 1024 * 1024
 
 
-def manifest(job: Job, config: RunsConfig, runner: str, runtime_class: str, fetcher: str = "",
-             links: Mapping[str, str] | None = None) -> dict[str, Any]:
+def manifest(job: Job, config: RunsConfig, runner: str, runtime_class: str, unpacker: str = "") -> dict[str, Any]:
     """`runner` is the program the container runs (`runner.py`'s text), `runtime_class` the pod's RuntimeClass. A job
-    with inputs also needs `fetcher`, the init container's program (`fetcher.py`'s text), and `links`, a URL for each
-    input by name. Raises ValueError for a language the config does not run, or inputs and links that do not name the
-    same files."""
+    with inputs also needs `unpacker`, the init container's program (`unpack.py`'s text). Raises ValueError for a
+    language the config does not run."""
     profile = config.profile(job.language)
     if profile is None:
         raise ValueError(f"{job.language} is not run")
-    fetched = links or {}
-    if set(fetched) != set(job.inputs):
-        raise ValueError("a link for each input, and no other")
     volumes: list[dict[str, Any]] = [{"name": name, "emptyDir": {"sizeLimit": f"{profile.work_mib}Mi"}}
                                      for name in ("work", "out")]
     spec: dict[str, Any] = {
@@ -50,26 +43,23 @@ def manifest(job: Job, config: RunsConfig, runner: str, runtime_class: str, fetc
                             "fsGroup": NOBODY, "seccompProfile": {"type": "RuntimeDefault"}},
         "containers": [_container(job, config, profile, runner)],
         "volumes": volumes}
-    labels = {LABEL: "true"}
     if job.inputs:
         volumes.append({"name": "inputs", "emptyDir": {"sizeLimit": _quantity(profile.input_bytes)}})
-        spec["initContainers"] = [_fetch_container(job, profile, fetcher, fetched)]
+        spec["initContainers"] = [_unpack_container(job, profile, unpacker)]
         spec["containers"][0]["volumeMounts"].append({"name": "inputs", "mountPath": "/work/inputs", "readOnly": True})
-        labels[FETCH_LABEL] = "true"
-    return {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": job.name, "labels": labels}, "spec": spec}
+    return {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": job.name, "labels": {LABEL: "true"}}, "spec": spec}
 
 
 def _quantity(size: int) -> str:
     return f"{-(-size // MIB)}Mi"
 
 
-def _fetch_container(job: Job, profile: Profile, fetcher: str, links: Mapping[str, str]) -> dict[str, Any]:
-    task = {"timeout_s": profile.pod_deadline_s,
-            "files": [{"name": name, "url": links[name], "size": file.size, "sha256": file.sha256}
-                      for name, file in sorted(job.inputs.items())]}
-    return {"name": "fetch", "image": profile.image, "imagePullPolicy": "IfNotPresent",
-            "command": ["python", "-I", "-B", "-c", fetcher],
-            "env": [{"name": "ASHLEY_FETCH", "value": _b64(json.dumps(task))}],
+def _unpack_container(job: Job, profile: Profile, unpacker: str) -> dict[str, Any]:
+    task = {"files": [{"name": name, "size": file.size, "sha256": file.sha256} for name, file in sorted(job.inputs.items())]}
+    return {"name": INIT, "image": profile.image, "imagePullPolicy": "IfNotPresent",
+            "command": ["python", "-I", "-B", "-c", unpacker],
+            "stdin": True, "stdinOnce": True,
+            "env": [{"name": "ASHLEY_INPUTS", "value": _b64(json.dumps(task))}],
             "resources": {"requests": {"cpu": "50m", "memory": "64Mi"}, "limits": {"cpu": "250m", "memory": "128Mi"}},
             "securityContext": {"runAsNonRoot": True, "runAsUser": NOBODY, "allowPrivilegeEscalation": False,
                                 "readOnlyRootFilesystem": True, "capabilities": {"drop": ["ALL"]},
