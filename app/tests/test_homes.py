@@ -1,30 +1,25 @@
 """Each household's Home Assistant (`home_assistant.homes`, `home_assistant.connected_homes.ConnectedHomes`): a household
 reaches the HA its own connection names, with its own token, and none without one; the same Home while the connection
 is unchanged, a new one (the old client closed) once it is replaced, none once it is removed; connections unreadable
-keep the last Home seen, and with none seen are HomesUnavailable; with no key to open connections, the env's HA
-answers for its one household alone. A new address and token are checked with one `GET /api/`. The env's HA is
-seeded as household 1's connection once (`home_assistant.seed.seed_from_env`), never over a row, and the token and
-address reach no log line."""
+keep the last Home seen, and with none seen are HomesUnavailable; with no key to open connections, no household has
+one. A new address and token are checked with one `GET /api/`."""
 
 import asyncio
 
 import pytest
-from ashley import logs
 from ashley.connections.connections import NullConnections
 from ashley.home_assistant.connected_homes import ConnectedHomes
 from ashley.home_assistant.homes import HomeAssistantFailed, HomesUnavailable, NullHomes
-from ashley.home_assistant.seed import seed_from_env
 from homes_support import TOKEN, StandIn
 from money_support import HeldConnections
-from connection_legacy_support import opened_of, remove_of
+from connection_legacy_support import remove_of
 
 ONE, TWO = 1, 2
 WILLOW, BIRCH = "http://ha.willow.test:8123", "https://ha.birch.test"
 
 
-def homes(connections: HeldConnections | NullConnections, stand: StandIn, fallback: str | None = None,
-          ) -> ConnectedHomes:
-    return ConnectedHomes(connections, stand.connect, env=(fallback, TOKEN) if fallback else None)
+def homes(connections: HeldConnections | NullConnections, stand: StandIn) -> ConnectedHomes:
+    return ConnectedHomes(connections, stand.connect)
 
 
 def held(**by_household: tuple[str, str]) -> HeldConnections:
@@ -85,29 +80,25 @@ def test_connections_unreadable_keep_the_last_home_and_with_none_seen_are_unavai
     asyncio.run(scenario())
 
 
-def test_without_a_key_the_envs_home_assistant_answers_for_household_one_alone() -> None:
-    stand = StandIn()
-    found = homes(NullConnections(), stand, fallback=WILLOW)
-    bare = homes(NullConnections(), stand)
+def test_without_a_key_no_household_has_a_home_assistant() -> None:
+    found = homes(NullConnections(), StandIn())
 
     async def scenario() -> None:
-        one = await found.of(ONE)
-        assert one is not None and await found.of(ONE) is one
-        assert await found.of(TWO) is None and await bare.of(ONE) is None
+        assert await found.of(ONE) is None and await found.of(TWO) is None
 
     asyncio.run(scenario())
 
 
 def test_close_closes_every_client_it_made() -> None:
     stand = StandIn()
-    found = homes(held(h1=(WILLOW, TOKEN)), stand, fallback=WILLOW)
+    found = homes(held(h1=(WILLOW, TOKEN)), stand)
 
     async def scenario() -> None:
         await found.of(ONE)
         await found.close()
 
     asyncio.run(scenario())
-    assert len(stand.made) == 2 and all(c.is_closed for c in stand.made)
+    assert len(stand.made) == 1 and all(c.is_closed for c in stand.made)
 
 
 @pytest.mark.parametrize(("status", "raw", "down", "reason"), [
@@ -137,36 +128,3 @@ def test_the_null_homes_reach_no_house() -> None:
 
     asyncio.run(scenario())
 
-
-def test_the_envs_home_assistant_is_seeded_as_household_ones_once_and_never_over_a_row(
-        capsys: pytest.CaptureFixture[str]) -> None:
-    connections = HeldConnections()
-    logs.setup()
-    capsys.readouterr()
-
-    async def scenario() -> None:
-        await seed_from_env(connections, WILLOW, TOKEN)
-        opened = await opened_of(connections, ONE, "home_assistant")
-        assert opened is not None and (opened.connection.base_url, opened.secret) == (WILLOW, TOKEN)
-        await seed_from_env(connections, BIRCH, "another")
-        again = await opened_of(connections, ONE, "home_assistant")
-        assert again is not None and (again.connection.base_url, again.secret) == (WILLOW, TOKEN)
-
-    asyncio.run(scenario())
-    lines = [ln for ln in capsys.readouterr().out.splitlines() if "event=homes.seed" in ln]
-    assert [ln.split("outcome=")[1].split()[0] for ln in lines] == ["seeded", "kept"]
-    assert not any(TOKEN in ln or "willow" in ln or "another" in ln for ln in lines)
-
-
-@pytest.mark.parametrize(("connections", "base", "outcome"), [
-    (NullConnections(), WILLOW, "no_key"), (HeldConnections(down=True), WILLOW, "unavailable"),
-    (HeldConnections(), "ftp://ha.test", "bad_url")])
-def test_a_seed_that_cannot_be_written_is_logged_and_never_raises(
-        connections: HeldConnections | NullConnections, base: str, outcome: str,
-        capsys: pytest.CaptureFixture[str]) -> None:
-    logs.setup()
-    capsys.readouterr()
-    asyncio.run(seed_from_env(connections, base, TOKEN))
-    assert f"outcome={outcome}" in capsys.readouterr().out
-    if isinstance(connections, HeldConnections):
-        assert connections.held == {}

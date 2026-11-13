@@ -2,13 +2,9 @@
 are unchanged and closed once they change or the connection goes. Every `of` reads the connection, so a replacement on
 either site is seen on the next call.
 
-The env's HA (`HA_URL`, `HA_TOKEN`) answers for its one household while that household's connection is not settled:
-with no key to open connections, or before any row of it has been seen, while the seed (`seed.seed_from_env`) is tried
-again on a read, at most once per `RETRY_S`. So a seed that failed at start (the database away during a rollout, or a
-pod ahead of the migration) heals without a restart. Once a row has been seen, a person removing it is respected."""
+A household with no connection has no home."""
 
 import logging
-import time
 from collections.abc import Callable
 from dataclasses import replace
 
@@ -24,12 +20,9 @@ from .ha_house import HaHouse
 from .homes import Home, HomeAssistantFailed, Homes, HomesUnavailable
 from .house import House
 from .house_settings import load as load_house_settings
-from .seed import FALLBACK_HOUSEHOLD, seed_from_env
 
 log = logging.getLogger("ashley.home_assistant")
 _CHECK_TIMEOUT_S = 10
-RETRY_S = 60.0
-"""How often a read tries the env's seed again while the fallback household has no row."""
 
 
 class _Running(BaseModel):
@@ -56,11 +49,8 @@ def _record_answers(client: HomeAssistant, connection_id: int) -> HomeAssistant:
 class ConnectedHomes(Homes):
     def __init__(self, connections: Connections,
                  connect: Callable[[str, str], HomeAssistant] = connect_client,
-                 env: tuple[str, str] | None = None, fallback_household: int = FALLBACK_HOUSEHOLD,
-                 clock: Callable[[], float] = time.monotonic,
                  house: Callable[[HomeAssistant], House] | None = None) -> None:
-        """`connect` makes a client for a base URL and token; it must not follow redirects. `env` is the env's HA
-        (base URL, token), answering for `fallback_household` alone while its connection is not settled. `house` makes the
+        """`connect` makes a client for a base URL and token; it must not follow redirects. `house` makes the
         House over a client; by default Home Assistant's (`ha_house.HaHouse`)."""
         self._connections = connections
         settings = load_house_settings()
@@ -69,11 +59,6 @@ class ConnectedHomes(Homes):
             return HaHouse(client, settings)
         self._house: Callable[[HomeAssistant], House] = house or over_home_assistant
         self._connect = connect
-        self._env = env
-        self._fallback = None if env is None else self._home(fallback_household, *env)
-        self._clock = clock
-        self._settled = env is None
-        self._next_seed = float("-inf")
         self._known: dict[int, tuple[str, str, Home]] = {}
 
     def _home(self, household_id: int, base_url: str, token: str, connection_id: int | None = None) -> Home:
@@ -82,22 +67,13 @@ class ConnectedHomes(Homes):
             client = _record_answers(client, connection_id)
         return Home(household_id, client, self._house(client))
 
-    def _falls_back(self, household_id: int) -> bool:
-        return self._fallback is not None and household_id == self._fallback.household_id
-
     async def of(self, household_id: int) -> Home | None:
         if not self._connections.can_open():
-            return self._fallback if self._falls_back(household_id) else None
+            return None
         try:
             opened = await ports.opened(self._connections, "house", household_id)
         except ConnectionsUnavailable as e:
             return self._unreadable(household_id, e)
-        if self._falls_back(household_id):
-            if opened is None and not self._settled:
-                opened = await self._seeded(household_id)
-                if opened is None:
-                    return self._fallback
-            self._settled = self._settled or opened is not None
         return await self._current(household_id, opened)
 
     def _unreadable(self, household_id: int, error: ConnectionsUnavailable) -> Home:
@@ -105,22 +81,7 @@ class ConnectedHomes(Homes):
         logs.warning(log, "homes.unreadable", household=household_id, kept=known is not None)
         if known is not None:
             return known[2]
-        if self._falls_back(household_id) and not self._settled and self._fallback is not None:
-            return self._fallback
         raise HomesUnavailable("the household's connections could not be read") from error
-
-    async def _seeded(self, household_id: int) -> Opened | None:
-        """The household's connection once the env's seed is decided, None while it is not or not due again."""
-        if self._env is None or self._clock() < self._next_seed:
-            return None
-        self._next_seed = self._clock() + RETRY_S
-        outcome = await seed_from_env(self._connections, *self._env, household_id=household_id)
-        if outcome not in ("seeded", "kept"):
-            return None
-        try:
-            return await ports.opened(self._connections, "house", household_id)
-        except ConnectionsUnavailable:
-            return None
 
     async def _current(self, household_id: int, opened: Opened | None) -> Home | None:
         known = self._known.get(household_id)
@@ -159,8 +120,8 @@ class ConnectedHomes(Homes):
             raise HomeAssistantFailed("not_home_assistant") from e
 
     async def close(self) -> None:
-        """Close every client this made, and the fallback's."""
-        homes = [k[2] for k in self._known.values()] + ([] if self._fallback is None else [self._fallback])
+        """Close every client this made."""
+        homes = [k[2] for k in self._known.values()]
         self._known.clear()
         for home in homes:
             await home.home_assistant.http.aclose()

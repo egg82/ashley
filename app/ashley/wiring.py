@@ -313,11 +313,9 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
 
 
 def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, Any, None]]]) -> None:
-    """Each household's Home Assistant from its connection, the env's (`HA_URL`, `HA_TOKEN`) answering for household 1
-    while its connection is not settled; presence and the everyday tools over each household's own, and the action judge
-    that a turn which has read outside words asks about a consequential change."""
-    env = (settings.ha_url, settings.ha_token) if settings.ha_url else None
-    homes = ConnectedHomes(services.get(Connections), env=env)
+    """Each household's Home Assistant from its connection; presence and the everyday tools over each household's own,
+    and the action judge that a turn which has read outside words asks about a consequential change."""
+    homes = ConnectedHomes(services.get(Connections))
     closers.append(homes.close)
     services.register(Homes, homes)
     services.register(HeldStates, SocketStates())

@@ -96,7 +96,6 @@ app at start-up when one of them is missing.
 | Web app sign-in | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `PUBLIC_URL`. Map each user to a person with `python -m ashley.people add-account <person> oidc <sub>`; `python -m ashley.signin unmapped` lists who was turned away |
 | Model providers | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`; with `CONNECTIONS_KEY` they become the first household's connections, added and rotated in the web app, which win over the env from then on |
 | Connections, added in the web app: Home Assistant, Sure, GitLab, GitHub, herdr, Google | `CONNECTIONS_KEY`, 32 random bytes in base64, which seals their secrets in the database |
-| Home Assistant for the first household, without the web app | `HA_URL`, `HA_TOKEN` (a long-lived access token) |
 | Web search | `SEARXNG_URL` |
 | Files on benches | `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY`, `FILES_SECRET_KEY` (any S3-compatible store; they seed its connection); with `CONNECTIONS_KEY` the key that signs file links is generated once, or seeded from `FILES_LINK_KEY` |
 | Voice | `WYOMING_STT_URL` or `OPENAI_API_KEY` to hear, `ELEVENLABS_API_KEY` (or the first household's ElevenLabs connection) to speak, `VOICE_CLIP_BASE_URL` for satellites, and their key (`ESPHOME_NOISE_PSK` seeds it once; then it is a connection) |

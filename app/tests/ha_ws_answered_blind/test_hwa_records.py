@@ -4,12 +4,11 @@ answer, or one made with another household's client, leaves it."""
 
 import pytest
 from ashley.connections.connections import Connections
-from ashley.home_assistant.connected_homes import ConnectedHomes
 from ashley.home_assistant.ha_socket import Commands
 from ashley.home_assistant.house import HouseRejected, HouseUnavailable
 from ashley.home_assistant.homes import Home
 from contract.conversations_support import scalar
-from ha_ws_answered_support import (TOKEN, Ha, World, age, all_logs, client_for, connections, count_writes, go,
+from ha_ws_answered_support import (Ha, World, age, all_logs, connections, count_writes, go,
                                     hold, homes, log_text, settings, stored_at, writes)
 
 LIST = {"type": "config/area_registry/list"}
@@ -196,18 +195,3 @@ def test_a_rest_read_is_one_write(world: World, ha: Ha) -> None:
 
     go(scenario())
 
-
-def test_a_house_without_a_stored_connection_moves_nobody_elses(world: World, ha: Ha) -> None:
-    async def scenario() -> None:
-        async with connections(world.url) as c:
-            await hold(c, world, world.other)
-            service = ConnectedHomes(Connections.null(), lambda url, token: client_for(ha.url, token),
-                                     env=(ha.url, TOKEN), fallback_household=world.home)
-            home = await service.of(world.home)
-            assert home is not None
-            before = age(world.url, world.other)
-            count_writes(world.url)
-            assert await Commands(home.home_assistant, settings()).run(LIST) == []
-            assert stored_at(world.url, world.other) == before and writes(world.url) == 0
-
-    go(scenario())

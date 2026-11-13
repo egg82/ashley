@@ -70,7 +70,7 @@ ALLOWED: dict[str, set[str]] = {
     "wiring_skills": {"db", "persona", "services", "skills"},
     "wiring_discord": {"channels", "connections", "services", "settings", "signin", "tools"},
     "wiring_secrets": {"channels", "connections", "db", "logs", "services", "settings"},
-    "wiring_seeds": {"channels", "connections", "files", "home_assistant", "inference", "services", "settings", "tools", "wiring_providers"},
+    "wiring_seeds": {"channels", "connections", "files", "inference", "services", "settings", "tools", "wiring_providers"},
     "wiring_inference": {"connections", "db", "inference", "services", "settings", "wiring_providers"},
     "wiring_singletons": {"channels", "connections", "conversations", "db", "files", "home_assistant", "inference", "logs", "looks", "mail", "memory",
                           "referee", "senses", "services", "settings", "watches", "workshop"},

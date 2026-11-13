@@ -213,7 +213,7 @@ def test_a_known_failing_case_is_marked_and_counted_in_its_rate() -> None:
 
 def test_the_runner_wires_from_the_environment_and_fails_when_no_model_answers(
         ledger_database: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "LOCAL_LLM_URL", "HA_URL", "HA_TOKEN",
+    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "LOCAL_LLM_URL",
                 "ETCD_URL", "WYOMING_STT_URL", "ELEVENLABS_API_KEY", "VOICE_CLIP_BASE_URL"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
