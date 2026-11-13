@@ -94,9 +94,12 @@ class Stack:
         return Owner(self.world.who.household_id, self.world.who.id)
 
     async def rule(self, event: str = "arrived", brief: str = GREET, tools: tuple[str, ...] = ("lamp_on",),
-                   body: str | None = None) -> int:
+                   body: str | None = None, greets: bool | None = None) -> int:
         bench = await self.workshop.open(self.owner, "wakes")
-        text = body if body is not None else json.dumps({"event": event, "brief": brief, "tools": list(tools)})
+        fields: dict[str, object] = {"event": event, "brief": brief, "tools": list(tools)}
+        if greets is not None:
+            fields["greets"] = greets
+        text = body if body is not None else json.dumps(fields)
         applied = await self.workshop.apply(self.owner, bench.id, Add(By(self.world.who.id), "wake", Text("rule", text), "small"))
         assert applied.outcome == "accepted", applied
         return bench.id

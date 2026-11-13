@@ -2,7 +2,9 @@
 Assistant wakes her; she decides"). One JSON object of exactly `event` (the event name it answers, the same slug an
 automation's wake action sends, `wake_action`), `brief` (her short brief for that turn, at most `MAX_BRIEF`
 characters) and `tools` (the names of the tools that turn may use, matched as `ashley.tools.excluding.is_excluded`
-matches; empty for none). An empty body is a draft and passes."""
+matches; empty for none), and optionally `greets` (a bool, false when absent: whether the wake is a greeting, whose
+turn `Initiative` scores and rolls; any other wake's reply goes out on her `says` alone). An empty body is a draft and
+passes."""
 
 import json
 import re
@@ -15,6 +17,7 @@ MAX_BRIEF = 1000
 EVENT = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _TOOL = re.compile(r"[A-Za-z0-9_.\-]{1,128}")
 _FIELDS = frozenset(("event", "brief", "tools"))
+_GREETS = _FIELDS | {"greets"}
 
 
 @dataclass(frozen=True)
@@ -22,6 +25,7 @@ class WakeRule:
     event: str
     brief: str
     tools: tuple[str, ...]
+    greets: bool = False
 
 
 def rule_of(body: str) -> WakeRule | None:
@@ -30,14 +34,17 @@ def rule_of(body: str) -> WakeRule | None:
         loaded = object_of(json.loads(body))
     except ValueError:
         return None
-    if loaded is None or frozenset(loaded) != _FIELDS:
+    if loaded is None or frozenset(loaded) not in (_FIELDS, _GREETS):
+        return None
+    greets = loaded.get("greets", False)
+    if not isinstance(greets, bool):
         return None
     event, brief, tools = loaded["event"], loaded["brief"], _names(loaded["tools"])
     if not isinstance(event, str) or not EVENT.fullmatch(event) or tools is None:
         return None
     if not isinstance(brief, str) or not brief.strip() or len(brief) > MAX_BRIEF:
         return None
-    return WakeRule(event, brief, tools)
+    return WakeRule(event, brief, tools, greets)
 
 
 def well_formed(body: str) -> bool:

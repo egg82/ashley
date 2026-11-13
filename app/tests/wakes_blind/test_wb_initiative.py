@@ -19,7 +19,7 @@ from ashley.initiative.moment import Moment, Outcome
 from ashley.initiative.score import roll
 from ashley.initiative.weights import parse
 from ashley.senses.presence import Presence
-from ashley.workshop.wake_rule import WakeRule
+from ashley.workshop.wake_rule import WakeRule, rule_of
 from contract.conversations_support import events, run, scalar
 from contract.test_inflight_resume import World
 from inflight_blind.ifb_checkpoint_support import checkpoint
@@ -57,7 +57,7 @@ def test_her_prompt_carries_the_plans_instruction_and_a_silent_plan_keeps_her_re
 
     async def go() -> None:
         async with stack(world, always(outcome)) as s:
-            await s.rule()
+            await s.rule(greets=True)
             await s.hand_in()
             await sweep()
             assert s.queued() == (0 if outcome == "silent" else 1)
@@ -76,8 +76,8 @@ def test_a_greeting_soon_after_the_last_is_quiet_even_when_the_last_was_quiet(wo
 
     async def go() -> None:
         async with stack(world, greeted_quiets()) as s:
-            await s.rule()
-            await s.rule(event="left")
+            await s.rule(greets=True)
+            await s.rule(event="left", greets=True)
             await s.hand_in("ctx-1")
             await sweep()
             await s.hand_in("ctx-2")
@@ -97,8 +97,8 @@ def test_said_before_reads_her_wake_turns_quiet_ones_as_greeted_and_not_as_spoke
 
     async def go() -> None:
         async with stack(world) as s:
-            await s.rule()
-            await s.rule(event="left")
+            await s.rule(greets=True)
+            await s.rule(event="left", greets=True)
             spoke = await s.hand_in("ctx-1")
             await sweep()
             quiet = await s.hand_in("ctx-2", event="left")
@@ -132,7 +132,7 @@ def test_the_moment_is_measured_from_the_event_in_the_households_zone(world: Wor
 
     async def go() -> None:
         async with stack(world) as s:
-            await s.rule()
+            await s.rule(greets=True)
             first = await s.hand_in("ctx-1")
             await sweep()
             services.register(Presence, TwoHome(frozenset({world.who.id, 999, 998})))
@@ -158,7 +158,7 @@ def test_the_decision_is_logged_with_its_score_roll_and_outcome_and_never_her_wo
 
     async def go() -> None:
         async with stack(world, policy) as s:
-            await s.rule()
+            await s.rule(greets=True)
             ids.append(await s.hand_in())
             await sweep()
 
@@ -177,3 +177,52 @@ def test_a_checkpoint_keeps_the_moment_so_a_resumed_turn_decides_the_same() -> N
     kept = replace(made, inbound=replace(made.inbound, moment=m))
     assert loads(dumps(kept)).inbound.moment == m
     assert loads(dumps(made)).inbound.moment is None
+
+
+def test_a_rule_that_does_not_greet_goes_out_on_says_alone_with_no_roll_and_no_instruction(
+        world: World, capsys: pytest.CaptureFixture[str]) -> None:
+    logs.setup()
+    world.first.inference.script = [DONE]
+    world.as_pod(world.first)
+
+    async def go() -> None:
+        async with stack(world, always("silent")) as s:
+            await s.rule()
+            await s.hand_in()
+            await sweep()
+            assert s.queued() == 1
+
+    run(go())
+    assert world.hers() == [HERS], "a greeting rule under this policy is kept quiet (the parametrized test above)"
+    seen = repr(world.first.inference.prompts[0].messages)
+    assert not any(instruction(world, o) in seen for o in ("full", "short", "silent"))
+    (line,) = events(capsys.readouterr().out, "initiative.decided")
+    assert line["outcome"] == "not_greeting" and "score" not in line and "roll" not in line
+
+
+def test_a_rule_that_does_not_greet_still_stays_quiet_when_she_says_none(world: World) -> None:
+    world.first.inference.script = [SILENT]
+    world.as_pod(world.first)
+
+    async def go() -> None:
+        async with stack(world, always("full")) as s:
+            await s.rule(greets=False)
+            await s.hand_in()
+            await sweep()
+            assert s.queued() == 0
+
+    run(go())
+    assert world.hers() == [QUIET]
+
+
+def test_a_rule_body_from_before_greets_parses_as_not_greeting() -> None:
+    old = rule_of('{"event": "washer_done", "brief": "Tell them.", "tools": []}')
+    assert old is not None and old.greets is False
+    new = rule_of('{"event": "arrived", "brief": "Greet them.", "tools": [], "greets": true}')
+    assert new is not None and new.greets is True
+
+
+@pytest.mark.parametrize("greets", ['"yes"', "1", "null", "0"])
+def test_a_rule_whose_greets_is_not_a_bool_is_refused(greets: str) -> None:
+    assert rule_of('{"event": "arrived", "brief": "Greet them.", "tools": [], "greets": %s}' % greets) is None
+    assert rule_of('{"event": "arrived", "brief": "Greet them.", "tools": [], "greets": false}') is not None, "control"

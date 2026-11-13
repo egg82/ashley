@@ -38,7 +38,9 @@ HINTS: dict[Reason, str] = {
     "no_proposal": "that is not a proposal of this piece waiting to be installed",
     "needs_person": "only the person installs an automation or undoes an install: ask them to, on the piece",
     "bad_wake": "a wake rule's body is one JSON object of exactly event (the slug its wake action sends), brief (what "
-                "to do on that wake, short) and tools (the names that turn may use)",
+                "to do on that wake, short) and tools (the names that turn may use), and optionally greets (true or "
+                "false; true when the wake is a greeting, so code decides whether and how fully to say it; absent or "
+                "false, what you write goes out when you say it is worth saying)",
     "bad_measurements": 'a measurements piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "asked"}]}: '
                         "name an identifier unique in the piece, value a finite number, unit mm (every length in millimetres), deg, "
                         "count, g (grams), ml (millilitres) or min (minutes), source measured, datasheet, accepted, bound or guessed, "
