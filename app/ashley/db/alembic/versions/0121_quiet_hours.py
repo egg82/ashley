@@ -3,8 +3,8 @@ choosing, all three set or none. While it holds, nothing she says on her own ini
 
 from alembic import op
 
-revision: str = "0122"
-down_revision: str | None = "0121"
+revision: str = "0121"
+down_revision: str | None = "0120"
 
 
 def upgrade() -> None:
