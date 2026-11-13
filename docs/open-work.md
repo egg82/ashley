@@ -28,6 +28,10 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
       site, and the room names in `app/ashley/evals/house_cases.json`.
 
+48. **A device says what it can do.** `takes_controls` is derived from `form` `other` with medium `text`, the only
+    fact the server holds (`ashley.channels.model.Listed.takes_controls`); the devices table gets an explicit capability
+    set when a device is registered, and the rule goes. Fits into: Devices.
+
 43. **The suite's remaining real waits and fixed costs.** A pull request's checks take about 6 minutes; what is left
     of that, largest first:
     - **A lease takeover timed out once in CI**: `tests/test_watch_session_lease.py::test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state`
