@@ -2,7 +2,8 @@
 the reply and the turn's `Inbound.moment`, unless the person asked for it earlier (`Inbound.promised`, a reminder); on
 a turn that may have been overheard (`Inbound.overhears`) it is her `Reply.says`. One that does not go out is stored as
 `QUIET`, so no later turn carries words she never said. Logs `initiative.decided` with the conversation and `speaks`,
-and at a moment its plan's score, roll and outcome, once per turn Initiative decides, never the reply."""
+with its plan's score, roll and outcome at a moment and `outcome=not_greeting` on a turn with none, once per turn
+Initiative decides, never the reply."""
 
 import logging
 
@@ -49,7 +50,7 @@ def decided(reply: Reply, inbound: Inbound, conversation_id: int) -> bool:
     if not _initiative_decides(inbound):
         return out
     if inbound.moment is None:
-        logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out)
+        logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out, outcome="not_greeting")
         return out
     plan = services.get(Initiative).planned(inbound.moment)
     logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out, score=plan.score,

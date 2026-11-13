@@ -2,9 +2,10 @@
 due first, and settles each with what came of it. A reminder fires (`reminder.fired`) and, when it repeats, is settled
 with its next occurrence, which the settle stores only if it was the one to settle it; it never expires. A watch's wake (`watch_turn`) is told for the watches' `wake_max_age_s`, a day, then `expired`.
 A house wake past `max_age_s` since it arrived, `expired`; no rule or more than one for its
-event (`rule.rule_for`), `no_rule` or `ambiguous`; no person of the household for its `who`, `no_person`; else the facts
-of its moment are gathered (`moment.gathered`), `Initiative` plans from them, and her turn runs through the shared turn
-loop with that plan's instruction (`wake_turn.inbound`) and it is `turn`, or `failed` when the model refused it. A
+event (`rule.rule_for`), `no_rule` or `ambiguous`; no person of the household for its `who`, `no_person`; else, for a rule
+that greets (`WakeRule.greets`), the facts of its moment are gathered (`moment.gathered`) and `Initiative` plans from
+them, and her turn runs through the shared turn loop with that plan's instruction, if any (`wake_turn.inbound`), and it
+is `turn`, or `failed` when the model refused it. A
 wake whose rule or person cannot be read now (the workshop or People out of reach), or whose turn could not run now
 (`RespondUnavailable`, as during a failover), is left due for the next sweep, until `max_age_s`; handing it in again
 is the same turn (`Inbound.source`).
@@ -125,10 +126,10 @@ async def _house(due: Due, wake: Wake) -> Outcome:
     person = await _person(wake)
     if person is None:
         return "no_person"
-    moment = await gathered(due.id, wake, person)
-    plan = services.get(Initiative).planned(moment)
+    moment = await gathered(due.id, wake, person) if rule.greets else None
+    outcome = None if moment is None else services.get(Initiative).planned(moment).outcome
     try:
-        await respond(wake_turn.inbound(due.id, wake, rule, person, moment, plan.outcome))
+        await respond(wake_turn.inbound(due.id, wake, rule, person, moment, outcome))
     except RespondRefused:
         return "failed"
     return "turn"

@@ -9,14 +9,18 @@ Code computes a score from measured facts, and her reply's structured `says` dec
 say. Weights, the threshold and the odds are data (`app/ashley/initiative/score.json`), tuned from real use; each
 weight's sign is part of that data's contract, so the loader refuses a recent greeting that would raise the score.
 
-- **The facts are gathered before the turn, and the plan is made before she is asked.** A house wake's turn carries
+- **Only a greeting is scored.** A wake rule says whether it greets (`greets`, false when absent); a greeting's turn is
+  scored and rolled as below, and any other wake (the washer finished, a door left open) goes out on her `says` alone,
+  as a notification should. Rejected: scoring every wake, which let a low score or a silent roll drop a notification.
+- **The facts are gathered before the turn, and the plan is made before she is asked.** A greeting wake's turn carries
   its moment (`ashley.initiative.moment.Moment`): the event's hour in the household's zone, how many others are home,
   how long since the person last spoke to her, since her last turn on the same event about them, and since her last
   wake turn about them that went out, each measured back from when the event happened and None when unknown, which
   scores as nothing. Under the threshold the plan is silent; above it a roll seeded from the wake's id picks full,
   short or silent from the odds of the score's band, so a replay decides the same. The outcome reaches her as that
   call's instruction in the wake's note, never as a frequency word. Her reply goes out when the plan is not silent and
-  `says` is not `none`; a turn with no moment (a watch, a bench's reaction) goes out on `says` alone.
+  `says` is not `none`; a turn with no moment (a wake that does not greet, a watch, a bench's reaction) goes out on
+  `says` alone, logged `outcome=not_greeting`.
   Rejected: the facts read inside `Initiative`, which would make the decision impure and let the first runner and the
   resumer disagree; the moment rides on the turn's `Inbound`, checkpointed with it.
 - **A quiet greeting is still a greeting.** Her turn kept quiet (`unprompted.QUIET`) counts as greeted for the same
@@ -55,8 +59,8 @@ person, and to ask only what the house cannot tell her.
   household in the one primary), and the turn is work she starts herself, run by the `wakes` singleton under the lease.
   The wake's id is the turn's `source`, so a runner killed after handing it in, whose wake is handed in again, gets the
   same turn. Rejected: refusing the request on the standby site, which drops HA's one call.
-- **Her rule is a wake piece on a bench** (kind `wake`): the event it answers, a short brief for that turn, and the
-  tools it may use. A wake runs a turn only when exactly one rule on the household's open benches answers its event;
+- **Her rule is a wake piece on a bench** (kind `wake`): the event it answers, a short brief for that turn, the
+  tools it may use, and whether it greets. A wake runs a turn only when exactly one rule on the household's open benches answers its event;
   none is `no_rule`, two are `ambiguous`, and it is settled so rather than guessed. A wake about no person of the
   household is `no_person`; one waiting past `max_age_s` is `expired` (an arrival greeting an hour late is wrong). A
   turn that cannot run now (`RespondUnavailable`, as during a failover) leaves the wake due for the next sweep, the
