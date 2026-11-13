@@ -1,11 +1,13 @@
-// The glance of the fixed page: the time and date on this screen's clock, who is home, and the sources with nothing
-// behind them yet. "Not connected" where no source exists.
+// The glance of the fixed page: the time and date on this screen's clock, who is home, today's and tomorrow's events,
+// and the sources with nothing behind them yet. "Not connected" where no source exists; a source that cannot be read now is "unknown".
 import { Fragment } from 'preact';
+import { Agenda } from './Agenda';
 import { Clock } from './Clock';
 import { HomeNames } from './Home';
 import { glance } from './state';
 
 const SOURCE = { calendar: 'Calendar', reminders: 'Reminders' };
+const NOT_YET = ['calendar', 'reminders'] as const;
 
 export function Glance() {
   const seen = glance.value;
@@ -15,7 +17,13 @@ export function Glance() {
       <dl class="k-facts">
         <dt class="label">Home</dt>
         <dd><HomeNames names={seen?.home} /></dd>
-        {(seen?.not_connected ?? ['calendar', 'reminders']).map((s) => (
+        {seen?.not_connected.includes('calendar') === false && (
+          <>
+            <dt class="label k-agenda-label">{SOURCE.calendar}</dt>
+            <dd><Agenda events={seen.calendar} /></dd>
+          </>
+        )}
+        {(seen?.not_connected ?? NOT_YET).map((s) => (
           <Fragment key={s}>
             <dt class="label">{SOURCE[s]}</dt>
             <dd><span class="unk">not connected</span></dd>

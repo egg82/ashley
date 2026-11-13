@@ -56,6 +56,13 @@ export function listLines(house: House, stored: readonly string[]): ListLine[] {
   return byName(ids.map((id) => ({ id, name: nameOf(house, id), sub: id, missing: house !== null && !have.includes(id), only: stored.includes(id) })));
 }
 
+/** One line per calendar the house has, plus any stored one it no longer has; `only` is true for one the hallway screen shows. */
+export function calendarLines(house: House, stored: readonly string[]): ListLine[] {
+  const have = (house?.entities ?? []).filter((e) => e.domain === 'calendar').map((e) => e.entity_id);
+  const ids = [...have, ...stored.filter((id) => !have.includes(id))];
+  return byName(ids.map((id) => ({ id, name: nameOf(house, id), sub: id, missing: house !== null && !have.includes(id), only: stored.includes(id) })));
+}
+
 function actionsOf(house: House): CatalogueActionInfo[] {
   return (house?.actions ?? []).filter((a) => LOOK_UP_DOMAINS.includes(a.domain));
 }

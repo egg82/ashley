@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ConnectionCatalogue } from '../../../api/types';
-import { found, listLines, lookupLines, needLines, nameOf } from './house.ts';
+import { calendarLines, found, listLines, lookupLines, needLines, nameOf } from './house.ts';
 
 const thing = (entity_id: string, name: string, device_class: string | null = null) =>
   ({ entity_id, name, domain: entity_id.split('.')[0] ?? '', device_class });
 const house: ConnectionCatalogue = {
   entities: [thing('todo.shop', 'Shopping'), thing('todo.chores', 'Chores'), thing('script.where', 'Where is everyone'),
-    thing('script.bed', 'Bedtime'), thing('lock.front', 'Front door'), thing('switch.rack', 'Server rack'), thing('light.den', 'Den')],
+    thing('script.bed', 'Bedtime'), thing('lock.front', 'Front door'), thing('calendar.family', 'Family'), thing('calendar.work', 'Work'), thing('switch.rack', 'Server rack'), thing('light.den', 'Den')],
   actions: [{ name: 'script.where', domain: 'script', looks_up_only: false }, { name: 'script.bed', domain: 'script', looks_up_only: false },
     { name: 'weather.get_forecasts', domain: 'weather', looks_up_only: true }, { name: 'light.turn_on', domain: 'light', looks_up_only: false }],
   read_at: '2026-11-07T00:00:00Z',
@@ -42,4 +42,9 @@ test('search finds what is not listed yet by name or id, says Already for a lock
   assert.deepEqual(found(house, '  ', []), { shown: [], more: 0 });
   const many: ConnectionCatalogue = { ...house, entities: Array.from({ length: 12 }, (_, i) => thing(`light.l${i}`, `Lamp ${i}`)) };
   assert.deepEqual([found(many, 'lamp', []).shown.length, found(many, 'lamp', []).more], [8, 4]);
+});
+
+test('every calendar the house has is a row, the shown ones on, and a stored calendar the house lost stays on', () => {
+  const rows = calendarLines(house, ['calendar.family', 'calendar.gone']);
+  assert.deepEqual(rows.map((r) => [r.name, r.only, r.missing]), [['Family', true, false], ['Gone', true, true], ['Work', false, false]]);
 });

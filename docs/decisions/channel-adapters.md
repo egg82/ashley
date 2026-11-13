@@ -64,9 +64,14 @@ the hallway may see, and does what anyone there may do.
   it is not queued in the outbox, since the satellites singleton takes every outbox reply on a `device:` thread. The
   page holds `GET /api/kiosk/live` open, reopened with backoff: her mark follows the shared turns' state and the
   conversation is read back on a stored turn or a resync, with its slow timer only while the feed is down. **The glance**
-  is the screen's own clock, written in the household's locale and clock, and the first names of the household's people who are home (the house's own knowledge, which whoever stands in the hallway can see), and calendar and
+  is the screen's own clock, written in the household's locale and clock, and the first names of the household's people who are home (the house's own knowledge, which whoever stands in the hallway can see), today's and tomorrow's events (title and
+  time) of the calendars the household listed in its Home Assistant connection's `glance_calendars` setting, and
   reminders shown as not connected until a source exists; it is read on its timer whether or not the feed is up, since
-  nothing announces a person coming or going.
+  nothing announces a person coming or going. **The calendar is a plain read, not a watch**: `senses.calendar.Calendar`
+  runs `calendar.get_events` through the household's house on every glance, with no cache (one HA call a minute per
+  screen) and no model, so a screen nobody is woken by owns no watch row and no wake. The titles are invite text shown to
+  whoever stands in the hallway, which is why a person picks the calendars (none listed reads as not connected) and why nothing but a count is logged. A calendar that cannot be read is
+  unknown, never an empty day.
 - **The tablet's screen is a bench of the device's, laid out by her.** A device of form `other` has at most one screen
   bench (`benches.device_id`, owner null), created on its first change and seeded from `screen_seed.json`; until
   then the page shows its fixed layout, which is also what it shows whenever the layout cannot be read or is not
