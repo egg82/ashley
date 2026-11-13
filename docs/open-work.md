@@ -162,7 +162,8 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     every target carries the provider's own spam or promotions label, which the adapter reads; (2) a page listing
     `outside_actions`, "what she did on her own and why"; (3) a live `python -m ashley.evals action-judge` run and the
     model-golf pick of the final route. Fits into: Mail (the adapter's labels), Channels (`Outside`), Inference.
-8. **Golf the system prompt.** Count tokens per section first (Anthropic's `count_tokens`), then cut by ablation
+8. **Golf the system prompt.** Token counts per section are built: `python -m ashley.evals prompt-sizes` (stable sections, moment, each tool and
+   source, reply schema; run it in the pod before each cut). Cut by ablation
    against the eval battery, keeping a cut only when nothing regresses (`model-golf`). Most of it is Home Assistant's:
    its tool definitions (4,315 tokens before her own house tools replaced them; measure again) and the device list in her tool instructions (about 1,080 tokens, the entities exposed to Assist). Levers: offer tool groups by kind, channel and place rather than all of them; household facts retrieved per message from memory
    (standing facts and recall) instead of the whole profile; format rules checked on `Reply` in code instead of carried as prose; and the
