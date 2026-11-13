@@ -4,7 +4,7 @@ holds and another lacks. Losing a site loses no file and stops no upload."""
 
 import asyncio
 import logging
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from datetime import datetime
 
 from .. import logs
@@ -41,6 +41,38 @@ class MirroredStore(ObjectStore):
         for index, store in enumerate(self._stores):
             try:
                 found = await store.get(key)
+            except StoreUnavailable as e:
+                logs.warning(log, "files.read_failed", store=index, error=type(e).__name__)
+                continue
+            answered = True
+            if found is not None:
+                return found
+        if not answered:
+            raise StoreUnavailable("no store answered")
+        return None
+
+    async def size(self, key: str) -> int | None:
+        """As `get`: the first store that holds `key` answers; raises StoreUnavailable when no store answered."""
+        answered = False
+        for index, store in enumerate(self._stores):
+            try:
+                found = await store.size(key)
+            except StoreUnavailable as e:
+                logs.warning(log, "files.read_failed", store=index, error=type(e).__name__)
+                continue
+            answered = True
+            if found is not None:
+                return found
+        if not answered:
+            raise StoreUnavailable("no store answered")
+        return None
+
+    async def stream(self, key: str, first: int, last: int) -> AsyncIterator[bytes] | None:
+        """As `get`: the first store that holds `key` is streamed from, a store that failed is skipped for the next."""
+        answered = False
+        for index, store in enumerate(self._stores):
+            try:
+                found = await store.stream(key, first, last)
             except StoreUnavailable as e:
                 logs.warning(log, "files.read_failed", store=index, error=type(e).__name__)
                 continue

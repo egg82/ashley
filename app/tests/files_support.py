@@ -53,6 +53,7 @@ class FakeS3:
         self.page = page
         self.signed = 0
         self.unsigned = 0
+        self.sent = 0
 
     def transport(self) -> httpx2.MockTransport:
         return httpx2.MockTransport(self._handle)
@@ -75,12 +76,26 @@ class FakeS3:
         if request.method == "PUT":
             self.objects[key] = request.content
             return httpx2.Response(200)
+        if request.method == "HEAD":
+            return httpx2.Response(200, headers={"content-length": str(len(self.objects[key]))}) if key in self.objects else httpx2.Response(404)
+        if request.method == "GET" and key in self.objects:
+            return self._body(self.objects[key], request.headers.get("range"))
         if request.method == "GET":
-            return httpx2.Response(200, content=self.objects[key]) if key in self.objects else httpx2.Response(404)
+            return httpx2.Response(404)
         if request.method == "DELETE":
             self.objects.pop(key, None)
             return httpx2.Response(204)
         return httpx2.Response(405)
+
+    def _body(self, data: bytes, asked: str | None) -> httpx2.Response:
+        found = re.fullmatch(r"bytes=(\d+)-(\d+)", asked or "")
+        if found is None:
+            self.sent += len(data)
+            return httpx2.Response(200, content=data)
+        first, last = int(found[1]), min(int(found[2]), len(data) - 1)
+        self.sent += last - first + 1
+        return httpx2.Response(206, content=data[first:last + 1],
+                               headers={"content-range": f"bytes {first}-{last}/{len(data)}"})
 
     def _list(self, query: dict[str, list[str]]) -> httpx2.Response:
         prefix = query.get("prefix", [""])[0]

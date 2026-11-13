@@ -5,7 +5,7 @@ removed in the room reaches every pod within that bound with no restart."""
 
 import logging
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from datetime import datetime
 
 import httpx2
@@ -68,6 +68,12 @@ class ConnectedStore(ObjectStore):
 
     async def get(self, key: str) -> bytes | None:
         return await (await self.current()).get(key)
+
+    async def size(self, key: str) -> int | None:
+        return await (await self.current()).size(key)
+
+    async def stream(self, key: str, first: int, last: int) -> AsyncIterator[bytes] | None:
+        return await (await self.current()).stream(key, first, last)
 
     async def delete(self, key: str) -> None:
         await (await self.current()).delete(key)

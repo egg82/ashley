@@ -1,10 +1,10 @@
 """An object store in memory: the stand-in for tests, and for a process with no storage to reach. `down` makes every
 call raise StoreUnavailable, as a store that cannot be reached does."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from datetime import UTC, datetime
 
-from .store import ObjectStore, StoreUnavailable
+from .store import ObjectStore, StoreUnavailable, chunks
 
 
 class MemoryStore(ObjectStore):
@@ -23,6 +23,16 @@ class MemoryStore(ObjectStore):
     async def get(self, key: str) -> bytes | None:
         self._reach()
         return self.objects.get(key)
+
+    async def size(self, key: str) -> int | None:
+        self._reach()
+        found = self.objects.get(key)
+        return None if found is None else len(found)
+
+    async def stream(self, key: str, first: int, last: int) -> AsyncIterator[bytes] | None:
+        self._reach()
+        found = self.objects.get(key)
+        return None if found is None else chunks(found[first:last + 1])
 
     async def delete(self, key: str) -> None:
         self._reach()
