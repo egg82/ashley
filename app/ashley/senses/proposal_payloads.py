@@ -194,7 +194,7 @@ def _reminder_to_json(r: Reminder) -> dict[str, Any]:
             "due_at": r.due_at.isoformat(), "repeat": None if r.repeat is None else repeats.to_json(r.repeat),
             "route": r.route, "tools": None if r.tools is None else list(r.tools), "taint": r.taint,
             "made_in": None if r.made_in is None else list(r.made_in), "device_id": r.device_id,
-            "ends_at": None if r.ends_at is None else r.ends_at.isoformat()}
+            "ends_at": None if r.ends_at is None else r.ends_at.isoformat(), "method": r.method}
 
 
 def _reminder_from_json(raw: Mapping[str, Any]) -> Reminder:
@@ -206,7 +206,8 @@ def _reminder_from_json(raw: Mapping[str, Any]) -> Reminder:
                     None if raw.get("taint") is None else str(raw["taint"]),
                     None if raw.get("made_in") is None else (int(raw["made_in"][0]), int(raw["made_in"][1])),
                     None if raw.get("device_id") is None else int(raw["device_id"]),
-                    None if raw.get("ends_at") is None else datetime.fromisoformat(raw["ends_at"]))
+                    None if raw.get("ends_at") is None else datetime.fromisoformat(raw["ends_at"]),
+                    method=None if raw.get("method") is None else str(raw["method"]))
 
 
 REMINDERS = Topic[ReminderPayload]("reminder", _decode_reminders)

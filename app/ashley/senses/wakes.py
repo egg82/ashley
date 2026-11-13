@@ -78,7 +78,10 @@ class Reminder:
     None for any other route and once that device is removed. `ends_at` makes it an **errand**, an ask she carries out
     over checks: each occurrence is one check, whose turn may set the next (`Wakes.follow_up`) no later than `ends_at`,
     and it never repeats by rule; None for a reminder. `plan` is what she noted for this check at the one before (1 to
-    `MAX_BRIEF` characters; people's data, never logged), None on an errand's first check and on every reminder."""
+    `MAX_BRIEF` characters; people's data, never logged), None on an errand's first check and on every reminder.
+    `method` makes it a **standing errand**, work she does each time its rule comes round and never finishes: the
+    household's skill kind (`ashley.skills.skills.Skills`) whose document her turn follows, read when it fires. A
+    standing errand repeats and has no `ends_at`; None for every other reminder."""
 
     household_id: int
     person_id: int
@@ -94,6 +97,7 @@ class Reminder:
     device_id: int | None = None
     ends_at: datetime | None = None
     plan: str | None = None
+    method: str | None = None
 
 
 @dataclass(frozen=True)
@@ -186,8 +190,9 @@ class Wakes(Service):
     async def schedule(self, reminder: Reminder) -> int:
         """Store `reminder` as a wake due at its `due_at`; its id. Raises ValueError for a brief outside 1 to
         `MAX_BRIEF` characters or holding a NUL, more than `MAX_TOOLS` tools, or a `landed` deposit (only
-        `Deposits.fire` sets one), and for an errand that repeats, carries a `plan` or falls due after its `ends_at`,
-        before anything is written; WakesUnavailable."""
+        `Deposits.fire` sets one), for an errand that repeats, carries a `plan` or falls due after its `ends_at`, and
+        for a standing errand (`method`) that does not repeat or has an end, before anything is written;
+        WakesUnavailable."""
 
     @abstractmethod
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:

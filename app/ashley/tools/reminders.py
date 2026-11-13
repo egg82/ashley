@@ -25,7 +25,8 @@ from ..senses.proposal_payloads import REMINDERS, MoneyRule, ReminderChange, Rem
 from ..senses.proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
 from ..senses.repeat import LOCAL_FORMAT
 from ..senses.wakes import Reminder, Route, Scheduled, Wakes, WakesUnavailable
-from . import bench_results, money_rule_args, reminder_shape as shape, reminder_specs as specs, tainted, watch_agreed
+from . import bench_results, money_rule_args, reminder_shape as shape, reminder_specs as specs, standing_method
+from . import tainted, watch_agreed
 from .bench_args import BadArguments, check_names
 from .errand_step import CONFIG as ERRAND
 from .tools import Catalogue, Tools, ToolsUnavailable
@@ -128,9 +129,13 @@ class ReminderTools(Tools):
         usable = await self._usable_specs()
         tools = shape.tools_of(args.get("tools"), usable)
         route, device = await self._route(args, "phone", None)
+        ends = _ends(args.get("errand_hours"), due_at, repeat)
+        method = await standing_method.named(self._household_id, args.get("method"))
+        if method is not None and repeat is None:
+            raise BadArguments("a standing errand repeats; give how it repeats, or leave out method")
         reminder = Reminder(self._household_id, _person(household, args.get("for")), self._speaker_id,
                             _what(args.get("what")), due_at, repeat, None, route, tools, tainted.current(),
-                            tainted.made_in(), device, _ends(args.get("errand_hours"), due_at, repeat))
+                            tainted.made_in(), device, ends, method=method)
         if shape.acts(tools, usable):
             return await self._proposed(call, started, reminder, None, zone)
         try:
@@ -330,10 +335,12 @@ def _changed(args: Mapping[str, object], current: Scheduled, zone: ZoneInfo, usa
         due_at = shape.first_due(repeat, local, zone, datetime.now(UTC))
     if r.ends_at is not None and (repeat is not None or due_at > r.ends_at):
         raise BadArguments("an errand never repeats, and its next check falls before it ends")
+    if r.method is not None and repeat is None:
+        raise BadArguments("a standing errand keeps repeating; cancel it to stop it")
     tools = shape.tools_of(args["tools"], usable) if "tools" in args else r.tools
     return Reminder(r.household_id, r.person_id, r.made_by, _what(args["what"]) if "what" in args else r.brief,
                     due_at, repeat, None, routed[0], tools, tainted.current() or r.taint,
-                    tainted.made_in() if tainted.current() else r.made_in, routed[1], r.ends_at, r.plan)
+                    tainted.made_in() if tainted.current() else r.made_in, routed[1], r.ends_at, r.plan, r.method)
 
 
 def _shown(s: Scheduled, names: Mapping[int, str], zone: ZoneInfo) -> dict[str, object]:
@@ -357,4 +364,6 @@ def _shown(s: Scheduled, names: Mapping[int, str], zone: ZoneInfo) -> dict[str, 
         shown["tools"] = list(r.tools)
     if r.ends_at is not None:
         shown["errand_until"] = r.ends_at.astimezone(zone).strftime(LOCAL_FORMAT)
+    if r.method is not None:
+        shown["method"] = r.method
     return shown
