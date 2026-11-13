@@ -542,6 +542,21 @@ this order.
 41. **Drop `outbox.agree` and `Outbound.agree`.** Receipts carry the proposal (`Receipts.proposal_id`); the column and the
     field stay for one release so a pod on the previous image can still send its Agree action. Drop both once both sites
     run the image that reads `outbox.receipts`. Fits into: Channels (the outbox).
+43. **The suite's remaining real waits and fixed costs.** A pull request's checks take about 6 minutes; what is left
+    of that, largest first:
+    - **Leases on a clock, not on etcd's TTLs.** The entries in `app/tests/time_gate_held.py` wait out real lease TTLs,
+      heartbeats, backoffs and poll intervals. Each moves onto a fake etcd driven by an injected clock, with one smoke
+      test left against the real etcd, and leaves the held list as it does. Fits into: Failover referee (the fake is a
+      second implementation of the `Lease`'s etcd client).
+    - **A fresh database per test costs 0.1–0.6 s** (`CREATE DATABASE … TEMPLATE`) on about two tests in five, about
+      70 s of each shard's setup measured locally. A pool of databases made ahead per worker and reset between tests
+      would remove it. Fits into: the test fixtures (`app/tests/conftest.py`).
+    - **A prebuilt test image.** Every shard spends 30–110 s on `pip install` before its first test. An image with the
+      requirements installed, tagged by their hash and built only when they change, as `app/tools/ci_image_hash.py`
+      already does for the other images. Fits into: CI's hashed images.
+    - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
+      every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
+      rather than per worker. Fits into: the structural gates.
 
 ## Open questions
 
