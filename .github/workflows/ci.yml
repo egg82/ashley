@@ -121,6 +121,10 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    # A container job's steps default to sh, which has no `mapfile`.
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -202,6 +206,10 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    # A container job's steps default to sh, which has no `mapfile`.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - working-directory: app
