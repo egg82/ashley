@@ -38,7 +38,8 @@ the app path are open-work item 23.
   `recent`. None of it is stored twice. Rejected: a counter or timestamp column on the bench, which a command could
   forget to keep.
 - **Every change is a Command** (`ashley.workshop.commands`): add, remove, move, edit, run, propose, install, archive,
-  restore, undo, rename, cue and point,
+  restore, undo, rename, cue, point and surfaced (the choice rows shown to the person, `decisions.md`, "Each choice she
+  sets is shown to the person once"),
   frozen records in one
   closed union, each naming who made it, the person or her. One pure function, `ashley.workshop.decide.decide`, judges a
   command against the bench into an accepted change and its effect, or a typed refusal. Every command gets the bench's

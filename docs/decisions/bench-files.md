@@ -261,6 +261,24 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     free-text values code branches on (code keys on `source`, the citation and `rests_on`; a script compares
     `chosen()` only to the row's own `options`). Rejected for now: `piece` on numbers, so that a number of hers whose
     `ref` cites a photo could be refused as `measured`.
+  - **Each choice she sets is shown to the person once, by code**, beside her reply and never in it, whatever its
+    source, so a wrong form she recorded as seen or stated is in front of the person too. As a bench turn closes with
+    a reply that is said, every choice row of the bench's measurements pieces that no `Surfaced` names by its current
+    name and value is recorded shown, one `Surfaced` of hers per piece (`ashley.workshop.surface.surface`), and goes
+    into `Receipts.facts` (bench, piece, name, label, value, options), stored with her turn like any receipt and
+    carried into her history on the app's line. `Surfaced` is a non-piece Command read back from the log as `Point`
+    is (`BenchView.surfaced`): it changes no piece, is never undone, and moves neither the bench's last change, the
+    undo walk nor her reactions; a row whose value or name changes is shown again. A turn that stays quiet records
+    nothing, so its rows wait for the next reply, and a turn closed again after a steer shows the same ones. The
+    card beside her reply offers the row's options as buttons, and a tap is the person's Edit of the row (`PUT
+    /api/benches/{id}/pieces/{piece_id}/choices/{name}`, `ashley.workshop.choice_tap.tapped`): a new value
+    `stated`, her guess `accepted`, a row whose source changes losing its citation; a value off the options is 422
+    and logs nothing. Their own `Surfaced` of the new value follows, so it is not shown back to them. A piece of an
+    outside kind or one a tainted turn wrote is never shown (`decide` refuses its Surfaced `bad_rows`): its labels
+    and options are not household words, so it gets an ids-only line in the moment layer instead (piece id and its
+    count of unconfirmed rows, `ashley.tools.bench_now.now`). Rejected: her asking in words and marking the row
+    asked, which leaves the person's seeing the row to her words and an `asked` flag every edit of hers must carry
+    right; a Live-only notice, which a reload loses.
 - **A diagram is Mermaid source in a stored piece** (kind `diagram`, format `diagram`, up to 20000 characters). The
   server keeps the text as written and checks nothing about it; the client draws it (`DiagramView.tsx`) with Mermaid,
   imported on first use, so a bench with no diagram never loads it, and bundled, because the look pod's browser has no
