@@ -5,7 +5,8 @@ from . import client
 from .check import accounts_seen
 
 _REFUSED: dict[client.Reason, Refusal] = {"refused": "key_refused", "unreachable": "unreachable",
-                                          "not_sure": "wrong_service"}
+                                          "not_sure": "wrong_service", "not_found": "wrong_service",
+                                          "rejected": "wrong_service"}
 
 
 async def _check(base: str, api_key: str, person_id: int) -> Refusal | None:
@@ -18,8 +19,9 @@ async def _check(base: str, api_key: str, person_id: int) -> Refusal | None:
 
 SURE = ConnectionKind(
     name="sure", title="Sure", what="finances",
-    blurb="Let her read the household’s accounts, transactions and net worth in Sure. She only reads, and only in a "
-          "chat that is yours alone.",
+    blurb="Let her read the household’s accounts, transactions and net worth in Sure, and set a transaction’s "
+          "category when someone asks, only in a chat that is theirs alone. A key that may only read keeps her to "
+          "reading.",
     connected="Connected. She can read the household’s finances for whoever asks in their own chat.",
     removed="Removed. She can’t read Sure now.",
     holders=frozenset({"household"}), schemes=frozenset({"https"}), address_placeholder="https://money.example",

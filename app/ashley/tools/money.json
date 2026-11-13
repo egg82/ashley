@@ -4,5 +4,6 @@
   "categories_max": 100,
   "transactions_default": 25,
   "transactions_max": 100,
-  "search_chars": 100
+  "search_chars": 100,
+  "categorise_max": 20
 }

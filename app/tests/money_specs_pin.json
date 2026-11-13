@@ -69,7 +69,32 @@
     "properties": {}
    },
    "reads": true
+  },
+  {
+   "name": "money_categorise",
+   "description": "Put transactions in Sure into one of the household's categories.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "transaction_ids": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "the transactions, by the ids money_transactions gives; 1 to 20"
+     },
+     "category_id": {
+      "type": "string",
+      "description": "the category, by the id money_categories gives"
+     }
+    },
+    "required": [
+     "transaction_ids",
+     "category_id"
+    ]
+   },
+   "reads": false
   }
  ],
- "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. They only read; you cannot change anything there. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short."
+ "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short. The one change you can make there is a transaction's category, with money_categorise, by the ids money_transactions and money_categories give, and only when the person asks for it; once you have read transactions it may wait for their OK instead of happening, and you say so."
 }

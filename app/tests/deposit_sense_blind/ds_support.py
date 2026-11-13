@@ -78,6 +78,9 @@ class FakeSure(Sure):
                 "pagination": {"page": page, "per_page": per_page, "total_count": len(rows),
                                "total_pages": max(1, -(-len(rows) // per_page))}}
 
+    async def put(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
+        raise AssertionError("the deposit sense only reads")
+
     @staticmethod
     def _wanted(row: dict[str, object], params: Mapping[str, str | int]) -> bool:
         day = str(row["date"])

@@ -14,7 +14,7 @@ from ashley.inference.model import ToolCall, ToolResult
 from ashley.sure.client import Sure
 from ashley.tools import money_config
 from ashley.tools.money import MoneyTools
-from ashley.tools.money_specs import ACCOUNTS, CATEGORIES, NAMES, NET_WORTH, TRANSACTIONS
+from ashley.tools.money_specs import ACCOUNTS, CATEGORIES, CATEGORISE, NAMES, NET_WORTH, READS, TRANSACTIONS
 from ashley.tools.tools import ToolsUnavailable
 from money_support import CHECKING, GROCERIES, KEY, FakeSure, HeldConnections, params_of
 
@@ -57,10 +57,10 @@ def test_a_household_without_sure_is_offered_nothing(held: HeldConnections, sure
     assert sure.seen == []
 
 
-def test_a_household_with_sure_is_offered_four_reads(held: HeldConnections, sure: FakeSure) -> None:
+def test_a_household_with_sure_is_offered_four_reads_and_one_change(held: HeldConnections, sure: FakeSure) -> None:
     catalogue = asyncio.run(MoneyTools(HOME, CONFIG).catalogue())
     assert [s.name for s in catalogue.specs] == list(NAMES)
-    assert all(s.reads for s in catalogue.specs)
+    assert [s.name for s in catalogue.specs if not s.reads] == [CATEGORISE]
     assert catalogue.instructions
 
 
@@ -97,9 +97,9 @@ def test_transactions_pass_their_filters_to_sure(held: HeldConnections, sure: Fa
         "search": "soopers", "type": "expense", "per_page": "10"}
     assert got["matched"] == 2 and got["cut"] is False
     assert got["transactions"] == [
-        {"date": "2026-10-30", "name": "Groceries run", "amount": "$12.34", "classification": "expense",
-         "account": "Checking", "category": "Groceries", "merchant": "Corner Grocer"},
-        {"date": "2026-10-29", "name": "To savings", "amount": "$100.00", "classification": "expense",
+        {"id": "t-Groceries run", "date": "2026-10-30", "name": "Groceries run", "amount": "$12.34",
+         "classification": "expense", "account": "Checking", "category": "Groceries", "merchant": "Corner Grocer"},
+        {"id": "t-To savings", "date": "2026-10-29", "name": "To savings", "amount": "$100.00", "classification": "expense",
          "account": "Checking", "merchant": "Corner Grocer", "transfer": True}]
 
 
@@ -170,10 +170,10 @@ def test_the_key_reaches_no_result_and_no_log(held: HeldConnections, sure: FakeS
                                               capsys: pytest.CaptureFixture[str]) -> None:
     logs.setup()
     capsys.readouterr()
-    results = [run(name) for name in NAMES]
+    results = [run(name) for name in READS]
     sure.status = 401
     results.append(run(ACCOUNTS))
     lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("ts=")]
-    assert sum("event=sure.get" in ln for ln in lines) == len(NAMES) + 1, "the probe saw every call's line"
+    assert sum("event=sure.get" in ln for ln in lines) == len(READS) + 1, "the probe saw every call's line"
     assert not any(KEY in r.content for r in results)
     assert not any(KEY in ln or "money.test" in ln for ln in lines)

@@ -9,6 +9,10 @@ Reason = Literal["refused", "unreachable", "unrecognised"]
 """Why a read failed: `refused`, the backend turned the household's key away; `unreachable`, no answer in time or a
 server error; `unrecognised`, what answered is not that backend's API."""
 
+Categorised = Literal["set", "not_found", "rejected"]
+"""What became of one transaction `Ledger.categorise` was asked to change: `set`, it is in the category now; `not_found`,
+the household has no such transaction; `rejected`, the backend would not change it (the part of a split, in Sure)."""
+
 Kind = Literal["income", "expense"]
 """Which way money moved: `income` came in, `expense` went out."""
 
@@ -102,6 +106,10 @@ class LedgerFailed(Exception):
 
 class LedgerUnavailable(Exception):
     """The household's link to its ledger cannot be read."""
+
+
+class UnknownCategory(Exception):
+    """The category asked for is not one of the household's."""
 
 
 class NotConnected(Exception):

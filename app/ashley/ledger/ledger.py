@@ -1,12 +1,13 @@
 """The Ledger service (`ashley.services`): a household's accounts, balances and transactions as neutral records
-(`model`), read from whichever app the household keeps them in. Reads only: the interface has no call that changes
-anything, so no adapter can. Callers import this module and `model`; the adapter (for Sure, `ashley.sure.ledger`) lives
-with its backend."""
+(`model`), read from whichever app the household keeps them in. The one change it makes is a transaction's category
+(`categorise`); its callers offer it only through a gated change tool (`ashley.tools.money`). Callers import this module
+and `model`; the adapter (for Sure, `ashley.sure.ledger`) lives with its backend."""
 
 from abc import abstractmethod
+from collections.abc import Mapping, Sequence
 
 from ..services import Service
-from .model import Account, Category, Entry, NetWorth, NotConnected, Page, TransactionQuery
+from .model import Account, Categorised, Category, Entry, NetWorth, NotConnected, Page, TransactionQuery
 
 
 class Ledger(Service):
@@ -34,6 +35,14 @@ class Ledger(Service):
     async def transactions(self, household_id: int, query: TransactionQuery) -> Page[Entry]:
         """The transactions `query` asks for. Raises LedgerFailed, LedgerUnavailable, NotConnected."""
 
+    @abstractmethod
+    async def categorise(self, household_id: int, category_id: str,
+                         transaction_ids: Sequence[str]) -> Mapping[str, Categorised]:
+        """Set each of `transaction_ids` to the household's category `category_id`, in order; what became of each, by
+        id. Nothing is changed when the category is not the household's. A failure part way leaves the ones before it
+        changed; setting a category again is harmless. Raises UnknownCategory, LedgerFailed, LedgerUnavailable,
+        NotConnected."""
+
 
 class NullLedger(Ledger):
     """No household has a ledger."""
@@ -51,4 +60,8 @@ class NullLedger(Ledger):
         raise NotConnected
 
     async def transactions(self, household_id: int, query: TransactionQuery) -> Page[Entry]:
+        raise NotConnected
+
+    async def categorise(self, household_id: int, category_id: str,
+                         transaction_ids: Sequence[str]) -> Mapping[str, Categorised]:
         raise NotConnected

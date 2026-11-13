@@ -1,7 +1,7 @@
 """The money tools' tunables, data in `money.json` beside this module: how long a call to Sure may take, how many
 accounts and categories one answer holds, how many transactions one answer holds unless she asks for fewer
-(`transactions_default`) and at most (`transactions_max`, which Sure's own page limit of 100 bounds), and how long a
-search may be."""
+(`transactions_default`) and at most (`transactions_max`, which Sure's own page limit of 100 bounds), how long a
+search may be, and how many transactions one categorisation may name (`categorise_max`, one call to Sure each)."""
 
 import json
 from dataclasses import dataclass, fields
@@ -20,6 +20,7 @@ class MoneyConfig:
     transactions_default: int
     transactions_max: int
     search_chars: int
+    categorise_max: int
 
 
 def load() -> MoneyConfig:
