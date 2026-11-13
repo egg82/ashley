@@ -52,14 +52,8 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
       every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
       rather than per worker. Fits into: the structural gates.
-44. **Split systems.md's bundled rows into a row each.** Channels carries Devices, the outbox, Lexicons, Voices,
-    Discord's Seen and push Subscriptions; Senses carries Wakes, Watches, Proposals, the outside record, the action
-    judge and Deposits; Errands carries Errands and bench jobs. One row each gives each its own question, callers and
-    duplicates, and `docs/systems.md`'s four-part test decides which are systems at all. Fits into: the systems inventory.
 45. **A cold-read distill of each `docs/decisions/` file and of `docs/systems.md`** (`doc-cold-read`): the split moved
     them byte for byte, so they still carry deliberation and history where each should state what is true now.
-46. **NUL in the remaining columns**, the follow-up to the first NUL fix: `wakes.changes` as jsonb,
-    `bench_site_frames.title`, `errands.result`'s trace, and code runs' output stripped of NUL rather than refused.
 47. **Two sign-in starts at once answered 503 once.** Two simultaneous `GET /api/auth/signin` in the admin blind
     writer's race harness gave one 503 (2026-11-10), unexplained and not in the admin logic. Reproduce with that
     harness first. Fits into: Sign-in.
@@ -243,7 +237,7 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     7. The `mail_inbox` watch kind: built, with the `Later` check.
     8. The sort: built (`brief` and `standing` on watches, armed with `watch` and agreed with `arm_reminder`).
     - Fits into: Connections (holders, resources, OAuth), a new system Mail (the port and its adapters), Tools (a
-      source), Watches (a kind), Errands (the sort, as a standing watch).
+      source), Watches (a kind), Channels' errands (the sort, as a standing watch).
 38. **A browser of her own.** For the services with no API, a Chromium she drives in a gVisor pod: a session of
     minutes with egress, unlike a code run's seconds with none. She acts on the page's accessibility tree with
     element references checked again against a fresh snapshot before each action (Rakazo's `browser_snapshot` and
