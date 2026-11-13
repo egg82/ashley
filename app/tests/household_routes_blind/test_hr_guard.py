@@ -32,14 +32,14 @@ def importing(modules: dict[str, ast.Module]) -> dict[str, set[str]]:
     return found
 
 
-def test_only_the_route_the_wiring_and_the_postgres_writer_import_the_writer(python_tree: dict[Path, Parsed]) -> None:
-    found = importing({dotted(p): f.tree for p, f in package(python_tree).items()})
+def test_only_the_route_the_wiring_and_the_postgres_writer_import_the_writer(package_tree: dict[Path, Parsed]) -> None:
+    found = importing({dotted(p): f.tree for p, f in package(package_tree).items()})
     assert found, "the gate saw no importer of the writer: it would pass on nothing"
     assert set(found) == MAY_IMPORT, f"importers of the choice writer: {sorted(found)}, allowed {sorted(MAY_IMPORT)}"
 
 
-def test_nothing_she_does_on_her_own_imports_the_writer(python_tree: dict[Path, Parsed]) -> None:
-    modules = {dotted(p): f.tree for p, f in package(python_tree).items()}
+def test_nothing_she_does_on_her_own_imports_the_writer(package_tree: dict[Path, Parsed]) -> None:
+    modules = {dotted(p): f.tree for p, f in package(package_tree).items()}
     assert any(m.startswith("ashley.tools.") for m in modules), "the tree read held no tools"
     hers = {m for m in importing(modules) if any(m.startswith(f"ashley.{h}") for h in HER_OWN)}
     assert not hers, sorted(hers)

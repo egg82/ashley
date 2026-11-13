@@ -35,10 +35,10 @@ def named(path: Path, first: ast.expr) -> str | None:
 
 
 @pytest.fixture(scope="module")
-def found(python_tree: Mapping[Path, Parsed]) -> dict[str, bool]:
+def found(package_tree: Mapping[Path, Parsed]) -> dict[str, bool]:
     """Every spec whose name is a string, or a module constant, and its `outside`. Built once for the module."""
     table: dict[str, bool] = {}
-    for path, parsed in python_tree.items():
+    for path, parsed in package_tree.items():
         if PACKAGE not in path.parents:
             continue
         for n in ast.walk(parsed.tree):

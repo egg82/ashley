@@ -15,9 +15,9 @@ SURE_ONLY_FIELDS = ("signed_amount_cents", "split_parent", "account_type", "amou
                     "/api/v1/accounts", "/api/v1/transactions", "/api/v1/categories")
 
 
-def sources(python_tree: dict[Path, Parsed]) -> list[tuple[Path, str, ast.Module]]:
+def sources(package_tree: dict[Path, Parsed]) -> list[tuple[Path, str, ast.Module]]:
     """app/ashley's files from the session's parsed tree: (path relative to the package, source, tree)."""
-    found = [(p.relative_to(ROOT), got.source, got.tree) for p, got in python_tree.items() if ROOT in p.parents]
+    found = [(p.relative_to(ROOT), got.source, got.tree) for p, got in package_tree.items() if ROOT in p.parents]
     assert len(found) > 100
     return found
 
@@ -41,13 +41,13 @@ def reaches_sure(names: set[str]) -> bool:
     return any(n == "ashley.sure" or n.startswith("ashley.sure.") for n in names)
 
 
-def test_the_detector_sees_a_sure_import_where_there_is_one(python_tree: dict[Path, Parsed]) -> None:
-    inside = [p for p, _, tree in sources(python_tree) if p.parts[0] == "sure" and reaches_sure(imported(p, tree))]
+def test_the_detector_sees_a_sure_import_where_there_is_one(package_tree: dict[Path, Parsed]) -> None:
+    inside = [p for p, _, tree in sources(package_tree) if p.parts[0] == "sure" and reaches_sure(imported(p, tree))]
     assert inside, "the import detector found no ashley.sure import in ashley/sure itself"
 
 
-def test_only_the_composition_root_imports_anything_of_sure(python_tree: dict[Path, Parsed]) -> None:
-    offenders = [str(p) for p, _, tree in sources(python_tree)
+def test_only_the_composition_root_imports_anything_of_sure(package_tree: dict[Path, Parsed]) -> None:
+    offenders = [str(p) for p, _, tree in sources(package_tree)
                  if p.parts[0] != "sure" and p not in COMPOSITION and reaches_sure(imported(p, tree))]
     assert offenders == []
 
@@ -57,18 +57,18 @@ def test_the_composition_root_does_import_sure() -> None:
     assert reaches_sure(imported(Path("wiring.py"), wiring))
 
 
-def test_no_sure_field_name_or_path_appears_outside_ashley_sure(python_tree: dict[Path, Parsed]) -> None:
-    offenders = [f"{p}: {word}" for p, text, _ in sources(python_tree) if p.parts[0] != "sure"
+def test_no_sure_field_name_or_path_appears_outside_ashley_sure(package_tree: dict[Path, Parsed]) -> None:
+    offenders = [f"{p}: {word}" for p, text, _ in sources(package_tree) if p.parts[0] != "sure"
                  for word in SURE_ONLY_FIELDS if word in text]
     assert offenders == []
 
 
-def test_the_field_scan_finds_them_inside_ashley_sure(python_tree: dict[Path, Parsed]) -> None:
-    assert any(word in text for p, text, _ in sources(python_tree) if p.parts[0] == "sure" for word in SURE_ONLY_FIELDS)
+def test_the_field_scan_finds_them_inside_ashley_sure(package_tree: dict[Path, Parsed]) -> None:
+    assert any(word in text for p, text, _ in sources(package_tree) if p.parts[0] == "sure" for word in SURE_ONLY_FIELDS)
 
 
-def test_the_neutral_package_imports_no_adapter(python_tree: dict[Path, Parsed]) -> None:
-    found = sources(python_tree)
+def test_the_neutral_package_imports_no_adapter(package_tree: dict[Path, Parsed]) -> None:
+    found = sources(package_tree)
     offenders = [str(p) for p, _, tree in found if p.parts[0] == "ledger" and reaches_sure(imported(p, tree))]
     assert offenders == [] and any(p.parts[0] == "ledger" for p, _, _ in found)
 

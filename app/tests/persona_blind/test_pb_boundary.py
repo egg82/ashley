@@ -14,8 +14,8 @@ WRITER = "ashley.skills.persona_write"
 ROUTE_AND_WIRING = {"ashley.api.persona", "ashley.wiring", "ashley.wiring_skills"}
 
 
-def importers(python_tree: dict[Path, Parsed]) -> dict[str, set[str]]:
-    modules = {dotted(p): file.tree for p, file in package(python_tree).items()}
+def importers(package_tree: dict[Path, Parsed]) -> dict[str, set[str]]:
+    modules = {dotted(p): file.tree for p, file in package(package_tree).items()}
     return writers_imported_by(modules, {WRITER})
 
 
@@ -24,23 +24,23 @@ def outside_the_implementation(found: dict[str, set[str]]) -> set[str]:
 
 
 def test_only_the_persona_route_the_wiring_and_the_implementation_import_the_writer(
-        python_tree: dict[Path, Parsed]) -> None:
-    found = importers(python_tree)
+        package_tree: dict[Path, Parsed]) -> None:
+    found = importers(package_tree)
     assert found, "the gate saw no importer of the persona writer: it would pass on nothing"
     assert outside_the_implementation(found) <= ROUTE_AND_WIRING, sorted(found)
     assert found.keys() & {"ashley.wiring", "ashley.wiring_skills"}, "the wiring no longer registers the writer"
 
 
-def test_no_tool_channel_or_model_call_module_imports_the_writer(python_tree: dict[Path, Parsed]) -> None:
-    found = importers(python_tree)
+def test_no_tool_channel_or_model_call_module_imports_the_writer(package_tree: dict[Path, Parsed]) -> None:
+    found = importers(package_tree)
     assert found
     for module in found:
         assert not module.startswith(("ashley.tools", "ashley.channels", "ashley.inference", "ashley.persona",
                                       "ashley.conversations", "ashley.memory", "ashley.errands")), module
 
 
-def test_the_read_module_and_the_wire_models_do_not_import_the_writer(python_tree: dict[Path, Parsed]) -> None:
-    found = importers(python_tree)
+def test_the_read_module_and_the_wire_models_do_not_import_the_writer(package_tree: dict[Path, Parsed]) -> None:
+    found = importers(package_tree)
     assert found
     assert "ashley.skills.persona" not in found
     assert "ashley.api.persona_models" not in found

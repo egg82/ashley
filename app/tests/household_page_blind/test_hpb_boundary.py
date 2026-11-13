@@ -11,15 +11,15 @@ WRITERS = {"ashley.people.household_write", "ashley.people.postgres_household_wr
 ROUTE_AND_WIRING = {"ashley.api.household", "ashley.wiring", "ashley.people.postgres_household_write"}
 
 
-def test_only_the_household_route_and_the_wiring_import_the_writer(python_tree: dict[Path, Parsed]) -> None:
-    modules = {dotted(p): file.tree for p, file in package(python_tree).items()}
+def test_only_the_household_route_and_the_wiring_import_the_writer(package_tree: dict[Path, Parsed]) -> None:
+    modules = {dotted(p): file.tree for p, file in package(package_tree).items()}
     found = writers_imported_by(modules, WRITERS)
     assert found, "the gate saw no importer of the writer: it would pass on nothing"
     assert set(found) == ROUTE_AND_WIRING, sorted(found)
 
 
-def test_no_tool_channel_or_inference_module_imports_the_writer(python_tree: dict[Path, Parsed]) -> None:
-    modules = {dotted(p): file.tree for p, file in package(python_tree).items()}
+def test_no_tool_channel_or_inference_module_imports_the_writer(package_tree: dict[Path, Parsed]) -> None:
+    modules = {dotted(p): file.tree for p, file in package(package_tree).items()}
     found = writers_imported_by(modules, WRITERS)
     reaching = [m for m in found if m.startswith(("ashley.tools", "ashley.channels", "ashley.inference", "ashley.persona"))]
     assert reaching == []

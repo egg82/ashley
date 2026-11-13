@@ -16,7 +16,7 @@ from ashley.settings import Settings
 from ashley.sure.ledger import SureLedger
 from ashley.wiring import CONNECTION_KINDS
 from pg import throwaway_database
-from source_tree import Parsed, parse_tree
+from source_tree import BRIDGE, KEEPER, ROOT, Parsed, parse_tree
 
 pytest_plugins = ["time_gate", "pytester"]
 
@@ -52,8 +52,21 @@ def collector_warm() -> Generator[None]:
 
 @pytest.fixture(scope="session")
 def python_tree() -> dict[Path, Parsed]:
-    """The Python source the structural gates read, parsed once for the session."""
+    """All the Python source, tests included, for the gates that count or rule over every file. Parsed once per worker,
+    on first use."""
     return parse_tree()
+
+
+@pytest.fixture(scope="session")
+def package_tree() -> dict[Path, Parsed]:
+    """The app package's source alone, for the gates that read only what ships."""
+    return parse_tree([ROOT / "ashley"])
+
+
+@pytest.fixture(scope="session")
+def deployed_tree() -> dict[Path, Parsed]:
+    """The bridge and the keeper, which run outside the app."""
+    return parse_tree([BRIDGE, KEEPER])
 
 
 @pytest.fixture(autouse=True)
