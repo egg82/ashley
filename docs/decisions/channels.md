@@ -47,7 +47,7 @@ photo from the phone, and both land in the same exchange.
   relevant chat turns (`(<stamp>)` prefix), remembered and standing facts (`(learned <stamp>)` from
   `Fact.valid_from`, the only time a fact holds: a correction is a new fact with a new `valid_from`, so it is also
   when it was last confirmed), `bench_read` (each recent command's `at`, each piece's `changed_at`),
-  `bench_read_piece` (`changed_at`), `bench_last_run` (`ran_at`), `house_automations` (`last_triggered`), and the bench reaction turn's list of changes. The
+  `bench_read_piece` (`changed_at`), `bench_last_run` (`ran_at`), `house_automations` (`last_triggered`), `house_state`'s entity list (`changed`, from HA's `last_changed`), and the bench reaction turn's list of changes. The
   bench tools take the zone from the household (`ashley.people.zone.zone_of`) and leave a time out rather than show
   it in a guessed zone when People cannot answer. A stamp is a function of the stored time and the zone alone, so a
   line shown again is the same bytes. That keeps history a cached prefix (the tail breakpoint, see the cache layers

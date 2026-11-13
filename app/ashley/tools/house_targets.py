@@ -15,7 +15,7 @@ def entity_of(state: State) -> Entity:
     """`state` in the form the matcher reads: its names (name, then aliases), its area's, and scalar attributes."""
     areas = () if state.area is None else (state.area, *state.area_aliases)
     return Entity((state.name, *state.aliases), state.domain, state.state, areas, _scalars(state.attributes), state.id,
-                  state.featured)
+                  state.featured, state.changed)
 
 
 def _scalars(attributes: Mapping[str, object]) -> Mapping[str, Scalar]:

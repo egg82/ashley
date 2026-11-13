@@ -12,6 +12,7 @@ import time
 from .. import logs
 from ..home_assistant.house import House, HouseUnavailable
 from ..inference.model import ToolCall, ToolResult, ToolSpec
+from ..people.zone import zone_of
 from .house_entities import NO_AREA
 from .house_query import query_of
 from .house_render import answer
@@ -26,7 +27,7 @@ DESCRIPTION = (
     "readings, for the devices you were given. This is the tool for retrieving live context. all true includes every "
     "other thing the house has (helpers, diagnostics, devices not listed for you), which house_find also looks up. Its arguments "
     "narrow it like a map: none gives every area with a one-line summary by domain; area alone gives every domain in "
-    "that area; domain (with or without area), or name, gives the devices themselves with their states. Use area and "
+    "that area; domain (with or without area), or name, gives the devices themselves with their states and, when known, changed: when the state last changed. Use area and "
     "domain values exactly as an answer shows them. Every list in an answer is the whole list: when the full answer "
     "would be too long it shows less of each (names without states, or counts), complete is false and narrow_by "
     "names the arguments to add. "
@@ -45,9 +46,10 @@ SPEC = ToolSpec(NAME, DESCRIPTION, PARAMETERS, reads=True, outside=False)
 class HouseStateTools:
     """`house_state` over a House. `call` never raises."""
 
-    def __init__(self, house: House, config: HouseStateConfig) -> None:
+    def __init__(self, house: House, config: HouseStateConfig, household_id: int = 0) -> None:
         self._house = house
         self._config = config
+        self._household_id = household_id
 
     async def call(self, call: ToolCall) -> ToolResult:
         started = time.monotonic()
@@ -63,7 +65,7 @@ class HouseStateTools:
         except HouseUnavailable:
             return _done(call, "unavailable", started, ToolResult(call.id, "the house did not answer", True))
         entities = tuple(entity_of(s) for s in states if wanted or s.featured)
-        got = answer(entities, query, self._config)
+        got = answer(entities, query, self._config, await zone_of(self._household_id))
         logs.info(log, "tools.call", tool=NAME, outcome="ok", level=got.level, children=got.children,
                   capped=got.capped, everything=wanted, chars=len(got.text), duration_ms=_ms(started))
         return ToolResult(call.id, got.text, outside=got.outside)

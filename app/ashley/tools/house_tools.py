@@ -56,7 +56,7 @@ class HouseTools(Tools):
         self._consequential = consequential
         self._values = values
         self._look = look
-        self._state = HouseStateTools(house, state)
+        self._state = HouseStateTools(house, state, household_id)
         self._guidance = guidance
         self._cache = _Cached()
 
