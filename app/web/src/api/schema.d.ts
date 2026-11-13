@@ -3038,11 +3038,6 @@ export interface components {
             /** Deleted */
             deleted: number;
         };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
         /**
          * HealthResponse
          * @description The process is up. Says nothing about the database.
@@ -5608,19 +5603,6 @@ export interface components {
             type: "undo";
             /** Seq */
             seq: number;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
         /**
          * VaultWrite
@@ -9646,14 +9628,12 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description FastAPI's validation error: a `screen` that is not a UUID */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
             /** @description `unavailable`: no live feed; look for changes by asking again */
             503: {
@@ -9922,14 +9902,12 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description FastAPI's validation error: a body outside `ScreenVisibility` */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
             /** @description `unavailable`: the record of open screens could not be reached */
             503: {
@@ -10176,14 +10154,12 @@ export interface operations {
                     "text/event-stream": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description FastAPI's validation error: a `screen` that is not a UUID */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
             /** @description `unavailable`: a system it needs could not be reached */
             503: {
@@ -10234,14 +10210,12 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description FastAPI's validation error: a body outside `ScreenVisibility` */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
             /** @description `unavailable`: a system it needs could not be reached */
             503: {

@@ -44,6 +44,7 @@ class EventStream(StreamingResponse):
     200: {"model": LiveEvent, "description": "A stream of `LiveEvent`, one per `data:` line",
           "content": {"text/event-stream": {"schema": {"$ref": "#/components/schemas/LiveEvent"}}}},
     401: {"description": "`unauthorized`: no live session", "content": _JSON_ERROR},
+    422: {"description": "FastAPI's validation error: a `screen` that is not a UUID"},
     503: {"description": "`unavailable`: no live feed; look for changes by asking again", "content": _JSON_ERROR}})
 async def live(signed_in: Person, screen: UUID | None = None) -> Response:
     """200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`. `screen` is the token the page made at load,

@@ -109,14 +109,16 @@ async def kiosk_send(device: Kiosk, body: KioskMessage) -> ChatReply | JSONRespo
 
 @router.get("/api/kiosk/live", response_class=EventStream, response_model=None, responses={
     **_PAIRED, 200: {"model": LiveEvent, "description": "A stream of `LiveEvent`, one per `data:` line",
-                     "content": {"text/event-stream": {"schema": {"$ref": "#/components/schemas/LiveEvent"}}}}})
+                     "content": {"text/event-stream": {"schema": {"$ref": "#/components/schemas/LiveEvent"}}}},
+    422: {"description": "FastAPI's validation error: a `screen` that is not a UUID"}})
 async def kiosk_live(device: Kiosk, screen: UUID | None = None) -> Response:
     """200 a stream of `LiveEvent` for the device; 401 `unauthorized`; 503 `unavailable`: no live feed, so the page
     reads for itself. `screen` is as for `GET /api/live`."""
     return stream_to(DeviceViewer(device.household_id, device.id), screen, device=device.id)
 
 
-@router.post("/api/kiosk/screen", status_code=204, response_class=Response, responses=_WRITE)
+@router.post("/api/kiosk/screen", status_code=204, response_class=Response, responses={
+    **_WRITE, 422: {"description": "FastAPI's validation error: a body outside `ScreenVisibility`"}})
 async def kiosk_screen(device: Kiosk, body: ScreenVisibility) -> Response:
     """204, the device's screen that opened its feed under `body.screen` is in the foreground or not (as
     `POST /api/screens/visibility`); 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
