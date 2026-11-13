@@ -4,7 +4,7 @@ rollouts. A failure carries a short reason, never a payload, a URL or the token.
 
 from collections.abc import Mapping
 import httpx2
-from httpx2.websockets import WebSocketDisconnect, WebSocketNetworkError, WebSocketUpgradeError
+from httpx2.websockets import AsyncWebSocketSession, WebSocketDisconnect, WebSocketNetworkError, WebSocketUpgradeError
 
 from .client import HomeAssistant
 from .ha_json import obj, text
@@ -15,10 +15,28 @@ _REJECTIONS = frozenset({"invalid_format", "not_found", "home_assistant_error", 
                          "unknown_error", "invalid_info", "failed"})
 
 
-def _url(client: httpx2.AsyncClient) -> str:
+def socket_url(client: httpx2.AsyncClient) -> str:
+    """The WebSocket API's address on the client's instance."""
     base = str(client.base_url).rstrip("/")
     scheme = "wss" if base.startswith("https") else "ws"
     return f"{scheme}://{base.split('://', 1)[1]}/api/websocket"
+
+
+def token_of(client: httpx2.AsyncClient) -> str:
+    """The bearer token the client sends."""
+    return str(client.headers.get("Authorization", "")).removeprefix("Bearer ")
+
+
+async def authenticate(ws: AsyncWebSocketSession, token: str, timeout_s: float) -> None:
+    """Home Assistant's opening exchange: its greeting, then the token. Raises HouseUnavailable when it does not greet
+    or refuses the token."""
+    greeting: object = await ws.receive_json(timeout=timeout_s)
+    if obj(greeting).get("type") != "auth_required":
+        raise HouseUnavailable("websocket: no greeting")
+    await ws.send_json({"type": "auth", "access_token": token})
+    authenticated: object = await ws.receive_json(timeout=timeout_s)
+    if obj(authenticated).get("type") != "auth_ok":
+        raise HouseUnavailable("websocket: refused")
 
 
 class Commands:
@@ -31,18 +49,11 @@ class Commands:
         """The `result` of the command (a dict with a `type`, as Home Assistant takes it). Raises HouseRejected when Home
         Assistant answers the command with an error of its own (`message` is its text), HouseUnavailable when it cannot be
         reached, refuses the token or answers in a shape this does not read."""
-        token = str(self._http.headers.get("Authorization", "")).removeprefix("Bearer ")
         try:
             async with self._http.websocket(
-                    _url(self._http), max_message_size_bytes=self._settings.socket_max_bytes,
+                    socket_url(self._http), max_message_size_bytes=self._settings.socket_max_bytes,
                     timeout=self._settings.timeout_s, keepalive_ping_interval_seconds=None) as ws:
-                greeting: object = await ws.receive_json(timeout=self._settings.timeout_s)
-                if obj(greeting).get("type") != "auth_required":
-                    raise HouseUnavailable("websocket: no greeting")
-                await ws.send_json({"type": "auth", "access_token": token})
-                authenticated: object = await ws.receive_json(timeout=self._settings.timeout_s)
-                if obj(authenticated).get("type") != "auth_ok":
-                    raise HouseUnavailable("websocket: refused")
+                await authenticate(ws, token_of(self._http), self._settings.timeout_s)
                 await ws.send_json({"id": 1, **command})
                 answer: object = await ws.receive_json(timeout=self._settings.timeout_s)
         except BaseExceptionGroup as group:
