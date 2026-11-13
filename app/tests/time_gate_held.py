@@ -5,23 +5,6 @@ one smoke test left against the real service."""
 HELD: frozenset[str] = frozenset({
     # the in-flight sweep's real timing
     "tests/test_bench_replay_eval.py::test_a_turn_kept_when_its_model_call_failed_is_finished_by_the_inflight_sweep",
-    # a real etcd lease expiring on its TTL
-    "tests/contract/test_contract_hold.py::test_a_short_hold_expires_on_its_own",
-    # real etcd lease TTLs
-    "tests/contract/test_contract_lease.py::test_exactly_one_of_three_holders_runs_the_body",
-    "tests/contract/test_contract_lease.py::test_the_standby_takes_over_promptly_when_the_holder_is_cancelled",
-    # real etcd lease TTLs and partitions
-    "tests/contract/test_contract_lease_faults.py::test_a_partitioned_holder_leaves_its_body_time_to_clean_up_before_etcd_frees_the_key",
-    "tests/contract/test_contract_lease_faults.py::test_a_partitioned_holder_stops_its_body_before_etcd_frees_the_key",
-    "tests/contract/test_contract_lease_faults.py::test_a_revoked_lease_cancels_the_body_logs_the_loss_and_campaigns_again",
-    "tests/contract/test_contract_lease_faults.py::test_a_run_cancelled_just_after_etcd_granted_it_the_key_leaves_no_key_behind",
-    "tests/contract/test_contract_lease_faults.py::test_etcd_unreachable_is_logged_once_per_streak_and_carries_no_address",
-    "tests/contract/test_contract_lease_faults.py::test_waiting_on_another_holder_is_logged_once_not_once_per_retry",
-    # real etcd lease TTLs as leadership moves
-    "tests/contract/test_contract_lease_site.py::test_a_site_that_is_not_active_logs_standby_once_per_wait",
-    "tests/contract/test_contract_lease_site.py::test_the_leader_moving_away_cancels_the_body_and_frees_the_key_before_the_lease_could_expire",
-    "tests/contract/test_contract_lease_site.py::test_the_standby_site_takes_over_when_leadership_moves",
-    "tests/contract/test_contract_lease_site.py::test_two_sites_never_run_at_once_while_leadership_moves_back_and_forth",
     # a resumed turn's real claim and resume timing
     "tests/inflight_rest_blind/test_irb_memory.py::test_a_forget_cut_off_while_it_ran_after_a_resumed_answer_is_not_made_again_nor_the_answer_queued_again",
     # a fence timed by the database's clock
