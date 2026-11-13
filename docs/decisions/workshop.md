@@ -27,7 +27,7 @@ the app path are open-work item 23.
 
 - **A piece is work product with a kind**, and kinds are data (Type Object, `app/ashley/workshop/kinds.json`): a label,
   the longest body, a family, and a body format. `stored`: the body is the content, in Postgres (`document`, `note`).
-  `live`: the body is a reference to a source the client renders (`site` and `video`, below). The format is `markdown`, `plain`
+  `live`: the body is a reference to a source the client shows as it is now (`site`, `video` and `session`, below). The format is `markdown`, `plain`
   (shown as typed) or `code` (source, with a `language`; only a code kind has one), and the client renders a body by
   it: a document is Markdown, a note is plain because it is a jotting, so a stray `*` or `#` stays as typed. The kinds and the bench's limits
   (`app/ashley/workshop/workshop.json`) are served at `GET /api/workshop/kinds`, so the client hard-codes neither.
@@ -232,6 +232,23 @@ the app path are open-work item 23.
   fact belongs to the address, and the piece's versions would churn); measuring on every read. She makes them with the ordinary piece tools; a person adds one from the Add card with an
   address (and, for a video, a start as seconds or `m:ss`), which the page shapes into the body and the server judges. Rejected: regex over a pasted URL in prose to pick a provider; a `provider` field she
   would have to get right, which the host already says.
+- **A session piece is one of the owner's Claude Code sessions, shown as it runs; only its id is stored** (kind
+  `session`, family `live`, `ashley.workshop.session_piece`). Its body is exactly `{"source": "herdr", "session": "<id>"}`:
+  the owner's herdr bridge (the only source there is) and a session id as the bridge lists it. An Add or Edit of
+  anything else is refused `bad_session`; an empty body is a draft. She puts one up with the ordinary piece tools, with an
+  id from `claude_sessions`; the page has no Add form for it. The page shows it by asking
+  `GET /api/claude/sessions/{id}/screen` (`ashley.api.claude_screen`), which reads the signed-in person's own bridge each
+  time (the session's status and its last `screen_lines`, `app/ashley/herdr/herdr.json`) and answers a state, never an
+  error: `live`, `gone`, `not_connected`, `unreachable` or `refused`. It asks while the piece is on screen and the page
+  is visible, again after the answer's `again_ms` (sooner while the session works), and sends the digest of the screen
+  it holds, so an unchanged screen comes back without its text; the last screen stays shown, dimmed, when the bridge
+  stops answering or the session ends. Nothing is kept between asks, so a pod on either site answers the same, and the
+  screen is never stored or logged (`claude.screen` is logged only for an answer that is not `live`, with its state and
+  the bridge's reason). The digest is the app's, since the bridge's `revision` counts changes to herdr's agent, not to
+  its screen. Rejected: a singleton polling each session on a bench and publishing on Live, which polls whether or not
+  anyone is looking and still has each screen fetch the text; copying the screen into the body or a table, which stores
+  what a session shows; reading the bench on every ask to find its owner, while the bench's owner is the only person
+  who sees it and the bridge is theirs.
 - **An automation piece is Home Assistant's own automation config, as JSON the code checks** (kind `automation`,
   format `automation`, `ashley.workshop.automation_config`): one object of HA's field names (`alias`, `description`,
   `triggers`, `conditions`, `actions`, `mode`, and `max`, `max_exceeded`, `variables`, `trigger_variables`), each of
