@@ -16,10 +16,10 @@
 .compose { display: flex; gap: 8px; align-items: center; margin: 6px 0 14px; padding: 6px 6px 6px 8px; border-radius: 14px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.92); }
 .compose input { flex: 1; min-width: 0; border: 0; background: none; outline: none; height: 34px; }
 .talk-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line-hi); background: var(--ink-3); color: var(--blue-hi); flex: none; }
-.convo { position: absolute; right: 32px; top: 70px; width: 270px; }
+.her-rail { position: absolute; right: 32px; top: 70px; width: 270px; display: grid; gap: 14px; }
 .convo dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; margin: 0; padding: 14px 16px; font-size: 13px; }
 .convo dt { font: 11px/1.6 var(--f-mono); color: var(--text-3); } .convo dd { margin: 0; }
-@media (max-width: 1359px) { .convo { display: none; } }
+@media (max-width: 1359px) { .her-rail { display: none; } }
 
 /* new here */
 .compose:focus-within { border-color: var(--blue); }
@@ -184,3 +184,26 @@ p.receipt-done { font: 12px/1.6 var(--f-mono); }
 .fact-option:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
 .fact-option[aria-pressed="true"] { border-color: var(--brass); background: var(--brass); color: var(--brass-ink); cursor: default; }
 .fact-option:disabled { opacity: 0.6; cursor: progress; }
+
+/* what we're working on (WorkList): new here. A row's state is a pill, in the token that means it: warn for what waits
+   on the person, brass for what is in her hands, ok for done. Wide screens list it in the rail; below the rail's width it
+   is a closed fold above the history. */
+.work-list { margin: 0; padding: 4px 0; list-style: none; max-height: 60vh; overflow: auto; }
+.work-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; padding: 8px 16px; border-top: 1px solid var(--line); }
+.work-row:first-child { border-top: 0; }
+.work-title { min-width: 0; color: var(--text); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none; }
+a.work-title { color: var(--blue-hi); } a.work-title:hover { text-decoration: underline; }
+.work-state { height: 20px; padding: 0 8px; font-size: 11px; }
+.work-meta { grid-column: 1 / -1; }
+.work-row.waiting_on_you .work-state { border-color: var(--warn-dim); color: var(--warn); }
+.work-row.running .work-state { border-color: var(--brass-dim); color: var(--brass); }
+.work-row.done .work-state { color: var(--ok); }
+.work-row.stopped .work-state { background: var(--unk-hatch); }
+.work-note { margin: 0; padding: 12px 16px; }
+.work-down { display: flex; align-items: center; gap: 10px; }
+.work-fold { display: none; margin: 0 0 6px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--panel); }
+.work-fold > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; font: 12px/1.6 var(--f-mono); color: var(--text-2); }
+.work-fold > summary::-webkit-details-marker { display: none; }
+.work-fold > summary:hover { color: var(--text); }
+.work-fold .work-list { max-height: 40vh; border-top: 1px solid var(--line); }
+@media (max-width: 1359px) { .work-fold { display: block; } }

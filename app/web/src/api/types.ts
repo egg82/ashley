@@ -11,6 +11,7 @@ export type MemoryFact = components['schemas']['MemoryFact'];
 export type FactKind = MemoryFact['kind'];
 export type Visibility = MemoryFact['visibility'];
 export type Reminder = components['schemas']['Reminder'];
+export type WorkItem = components['schemas']['WorkItem'];
 export type OutsideAction = components['schemas']['OutsideAction'];
 export type OutsideActionsResponse = components['schemas']['OutsideActionsResponse'];
 export type FactSource = components['schemas']['FactSource'];

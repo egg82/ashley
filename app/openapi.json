@@ -7799,6 +7799,45 @@
           }
         }
       }
+    },
+    "/api/work": {
+      "get": {
+        "summary": "List Work",
+        "description": "200 `WorkResponse`; 401 `unauthorized`; 503 `unavailable`. All of it or none: a part that cannot be read is not\nshown as an empty one.",
+        "operationId": "list_work",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a store holding part of it could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -16361,6 +16400,64 @@
         "title": "WireReceipts",
         "description": "The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its\nsummary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is\nheld; whether it can still be agreed to is `ChatConversationTurn.agree`. `choice_rows` the rows of a bench shown to\nthe person this turn, as they stood then."
       },
+      "WorkItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "errand",
+              "open_errand",
+              "bench"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "waiting_on_you",
+              "open",
+              "done",
+              "stopped"
+            ],
+            "title": "State"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "until_local": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Until Local"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "title",
+          "state",
+          "at"
+        ],
+        "title": "WorkItem",
+        "description": "One thing the signed-in person asked her to do or make that has not ended: a `kind` of `errand` (asked once, held\nuntil its source answers), `open_errand` (carried out over checks) or `bench` (an open bench), `id` that record's own\nid (a bench's id is the workshop's `/workshop/{id}`), `title` what it is (the person's own words, shown only to them).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them); `open`, a bench with nothing in\nflight; `done`, finished with its result not yet told; `stopped`, an errand's check that could not be sent. `at`\nis when it last moved: a bench's last change (else when it opened), an errand's check due or a one-shot's asking,\nor finishing when `done`. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind."
+      },
       "WorkKind": {
         "properties": {
           "name": {
@@ -16414,6 +16511,23 @@
         ],
         "title": "WorkRequest",
         "description": "A bench's kind of work: the `work` slug of one of `WorkshopKinds.work_kinds`, or null for none. A slug the\nhousehold has no kind for starts one, and then needs `label` (what to call it); a slug is lowercase letters, digits\nand hyphens."
+      },
+      "WorkResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/WorkItem"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries"
+        ],
+        "title": "WorkResponse",
+        "description": "The signed-in person's open work, those waiting on them first, then running, open, stopped and done, the most\nrecently moved first within each."
       },
       "WorkshopKinds": {
         "properties": {
