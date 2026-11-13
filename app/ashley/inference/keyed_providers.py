@@ -30,10 +30,16 @@ class KeyedProviders:
     """`keyed` are the providers a key turns on (two sharing a kind name or a route name raise ValueError); `keys` says
     which key each uses now; `env` (kind name to the env's key, empty when unset) is what is wired before the first read
     of `keys` succeeds, so a process serves from the env's keys while the database is away, as it did before keys were
-    stored. `clock` is monotonic seconds."""
+    stored. `clock` is monotonic seconds.
+
+    `compatible` builds an OpenAI-compatible provider (`ashley.inference.compatible.build`): each key `keys` gives under a
+    name that is not a keyed kind's is one such provider, wired under that name (its label), built again when its key or
+    address changes; `compatible_env` (label to key) is wired before the first read as `env` is. None wires none."""
 
     def __init__(self, keyed: Iterable[KeyedProvider], keys: ProviderKeys, env: Mapping[str, str],
-                 clock: Callable[[], float] = time.monotonic, refresh_s: float = REFRESH_S) -> None:
+                 clock: Callable[[], float] = time.monotonic, refresh_s: float = REFRESH_S,
+                 compatible: Callable[[KeyInForce], Built] | None = None,
+                 compatible_env: Mapping[str, KeyInForce] | None = None) -> None:
         self._keyed: dict[str, KeyedProvider] = {}
         names: set[str] = set()
         for provider in keyed:
@@ -43,6 +49,7 @@ class KeyedProviders:
             names |= provider.names
         self._names = frozenset(names)
         self._keys = keys
+        self._compatible = compatible
         self._clock = clock
         self._refresh_s = refresh_s
         self._lock = asyncio.Lock()
@@ -52,12 +59,18 @@ class KeyedProviders:
         self._retired: list[Built] = []
         self._checkers: dict[str, Built] = {}
         self._wired: dict[str, Wired] = {}
-        self._rebuild({kind: KeyInForce(kind, secret, None) for kind, secret in env.items()
-                       if secret and kind in self._keyed})
+        self._rebuild({**{kind: KeyInForce(kind, secret, None) for kind, secret in env.items()
+                          if secret and kind in self._keyed}, **(compatible_env or {})})
 
     def names(self) -> frozenset[str]:
-        """Every route name a build of these providers can carry, wired now or not."""
+        """Every route name a build of the keyed providers can carry, wired now or not. An OpenAI-compatible provider's
+        name is its label, known only once read, so it is never among them."""
         return self._names
+
+    def catalogue_providers(self) -> Mapping[str, str | None]:
+        """The OpenAI-compatible providers wired now, by route name, each with the catalogue provider its calls are
+        priced as (None: unpriced)."""
+        return {slot: key.catalogue_provider for slot, key in self._in_force.items() if slot not in self._keyed}
 
     def checkers(self) -> Mapping[str, Wired]:
         """One provider per name in `names`, built with `PLACEHOLDER` for its key, so the routes' params can be checked
@@ -105,28 +118,38 @@ class KeyedProviders:
         return self._read_at is None or self._clock() - self._read_at >= self._refresh_s
 
     def _rebuild(self, keys: Mapping[str, KeyInForce]) -> frozenset[str]:
-        """Each kind's build made to match `keys`; the route names whose build appeared, changed or went."""
+        """Each kind's and each OpenAI-compatible provider's build made to match `keys`; the route names whose build
+        appeared, changed or went."""
         changed: set[str] = set()
-        for kind, provider in self._keyed.items():
-            key, had = keys.get(kind), self._in_force.get(kind)
-            if (None if key is None else key.secret) == (None if had is None else had.secret):
+        compatible: set[str] = {slot for slot in self._in_force if slot not in self._keyed}
+        if self._compatible is not None:
+            compatible |= {slot for slot in keys if slot not in self._keyed}
+        for slot in [*self._keyed, *sorted(compatible)]:
+            key, had = keys.get(slot), self._in_force.get(slot)
+            if _reach(key) == _reach(had):
                 if key is not None:
-                    self._in_force[kind] = key
+                    self._in_force[slot] = key
                 continue
-            old = self._builds.pop(kind, None)
+            old = self._builds.pop(slot, None)
             if old is not None:
                 self._retired.append(old)
-            self._in_force.pop(kind, None)
+            self._in_force.pop(slot, None)
             if key is not None:
-                self._builds[kind] = provider.build(key.secret)
-                self._in_force[kind] = key
-            changed |= provider.names
+                self._builds[slot] = self._build(slot, key)
+                self._in_force[slot] = key
+            changed |= self._keyed[slot].names if slot in self._keyed else {slot}
         self._wired = {w.name: w for built in self._builds.values() for w in built.wired}
         if changed:
             logs.info(log, "inference.keys", changed=len(changed), sources=",".join(
-                f"{kind}:{'env' if key.connection_id is None else 'connection'}"
-                for kind, key in sorted(self._in_force.items())))
+                f"{key.kind}:{'env' if key.connection_id is None else 'connection'}"
+                for _, key in sorted(self._in_force.items())))
         return frozenset(changed)
+
+    def _build(self, slot: str, key: KeyInForce) -> Built:
+        if slot in self._keyed:
+            return self._keyed[slot].build(key.secret)
+        assert self._compatible is not None, "a slot outside the keyed kinds is read only with a compatible builder"
+        return self._compatible(key)
 
     async def balance_sources(self) -> Mapping[str, BalanceSource]:
         """`balances` after `refresh`, for the spend page, so a rotated ElevenLabs key's quota is read with the new key."""
@@ -140,3 +163,8 @@ class KeyedProviders:
         self._builds, self._retired, self._checkers, self._in_force, self._wired = {}, [], {}, {}, {}
         for built in builds:
             await built.close()
+
+
+def _reach(key: KeyInForce | None) -> tuple[str, str] | None:
+    """What a build depends on: the key and the address it is sent to."""
+    return None if key is None else (key.secret, key.base_url)

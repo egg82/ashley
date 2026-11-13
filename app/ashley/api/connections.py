@@ -11,7 +11,8 @@ read, and nothing is stored when that fails (400 `ConnectionRefused`, in the kin
 hands it to the household or takes it back (`connection_holders`), and `DELETE` removes it. A connection a person holds
 (a code host, a Google account) is theirs, listed only to them and read only when they speak, until they hand it over. A connection is addressed by its id; one the signed-in person cannot see is 404, as a name no adapter
 registered is. A label an owner already uses for the kind is 409 `label_taken`, and an owner at the kind's `most` is
-409 `too_many`.
+409 `too_many`. A kind whose label names something elsewhere refuses a label of another shape (422 `bad_label`), and
+an OpenAI-compatible provider names the model catalogue provider its calls are priced as (`connection_rules`).
 
 One log line per list, connect, refusal, rename and removal, with household and person ids, the kind, the connection id
 and the outcome; never the key, the token, the address or the label."""
@@ -33,6 +34,7 @@ from . import connection_holders
 from .connection_models import (ApiKeyConnectionRequest, ConnectionChange, ConnectionKindInfo, ConnectionRefused,
                                 ConnectionRequest, ConnectionsResponse, HouseholdConnection, NewConnectionRequest)
 from .admin_gate import ADMIN_ONLY, may_change, refused
+from .connection_rules import catalogue_refused, label_refused
 from .models import ErrorResponse, Person as WirePerson, wire_person
 from .person import Person
 
@@ -46,12 +48,16 @@ _WRITE: dict[int | str, dict[str, Any]] = {**_READ, **ADMIN_ONLY}
 _PUT: dict[int | str, dict[str, Any]] = {
     **_WRITE, 400: {"model": ConnectionRefused, "description": "the service did not answer with that address and "
                     "key or token, or the address is not one; nothing was stored"},
-    422: {"model": ErrorResponse, "description": "a body outside the request's schema gets FastAPI's own validation "
-          "error, which is not this schema"}}
+    422: {"model": ErrorResponse, "description": "`unsupported`: a secret field or catalogue provider the kind does "
+          "not take; `bad_label`: a label the kind does not take. A body outside the request's schema gets FastAPI's own "
+          "validation error, which is not this schema"}}
 
 
 _INVALID = {422: {"model": ErrorResponse, "description": "a body or id outside the request's schema gets FastAPI's own "
                   "validation error, which is not this schema"}}
+_CHANGE_INVALID = {422: {"model": ErrorResponse, "description": "`unsupported`: a holder the kind does not allow; "
+                         "`bad_label`: a label the kind does not take. A body or id outside the request's schema gets "
+                         "FastAPI's own validation error, which is not this schema"}}
 _NOT_FOUND = {404: {"model": ErrorResponse, "description": "`not_found`: no such connection, or none the signed-in "
                     "person can see; for a new one, no such kind"}}
 _CONFLICT = {409: {"model": ErrorResponse, "description": "`label_taken`: the owner has a connection of that kind "
@@ -92,7 +98,8 @@ def _kinds(signed_in: Person) -> list[ConnectionKindInfo]:
         name=k.name, title=k.title, what=k.what, blurb=k.blurb, connected=k.connected, removed=k.removed,
         holders=sorted(k.holders), most=k.most, takes_address=k.fixed_address is None,
         address_placeholder=k.address_placeholder, secret_field=k.secret_field, secret_label=k.secret_label,
-        secret_noun=k.secret_noun, connect=_connect_of(k), has_settings=bool(k.settings),
+        secret_noun=k.secret_noun, connect=_connect_of(k), has_settings=bool(k.settings), label_pattern=k.label_pattern,
+        picks_catalogue_provider=k.picks_catalogue_provider,
         set_up=not isinstance(k.connect, OAuth) or services.get(OAuthProviders).get(k.connect.provider) is not None)
         for k in services.get(ConnectionKinds).offered(signed_in.person.household_id) if may_change(signed_in, k)]
 
@@ -122,7 +129,8 @@ def _wire(c: Connection, people: dict[int, WirePerson], signed_in: Person,
                                resources=[connection_holders.wire_resource(r) for r in resources],
                                can_hand_over=c.person_id == me and "household" in holders,
                                can_take_back=c.person_id is None and c.added_by == me and "person" in holders,
-                               can_change=kind is None or may_change(signed_in, kind))
+                               can_change=kind is None or may_change(signed_in, kind),
+                               catalogue_provider=c.catalogue_provider)
 
 
 def _secret(body: ConnectionRequest | NewConnectionRequest, kind: ConnectionKind) -> str | JSONResponse:
@@ -136,6 +144,10 @@ def _secret(body: ConnectionRequest | NewConnectionRequest, kind: ConnectionKind
         return JSONResponse(status_code=422, content=ErrorResponse(
             code="unsupported", detail=f"{kind.title} takes its secret as `{kind.secret_field}`").model_dump())
     return secret
+
+
+def _catalogue_provider(body: ConnectionRequest | NewConnectionRequest) -> str | None:
+    return body.catalogue_provider if isinstance(body, ApiKeyConnectionRequest) else None
 
 
 async def _checked(signed_in: Person, kind: ConnectionKind, typed: str | None, secret: str) -> str | JSONResponse:
@@ -177,7 +189,9 @@ async def list_connections(signed_in: Person, after: BackgroundTasks) -> Connect
 async def connect(signed_in: Person, body: NewConnectionRequest) -> HouseholdConnection | JSONResponse:
     """201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;
     401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or
-    `too_many`; 422 `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when
+    `too_many`; 422 `unsupported`, the body carries the other secret field than the kind's, or a catalogue provider the
+    kind takes none of or the catalogue does not list; 422 `bad_label`, a label the kind does not take
+    (`ConnectionKind.takes_label`); 503 `unavailable`, also when
     connections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404."""
     person = signed_in.person
     registered = next((k for k in services.get(ConnectionKinds).offered(person.household_id) if k.name == body.kind),
@@ -186,15 +200,23 @@ async def connect(signed_in: Person, body: NewConnectionRequest) -> HouseholdCon
         return _not_found("there is no such kind of connection")
     if not may_change(signed_in, registered):
         return refused(signed_in, "connections.add")
-    secret = _secret(body, registered)
+    secret, listed = _secret(body, registered), _catalogue_provider(body)
+    rule = label_refused(registered, body.label) or await catalogue_refused(registered, listed)
+    if rule is not None:
+        return rule
     if isinstance(secret, JSONResponse):
         return secret
     base = await _checked(signed_in, registered, body.base_url, secret)
     if isinstance(base, JSONResponse):
         return base
+    connections = services.get(Connections)
     try:
-        connection = await services.get(Connections).add(person.household_id, registered.name, body.label, base,
-                                                         secret, person.id)
+        if registered.picks_catalogue_provider:
+            connection = await connections.add_catalogued(person.household_id, registered.name, body.label, base,
+                                                          secret, person.id, listed)
+        else:
+            connection = await connections.add(person.household_id, registered.name, body.label, base, secret,
+                                               person.id)
         await connection_holders.stored(connection.id, person.household_id, person.id)
         shown = await _shown(signed_in, connection)
     except (LabelTaken, TooMany) as e:
@@ -224,7 +246,8 @@ async def _changeable(signed_in: Person, connection_id: int, held: Connection | 
     **_PUT, **_NOT_FOUND})
 async def replace(signed_in: Person, connection_id: int, body: ConnectionRequest) -> HouseholdConnection | JSONResponse:
     """200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;
-    403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`."""
+    403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`. A kind that
+    `picks_catalogue_provider` stores the body's catalogue provider, none when it names none."""
     person = signed_in.person
     try:
         held = await _visible(signed_in, connection_id)
@@ -235,15 +258,22 @@ async def replace(signed_in: Person, connection_id: int, body: ConnectionRequest
         return _not_found()
     if not may_change(signed_in, registered):
         return refused(signed_in, "connections.replace")
-    secret = _secret(body, registered)
+    secret, listed = _secret(body, registered), _catalogue_provider(body)
+    rule = await catalogue_refused(registered, listed)
+    if rule is not None:
+        return rule
     if isinstance(secret, JSONResponse):
         return secret
     base = await _checked(signed_in, registered, body.base_url, secret)
     if isinstance(base, JSONResponse):
         return base
+    connections = services.get(Connections)
     try:
-        connection = await services.get(Connections).replace(connection_id, person.household_id, person.id, base,
-                                                             secret)
+        if registered.picks_catalogue_provider:
+            connection = await connections.replace_catalogued(connection_id, person.household_id, person.id, base,
+                                                              secret, listed)
+        else:
+            connection = await connections.replace(connection_id, person.household_id, person.id, base, secret)
         if connection is not None:
             await connection_holders.stored(connection_id, person.household_id, person.id)
         shown = None if connection is None else await _shown(signed_in, connection)
@@ -266,16 +296,22 @@ async def _shown(signed_in: Person, connection: Connection) -> HouseholdConnecti
 
 
 @router.patch("/api/connections/{connection_id}", response_model=HouseholdConnection, responses={
-    **_WRITE, **_INVALID, **_NOT_FOUND, **_CONFLICT})
+    **_WRITE, **_CHANGE_INVALID, **_NOT_FOUND, **_CONFLICT})
 async def change(signed_in: Person, connection_id: int, body: ConnectionChange) -> HouseholdConnection | JSONResponse:
     """200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401
     `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404
-    `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503
+    `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 422
+    `bad_label`, a label the kind does not take; 503
     `unavailable`."""
     person = signed_in.person
     try:
-        if not await _changeable(signed_in, connection_id):
+        held = await _visible(signed_in, connection_id)
+        if not await _changeable(signed_in, connection_id, held):
             return refused(signed_in, "connections.change")
+        kind = None if held is None else services.get(ConnectionKinds).get(held.kind)
+        rule = None if kind is None or body.holder is not None else label_refused(kind, body.label or "")
+        if rule is not None:
+            return rule
         if body.holder is not None:
             changed = await connection_holders.moved(signed_in, connection_id, body.holder)
             return changed if isinstance(changed, JSONResponse) else await _shown(signed_in, changed)

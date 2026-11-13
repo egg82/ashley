@@ -83,6 +83,7 @@ class PostgresConnectionResources(ConnectionResources):
         with translated():
             async with self._database.connection() as conn:
                 rows = await (await conn.execute(USABLE, args)).fetchall()
-        found = [(connection_of(row[:11]), _resource(row[11:15]), bool(row[15])) for row in rows]
+        found = [(connection_of(row[:queries.WIDTH]), _resource(row[queries.WIDTH:queries.WIDTH + 4]),
+                  bool(row[queries.WIDTH + 4])) for row in rows]
         return tuple(Usable(c, r) for c, r, member in found if permits(use, changing, c, r, member))
 

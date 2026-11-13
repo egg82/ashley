@@ -3,7 +3,10 @@
 The keys belong to the deployment, not a household: inference is one service for every household, so its keys are the
 `FIRST_HOUSEHOLD`'s connections of the `deployment` kinds implementing the `inference` port, and the env's keys
 (`ANTHROPIC_API_KEY` and the rest) stand in wherever that household has no row. A row always wins over the env: once
-a key is stored, a changed env key is ignored until the row is removed."""
+a key is stored, a changed env key is ignored until the row is removed.
+
+An OpenAI-compatible provider (`ashley.inference.compatible`) is one of many connections of one kind, so its key is
+read per connection, by label, beside its address and the catalogue provider its calls are priced as."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping
@@ -17,11 +20,16 @@ from ..connections.kinds import FIRST_HOUSEHOLD
 @dataclass(frozen=True)
 class KeyInForce:
     """The key a provider kind uses now: `secret`, left out of `repr`, from the connection `connection_id`, or from the
-    env when that is None."""
+    env when that is None. For an OpenAI-compatible provider, also the `label` routes name it by, the `base_url` it is
+    reached at and the `catalogue_provider` its calls are priced as (None: unpriced); empty for the keyed kinds, which
+    have one address each."""
 
     kind: str
     secret: str = field(repr=False)
     connection_id: int | None
+    base_url: str = ""
+    label: str = ""
+    catalogue_provider: str | None = None
 
 
 class KeysUnavailable(Exception):
@@ -32,7 +40,8 @@ class KeysUnavailable(Exception):
 class ProviderKeys(ABC):
     @abstractmethod
     async def in_force(self) -> Mapping[str, KeyInForce]:
-        """The key in force for each provider kind that has one, by kind name. Raises KeysUnavailable."""
+        """The key in force for each provider kind that has one, by kind name, and for each OpenAI-compatible provider,
+        by its label. Raises KeysUnavailable."""
 
 
 class ConnectionProviderKeys(ProviderKeys):
@@ -45,17 +54,25 @@ class ConnectionProviderKeys(ProviderKeys):
       and other households' rows are never read. A database that cannot be reached, or a stored key that does not open,
       raises KeysUnavailable rather than answering with the env's keys, which a stored row may have replaced.
 
+    `compatible` names the OpenAI-compatible kind: each `FIRST_HOUSEHOLD` connection of it is in force under its
+    label, and `compatible_env` (label to key, the env's local server) stands in for a label no row has, as `env` does
+    for a kind.
+
     `connections` is called on each read, so it follows the service the locator holds then. Reads only; logs nothing
     (the caller logs what changed)."""
 
-    def __init__(self, connections: Callable[[], Connections], kinds: Iterable[str], env: Mapping[str, str]) -> None:
+    def __init__(self, connections: Callable[[], Connections], kinds: Iterable[str], env: Mapping[str, str],
+                 compatible: str | None = None, compatible_env: Mapping[str, KeyInForce] | None = None) -> None:
         self._connections = connections
         self._kinds = tuple(kinds)
         self._env = dict(env)
+        self._compatible = compatible
+        self._compatible_env = dict(compatible_env or {})
 
     async def in_force(self) -> Mapping[str, KeyInForce]:
         keys = {kind: KeyInForce(kind, secret, None) for kind, secret in self._env.items()
                 if secret and kind in self._kinds}
+        keys.update(self._compatible_env)
         connections = self._connections()
         if not connections.can_open():
             return keys
@@ -65,8 +82,10 @@ class ConnectionProviderKeys(ProviderKeys):
             raise KeysUnavailable("the stored keys could not be read") from e
         rows: set[str] = set()
         for opened in stored:
-            kind = opened.connection.kind
-            if kind in self._kinds and kind not in rows:
-                rows.add(kind)
-                keys[kind] = KeyInForce(kind, opened.secret, opened.connection.id)
+            c = opened.connection
+            if c.kind == self._compatible:
+                keys[c.label] = KeyInForce(c.kind, opened.secret, c.id, c.base_url, c.label, c.catalogue_provider)
+            elif c.kind in self._kinds and c.kind not in rows:
+                rows.add(c.kind)
+                keys[c.kind] = KeyInForce(c.kind, opened.secret, c.id)
         return keys

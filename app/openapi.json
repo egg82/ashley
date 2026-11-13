@@ -1208,7 +1208,7 @@
       },
       "post": {
         "summary": "Connect",
-        "description": "201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;\n401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or\n`too_many`; 422 `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when\nconnections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.",
+        "description": "201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;\n401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or\n`too_many`; 422 `unsupported`, the body carries the other secret field than the kind's, or a catalogue provider the\nkind takes none of or the catalogue does not list; 422 `bad_label`, a label the kind does not take\n(`ConnectionKind.takes_label`); 503 `unavailable`, also when\nconnections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.",
         "operationId": "connect",
         "requestBody": {
           "content": {
@@ -1280,7 +1280,7 @@
             }
           },
           "422": {
-            "description": "a body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "description": "`unsupported`: a secret field or catalogue provider the kind does not take; `bad_label`: a label the kind does not take. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
             "content": {
               "application/json": {
                 "schema": {
@@ -1315,7 +1315,7 @@
     "/api/connections/{connection_id}": {
       "put": {
         "summary": "Replace",
-        "description": "200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;\n403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`.",
+        "description": "200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;\n403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`. A kind that\n`picks_catalogue_provider` stores the body's catalogue provider, none when it names none.",
         "operationId": "replace",
         "parameters": [
           {
@@ -1398,7 +1398,7 @@
             }
           },
           "422": {
-            "description": "a body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "description": "`unsupported`: a secret field or catalogue provider the kind does not take; `bad_label`: a label the kind does not take. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
             "content": {
               "application/json": {
                 "schema": {
@@ -1421,7 +1421,7 @@
       },
       "patch": {
         "summary": "Change",
-        "description": "200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401\n`unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404\n`not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503\n`unavailable`.",
+        "description": "200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401\n`unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404\n`not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 422\n`bad_label`, a label the kind does not take; 503\n`unavailable`.",
         "operationId": "change",
         "parameters": [
           {
@@ -1486,7 +1486,7 @@
             }
           },
           "422": {
-            "description": "a body or id outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "description": "`unsupported`: a holder the kind does not allow; `bad_label`: a label the kind does not take. A body or id outside the request's schema gets FastAPI's own validation error, which is not this schema",
             "content": {
               "application/json": {
                 "schema": {
@@ -7472,6 +7472,19 @@
             "minLength": 1,
             "pattern": "^\\S+$",
             "title": "Api Key"
+          },
+          "catalogue_provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Provider"
           }
         },
         "type": "object",
@@ -7479,7 +7492,7 @@
           "api_key"
         ],
         "title": "ApiKeyConnectionRequest",
-        "description": "Replace a connection of a kind whose `secret_field` is `api_key` (Sure, a model provider): `base_url` is the\naddress it is served at, left out for a kind that has one address (a model provider's); `api_key` is a key made in\nthe service's own settings, checked against it before anything is stored."
+        "description": "Replace a connection of a kind whose `secret_field` is `api_key` (Sure, a model provider): `base_url` is the\naddress it is served at, left out for a kind that has one address (a model provider's); `api_key` is a key made in\nthe service's own settings, checked against it before anything is stored. `catalogue_provider`, only for a kind\nthat `picks_catalogue_provider`, is the model catalogue provider (`GET /api/catalogue`) its calls are priced as;\nleft out, a custom address whose calls are unpriced."
       },
       "Applied": {
         "properties": {
@@ -8708,6 +8721,22 @@
             "type": "boolean",
             "title": "Has Settings",
             "default": false
+          },
+          "label_pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Pattern"
+          },
+          "picks_catalogue_provider": {
+            "type": "boolean",
+            "title": "Picks Catalogue Provider",
+            "default": false
           }
         },
         "type": "object",
@@ -8727,7 +8756,7 @@
           "secret_noun"
         ],
         "title": "ConnectionKindInfo",
-        "description": "A kind of connection a household or person can make, as its adapter declares it: what the panel shows for it\nand what the request must carry. `name` is the `kind` of a new connection; `most` is how many of it one owner may hold; `title` and `what` label it; `blurb`,\n`connected` and `removed` are what the panel says before and after; `holders` is who may hold one, the household,\na person (`person`) or either, and a new connection of a kind a person may hold is theirs until they hand it over;\n`takes_address` whether a person types its address (`address_placeholder` shows the shape); `secret_field` is the\nrequest field that carries the key or token, `secret_label` what to call it to a person and `secret_noun` its\nname in a button. `connect` is how it is connected: `pasted`, a person types the secret, or `oauth`, through the\nservice's own consent screen (`POST /api/connections/oauth/{provider}/start`), or `bridge`, a login to the service's account\nmade once from the room (`POST /api/mail-bridge/login`); `set_up` is whether this app can\nconnect it at all (an OAuth kind whose client is not configured is not); `has_settings` whether a person sets anything on a connection of\nit (`GET /api/connections/{id}/settings`)."
+        "description": "A kind of connection a household or person can make, as its adapter declares it: what the panel shows for it\nand what the request must carry. `name` is the `kind` of a new connection; `most` is how many of it one owner may hold; `title` and `what` label it; `blurb`,\n`connected` and `removed` are what the panel says before and after; `holders` is who may hold one, the household,\na person (`person`) or either, and a new connection of a kind a person may hold is theirs until they hand it over;\n`takes_address` whether a person types its address (`address_placeholder` shows the shape); `secret_field` is the\nrequest field that carries the key or token, `secret_label` what to call it to a person and `secret_noun` its\nname in a button. `connect` is how it is connected: `pasted`, a person types the secret, or `oauth`, through the\nservice's own consent screen (`POST /api/connections/oauth/{provider}/start`), or `bridge`, a login to the service's account\nmade once from the room (`POST /api/mail-bridge/login`); `set_up` is whether this app can\nconnect it at all (an OAuth kind whose client is not configured is not); `has_settings` whether a person sets anything on a connection of\nit (`GET /api/connections/{id}/settings`). `label_pattern`, when set, is the shape a label of it must match whole\n(an OpenAI-compatible provider's label is the name routes call it by, so it is required and an identifier); some\nnames a shipped provider has are refused too (422 `bad_label`). `picks_catalogue_provider` says a new connection\nmay name the model catalogue provider it is (`GET /api/catalogue`), whose `api` is its address; without one it is\nat a custom address and its calls are unpriced."
       },
       "ConnectionRefused": {
         "properties": {
@@ -9224,7 +9253,8 @@
               "stale",
               "admin_only",
               "last_admin",
-              "admins_from_provider"
+              "admins_from_provider",
+              "bad_label"
             ],
             "title": "Code"
           },
@@ -9542,6 +9572,17 @@
             "type": "boolean",
             "title": "Can Change",
             "default": true
+          },
+          "catalogue_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Provider"
           }
         },
         "type": "object",
@@ -9556,7 +9597,7 @@
           "personal"
         ],
         "title": "HouseholdConnection",
-        "description": "One of the household's connections. `id` is what addresses it; `label` is what its owner calls it, empty for one\nnever named. `kind` is the service, the `name` of a registered connection kind; `base_url` where it is\nreached; `added_by` the person who added it, null once they are not among the household's people or for one\ncarried over from her own setup; `personal` whether it is the signed-in person's own (a code host) and not the\nhousehold's; `checked_at` when the service last answered with it, at its adding or on one of\nher reads since. `needs` is set while its person must act before it works again (`reconnect`: the service\nrefused its grant, so connect it again); `scopes` are what an OAuth service granted and `missing_scopes` what its kind asks for\nthat it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or\nkept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household\n(it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they\nadded it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it\nup: false for a deployment's connection (a model provider's key) unless they are an admin."
+        "description": "One of the household's connections. `id` is what addresses it; `label` is what its owner calls it, empty for one\nnever named. `kind` is the service, the `name` of a registered connection kind; `base_url` where it is\nreached; `added_by` the person who added it, null once they are not among the household's people or for one\ncarried over from her own setup; `personal` whether it is the signed-in person's own (a code host) and not the\nhousehold's; `checked_at` when the service last answered with it, at its adding or on one of\nher reads since. `needs` is set while its person must act before it works again (`reconnect`: the service\nrefused its grant, so connect it again); `scopes` are what an OAuth service granted and `missing_scopes` what its kind asks for\nthat it did not (a person unticked them), empty for a pasted kind. `resources` is what it reaches, each shared or\nkept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household\n(it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they\nadded it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it\nup: false for a deployment's connection (a model provider's key) unless they are an admin. `catalogue_provider` is\nthe model catalogue provider an OpenAI-compatible provider's calls are priced as, null for one at a custom address\n(its calls are unpriced) and for every other kind."
       },
       "HouseholdRefused": {
         "properties": {
@@ -11777,6 +11818,19 @@
             "minLength": 1,
             "pattern": "^\\S+$",
             "title": "Api Key"
+          },
+          "catalogue_provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Provider"
           },
           "kind": {
             "type": "string",

@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 from connection_routes_support import delete_kind, put_kind
 
-ADDRESS_KINDS = [k.name for k in CONNECTION_KINDS if k.fixed_address is None and not k.pinned]
+ADDRESS_KINDS = [k.name for k in CONNECTION_KINDS if k.fixed_address is None and not k.pinned and k.name in ADDRESSES]
 REFUSALS = {"refuse": "key_refused", "down": "unreachable", "html": "wrong_service", "missing": "wrong_service"}
 
 

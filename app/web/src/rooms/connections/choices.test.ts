@@ -7,6 +7,7 @@ function kind(name: string, title: string, what: string, holders: ConnectionKind
   return {
     name, title, what, blurb: `Let her read ${what}.`, connected: '', removed: '', holders, most: 1, takes_address: true,
     address_placeholder: '', secret_field: 'token', secret_label: 'Token', secret_noun: 'token', connect: 'pasted', set_up: true, has_settings: false,
+    picks_catalogue_provider: false,
   };
 }
 

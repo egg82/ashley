@@ -30,4 +30,4 @@ def connection_of(row: tuple[Any, ...]) -> Connection:
     if services.get(ConnectionKinds).get(row[2]) is None:
         raise ConnectionsUnavailable("a stored connection has an unknown kind")
     return Connection(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9],
-                      tuple(row[10] or ()))
+                      tuple(row[10] or ()), row[11])

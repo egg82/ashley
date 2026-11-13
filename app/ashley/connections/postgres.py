@@ -60,7 +60,7 @@ class PostgresConnections(Connections):
             return None
         connection = connection_of(row)
         try:
-            return Opened(connection, self._sealer.open(bytes(row[11]), bound_to(household_id, connection.kind,
+            return Opened(connection, self._sealer.open(bytes(row[queries.WIDTH]), bound_to(household_id, connection.kind,
                                                                                  connection.person_id)))
         except Unsealable as e:
             logs.error(log, "connections.unsealable", household=household_id, kind=connection.kind,
@@ -71,16 +71,23 @@ class PostgresConnections(Connections):
                   added_by: int, holder: Holder | None = None) -> Connection:
         return await self.add_granted(household_id, kind, label, base_url, secret, added_by, None, holder)
 
+    async def add_catalogued(self, household_id: int, kind: Kind, label: str, base_url: str, secret: str,
+                             added_by: int, catalogue_provider: str | None) -> Connection:
+        return await self.add_granted(household_id, kind, label, base_url, secret, added_by, None,
+                                      catalogue_provider=catalogue_provider)
+
     async def add_granted(self, household_id: int, kind: Kind, label: str, base_url: str, secret: str, added_by: int,
-                          grant: Grant | None, holder: Holder | None = None) -> Connection:
-        """`add`, storing an OAuth `grant`'s access token, expiry and scopes beside `secret` (its refresh token)."""
+                          grant: Grant | None, holder: Holder | None = None,
+                          catalogue_provider: str | None = None) -> Connection:
+        """`add`, storing an OAuth `grant`'s access token, expiry and scopes beside `secret` (its refresh token), and the
+        `catalogue_provider` as `add_catalogued` does."""
         registered = _registered(kind)
         holder = holder or registered.default_holder
         if holder not in registered.holders:
             raise ValueError("that kind cannot be held that way")
         owner = added_by if holder == "person" else None
         args: dict[str, Any] = {"household": household_id, "kind": kind, "label": label, "base_url": base_url, "person": added_by,
-                "owner": owner, "most": registered.most,
+                "owner": owner, "most": registered.most, "catalogue_provider": catalogue_provider,
                 "secret": self._sealer.seal(secret, bound_to(household_id, kind, owner)),
                 **grant_args(self._sealer, grant, bound_to(household_id, kind, owner))}
         why: tuple[Any, ...] | None = None
@@ -112,11 +119,17 @@ class PostgresConnections(Connections):
                       secret: str) -> Connection | None:
         return await self.replace_granted(connection_id, household_id, person_id, base_url, secret, None)
 
+    async def replace_catalogued(self, connection_id: int, household_id: int, person_id: int, base_url: str,
+                                 secret: str, catalogue_provider: str | None) -> Connection | None:
+        return await self.replace_granted(connection_id, household_id, person_id, base_url, secret, None,
+                                          catalogue_provider)
+
     async def replace_granted(self, connection_id: int, household_id: int, person_id: int, base_url: str, secret: str,
-                              grant: Grant | None) -> Connection | None:
-        """`replace`, storing an OAuth `grant` beside `secret` (its refresh token)."""
+                              grant: Grant | None, catalogue_provider: str | None = None) -> Connection | None:
+        """`replace`, storing an OAuth `grant` beside `secret` (its refresh token), and the `catalogue_provider` as
+        `add_catalogued` does."""
         args: dict[str, Any] = {"id": connection_id, "household": household_id, "person": person_id,
-                                "base_url": base_url}
+                                "base_url": base_url, "catalogue_provider": catalogue_provider}
         with translated():
             async with self._database.connection() as conn:
                 found = await (await conn.execute(queries.IDENTITY, args)).fetchone()
@@ -150,10 +163,14 @@ class PostgresConnections(Connections):
         return connection
 
     async def seed(self, household_id: int, kind: Kind, base_url: str, secret: str) -> Connection | None:
+        return await self.seed_labelled(household_id, kind, "", base_url, secret)
+
+    async def seed_labelled(self, household_id: int, kind: Kind, label: str, base_url: str,
+                            secret: str) -> Connection | None:
         sealed = self._sealer.seal(secret, bound_to(household_id, kind))
         with translated():
             async with self._database.connection() as conn:
-                cur = await conn.execute(queries.SEED, {"household": household_id, "kind": kind,
+                cur = await conn.execute(queries.SEED, {"household": household_id, "kind": kind, "label": label,
                                                         "base_url": base_url, "secret": sealed})
                 row = await cur.fetchone()
         connection = None if row is None else connection_of(row)
