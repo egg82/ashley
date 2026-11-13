@@ -10,8 +10,12 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     kept by `ashley.files.intake.take` and added by an ordinary Add (`ashley.workshop.bench_file.add_file`), so the piece
     is live, logged and undoable like any other. The name and the type the browser gave ride in the headers `X-File-Name`
     (percent-encoded) and `X-File-Type`, never in the URL or the logs; the body type is `application/octet-stream`,
-    which a cross-site form cannot send (`ashley.api.person.Uploading`). It is read into memory, so the size is bounded:
-    `max_bytes`, 25 MiB; a longer request is 413, by `Content-Length` or as its body streams in.
+    which a cross-site form cannot send (`ashley.api.person.Uploading`). It is read into memory whole (to judge, hash
+    and keep it), so the size is bounded: `max_bytes`, 100 MiB, enough for several minutes of phone video; a longer
+    request is 413, by `Content-Length` or as its body streams in. Serving has no such bound: `GET /api/files/{token}`
+    streams from the store (`ObjectStore.size` and `ObjectStore.stream`, an S3 ranged GET), so a download or a seek
+    never holds the file in the pod. Streaming the upload too (the hash names the key, so it would need a staging key)
+    is not built.
   - **Content decides the type, not the client** (`ashley.files.sniff`, signatures and limits in
     `ashley/files/files.json`): a signature of the config (PNG, JPEG, GIF, WebP, PDF, zip), else UTF-8 text with no
     control characters (`text/plain`, or `text/csv`, `text/markdown` or `application/json` when the client named it), else

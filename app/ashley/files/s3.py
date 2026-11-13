@@ -2,14 +2,14 @@
 GET and ListObjectsV2 with Signature Version 4. Several endpoints are one store through `mirror.MirroredStore`."""
 
 import xml.etree.ElementTree as ET
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from datetime import UTC, datetime
 from urllib.parse import quote, urlsplit
 
 import httpx2
 
 from . import sigv4
-from .store import ObjectStore, StoreUnavailable
+from .store import CHUNK, ObjectStore, StoreUnavailable
 
 _NS = "{http://s3.amazonaws.com/doc/2006-03-01/}"
 
@@ -48,6 +48,46 @@ class S3Store(ObjectStore):
         if reply.status_code != 200:
             raise StoreUnavailable(f"get answered {reply.status_code}")
         return reply.content
+
+    async def size(self, key: str) -> int | None:
+        reply = await self._send("HEAD", self._path(key), {}, b"")
+        if reply.status_code == 404:
+            return None
+        length = reply.headers.get("content-length", "")
+        if reply.status_code != 200 or not length.isdigit():
+            raise StoreUnavailable(f"head answered {reply.status_code}")
+        return int(length)
+
+    async def stream(self, key: str, first: int, last: int) -> AsyncIterator[bytes] | None:
+        path = self._path(key)
+        headers = {**sigv4.sign("GET", self._host, path, {}, b"", *self._keys, self._clock()),
+                   "range": f"bytes={first}-{last}"}
+        try:
+            reply = await self._http.send(self._http.build_request("GET", self._base + path, headers=headers),
+                                          stream=True)
+        except httpx2.HTTPError as e:
+            raise StoreUnavailable(type(e).__name__) from e
+        if reply.status_code != 206 and not (reply.status_code == 200 and first == 0):
+            await reply.aclose()
+            if reply.status_code == 404:
+                return None
+            raise StoreUnavailable(f"get answered {reply.status_code}")
+        return self._body(reply, last - first + 1)
+
+    @staticmethod
+    async def _body(reply: httpx2.Response, wanted: int) -> AsyncIterator[bytes]:
+        left = wanted
+        try:
+            async for chunk in reply.aiter_bytes(CHUNK):
+                piece = chunk[:left]
+                left -= len(piece)
+                yield piece
+                if left == 0:
+                    return
+        except httpx2.HTTPError as e:
+            raise StoreUnavailable(type(e).__name__) from e
+        finally:
+            await reply.aclose()
 
     async def delete(self, key: str) -> None:
         reply = await self._send("DELETE", self._path(key), {}, b"")

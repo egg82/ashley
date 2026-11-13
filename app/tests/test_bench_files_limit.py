@@ -17,7 +17,7 @@ def sized(n: int) -> bytes:
 
 def test_a_body_of_exactly_the_documented_limit_is_stored_whole(box: Box) -> None:
     limit = bench_file.CONFIG.max_bytes
-    assert limit == 25 * 1024 * 1024
+    assert limit == 100 * 1024 * 1024
     client = box(ALANA)
     bench = opened(client)
     status, body = upload(client, bench.id, sized(limit), "big.png", "image/png")

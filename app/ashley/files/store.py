@@ -4,7 +4,7 @@ them (S3-compatible storage on each site's NAS, memory in a test) is the adapter
 and ask the locator; keys and bytes are people's data and are never logged."""
 
 from abc import abstractmethod
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from datetime import datetime
 
 from ..services import Service
@@ -34,6 +34,20 @@ class ObjectStore(Service):
     async def get(self, key: str) -> bytes | None:
         """The bytes under `key`, None when no copy holds any. Raises StoreUnavailable when none could be asked."""
 
+    async def size(self, key: str) -> int | None:
+        """How many bytes are under `key`, None when no copy holds any, without reading them. Raises
+        StoreUnavailable. The default reads the whole object; an adapter that can ask for the size alone overrides it."""
+        data = await self.get(key)
+        return None if data is None else len(data)
+
+    async def stream(self, key: str, first: int, last: int) -> AsyncIterator[bytes] | None:
+        """The bytes `first` to `last` (inclusive, inside the object) of `key` as chunks, so a large object is never
+        held whole; None when no copy holds `key`. Raises StoreUnavailable before the first chunk when none could be
+        asked; a copy that fails after that ends the iteration with StoreUnavailable. The caller closes the iterator
+        (`aclose`). The default reads the whole object; an adapter that can ask for a range overrides it."""
+        data = await self.get(key)
+        return None if data is None else chunks(data[first:last + 1])
+
     @abstractmethod
     async def delete(self, key: str) -> None:
         """Remove the bytes under `key`; a key nothing holds is not an error. Raises StoreUnavailable."""
@@ -48,6 +62,14 @@ class ObjectStore(Service):
         return frozenset(await self.listing(prefix))
 
 
+CHUNK = 256 * 1024
+
+
+async def chunks(data: bytes) -> AsyncIterator[bytes]:
+    for at in range(0, len(data), CHUNK):
+        yield data[at:at + CHUNK]
+
+
 class NullStore(ObjectStore):
     """What an unwired process sees: every call raises StoreUnavailable."""
 
@@ -58,6 +80,12 @@ class NullStore(ObjectStore):
         raise StoreUnavailable("no object store is wired")
 
     async def get(self, key: str) -> bytes | None:
+        raise StoreUnavailable("no object store is wired")
+
+    async def size(self, key: str) -> int | None:
+        raise StoreUnavailable("no object store is wired")
+
+    async def stream(self, key: str, first: int, last: int) -> AsyncIterator[bytes] | None:
         raise StoreUnavailable("no object store is wired")
 
     async def delete(self, key: str) -> None:

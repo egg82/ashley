@@ -1,5 +1,5 @@
 {
-  "max_bytes": 26214400,
+  "max_bytes": 104857600,
   "link_ttl_s": 900,
   "repair_interval_s": 3600,
   "sweep_interval_s": 21600,
