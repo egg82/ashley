@@ -32,8 +32,13 @@ The cluster repo pins those images' digests. A pull request builds every image a
 registries, `docker.io/<DOCKERHUB_USERNAME>/<image>` and `ghcr.io/<owner>/<image>`; the hosts and namespaces are the
 workflow's `DOCKERHUB_REPO` and `GHCR_REPO`, so nothing names a registry twice. linux/amd64 only.
 
+A pull request that changes only `docs/` and top-level markdown runs one job instead: the tests marked `reads_docs`,
+which read those files (citations, decisions, env tiers, household names), with no services. A new test that reads a
+doc carries that marker; a push to main always takes the full run, so a test nobody marked is still caught there.
+
 **Every change reaches main through a pull request**, and branch protection requires the `ci-ok` job, which fails
-unless every other job passed. On main, the app image is pushed by digest alone; once `ci-ok` is green, `release` tags
+unless every job it needs had its expected result: all succeeded, or on a docs-only pull request, `changes` and `tests`
+succeeded and the rest were skipped. On main, the app image is pushed by digest alone; once `ci-ok` is green, `release` tags
 that digest `dev` and `main-<sha8>-<commit-timestamp>`, so the deploy waits for green. Publishing a GitHub release tags
 the same image `<version>` and `latest` (`.github/workflows/container-release.yml`). Flux image automation on one site writes
 the `main-` tag into `kustomization/ashley-app` in the cluster repo, and the deploy runs `python -m ashley.db migrate`
