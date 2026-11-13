@@ -114,7 +114,7 @@ def test_each_kind_says_how_its_body_is_written(wired: Fakes) -> None:
         "model": ("code", "build123d"),
         "automation": ("automation", None), "wake": ("wake", None), "diagram": ("diagram", None), "facts": ("facts", None), "site": ("site", None),
         "video": ("video", None), "reader": ("reader", None), "recipe": ("recipe", None), "image": ("image", None), "file": ("file", None),
-        "clip": ("clip", None), "audio": ("audio", None), "job": ("job", None)}
+        "clip": ("clip", None), "audio": ("audio", None), "job": ("job", None), "session": ("session", None)}
 
 
 def test_the_list_carries_each_benchs_piece_count_and_last_change(signed_in: As, wired: Fakes) -> None:

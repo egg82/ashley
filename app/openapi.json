@@ -7084,6 +7084,73 @@
         }
       }
     },
+    "/api/claude/sessions/{session_id}/screen": {
+      "get": {
+        "summary": "Session Screen",
+        "description": "200 `SessionScreen`, whatever the bridge answered; 401 `unauthorized`; 422 for an id that is not a session's.\n`seen` is the `digest` of the screen the page shows, so an unchanged screen is not sent again. (The bridge's own\n`revision` is herdr's count of changes to the agent, not to its screen, so it cannot say that.)",
+        "operationId": "session_screen",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "seen",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seen"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionScreen"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a session id that is not one gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/files/{token}": {
       "get": {
         "summary": "Get File",
@@ -9107,7 +9174,8 @@
               "confirmed_measurement",
               "bad_body",
               "bad_citation",
-              "bad_rows"
+              "bad_rows",
+              "bad_session"
             ],
             "title": "Reason"
           },
@@ -11532,7 +11600,8 @@
                   "confirmed_measurement",
                   "bad_body",
                   "bad_citation",
-                  "bad_rows"
+                  "bad_rows",
+                  "bad_session"
                 ]
               }
             ],
@@ -13413,7 +13482,8 @@
               "audio",
               "screen",
               "controls",
-              "job"
+              "job",
+              "session"
             ],
             "title": "Format"
           },
@@ -15128,6 +15198,78 @@
         ],
         "title": "ScreenVisibility",
         "description": "What a page reports about itself: `screen` is the token it made at load and opened its feed under, `visible`\nwhether it is in the foreground now (the Page Visibility API's `visible`). Sent on every change and on a heartbeat."
+      },
+      "SessionScreen": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "live",
+              "gone",
+              "not_connected",
+              "unreachable",
+              "refused"
+            ],
+            "title": "State"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "idle",
+                  "working",
+                  "blocked",
+                  "done",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "again_ms": {
+            "type": "integer",
+            "title": "Again Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "again_ms"
+        ],
+        "title": "SessionScreen",
+        "description": "A session's screen as it is now. `state`: `live` (shown below), `gone` (the bridge lists no such session: it\nended or was closed), `not_connected` (the person has no herdr bridge), `unreachable` (the bridge, herdr or the\nperson's connections did not answer) or `refused` (the bridge turned the connection away: its token, person or\ncertificate). While `live`, `status` is the session's (`idle`, `working`, `blocked`, `done` or `unknown`),\n`digest` names the screen's text (a hash, the same for the same text), and `text` is its last lines as unwrapped\ntext, null when `digest` is the one the page asked with (nothing changed); `truncated` says older lines were left\nout. `again_ms`: how long the page waits before it asks again."
       },
       "SettingChange": {
         "properties": {

@@ -7,8 +7,8 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 
-from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, stored_file, surfacing,
-               wake_rule)
+from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, session_piece, stored_file,
+               surfacing, wake_rule)
 from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Move, Moved,
                        Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored, Run,
                        Shown, Surfaced, Undo)
@@ -80,6 +80,7 @@ _BODIES: Mapping[BodyFormat, tuple[Callable[[str], bool], Reason]] = MappingProx
     "file": (stored_file.file_well_formed, "bad_file"),
     "controls": (screen_controls.well_formed, "bad_controls"),
     "job": (job_body.well_formed, "bad_body"),
+    "session": (session_piece.well_formed, "bad_session"),
 })
 
 
@@ -131,7 +132,7 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
     (`wake_rule.well_formed`), a facts piece's `bad_facts` unless it is a list of facts
     (`facts.well_formed`), a site's `bad_site` unless one https URL that is not a video page, a video's
     `bad_video` unless a video body
-    (`embed`). Her Add or Edit of a facts piece is refused `bad_citation` when a choice row it adds or changes
+    (`embed`), a session's `bad_session` unless a session reference (`session_piece`). Her Add or Edit of a facts piece is refused `bad_citation` when a choice row it adds or changes
     with a source that cites a piece (`facts.cited_pieces`) names none, or names one that is not a piece on the
     layout or the shelf of a kind whose format is in `CITABLE`."""
     seq = state.next_seq
