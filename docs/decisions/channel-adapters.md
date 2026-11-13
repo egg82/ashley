@@ -6,9 +6,9 @@ The channels beyond the web chat: web push, the hallway tablet, Discord and voic
 
 Web push is a channel like any other: its thread is `push:<person id>`, and one singleton under the lease `push` takes
 that prefix from the outbox and sends each reply to every browser the person subscribed in the devices room. Nothing
-is pushed from a request pod. Her VAPID identity is `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` from
-the deployment's secret store (`ashley-push`); unset or not one key pair, the push routes answer 503, the singleton does not run,
-and the rest runs.
+is pushed from a request pod. Her VAPID identity is the deployment's key pair (`connections.md`, "The deployment's own
+secrets are rows it makes for itself"), which `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` seed, and `VAPID_SUBJECT`; with no
+subject, or a pair that is not one P-256 pair, the push routes answer 503, the singleton does not run, and the rest runs.
 
 - **"It's on your phone" keys on a field.** `Reply.to_phone` means the written reply holds what doesn't work aloud (a
   link, a list, something long to keep). Code offers it per call, in one line of the prompt, only on a spoken channel

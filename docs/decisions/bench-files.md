@@ -23,7 +23,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     commands route and her `bench_add` refuse an Add of a large kind outright, since a body they wrote names bytes no
     one uploaded. An Edit may retitle the piece.
   - **A bench viewer reaches the bytes through a link of the app's own**, `GET /api/files/{token}` (`ashley.files.links`):
-    a token signed under `FILES_LINK_KEY`, shared by every pod, naming household, hash, media type, whether to show it
+    a token signed under the deployment's link key (`ashley.connections.deployment_secrets`), shared by every pod, naming household, hash, media type, whether to show it
     in place and when it ends. It is the only credential, so an `<img>` and a saved download need no session, and it
     carries no file name. A bench read hands out links ending at the end of the next half-`link_ttl_s` window (900 s), so
     the address is stable within a window and the browser keeps the image; the page reads the bench again 30 s before

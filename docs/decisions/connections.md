@@ -14,6 +14,18 @@ same family's accounts; one HA is the one house), so a key per person would add 
   store's `ashley-connections`): a version byte naming the key, a random nonce, and the household and kind as
   associated data, so a sealed value copied to another row does not open (`ashley.connections.sealing`). It is never
   on the wire back and never logged. Without the key nothing can be added or read, and the room says it is not set up.
+- **The deployment's own secrets are rows it makes for itself**, not connections: the key that signs file links and
+  her Web Push key pair (`ashley.connections.deployment_secrets`). No outside service holds them, so there is nothing to
+  check a value against, and no person edits them: a replaced VAPID pair orphans every browser's subscription and a
+  replaced link key breaks every live link. Each is a row of `deployment_secrets` (the pair as one value, so no race can
+  split it), sealed under `CONNECTIONS_KEY` bound to its name. Every pod settles them at start (`ashley.wiring_secrets`):
+  a row wins; with none, the env's value (`FILES_LINK_KEY`, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`) is written, and
+  with neither a fresh one from the system's CSPRNG, a P-256 pair for push. The write is `ON CONFLICT DO NOTHING` and is
+  read back in the same transaction, so pods starting on both sites at once all keep the value written first, with no
+  lease. Until a pod has settled (the database away, a row this key cannot open: logged and retried) the env's values
+  answer; the push singleton and browsers' subscriptions start once it has. Without `CONNECTIONS_KEY` the env's values
+  are all there is. Rejected: a `deployment` connection kind, which would offer the room's replace and remove, and a
+  check, for values only she holds; one row per VAPID key, which two pods could fill from two different pairs.
 - **A connection is stored only after the service answers with it**: the kind's one authenticated read (Sure's
   accounts, Home Assistant's `GET /api/`, a code host's `GET /user`). A refusal says why (`bad_url`, `key_refused`,
   `unreachable`, `wrong_service`), in the kind's own words, and stores nothing. Sure's address is https; Home Assistant's may be http, since most are
@@ -211,8 +223,7 @@ subscription, the read the Usage room already makes), and the router opens the p
   connection seals a single secret. It is checked by one signed listing at every endpoint, so a typo in a site's address
   is caught when it is saved. `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY` and `FILES_SECRET_KEY` seed the row at
   each pod's start (`ashley.files.store_seed`), never over a row, and the row then wins; with no row the env's store
-  answers, and with neither every call is `StoreUnavailable` and the sweep and repair idle. `FILES_LINK_KEY` stays an env
-  var. The store is `ashley.files.connected_store.ConnectedStore`, a cache and not state: it reads the row again by the
+  answers, and with neither every call is `StoreUnavailable` and the sweep and repair idle. The store is `ashley.files.connected_store.ConnectedStore`, a cache and not state: it reads the row again by the
   first call once the last read is `REFRESH_S` old, so a store added, replaced or removed in the room reaches every pod
   within that bound, and a read that fails keeps what was wired. It is registered whenever the env names a store or
   `CONNECTIONS_KEY` is set, and answers `ObjectStore.available()` with whether it holds a store now, which the bench

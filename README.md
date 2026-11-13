@@ -98,11 +98,11 @@ app at start-up when one of them is missing.
 | Connections, added in the web app: Home Assistant, Sure, GitLab, GitHub, herdr, Google | `CONNECTIONS_KEY`, 32 random bytes in base64, which seals their secrets in the database |
 | Home Assistant for the first household, without the web app | `HA_URL`, `HA_TOKEN` (a long-lived access token) |
 | Web search | `SEARXNG_URL` |
-| Files on benches | `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY`, `FILES_SECRET_KEY` (any S3-compatible store; they seed its connection), `FILES_LINK_KEY` |
+| Files on benches | `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY`, `FILES_SECRET_KEY` (any S3-compatible store; they seed its connection); with `CONNECTIONS_KEY` the key that signs file links is generated once, or seeded from `FILES_LINK_KEY` |
 | Voice | `WYOMING_STT_URL` or `OPENAI_API_KEY` to hear, `ELEVENLABS_API_KEY` (or the first household's ElevenLabs connection) to speak, `VOICE_CLIP_BASE_URL` for satellites, and their key (`ESPHOME_NOISE_PSK` seeds it once; then it is a connection) |
 | Discord | `DISCORD_BOT_TOKEN`; `DISCORD_OAUTH_CLIENT_ID`, `DISCORD_OAUTH_CLIENT_SECRET` and `PUBLIC_URL` to link accounts |
 | Gmail | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `PUBLIC_URL`, `CONNECTIONS_KEY` |
-| Web push | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` |
+| Web push | `VAPID_SUBJECT`; with `CONNECTIONS_KEY` the key pair is generated once, or seeded from `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` |
 | Privacy and terms pages | `OPERATOR_NAME`, `OPERATOR_CONTACT` |
 | Log detail | `LOG_LEVEL` (default `info`); logs are one `key=value` line per event |
 | Two sites | `ETCD_URL` (with `ETCD_CA_FILE`, `ETCD_CERT_FILE`, `ETCD_KEY_FILE`), `SITE`, `PATRONI_RESTAPI_PASSWORD`; `ACTIVE_SITE_LEADER_PATH`, `ACTIVE_SITE_MEMBER` (where the referee keeps the leader, and the value naming this site; default Patroni's key and `SITE`), `FAILBACK=off` |

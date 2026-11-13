@@ -66,7 +66,7 @@ chat, memory view) built with esbuild, its types generated from the backend's `o
 - **In-app setting**: a household's own choices, edited by a person through the web route and never by her tools.
 
 `app/tests/test_env_tiers.py` lists every variable `from_env` reads with its tier and a reason. A new read fails until it
-is listed, and a listed name nothing reads fails too. A name ending `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must seed a registered connection kind, be a named root secret that cannot live in the database (with its reason), or be recorded debt. The gate cannot judge a tier; it makes the question get asked. The
+is listed, and a listed name nothing reads fails too. A name ending `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must seed a registered connection kind or one of the deployment's own secrets (`connections.md`), be a named root secret that cannot live in the database (with its reason), or be recorded debt. The gate cannot judge a tier; it makes the question get asked. The
 variables that fail the rule today are marked "to move" there.
 
 - **Rejected:** a gate that forbids any new env var. Infrastructure placement is legitimately env, and a ban would push
