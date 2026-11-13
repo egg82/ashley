@@ -54,7 +54,7 @@ def verdict(asks_to_look: bool = False, asked_form: bool = False, claims_done: b
 
 
 def record(looks: tuple[Look, ...] = (Look(20, 3, 510.0), Look(30, 2, 970.0)), before: str = BEFORE) -> Record:
-    commands = (added(1, 0, "measurements", before), added(2, 0, "model", "m"), added(3, 0, "image", "{}", True),
+    commands = (added(1, 0, "facts", before), added(2, 0, "model", "m"), added(3, 0, "image", "{}", True),
                 edited(4, 200, 2, "m", "m2"), ran(5, 210), edited(6, 300, 1, before, AFTER), ran(7, 350),
                 added(8, 480, "image", "{}", True), added(9, 950, "note", "n"), ran(10, 960))
     turns = (said(10, "person", 100), said(11, "ashley", 150, 10, follows=True), said(12, "ashley", 400, 10),
@@ -66,7 +66,7 @@ def record(looks: tuple[Look, ...] = (Look(20, 3, 510.0), Look(30, 2, 970.0)), b
 
 
 EXPECTED: dict[int, dict[str, object]] = {
-    10: {"build_s": 110.0, "model_runs": 2, "unasked_changes": 1, "unasked_by_kind": {"measurements": 1},
+    10: {"build_s": 110.0, "model_runs": 2, "unasked_changes": 1, "unasked_by_kind": {"facts": 1},
          "measurement_rewrites": 2, "confirmed_rewrites": 1, "overlaps_final": 1, "failed_checks_final": 2,
          "looked_at_photo": False, "asks_to_look": True, "asked_form": False, "claimed_unbacked": True,
          "measurement_reasks": 0, "reask_basis": "grader"},

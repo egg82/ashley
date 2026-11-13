@@ -1,6 +1,7 @@
 """What a build123d model script ends with, in the CAD image (deploy/cad/Containerfile). The script runs in `/work`
-with the bench's measurements as `measurements.json`; `show` writes `out/model.glb`, `out/model.stl`, `out/model.3mf`
-and `out/report.json` beside it, all in millimetres (GLB is metres and Y-up, as glTF says; the viewer turns it back).
+with the bench's facts as `facts.json` (or `measurements.json`, which an app not yet updated writes); `show` writes
+`out/model.glb`, `out/model.stl`, `out/model.3mf` and `out/report.json` beside it, all in millimetres (GLB is metres
+and Y-up, as glTF says; the viewer turns it back).
 
     from ashley_cad import check, measured, show
     width = measured("board_width")
@@ -53,25 +54,32 @@ MODEL_UNITS = {"micron": 0.001, "millimeter": 1.0, "centimeter": 10.0, "inch": 2
 """Millimetres in each unit a 3MF model declares."""
 """Decimals of a millimetre two STL vertices still count as one at; binary STL stores float32, which is finer."""
 
-MEASUREMENTS = Path("measurements.json")
+FACTS = Path("facts.json")
+LEGACY_FACTS = Path("measurements.json")
 _rows: dict[str, dict[str, Any]] | None = None
 _read: list[str] = []
 _checks: list[dict[str, Any]] = []
 
 
+def _file() -> Path | None:
+    """The run's facts file: `facts.json`, or the older `measurements.json` an app not yet updated writes."""
+    return next((p for p in (FACTS, LEGACY_FACTS) if p.is_file()), None)
+
+
 def _load() -> dict[str, dict[str, Any]]:
-    """Every row of the run's measurements by name, numbers and choices alike."""
+    """Every row of the run's facts by name, numbers and choices alike."""
     global _rows
     if _rows is None:
-        if not MEASUREMENTS.is_file():
-            raise FileNotFoundError("measurements.json is not here: this bench has no measurements piece")
-        _rows = {item["name"]: item for item in json.loads(MEASUREMENTS.read_text(encoding="utf-8"))["items"]}
+        found = _file()
+        if found is None:
+            raise FileNotFoundError("facts.json is not here: this bench has no facts piece")
+        _rows = {item["name"]: item for item in json.loads(found.read_text(encoding="utf-8"))["items"]}
     return _rows
 
 
 def _names(choices: bool) -> list[str]:
-    """The names of the choice rows, or of the number rows; none when the run has no measurements."""
-    rows = _load() if MEASUREMENTS.is_file() else {}
+    """The names of the choice rows, or of the number rows; none when the run has no facts."""
+    rows = _load() if _file() is not None else {}
     return sorted(n for n, row in rows.items() if (row.get("kind") == CHOICE) == choices)
 
 
@@ -222,7 +230,7 @@ def cut_away(base: Any, part: Any) -> Any:
 def check(name: str, actual: float, op: str, target: float, *, tolerance: float = 0.0,
           rests_on: Sequence[str] | None = None) -> None:
     """Record that `actual` (measured on the geometry) compares to `target` by `op` (`==`, `<=`, `>=`, `<`, `>`),
-    within `tolerance`, in the same unit. `rests_on` names the measurements the check depends on; left out, it is
+    within `tolerance`, in the same unit. `rests_on` names the facts the check depends on; left out, it is
     every measurement read so far."""
     if not name or any(c["name"] == name for c in _checks):
         raise ValueError(f"check name {name!r} is empty or already used")
@@ -278,10 +286,10 @@ def _form(part: tuple[Any, ...], role: str) -> None:
     choices = _names(True)
     if len(part) != 4:
         raise ValueError(f"part {part[0]!r} is a reference, a stand-in for a real object: say what kind of thing it is "
-                         f"with a choice row in the measurements piece and name it, as (name, shape, \"reference\", "
+                         f"with a choice row in the facts piece and name it, as (name, shape, \"reference\", "
                          f"\"<choice name>\"); the bench has the choices {choices}")
     if str(part[3]) not in choices:
-        raise ValueError(f"part {part[0]!r}: form {part[3]!r} is not a choice row of the measurements; the bench has "
+        raise ValueError(f"part {part[0]!r}: form {part[3]!r} is not a choice row of the facts; the bench has "
                          f"the choices {choices}")
 
 

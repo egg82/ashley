@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 
-from . import (automation_config, embed, job_body, measurements, reader, recipe, screen_controls, stored_file, surfacing,
+from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, stored_file, surfacing,
                wake_rule)
 from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Move, Moved,
                        Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored, Run,
@@ -63,13 +63,13 @@ Decision = Accepted | Refused
 PLAYED: tuple[BodyFormat, ...] = ("video", "clip", "audio")
 """The formats of the pieces a Cue drives: an embedded video, a video file, an audio file."""
 CITABLE: tuple[BodyFormat, ...] = ("image", "file", "reader", "site", "recipe")
-"""The formats of the pieces a measurements choice row may name as where it was seen or published."""
+"""The formats of the pieces a facts choice row may name as where it was seen or published."""
 
 # The body formats code checks on every Add and Edit, and the refusal for a body that is not empty and fails the check.
 _BODIES: Mapping[BodyFormat, tuple[Callable[[str], bool], Reason]] = MappingProxyType({
     "automation": (automation_config.well_formed, "bad_automation"),
     "wake": (wake_rule.well_formed, "bad_wake"),
-    "measurements": (measurements.well_formed, "bad_measurements"),
+    "facts": (facts.well_formed, "bad_facts"),
     "site": (embed.site_well_formed, "bad_site"),
     "video": (embed.video_well_formed, "bad_video"),
     "reader": (reader.well_formed, "bad_reader"),
@@ -128,11 +128,11 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
     A title is refused when empty, only whitespace or longer than `rules.title_max_chars`; a body may be empty. An
     automation piece's body that is not empty is refused `bad_automation` (after `too_long`) unless it is an
     automation config (`automation_config.well_formed`), a wake rule's `bad_wake` unless it is a rule
-    (`wake_rule.well_formed`), a measurements piece's `bad_measurements` unless it is a list of measurements
-    (`measurements.well_formed`), a site's `bad_site` unless one https URL that is not a video page, a video's
+    (`wake_rule.well_formed`), a facts piece's `bad_facts` unless it is a list of facts
+    (`facts.well_formed`), a site's `bad_site` unless one https URL that is not a video page, a video's
     `bad_video` unless a video body
-    (`embed`). Her Add or Edit of a measurements piece is refused `bad_citation` when a choice row it adds or changes
-    with a source that cites a piece (`measurements.cited_pieces`) names none, or names one that is not a piece on the
+    (`embed`). Her Add or Edit of a facts piece is refused `bad_citation` when a choice row it adds or changes
+    with a source that cites a piece (`facts.cited_pieces`) names none, or names one that is not a piece on the
     layout or the shelf of a kind whose format is in `CITABLE`."""
     seq = state.next_seq
     checked = _effect_of(state, command, rules, seq)
@@ -243,11 +243,11 @@ def _add(state: BenchState, command: Add, rules: Rules, seq: int) -> Effect | Re
 
 
 def _citation(state: BenchState, before: str, after: str, by: By, kind: Kind, rules: Rules) -> Reason | None:
-    """`bad_citation` for her measurements body naming a piece that is not a source on this bench (`decide`)."""
-    if kind.format != "measurements" or by.person_id is not None:
+    """`bad_citation` for her facts body naming a piece that is not a source on this bench (`decide`)."""
+    if kind.format != "facts" or by.person_id is not None:
         return None
     held = {p.id: p for p in (*state.pieces, *state.shelf)}
-    for cited in measurements.cited_pieces(before, after):
+    for cited in facts.cited_pieces(before, after):
         found = None if cited is None else held.get(cited)
         source = None if found is None else rules.kinds.get(found.kind)
         if source is None or source.format not in CITABLE:
@@ -267,8 +267,8 @@ def _edit(state: BenchState, piece: Piece, command: Edit, rules: Rules) -> Effec
     refused = _text_refusal(text, kind, rules)
     if refused is None and kind.family == "large" and text.body != piece.text.body:
         return "bad_file"
-    if refused is None and kind.format == "measurements" and command.by.person_id is None and (
-            measurements.rewrites_confirmed(piece.text.body, text.body)):
+    if refused is None and kind.format == "facts" and command.by.person_id is None and (
+            facts.rewrites_confirmed(piece.text.body, text.body)):
         return "confirmed_measurement"
     if refused is None:
         refused = _citation(state, piece.text.body, text.body, command.by, kind, rules)

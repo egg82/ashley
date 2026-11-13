@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from ashley.files.links import check, window_end
-from run_artifacts_support import (CONFIG, GLB_NAME, GOOD, LINK_KEY, TYPES, Box, Rig, check_json, measurement, measurements_body, model_output,
+from run_artifacts_support import (CONFIG, GLB_NAME, GOOD, LINK_KEY, TYPES, Box, Rig, check_json, measurement, facts_body, model_output,
                                    part_json, rig, report_json, sha)
 
 CHECKS = [check_json("fit", 2.0, ">=", 1.5, rests_on=["w"]), check_json("guess", 2.0, ">=", 1.5, rests_on=["g"]),
@@ -16,7 +16,7 @@ REPORT = report_json(*CHECKS, parts=[part_json("lid")], triangles=48)
 
 def measured_bench(r: Rig) -> tuple[int, int]:
     bench = r.new_bench()
-    r.add(bench, "measurements", measurements_body(measurement("w", 30), measurement("g", 5, "guessed")))
+    r.add(bench, "facts", facts_body(measurement("w", 30), measurement("g", 5, "guessed")))
     return bench, r.add(bench, "code", "box = 1")
 
 
@@ -128,15 +128,15 @@ def test_a_link_ends_with_the_current_half_window_and_is_the_same_address_when_r
             assert again == applied
 
 
-def test_the_report_of_a_run_is_judged_by_the_measurements_it_started_with(db_url: str) -> None:
+def test_the_report_of_a_run_is_judged_by_the_facts_it_started_with(db_url: str) -> None:
     with rig(db_url, Box([model_output(REPORT)])) as r:
         bench = r.new_bench()
-        measures = r.add(bench, "measurements", measurements_body(measurement("w", 30), measurement("g", 5, "datasheet")))
+        measures = r.add(bench, "facts", facts_body(measurement("w", 30), measurement("g", 5, "datasheet")))
         piece = r.add(bench, "code", "box = 1")
         first = r.run_piece(bench, piece)["run_output"]["report"]
         assert {c["name"]: c["verdict"] for c in first["checks"]}["guess"] == "pass"
         r.command(bench, {"type": "edit", "piece_id": measures, "base_version": 1, "title": "t",
-                          "body": measurements_body(measurement("w", 30), measurement("g", 5, "guessed"))})
+                          "body": facts_body(measurement("w", 30), measurement("g", 5, "guessed"))})
         last = next(p for p in r.bench(bench)["pieces"] if p["id"] == piece)["last_run"]["run_output"]["report"]
         assert last == first
         second = r.run_piece(bench, piece)["run_output"]["report"]

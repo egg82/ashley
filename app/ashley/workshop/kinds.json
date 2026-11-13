@@ -6,7 +6,7 @@
   "automation": {"family": "stored", "label": "Automation", "max_chars": 50000, "format": "automation"},
   "wake": {"family": "stored", "label": "Wake rule", "max_chars": 4000, "format": "wake"},
   "diagram": {"family": "stored", "label": "Diagram", "max_chars": 20000, "format": "diagram"},
-  "measurements": {"family": "stored", "label": "Measurements", "max_chars": 50000, "format": "measurements"},
+  "facts": {"family": "stored", "label": "Facts", "max_chars": 50000, "format": "facts"},
   "site": {"family": "live", "label": "Site", "max_chars": 2000, "format": "site", "outside": true},
   "video": {"family": "live", "label": "Video", "max_chars": 2200, "format": "video", "outside": true},
   "reader": {"family": "stored", "label": "Reader", "max_chars": 200000, "format": "reader", "outside": true},

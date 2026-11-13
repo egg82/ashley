@@ -7,7 +7,7 @@ from typing import Any
 from ashley.inference.model import ToolCall
 from ashley.tools.bench_run import BenchRunTools
 from contract.conversations_support import scalar
-from run_artifacts_support import (GOOD, TYPES, Box, World, check_json, go, measurement, measurements_body, model_output, ran,
+from run_artifacts_support import (GOOD, TYPES, Box, World, check_json, go, measurement, facts_body, model_output, ran,
                                    report_json, world)
 
 REPORT = report_json(check_json("fit", 2.0, ">=", 1.5, rests_on=["w"]), check_json("guess", 2.0, ">=", 1.5, rests_on=["g"]),
@@ -24,7 +24,7 @@ def tools(w: World, url: str, bench: int) -> BenchRunTools:
 
 async def prepared(w: World) -> tuple[int, int]:
     bench = await w.bench()
-    await w.add(bench, "measurements", measurements_body(measurement("w", 30), measurement("g", 5, "guessed")))
+    await w.add(bench, "facts", facts_body(measurement("w", 30), measurement("g", 5, "guessed")))
     return bench, await w.add(bench, "code", "box = 1")
 
 

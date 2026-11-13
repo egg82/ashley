@@ -6,7 +6,7 @@ import unittest
 from test_ashley_cad import SHIPPED, run
 
 GATE_BLOCK = """
-# A gate block from a model run, with the measurements that run had: a 15 mm
+# A gate block from a model run, with the facts that run had: a 15 mm
 # tongue rooted on one side over a 1.2 mm deep mouth, its tip 0.4 mm over a ledge. It printed as its own part there too.
 from build123d import Box, Pos
 from ashley_cad import show
@@ -51,8 +51,8 @@ CORD = {"items": [{"kind": "choice", "name": "cord_form", "label": "The cord", "
 """The form a reference stand-in names."""
 
 
-def report_of(script: str, extra: str = "", printing: dict | None = SHIPPED, measurements: dict | None = None) -> dict:
-    done, out = run(script.format(extra=extra), measurements=measurements, printing=printing)
+def report_of(script: str, extra: str = "", printing: dict | None = SHIPPED, facts: dict | None = None) -> dict:
+    done, out = run(script.format(extra=extra), facts=facts, printing=printing)
     assert done.returncode == 0, done.stderr
     return json.loads((out / "report.json").read_text())
 
@@ -164,7 +164,7 @@ class Assembled(unittest.TestCase):
 class Reference(unittest.TestCase):
     def test_a_reference_part_under_the_tongue_neither_prints_nor_closes_the_gap(self) -> None:
         cord = ', ("cord", Pos(4.7, -2, -5.5) * Box(20, 6, 0.9), "reference", "cord_form")'
-        report = report_of(GATE_BLOCK, extra=cord, measurements=CORD)
+        report = report_of(GATE_BLOCK, extra=cord, facts=CORD)
         self.assertEqual([p["name"] for p in report["print"]["parts"]], ["gate_test_block"])
         island = report["print"]["parts"][0]["islands"][0]
         self.assertEqual((island["min_gap_mm"], island["median_gap_mm"]), (0.4, 1.2))
@@ -173,13 +173,13 @@ class Reference(unittest.TestCase):
 
     def test_a_reference_part_is_still_checked_for_overlaps(self) -> None:
         report = report_of(PLAIN, extra=', ("token", Pos(10, 0, 0) * Box(10, 10, 10), "reference", "cord_form")',
-                           measurements=CORD)
+                           facts=CORD)
         self.assertEqual([(c["name"], c["rests_on"]) for c in report["checks"]], [("parts_apart:block:token", ["cord_form"])])
         self.assertGreater(report["checks"][0]["actual"], 0)
 
     def test_only_reference_parts_skip_the_print_check_with_that_reason(self) -> None:
         report = report_of('from build123d import Box\nfrom ashley_cad import show\nshow(("cord", Box(5, 5, 5), "reference", "cord_form"))',
-                           measurements=CORD)
+                           facts=CORD)
         self.assertEqual(report["print"], {"skipped": "no_printed_parts"})
 
 
@@ -203,7 +203,7 @@ class Settings(unittest.TestCase):
         self.assertFalse(small["print"]["parts"][0]["fits_bed"])
 
     def test_bad_settings_fail_the_run_naming_the_key(self) -> None:
-        done, _ = run(PLAIN.format(extra=""), measurements=None, printing={**SHIPPED, "min_open_gap_mm": "wide"})
+        done, _ = run(PLAIN.format(extra=""), facts=None, printing={**SHIPPED, "min_open_gap_mm": "wide"})
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("min_open_gap_mm", done.stderr)
 
@@ -211,7 +211,7 @@ class Settings(unittest.TestCase):
 class Roles(unittest.TestCase):
     def test_a_role_off_the_list_is_refused_naming_the_list(self) -> None:
         done, out = run('from build123d import Box\nfrom ashley_cad import show\nshow(("a", Box(5, 5, 5), "holder"))',
-                        measurements=None)
+                        facts=None)
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("'holder'", done.stderr)
         self.assertIn("'flexure'", done.stderr)
@@ -224,7 +224,7 @@ class Roles(unittest.TestCase):
 
     def test_a_tuple_of_another_length_is_refused(self) -> None:
         done, _ = run('from build123d import Box\nfrom ashley_cad import show\nshow(("a", Box(5, 5, 5), "test", 1, 2))',
-                      measurements=None)
+                      facts=None)
         self.assertIn("(name, shape, role)", done.stderr)
 
 

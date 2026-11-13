@@ -1,13 +1,13 @@
 """A model run's report (`ashley.workshop.model_report`): the script's `out/report.json` understood, each check's verdict
-computed from its numbers and the source of the measurements it rests on; and the measurements file a model run starts with
-(`ashley.workshop.measurements_file`)."""
+computed from its numbers and the source of the facts it rests on; and the facts file a model run starts with
+(`ashley.workshop.facts_file`)."""
 
 import json
 from typing import Any
 
 import pytest
 from ashley.runs.model import Outcome, Output
-from ashley.workshop import measurements_file
+from ashley.workshop import facts_file
 from ashley.api.bench_report_models import report_of_wire
 from ashley.tools.run_model import extras
 from ashley.workshop.model_report import Check, Island, ModelReport, Overlap, Part, PrintCheck, PrintPart, holds, open_guesses, report_of
@@ -32,7 +32,7 @@ def ran(body: object, outcome: Outcome = "ran", exit_code: int | None = 0) -> Ou
 
 def measures(**sources: str) -> dict[str, str]:
     items = [{"name": n, "value": 1, "unit": "mm", "source": s, "tolerance": 0.5} for n, s in sources.items()]
-    return {"measurements.json": json.dumps({"items": items})}
+    return {"facts.json": json.dumps({"items": items})}
 
 
 def test_a_report_is_its_parts_triangles_and_checks_with_a_verdict_each() -> None:
@@ -110,15 +110,15 @@ def item(name: str, value: float = 1.0, **extra: Any) -> dict[str, Any]:
     return {"name": name, "value": value, "unit": "mm", "source": "measured", **extra}
 
 
-def test_the_measurements_file_merges_the_pieces_in_order_keeping_a_repeated_names_first_value() -> None:
-    text = measurements_file.file_of([body(item("a", 1, tolerance=0.1), item("b", 2)), "", body(item("b", 9), item("c", 3, ref="x"))])
+def test_the_facts_file_merges_the_pieces_in_order_keeping_a_repeated_names_first_value() -> None:
+    text = facts_file.file_of([body(item("a", 1, tolerance=0.1), item("b", 2)), "", body(item("b", 9), item("c", 3, ref="x"))])
     assert text is not None
     assert json.loads(text) == {"items": [item("a", 1, tolerance=0.1), item("b", 2), item("c", 3, ref="x")]}
 
 
-def test_no_measurements_make_no_file() -> None:
-    assert measurements_file.file_of([]) is None
-    assert measurements_file.file_of(["", "not a body", body()]) is None
+def test_no_facts_make_no_file() -> None:
+    assert facts_file.file_of([]) is None
+    assert facts_file.file_of(["", "not a body", body()]) is None
 
 
 OVERLAP = {"a": "holder", "b": "block", "volume_mm3": 1600.0, "bbox": {"min": [-10, -10, -9], "max": [10, 10, -5]}}

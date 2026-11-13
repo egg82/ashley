@@ -1,5 +1,5 @@
-"""A model run (language `build123d`) over a real database: it starts with the bench's measurements merged as
-`measurements.json`, the shipped print settings as `print.json`, and without the last run's stale report; its artifacts and report come back on the wire
+"""A model run (language `build123d`) over a real database: it starts with the bench's facts merged as
+`facts.json`, the shipped print settings as `print.json`, and without the last run's stale report; its artifacts and report come back on the wire
 (`piece_run_of`) with download links, and to her (`bench_run`, `bench_last_run`); a Python run gets none of that."""
 
 import json
@@ -34,13 +34,13 @@ def item(name: str, value: float, source: str = "measured") -> dict[str, Any]:
 
 
 def measuring(owner: Owner, *items: dict[str, Any]) -> Add:
-    return Add(By(owner.person_id), "measurements", Text("m", json.dumps({"items": list(items)})), "small")
+    return Add(By(owner.person_id), "facts", Text("m", json.dumps({"items": list(items)})), "small")
 
 
 REPORT = {"unit": "mm", "parts": [{"name": "lid", "volume": 9.0, "bbox": {"min": [0, 0, 0], "max": [4, 3, 1]}}],
           "triangles": 12, "checks": [{"name": "fit", "actual": 2.0, "op": ">=", "target": 1.5, "tolerance": 0.0,
                                        "rests_on": ["board"]}]}
-MODEL = replace(OK, files={"out/report.json": json.dumps(REPORT), "measurements.json": "stale", "print.json": "stale"},
+MODEL = replace(OK, files={"out/report.json": json.dumps(REPORT), "facts.json": "stale", "print.json": "stale"},
                 artifacts={"out/model.glb": GLB})
 
 
@@ -49,7 +49,7 @@ def owner(url: str) -> Owner:
     return Owner(home, person(url, home))
 
 
-def test_a_model_run_starts_with_the_current_measurements_and_no_stale_report_and_a_python_run_with_neither(
+def test_a_model_run_starts_with_the_current_facts_and_no_stale_report_and_a_python_run_with_neither(
         db_url: str) -> None:
     alana = owner(db_url)
     box = Box(outputs=[MODEL], offered=BOTH)
@@ -72,17 +72,17 @@ def test_a_model_run_starts_with_the_current_measurements_and_no_stale_report_an
             finally:
                 services.unregister(ObjectStore)
             assert first.finished is not None and second.finished is not None and third.finished is not None
-            merged = json.loads(box.jobs[0].files["measurements.json"])
+            merged = json.loads(box.jobs[0].files["facts.json"])
             assert [i["name"] for i in merged["items"]] == ["board", "gap", "hole"]
             assert merged["items"][0]["value"] == 30
-            assert "out/report.json" not in box.jobs[1].files and box.jobs[1].files["measurements.json"] != "stale"
+            assert "out/report.json" not in box.jobs[1].files and box.jobs[1].files["facts.json"] != "stale"
             assert json.loads(box.jobs[1].files["print.json"]) == json.loads(print_file.FILE.read_text())
             assert dict(box.jobs[2].files) == dict(MODEL.files)
 
     run(scenario())
 
 
-def test_a_model_run_on_a_bench_without_measurements_is_given_no_measurements_file(db_url: str) -> None:
+def test_a_model_run_on_a_bench_without_facts_is_given_no_facts_file(db_url: str) -> None:
     alana = owner(db_url)
     box = Box(outputs=[MODEL], offered=BOTH)
 
@@ -97,7 +97,7 @@ def test_a_model_run_on_a_bench_without_measurements_is_given_no_measurements_fi
                 await run_piece(alana, bench.id, Run(By(alana.person_id), 1, 1, "build123d"))
             finally:
                 services.unregister(ObjectStore)
-            assert box.jobs[0].files == {"print.json": print_file.file_text()} and "measurements.json" not in box.jobs[1].files
+            assert box.jobs[0].files == {"print.json": print_file.file_text()} and "facts.json" not in box.jobs[1].files
             assert "out/report.json" not in box.jobs[1].files
 
     run(scenario())

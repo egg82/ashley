@@ -1,4 +1,4 @@
-"""`decide` on a measurements piece holding choices (design section 1): a piece citation is checked on the bench, a
+"""`decide` on a facts piece holding choices (design section 1): a piece citation is checked on the bench, a
 person's own edit needs no citation, and `confirmed_measurement` covers a choice's value."""
 
 import pytest
@@ -14,7 +14,7 @@ def with_body(*items: object) -> BenchState:
     return accepted(decide_edit(bench_with_site(), FACTS, 1, body_of(*items), ALANA)).state
 
 
-# --- a choice is a stored measurements body ---------------------------------------------------------------------------
+# --- a choice is a stored facts body ---------------------------------------------------------------------------
 
 
 def test_an_add_with_a_choice_row_is_accepted_and_keeps_the_body_exactly() -> None:
@@ -23,16 +23,16 @@ def test_an_add_with_a_choice_row_is_accepted_and_keeps_the_body_exactly() -> No
     assert [(p.kind, p.text.body) for p in state.pieces] == [(KIND, body)]
 
 
-def test_a_bad_choice_row_is_refused_bad_measurements_and_changes_nothing_but_the_seq() -> None:
+def test_a_bad_choice_row_is_refused_bad_facts_and_changes_nothing_but_the_seq() -> None:
     out = decide_add(body_of(choice(label="l" * 61)))
-    assert refused_as(out) == "bad_measurements"
+    assert refused_as(out) == "bad_facts"
     assert out.state.pieces == () and out.state.next_seq == 2
 
 
 def test_an_edit_to_a_bad_choice_is_refused_and_the_piece_stays() -> None:
     state = with_body(choice())
     out = decide_edit(state, FACTS, 2, body_of(choice(source="measured")), ALANA)
-    assert refused_as(out) == "bad_measurements"
+    assert refused_as(out) == "bad_facts"
     assert out.state.pieces == state.pieces
 
 
@@ -63,12 +63,12 @@ def test_her_add_citing_a_source_piece_that_is_there_is_accepted() -> None:
 @pytest.mark.parametrize("source", CITED_PIECE_SOURCES)
 def test_her_seen_or_datasheet_row_naming_no_piece_is_refused(source: str) -> None:
     out = decide_edit(bench_with_site(), FACTS, 1, body_of(cited(source, piece=None)))
-    assert refused_as(out) in ("bad_citation", "bad_measurements")
+    assert refused_as(out) in ("bad_citation", "bad_facts")
 
 
 def test_a_malformed_row_is_refused_for_its_shape_before_its_citation() -> None:
     out = decide_edit(bench_with_site(), FACTS, 1, body_of(cited("seen", piece=999, label="l" * 61)))
-    assert refused_as(out) == "bad_measurements"
+    assert refused_as(out) == "bad_facts"
 
 
 def test_a_person_needs_no_citation() -> None:

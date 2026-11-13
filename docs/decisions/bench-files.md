@@ -226,8 +226,8 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     by the same component on one canvas, which the look page's `ready` waits for: it is set after every model on the
     page has drawn its frame, or failed. Headless Chromium draws WebGL with SwiftShader, with no GPU and no new launch
     flag. Rejected: a continuous render loop, which a still photograph and an idle page do not need.
-- **Measurements are structured data, each with its source** (kind `measurements`, format `measurements`,
-  `ashley.workshop.measurements`). The body is JSON: `{"items": [{"name", "value", "unit", "source", "tolerance",
+- **Measurements are structured data, each with its source** (kind `facts`, format `facts`,
+  `ashley.workshop.facts`). The body is JSON: `{"items": [{"name", "value", "unit", "source", "tolerance",
   "ref", "given"}]}`. `name` is an identifier unique within the piece. `value` is finite. `unit` is `mm`, `deg`,
   `count`, `g`, `ml` or `min`, with lengths always in millimetres, masses in grams, volumes in millilitres and durations
   in minutes (she converts what she is told). `source` is `measured` (the person measured, counted or stated it, or a
@@ -237,14 +237,14 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
   optional ± of 0 or more in the unit. `ref` is optional text up to 200 characters (the datasheet's address, what was
   measured with, the photo piece a form was seen in). `given` optionally names a choice row
   of the same piece the number belongs to (a strap's width is given the strap's form). Anything else is refused
-  `bad_measurements`. The room shows a table with each value's source, a guess hatched, a choice
+  `bad_facts`. The room shows a table with each value's source, a guess hatched, a choice
   by its label. Either side edits it like any piece, so a correction is logged and undoable. An edit of hers that changes
   what a confirmed row holds (a number's value, unit or tolerance; a choice's value) while keeping where it came from (a
   number's source and ref; a choice's source, turn and piece) is refused `confirmed_measurement`: a confirmed row
   changes only with a new answer from the person or a new source, and the row says which. The piece goes on any bench:
   the numbers a plan rests on (headcount, amounts, times) are rows too, under the bench guidance every bench gets.
-  Rejected: a table of its own, since measurements belong to the project and a piece already gives edit, undo, Live
-  and the log. Rejected for now: measurements as memory facts shared across benches, until a second bench wants the
+  Rejected: a table of its own, since facts belong to the project and a piece already gives edit, undo, Live
+  and the log. Rejected for now: facts as memory facts shared across benches, until a second bench wants the
   same object's numbers. Rejected: a source of its own for a size read off a photo; a photo settles what kind of thing an
   object is and its cross-section (a choice row, `seen`), while a size read off it stays guessed until the person gives
   or accepts it.
@@ -257,7 +257,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     names a piece on the bench, layout or shelf, of an image, file, reader, site or recipe kind (`decide`), and one as
     `stated` or `accepted` a person's turn on the talk her tools serve (`ashley.tools.bench_citations`, since the talk
     is not the Workshop's); either is refused `bad_citation`. A person's edit needs no citation, since the log says
-    who wrote it, and a row kept as it was is not judged again. `measurements.confirmed` is the one test of a confirmed
+    who wrote it, and a row kept as it was is not judged again. `facts.confirmed` is the one test of a confirmed
     row, read by a check's verdict, the guard on her edits and the carry into later turns. Rejected: a form told by
     which rows exist, which is shape-sniffing (one bench's rows flip-flopped and "superseded" lived in a `ref`);
     free-text values code branches on (code keys on `source`, the citation and `rests_on`; a script compares
@@ -266,9 +266,9 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
   - **Each choice she sets is shown to the person once, by code**, beside her reply and never in it, whatever its
     source, so a wrong form she recorded as seen or stated is in front of the person too. So is a guessed number that
     an unconfirmed check of the turn's own run rests on (`model_report.open_guesses` of the turn's latest bench run of
-    each piece, `Runs.bench_runs_of_turn`): by its name read as words, its value and unit (`measurements.shown_value`),
+    each piece, `Runs.bench_runs_of_turn`): by its name read as words, its value and unit (`facts.shown_value`),
     with no options, so the card shows it and the person answers in the talk. As a bench turn closes with
-    a reply that is said, every such row of the bench's measurements pieces that no `Surfaced` names by its current
+    a reply that is said, every such row of the bench's facts pieces that no `Surfaced` names by its current
     name and shown value is recorded shown, one `Surfaced` of hers per piece (`ashley.workshop.surface.surface`), and goes
     into `Receipts.facts` (bench, piece, name, label, value, options), stored with her turn like any receipt and
     carried into her history on the app's line. `Surfaced` is a non-piece Command read back from the log as `Point`
@@ -295,21 +295,21 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
   Rejected: a diagram kind per chart type, since Mermaid already names its type on the first line, and a drawing
   library of our own.
 - **A model is checked against them by the numbers, and the app does the comparing.** A run in `build123d` starts with
-  the bench's measurements pieces that are not shelved, merged in layout order as `measurements.json` (a name a later
+  the bench's facts pieces that are not shelved, merged in layout order as `facts.json` (a name a later
   piece repeats keeps its first value; none when the bench has none), recorded with the run's files as any input is, and
-  without the last run's `measurements.json`, `inputs.json` and `out/report.json`, so a report read back is this run's.
+  without the last run's `facts.json`, `inputs.json` and `out/report.json`, so a report read back is this run's.
   `ashley.workshop.model_report.report_of` parses `out/report.json` of a run that `ran` with exit 0 into a
   `ModelReport` (parts with bounding box and volume, triangles, checks) and judges each check from its numbers:
   `==` within ±`tolerance`; `<=` and `<` against target + tolerance; `>=` and `>` against target - tolerance. A check
   that holds is `pass`, or `unconfirmed` when a measurement it rests on is `guessed` or is not in the run's
-  measurements; one that does not hold is `fail` whatever it rests on. A report not of the shape the helper writes is
+  facts; one that does not hold is `fail` whatever it rests on. A report not of the shape the helper writes is
   none, never a partial one. `BenchPiece.last_run.run_output` and `RunApplied` carry `artifacts` (with download links
   of the files' kind, ending at the half-`link_ttl_s` window) and `report`; her `bench_run` and `bench_last_run` carry
   the artifacts by name, type and size (no link: her tools hold no link key and a link lasts minutes) and the report.
   Rejected: judging a fit from the picture, which is for the person to point at; trusting a pass flag the script
   printed. Rejected: marking a failing check unconfirmed, which would hide a measured disagreement behind a guess.
   - **A stand-in names its form, and a fit against it rests on that form.** A `reference` part is shown as
-    `(name, shape, "reference", form)`, `form` a choice row of the run's measurements; one without it, or naming a row
+    `(name, shape, "reference", form)`, `form` a choice row of the run's facts; one without it, or naming a row
     that is not a choice, fails the run before anything is written, with a message naming the fix, and the report's
     part carries `form`. `chosen(name)` reads a choice and records the read as `measured` does, and `measured` of a
     number with `given` records that choice too, so a check that leaves out `rests_on` rests on the form. Every pair of
@@ -320,10 +320,10 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     unconfirmed, a softer signal of the kind she had already read past; a failed run cannot be missed and costs one
     re-run.
 - **Her 3D method is the `3d` skill, and whether a model fits the real object is the bench turn's own judgement.** The
-  seed `app/ashley/skills/seeds/3d.md` is the method: measurements first, each with its source, the model built from
+  seed `app/ashley/skills/seeds/3d.md` is the method: facts first, each with its source, the model built from
   them with `ashley_cad`, a `check` for every fit, the report read before anything is said, `bench_look` after, and an
   `unconfirmed` check reported as resting on a guess. It loads as every skill does, for a bench whose kind of work is
-  `3d`; the bench guidance (`bench_specs.INSTRUCTIONS`) names the `model` and `measurements` kinds and tells her to set
+  `3d`; the bench guidance (`bench_specs.INSTRUCTIONS`) names the `model` and `facts` kinds and tells her to set
   that kind. The judgement runs on the model running that bench's turn (`brainstorm`, as the talk is), from the report
   and the sources together; the app has computed each check's verdict from the numbers before she reads it. Rejected: a
   separate "strongest route" call for the fit (it would re-read what the turn already holds, and the verdicts are

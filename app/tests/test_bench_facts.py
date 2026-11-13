@@ -66,7 +66,7 @@ def bench_world(db_url: str, scenario: Callable[[Owner, int, Workshop], Awaitabl
         try:
             shop = services.get(Workshop)
             bench = await shop.open(alana, "clip")
-            added = await shop.apply(alana, bench.id, Add(HER, "measurements", Text("m", body("flat strap")), "small"))
+            added = await shop.apply(alana, bench.id, Add(HER, "facts", Text("m", body("flat strap")), "small"))
             assert added.outcome == "accepted"
             await scenario(alana, bench.id, shop)
         finally:
@@ -107,7 +107,7 @@ def _model_run(bench: int, piece: int, turn: int, rests_on: list[str]) -> Run:
     report = {"unit": "mm", "parts": [], "triangles": 0, "checks": [
         {"name": "fits", "actual": 2.0, "op": ">=", "target": 1.0, "tolerance": 0.0, "rests_on": rests_on}]}
     output = Output("ran", 0, "", "", False, {"out/report.json": json.dumps(report)}, ())
-    files = {"measurements.json": json.dumps({"items": [{"name": "width", "value": 12, "unit": "mm", "source": "guessed"}]})}
+    files = {"facts.json": json.dumps({"items": [{"name": "width", "value": 12, "unit": "mm", "source": "guessed"}]})}
     now = datetime.now(UTC)
     return Run(1, 1, 1, turn, "c", "build123d", "s", "", files, now, now, output, BenchRun(bench, 3, piece, 1))
 

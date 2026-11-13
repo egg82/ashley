@@ -8,7 +8,7 @@ from ashley.db.pool import PoolDatabase
 from ashley.live.live import Live
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.commands import Add, Edit, ShownRow
-from ashley.workshop.measurements import Choice
+from ashley.workshop.facts import Choice
 from ashley.workshop.model import HER, By, Owner, Text
 from ashley.workshop.postgres import PostgresWorkshop
 from ashley.workshop.surface import surface
@@ -37,7 +37,7 @@ def test_each_choice_is_recorded_shown_once_and_again_only_when_its_value_change
         try:
             shop = services.get(Workshop)
             bench = await shop.open(alana, "lanyard clip")
-            assert (await shop.apply(alana, bench.id, Add(HER, "measurements", Text("m", body("flat strap")), "small"))
+            assert (await shop.apply(alana, bench.id, Add(HER, "facts", Text("m", body("flat strap")), "small"))
                     ).outcome == "accepted"
             assert (await shop.apply(alana, bench.id, Add(HER, "note", Text("n", "x"), "small"))).outcome == "accepted"
             before = await shop.read(alana, bench.id)

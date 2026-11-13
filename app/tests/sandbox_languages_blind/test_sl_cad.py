@@ -1,5 +1,5 @@
 """The part of the `ashley_cad` helper (deploy/cad/ashley_cad.py) a caller can rely on without build123d: the
-measurements a script reads and the comparisons it may record. `show` meshes with build123d, which the test image does
+facts a script reads and the comparisons it may record. `show` meshes with build123d, which the test image does
 not hold, so its files and report are checked by the helper's own tests in the CAD image and not here."""
 
 import importlib.util
@@ -13,11 +13,11 @@ HELPER = Path(__file__).resolve().parents[3] / "deploy" / "cad" / "ashley_cad.py
 DOCUMENTED_OPS = ("==", "<=", ">=", "<", ">")
 
 
-def fresh(workdir: Path, measurements: dict[str, float] | None = None) -> ModuleType:
-    """The helper imported anew (it keeps what a script read), with `measurements.json` (decisions.md, "Measurements are structured data") in the working directory."""
-    if measurements is not None:
-        items = [{"name": name, "value": value, "unit": "mm", "source": "measured"} for name, value in measurements.items()]
-        (workdir / "measurements.json").write_text(json.dumps({"items": items}))
+def fresh(workdir: Path, facts: dict[str, float] | None = None) -> ModuleType:
+    """The helper imported anew (it keeps what a script read), with `facts.json` (decisions.md, "Measurements are structured data") in the working directory."""
+    if facts is not None:
+        items = [{"name": name, "value": value, "unit": "mm", "source": "measured"} for name, value in facts.items()]
+        (workdir / "facts.json").write_text(json.dumps({"items": items}))
     spec = importlib.util.spec_from_file_location("ashley_cad_under_test", HELPER)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

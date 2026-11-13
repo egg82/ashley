@@ -1,4 +1,4 @@
-"""What a choice row does downstream of the measurements piece (design sections 1 and 2): `confirmed` for each source
+"""What a choice row does downstream of the facts piece (design sections 1 and 2): `confirmed` for each source
 as the report reads it, a check resting on a guessed choice is `unconfirmed`, the model file carries choice rows, the
 parts of a report carry the form of a reference part, and the moment layer carries a guessed choice as still open."""
 
@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from ashley.runs.model import Output
 from ashley.tools.bench_now import now, open_rows
-from ashley.workshop import measurements_file
+from ashley.workshop import facts_file
 from ashley.workshop.model import Bench, Piece, Place, Text
 from ashley.workshop.model_report import report_of
 from ashley.workshop.rules import Kind, Rules
@@ -29,8 +29,8 @@ def ran(checks: list[Any], **part: Any) -> Output:
 
 
 def inputs(*rows: dict[str, Any]) -> dict[str, str]:
-    """The run's inputs as the app builds them from a measurements piece holding `rows`."""
-    return {"measurements.json": measurements_file.file_of([body_of(*rows)]) or ""}
+    """The run's inputs as the app builds them from a facts piece holding `rows`."""
+    return {"facts.json": facts_file.file_of([body_of(*rows)]) or ""}
 
 
 def verdict(rests_on: list[str], *rows: dict[str, Any]) -> str:
@@ -92,7 +92,7 @@ def test_a_part_naming_its_form_is_carried_in_the_report() -> None:
 def test_the_model_file_carries_choice_rows() -> None:
     row = cited("stated", options=["flat woven strap", "round cord"])
     given = {**NUMBER, "name": "strap_width", "source": "guessed", "given": "lanyard_form"}
-    text = measurements_file.file_of([body_of(row, given)])
+    text = facts_file.file_of([body_of(row, given)])
     assert text is not None
     items = {i["name"]: i for i in json.loads(text)["items"]}
     assert items["lanyard_form"]["kind"] == "choice"
@@ -103,12 +103,12 @@ def test_the_model_file_carries_choice_rows() -> None:
 
 
 def test_a_number_only_model_file_is_unchanged() -> None:
-    text = measurements_file.file_of([body_of(NUMBER)])
+    text = facts_file.file_of([body_of(NUMBER)])
     assert text == '{"items":[{"name":"width","value":12.5,"unit":"mm","source":"measured"}]}'
 
 
 def test_a_name_a_later_piece_repeats_keeps_its_first_row_across_kinds() -> None:
-    text = measurements_file.file_of([body_of(choice()), body_of(choice(value="round cord"))])
+    text = facts_file.file_of([body_of(choice()), body_of(choice(value="round cord"))])
     assert text is not None
     assert [i["value"] for i in json.loads(text)["items"]] == ["flat woven strap"]
 
@@ -116,12 +116,12 @@ def test_a_name_a_later_piece_repeats_keeps_its_first_row_across_kinds() -> None
 # --- still open in the moment layer ---------------------------------------------------------------------------------
 
 RULES = Rules({"note": Kind("note", "stored", "Note", 4000),
-               "measurements": Kind("measurements", "stored", "Measurements", 50000, "measurements")},
+               "facts": Kind("facts", "stored", "Facts", 50000, "facts")},
               max_pieces=10, title_max_chars=40, recent_commands=5, undo_window=100)
 
 
 def bench_of(body: str, outside: bool = False) -> BenchView:
-    piece = Piece(1, "measurements", Text("t", body), 1, Place(0, "medium"), 1, outside)
+    piece = Piece(1, "facts", Text("t", body), 1, Place(0, "medium"), 1, outside)
     return BenchView(Bench(9, 10, 1, "Lanyard", EPOCH, None), (piece,), ())
 
 

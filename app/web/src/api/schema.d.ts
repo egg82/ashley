@@ -2710,7 +2710,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_measurements" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows";
+            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows";
             /** Seq */
             seq: number;
             /** Detail */
@@ -3819,7 +3819,7 @@ export interface components {
              */
             type: "add" | "remove" | "move" | "edit" | "run" | "propose" | "install" | "archive" | "restore" | "undo" | "rename" | "cue" | "point" | "surfaced";
             /** Outcome */
-            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_measurements" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows");
+            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows");
             /** Piece Id */
             piece_id: number | null;
         };
@@ -4537,7 +4537,7 @@ export interface components {
              * Format
              * @enum {string}
              */
-            format: "markdown" | "plain" | "code" | "automation" | "wake" | "measurements" | "diagram" | "site" | "video" | "reader" | "recipe" | "image" | "file" | "clip" | "audio" | "screen" | "controls" | "job";
+            format: "markdown" | "plain" | "code" | "automation" | "wake" | "facts" | "diagram" | "site" | "video" | "reader" | "recipe" | "image" | "file" | "clip" | "audio" | "screen" | "controls" | "job";
             /** Language */
             language: string | null;
         };
@@ -5014,7 +5014,7 @@ export interface components {
         /**
          * ReportCheck
          * @description A comparison the script made of a number it measured on the geometry: `actual op target` within `tolerance`, resting
-         *     on the measurements `rests_on`. `verdict` is computed by the app: `pass`, `fail`, or `unconfirmed` when it would pass
+         *     on the facts `rests_on`. `verdict` is computed by the app: `pass`, `fail`, or `unconfirmed` when it would pass
          *     but a measurement it rests on is guessed or missing from the run; any other source confirms.
          */
         ReportCheck: {
@@ -5074,7 +5074,7 @@ export interface components {
          * ReportPart
          * @description One part's `volume` (mm³) and the corners of its bounding box (mm, x y z). `role` is what the script said the part
          *     is for, one of the roles in the print settings (`reference` is the real object modelled for fit, which is never
-         *     printed), or `unknown` when it said nothing. `form` is the measurements choice row a `reference` part names as what
+         *     printed), or `unknown` when it said nothing. `form` is the facts choice row a `reference` part names as what
          *     kind of thing it stands in for, null on every other part.
          */
         ReportPart: {
@@ -5780,7 +5780,7 @@ export interface components {
         };
         /**
          * WireFact
-         * @description A row of a bench's measurements piece shown beside her reply, once: a choice, or a guessed number a check of the
+         * @description A row of a bench's facts piece shown beside her reply, once: a choice, or a guessed number a check of the
          *     turn's run rests on (its `value` with its unit). `label` and `value` as she set them, and `option_values`, each a tap
          *     that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`); empty when the row has none,
          *     as a number's.

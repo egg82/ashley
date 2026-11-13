@@ -1,7 +1,7 @@
 """What a model run reports (`decisions.md`, "A model is checked against them by the numbers"): the `out/report.json` a
 build123d script's `ashley_cad.show` writes, understood (its parts with their roles, its checks, overlaps and the print
 check's `print` section), and the verdict of each check computed here from its numbers and the source of the
-measurements it rests on. The script records what it measured; it never says pass or fail."""
+facts it rests on. The script records what it measured; it never says pass or fail."""
 
 import json
 import math
@@ -11,8 +11,8 @@ from typing import Any, Literal
 
 from ..runs.model import Output
 from .automation_config import object_of
-from .measurements import Measurement, confirmed, items_of
-from .measurements_file import NAME as MEASUREMENTS
+from .facts import Measurement, confirmed, items_of
+from .facts_file import NAME as FACTS
 
 REPORT = "out/report.json"
 OPS = ("==", "<=", ">=", "<", ">")
@@ -78,8 +78,8 @@ class PrintCheck:
 @dataclass(frozen=True)
 class Check:
     """A comparison of `actual` (measured on the geometry) to `target` by `op`, within `tolerance`, resting on the
-    measurements `rests_on`. `verdict`: `pass`, `fail`, or `unconfirmed` when it would pass but a measurement it rests
-    on is `guessed` or not in the run's measurements; every other source (`measured`, `datasheet`, `accepted`, `bound`)
+    facts `rests_on`. `verdict`: `pass`, `fail`, or `unconfirmed` when it would pass but a measurement it rests
+    on is `guessed` or not in the run's facts; every other source (`measured`, `datasheet`, `accepted`, `bound`)
     confirms."""
 
     name: str
@@ -134,7 +134,7 @@ def holds(actual: float, op: str, target: float, tolerance: float) -> bool:
 
 def report_of(output: Output, inputs: Mapping[str, str]) -> ModelReport | None:
     """The report a run that ran to its end with exit 0 left in `out/report.json`, its checks judged against the
-    measurements the run started with (`inputs["measurements.json"]`). None when there is no such run or file, or the
+    facts the run started with (`inputs["facts.json"]`). None when there is no such run or file, or the
     file is not of the shape `ashley_cad.show` writes."""
     text = output.files.get(REPORT)
     if output.outcome != "ran" or output.exit_code != 0 or text is None:
@@ -148,16 +148,16 @@ def report_of(output: Output, inputs: Mapping[str, str]) -> ModelReport | None:
 
 def open_guesses(output: Output, inputs: Mapping[str, str]) -> frozenset[str]:
     """The names of the guessed numbers an unconfirmed check of the run's report rests on (`report_of`): none for a run
-    with no report. A name the run's measurements do not hold is not one."""
+    with no report. A name the run's facts do not hold is not one."""
     report = report_of(output, inputs)
     rested = {n for c in report.checks if c.verdict == "unconfirmed" for n in c.rests_on} if report else set[str]()
-    guessed = {m.name for m in items_of(inputs.get(MEASUREMENTS, "")) or () if isinstance(m, Measurement) and not confirmed(m)}
+    guessed = {m.name for m in items_of(inputs.get(FACTS, "")) or () if isinstance(m, Measurement) and not confirmed(m)}
     return frozenset(rested & guessed)
 
 
 def _confirmed(inputs: Mapping[str, str]) -> frozenset[str]:
-    """The names of the run's measurements that are confirmed."""
-    return frozenset(m.name for m in items_of(inputs.get(MEASUREMENTS, "")) or () if confirmed(m))
+    """The names of the run's facts that are confirmed."""
+    return frozenset(m.name for m in items_of(inputs.get(FACTS, "")) or () if confirmed(m))
 
 
 def _report(raw: dict[str, object], sure: frozenset[str]) -> ModelReport | None:

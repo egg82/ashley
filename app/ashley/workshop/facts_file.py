@@ -1,16 +1,16 @@
-"""The measurements a model run starts with: the bench's measurements pieces merged into the one `measurements.json`
+"""The facts a model run starts with: the bench's facts pieces merged into the one `facts.json`
 that `ashley_cad.measured` and `ashley_cad.chosen` read, `{"items": [...]}`, each row as its piece wrote it."""
 
 import json
 from collections.abc import Iterable
 
-from .measurements import CHOICE, Choice, Row, items_of
+from .facts import CHOICE, Choice, Row, items_of
 
-NAME = "measurements.json"
+NAME = "facts.json"
 
 
 def file_of(bodies: Iterable[str]) -> str | None:
-    """The file for the measurements pieces whose bodies are `bodies`, in order; a name a later piece repeats keeps its
+    """The file for the facts pieces whose bodies are `bodies`, in order; a name a later piece repeats keeps its
     first value. None when they hold no row."""
     items: dict[str, dict[str, object]] = {}
     for body in bodies:

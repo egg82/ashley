@@ -199,7 +199,7 @@ def measurement(name: str, value: float, source: str = "measured", unit: str = "
     return {"name": name, "value": value, "unit": unit, "source": source}
 
 
-def measurements_body(*items: Mapping[str, object]) -> str:
+def facts_body(*items: Mapping[str, object]) -> str:
     return json.dumps({"items": list(items)})
 
 

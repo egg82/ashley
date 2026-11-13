@@ -1,5 +1,5 @@
 """`model_report`: a run's `out/report.json` understood, each check judged here from its numbers and the source of the
-measurements it rests on. A passing check on a guess or a missing measurement is `unconfirmed`; a failing one stays
+facts it rests on. A passing check on a guess or a missing measurement is `unconfirmed`; a failing one stays
 `fail`; a report not of the shape the helper writes is none, never partial."""
 
 import json
@@ -7,13 +7,13 @@ from collections.abc import Mapping, Sequence
 
 import pytest
 from ashley.runs.model import Output
-from ashley.workshop.measurements_file import file_of
+from ashley.workshop.facts_file import file_of
 from ashley.workshop.model_report import ModelReport, holds, report_of
-from run_artifacts_support import REPORT_NAME, check_json, measurement, measurements_body, model_output, part_json, report_json
+from run_artifacts_support import REPORT_NAME, check_json, measurement, facts_body, model_output, part_json, report_json
 
 
 def inputs(*items: Mapping[str, object]) -> dict[str, str]:
-    return {"measurements.json": measurements_body(*items)}
+    return {"facts.json": facts_body(*items)}
 
 
 def verdicts(checks: Sequence[Mapping[str, object]], given: Mapping[str, str]) -> list[str]:
@@ -67,7 +67,7 @@ def test_a_check_that_holds_on_a_measurement_the_run_does_not_have_is_unconfirme
     assert verdicts([check_json(rests_on=["gone"])], inputs(measurement("w", 30))) == ["unconfirmed"]
 
 
-def test_a_check_that_holds_with_no_measurements_file_at_all_is_unconfirmed() -> None:
+def test_a_check_that_holds_with_no_facts_file_at_all_is_unconfirmed() -> None:
     assert verdicts([check_json(rests_on=["w"])], {}) == ["unconfirmed"]
 
 
@@ -76,7 +76,7 @@ def test_a_check_resting_on_nothing_is_judged_by_its_numbers_alone() -> None:
     assert verdicts([check_json(actual=1.0, rests_on=[])], {}) == ["fail"]
 
 
-def test_one_guess_among_the_measurements_a_check_rests_on_leaves_it_unconfirmed() -> None:
+def test_one_guess_among_the_facts_a_check_rests_on_leaves_it_unconfirmed() -> None:
     given = inputs(measurement("a", 1), measurement("b", 2, "guessed"), measurement("c", 3, "datasheet"))
     assert verdicts([check_json(rests_on=["a", "c"]), check_json(rests_on=["a", "b", "c"]),
                      check_json(rests_on=["a", "nope"])], given) == ["pass", "unconfirmed", "unconfirmed"]
@@ -88,7 +88,7 @@ def test_a_check_that_fails_stays_fail_whatever_it_rests_on(source: str) -> None
     assert verdicts([check_json(actual=1.0, rests_on=["w"]), check_json(actual=1.0, rests_on=["gone"])], given) == ["fail", "fail"]
 
 
-def test_a_failing_check_stays_fail_when_there_are_no_measurements_at_all() -> None:
+def test_a_failing_check_stays_fail_when_there_are_no_facts_at_all() -> None:
     assert verdicts([check_json(actual=1.0, rests_on=["w"])], {}) == ["fail"]
 
 
@@ -111,8 +111,8 @@ def test_each_check_is_judged_on_its_own_numbers() -> None:
     assert got == ["pass", "fail", "unconfirmed"]
 
 
-def test_measurements_that_cannot_be_read_confirm_nothing() -> None:
-    assert verdicts([check_json(rests_on=["w"])], {"measurements.json": "not json"}) == ["unconfirmed"]
+def test_facts_that_cannot_be_read_confirm_nothing() -> None:
+    assert verdicts([check_json(rests_on=["w"])], {"facts.json": "not json"}) == ["unconfirmed"]
 
 
 def test_a_report_with_no_checks_is_a_report() -> None:
@@ -190,28 +190,28 @@ def test_one_broken_check_among_good_ones_makes_the_whole_report_none() -> None:
     assert report_of(model_output(text), {}) is None
 
 
-def test_no_measurements_means_no_file_and_so_does_a_body_with_no_item() -> None:
+def test_no_facts_means_no_file_and_so_does_a_body_with_no_item() -> None:
     assert file_of([]) is None
-    assert file_of([measurements_body()]) is None
-    assert file_of([measurements_body(), measurements_body()]) is None
+    assert file_of([facts_body()]) is None
+    assert file_of([facts_body(), facts_body()]) is None
 
 
-def test_measurements_pieces_are_merged_in_order_each_item_as_it_was_written() -> None:
+def test_facts_pieces_are_merged_in_order_each_item_as_it_was_written() -> None:
     first = {**measurement("w", 30), "tolerance": 0.1, "ref": "caliper"}
     second = measurement("d", 4, "datasheet")
     third = measurement("h", 90, "guessed", "deg")
-    text = file_of([measurements_body(first, second), measurements_body(third)])
+    text = file_of([facts_body(first, second), facts_body(third)])
     assert text is not None and json.loads(text) == {"items": [first, second, third]}
 
 
 def test_a_name_a_later_piece_repeats_keeps_its_first_value() -> None:
-    text = file_of([measurements_body(measurement("w", 30, "measured")), measurements_body(measurement("w", 99, "guessed"),
+    text = file_of([facts_body(measurement("w", 30, "measured")), facts_body(measurement("w", 99, "guessed"),
                                                                                            measurement("x", 1))])
     assert text is not None
     assert json.loads(text)["items"] == [measurement("w", 30, "measured"), measurement("x", 1)]
 
 
 def test_a_merged_file_confirms_a_check_the_same_way() -> None:
-    text = file_of([measurements_body(measurement("w", 30)), measurements_body(measurement("w", 5, "guessed"))])
+    text = file_of([facts_body(measurement("w", 30)), facts_body(measurement("w", 5, "guessed"))])
     assert text is not None
-    assert verdicts([check_json(rests_on=["w"])], {"measurements.json": text}) == ["pass"]
+    assert verdicts([check_json(rests_on=["w"])], {"facts.json": text}) == ["pass"]

@@ -23,7 +23,7 @@ const WHY: Record<Why, string> = {
   needs_person: 'Only you can install it. Nothing changed.',
   bad_body: "Not saved. A job's card is written by Ashley's job runner; to stop a job, use its Cancel button.",
   bad_wake: "Not saved. A wake rule is one JSON object of event, brief and tools.",
-  bad_measurements: 'Not saved. Measurements are {"items": [{name, value, unit, source}]}: a unit of mm, deg, count, g, ml or min, a source of measured, datasheet, accepted, bound (with a tolerance) or guessed; a choice is {kind: "choice", name, label, value, source} with a source of stated, seen, datasheet, accepted or guessed.',
+  bad_facts: 'Not saved. Facts are {"items": [{name, value, unit, source}]}: a unit of mm, deg, count, g, ml or min, a source of measured, datasheet, accepted, bound (with a tolerance) or guessed; a choice is {kind: "choice", name, label, value, source} with a source of stated, seen, datasheet, accepted or guessed.',
   bad_citation: 'Not saved. A choice taken from a photo or a page names that piece.',
   confirmed_measurement: 'Not saved. A confirmed number changes only with a new source or note saying where it came from.',
   not_video: 'Only a video can be played or paused. Nothing changed.',

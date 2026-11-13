@@ -300,7 +300,7 @@
 .pbody.pmedia { display: grid; gap: 10px; }
 .pmedia-audio { display: block; width: 100%; }
 .pmedia-cue { margin: 0; min-height: 1.2em; }
-/* new here: a measurements piece, a table of values with their source; a guess is hatched like any unknown */
+/* new here: a facts piece, a table of values with their source; a guess is hatched like any unknown */
 .pbody.meas { display: grid; gap: 8px; }
 .pbody.meas table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .pbody.meas th, .pbody.meas td { padding: 4px 8px 4px 0; text-align: left; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }

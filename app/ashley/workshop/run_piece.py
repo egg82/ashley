@@ -7,8 +7,8 @@ The command is logged before anything runs and the run is recorded before it sta
 leaves either an accepted Run with no run (it never started) or a run with no output (it may have run); neither is
 ever run again.
 
-A run in `build123d` starts with the bench's measurements pieces merged as `measurements.json` (`measurements_file`) and the
-print settings as `print.json` (`print_file`), and without the last run's `measurements.json`, `print.json`, `inputs.json`
+A run in `build123d` starts with the bench's facts pieces merged as `facts.json` (`facts_file`) and the
+print settings as `print.json` (`print_file`), and without the last run's `facts.json`, `print.json`, `inputs.json`
 and `out/report.json`, so a report read back after it is this run's. It is also handed the bench's STL, 3MF and STEP file pieces as binary inputs (`model_inputs`)."""
 
 from collections.abc import Iterable, Mapping, Sequence
@@ -24,7 +24,7 @@ from ..runs.model import BenchRun, NewRun
 from ..runs.once import Finished, run_once
 from ..runs.runs import Runs, RunsUnavailable
 from ..runs.sandbox import Sandbox
-from . import measurements_file, model_inputs, print_file
+from . import facts_file, model_inputs, print_file
 from . import rules as workshop_rules
 from .commands import Run
 from .model import Owner, Piece
@@ -114,13 +114,13 @@ def _check(piece: Piece, config: RunsConfig) -> None:
 
 def _measures(piece: Piece, rules: Rules) -> bool:
     kind = rules.kinds.get(piece.kind)
-    return kind is not None and kind.format == "measurements"
+    return kind is not None and kind.format == "facts"
 
 
-def _model_files(left: Mapping[str, str], measurements: Iterable[str]) -> dict[str, str]:
-    """`left`, the files the last run left, without that run's measurements, print settings, inputs index and report, and
-    with the print settings and the bench's current measurements when it has any."""
-    stale = (measurements_file.NAME, print_file.NAME, model_inputs.NAME, REPORT)
+def _model_files(left: Mapping[str, str], facts: Iterable[str]) -> dict[str, str]:
+    """`left`, the files the last run left, without that run's facts, print settings, inputs index and report, and
+    with the print settings and the bench's current facts when it has any."""
+    stale = (facts_file.NAME, print_file.NAME, model_inputs.NAME, REPORT)
     files = {n: t for n, t in left.items() if n not in stale} | {print_file.NAME: print_file.file_text()}
-    current = measurements_file.file_of(measurements)
-    return files if current is None else {**files, measurements_file.NAME: current}
+    current = facts_file.file_of(facts)
+    return files if current is None else {**files, facts_file.NAME: current}

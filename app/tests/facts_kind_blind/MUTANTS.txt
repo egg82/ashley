@@ -1,10 +1,10 @@
-Planted mutants for the measurements blind suite (tests/measurements_blind). Each was applied alone to the shipped source
-(measurements.py, decide.py, kinds.json) and the suite (without the xfailed findings) run to its first failure; the file was
+Planted mutants for the facts blind suite (tests/facts_kind_blind). Each was applied alone to the shipped source
+(facts.py, decide.py, kinds.json) and the suite (without the xfailed findings) run to its first failure; the file was
 restored from the text read before mutating. 59 planted: 54 killed, 1 no-op control survived as it must, 1 equivalent,
 3 survive because the contract is silent. Two survivors found earlier (M18 a `note` key, M45 only 50 items kept) got
 directed tests and are counted as killed.
 
-measurements.py
+facts.py
   M1-M2   MAX_REF 199 / 201                                              killed
   M3-M4   name limit 63 / 65 characters                                  killed
   M5-M7   name start/continue character classes changed                  killed

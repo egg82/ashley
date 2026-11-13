@@ -1,4 +1,4 @@
-"""A person's tap on an option of a choice row shown beside her reply (`WireFact`): an ordinary Edit of the measurements
+"""A person's tap on an option of a choice row shown beside her reply (`WireFact`): an ordinary Edit of the facts
 piece by the person (`workshop.choice_tap.tapped`), logged and undoable like any, then a `Surfaced` of theirs naming the
 row as it now is, so the value they chose is not shown back to them. Only the bench's owner taps; anyone else's bench
 is 404 as one that does not exist."""
@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from .. import services
-from ..workshop import measurements
+from ..workshop import facts
 from ..workshop.choice_tap import tapped
 from ..workshop.commands import Edit, ShownRow, Surfaced
 from ..workshop.model import By, Text
@@ -26,7 +26,7 @@ router = APIRouter()
 class ChoiceRequest(BaseModel):
     """The option tapped: one of the row's `options`."""
 
-    value: str = Field(min_length=1, max_length=measurements.MAX_VALUE)
+    value: str = Field(min_length=1, max_length=facts.MAX_VALUE)
 
 
 class ChoiceSet(BaseModel):

@@ -18,7 +18,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-MEASUREMENTS = {"items": [
+FACTS = {"items": [
     {"name": "board_width", "value": 60.0, "unit": "mm", "source": "measured"},
     {"name": "hole", "value": 3.2, "unit": "mm", "source": "guessed"}]}
 
@@ -54,11 +54,12 @@ def hand_over(work: Path, models: dict[int, str], left_out: list[dict] | None = 
     (work / "inputs.json").write_text(json.dumps({"items": items, "left_out": left_out or []}))
 
 
-def run(script: str, measurements: dict | None = MEASUREMENTS, models: dict[int, str] | None = None,
-        left_out: list[dict] | None = None, printing: dict | None = SHIPPED) -> tuple[subprocess.CompletedProcess[str], Path]:
+def run(script: str, facts: dict | None = FACTS, models: dict[int, str] | None = None,
+        left_out: list[dict] | None = None, printing: dict | None = SHIPPED,
+        facts_file: str = "facts.json") -> tuple[subprocess.CompletedProcess[str], Path]:
     work = Path(tempfile.mkdtemp(dir="/work"))
-    if measurements is not None:
-        (work / "measurements.json").write_text(json.dumps(measurements))
+    if facts is not None:
+        (work / facts_file).write_text(json.dumps(facts))
     if printing is not None:
         (work / "print.json").write_text(json.dumps(printing))
     if models is not None:
@@ -128,7 +129,7 @@ from ashley_cad import joined, show
 
 def shown(body: str) -> dict:
     """The report of a script that builds boxes and shows them."""
-    done, out = run(PAIR.format(body=body), measurements=None)
+    done, out = run(PAIR.format(body=body), facts=None)
     assert done.returncode == 0, done.stderr
     return json.loads((out / "report.json").read_text())
 
@@ -188,7 +189,7 @@ corner = Box(30, 30, 30) - Pos(10, 10, 0) * Box(20, 20, 40)
 ashley_cad.show(("corner", corner), ("far", Pos(100, 0, 0) * Box(5, 5, 5)), ("notch", Pos(10, 10, 0) * Box(10, 10, 10)))
 print(len(calls))
 """
-        done, out = run(script, measurements=None)
+        done, out = run(script, facts=None)
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(done.stdout.strip(), "1")
         self.assertEqual(json.loads((out / "report.json").read_text())["overlaps"], [])
@@ -204,8 +205,8 @@ print(len(calls))
 
 
 class Refusals(unittest.TestCase):
-    def fails(self, script: str, text: str, measurements: dict | None = MEASUREMENTS) -> None:
-        done, out = run("from ashley_cad import *\n" + script, measurements)
+    def fails(self, script: str, text: str, facts: dict | None = FACTS) -> None:
+        done, out = run("from ashley_cad import *\n" + script, facts)
         self.assertNotEqual(done.returncode, 0)
         self.assertIn(text, done.stderr)
         self.assertFalse(out.exists())
@@ -213,8 +214,13 @@ class Refusals(unittest.TestCase):
     def test_an_unknown_measurement_names_the_known_ones(self) -> None:
         self.fails("measured('nope')", "['board_width', 'hole']")
 
-    def test_no_measurements_piece_is_said_plainly(self) -> None:
-        self.fails("measured('x')", "no measurements piece", measurements=None)
+    def test_the_older_file_name_is_still_read(self) -> None:
+        done, _ = run("from ashley_cad import *\nprint(measured('board_width'))", facts_file="measurements.json")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(float(done.stdout), FACTS["items"][0]["value"])
+
+    def test_no_facts_piece_is_said_plainly(self) -> None:
+        self.fails("measured('x')", "no facts piece", facts=None)
 
     def test_a_bad_check_is_refused(self) -> None:
         self.fails("check('a', 1.0, '!=', 2.0)", "op '!='")
@@ -252,8 +258,8 @@ show(("holder", holder, "fit"), ("strap", strap, "reference", "lanyard_form"))
 
 
 class Forms(unittest.TestCase):
-    def fails(self, script: str, text: str, measurements: dict | None = STRAP_ROWS) -> None:
-        done, out = run("from build123d import Box, Pos\nfrom ashley_cad import *\n" + script, measurements)
+    def fails(self, script: str, text: str, facts: dict | None = STRAP_ROWS) -> None:
+        done, out = run("from build123d import Box, Pos\nfrom ashley_cad import *\n" + script, facts)
         self.assertNotEqual(done.returncode, 0)
         self.assertIn(text, done.stderr)
         self.assertFalse(out.exists())
@@ -261,7 +267,7 @@ class Forms(unittest.TestCase):
     def test_a_reference_part_without_a_form_fails_the_run_naming_the_fix(self) -> None:
         self.fails('show(("box", Box(5, 5, 5), "fit"), ("strap", Pos(20, 0, 0) * Box(5, 5, 5), "reference"))',
                    "say what kind of thing it is with a choice row")
-        self.fails('show(("strap", Box(5, 5, 5), "reference"))', "the bench has the choices []", measurements=None)
+        self.fails('show(("strap", Box(5, 5, 5), "reference"))', "the bench has the choices []", facts=None)
 
     def test_a_form_that_is_not_a_choice_row_or_on_a_part_that_is_not_a_reference_fails(self) -> None:
         self.fails('show(("strap", Box(5, 5, 5), "reference", "strap_width"))', "is not a choice row")

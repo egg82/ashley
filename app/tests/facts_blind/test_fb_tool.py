@@ -15,7 +15,7 @@ def tools(e: Env, bench_id: int) -> BenchTools:
 
 
 def add(body: str) -> ToolCall:
-    return call("bench_add", kind="measurements", title="facts", body=body)
+    return call("bench_add", kind="facts", title="facts", body=body)
 
 
 def test_a_guessed_choice_row_goes_through_the_tool(db_url: str) -> None:

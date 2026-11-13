@@ -43,7 +43,7 @@ HINTS: dict[Reason, str] = {
                 "false, what you write goes out when you say it is worth saying), who (a person.* entity id) and what "
                 "(a slug): set, the rule answers only a wake whose who or what is exactly that; when several rules "
                 "answer one wake, the one setting the most of who and what runs, and a tie runs none)",
-    "bad_measurements": 'a measurements piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "given"}]}: '
+    "bad_facts": 'a facts piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "given"}]}: '
                         "name an identifier unique in the piece, value a finite number, unit mm (every length in millimetres), deg, "
                         "count, g (grams), ml (millilitres) or min (minutes), source measured, datasheet, accepted, bound or guessed, "
                         "tolerance an optional ± of 0 or more (above 0 on a bound row), ref optional text up to 200 characters, "
@@ -74,7 +74,7 @@ HINTS: dict[Reason, str] = {
     "bad_body": "a job piece is written by the jobs' runner alone: it is neither added nor edited by hand; a job is "
                 "handed off with bench_hand_off and cancelled with bench_job_cancel",
     "bad_cue": "seek takes seconds from the start, 0 or more and under 100 hours; play and pause take none",
-    "bad_rows": "only a measurements piece's current choice rows can be shown, each once; read the piece again",
+    "bad_rows": "only a facts piece's current choice rows can be shown, each once; read the piece again",
 }
 
 

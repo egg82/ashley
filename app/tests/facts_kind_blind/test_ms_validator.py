@@ -1,4 +1,4 @@
-"""`ashley.workshop.measurements` from its docstring: which bodies are measurements, what `items_of` reads back, and that
+"""`ashley.workshop.facts` from its docstring: which bodies are facts, what `items_of` reads back, and that
 `well_formed` and `items_of` never disagree."""
 
 import json
@@ -6,10 +6,10 @@ import math
 from typing import Any
 
 import pytest
-from ashley.workshop.measurements import MAX_REF, NAME, SOURCES, UNITS, Measurement, items_of, well_formed
+from ashley.workshop.facts import MAX_REF, NAME, SOURCES, UNITS, Measurement, items_of, well_formed
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
-from measurements_blind_support import GOOD, body_of, good_bodies, item_lists, names, with_, without
+from facts_kind_blind_support import GOOD, body_of, good_bodies, item_lists, names, with_, without
 
 
 def read(items: list[dict[str, Any]]) -> tuple[Measurement, ...]:
@@ -38,7 +38,7 @@ def test_an_empty_body_is_a_draft_that_passes_and_holds_nothing() -> None:
     assert items_of("") is None
 
 
-def test_an_empty_list_passes_and_holds_no_measurements() -> None:
+def test_an_empty_list_passes_and_holds_no_facts() -> None:
     assert well_formed('{"items": []}') is True
     assert items_of('{"items": []}') == ()
 
@@ -98,7 +98,7 @@ def test_whitespace_around_json_tokens_does_not_matter() -> None:
 # --- refused shapes -----------------------------------------------------------------------------------------------
 
 REFUSED_BODIES: dict[str, str] = {
-    "not json": "not measurements",
+    "not json": "not facts",
     "truncated": '{"items": [',
     "a list at top": "[]",
     "a string at top": '"items"',

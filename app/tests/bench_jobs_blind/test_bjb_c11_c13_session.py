@@ -61,8 +61,8 @@ def test_c11_the_first_step_starts_a_session_under_a_root_uploads_and_prompts_th
 
 def test_c11_stored_pieces_go_up_as_p_id_in_their_natural_file(db_url: str) -> None:
     async def body(w: World) -> None:
-        kinds = {"code": "py", "model": "py", "measurements": "json", "document": "md", "note": "md"}
-        bodies = {"measurements": '{"items":[{"name":"w","value":3,"unit":"mm","source":"measured"}]}'}
+        kinds = {"code": "py", "model": "py", "facts": "json", "document": "md", "note": "md"}
+        bodies = {"facts": '{"items":[{"name":"w","value":3,"unit":"mm","source":"measured"}]}'}
         ids = {k: await w.piece(k, f"t-{k}", bodies.get(k, f"body of {k}")) for k in kinds}
         job = await claude_job(w, [named(i) for i in ids.values()])
         await step(w, job)

@@ -17,7 +17,7 @@ from ashley.skills.postgres import PostgresSkills
 from ashley.skills.skills import Skills
 from ashley.tools.tools import Catalogue, Tools
 from ashley.workshop import rules as workshop_rules
-from ashley.workshop.measurements import SOURCES, UNITS
+from ashley.workshop.facts import SOURCES, UNITS
 from ashley.workshop.model import Owner
 from ashley.workshop.postgres import PostgresWorkshop
 from ashley.workshop.workshop import Workshop
@@ -85,7 +85,7 @@ def test_the_method_loads_on_a_3d_bench_turn_and_on_no_other(db_url: str) -> Non
     run(scenario())
 
 
-def test_a_bench_turn_is_told_about_the_model_and_measurements_kinds_whatever_its_kind_of_work(db_url: str) -> None:
+def test_a_bench_turn_is_told_about_the_model_and_facts_kinds_whatever_its_kind_of_work(db_url: str) -> None:
     home = household(db_url)
     owner = Owner(home, person(db_url, home, "Alana"))
 
@@ -93,7 +93,7 @@ def test_a_bench_turn_is_told_about_the_model_and_measurements_kinds_whatever_it
         async with wired(db_url) as workshop:
             bare = (await workshop.open(owner, "bare")).id
             text = await instructions(for_turn(inbound(owner, bare)))
-            assert "kind model" in text and "kind measurements" in text and "kind of work to 3d" in text
+            assert "kind model" in text and "kind facts" in text and "kind of work to 3d" in text
             assert "kind model" not in await instructions(for_turn(inbound(owner, None)))
 
     run(scenario())
@@ -102,7 +102,7 @@ def test_a_bench_turn_is_told_about_the_model_and_measurements_kinds_whatever_it
 def test_what_the_method_names_is_what_the_workshop_and_sandbox_take() -> None:
     body = seeds.load(CONFIG)["3d"].body
     kinds = workshop_rules.load().kinds
-    assert kinds["model"].language == "build123d" and kinds["measurements"].format == "measurements"
+    assert kinds["model"].language == "build123d" and kinds["facts"].format == "facts"
     for word in (*sorted(UNITS), *sorted(SOURCES), "name", "value", "unit", "source", "tolerance", "ref"):
         assert f"`{word}`" in body or f'"{word}"' in body, word
     for name in ("measured", "check", "show", "bench_run", "bench_look", "unconfirmed"):

@@ -30,7 +30,7 @@ class Receipt:
 
 @dataclass(frozen=True)
 class Fact:
-    """A row of a bench's measurements piece shown to the person beside her reply, once for its name and value
+    """A row of a bench's facts piece shown to the person beside her reply, once for its name and value
     (`ashley.workshop.commands.Surfaced`): `bench_id`, `piece_id`, the row's `name`, and its `label`, `value` and
     `options` as they were (`options` empty when it has none: a guessed number, or a choice with none); a tap on an
     option sets the row."""
