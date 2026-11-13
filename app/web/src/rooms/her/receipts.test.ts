@@ -7,14 +7,14 @@ const none = { headline: 'Sent an email', detail: null, why: null };
 const some = { headline: 'Changed something in the house', detail: 'Changed something in the house (action: light.turn_on)', why: 'You asked for it.' };
 
 test('the done line is the headlines, and nothing when nothing ran', () => {
-  const both: WireReceipts = { ran: [some, none], held: [], proposal_id: null };
+  const both: WireReceipts = { ran: [some, none], held: [], proposal_id: null, facts: [] };
   assert.equal(doneLine(both), 'Done: Changed something in the house, Sent an email');
-  assert.equal(doneLine({ ran: [], held: [some], proposal_id: 4 }), null);
+  assert.equal(doneLine({ ran: [], held: [some], proposal_id: 4, facts: [] }), null);
 });
 
 test('a note opens only when a receipt has a detail or a reason', () => {
-  assert.equal(opens({ ran: [none], held: [], proposal_id: null }), false);
-  assert.equal(opens({ ran: [none, some], held: [], proposal_id: null }), true);
+  assert.equal(opens({ ran: [none], held: [], proposal_id: null, facts: [] }), false);
+  assert.equal(opens({ ran: [none, some], held: [], proposal_id: null, facts: [] }), true);
   assert.equal(hasMore({ headline: 'x', detail: null, why: 'because' }), true);
   assert.equal(hasMore(none), false);
 });

@@ -31,6 +31,7 @@ const WHY: Record<Why, string> = {
   bad_recipe: "Not saved. A recipe is its page's recipe as Ashley read it; change its serves and keep the rest as it is.",
   not_reader: 'Only a page of text has a passage to highlight. Nothing changed.',
   bad_passage: 'That is not a passage of the page. Nothing changed.',
+  bad_rows: "Those choices aren't on the piece any more. Nothing changed.",
   bad_cue: 'That is not a place in the video. Nothing changed.',
   bad_controls: "Not saved. A screen's buttons are a list of at most 12, each with a label, an action and a light or scene.",
   already_shown: 'The screen already has that. Nothing changed.',
