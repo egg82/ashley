@@ -29,7 +29,8 @@ def test_a_reminder_not_yet_due_is_not_returned_until_it_is(home: Home) -> None:
         async with wakes(home.url) as w:
             id_ = await w.schedule(reminder(home.one, home.alana, due_in_s=1.0))
             assert await w.due(10) == ()
-            await asyncio.sleep(1.4)
+            assert scalar(home.url, "UPDATE wakes SET due_at = due_at - interval '1.4 seconds' WHERE id = %s RETURNING id",
+                          (id_,)) == id_
             assert [d.id for d in await w.due(10)] == [id_]
 
     run(go())
