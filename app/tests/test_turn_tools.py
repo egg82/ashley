@@ -127,7 +127,7 @@ def test_a_bench_turn_offers_the_shared_tools_then_that_benchs(everyday: Fixed) 
 
 
 def test_her_web_chat_offers_opening_a_bench_the_households_devices_and_no_bench_tools(everyday: Fixed) -> None:
-    assert names(for_turn(WEB)) == ["HassTurnOn", "look_up", "open_bench", "household_devices"]
+    assert names(for_turn(WEB)) == ["HassTurnOn", "look_up", "open_bench", "household_devices", "send_readers"]
 
 
 def test_the_speakers_code_host_is_a_source_only_where_connections_open_and_the_reply_reaches_them_alone(

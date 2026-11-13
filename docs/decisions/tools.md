@@ -24,6 +24,20 @@ catalogue, and she says in one line that she cannot use it right now, while the 
   `Tools.call` carries no household, so a required field is how the moment crosses.
 - **Its steps record no conversation in the spend ledger:** `Tools.call` carries no conversation id, so a look-up's
   rows are by task alone.
+- **Readers are the look-up made general: `send_readers` sends several at once.** Each reader is the same loop
+  (`ashley.tools.reader.read`) given a brief she writes and the tools of hers she names, and returns `found` and a
+  `report` cut to `report_chars` in code (`readers.json`). One call's readers run concurrently, so the turn's loop
+  still sees one call in one round; the concurrency rejected under Channels was reads beside a change in one round, and
+  readers only read. The gain is context: each reader sees one inbox or one week of calendar, and she sees their reports.
+  - A reader is handed a `Reading` (the type `ashley.tools.readers.ReaderTools` takes), so a change is neither listed
+    nor callable, whatever she names. Its tools are the turn's own as narrowed by `reads_only` and `tools_only`, built
+    before `send_readers` is added, so a reminder's `tools` bound its readers too and a reader cannot send readers.
+    Offered with a known speaker, and a reminder may name it.
+  - The result is `outside` when a reader that answered read a result that can carry outside words (`ToolResult.taints`),
+    so a change she makes after it is an ask; a reader that did not answer brings nothing back and taints nothing.
+  - Its steps run on the `look_up` task and its routes: the same kind of call, so no new task and ledger migration.
+  - Rejected: readers that message each other, or a leader they negotiate with. Each hop re-reads its whole context, and
+    work that does not split into independent reads is better done by one turn holding all of it.
 
 - **The web is SearXNG** (JSON API), at the deployment's address (its SearXNG connection, seeded from `SEARXNG_URL`; `decisions/connections.md`); without
   one she has no web search. The look-up is shown the first few results' titles, snippets and sites, each with a result

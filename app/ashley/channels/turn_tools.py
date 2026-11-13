@@ -33,6 +33,7 @@ from ..tools.money_config import load as money_config
 from ..tools.move_page import MovePageTools
 from ..tools.only import Only
 from ..tools.reading import Reading
+from ..tools.readers import ReaderTools
 from ..tools.open_bench import OpenBenchTools
 from ..tools.reminders import ReminderTools
 from ..tools.results import Results
@@ -49,6 +50,8 @@ from .wake import reminder_device
 
 EVERYDAY = "everyday"
 """The key the household's everyday tools go under when a turn adds sources; first, so its tools and instructions lead."""
+READERS = "readers"
+"""The key `send_readers` goes under, last: its readers read with the turn's other tools as narrowed, never with it."""
 _MONEY = money_config()
 _CODE_HOST = codehost_config.load()
 _CLAUDE_CODE = claude_code_config()
@@ -73,18 +76,28 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     with `arrival` fresh (the bench was opened in this turn) or `lead` (the message opened it) its instructions tell her
     to lead (`bench_lead`).
     `arrival` is told by `open_bench` and `move_page`. With `tools_only`, all of that narrowed to the tools it
-    names; with `reads_only`, to those that change nothing, where the reply reaches the speaker alone and else to none. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
+    names; with `reads_only`, to those that change nothing, where the reply reaches the speaker alone and else to none.
+    With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
     by; the conversation she is in (`said`) is what they check a URL the person gave against."""
     everyday = HouseholdTools(inbound.household_id)
 
     def usable() -> Tools:
         """What the speaker has in this turn except the reminder tools: what a reminder may name."""
         rest = {k: v for k, v in added.items() if k not in ("reminders", "watches")}
-        return CompositeTools({EVERYDAY: everyday, **rest})
+        return CompositeTools({EVERYDAY: everyday, **rest, READERS: readers})
 
     added = {**sources(inbound, arrival, said and said[0], results, said, usable), **_mail(inbound),
              **_code(inbound, said)}
-    offered = CompositeTools({EVERYDAY: everyday, **added}) if added else everyday
+    own = narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added}) if added else everyday)
+    readers = ReaderTools(lambda names: Reading(Only(own, names)))
+    if inbound.speaker_id is None:
+        return own
+    return narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added, READERS: readers}))
+
+
+def narrowed(inbound: Inbound, offered: Tools) -> Tools:
+    """`offered` as `inbound` narrows it: to its reads with `reads_only` (to none unless the reply reaches the speaker
+    alone), then to the tools `tools_only` names."""
     if inbound.reads_only:
         offered = Reading(offered) if owner_alone(inbound) else Only(offered, ())
     return offered if inbound.tools_only is None else Only(offered, inbound.tools_only)

@@ -31,6 +31,7 @@ from ashley.senses.wakes import Reminder
 from ashley.tidy.pointer import Pointed
 from ashley.tools.bench_agent import JobResult
 from ashley.tools.look_up import LookedUp
+from ashley.tools.readers import ReaderReport
 from ashley.tools.tools import Tools
 from pydantic import BaseModel
 from automations_support import FakeHouse
@@ -44,7 +45,8 @@ from test_reminder_turn import Home
 RULES = Path(__file__).with_name("provider_schema_rejects.json")
 APP = Path(__file__).resolve().parents[1] / "ashley"
 HOUSEHOLD, ALANA, SAM, CONVERSATION, TURN = 10, 1, 2, 20, 30
-RESPONSE_FORMATS: tuple[type[BaseModel], ...] = (Reply, writer_output.Written, Verdict, LookedUp, Pointed, Answer, JobResult)
+RESPONSE_FORMATS: tuple[type[BaseModel], ...] = (Reply, writer_output.Written, Verdict, LookedUp, Pointed, Answer, JobResult,
+                                                   ReaderReport)
 """The structured response formats the app sends. `unlisted_formats` fails when a call site names one not here."""
 
 
@@ -186,16 +188,18 @@ def violations(provider: str, sent: list[Sent]) -> list[str]:
 
 
 def used_formats(package_tree: Mapping[Path, Parsed]) -> set[str]:
-    """Names of response formats passed to `Inference.step`/`generate` somewhere in the app (a capitalised name or the
-    attribute of a module)."""
+    """Names of response formats passed to `Inference.step`/`generate`, or to a reader's loop (`reader.read`), somewhere
+    in the app (a capitalised name or the attribute of a module)."""
     used: set[str] = set()
+    at = {"step": 2, "generate": 2, "read": 6}
     for path, parsed in package_tree.items():
-        if APP not in path.parents or (".step(" not in parsed.source and ".generate(" not in parsed.source):
+        if APP not in path.parents or not any(f".{name}(" in parsed.source for name in at):
             continue
         for call in ast.walk(parsed.tree):
-            if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
-                    and call.func.attr in ("step", "generate") and len(call.args) >= 3):
-                arg = call.args[2]
+            if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and call.func.attr in at
+                    and (call.func.attr != "read" or isinstance(call.func.value, ast.Name) and call.func.value.id == "reader")
+                    and len(call.args) > at[call.func.attr]):
+                arg = call.args[at[call.func.attr]]
                 name = arg.id if isinstance(arg, ast.Name) else arg.attr if isinstance(arg, ast.Attribute) else ""
                 if name[:1].isupper():
                     used.add(name)

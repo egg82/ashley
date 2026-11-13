@@ -1,6 +1,7 @@
 """A reader: a sub-agent with its own context, which steps its own `Inference.step` loop over the tools it is given until
 it replies in the shape asked for. `look_up` runs one per question. It sees only its first message and what its own
-calls return, never the conversation that sent it; what crosses back is its caller's to bound."""
+calls return, never the conversation that sent it; what crosses back is its caller's to bound. `send_readers`
+(`ashley.tools.readers`) sends several at once."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
@@ -32,17 +33,20 @@ class Limits:
 
 @dataclass
 class Took:
-    """What one reader's loop took, for its caller's log line."""
+    """What one reader's loop took, for its caller's log line; `outside` is whether any result it read can carry text
+    written outside the household (`ToolResult.taints`)."""
 
     rounds: int = 0
     calls: int = 0
+    outside: bool = False
 
 
 async def read(task: Task, system: Mapping[str, SystemPrompt], first: str, sources: Tools,
                tools: tuple[ToolSpec, ...], limits: Limits, output: type[T], took: Took) -> T:
     """Steps under tool choice `auto` for up to `max_rounds` rounds of tool calls, then one under `none`. Counts the rounds
-    and calls into `took`. Raises NoAnswer."""
+    and calls into `took`, and whether what it read was outside. Raises NoAnswer."""
     entries: list[Entry] = [Message("person", first)]
+    outside = {t.name: t.outside for t in tools}
     for rounds in range(limits.max_rounds + 1):
         choice: ToolChoice = "auto" if rounds < limits.max_rounds else "none"
         got = await _step(task, Prompt(system, tuple(entries), tools, choice), output)
@@ -51,7 +55,10 @@ async def read(task: Task, system: Mapping[str, SystemPrompt], first: str, sourc
         if choice == "none":
             break
         took.rounds, took.calls = rounds + 1, took.calls + len(got.calls)
-        entries += [got, await _results(sources, got, limits.result_chars)]
+        results = await _results(sources, got, limits.result_chars)
+        took.outside = took.outside or any(r.taints(outside.get(c.name, True))
+                                           for c, r in zip(got.calls, results.results, strict=True))
+        entries += [got, results]
     raise NoAnswer()
 
 

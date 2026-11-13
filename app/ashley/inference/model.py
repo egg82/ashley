@@ -20,7 +20,7 @@ Task = Literal["command", "chat", "brainstorm", "escalated", "wrap_up", "memory_
 fast route to the stronger one (`ashley.channels.escalation`; its own task so the ledger tells its calls apart, its
 routes those of `brainstorm`), the one step that wraps up a turn whose route refused it (`ashley.channels.unsaid`; routes
 of other providers than chat's), the memory write job's decision, the memory eval's judge, and the look-up sub-agent's
-steps (`ashley.tools.look_up`), and the tidy pass that points at stale text on a bench (`ashley.tidy.run`), an errand run (`ashley.channels.errand.job`), a step of a bench job's agent (`ashley.tools.bench_agent`), and an eval's grader of her words into
+steps and a reader's (`ashley.tools.look_up`, `ashley.tools.readers`), and the tidy pass that points at stale text on a bench (`ashley.tidy.run`), an errand run (`ashley.channels.errand.job`), a step of a bench job's agent (`ashley.tools.bench_agent`), and an eval's grader of her words into
 structured fields (`ashley.evals.bench_replay_grader`). A new kind of work (an orchestrator's step) is a new task here, a new entry in
 `routes.json`, and a migration widening the spend ledger's check."""
 
