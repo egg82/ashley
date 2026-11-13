@@ -38,7 +38,7 @@ def test_a_mention_gets_one_reply_to_it_and_the_claim_is_recorded() -> None:
 
     run(scenario())
     assert r.replies.inbounds == [Inbound(1, f"discord:{CHANNEL}", "hello there", "chat", "text", "household",
-                                          ALANA.id, False, None, "discord", later=True, source=f"discord:{sent.id}")]
+                                          ALANA.id, False, None, "discord", later=True, source=f"discord:{sent.id}", discord_channel=CHANNEL)]
     assert r.discord.sends == [Sent(CHANNEL, "hi back", sent.id)]
     assert r.seen.claims == {sent.id: (CHANNEL, NOW)}
     assert r.people.asked == [("discord", str(ALANA_ID))]
