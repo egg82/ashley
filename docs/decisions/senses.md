@@ -126,6 +126,22 @@ person, and to ask only what the house cannot tell her.
   both, once each. A greeting that reaches no device is pushed to the phone for `deliver_for_s`, not dropped as the
   outbox drops a stale one. Rejected: a new `where` field on the wake, which would put one more field into every
   automation for what `what` already carries; choosing the device by the person's last known room.
+- **A rule may name a speaker, and the turn is said there instead of on the phone.** `speaker` on the wake piece is
+  a `media_player.*` entity id, chosen by a person on the bench or by her as part of the rule; the piece check is pure,
+  so it checks shape only, and the runner reads the household's house when the wake runs
+  (`ashley.channels.wake.speaker`): an entity the house lists is used, any other leaves the turn on the phone, and a
+  house that cannot be read leaves the wake due as any unavailable read does. The turn runs on the thread
+  `device:speaker:<person id>:<entity id>`, spoken for whoever is near (`present`), so what she may say is fit for a room;
+  the reply is queued in the outbox and the satellites singleton, which already holds the clips store and the player
+  (`ashley.channels.voice.speakers`), stores a clip and plays its URL through `media_player.play_media`, the path a
+  satellite's room speaker takes. A reply that cannot be played goes to the person's phone, so a speaker that is off
+  loses nothing. A named speaker is **instead of** the phone, not with it: both would say the same words twice to the
+  person who is home, and she can still add the phone for a reply she judges worth it (`Reply.to_phone`), as on any
+  woken turn off the phone's thread. It also wins over Initiative's placement at a satellite or screen: the rule
+  names where, so the plan keeps deciding only whether and how fully. Rejected: a `speaker` route on the wake's row
+  (a migration and a second delivery state for what the outbox already carries); playing from the runner (it does not
+  hold the clips store or the player, and a pod on the standby site would play too); choosing the speaker by the
+  person's last known room.
 - **A household is a speaker in its own right.** A turn's author is `person`, `ashley` or `household`: the household
   speaking as itself, shown by its name (`households.name`), not as any one of its people. A wake is the first
   such turn (an event the house reported, stored as its fields alone: event, person, what; the page shows it as
