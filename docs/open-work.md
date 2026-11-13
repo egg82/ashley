@@ -92,12 +92,10 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
    - **What we're working on**, beside her room's history: the person's open errands (item 7) and benches (item 11),
      each with its state (running, waiting on you, done), filled in as those items land. A quick question stays in
      the history; asking her to do or make something gets a place that outlasts the conversation.
-   - **The page reads as talking to someone, not as one conversation's context.** The copy follows `app/web/voice.md`;
-     what is left of that is her room's own strings, and the history shows what was said to her on every channel.
-   - **The other settings rooms past tables.** Usage and Connections had their design pass (three clean-room
-     designers, `ui-craft`: each sees only the room's real payloads, its API schema and its purpose, takes a different
-     lens, and the best layers are mixed). Household and Devices get the same, and so does the admin settings page
-     when the admin role lands. Connections' settings are still edited on their own page rather than in the opened row.
+   - **The admin settings page past a table**, when the admin role lands, with the same design pass the other
+     settings rooms had (three clean-room designers, `ui-craft`: each sees only the room's real payloads, its API
+     schema and its purpose, takes a different lens, and the best layers are mixed). Connections' settings are still
+     edited on their own page rather than in the opened row.
    - Fits into: Channels and Live.
 6. **Choose models by measurement, and let several work together.** Search per task over model, params and prompt
    variant, `model-golf` style, across every wired provider; the spend ledger already has cost and outcome per task,
