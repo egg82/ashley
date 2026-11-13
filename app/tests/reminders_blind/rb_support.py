@@ -184,6 +184,9 @@ class KillableWakes(Wakes):
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
         return await self.inner.edit(household_id, person_id, wake_id, changed)
 
+    async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
+        return None
+
     async def prune(self, older_than_s: float) -> int:
         return await self.inner.prune(older_than_s)
 

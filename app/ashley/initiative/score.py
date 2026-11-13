@@ -2,6 +2,7 @@
 decided in code"): pure functions of a `Moment` and the `Weights`, so the same wake always plans the same."""
 
 import hashlib
+from dataclasses import replace
 
 from .moment import Moment, Plan
 from .weights import Band, Weights
@@ -36,7 +37,17 @@ def planned(moment: Moment, weights: Weights) -> Plan:
     rolled = roll(moment.seed)
     band = _band(got, weights)
     outcome = "full" if rolled < band.full else "short" if rolled < band.full + band.short else "silent"
-    return Plan(got, rolled, outcome)
+    return Plan(got, rolled, outcome) if outcome == "silent" else _placed(Plan(got, rolled, outcome), moment)
+
+
+def _placed(plan: Plan, moment: Moment) -> Plan:
+    """`plan` said at the moment's satellite when it has one (the person is in that room), else at its screen, else the
+    phone. Two arrivals are two wakes, each planned and placed on its own."""
+    for route in ("room", "screen"):
+        found = next((c for c in moment.devices if c.route == route), None)
+        if found is not None:
+            return replace(plan, route=found.route, device_id=found.device_id)
+    return plan
 
 
 def _at_night(hour: int, weights: Weights) -> bool:

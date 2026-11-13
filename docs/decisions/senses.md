@@ -80,6 +80,17 @@ person, and to ask only what the house cannot tell her.
 - **Whether it goes out is Initiative's**, from the wake's moment and her reply's `says`, a structured field
   (decisions, "Whether she speaks unprompted is decided in code"). A reply kept quiet is stored as her staying quiet, never as words she did
   not say, so no later turn carries them. Rejected: an empty reply meaning quiet, which keys behaviour on text.
+- **A greeting is said where the person arrived, chosen by Initiative from structured fields.** The place is the
+  wake's own `what`, compared with the place a person configured on each of the household's devices (as a slug: "Back
+  Hall" is `back_hall`); the devices there that fit a route by form, never name (`reminder_device.at_place`), are part
+  of the greeting's moment, and its plan places it at the satellite there, else the screen there, else the phone,
+  unless the plan is quiet (`Plan.route`). A placed greeting runs on that device's thread and is recorded on the wake's
+  own row (`Wakes.routed`), then delivered by the reminders' path (the satellites singleton, a screen's open page, the
+  phone after `device_tries`), so no second delivery mechanism exists. A place no device has, or a wake naming none, is
+  the phone's, as before. Two people arriving are two wakes, each greeted on its own plan: the same room may greet
+  both, once each. A greeting that reaches no device is pushed to the phone for `deliver_for_s`, not dropped as the
+  outbox drops a stale one. Rejected: a new `where` field on the wake, which would put one more field into every
+  automation for what `what` already carries; choosing the device by the person's last known room.
 - **A household is a speaker in its own right.** A turn's author is `person`, `ashley` or `household`: the household
   speaking as itself, shown by its name (`households.name`), not as any one of its people. A wake is the first
   such turn (an event the house reported, stored as its fields alone: event, person, what; the page shows it as

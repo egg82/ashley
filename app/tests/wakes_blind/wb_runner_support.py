@@ -11,10 +11,13 @@ from datetime import UTC, datetime
 
 import psycopg
 from ashley import services
+from ashley.channels.devices import Devices
+from ashley.channels.model import Listed
 from ashley.channels.outbox import Outbox
 from ashley.channels.postgres_outbox import PostgresOutbox
 from ashley.channels.wake import runner
 from ashley.initiative.initiative import Initiative
+from house_devices_support import HouseDevices
 from initiative_support import speaking
 from ashley.inference.model import Prompt, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ashley.inference.reply import Reply
@@ -136,13 +139,15 @@ def _now() -> datetime:
 
 
 @asynccontextmanager
-async def stack(world: World, initiative: Initiative | None = None) -> AsyncGenerator[Stack]:
+async def stack(world: World, initiative: Initiative | None = None,
+                rows: dict[int, list[Listed]] | None = None) -> AsyncGenerator[Stack]:
     async with database(world) as db:
         wakes = PostgresWakes(db)
         workshop = PostgresWorkshop(db, workshop_rules.load())
         services.register(Wakes, wakes)
         services.register(Workshop, workshop)
         services.register(Live, FakeLive())
+        services.register(Devices, HouseDevices(rows if rows is not None else {}))
         services.register(Outbox, PostgresOutbox(db, 600.0, POLICY))
         services.register(Initiative, initiative or speaking())
         services.register(People, HaPeople(Household(world.who.household_id, "home", "America/Denver", "", (world.who,)),

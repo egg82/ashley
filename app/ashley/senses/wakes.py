@@ -172,6 +172,12 @@ class Wakes(Service):
         with `new` false and changes nothing. Raises WakesUnavailable."""
 
     @abstractmethod
+    async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
+        """Record that the unsettled house wake `wake_id`, about `person_id`, has its greeting said at `route` (`room`
+        or `screen`) on `device_id`, so settling it `turn` marks it `sending` and it is delivered as a reminder is.
+        Changes nothing for any other wake. Raises WakesUnavailable."""
+
+    @abstractmethod
     async def schedule(self, reminder: Reminder) -> int:
         """Store `reminder` as a wake due at its `due_at`; its id. Raises ValueError for a brief outside 1 to
         `MAX_BRIEF` characters or holding a NUL, more than `MAX_TOOLS` tools, or a `landed` deposit (only
@@ -255,6 +261,9 @@ class NullWakes(Wakes):
     """What an unwired process sees: every call raises, so a wake is never taken in and quietly dropped."""
 
     async def receive(self, device_id: int, wake: Wake) -> Received:
+        raise WakesUnavailable("wakes are not wired")
+
+    async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
         raise WakesUnavailable("wakes are not wired")
 
     async def schedule(self, reminder: Reminder) -> int:
