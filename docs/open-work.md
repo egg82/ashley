@@ -2,8 +2,8 @@
 
 The queue, top first. Delete an item when it ships; design rules live in `decisions.md`.
 
-The first version worth switching to adds two things to what runs today: her own voice pipeline past the first Echo,
-and the arrival greeting (the web app's first cut is built). The rest build on the pieces those land.
+The first version worth switching to adds one thing to what runs today: her own voice pipeline past the first Echo
+(the web app's first cut is built). The rest build on the pieces it lands.
 
 
 42. **Others run her, with their own keys.** Anyone can stand her up from the published image and change what a
@@ -71,10 +71,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
    - Prints in the memory room, so a person sees and forgets their own; today a forget is the admin CLI's
      `voice-forget`.
    - Fits into: Channels (the voice adapter) and Memory's room (`app/ashley/api/memory.py`).
-4. **The arrival greeting.** Its trigger is a wake (`decisions.md`, "Home Assistant wakes her; she decides"): an
-   arrival automation's wake action and a wake rule for it, marked `greets`. Left: where she says it (a room's
-   satellite or the hallway tablet rather than only the phone).
-   - Fits into: **Initiative** (should she speak now, to whom, on which channels), over the wake adapter's turn.
 5. **Web app, what is left.** Its rooms are built: sign-in, chat, memory (the facts she holds and where each was learned; a line
    dragged out of chat is input only, never shown back on the line), Devices (linked accounts, Discord linking,
    notifications, the household's devices) and the kiosk, with open screens kept current by Live. Left:
