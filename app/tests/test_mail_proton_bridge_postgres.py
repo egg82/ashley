@@ -140,7 +140,7 @@ def test_a_signed_out_account_needs_a_login_and_logging_in_clears_it(db_url: str
 
 def test_a_database_that_cannot_be_reached_is_unavailable() -> None:
     async def scenario() -> None:
-        async with bridge_on("postgresql://postgres:t@127.0.0.1:1/postgres") as bridge:
+        async with bridge_on("postgresql://postgres:t@127.0.0.1:1/postgres", connect_timeout_s=0.1) as bridge:
             with pytest.raises(BridgeUnavailable):
                 await bridge.holder()
 

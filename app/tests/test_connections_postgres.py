@@ -29,8 +29,8 @@ BASE = "https://money.test"
 
 
 @asynccontextmanager
-async def connections_on(url: str, key: bytes = KEY) -> AsyncGenerator[Connections]:
-    database = PoolDatabase(url)
+async def connections_on(url: str, key: bytes = KEY, connect_timeout_s: float = 5.0) -> AsyncGenerator[Connections]:
+    database = PoolDatabase(url, connect_timeout_s=connect_timeout_s)
     await database.open()
     try:
         yield PostgresConnections(database, Sealer({VERSION: key}))

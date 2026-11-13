@@ -208,7 +208,7 @@ def test_a_failing_api_is_logged_and_tried_again_at_the_next_tick(db_url: str, k
 
 def test_an_unreachable_record_is_logged_not_raised(kube: BridgeKube, caplog: pytest.LogCaptureFixture) -> None:
     async def scenario() -> None:
-        async with bridge_on("postgresql://postgres:t@127.0.0.1:1/postgres") as bridge:
+        async with bridge_on("postgresql://postgres:t@127.0.0.1:1/postgres", connect_timeout_s=0.1) as bridge:
             async def once(_: float) -> None:
                 raise asyncio.CancelledError
 

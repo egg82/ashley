@@ -39,8 +39,8 @@ def execute(url: str, query: str, params: tuple[object, ...] = ()) -> None:
 
 
 @asynccontextmanager
-async def sessions(url: str, **policy: int) -> AsyncGenerator[PostgresSessions]:
-    db = PoolDatabase(url)
+async def sessions(url: str, connect_timeout_s: float = 5.0, **policy: int) -> AsyncGenerator[PostgresSessions]:
+    db = PoolDatabase(url, connect_timeout_s=connect_timeout_s)
     await db.open()
     try:
         yield PostgresSessions(db, replace(POLICY, **policy))
@@ -207,7 +207,7 @@ def test_a_refused_account_is_listed_until_mapped_or_past_retention(db_url: str,
 
 def test_an_unreachable_database_is_sessions_unavailable() -> None:
     async def scenario() -> None:
-        async with sessions(unreachable_conninfo()) as s:
+        async with sessions(unreachable_conninfo(), connect_timeout_s=0.1) as s:
             with pytest.raises(SessionsUnavailable):
                 await s.find("anything")
 
