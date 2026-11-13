@@ -328,7 +328,6 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       tool provider, offered only on a bench). The pieces are the Workshop system.
 12. **herdr bridge, remaining slices** (item 11's bench order, step 1). The bridge program is built (`bridge/herdr/`,
     its README sets it up) and registered to one person; one writer per slice:
-    - **Last typed**: the bridge's transcript reader and sent-prompt ledger, for item 14's aside policy.
     - **A session as a live piece** on a bench (item 11's first `live` kind).
     - **A second machine of the owner's**: following the README, no code.
     - Fits into: Senses and Channels.
