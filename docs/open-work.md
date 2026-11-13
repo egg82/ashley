@@ -28,12 +28,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     fact the server holds (`ashley.channels.model.Listed.takes_controls`); the devices table gets an explicit capability
     set when a device is registered, and the rule goes. Fits into: Devices.
 
-43. **The suite's remaining real waits and fixed costs.** A pull request's checks take about 6 minutes; what is left
-    of that, largest first:
-    - **A lease takeover timed out once in CI**: `tests/test_watch_session_lease.py::test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state`
-      waited 8.2 s with no takeover on a 2 s TTL (run 43391109530, the first run of the test image; green on rerun and
-      in the 25 runs before). It runs on the real etcd; reproduce it under load before blaming the image.
-
 1. **Her own voice pipeline, past the first Echo.** One wake on the first Echo (an M5Stack Atom Echo) reaches
    her through her own pipeline: faster-whisper on each site, the turn loop, ElevenLabs, played on the
    Echo. What is left, in order:
