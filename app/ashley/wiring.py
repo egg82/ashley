@@ -59,7 +59,6 @@ from .files.store import ObjectStore
 from .inference import spend_catalog
 from .inference.balance import ProviderBalances
 from .inference.compatible import KIND as COMPATIBLE
-from .inference.key_seed import seed_compatible_from_env, seed_from_env as seed_keys_from_env
 from .inference.kinds import KEYED
 from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
@@ -75,7 +74,6 @@ from .live.postgres import PostgresLive
 from .home_assistant.connected_homes import ConnectedHomes
 from .home_assistant.homes import Home, Homes
 from .home_assistant.kind import HOME_ASSISTANT
-from .home_assistant.seed import seed_from_env
 from .people.accounts import Accounts
 from .people.admins import Admins
 from .people.household_write import HouseholdWriter
@@ -100,7 +98,7 @@ from .runs.runs import Runs
 from .tidy.register import register as register_tidy
 from .settings import Settings
 from .wiring_inference import wire_inference
-from .wiring_providers import env_compatible, env_keys
+from .wiring_seeds import seeds
 from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_podman_sandbox, wire_sandbox
 from .wiring_skills import wire_skills
@@ -364,28 +362,10 @@ def look_up_sources(web: WebSearchTools | None, places: Tools | None, models: Pr
 
 def warmups(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """What every pod runs once at start, for the app to start after `wire`, so the first reply after a deploy does not
-    pay for it: the embedding and speaker-embedding models' load; with `HA_URL` set, the env's Home Assistant
-    sealed as household 1's connection where it has none (`seed_from_env`); and the env's model provider keys sealed as
-    its connections of their kinds where it has none, and the env's local OpenAI-compatible server as its connection
-    labelled `local` (`ashley.inference.key_seed`). Each is best effort and never raises."""
+    pay for it: the embedding and speaker-embedding models' load, and the env's seeds of connections
+    (`ashley.wiring_seeds`). Each is best effort and never raises."""
     inference = services.get(Inference)
     running: list[Coroutine[Any, Any, None]] = [inference.warm("embed"), inference.warm("voiceprint")]
-    if settings.ha_url:
-        running.append(_seed(settings))
-    if any(env_keys(settings).values()):
-        running.append(_seed_keys(settings))
-    if env_compatible(settings):
-        running.append(_seed_compatible(settings))
+    running.extend(seeds(settings))
     return running
 
-
-async def _seed_keys(settings: Settings) -> None:
-    await seed_keys_from_env(services.get(Connections), KEYED, env_keys(settings))
-
-
-async def _seed_compatible(settings: Settings) -> None:
-    await seed_compatible_from_env(services.get(Connections), env_compatible(settings))
-
-
-async def _seed(settings: Settings) -> None:
-    await seed_from_env(services.get(Connections), settings.ha_url, settings.ha_token)
