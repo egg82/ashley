@@ -39,11 +39,13 @@ class Later:
 
 @dataclass(frozen=True)
 class Pushed:
-    """A reply to queue for `thread` of `household_id`."""
+    """A reply to queue for `thread` of `household_id`. `answers` is the person turn the reply answers, set on a held
+    answer: should it wait past `stale_s` it is kept for the asker's next reply, not lost."""
 
     household_id: int
     thread: str
     outbound: Outbound
+    answers: int | None = None
 
 
 @dataclass(frozen=True)

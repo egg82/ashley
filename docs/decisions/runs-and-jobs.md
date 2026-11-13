@@ -195,6 +195,13 @@ first, at most `tell_max`. `respond` reads it for a known speaker beside recall,
 `respond.told_unrecorded` and costs only saying it again. An unknown speaker carries none, and a private result waits
 for a channel only its owner hears. Raising it unprompted is Initiative's job, through the outbox.
 
+**An answer that outlived the outbox is held the same way.** A held answer ("let me check", then the answer) is queued
+with the person turn it answers (`outbox.answers`). When `PostgresOutbox.take` removes one older than `stale_s` it
+inserts, in the same transaction, a `done` errand for that turn (`ashley.errands.postgres.HOLD`: source `outbox`, the
+answer as `result`, the ask's visibility, the ask's speaker as asker), so the asker's next reply tells it through
+`untold` and `told` and no second path exists. Nothing is held when the turn has no known speaker or an errand already
+exists for it; the outbox logs `outbox.stale_dropped` with `held` 1 or 0.
+
 **Memory and Errands work together without sharing a table.** Memory holds what stays true; an errand holds what she
 owed and how it went. Her turn telling the result is an ordinary turn, so anything lasting in it reaches Memory
 through the write job.

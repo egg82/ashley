@@ -59,12 +59,12 @@ def receipt_push(receipts: Receipts | None, inbound: Inbound, phone: int | None,
     return Pushed(inbound.household_id, thread(phone), Outbound(conversation_id, "text", "", receipts=receipts))
 
 
-async def pushed(reply: Reply, inbound: Inbound, conversation_id: int,
-                 receipts: Receipts | None = None) -> tuple[Pushed, ...]:
+async def pushed(reply: Reply, inbound: Inbound, conversation_id: int, receipts: Receipts | None = None,
+                 said_id: int | None = None) -> tuple[Pushed, ...]:
     """Her answer as queued for the thread, when it goes out after the response through the `Outbox`: never on an
-    unprompted turn that `Initiative` keeps quiet."""
+    unprompted turn that `Initiative` keeps quiet. `said_id` is the person turn it answers."""
     if inbound.later_by != "outbox" or not unprompted.decided(reply, inbound, conversation_id):
         return ()
     body = await render(reply, inbound.medium, inbound.household_id)
     return (Pushed(inbound.household_id, inbound.thread, Outbound(
-        conversation_id, inbound.medium, body, receipts=receipts)),)
+        conversation_id, inbound.medium, body, receipts=receipts), said_id),)

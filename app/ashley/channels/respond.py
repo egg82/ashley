@@ -312,7 +312,8 @@ def failed_later(error: Exception, started: float, resumed: bool = False) -> str
 
 async def _end(turn: _Turn, reply: Reply, push: bool) -> None:
     """Her turn stored (and, when `push`, queued for the thread with it) and what it asks of memory begun."""
-    queued = await storing.pushed(reply, turn.inbound, turn.conversation_id, turn.landing.receipts) if push else ()
+    queued = await storing.pushed(reply, turn.inbound, turn.conversation_id, turn.landing.receipts,
+                                   turn.said_id) if push else ()
     act = keep.act(reply, turn.inbound, turn.offered, turn.conversation_id)
     speaker_id = turn.who.speaker.id if turn.who.speaker is not None else None
     said, queued = storing.stored(reply, turn.inbound, turn.who.speaker, turn.phone, turn.conversation_id,

@@ -16,6 +16,14 @@ SELECT t.household_id, %s, t.conversation_id, t.id, %s, t.visibility FROM turns 
 WHERE t.id = %s AND t.conversation_id = %s AND t.household_id = %s
 ON CONFLICT (turn_id) DO NOTHING RETURNING id"""
 
+HOLD = """
+INSERT INTO errands (household_id, asker_id, conversation_id, turn_id, source, state, result, visibility, finished_at)
+SELECT t.household_id, t.speaker_id, t.conversation_id, t.id, 'outbox', 'done', %s, t.visibility, now() FROM turns t
+WHERE t.id = %s AND t.speaker_id IS NOT NULL
+ON CONFLICT (turn_id) DO NOTHING"""
+"""An answer she could not deliver in time, held as a `done` errand of the asker's, source `outbox`, so her next reply to
+them tells it (`PostgresOutbox.take`, in its own transaction). Parameters: the answer's text, the person turn it answers."""
+
 _CLAIM = """
 UPDATE errands SET state = 'running', attempts = attempts + 1, claimed_at = now()
 WHERE id = (SELECT id FROM errands
