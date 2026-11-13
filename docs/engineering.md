@@ -129,7 +129,7 @@ connection is named by its label):
 {
   "tasks": {
     "chat": [
-      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 30, "params": {"max_completion_tokens": 2048}}
+      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 30, "params": {"max_output_tokens": 2048}}
     ],
     "errand": [
       {"provider": "local", "model": "qwen3-32b", "timeout_s": 60, "params": {"max_completion_tokens": 2048}}
