@@ -3,7 +3,7 @@
   "tasks": {
     "command": {"household": true, "routes": [
       {"provider": "anthropic", "model": "claude-haiku-5-5", "timeout_s": 10, "params": {"max_tokens": 1024, "effort": "low"}},
-      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 10, "params": {"max_completion_tokens": 1024, "reasoning_effort": "none"}},
+      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 10, "params": {"max_output_tokens": 1024, "reasoning_effort": "none"}},
       {"provider": "gemini", "model": "gemini-3.5-flash-lite", "timeout_s": 10, "params": {"max_completion_tokens": 1024}}
     ]},
     "chat": {"household": true, "routes": [
@@ -16,7 +16,7 @@
     ]},
     "escalated": {"like": "brainstorm"},
     "wrap_up": [
-      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "none"}},
+      {"provider": "openai", "model": "gpt-6-luna", "timeout_s": 30, "params": {"max_output_tokens": 2048, "reasoning_effort": "none"}},
       {"provider": "gemini", "model": "gemini-3.8-flash", "timeout_s": 30, "params": {"max_completion_tokens": 2048, "reasoning_effort": "low"}},
       {"provider": "anthropic", "model": "claude-sonnet-5-5", "timeout_s": 30, "params": {"max_tokens": 2048, "effort": "low"}}
     ],

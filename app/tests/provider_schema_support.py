@@ -15,7 +15,7 @@ from ashley.channels import turn_tools
 from ashley.channels.model import Inbound
 from ashley.connections.connections import Connections
 from ashley.home_assistant.homes import Homes
-from ashley.inference import anthropic_wire, openai_wire
+from ashley.inference import anthropic_wire, openai_responses_wire, openai_wire
 from ashley.inference.model import ToolSpec
 from ashley.inference.reply import Reply
 from ashley.memory import writer_output
@@ -61,16 +61,19 @@ class Sent:
 def wire_tools(provider: str, specs: tuple[ToolSpec, ...]) -> list[Sent]:
     if provider == "anthropic":
         return [Sent(f"tool {t['name']}", dict(t["input_schema"])) for t in anthropic_wire.tools(specs)]
+    if provider == "openai":
+        return [Sent(f"tool {t['name']}", dict(t.get("parameters") or {})) for t in openai_responses_wire.tools(specs)]
     return [Sent(f"tool {t['function']['name']}", dict(t["function"].get("parameters", {})))
             for t in openai_wire.tools(specs)]
 
 
 def wire_formats(provider: str) -> list[Sent]:
-    build = anthropic_wire.reply_schema if provider == "anthropic" else openai_wire.reply_schema
+    build = {"anthropic": anthropic_wire.reply_schema, "openai": openai_responses_wire.reply_schema}.get(
+        provider, openai_wire.reply_schema)
     return [Sent(f"format {f.__name__}", build(f)) for f in RESPONSE_FORMATS]
 
 
-WIRES: dict[str, str] = {"anthropic": "anthropic", "openai": "openai-compatible", "gemini": "openai-compatible"}
+WIRES: dict[str, str] = {"anthropic": "anthropic", "openai": "openai-responses", "gemini": "openai-compatible"}
 """The providers `wiring` builds a chat provider for, by the wire module that adapts their schemas."""
 
 

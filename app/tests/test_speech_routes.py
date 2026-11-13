@@ -17,7 +17,7 @@ from ashley.inference.elevenlabs_tts import ElevenLabsSpeaker
 from ashley.inference.model import Usage
 from ashley.inference.postgres import PostgresSpendLedger
 from ashley.inference.provider import Wired
-from ashley.inference.providers import OpenAICompatibleProvider
+from ashley.inference.providers import OpenAIResponsesProvider
 from ashley.inference.spend import Call
 from ashley.inference.wyoming_stt import WyomingTranscriber
 from ashley.settings import from_env
@@ -53,7 +53,7 @@ def test_an_unwired_provider_may_be_named_and_speech_tasks_may_be_absent() -> No
 def test_the_shipped_routes_load_with_the_real_providers_and_put_wyoming_first() -> None:
     providers: dict[str, Wired] = {
         "wyoming": WyomingTranscriber("wyoming", "tcp://stt:10300"),
-        "openai": OpenAICompatibleProvider("openai", AsyncOpenAI(api_key="k")),
+        "openai": OpenAIResponsesProvider("openai", AsyncOpenAI(api_key="k")),
         "elevenlabs": ElevenLabsSpeaker("elevenlabs", httpx2.AsyncClient())}
     loaded = routes.load(providers)
     assert [r.provider for r in loaded.speech["transcribe"]] == ["wyoming", "openai"]
