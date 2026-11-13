@@ -18,6 +18,8 @@ from .channels.kiosk.postgres_device_controls import PostgresDeviceControls
 from .channels import outbox, resume
 from .channels.outbox import Outbox
 from .channels.postgres_outbox import PostgresOutbox
+from .channels.postgres_remarks import PostgresRemarks
+from .channels.remarks import Remarks
 from .channels.push import config as push_config
 from .channels.watch_reads import ChannelToolReads
 from .channels.spend_report import SpendReport
@@ -92,6 +94,8 @@ from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
 from .senses.calendar import Calendar
 from .senses.homes_calendar import HomesCalendar
+from .senses.focus import Focus
+from .senses.herdr_focus import HerdrFocus
 from .senses.homes_presence import HomesPresence
 from .live.postgres_screens import PostgresScreens
 from .live.screens import Screens
@@ -276,6 +280,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Deposits, PostgresDeposits(services.get(Database)))
     register_proposals(services.get(Database), *outside_config.keeps())
     services.register(Initiative, Scored(WEIGHTS))
+    services.register(Remarks, PostgresRemarks(services.get(Database)))
+    services.register(Focus, HerdrFocus())
     if settings.sandbox_token_file:
         api = wire_sandbox(settings, closers, AddressInForce(lambda: services.get(Connections), WYOMING.name,
                                                               settings.wyoming_stt_url))

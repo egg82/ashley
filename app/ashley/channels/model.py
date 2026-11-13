@@ -6,6 +6,7 @@ from typing import Literal
 from ..conversations.model import Attachment, Channel, Kind, Receipts
 from ..inference.reply import Says
 from ..initiative.moment import Moment
+from ..initiative.remark import Chance
 from ..workshop.model import thread_of
 
 Medium = Literal["spoken", "text"]
@@ -139,7 +140,9 @@ class Inbound:
     (`channels.wake.reminder_turn`): it offers her `check_again` (`ashley.tools.errand_step`) whatever else narrows the
     turn's tools; None on every other turn.
     `discord_channel` is the id of the server channel the message came from, set only by the Discord adapter on a server
-    message (never a DM), and offers her a read of that channel (`tools.discord_read`)."""
+    message (never a DM), and offers her a read of that channel (`tools.discord_read`). `remark` is the facts of a
+    remark nobody asked for that `Initiative` allowed before the turn (`channels.discord.remark`), set with
+    `unprompted`: whether it goes out is `Initiative.remark_speaks`, and it never goes to a phone."""
 
     household_id: int
     thread: str
@@ -179,6 +182,7 @@ class Inbound:
     moment: Moment | None = None
     errand: int | None = None
     discord_channel: int | None = None
+    remark: Chance | None = None
 
     @property
     def lands_on(self) -> int | None:

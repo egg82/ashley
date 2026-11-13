@@ -38,8 +38,8 @@ async def reachable(inbound: Inbound, speaker: Person | None) -> int | None:
 
 
 def _woken(inbound: Inbound) -> bool:
-    """A turn she was woken for, on a thread other than their phone's, which a push would only repeat."""
-    return inbound.unprompted and not inbound.thread.startswith(PUSH_PREFIX)
+    """A turn she was woken for, on a thread other than their phone's, which a push would only repeat; never a remark."""
+    return inbound.unprompted and inbound.remark is None and not inbound.thread.startswith(PUSH_PREFIX)
 
 
 async def looking(inbound: Inbound, speaker: Person | None) -> bool | None:

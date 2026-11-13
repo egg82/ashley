@@ -34,6 +34,20 @@ weight's sign is part of that data's contract, so the loader refuses a recent gr
   that person's focus: not while they are on a call, have just been prompting a Claude Code session themselves, or
   it is late by their own quiet hours. A session merely running is not focus: a person can have sessions working almost
   all the time, overnight and while away.
+- **An aside is allowed in code before she is asked** (`ashley.initiative.remark`, rates in
+  `app/ashley/initiative/remark.json`). The first kind is a remark on a household member's message in a Discord channel
+  she was not pinged in (`ashley.channels.discord.remark`). The message is rolled against `chance`, seeded by its id,
+  before anything is read, so most messages cost nothing. One that rolls in is refused when a fact cannot be read, in
+  the household's night (`score.json`'s `night`, standing in for a person's own quiet hours, which nothing models
+  yet), when the person typed into a Claude Code session within `typing_within_s` (their herdr bridge's last typing,
+  `ashley.senses.focus.Focus`), or when she already made `per_day` remarks for them in the last 24 hours. Being on a
+  call is not read yet. The count comes from `ashley.channels.remarks.Remarks`: a remark is claimed before her turn
+  and settled with the fingerprint of the line that went out; one kept quiet does not count, one never settled does.
+  An allowed remark is an unprompted turn with no tools, told only that this time one remark is allowed. It goes out
+  through the outbox when she sets `says` to reply and its line matches no line she sent as a remark in the
+  household within `repeat_within_days`, compared by fingerprint (case, punctuation and spacing ignored), never by
+  asking a model. It never goes to a phone. Rejected: a model call per channel message to ask whether she has
+  something to say, which costs a call for every message and keeps no rate.
 - **Rejected: leaving the judgement to the prompt.** No history, so no rate.
 
 ## Home Assistant wakes her; she decides
