@@ -52,9 +52,8 @@ same family's accounts; one HA is the one house), so a key per person would add 
   person cannot see (another household's, or another person's code host) is 404, never 403. `GET /api/connections` serves the
   kinds, so the panel renders what the server offers. Refusal reasons are service-neutral (`wrong_service`), the
   service's name being in the text.
-- **The `connections` table does not list kinds.** The check on `kind` and the one tying `person_id` to the code
-  hosts are dropped (migration 0063): the registry is the one list, and a copy in the table would be a second a new
-  service must migrate. The service writes only registered kinds, refuses to read a row whose kind is gone
+- **The `connections` table does not list kinds.** It has no check on `kind` and none tying `person_id` to the code
+  hosts: the registry is the one list, and a copy in the table would be a second a new service must migrate. The service writes only registered kinds, refuses to read a row whose kind is gone
   (`ConnectionsUnavailable`), and a secret is sealed bound to its household, kind and person, so a row moved under
   another does not open. Rejected: a migration that rewrites the check from the registry, which would run per release
   and still lag a deploy that adds a kind.
@@ -70,11 +69,11 @@ same family's accounts; one HA is the one house), so a key per person would add 
   split-horizon DNS (a Sure instance on a public name can resolve to a home-network address from her pods), and the caller is a
   signed-in member of that household.
 - **How many connections of a kind one owner may hold is the kind's `most`, one for every kind today.** No case
-  needs more yet: each one looked at is another kind (Gmail beside Proton, GitHub beside a local GitLab), a
+  needs more: each one looked at is another kind (Gmail beside Proton, GitHub beside a local GitLab), a
   resource inside one connection (a person's mailboxes or calendars), or a personal kind's one per person (a herdr
   per person's machine). A connection is addressed by its id and carries its owner's label (at most 40 characters,
   unique per owner and kind), the owner being the household or, for a personal kind, the person. Adding past `most`
-  is 409 `too_many` and a taken label 409 `label_taken`. A second account of one kind later is that kind's `most`
+  is 409 `too_many` and a taken label 409 `label_taken`. A second account of one kind is that kind's `most`
   raised and its tools asking which one by label; storage, routes, the room and the service need no change.
 
 - **A code host is a person's own connection, not the household's.** `gitlab` and `github` rows carry the person
@@ -102,8 +101,8 @@ same family's accounts; one HA is the one house), so a key per person would add 
   mid-JSON loses any flag at the end and "it is not in the file" is then a false answer. `git_read_file` takes a
   `start` and returns `total_chars` and `next_start` (null at the end); each page is the most text whose whole result
   fits the smallest `max_tool_result_chars` of any kind (it is offered in voice commands too), measured on the
-  serialized result, so the loop never cuts it. `claude_read` fits the end of the screen the same way. Rejected: a fixed `read_chars` setting (both tools had one), which had to be kept under
-  the cap by hand and was 40000 against caps of 8000 and 16000; wrapping a cut result in JSON, which escapes the head
+  serialized result, so the loop never cuts it. `claude_read` fits the end of the screen the same way. Rejected: a fixed `read_chars` setting, which has to be kept under
+  the cap by hand; wrapping a cut result in JSON, which escapes the head
   and wastes the budget.
 
 ## Her money is read through a neutral ledger
@@ -123,7 +122,6 @@ second kind exists; the adapter finds it, so a caller passes a household id.
 - **Failures are `LedgerFailed(reason)`** (`refused`, `unreachable`, `unrecognised`), `LedgerUnavailable` when the
   household's link cannot be read, `NotConnected` when it has none. The tools' error texts still say Sure (and
   `not_sure` for `unrecognised`), since the model is told the source is Sure; they change with the first second backend.
-- **The tools' answers did not change** in the move: the same Sure bodies give the same bytes.
 - Rejected: an adapter per tool. The records are the contract, and four tools plus the sense share one reader.
 
 ## A model provider's key is a connection
