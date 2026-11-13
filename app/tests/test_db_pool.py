@@ -51,7 +51,7 @@ def dirty(url: str) -> list[psycopg.Connection]:
 def test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_left(
         migrated_template: DatabasePool) -> None:
     admin = admin_url()
-    fresh = state(make_conninfo(admin, dbname=migrated_template.template))
+    fresh = state(make_conninfo(admin, dbname=migrated_template.template)) | {"other_connections": (0,)}
     first = migrated_template.take()
     held = dirty(first)
     try:
