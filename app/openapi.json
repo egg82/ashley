@@ -4547,16 +4547,35 @@
     "/api/live": {
       "get": {
         "summary": "Live",
-        "description": "200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`.",
+        "description": "200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`. `screen` is the token the page made at load,\nwhich names this screen when it reports its visibility (`POST /api/screens/visibility`).",
         "operationId": "live",
+        "parameters": [
+          {
+            "name": "screen",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Screen"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "A stream of `LiveEvent`, one per `data:` line",
             "content": {
               "text/event-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/LiveEvent",
-                  "type": "string"
+                  "type": "string",
+                  "$ref": "#/components/schemas/LiveEvent"
                 }
               }
             }
@@ -4577,6 +4596,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -4828,6 +4857,68 @@
         }
       }
     },
+    "/api/screens/visibility": {
+      "post": {
+        "summary": "Report Visibility",
+        "description": "204; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error for a body outside\n`ScreenVisibility`; 503 `unavailable`.",
+        "operationId": "report_visibility",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScreenVisibility"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site or was not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the record of open screens could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/kiosk/session": {
       "post": {
         "summary": "Kiosk Pair",
@@ -5057,16 +5148,35 @@
     "/api/kiosk/live": {
       "get": {
         "summary": "Kiosk Live",
-        "description": "200 a stream of `LiveEvent` for the device; 401 `unauthorized`; 503 `unavailable`: no live feed, so the page\nreads for itself.",
+        "description": "200 a stream of `LiveEvent` for the device; 401 `unauthorized`; 503 `unavailable`: no live feed, so the page\nreads for itself. `screen` is as for `GET /api/live`.",
         "operationId": "kiosk_live",
+        "parameters": [
+          {
+            "name": "screen",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Screen"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "A stream of `LiveEvent`, one per `data:` line",
             "content": {
               "text/event-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/LiveEvent",
-                  "type": "string"
+                  "type": "string",
+                  "$ref": "#/components/schemas/LiveEvent"
                 }
               }
             }
@@ -5087,6 +5197,78 @@
               "text/event-stream": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kiosk/screen": {
+      "post": {
+        "summary": "Kiosk Screen",
+        "description": "204, the device's screen that opened its feed under `body.screen` is in the foreground or not (as\n`POST /api/screens/visibility`); 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503\n`unavailable`.",
+        "operationId": "kiosk_screen",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScreenVisibility"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "`unauthorized`: not paired, a revoked device, or from the public internet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a system it needs could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: from another site, or not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -9571,6 +9753,19 @@
         ],
         "title": "ForgetResponse",
         "description": "How many facts were deleted: the one forgotten and every earlier version it replaced. None of them is kept."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "HealthResponse": {
         "properties": {
@@ -14616,6 +14811,26 @@
         "title": "RunRequest",
         "description": "Run piece `piece_id`, a code piece, as it is at `base_version` (the version the screen shows), in\n`run_language`, one of `WorkshopKinds.run_languages`."
       },
+      "ScreenVisibility": {
+        "properties": {
+          "screen": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Screen"
+          },
+          "visible": {
+            "type": "boolean",
+            "title": "Visible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "screen",
+          "visible"
+        ],
+        "title": "ScreenVisibility",
+        "description": "What a page reports about itself: `screen` is the token it made at load and opened its feed under, `visible`\nwhether it is in the foreground now (the Page Visibility API's `visible`). Sent on every change and on a heartbeat."
+      },
       "SettingChange": {
         "properties": {
           "id": {
@@ -15605,6 +15820,46 @@
         ],
         "title": "UndoRequest",
         "description": "Undo command `seq`, while what it changed has not changed since. Refused `nothing_to_undo` when `seq` is an undo\n(there is no redo) or older than the bench's last `undo_window` commands, and `changed_since` when it was already\nundone. Undoing an install takes it back out of the house before it is answered (`automation.last_install` of the\npiece)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       },
       "VaultWrite": {
         "properties": {

@@ -13,6 +13,7 @@ Logs `kiosk.paired` with the device id when a screen pairs; never the token or w
 
 import logging
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Request, Response
 from fastapi.responses import JSONResponse
@@ -24,6 +25,7 @@ from ..channels.kiosk.screen_controls_of import controls_piece
 from ..channels.kiosk.glance import glance
 from ..channels.model import Device, Inbound
 from ..live.events import DeviceViewer
+from ..live.screens import Screens, ScreensUnavailable
 from ..workshop.workshop import ScreenNotFound, Workshop, WorkshopUnavailable
 from . import chat
 from .chat_models import KioskMessage
@@ -33,7 +35,8 @@ from .kiosk_glance_models import KioskEvent, KioskGlance
 from .kiosk_layout_models import KioskLayout, KioskPiece
 from .models import (ChatConversation, ChatReply, ChatRequest, ErrorResponse, KioskControl, KioskControlDone,
                      KioskControls, KioskDevice, KioskPairRequest)
-from .live_models import LiveEvent
+from .live_models import LiveEvent, ScreenVisibility
+from .screens import unavailable
 
 router = APIRouter()
 log = logging.getLogger("ashley.api.kiosk")
@@ -107,10 +110,23 @@ async def kiosk_send(device: Kiosk, body: KioskMessage) -> ChatReply | JSONRespo
 @router.get("/api/kiosk/live", response_class=EventStream, response_model=None, responses={
     **_PAIRED, 200: {"model": LiveEvent, "description": "A stream of `LiveEvent`, one per `data:` line",
                      "content": {"text/event-stream": {"schema": {"$ref": "#/components/schemas/LiveEvent"}}}}})
-async def kiosk_live(device: Kiosk) -> Response:
+async def kiosk_live(device: Kiosk, screen: UUID | None = None) -> Response:
     """200 a stream of `LiveEvent` for the device; 401 `unauthorized`; 503 `unavailable`: no live feed, so the page
-    reads for itself."""
-    return stream_to(DeviceViewer(device.household_id, device.id), device=device.id)
+    reads for itself. `screen` is as for `GET /api/live`."""
+    return stream_to(DeviceViewer(device.household_id, device.id), screen, device=device.id)
+
+
+@router.post("/api/kiosk/screen", status_code=204, response_class=Response, responses=_WRITE)
+async def kiosk_screen(device: Kiosk, body: ScreenVisibility) -> Response:
+    """204, the device's screen that opened its feed under `body.screen` is in the foreground or not (as
+    `POST /api/screens/visibility`); 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
+    `unavailable`."""
+    try:
+        await services.get(Screens).device_visible(device.id, str(body.screen), body.visible)
+    except ScreensUnavailable:
+        return unavailable()
+    logs.info(log, "screens.visibility", device=device.id, visible=body.visible)
+    return Response(status_code=204)
 
 
 @router.get("/api/kiosk/glance", response_model=KioskGlance, responses=_PAIRED)

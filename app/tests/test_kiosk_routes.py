@@ -343,3 +343,36 @@ def test_a_validation_error_does_not_echo_the_pairing_token_back(wired: Fakes, d
     response = _app(wired, devices, cookie=None).post("/api/kiosk/session", json={"token": token})
     assert response.status_code == 422 and token not in response.text
     assert all(set(error) == {"type", "loc", "msg"} for error in response.json()["detail"])
+
+
+SCREEN = "3f2b8a64-0c1d-4e57-9a1b-6d5e7f8091a2"
+
+
+def test_the_kiosk_feed_opens_its_screen_under_the_pages_token(client: TestClient, live: FakeLive) -> None:
+    screens = RecordingScreens()
+    services.register(Screens, screens)
+    live.scripted = (RESYNC,)
+    with client.stream("GET", f"/api/kiosk/live?screen={SCREEN}") as response:
+        list(response.iter_lines())
+    assert screens.tokens == [SCREEN]
+
+
+def test_the_kiosk_reports_visibility_as_its_own_device_and_logs_only_ids(
+        client: TestClient, capsys: pytest.CaptureFixture[str]) -> None:
+    screens = RecordingScreens()
+    services.register(Screens, screens)
+    capsys.readouterr()
+    response = client.post("/api/kiosk/screen", json={"screen": SCREEN, "visible": True})
+    assert response.status_code == 204
+    assert screens.reports == [("device", DEVICE.id, SCREEN, True)]
+    assert f"event=screens.visibility device={DEVICE.id} visible=true" in capsys.readouterr().out
+
+
+def test_the_kiosk_visibility_report_is_refused_unpaired_or_from_another_site(wired: Fakes, devices: FakeDevices) -> None:
+    screens = RecordingScreens()
+    services.register(Screens, screens)
+    body = {"screen": SCREEN, "visible": True}
+    assert _app(wired, devices, cookie=None).post("/api/kiosk/screen", json=body).status_code == 401
+    assert _app(wired, devices).post("/api/kiosk/screen", json=body,
+                                     headers={"origin": "https://evil.test"}).status_code == 403
+    assert screens.reports == []

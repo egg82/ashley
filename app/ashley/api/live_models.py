@@ -1,6 +1,7 @@
 """Wire models for the open screens' feed (`api.live`, and the kiosk's, `api.kiosk`): one `LiveEvent` per `data:` line."""
 
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -88,3 +89,11 @@ class LiveResync(BaseModel):
 
 class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LivePage | LiveScreen | LiveResync, Field(discriminator="type")]]):
     """One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`."""
+
+
+class ScreenVisibility(BaseModel):
+    """What a page reports about itself: `screen` is the token it made at load and opened its feed under, `visible`
+    whether it is in the foreground now (the Page Visibility API's `visible`). Sent on every change and on a heartbeat."""
+
+    screen: UUID
+    visible: bool

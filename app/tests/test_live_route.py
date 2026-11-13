@@ -14,7 +14,7 @@ from ashley.api.person import person_signed_in
 from ashley.live.events import HerState, Shown, ThreadTurn, Viewer
 from ashley.live.fanout import RESYNC
 from ashley.live.live import Live
-from ashley.live.screens import NullScreens, Screens
+from ashley.live.screens import NullScreens, OpenScreen, Screens
 from ashley.main import create_app
 from ashley.settings import Settings
 from ashley.signin.model import SignedIn
@@ -95,14 +95,27 @@ class RecordingScreens(Screens):
     """The record of open screens, in memory: `calls` is every call made, in order."""
 
     calls: list[tuple[str, int]] = field(default_factory=list[tuple[str, int]])
+    tokens: list[str | None] = field(default_factory=list[str | None])
+    reports: list[tuple[str, int, str, bool]] = field(default_factory=list[tuple[str, int, str, bool]])
 
-    async def opened(self, household_id: int, person_id: int) -> int:
+    async def opened(self, household_id: int, person_id: int, token: str | None = None) -> int:
         self.calls.append(("opened", person_id))
+        self.tokens.append(token)
         return 41
 
-    async def device_opened(self, household_id: int, device_id: int) -> int:
+    async def device_opened(self, household_id: int, device_id: int, token: str | None = None) -> int:
         self.calls.append(("device_opened", device_id))
+        self.tokens.append(token)
         return 42
+
+    async def person_visible(self, person_id: int, token: str, visible: bool) -> None:
+        self.reports.append(("person", person_id, token, visible))
+
+    async def device_visible(self, device_id: int, token: str, visible: bool) -> None:
+        self.reports.append(("device", device_id, token, visible))
+
+    async def open_screens(self, household_id: int, within_s: float) -> tuple[OpenScreen, ...]:
+        return ()
 
     async def beat(self, screen_id: int) -> None:
         self.calls.append(("beat", screen_id))
@@ -133,3 +146,51 @@ def test_a_record_that_cannot_be_written_never_ends_the_stream(fake: FakeLive) -
     services.register(Screens, NullScreens())
     _, lines = read(client)
     assert any(line.startswith("data: ") for line in lines)
+
+
+TOKEN = "3f2b8a64-0c1d-4e57-9a1b-6d5e7f8091a2"
+
+
+def test_the_feed_opens_its_screen_under_the_pages_token(fake: FakeLive) -> None:
+    screens = RecordingScreens()
+    client = _client(fake)
+    services.register(Screens, screens)
+    with client.stream("GET", f"/api/live?screen={TOKEN}") as response:
+        list(response.iter_lines())
+    assert screens.tokens == [TOKEN]
+
+
+def test_a_feed_with_a_token_that_is_not_one_is_422(fake: FakeLive) -> None:
+    assert _client(fake).get("/api/live?screen=nope").status_code == 422
+
+
+def test_a_visibility_report_is_the_signed_in_persons_own_whatever_the_body_says(fake: FakeLive) -> None:
+    screens = RecordingScreens()
+    client = _client(fake)
+    services.register(Screens, screens)
+    response = client.post("/api/screens/visibility", json={"screen": TOKEN, "visible": False, "person": 99},
+                           headers={"origin": PUBLIC})
+    assert response.status_code == 204 and response.content == b""
+    assert screens.reports == [("person", ALANA.id, TOKEN, False)]
+
+
+def test_a_visibility_report_needs_a_session_and_a_token(fake: FakeLive) -> None:
+    screens = RecordingScreens()
+    services.register(Screens, screens)
+    body = {"screen": TOKEN, "visible": True}
+    assert _client(fake, signed_in=False).post("/api/screens/visibility", json=body,
+                                                headers={"origin": PUBLIC}).status_code == 401
+    assert _client(fake).post("/api/screens/visibility", json={"screen": "x", "visible": True},
+                              headers={"origin": PUBLIC}).status_code == 422
+    assert screens.reports == []
+
+
+def test_a_visibility_report_with_no_record_wired_is_503_and_logs_only_ids(
+        fake: FakeLive, capsys: pytest.CaptureFixture[str]) -> None:
+    client = _client(fake)
+    services.register(Screens, NullScreens())
+    response = client.post("/api/screens/visibility", json={"screen": TOKEN, "visible": True},
+                           headers={"origin": PUBLIC})
+    out = capsys.readouterr().out
+    assert response.status_code == 503 and ErrorResponse.model_validate(response.json()).code == "unavailable"
+    assert "event=screens.unavailable" in out and TOKEN not in out
