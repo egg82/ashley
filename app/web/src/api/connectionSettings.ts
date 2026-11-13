@@ -1,6 +1,6 @@
 // The settings of a connection: read, replace, and the catalogue its service offers for a setting to pick from.
 import { answer, ApiError } from './client';
-import type { ConnectionCatalogue, ConnectionSettings, ConnectionSettingsRequest, ErrorResponse, SettingsRefused } from './types';
+import type { ConnectionCatalogue, ConnectionSettings, ConnectionSettingsRequest, ErrorResponse, SettingChanges, SettingsRefused } from './types';
 
 /** Connection `id`'s settings with the schema its kind declares. A 404 is a connection with no settings, or none visible. */
 export async function getSettings(id: number): Promise<ConnectionSettings> {
@@ -24,4 +24,9 @@ export async function putSettings(id: number, body: ConnectionSettingsRequest): 
 export async function getCatalogue(id: number, domains: readonly string[]): Promise<ConnectionCatalogue> {
   const query = new URLSearchParams(domains.map((d) => ['domains', d]));
   return answer(await fetch(`/api/connections/${id}/catalogue?${query}`), 200, 'GET /api/connections/{id}/catalogue');
+}
+
+/** The latest changes to connection `id`'s settings, newest first: which key, who, when (never the values). */
+export async function getSettingsHistory(id: number, limit = 20): Promise<SettingChanges> {
+  return answer(await fetch(`/api/connections/${id}/settings/history?limit=${limit}`), 200, 'GET /api/connections/{id}/settings/history');
 }
