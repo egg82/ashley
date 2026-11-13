@@ -200,6 +200,11 @@ subscription, the read the Usage room already makes), and the router opens the p
   cache (`KeyedProviders`, `AddressedProvider`), so a row changed in the room reaches every pod within its 30 seconds; the
   media pod's address and the web search read the row on each use (`ashley.connections.address_in_force`), so a change is
   seen by the next transcription or search, and with no address the search is not offered.
+- **Her Discord bot's token is a connection** (`ashley.channels.discord.token_kind`, a `chat` kind): a `deployment` kind
+  held by the first household at Discord's one address, checked by one read of the bot's own user. `DISCORD_BOT_TOKEN`
+  seeds the row at each pod's start (`ashley.channels.discord.token_seed`), never over a row, and the row then wins;
+  with no row the env's token answers. The session follows a changed token (`channel-adapters.md`, "Discord is a bot,
+  its Gateway a singleton").
 - Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
   Connections already has.
 - Rejected: one `inference_provider` kind with the provider named in the label or address. The provider would then be

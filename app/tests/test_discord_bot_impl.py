@@ -24,7 +24,7 @@ ME, ALANA, STRANGER, CHANNEL, DM, GUILD, OTHER = 900, 501, 502, 77, 88, 5, 79
 NOW = datetime(2026, 10, 26, 12, tzinfo=UTC)
 SECRET = "PLANTED-CONTENT-zq"
 CONFIG = Config(max_messages=2, catch_up_s=600, seen_retention_days=7, typing_refresh_s=0.01,
-                unavailable_text="later", refused_text="no", held_footer="Say yes.")
+                token_poll_s=30, unavailable_text="later", refused_text="no", held_footer="Say yes.")
 GENERAL = DiscordServer(Device(3, 1, "general", "discord", "household", "text", "chat"), GUILD, CHANNEL)
 
 

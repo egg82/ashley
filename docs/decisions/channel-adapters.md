@@ -110,6 +110,12 @@ own conversation. One unrevoked device holds a server, so revoking it frees the 
 
 - **The Gateway session is a singleton under the lease `discord`.** Discord allows several sessions on one shard and
   does not say whether each gets every event, so two sessions are assumed to both answer; the lease allows one.
+- **The token the session runs on is the Discord connection's** (`decisions/connections.md`, "Her Discord bot's token is
+  a connection"). The lease body (`ashley.channels.discord.following.follow`) reads it every `token_poll_s` and runs on
+  every pod, idle while there is none. A token replaced or removed in the room cancels the session, which closes the
+  Gateway, and the next read opens one on the new token: a restart of the singleton, not a hot swap, so a change shows
+  within one poll and costs one IDENTIFY. Rows that cannot be read leave the running session as it is. A session that
+  ends on its own ends the body, and the lease campaigns again after its pause.
 - **Each message is claimed in Postgres before she answers it** (`discord_seen`, `INSERT … ON CONFLICT DO NOTHING`),
   so a double reply is impossible even in a failover's overlap. During a demotion the claim fails on the read-only
   database and she does not answer, which is the lease rule's tolerated failed write. Claims are pruned after

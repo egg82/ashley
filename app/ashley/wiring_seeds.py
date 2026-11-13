@@ -1,12 +1,13 @@
 """What each pod seeds at start from the env, best effort: Home Assistant (`ashley.home_assistant.seed`), the model
-provider keys and the local OpenAI-compatible server (`ashley.inference.key_seed`), and the Wyoming and SearXNG addresses
-(`ashley.connections.address_seed`), each as the first household's connection where it has none. Called by
-`ashley.wiring.warmups`."""
+provider keys and the local OpenAI-compatible server (`ashley.inference.key_seed`), the Wyoming and SearXNG addresses
+(`ashley.connections.address_seed`) and the Discord bot's token (`ashley.channels.discord.token_seed`), each as the
+first household's connection where it has none. Called by `ashley.wiring.warmups`."""
 
 from collections.abc import Coroutine
 from typing import Any
 
 from . import services
+from .channels.discord.token_seed import seed_token
 from .connections.address_seed import seed_addresses
 from .connections.connections import Connections
 from .home_assistant.seed import seed_from_env
@@ -29,6 +30,8 @@ def seeds(settings: Settings) -> list[Coroutine[Any, Any, None]]:
         running.append(_seed_compatible(settings))
     if settings.wyoming_stt_url or settings.searxng_url:
         running.append(_seed_addresses(settings))
+    if settings.discord_bot_token:
+        running.append(_seed_discord(settings))
     return running
 
 
@@ -47,3 +50,7 @@ async def _seed(settings: Settings) -> None:
 async def _seed_addresses(settings: Settings) -> None:
     await seed_addresses(services.get(Connections), ((WYOMING, settings.wyoming_stt_url),
                                                      (SEARXNG, settings.searxng_url)))
+
+
+async def _seed_discord(settings: Settings) -> None:
+    await seed_token(services.get(Connections), settings.discord_bot_token)

@@ -270,6 +270,7 @@ class Rig:
 
 def config(**changes: object) -> Config:
     base = Config(max_messages=4, catch_up_s=600, seen_retention_days=30, typing_refresh_s=0.01,
+                  token_poll_s=30,
                   unavailable_text="I cannot answer right now.", refused_text="I would rather not.",
                   held_footer="Answer yes to go ahead.")
     return replace(base, **changes)

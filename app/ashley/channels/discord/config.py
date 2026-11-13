@@ -2,7 +2,8 @@
 
 A reply is sent as at most `max_messages` Discord messages. On taking the lease she catches up on messages younger than
 `catch_up_s`; claims are kept `seen_retention_days`, which must outlast the catch-up. While she thinks, typing is shown
-again every `typing_refresh_s` (Discord shows it for about 10 s). `unavailable_text` is posted when she cannot answer
+again every `typing_refresh_s` (Discord shows it for about 10 s). The bot's token is read every `token_poll_s`
+(`following.follow`). `unavailable_text` is posted when she cannot answer
 for want of a system, `refused_text` when the model declined. The small message under a reply that did or held changes
 (`receipts.receipt_lines`) ends with `held_footer` when any waits."""
 
@@ -21,6 +22,7 @@ class Config:
     catch_up_s: float
     seen_retention_days: float
     typing_refresh_s: float
+    token_poll_s: float
     unavailable_text: str
     refused_text: str
     held_footer: str
@@ -28,7 +30,7 @@ class Config:
     def __post_init__(self) -> None:
         if self.max_messages < 1:
             raise ValueError("max_messages must be at least 1")
-        if min(self.catch_up_s, self.seen_retention_days, self.typing_refresh_s) <= 0:
+        if min(self.catch_up_s, self.seen_retention_days, self.typing_refresh_s, self.token_poll_s) <= 0:
             raise ValueError("discord timings must be positive")
         if self.seen_retention_days * 86400 <= self.catch_up_s:
             raise ValueError("seen_retention_days must outlast catch_up_s")
