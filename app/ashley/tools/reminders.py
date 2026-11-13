@@ -10,7 +10,6 @@ are wall-clock times in the household's zone. Logs `tools.call` with the tool, o
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
-from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from .. import services
@@ -18,7 +17,7 @@ from ..connections.connections import Connections, ConnectionsUnavailable
 from ..inference.model import ToolCall, ToolResult, ToolSpec
 from ..people.model import Household
 from ..people.people import People, PeopleUnavailable
-from ..senses.deposit_rule import PAYEE_MATCHES, DepositRule, Direction, PayeeMatch, describe
+from ..senses.deposit_rule import describe
 from ..senses.deposit_config import CONFIG
 from ..senses.deposits import Deposits, DepositsUnavailable
 from ..senses.proposal_gate import Refusal
@@ -26,7 +25,7 @@ from ..senses.proposal_payloads import REMINDERS, MoneyRule, ReminderChange, Rem
 from ..senses.proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
 from ..senses.repeat import LOCAL_FORMAT
 from ..senses.wakes import Reminder, Route, Scheduled, Wakes, WakesUnavailable
-from . import bench_results, reminder_conditions as conditions, reminder_shape as shape, reminder_specs as specs, tainted, watch_agreed
+from . import bench_results, money_rule_args, reminder_shape as shape, reminder_specs as specs, tainted, watch_agreed
 from .bench_args import BadArguments, check_names
 from .tools import Catalogue, Tools, ToolsUnavailable
 
@@ -213,10 +212,7 @@ class ReminderTools(Tools):
         if not await self._sees_deposits():
             return bench_results.failed(call, started, "not_connected", "the household has not connected Sure")
         try:
-            rule = DepositRule(_text(args, "account_id"), _text(args, "account"), _cents(args.get("min_amount")),
-                               _payee(args.get("payee")), _match(args.get("payee_match")),
-                               _direction(args.get("direction")), conditions.parse(args.get("conditions")),
-                               args.get("judge") is True)
+            rule = money_rule_args.rule_of(args)
             reminder = Reminder(self._household_id, _person(household, args.get("for")), self._speaker_id,
                                 _what(args.get("what")), datetime.now(UTC), None, taint=tainted.current(),
                                 made_in=tainted.made_in())
@@ -300,45 +296,6 @@ def _person(household: Household, raw: object) -> int:
     if len(found) != 1:
         raise BadArguments("for is one of the household's names")
     return found[0]
-
-
-def _text(args: Mapping[str, object], key: str) -> str:
-    value = args.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise BadArguments(f"{key} is as Sure shows it")
-    return value.strip()
-
-
-def _cents(raw: object) -> int | None:
-    if raw is None:
-        return None
-    if isinstance(raw, bool) or not isinstance(raw, int | float) or not raw > 0:
-        raise BadArguments("min_amount is a number above zero")
-    return int((Decimal(str(raw)) * 100).to_integral_value())
-
-
-def _payee(raw: object) -> str | None:
-    if raw is None:
-        return None
-    if not isinstance(raw, str):
-        raise BadArguments("payee is a name as Sure shows it")
-    return raw
-
-
-def _match(raw: object) -> PayeeMatch:
-    if raw is None:
-        return "contains"
-    if raw not in PAYEE_MATCHES:
-        raise BadArguments("payee_match is exact or contains")
-    return "exact" if raw == "exact" else "contains"
-
-
-def _direction(raw: object) -> Direction:
-    if raw == "in":
-        return "in"
-    if raw == "out":
-        return "out"
-    raise BadArguments("direction is in or out")
 
 
 def _what(raw: object) -> str:
