@@ -1,0 +1,6 @@
+{
+  "household_reads": "Lists she counts as the household’s",
+  "service_reads": "Look-ups she trusts",
+  "reads": "Look-ups that only read",
+  "consequential_entities": "Things that need your word"
+}

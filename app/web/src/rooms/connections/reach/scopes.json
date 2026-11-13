@@ -1,0 +1,8 @@
+{
+  "https://www.googleapis.com/auth/gmail.modify": "read and change mail",
+  "https://www.googleapis.com/auth/gmail.readonly": "read mail",
+  "https://www.googleapis.com/auth/userinfo.email": "see the account address",
+  "https://www.googleapis.com/auth/calendar.readonly": "read the calendar",
+  "https://www.googleapis.com/auth/calendar": "read and change the calendar",
+  "openid": "sign in"
+}

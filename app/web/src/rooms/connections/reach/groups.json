@@ -1,0 +1,10 @@
+{
+  "groups": [
+    { "id": "house", "title": "The house", "kinds": ["home_assistant"] },
+    { "id": "money", "title": "Money", "kinds": ["sure"] },
+    { "id": "code", "title": "Code and sessions", "kinds": ["gitlab", "github", "herdr"] },
+    { "id": "mail", "title": "Mail", "kinds": ["google", "proton"] },
+    { "id": "voice", "title": "Her voice and thinking", "kinds": ["anthropic", "openai", "gemini", "elevenlabs"] }
+  ],
+  "other": { "id": "other", "title": "Other services" }
+}
