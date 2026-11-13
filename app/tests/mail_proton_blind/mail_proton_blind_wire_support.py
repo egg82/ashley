@@ -22,6 +22,7 @@ from cryptography.x509.oid import NameOID
 class Wire:
     def __init__(self, sock: socket.socket | ssl.SSLSocket) -> None:
         self.sock: socket.socket | ssl.SSLSocket = sock
+        self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.buf = b""
 
     def fill(self) -> bool:
