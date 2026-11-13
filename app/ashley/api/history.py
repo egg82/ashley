@@ -1,5 +1,6 @@
 """A signed-in person reads back their earlier conversations on any channel (`decisions.md`, "A person reads back their
 earlier conversations"). They are the ones the person took part in; another's, and one that does not exist, are both 404.
+A turn said privately to another participant (a reply sent to their phone in a shared room) is not shown to the rest.
 Read only: nothing here posts into a conversation, closed or not. Logs ids and counts, never turns."""
 
 import logging
@@ -101,15 +102,23 @@ async def past(signed_in: Person, conversation_id: Annotated[int, Path(ge=1)]) -
         household = await services.get(People).household(who.household_id)
     except (ConversationsUnavailable, PeopleUnavailable):
         return _unavailable()
-    logs.info(log, "chat.past", person=who.id, conversation=found.id, turns=len(found.turns))
-    return _wire(found, household)
+    wired = _wire(found, household, who)
+    logs.info(log, "chat.past", person=who.id, conversation=found.id, turns=wired.turn_count,
+              withheld=sum(not _heard_by(t, who) for t in found.turns))
+    return wired
 
 
-def _wire(found: Conversation, household: Household | None) -> PastConversation:
+def _heard_by(turn: Turn, who: PersonRecord) -> bool:
+    """A turn said to the household, or privately to `who`: what a participant may read back of a shared conversation."""
+    return turn.heard == "shared" or turn.owner_id == who.id
+
+
+def _wire(found: Conversation, household: Household | None, who: PersonRecord) -> PastConversation:
     names = {} if household is None else {p.id: p.name for p in household.people}
     turns = [PastTurn(id=t.id, author=t.author, text=t.text, at=t.at, follows=t.follows,
                       continued_on=t.continued_on, attachment=wire_attachment(t.attachment),
-                      speaker=_speaker(t, names, household)) for t in unprompted.shown(found.turns)]
+                      speaker=_speaker(t, names, household))
+             for t in unprompted.shown(tuple(t for t in found.turns if _heard_by(t, who)))]
     return PastConversation(id=found.id, kind=found.kind, state=found.state, started_at=found.started_at,
                             last_activity_at=found.last_activity_at, channel=found.channel, place=found.place,
                             turn_count=len(turns), lines=turns)

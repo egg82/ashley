@@ -84,7 +84,7 @@ class Turn:
     """A stored turn. `at` is when the database recorded it. `follows`, `answers`, `carried_from`, `continued_on`, `attachment`, `spoken` and `receipts` as on `NewTurn`. `conversation_id`
     is the conversation it was said in, None on a turn built by hand; it is not part of a turn's equality. `agreed` is
     what became of the held calls a person's agreeing turn carried out (`InFlight.agreed`), set once they are done; None
-    on every other turn."""
+    on every other turn. `heard` and `owner_id` as on `NewTurn`; a hand-built turn is `shared`."""
 
     id: int
     author: Author
@@ -100,6 +100,8 @@ class Turn:
     spoken: str | None = None
     receipts: Receipts | None = None
     agreed: AgreedOutcome | None = None
+    heard: Heard = "shared"
+    owner_id: int | None = None
 
 
 @dataclass(frozen=True)

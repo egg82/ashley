@@ -353,7 +353,8 @@ A conversation that has closed is not gone: `Conversations.of_person` lists the 
 - **Taking part is the only key.** A conversation is the person's when they are a participant (started with, or spoke in
   it), in their household. Any other id, and one that does not exist, is the same 404, so nobody learns a conversation
   is there. This reads what a shared kiosk or satellite conversation held, including others' turns, because they were
-  in the room for it.
+  in the room for it; not a turn said privately to someone else there (a reply sent to their phone), which only its
+  owner reads (`ashley.hearing`'s rule, applied to the turn's `heard` and `owner_id`).
 - **Newest activity first, paged by a keyset cursor** of the last activity and id of a page's last entry, handed to the
   client as an opaque `next` and taken back as `before`. A conversation with no turn is not listed. The service reports
   each one's kind, state, when it started and was last active, the channel and place it started on (unknown for old
