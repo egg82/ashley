@@ -63,7 +63,7 @@ mention of `decisions.md`: the title is an entry below, or a `###` heading or bo
 ## Connections and the ledger
 
 - [A household connects its own services](decisions/connections.md): a household's links to services outside her are Connections, each a kind, a label, a base URL and a secret sealed at rest.
-- [Her money is read through a neutral ledger](decisions/connections.md): her money tools and the deposit sense read `Ledger`'s neutral records, never Sure; Sure is the first adapter.
+- [Her money is read, and categorised, through a neutral ledger](decisions/connections.md): her money tools and the deposit sense read `Ledger`'s neutral records, never Sure; Sure is the first adapter. Her one write, a transaction's category, is a judged change through the gate every change uses.
 - [A model provider's key is a connection](decisions/connections.md): a deployment's model provider keys are connections, added or rotated in the connections room with no redeploy.
 
 ## Mail

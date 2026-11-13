@@ -497,8 +497,7 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
 The next three make existing systems general (`engineering.md`, "Her systems are general, and she wires them"), in
 this order.
 
-30. **The ledger written to, and its events.** She may categorise through the Ledger (`ashley.ledger.ledger.Ledger`
-    reads only today), and "balance below" and "bill due" become events her rules can match. Fits into: Ledger and
+30. **The ledger's events.** "Balance below" and "bill due" become events her rules can match. Fits into: Ledger and
     Senses.
 32. **Wake rules matched by who and what.** A wake rule matches on the event alone, and two for one event run no turn
     (`ashley.channels.wake.rule.rule_for`); an optional who/what match lets her keep rules per person or situation,
