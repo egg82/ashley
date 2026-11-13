@@ -40,7 +40,9 @@ HINTS: dict[Reason, str] = {
     "bad_wake": "a wake rule's body is one JSON object of exactly event (the slug its wake action sends), brief (what "
                 "to do on that wake, short) and tools (the names that turn may use), and optionally greets (true or "
                 "false; true when the wake is a greeting, so code decides whether and how fully to say it; absent or "
-                "false, what you write goes out when you say it is worth saying)",
+                "false, what you write goes out when you say it is worth saying), who (a person.* entity id) and what "
+                "(a slug): set, the rule answers only a wake whose who or what is exactly that; when several rules "
+                "answer one wake, the one setting the most of who and what runs, and a tie runs none)",
     "bad_measurements": 'a measurements piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "asked"}]}: '
                         "name an identifier unique in the piece, value a finite number, unit mm (every length in millimetres), deg, "
                         "count, g (grams), ml (millilitres) or min (minutes), source measured, datasheet, accepted, bound or guessed, "

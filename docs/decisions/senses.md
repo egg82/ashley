@@ -60,8 +60,13 @@ person, and to ask only what the house cannot tell her.
   The wake's id is the turn's `source`, so a runner killed after handing it in, whose wake is handed in again, gets the
   same turn. Rejected: refusing the request on the standby site, which drops HA's one call.
 - **Her rule is a wake piece on a bench** (kind `wake`): the event it answers, a short brief for that turn, the
-  tools it may use, and whether it greets. A wake runs a turn only when exactly one rule on the household's open benches answers its event;
-  none is `no_rule`, two are `ambiguous`, and it is settled so rather than guessed. A wake about no person of the
+  tools it may use, whether it greets, and optionally the `who` (a `person.*` entity) and `what` (a slug) it is kept
+  for, matched exactly against the wake's own structured fields, never its words. Of the rules on the household's open
+  benches that answer a wake, the most specific runs: specificity is how many of `who` and `what` a rule sets, so a rule
+  for one person beats the event's bare rule for that person only, and one for that person and that thing beats both.
+  None is `no_rule`; two at the top (two bare rules, or one keyed on `who` and one on `what`) are `ambiguous`, and it is
+  settled so rather than guessed. Rejected: ranking `who` above `what`, which would pick a winner the person never
+  chose between; a tie stays theirs to resolve on the bench. A wake about no person of the
   household is `no_person`; one waiting past `max_age_s` is `expired` (an arrival greeting an hour late is wrong). A
   turn that cannot run now (`RespondUnavailable`, as during a failover) leaves the wake due for the next sweep, the
   same turn by its source; only a refused one is `failed`. A rule's tool names the catalogue does not offer are logged
