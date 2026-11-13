@@ -15,6 +15,7 @@ import { FollowHer } from './her/FollowHer';
 import { pageMoved } from './her/moves';
 import { TravellingMark } from './her/TravellingMark';
 import { roomForPath, type RoomId } from './rooms';
+import { Announcement } from '../speech/Announcement';
 import { Stage } from './Stage';
 import { Topbar } from './topbar/Topbar';
 
@@ -70,6 +71,7 @@ export function Shell() {
       {who && target !== 'signin' && <Topbar current={target} person={who} />}
       <Stage />
       {who && target !== 'signin' && <FollowHer />}
+      {who && target !== 'signin' && <Announcement />}
       <TravellingMark />
     </>
   );

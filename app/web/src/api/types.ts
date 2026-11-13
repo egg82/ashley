@@ -96,6 +96,7 @@ export type PastSummary = components['schemas']['PastSummary'];
 export type PastConversation = components['schemas']['PastConversation'];
 export type PastTurn = components['schemas']['PastTurn'];
 export type LiveEvent = components['schemas']['LiveEvent'];
+export type ClipLine = components['schemas']['ClipLine'];
 export type LiveCue = components['schemas']['LiveCue'];
 export type KioskDevice = components['schemas']['KioskDevice'];
 export type Transcript = components['schemas']['Transcript'];

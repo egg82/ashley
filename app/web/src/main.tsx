@@ -21,6 +21,7 @@ import './rooms/spend/spend.css';
 import './rooms/her/chat.css';
 import './rooms/workshop/workshop.css';
 import './kiosk/kiosk.css';
+import './speech/announce.css';
 import './highlight/highlight.css';
 
 // /look/<token> is the page a browser pod photographs for her (`bench_look`). /kiosk is a shared screen signed in as a device, outside the person shell. Elsewhere, links under /api/ (sign-in) are

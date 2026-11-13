@@ -1,0 +1,12 @@
+/* What she announces (`Announcement.tsx`): one line at the top of any screen, the kiosk's and a person's (below
+   its top bar), over the room. It slides down as it arrives; under reduced motion it just appears. */
+.announce { position: fixed; z-index: 96; top: 68px; left: 50%; transform: translateX(-50%); display: flex; align-items: center;
+  gap: 12px; width: max-content; max-width: calc(100vw - 32px); padding: 8px 8px 8px 12px; border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--brass-dim); color: var(--text); box-shadow: 0 12px 32px rgba(0,0,0,.55);
+  animation: announce-in 260ms var(--ease-out) both; }
+.announce > :first-child { flex: none; }
+.announce-line { margin: 0; font-size: 15px; line-height: 1.4; color: var(--text); overflow-wrap: anywhere; }
+[data-room="kiosk"] .announce { top: 14px; }
+[data-room="kiosk"] .announce-line { font-size: 20px; }
+@keyframes announce-in { from { opacity: 0; transform: translate(-50%, -12px); } }
+:root[data-motion="reduced"] .announce { animation: none; }
