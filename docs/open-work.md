@@ -33,9 +33,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **A lease takeover timed out once in CI**: `tests/test_watch_session_lease.py::test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state`
       waited 8.2 s with no takeover on a 2 s TTL (run 43391109530, the first run of the test image; green on rerun and
       in the 25 runs before). It runs on the real etcd; reproduce it under load before blaming the image.
-    - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
-      every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
-      rather than per worker. Fits into: the structural gates.
 45. **A cold-read distill of each `docs/decisions/` file and of `docs/systems.md`** (`doc-cold-read`): the split moved
     them byte for byte, so they still carry deliberation and history where each should state what is true now.
 
