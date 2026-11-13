@@ -2,8 +2,8 @@
 
 from alembic import op
 
-revision: str = "0107"
-down_revision: str | None = "0106"
+revision: str = "0108"
+down_revision: str | None = "0107"
 
 
 def upgrade() -> None:
