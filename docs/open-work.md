@@ -181,18 +181,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     Rejected: recording a demonstration as a replayable skill (Rakazo's Teach is pixel coordinates plus the final
     window's title); her method stays a skill document she edits. Fits into: Code runs (a third pod kind beside
     code and media), Object store, Tools.
-39. **Readers she sends out, several at once.** Asked for something that reads many sources ("a digest of my mail,
-    calendar and the house every weekday at 9"), she builds it from what she has rather than from a feature made for
-    it: a repeating reminder (`ashley.senses.wakes.Reminder`, with its `tools`) starts the turn, and that turn sends
-    a reader per source. A reader is `look_up` made general: a sub-agent with its own context, given a brief she
-    writes and a subset of her read tools, that returns a result cut to length in code. One call can send several,
-    and they run at once, so the loop still sees one tool round (the concurrency `decisions.md` rejected was reads
-    beside a change in one round; readers only read). The gain is context: each reader sees one inbox or one week of
-    calendar, and she sees their pages. A reader's result is `outside` when any of its reads were (`decisions.md`, "A turn that has read outside words asks before it does anything consequential the person did not ask for"), so a
-    change she then makes is an ask. Rejected: readers that message each other, or a leader they negotiate with;
-    each hop re-reads its whole context, and work that does not split into independent reads is better done by one
-    turn holding all of it. Fits into: Tools (`ashley.tools.look_up.LookUpTools` generalised, over `Only` and
-    `Reading`), Inference (the step loop each reader runs).
 P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A turn that has read outside words asks before it
     does anything consequential the person did not ask for"). Left: (1) a move to trash or spam goes to the judge only when
     every target carries the provider's own spam or promotions label, which the adapter reads; (2) a page listing
