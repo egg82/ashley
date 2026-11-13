@@ -12,7 +12,9 @@ import httpx2
 from . import logs, services
 from .channels import bench_job, errand, outbox, resume
 from .channels.discord import bot as discord_bot, client as discord_client, config as discord_config
+from .channels.discord.following import follow
 from .channels.discord.postgres_seen import PostgresSeen
+from .channels.discord.token_in_force import TokenInForce
 from .channels.push import config as push_config, later as push_later
 from .channels.push.sender import WebPushSender
 from .channels.respond import respond
@@ -22,6 +24,7 @@ from .channels.voice.run import Pipeline
 from .channels.voice.satellites import NAME as SATELLITES, Satellites
 from .channels.wake import runner as wake_runner
 from .conversations import policy
+from .connections.connections import Connections
 from .db.database import Database
 from .files import config as files_config, repair as files_repair, sweep as files_sweep
 from .files.intake import PREFIX as FILES_PREFIX
@@ -82,7 +85,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`: fail-back
     when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
     turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, fetching the model catalogue, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
-    Discord session when `discord_bot_token` is, and web push when her VAPID identity is (`push_config.vapid`)."""
+    Discord session on the token in force (`ashley.channels.discord.following`), and web push when her VAPID identity is (`push_config.vapid`)."""
     running: list[Coroutine[Any, Any, None]] = []
     if settings.etcd_url and settings.failback == "off":
         logs.info(log, "failback.off")
@@ -117,8 +120,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
         running.append(services.get(Lease).run(files_sweep.NAME, sweeping))
     if settings.voice_clip_base_url:
         running.append(_satellites(settings))
-    if settings.discord_bot_token:
-        running.append(_discord(settings.discord_bot_token))
+    running.append(_discord(settings.discord_bot_token))
     identity = push_config.vapid(settings)
     if identity is not None:
         config = push_config.load()
@@ -128,10 +130,14 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     return running
 
 
-def _discord(token: str) -> Coroutine[Any, Any, None]:
-    bot = discord_bot.Bot(discord_client.connect(token), PostgresSeen(services.get(Database)),
-                          discord_config.load(), later_poll_s=outbox.load().poll_s)
-    return services.get(Lease).run(discord_bot.NAME, bot.run)
+def _discord(env_token: str) -> Coroutine[Any, Any, None]:
+    config = discord_config.load()
+
+    def session(token: str) -> Coroutine[Any, Any, None]:
+        return discord_bot.Bot(discord_client.connect(token), PostgresSeen(services.get(Database)), config,
+                               later_poll_s=outbox.load().poll_s).run()
+    body = partial(follow, TokenInForce(lambda: services.get(Connections), env_token), session, config.token_poll_s)
+    return services.get(Lease).run(discord_bot.NAME, body)
 
 
 async def _satellites(settings: Settings) -> None:

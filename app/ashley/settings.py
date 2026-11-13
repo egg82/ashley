@@ -36,7 +36,8 @@ class Settings:
     `voice_clip_base_url` (`https://ashley.example.com`) is where satellites and room speakers fetch her spoken
     replies; set, and with etcd, the satellite connections singleton runs. It needs `esphome_noise_psk`, the satellites'
     ESPHome API encryption key, since their audio never crosses the network unencrypted (ValueError).
-    `discord_bot_token` is her Discord bot's token; set, and with etcd, the Discord singleton runs.
+    `discord_bot_token` seeds the Discord connection at start (`ashley.channels.discord.token_seed`); once a row exists
+    it wins, and with none and no row the Discord singleton idles.
     `oidc_issuer`, `oidc_client_id` and `oidc_client_secret` wire sign-in through OIDC, all three or none
     (ValueError); unset, the sign-in routes answer 503. It needs `public_url` (`https://ashley.example.com`), the
     origin people reach her at, which names the callback the provider returns to and the one origin a cookie-signed write

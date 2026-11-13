@@ -142,15 +142,13 @@ def test_the_discord_token_comes_from_the_environment() -> None:
     assert from_env({"DATABASE_URL": "x"}).discord_bot_token == ""
 
 
-@pytest.mark.parametrize(("token", "count"), [("", 10), ("t", 11)])
-def test_the_discord_singleton_runs_only_with_a_token(token: str, count: int) -> None:
-    settings = Settings(database_url="x", build_version="t", etcd_url="http://127.0.0.1:1", site="willow",
-                        discord_bot_token=token)
+def test_the_discord_singleton_runs_with_no_env_token_since_the_connection_may_hold_one() -> None:
+    settings = Settings(database_url="x", build_version="t", etcd_url="http://127.0.0.1:1", site="willow")
     running = singletons(settings)
     for coroutine in running:
         coroutine.close()
-    assert len(running) == count
-    bare = singletons(Settings(database_url="x", build_version="t", discord_bot_token=token))
+    assert len(running) == 11
+    bare = singletons(Settings(database_url="x", build_version="t"))
     for coroutine in bare:
         coroutine.close()
-    assert len(bare) == count - 1, "without etcd, every singleton but fail-back"
+    assert len(bare) == 10, "without etcd, every singleton but fail-back"
