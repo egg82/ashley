@@ -75,8 +75,9 @@ def test_a_read_for_a_household_with_no_sure_asks_nothing(sure: FakeSure) -> Non
 
 def test_accounts_categories_and_net_worth_are_neutral_records(held: HeldConnections, sure: FakeSure) -> None:
     accounts = asyncio.run(ledger().accounts(HOME, 7))
-    assert [(a.id, a.name, a.balance, a.type, a.classification) for a in accounts.rows] == [
-        (CHECKING, "Checking", "$1,234.56", "depository", "asset"), ("a2", "Visa", "$300.00", "depository", "liability")]
+    assert [(a.id, a.name, a.balance, a.type, a.classification, a.cents) for a in accounts.rows] == [
+        (CHECKING, "Checking", "$1,234.56", "depository", "asset", 123_456),
+        ("a2", "Visa", "$300.00", "depository", "liability", 30_000)]
     assert accounts.total == 2 and params_of(sure.seen, "/api/v1/accounts") == {"per_page": "7"}
     categories = asyncio.run(ledger().categories(HOME, 9))
     assert [(c.id, c.name, c.parent) for c in categories.rows] == [(GROCERIES, "Groceries", "Food")]

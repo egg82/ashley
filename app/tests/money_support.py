@@ -26,8 +26,10 @@ GROCERIES = "7d1e2f3a-4b5c-4d6e-8f70-81a2b3c4d5e6"
 
 
 def account(id_: str, name: str, balance: str, classification: str = "asset") -> dict[str, object]:
-    return {"id": id_, "name": name, "balance": balance, "balance_cents": 0, "cash_balance": balance,
-            "cash_balance_cents": 0, "currency": "USD", "classification": classification, "account_type": "depository",
+    """An account as Sure's jbuilder writes it; `balance` as Sure formats dollars ("$1,234.56", "-$5.00")."""
+    cents = round(float(balance.replace("$", "").replace(",", "")) * 100)
+    return {"id": id_, "name": name, "balance": balance, "balance_cents": cents, "cash_balance": balance,
+            "cash_balance_cents": cents, "currency": "USD", "classification": classification, "account_type": "depository",
             "subtype": "checking", "status": "active", "institution_name": "Bank", "institution_domain": "bank.test",
             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-10-30T00:00:00Z"}
 
