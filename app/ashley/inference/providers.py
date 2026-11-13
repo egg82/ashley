@@ -1,4 +1,4 @@
-"""The two provider implementations. Each takes a configured async SDK client, so wiring decides keys and endpoints
+"""The three provider implementations. Each takes a configured async SDK client, so wiring decides keys and endpoints
 and a test can point one at a stand-in server.
 
 `AnthropicProvider` calls the Messages API with the schema as `output_config.format` (structured outputs) and three
@@ -14,7 +14,14 @@ API ChatGPT, Gemini's OpenAI endpoint and local servers (Ollama, vLLM, llama.cpp
 `max`; which a model accepts is the model's business). Usage counts cached reads and cache writes apart from input.
 It is also a `Transcriber` for `transcribe` routes (`openai_stt`).
 
-Both: a refusal (Anthropic `stop_reason` `refusal`; OpenAI `message.refusal` set) raises ProviderRefused; a reply cut
+`OpenAIResponsesProvider` calls OpenAI's Responses API (`POST /v1/responses`, `store` off) with the schema as the
+strict `text.format`, the one API that takes tools with `reasoning.effort`. Params: `max_output_tokens` (int of at least
+16, required), `reasoning_effort` (as above). A response `incomplete` for `max_output_tokens` is cut off; one
+`incomplete` for `content_filter`, or holding a refusal part, is a refusal; one `failed` fails by its error code. Usage
+and tool history as for Chat Completions; the shapes are `openai_responses_wire`. It is also a `Transcriber`, as the
+`openai` name serves both.
+
+All three: a refusal (Anthropic `stop_reason` `refusal`; OpenAI `message.refusal` set) raises ProviderRefused; a reply cut
 off at the token limit or not matching the schema fails `invalid_output`; a timeout, connection failure, 408, 409,
 429, 5xx, 401, 402 or 403 fails `unavailable`; any other status fails `error`. A failure message names the
 exception type and status; an `error` status adds the provider's own message (`message=`), one line cut to
@@ -24,7 +31,7 @@ exception type and status; an `error` status adds the provider's own message (`m
 Tools go with the schema when offered; with none offered, neither `tools` nor `tool_choice` is sent. Anthropic: a
 `stop_reason` of `tool_use` is a `ToolUse`; the API renders tool definitions before the system prompt, so the second
 breakpoint covers both and the first keeps the tools when only the system prompt differs. OpenAI: a `finish_reason` of
-`tool_calls`, or any tool calls on the message, is a `ToolUse`. Tool calls that name none, repeat an id, are not function calls, carry arguments that are not a JSON object, or
+`tool_calls`, or any tool calls on the message, is a `ToolUse`; Responses: any `function_call` item. Tool calls that name none, repeat an id, are not function calls, carry arguments that are not a JSON object, or
 arrive with no tools offered or under `none` fail `invalid_output`. History in each wire format: `anthropic_wire`,
 `openai_wire`."""
 
@@ -42,10 +49,11 @@ from anthropic.types import OutputConfigParam
 from openai import AsyncOpenAI, Omit, omit
 from openai.types import CompletionUsage, ReasoningEffort
 from openai.types.chat import ChatCompletion
+from openai.types.responses import Response, ResponseUsage
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from .. import logs
-from . import anthropic_wire, openai_stt, openai_wire
+from . import anthropic_wire, openai_responses_wire, openai_stt, openai_wire
 from .model import Entry, SystemPrompt, ToolCall, ToolCalls, ToolChoice, ToolSpec, Usage
 from .provider import Completion, Provider, ProviderFailed, ProviderRefused, ToolUse, status_failure
 from .speech import AudioFormat
@@ -161,6 +169,32 @@ def _openai_usage(usage: CompletionUsage | None) -> Usage | None:
     return Usage(usage.prompt_tokens - read - written, usage.completion_tokens, read, written)
 
 
+def _responses_usage(usage: ResponseUsage | None) -> Usage | None:
+    if usage is None:
+        return None
+    read, written = usage.input_tokens_details.cached_tokens, usage.input_tokens_details.cache_write_tokens
+    return Usage(usage.input_tokens - read - written, usage.output_tokens, read, written)
+
+
+_MIN_OUTPUT_TOKENS = 16
+_SERVER_SIDE = frozenset({"server_error", "rate_limit_exceeded"})
+
+
+def _responses_unfinished(response: Response, usage: Usage | None) -> ProviderFailed | ProviderRefused | None:
+    """What a response that did not complete is: a refusal, a cut-off reply, or a failure; None when it completed."""
+    reason = response.incomplete_details.reason if response.incomplete_details else None
+    if reason == "content_filter":
+        return ProviderRefused("the model refused", usage)
+    if reason == "max_output_tokens":
+        return ProviderFailed("invalid_output", "reply cut off at the token limit", usage, cut_off=True)
+    if response.status == "failed":
+        code = response.error.code if response.error else "unknown"
+        return ProviderFailed("unavailable" if code in _SERVER_SIDE else "error", f"response failed code={code}", usage)
+    if response.status != "completed":
+        return ProviderFailed("error", f"response not completed status={response.status}", usage)
+    return None
+
+
 class AnthropicProvider(Provider):
     def __init__(self, name: str, client: AsyncAnthropic) -> None:
         self._name = name
@@ -259,3 +293,57 @@ class OpenAICompatibleProvider(Provider, Transcriber):
         if choice.finish_reason == "tool_calls" or choice.message.tool_calls:
             return _tool_use(openai_wire.calls(choice.message), tools, tool_choice, usage)
         return _decode(choice.message.content, output, usage)
+
+
+class OpenAIResponsesProvider(Provider, Transcriber):
+    def __init__(self, name: str, client: AsyncOpenAI) -> None:
+        self._name = name
+        self._client = client
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def check_params(self, params: Mapping[str, object]) -> None:
+        _check_params(params, "max_output_tokens", "reasoning_effort", _OPENAI_EFFORT)
+        if _int_param(params, "max_output_tokens") < _MIN_OUTPUT_TOKENS:
+            raise ValueError(f"max_output_tokens must be at least {_MIN_OUTPUT_TOKENS}")
+
+    def check_transcribe_params(self, params: Mapping[str, object]) -> None:
+        openai_stt.check_params(params)
+
+    async def transcribe(self, model: str, params: Mapping[str, object], format: AudioFormat,
+                         chunks: AsyncIterator[bytes], timeout_s: float, language: str | None = None) -> str:
+        return await openai_stt.transcribe(self._client, model, params, format, chunks, timeout_s, language)
+
+    async def complete(self, model: str, params: Mapping[str, object], system: SystemPrompt, messages: tuple[Entry, ...],
+                       tools: tuple[ToolSpec, ...], tool_choice: ToolChoice, output: type[T],
+                       timeout_s: float) -> Completion[T] | ToolUse:
+        effort = _openai_effort(params)
+        try:
+            response = _untrusted(await self._client.responses.create(
+                model=model, timeout=timeout_s, store=False, max_output_tokens=_int_param(params, "max_output_tokens"),
+                instructions=system.stable, input=openai_responses_wire.items(system, messages),
+                text={"format": {"type": "json_schema", "name": "reply", "strict": True,
+                                 "schema": openai_responses_wire.reply_schema(output)}},
+                tools=openai_responses_wire.tools(tools) if tools else omit,
+                tool_choice=openai_responses_wire.tool_choice(tool_choice) if tools else omit,
+                reasoning=omit if isinstance(effort, Omit) else {"effort": effort}))
+        except openai.APIStatusError as e:
+            raise ProviderFailed(status_failure(e.status_code), _status_reason(e)) from e
+        except openai.APIConnectionError as e:
+            raise ProviderFailed("unavailable", type(e).__name__) from e
+        except Exception as e:
+            raise ProviderFailed("error", type(e).__name__) from e
+        if not isinstance(response, Response):
+            raise ProviderFailed("error", f"unexpected response body: {type(response).__name__}")
+        usage = _responses_usage(response.usage)
+        if openai_responses_wire.refusal(response):
+            raise ProviderRefused("the model refused", usage)
+        stopped = _responses_unfinished(response, usage)
+        if stopped is not None:
+            raise stopped
+        found = openai_responses_wire.calls(response)
+        if found is None or found:
+            return _tool_use(found, tools, tool_choice, usage)
+        return _decode(openai_responses_wire.text(response), output, usage)

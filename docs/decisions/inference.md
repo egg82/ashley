@@ -19,8 +19,8 @@ breaking her.
   it costs one more failed call, not a wrong answer.
 - **A refusal is final.** The next route is never asked to answer what the first declined.
 - **Replies are structured fields**, one per medium (`spoken`, `text`), sent to every provider as the Pydantic
-  model's JSON Schema; OpenAI-compatible providers use Chat Completions, the one API Gemini and local servers
-  also speak.
+  model's JSON Schema; OpenAI itself uses the Responses API (Chat Completions refuses tools beside `reasoning_effort`),
+  and every other OpenAI-compatible provider uses Chat Completions, the one API Gemini and local servers speak.
 - **The spend ledger records every call**, answered or not, by task, provider and model, with tokens and cost,
   and the conversation it served where it served one (an id with no foreign key, so the ledger holds nothing said or
   known about anyone and keeps a row after its conversation is gone).

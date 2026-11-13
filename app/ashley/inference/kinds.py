@@ -17,7 +17,7 @@ from .gemini_image import GeminiImageMaker
 from .key_check import answered
 from .keyed import Built, KeyedProvider
 from .openai_image import OpenAIImageMaker
-from .providers import AnthropicProvider, OpenAICompatibleProvider
+from .providers import AnthropicProvider, OpenAICompatibleProvider, OpenAIResponsesProvider
 
 ANTHROPIC_API = "https://api.anthropic.com"
 OPENAI_API = "https://api.openai.com"
@@ -65,7 +65,7 @@ def _anthropic(key: str) -> Built:
 def _openai(key: str) -> Built:
     chat = AsyncOpenAI(api_key=key, max_retries=0)
     images = httpx2.AsyncClient(base_url=OPENAI_API, headers={"Authorization": f"Bearer {key}"})
-    return Built((OpenAICompatibleProvider("openai", chat), OpenAIImageMaker("openai_image", images)), {},
+    return Built((OpenAIResponsesProvider("openai", chat), OpenAIImageMaker("openai_image", images)), {},
                  _closing(chat.close, images.aclose))
 
 

@@ -14,7 +14,7 @@ from ashley.inference import routes as routes_module
 from ashley.inference.routes import TASKS
 from ashley.inference.model import DEFAULT_VARIANT, Route
 from ashley.inference.provider import Provider
-from ashley.inference.providers import AnthropicProvider, OpenAICompatibleProvider
+from ashley.inference.providers import AnthropicProvider, OpenAICompatibleProvider, OpenAIResponsesProvider
 from ashley.inference.routes import Routes, load, parse
 from inference_support import FakeProvider
 from openai import AsyncOpenAI
@@ -201,8 +201,10 @@ def real_providers() -> dict[str, Provider]:
     """The names the decision gives (`anthropic`, `openai`, `gemini`, `local`) wired to the real classes, so the
     shipped params meet a real `check_params`."""
     made: dict[str, Provider] = {"anthropic": AnthropicProvider("anthropic", AsyncAnthropic(api_key="k"))}
-    for name in ("openai", "gemini", "local"):
-        made[name] = OpenAICompatibleProvider(name, AsyncOpenAI(api_key="k", base_url="http://127.0.0.1:9/v1"))
+    client = AsyncOpenAI(api_key="k", base_url="http://127.0.0.1:9/v1")
+    made["openai"] = OpenAIResponsesProvider("openai", client)
+    for name in ("gemini", "local"):
+        made[name] = OpenAICompatibleProvider(name, client)
     return made
 
 
