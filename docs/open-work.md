@@ -22,9 +22,47 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **Any OpenAI-compatible model provider** as a connection kind: a name, a base URL and a key, many per deployment,
       with routes naming the connection. It covers OpenRouter, Groq, Together, Mistral, DeepSeek, Ollama and vLLM without
       a wrapper library; Anthropic and Gemini keep their native adapters for caching and structured output.
-      `LOCAL_LLM_URL` and `LOCAL_LLM_API_KEY` become the seed of one such row. Fits into: Connections, Inference.
+      `LOCAL_LLM_URL` and `LOCAL_LLM_API_KEY` become the seed of one such row. Adding one is a picker over models.dev's
+      providers (each one's `api` base URL prefills) or a custom base URL. Prices and capabilities come from models.dev,
+      and `app/ashley/inference/prices.json` goes, natives included. The owner agreed this design (2026-11-10). It has
+      three layers, the later winning: a snapshot of models.dev's `api.json` baked into the image at build; the last
+      good fetch in Postgres, refreshed by one lease-holding singleton on an interval from a data file, where a failed
+      fetch keeps the previous result and the page shows the snapshot's age; and a person's overrides, deployment-wide
+      and admin-only, edited through the web route alone. An override can add a model, hide one, change any field or
+      define a provider; it stores only the fields the person changed, so upstream updates to the rest still flow in,
+      and the page shows default against yours per field with a reset and who set it. No price in any layer is
+      "unpriced", never $0; models.dev's 0/0 is "listed as $0" until a person marks it free; every price names its
+      source. A task that uses tools refuses a model listed without tool calls. Write the delta rule into
+      `docs/decisions/` beside "Env var, file, connection or setting". Fits into: Connections, Inference.
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
       site, and the room names in `app/ashley/evals/house_cases.json`.
+
+43. **The suite's remaining real waits and fixed costs.** A pull request's checks take about 6 minutes; what is left
+    of that, largest first:
+    - **Leases on a clock, not on etcd's TTLs.** The entries in `app/tests/time_gate_held.py` wait out real lease TTLs,
+      heartbeats, backoffs and poll intervals. Each moves onto a fake etcd driven by an injected clock, with one smoke
+      test left against the real etcd, and leaves the held list as it does. Fits into: Failover referee (the fake is a
+      second implementation of the `Lease`'s etcd client).
+    - **A fresh database per test costs 0.1–0.6 s** (`CREATE DATABASE … TEMPLATE`) on about two tests in five, about
+      70 s of each shard's setup measured locally. A pool of databases made ahead per worker and reset between tests
+      would remove it. Fits into: the test fixtures (`app/tests/conftest.py`).
+    - **A prebuilt test image.** Every shard spends 30–110 s on `pip install` before its first test. An image with the
+      requirements installed, tagged by their hash and built only when they change, as `app/tools/ci_image_hash.py`
+      already does for the other images. Fits into: CI's hashed images.
+    - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
+      every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
+      rather than per worker. Fits into: the structural gates.
+44. **Split systems.md's bundled rows into a row each.** Channels carries Devices, the outbox, Lexicons, Voices,
+    Discord's Seen and push Subscriptions; Senses carries Wakes, Watches, Proposals, the outside record, the action
+    judge and Deposits; Errands carries Errands and bench jobs. One row each gives each its own question, callers and
+    duplicates, and `docs/systems.md`'s four-part test decides which are systems at all. Fits into: the systems inventory.
+45. **A cold-read distill of each `docs/decisions/` file and of `docs/systems.md`** (`doc-cold-read`): the split moved
+    them byte for byte, so they still carry deliberation and history where each should state what is true now.
+46. **NUL in the remaining columns**, the follow-up to the first NUL fix: `wakes.changes` as jsonb,
+    `bench_site_frames.title`, `errands.result`'s trace, and code runs' output stripped of NUL rather than refused.
+47. **Two sign-in starts at once answered 503 once.** Two simultaneous `GET /api/auth/signin` in the admin blind
+    writer's race harness gave one 503 (2026-11-10), unexplained and not in the admin logic. Reproduce with that
+    harness first. Fits into: Sign-in.
 
 1. **Her own voice pipeline, past the first Echo.** One wake on the first Echo (an M5Stack Atom Echo) reaches
    her through her own pipeline: faster-whisper on each site, the turn loop, ElevenLabs, played on the
@@ -542,21 +580,6 @@ this order.
 41. **Drop `outbox.agree` and `Outbound.agree`.** Receipts carry the proposal (`Receipts.proposal_id`); the column and the
     field stay for one release so a pod on the previous image can still send its Agree action. Drop both once both sites
     run the image that reads `outbox.receipts`. Fits into: Channels (the outbox).
-43. **The suite's remaining real waits and fixed costs.** A pull request's checks take about 6 minutes; what is left
-    of that, largest first:
-    - **Leases on a clock, not on etcd's TTLs.** The entries in `app/tests/time_gate_held.py` wait out real lease TTLs,
-      heartbeats, backoffs and poll intervals. Each moves onto a fake etcd driven by an injected clock, with one smoke
-      test left against the real etcd, and leaves the held list as it does. Fits into: Failover referee (the fake is a
-      second implementation of the `Lease`'s etcd client).
-    - **A fresh database per test costs 0.1–0.6 s** (`CREATE DATABASE … TEMPLATE`) on about two tests in five, about
-      70 s of each shard's setup measured locally. A pool of databases made ahead per worker and reset between tests
-      would remove it. Fits into: the test fixtures (`app/tests/conftest.py`).
-    - **A prebuilt test image.** Every shard spends 30–110 s on `pip install` before its first test. An image with the
-      requirements installed, tagged by their hash and built only when they change, as `app/tools/ci_image_hash.py`
-      already does for the other images. Fits into: CI's hashed images.
-    - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
-      every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
-      rather than per worker. Fits into: the structural gates.
 
 ## Open questions
 
