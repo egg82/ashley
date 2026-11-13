@@ -43,9 +43,9 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
       heartbeats, backoffs and poll intervals. Each moves onto a fake etcd driven by an injected clock, with one smoke
       test left against the real etcd, and leaves the held list as it does. Fits into: Failover referee (the fake is a
       second implementation of the `Lease`'s etcd client).
-    - **A fresh database per test costs 0.1–0.6 s** (`CREATE DATABASE … TEMPLATE`) on about two tests in five, about
-      70 s of each shard's setup measured locally. A pool of databases made ahead per worker and reset between tests
-      would remove it. Fits into: the test fixtures (`app/tests/conftest.py`).
+    - **A lease takeover timed out once in CI**: `tests/test_watch_session_lease.py::test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state`
+      waited 8.2 s with no takeover on a 2 s TTL (run 43391109530, the first run of the test image; green on rerun and
+      in the 25 runs before). Reproduce under load before blaming the image; the lease clock work may subsume it.
     - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
       every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
       rather than per worker. Fits into: the structural gates.
