@@ -2,8 +2,8 @@
 format; the piece reads back with its page split into paragraphs and her highlight, and the highlight is gone once the
 piece changes; every other piece reads back with neither."""
 
-import asyncio
 
+from app_loop_support import on_app_loop
 from ashley import services
 from ashley.api.workshop_models import BenchDetail, CommandRefused
 from ashley.workshop import reader
@@ -36,7 +36,7 @@ def test_a_reader_reads_back_with_its_paragraphs_and_her_highlight(signed_in: As
     page = plain.pieces[0].reader
     assert page is not None and (page.url, page.title, page.paragraphs) == ("https://a.example/graph", "Graph",
                                                                               ["one", "two words", "three"])
-    asyncio.run(services.get(Workshop).apply(OWNER, bench, Point(HER, 1, 1, Passage(1, 4, 9))))
+    on_app_loop(client, services.get(Workshop).apply(OWNER, bench, Point(HER, 1, 1, Passage(1, 4, 9))))
     pointer = read(client, bench).pieces[0].pointer
     assert pointer is not None and (pointer.seq, pointer.paragraph, pointer.start, pointer.end) == (3, 1, 4, 9)
     edit = {"type": "edit", "piece_id": 1, "base_version": 1, "title": "graph", "body": BODY.replace("three", "3")}
@@ -77,7 +77,7 @@ def test_the_person_clears_her_highlight_and_only_at_the_version_it_was_made_aga
     bench = opened(client).id
     command(client, bench, READER)
     command(client, bench, NOTE)
-    asyncio.run(services.get(Workshop).apply(OWNER, bench, Point(HER, 1, 1, Passage(0, 0, 3))))
+    on_app_loop(client, services.get(Workshop).apply(OWNER, bench, Point(HER, 1, 1, Passage(0, 0, 3))))
     stale = command(client, bench, {"type": "clear_point", "piece_id": 1, "base_version": 9})
     assert stale[0] == 409 and CommandRefused.model_validate(stale[1]).reason == "stale_base"
     note = command(client, bench, {"type": "clear_point", "piece_id": 2, "base_version": 1})

@@ -4,11 +4,11 @@ been written to and the piece shows how it went; Undo takes it back out of the h
 refused `bad_automation`, an install of a piece that is not an automation `not_installable`, of no proposal
 `no_proposal`, and of a piece changed since `stale_base` (409, logged)."""
 
-import asyncio
 import json
 from collections.abc import Generator
 
 import pytest
+from app_loop_support import on_app_loop
 from ashley import services
 from ashley.api.workshop_models import BenchDetail, CommandRefused
 from ashley.home_assistant.homes import Homes
@@ -40,8 +40,8 @@ def read(client: TestClient, bench: int) -> BenchDetail:
     return BenchDetail.model_validate(client.get(f"/api/benches/{bench}").json())
 
 
-def her_proposal(bench: int, piece: int = 1, version: int = 1, enabled: bool = False) -> None:
-    asyncio.run(services.get(Workshop).apply(OWNER, bench, propose(piece, version, enabled)))
+def her_proposal(client: TestClient, bench: int, piece: int = 1, version: int = 1, enabled: bool = False) -> None:
+    on_app_loop(client, services.get(Workshop).apply(OWNER, bench, propose(piece, version, enabled)))
 
 
 def test_the_person_installs_her_proposal_and_undoes_it(signed_in: As, house: FakeHouse) -> None:
@@ -50,7 +50,7 @@ def test_the_person_installs_her_proposal_and_undoes_it(signed_in: As, house: Fa
     command(client, bench, AUTOMATION)
     shown = read(client, bench).pieces[0].automation
     assert shown is not None and shown.install_proposal is None and shown.last_install is None
-    her_proposal(bench)
+    her_proposal(client, bench)
     shown = read(client, bench).pieces[0].automation
     assert shown is not None and shown.install_proposal is not None
     assert (shown.install_proposal.seq, shown.install_proposal.piece_version, shown.install_proposal.enabled) == (2, 1, False)
@@ -95,7 +95,7 @@ def test_an_install_of_no_proposal_or_of_a_changed_piece_is_refused_and_writes_n
     command(client, bench, AUTOMATION)
     status, got = command(client, bench, {"type": "install", "piece_id": 1, "proposal": 1})
     assert status == 409 and CommandRefused.model_validate(got).reason == "no_proposal"
-    her_proposal(bench)
+    her_proposal(client, bench)
     command(client, bench, {"type": "edit", "piece_id": 1, "base_version": 1, "title": "porch",
                             "body": body(alias="other")})
     status, got = command(client, bench, {"type": "install", "piece_id": 1, "proposal": 3})
