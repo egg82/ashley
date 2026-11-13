@@ -26,7 +26,7 @@ and fans out to its own streams; nothing about a screen is kept beyond its open 
   the `idle` can die with the pod that ran the turn. A stream ends after `stream_s` and the page reconnects, which
   checks its session again. Heartbeats every `heartbeat_s` (20 s) keep Cloudflare from closing it: its proxy read
   timeout is 125 s.
-- **`speaking` is on the wire but nothing sends it yet.** No channel has a real playback signal: a satellite's wake sends it as an estimate (above), and no other channel does. A satellite plays the clip URL it is handed and
+- **`speaking` is an estimate, from a satellite's wake alone.** No channel has a real playback signal: a satellite's wake sends it as an estimate (above), and no other channel does. A satellite plays the clip URL it is handed and
   does not report when it starts or stops; the clip route streams faster than real time, so its end is not the end of
   playback. No other channel sends `speaking`.
 - **Rejected: polling per room.** Every open screen would ask every few seconds whether anything happened, mostly to
