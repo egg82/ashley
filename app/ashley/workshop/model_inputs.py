@@ -1,8 +1,8 @@
 """The existing models a model run starts with: the bench's file pieces that are an STL, a 3MF or a STEP, handed to the
-run as binary inputs (`Job.inputs`, under `inputs/` in the pod) with an index of them, `inputs.json`, among its files,
+run as binary inputs (`Job.inputs`, references the sandbox has fetched from the object store into `inputs/`) with an index of them, `inputs.json`, among its files,
 which `ashley_cad.existing(piece_id)` reads. A file piece is named by its id, never by anything in the script. The
 run may name the pieces it takes (`inputs`): exactly those are handed over, and one that is not a model file on the
-bench, does not fit the language's `input_bytes` with the others named, or whose bytes the store cannot give refuses
+bench, does not fit the language's `input_bytes` with the others named, or whose bytes the store does not hold refuses
 the run (`InputRefused`). Without names every model file is a candidate, taken in layout order while the bytes fit;
 one that does not fit, or cannot be read, is in the index's `left_out` with why, so the script's failure names it."""
 
@@ -16,6 +16,7 @@ from typing import Any, Literal
 from .. import logs, services
 from ..files.intake import key_of
 from ..files.store import ObjectStore, StoreUnavailable
+from ..runs.model import InputFile
 from .model import Piece
 from .rules import Rules
 from .stored_file import StoredFile, file_of
@@ -30,7 +31,7 @@ a STEP file are text)."""
 class InputRefused(Exception):
     """A piece named as an input cannot be handed over: `why` is `missing` (not on the bench), `not_model` (not an STL,
     3MF or STEP file piece), `too_large` (it does not fit `input_bytes` with the ones named before it) or `unavailable`
-    (the store cannot give its bytes); `sizes` says, for `too_large`, the bytes of the pieces named up to and including
+    (the store does not hold its bytes); `sizes` says, for `too_large`, the bytes of the pieces named up to and including
     it against `input_bytes`."""
 
     def __init__(self, piece: int, why: Literal["missing", "not_model", "too_large", "unavailable"],
@@ -43,10 +44,10 @@ class InputRefused(Exception):
 
 @dataclass(frozen=True)
 class ModelInputs:
-    """`blobs` (name -> bytes) are the files to hand over, `index` the text of `inputs.json`; both empty when the bench
-    has no file piece of these kinds."""
+    """`files` (name -> stored file) are the files to hand over, `index` the text of `inputs.json`; both empty when the
+    bench has no file piece of these kinds."""
 
-    blobs: Mapping[str, bytes] = field(default_factory=dict[str, bytes])
+    files: Mapping[str, InputFile] = field(default_factory=dict[str, InputFile])
     index: str | None = None
 
 
@@ -75,28 +76,28 @@ async def inputs_of(household_id: int, pieces: Iterable[Piece], rules: Rules, in
                     named: Collection[int] | None = None) -> ModelInputs:
     """The inputs for a run on a bench with `pieces`, at most `input_bytes` of them: every model file, or with `named`
     only those pieces (an empty `named` is none), which raises InputRefused instead of leaving one out. Logs
-    `workshop.model_inputs` with the counts of those handed over and left out and their bytes."""
+    `workshop.model_inputs` with the counts of those handed over and left out and their bytes. Only whether the store
+    holds each is asked here; the sandbox fetches the bytes."""
     items: list[dict[str, Any]] = []
     left_out: list[dict[str, Any]] = []
-    blobs: dict[str, bytes] = {}
+    held: dict[str, InputFile] = {}
     used = 0
     for piece, file in _candidates(pieces, rules, named):
         if used + file.size > input_bytes:
             _leave(left_out, piece, file, "too_large", named, f"{used + file.size} bytes against {input_bytes}")
             continue
-        data = await _bytes(household_id, file)
-        if data is None:
+        if not await _held(household_id, file):
             _leave(left_out, piece, file, "unavailable", named)
             continue
-        used += len(data)
+        used += file.size
         name = f"{piece.id}{PurePosixPath(file.name).suffix.lower()}"
-        blobs[name] = data
-        items.append({"piece": piece.id, "name": file.name, "file": f"inputs/{name}", "size": len(data),
+        held[name] = InputFile(household_id, file.sha256, file.size)
+        items.append({"piece": piece.id, "name": file.name, "file": f"inputs/{name}", "size": file.size,
                       "sha256": file.sha256})
     if not items and not left_out:
         return ModelInputs()
     logs.info(log, "workshop.model_inputs", household=household_id, handed=len(items), left_out=len(left_out), bytes=used)
-    return ModelInputs(blobs, json.dumps({"items": items, "left_out": left_out}, separators=(",", ":")))
+    return ModelInputs(held, json.dumps({"items": items, "left_out": left_out}, separators=(",", ":")))
 
 
 def _leave(left_out: list[dict[str, Any]], piece: Piece, file: StoredFile, why: Literal["too_large", "unavailable"],
@@ -106,8 +107,9 @@ def _leave(left_out: list[dict[str, Any]], piece: Piece, file: StoredFile, why: 
     left_out.append({"piece": piece.id, "name": file.name, "why": why})
 
 
-async def _bytes(household_id: int, file: StoredFile) -> bytes | None:
+async def _held(household_id: int, file: StoredFile) -> bool:
+    key = key_of(household_id, file.sha256)
     try:
-        return await services.get(ObjectStore).get(key_of(household_id, file.sha256))
+        return key in await services.get(ObjectStore).keys(key)
     except StoreUnavailable:
-        return None
+        return False

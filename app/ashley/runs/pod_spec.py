@@ -2,11 +2,14 @@
 namespaces, no service environment, no resolver, never restarted, CPU and memory limits, `activeDeadlineSeconds`, a
 locked-down non-root container on the language's pinned image with a read-only root, and two size-limited emptyDirs (`/work`, the
 script's working directory, and `/out`, where its output streams go). The job is in the container's environment, one
-variable per value, each base64 (`runner`); binary inputs ride the same way, deflated and cut in chunks. No host path, ConfigMap or Secret is mounted. The namespace denies all traffic."""
+variable per value, each base64 (`runner`). A job with binary inputs also gets a third emptyDir, `inputs`, filled before
+the script starts by an init container (`fetcher`) from the short-lived links the app signed for them, and mounted
+read-only at `/work/inputs` in the run container, which holds no link. Such a pod alone carries `FETCH_LABEL`, which the
+cluster's network policy admits to the app's address and nothing else; any other pod can reach nothing. No host path,
+ConfigMap or Secret is mounted. The namespace denies all other traffic."""
 
 import base64
 import json
-import zlib
 from collections.abc import Mapping
 from typing import Any
 
@@ -15,31 +18,63 @@ from .labels import PREFIX
 from .model import Job
 
 LABEL = PREFIX + "run"
+FETCH_LABEL = PREFIX + "run-inputs"
 NOBODY = 65534
+MIB = 1024 * 1024
 
 
-def manifest(job: Job, config: RunsConfig, runner: str, runtime_class: str) -> dict[str, Any]:
-    """`runner` is the program the container runs (`runner.py`'s text), `runtime_class` the pod's RuntimeClass. Raises ValueError for a language the config
-    does not run."""
+def manifest(job: Job, config: RunsConfig, runner: str, runtime_class: str, fetcher: str = "",
+             links: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """`runner` is the program the container runs (`runner.py`'s text), `runtime_class` the pod's RuntimeClass. A job
+    with inputs also needs `fetcher`, the init container's program (`fetcher.py`'s text), and `links`, a URL for each
+    input by name. Raises ValueError for a language the config does not run, or inputs and links that do not name the
+    same files."""
     profile = config.profile(job.language)
     if profile is None:
         raise ValueError(f"{job.language} is not run")
-    return {"apiVersion": "v1", "kind": "Pod",
-            "metadata": {"name": job.name, "labels": {LABEL: "true"}},
-            "spec": {
-                "runtimeClassName": runtime_class,
-                "automountServiceAccountToken": False,
-                "hostNetwork": False, "hostPID": False, "hostIPC": False,
-                "enableServiceLinks": False,
-                "dnsPolicy": "None", "dnsConfig": {"nameservers": ["127.0.0.1"]},
-                "restartPolicy": "Never",
-                "activeDeadlineSeconds": profile.pod_deadline_s,
-                "terminationGracePeriodSeconds": 0,
-                "securityContext": {"runAsNonRoot": True, "runAsUser": NOBODY, "runAsGroup": NOBODY,
-                                    "fsGroup": NOBODY, "seccompProfile": {"type": "RuntimeDefault"}},
-                "containers": [_container(job, config, profile, runner)],
-                "volumes": [{"name": name, "emptyDir": {"sizeLimit": f"{profile.work_mib}Mi"}} for name in ("work", "out")],
-            }}
+    fetched = links or {}
+    if set(fetched) != set(job.inputs):
+        raise ValueError("a link for each input, and no other")
+    volumes: list[dict[str, Any]] = [{"name": name, "emptyDir": {"sizeLimit": f"{profile.work_mib}Mi"}}
+                                     for name in ("work", "out")]
+    spec: dict[str, Any] = {
+        "runtimeClassName": runtime_class,
+        "automountServiceAccountToken": False,
+        "hostNetwork": False, "hostPID": False, "hostIPC": False,
+        "enableServiceLinks": False,
+        "dnsPolicy": "None", "dnsConfig": {"nameservers": ["127.0.0.1"]},
+        "restartPolicy": "Never",
+        "activeDeadlineSeconds": profile.pod_deadline_s,
+        "terminationGracePeriodSeconds": 0,
+        "securityContext": {"runAsNonRoot": True, "runAsUser": NOBODY, "runAsGroup": NOBODY,
+                            "fsGroup": NOBODY, "seccompProfile": {"type": "RuntimeDefault"}},
+        "containers": [_container(job, config, profile, runner)],
+        "volumes": volumes}
+    labels = {LABEL: "true"}
+    if job.inputs:
+        volumes.append({"name": "inputs", "emptyDir": {"sizeLimit": _quantity(profile.input_bytes)}})
+        spec["initContainers"] = [_fetch_container(job, profile, fetcher, fetched)]
+        spec["containers"][0]["volumeMounts"].append({"name": "inputs", "mountPath": "/work/inputs", "readOnly": True})
+        labels[FETCH_LABEL] = "true"
+    return {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": job.name, "labels": labels}, "spec": spec}
+
+
+def _quantity(size: int) -> str:
+    return f"{-(-size // MIB)}Mi"
+
+
+def _fetch_container(job: Job, profile: Profile, fetcher: str, links: Mapping[str, str]) -> dict[str, Any]:
+    task = {"timeout_s": profile.pod_deadline_s,
+            "files": [{"name": name, "url": links[name], "size": file.size, "sha256": file.sha256}
+                      for name, file in sorted(job.inputs.items())]}
+    return {"name": "fetch", "image": profile.image, "imagePullPolicy": "IfNotPresent",
+            "command": ["python", "-I", "-B", "-c", fetcher],
+            "env": [{"name": "ASHLEY_FETCH", "value": _b64(json.dumps(task))}],
+            "resources": {"requests": {"cpu": "50m", "memory": "64Mi"}, "limits": {"cpu": "250m", "memory": "128Mi"}},
+            "securityContext": {"runAsNonRoot": True, "runAsUser": NOBODY, "allowPrivilegeEscalation": False,
+                                "readOnlyRootFilesystem": True, "capabilities": {"drop": ["ALL"]},
+                                "seccompProfile": {"type": "RuntimeDefault"}},
+            "volumeMounts": [{"name": "inputs", "mountPath": "/inputs"}]}
 
 
 def _container(job: Job, config: RunsConfig, profile: Profile, runner: str) -> dict[str, Any]:
@@ -65,20 +100,6 @@ def _env(job: Job, config: RunsConfig, profile: Profile) -> list[dict[str, str]]
            {"name": "ASHLEY_LIMITS", "value": json.dumps(limits)}]
     env += [{"name": f"ASHLEY_FILE_{i}", "value": _b64(f"{name}\0{text}")}
             for i, (name, text) in enumerate(sorted(job.files.items()))]
-    return env + _blobs(job.inputs)
-
-
-BLOB_CHUNK = 100_000
-"""Characters of base64 in one variable; Linux caps a single environment string at 128 KiB."""
-
-
-def _blobs(inputs: Mapping[str, bytes]) -> list[dict[str, str]]:
-    env: list[dict[str, str]] = []
-    for i, (name, data) in enumerate(sorted(inputs.items())):
-        packed = base64.b64encode(zlib.compress(data)).decode("ascii")
-        env.append({"name": f"ASHLEY_BLOBNAME_{i:03d}", "value": _b64(name)})
-        env += [{"name": f"ASHLEY_BLOB_{i:03d}_{k:04d}", "value": packed[at:at + BLOB_CHUNK]}
-                for k, at in enumerate(range(0, len(packed), BLOB_CHUNK))]
     return env
 
 

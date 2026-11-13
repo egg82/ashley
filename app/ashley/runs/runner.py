@@ -4,8 +4,8 @@ files in `/out`, and prints one line, `MARK` then JSON, saying what came out. A 
 also carries the binary files named by `ARTIFACT_SUFFIXES`, each deflated and base64, while their sizes fit it. The job arrives in the environment:
 `ASHLEY_SCRIPT`, `ASHLEY_STDIN`, `ASHLEY_FILE_<n>` (each `name NUL text`), each base64 of its UTF-8 so Kubernetes
 expands nothing in it, and `ASHLEY_LIMITS`; one variable per value, since Linux caps a single one at 128 KiB. Binary
-inputs arrive as `ASHLEY_BLOBNAME_<n>` (base64 of the name) and `ASHLEY_BLOB_<n>_<k>`, the chunks of the base64 of the
-deflated bytes in order of `k`; they are written under `inputs/` in `/work`, read-only, and are never carried back. Everything the script printed is the script's to forge, so the line is read
+inputs are not in it: the pod's init container (`fetcher`) has put them, read-only, under `inputs/` in `/work`, and
+they are never carried back. Everything the script printed is the script's to forge, so the line is read
 as no more trustworthy than its own output."""
 
 import base64
@@ -34,27 +34,6 @@ def job(environ: Mapping[str, str]) -> tuple[str, str, dict[str, str]]:
         name, _, content = text(key).partition("\0")
         files[name] = content
     return text("ASHLEY_SCRIPT"), text("ASHLEY_STDIN"), files
-
-
-def blobs(environ: Mapping[str, str]) -> dict[str, bytes]:
-    """The binary inputs (name -> bytes) in the environment: each `ASHLEY_BLOBNAME_<n>` with its chunks joined and
-    inflated."""
-    found: dict[str, bytes] = {}
-    for key in sorted(k for k in environ if k.startswith("ASHLEY_BLOBNAME_")):
-        n = key.removeprefix("ASHLEY_BLOBNAME_")
-        chunks = "".join(environ[k] for k in sorted(k for k in environ if k.startswith(f"ASHLEY_BLOB_{n}_")))
-        found[base64.b64decode(environ[key]).decode("utf-8")] = zlib.decompress(base64.b64decode(chunks))
-    return found
-
-
-def place_blobs(work: Path, inputs: Mapping[str, bytes]) -> None:
-    """Write each input as `inputs/<name>` under `work`, read-only; a name that is not plain is skipped."""
-    for name, data in inputs.items():
-        target = placed(work / INPUTS, name)
-        if target is not None:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(data)
-            target.chmod(0o444)
 
 
 def placed(work: Path, name: str) -> Path | None:
@@ -171,7 +150,6 @@ def main() -> None:
         if target is not None:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(text, encoding="utf-8")
-    place_blobs(WORK, blobs(os.environ))
     env = {"PATH": os.environ.get("PATH", ""), "HOME": str(WORK), "LANG": "C.UTF-8", "PYTHONDONTWRITEBYTECODE": "1"}
     exit_code: int | None = None
     timed_out = False

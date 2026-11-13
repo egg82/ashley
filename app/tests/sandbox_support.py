@@ -33,6 +33,7 @@ class Script:
     reason: str | None = None
     terminated: str | None = None
     log_status: int = 200
+    init_exit: int | None = None
 
 
 @dataclass
@@ -90,6 +91,8 @@ class FakeKube:
         if phase in ("Succeeded", "Failed"):
             if self.script.reason:
                 status["reason"] = self.script.reason
+            if self.script.init_exit is not None:
+                status["initContainerStatuses"] = [{"state": {"terminated": {"exitCode": self.script.init_exit}}}]
             if self.script.terminated:
                 status["containerStatuses"] = [{"state": {"terminated": {"reason": self.script.terminated}}}]
         return {**self.pods[name], "status": status}
