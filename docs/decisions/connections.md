@@ -212,6 +212,11 @@ subscription, the read the Usage room already makes), and the router opens the p
   cache (`KeyedProviders`, `AddressedProvider`), so a row changed in the room reaches every pod within its 30 seconds; the
   media pod's address and the web search read the row on each use (`ashley.connections.address_in_force`), so a change is
   seen by the next transcription or search, and with no address the search is not offered.
+- **The Claude subscription's OAuth token is a provider key like the others** (`ashley.inference.kinds.CLAUDE_CLI`,
+  kind `claude_cli`): a fifth keyed kind at Anthropic's address, its secret the token `claude setup-token` prints,
+  seeded from `CLAUDE_CODE_OAUTH_TOKEN` and read through the same keys cache. It is checked by one short call through
+  the CLI it is used with (`ashley.inference.claude_cli.check`, the cheapest model by its alias), since the API's
+  models list is not documented to take a subscription token.
 - **Her Discord bot's token is a connection** (`ashley.channels.discord.token_kind`, a `chat` kind): a `deployment` kind
   held by the first household at Discord's one address, checked by one read of the bot's own user. `DISCORD_BOT_TOKEN`
   seeds the row at each pod's start (`ashley.channels.discord.token_seed`), never over a row, and the row then wins;
