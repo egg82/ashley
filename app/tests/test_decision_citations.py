@@ -12,6 +12,10 @@ import os
 import re
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.reads_docs  # run on a docs-only pull request (ci.yml)
+
 REPO = Path(__file__).resolve().parent.parent.parent
 INDEX = REPO / "docs" / "decisions.md"
 DECISIONS = REPO / "docs" / "decisions"

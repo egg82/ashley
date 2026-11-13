@@ -31,16 +31,46 @@ env:
   PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
 jobs:
+  # Whether this pull request changes only docs: every changed path under docs/ or a markdown file at the top level.
+  # Such a PR runs only the tests marked `reads_docs` and skips everything that builds or type-checks code. A push to
+  # main always takes the full run, which backstops a doc-reading test nobody marked.
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+      shards: ${{ steps.diff.outputs.shards }}
+    steps:
+      # A pull request's checkout is its merge commit, whose first parent is the base branch's tip.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: diff
+        run: |
+          docs_only=false
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            git diff --name-only HEAD^1 HEAD > changed.txt
+            echo "$(wc -l < changed.txt) changed paths"
+            if [ -s changed.txt ] && ! grep -vE '^docs/|^[^/]+\.md$' changed.txt > /dev/null; then docs_only=true; fi
+          fi
+          if [ "$docs_only" = true ]; then shards='[0]'; else shards='[0, 1, 2, 3, 4, 5, 6, 7]'; fi
+          echo "docs_only=$docs_only shards=$shards"
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+
   # The suite on the Postgres major production runs (18, with pgvector) and the etcd release the referee runs. Each
   # shard takes every SHARDS-th test file in name order, so the shards together run exactly the files pytest collects.
+  # A docs-only pull request runs one job over every file, selecting the `reads_docs` tests, which need no services.
   tests:
+    needs: changes
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        shard: ${{ fromJSON(needs.changes.outputs.shards) }}
     env:
+      DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
       SHARDS: 8
       CI: "true"
       TIME_GATE: "1"   # tests/time_gate.py judges only here; tests/test_time_gate.py fails under CI without it
@@ -58,6 +88,7 @@ jobs:
       # Started by hand, not as `services:`, which cannot pass a command: Postgres takes throwaway-data settings, etcd
       # listens beyond localhost, and Dex reads the config the checkout holds (its issuer names port 5556).
       - name: Start Postgres, etcd and Dex
+        if: env.DOCS_ONLY != 'true'
         run: |
           docker run -d --name postgres -p 5432:5432 \
             -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_INITDB_ARGS="--locale=C --encoding=UTF8" \
@@ -74,20 +105,31 @@ jobs:
           cache-dependency-path: app/requirements*.txt
 
       # ffmpeg: the media runner's tests run it for real (tests/test_media_runner.py).
-      - name: Install dependencies
+      - name: Install ffmpeg
+        if: env.DOCS_ONLY != 'true'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends ffmpeg
-          pip install -r app/requirements.txt -r app/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r app/requirements.txt -r app/requirements-dev.txt
 
       - name: Wait for Postgres, etcd and Dex
+        if: env.DOCS_ONLY != 'true'
         working-directory: app
         run: |
           for _ in $(seq 60); do python -c "import psycopg; psycopg.connect('$ASHLEY_TEST_DATABASE_URL').close()" 2>/dev/null && break; sleep 1; done
           for _ in $(seq 60); do python -c "import httpx2; httpx2.get('$ASHLEY_TEST_ETCD_URL/health').raise_for_status()" 2>/dev/null && break; sleep 1; done
           for _ in $(seq 60); do python -c "import httpx2; httpx2.get('$ASHLEY_TEST_DEX_URL/.well-known/openid-configuration').raise_for_status()" 2>/dev/null && break; sleep 1; done
 
+      # pytest exits 5 when the marker selects nothing, so a docs-only run that lost its tests fails.
+      - name: Test the docs readers
+        if: env.DOCS_ONLY == 'true'
+        working-directory: app
+        run: python -m pytest -q -n 2 -m reads_docs tests
+
       - name: Test (shard ${{ matrix.shard }})
+        if: env.DOCS_ONLY != 'true'
         working-directory: app
         env:
           SHARD: ${{ matrix.shard }}
@@ -103,6 +145,8 @@ jobs:
 
   # Pyright's error count against the held one in app/tools/held/pyright.json: it may only go down.
   pyright:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -118,6 +162,8 @@ jobs:
 
   # The client's generated API types in step with openapi.json, its TypeScript, its tests, and that it builds.
   web:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -139,6 +185,8 @@ jobs:
   # The app image, built beside the tests. On main it is pushed by digest alone, a tag Flux never sees; `release` names
   # it once everything is green.
   app-image:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -190,6 +238,8 @@ jobs:
   # registry lacks that tag; the CAD and mail bridge images run their tests inside the image, as their pods run it,
   # before anything is pushed. The cluster repo pins their digests.
   hashed-images:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -284,17 +334,26 @@ jobs:
           done
 
   # The one check branch protection requires. A skipped required check counts as passed, and a job whose need failed is
-  # skipped, so this runs always and fails unless every job it needs succeeded.
+  # skipped, so this runs always and names the exact result each job must have: on a docs-only pull request `changes`
+  # and `tests` succeeded and every other job was skipped, otherwise every job succeeded. Never "success or skipped",
+  # which passes a job that was skipped because something it needed failed.
   ci-ok:
     if: always()
-    needs: [tests, pyright, web, app-image, hashed-images]
+    needs: [changes, tests, pyright, web, app-image, hashed-images]
     runs-on: ubuntu-24.04
     steps:
       - env:
           NEEDS: ${{ toJSON(needs) }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
         run: |
+          echo "docs_only=$DOCS_ONLY"
           echo "$NEEDS" | jq -r 'to_entries[] | "\(.key) \(.value.result)"'
-          echo "$NEEDS" | jq -e 'all(.[]; .result == "success")' > /dev/null
+          if [ "$DOCS_ONLY" = true ]; then
+            echo "$NEEDS" | jq -e 'to_entries | all(.[];
+              if .key == "changes" or .key == "tests" then .value.result == "success" else .value.result == "skipped" end)' > /dev/null
+          else
+            echo "$NEEDS" | jq -e 'all(.[]; .result == "success")' > /dev/null
+          fi
 
   # The pushed digest under its deployable names: a manifest copy inside each repository, so no layer moves.
   release:
