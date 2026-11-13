@@ -6,8 +6,8 @@ Route `model` is the image model (`gemini-3.1-flash-lite-image`); it takes no pa
 part only, in the aspect's ratio. A 200 whose `promptFeedback.blockReason` is set, or whose candidate ends without an
 image for a safety `finishReason`, is a refusal; one with no image for any other reason fails `invalid_output`.
 A timeout, connection failure, 408, 409, 429, 5xx, 401, 402 or 403 fails `unavailable`, any other status `error`.
-Usage is the prompt's tokens and the candidate's: the image is most of them, and `prices.json` prices them all at the
-image rate, so a cost here is an upper bound."""
+Usage is the prompt's tokens and the candidate's: the image is most of them, and the catalogue prices them all at the
+output rate, so a cost here is an upper bound."""
 
 import base64
 import binascii

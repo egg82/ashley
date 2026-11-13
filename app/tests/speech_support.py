@@ -4,11 +4,10 @@ ledger and a router assembled over them. Nothing here reaches a real provider.""
 import asyncio
 from collections.abc import AsyncIterator, Coroutine, Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import date
 from typing import Any, get_args
 
 from ashley.inference.model import Route, Task, Usage
-from ashley.inference.prices import Prices
+from catalogue_support import NONE
 from ashley.inference.provider import Failure, ProviderFailed
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import Routes
@@ -175,8 +174,7 @@ def router(task: SpeechTask, *providers: Transcriber | Speaker, ledger: MemoryLe
            names: Sequence[str] | None = None) -> tuple[RoutedInference, MemoryLedger]:
     ledger = ledger or MemoryLedger()
     chosen = tuple(names) if names is not None else tuple(p.name for p in providers)
-    inference = RoutedInference(routes_for(task, *chosen), providers, ledger, Prices({}),
-                                today=lambda: date(2026, 10, 25))
+    inference = RoutedInference(routes_for(task, *chosen), providers, ledger, NONE)
     return inference, ledger
 
 

@@ -1,16 +1,16 @@
 """`Inference.embed` through the router and the shipped routes, and `FastEmbedder` with its model stubbed out."""
 
 import math
-from datetime import date
 from collections.abc import Iterable
 from typing import Any
 
 import pytest
-from ashley.inference import fastembed_embedder, prices, routes
+from ashley.inference import fastembed_embedder, routes
 from ashley.inference.fastembed_embedder import FastEmbedder
 from ashley.inference.inference import InferenceUnavailable, NullInference
 from ashley.inference.model import Usage
 from ashley.inference.provider import ProviderFailed
+from catalogue_support import shipped
 from embed_support import ScriptedEmbedder, embed_router
 from speech_support import run
 
@@ -48,7 +48,7 @@ def test_the_shipped_embed_route_is_priced_at_zero_and_unwired_without_a_provide
     loaded = routes.load({"fastembed": FastEmbedder("fastembed", "/nowhere")})
     [route] = loaded.for_task("embed")
     assert route.provider == "fastembed"
-    cost = prices.load().cost_usd(route.provider, route.model, Usage(0, 0, characters=40), date(2026, 10, 26))
+    cost = shipped().priced().cost_usd(route.provider, route.model, Usage(0, 0, characters=40))
     assert cost is not None and cost == 0
     with pytest.raises(InferenceUnavailable):
         run(NullInference().embed(["q"], "query"))

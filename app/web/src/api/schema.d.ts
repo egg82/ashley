@@ -922,6 +922,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Catalogue
+         * @description 200 `ModelCatalogueResponse`; 401 `unauthorized`; 403 `admin_only`; 503 `unavailable`.
+         */
+        get: operations["read_catalogue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalogue/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Models
+         * @description 200 `ModelCatalogueModelsResponse`; 401 `unauthorized`; 403 `admin_only`; 404 `not_found`; 503
+         *     `unavailable`.
+         */
+        get: operations["read_models"];
+        /**
+         * Change Model
+         * @description 200 `ModelCatalogueModel` as stored; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 422
+         *     `ModelCatalogueRefused`; 503 `unavailable`.
+         */
+        put: operations["change_model"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lexicon": {
         parameters: {
             query?: never;
@@ -3642,6 +3688,203 @@ export interface components {
             /** Body */
             body: string;
             receipts?: components["schemas"]["WireReceipts"] | null;
+        };
+        /**
+         * ModelCatalogueChange
+         * @description A change to one model, for the whole deployment: `set` these fields and `reset` those to upstream's. A model
+         *     upstream does not list is added by setting its fields.
+         */
+        ModelCatalogueChange: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            set: components["schemas"]["ModelCatalogueSet"];
+            /** Reset */
+            reset?: ("name" | "tool_call" | "structured_output" | "context_tokens" | "max_output_tokens" | "input_usd_per_mtok" | "output_usd_per_mtok" | "cache_read_usd_per_mtok" | "cache_write_usd_per_mtok" | "free" | "hidden")[];
+        };
+        /**
+         * ModelCatalogueFields
+         * @description One model's fields; null is not known. `free` and `hidden` are a person's only; `tiers` come from upstream only,
+         *     and a person's price on any price field replaces them.
+         */
+        ModelCatalogueFields: {
+            /** Name */
+            name: string | null;
+            /** Tool Call */
+            tool_call: boolean | null;
+            /** Structured Output */
+            structured_output: boolean | null;
+            /** Context Tokens */
+            context_tokens: number | null;
+            /** Max Output Tokens */
+            max_output_tokens: number | null;
+            /** Input Usd Per Mtok */
+            input_usd_per_mtok: number | null;
+            /** Output Usd Per Mtok */
+            output_usd_per_mtok: number | null;
+            /** Cache Read Usd Per Mtok */
+            cache_read_usd_per_mtok: number | null;
+            /** Cache Write Usd Per Mtok */
+            cache_write_usd_per_mtok: number | null;
+            /** Free */
+            free: boolean | null;
+            /** Hidden */
+            hidden: boolean | null;
+            /** Tiers */
+            tiers: components["schemas"]["ModelCatalogueTier"][];
+        };
+        /**
+         * ModelCatalogueModel
+         * @description One model. `fields` are in force; `defaults` are upstream's, from `defaults_layer`, null for a model only a person lists;
+         *     `overrides` the fields a person set, each reset by naming it in a change's `reset`.
+         */
+        ModelCatalogueModel: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            fields: components["schemas"]["ModelCatalogueFields"];
+            defaults: components["schemas"]["ModelCatalogueFields"] | null;
+            /** Defaults Layer */
+            defaults_layer: ("snapshot" | "fetch") | null;
+            /** Overrides */
+            overrides: components["schemas"]["ModelCatalogueOverride"][];
+            price: components["schemas"]["ModelCataloguePrice"];
+        };
+        /**
+         * ModelCatalogueModelsResponse
+         * @description The models of one provider, by id.
+         */
+        ModelCatalogueModelsResponse: {
+            /** Provider */
+            provider: string;
+            /** Models */
+            models: components["schemas"]["ModelCatalogueModel"][];
+        };
+        /**
+         * ModelCatalogueOverride
+         * @description A field a person set: who (`set_by`, a person id, null once they are gone) and when.
+         */
+        ModelCatalogueOverride: {
+            /**
+             * Field Name
+             * @enum {string}
+             */
+            field_name: "name" | "tool_call" | "structured_output" | "context_tokens" | "max_output_tokens" | "input_usd_per_mtok" | "output_usd_per_mtok" | "cache_read_usd_per_mtok" | "cache_write_usd_per_mtok" | "free" | "hidden";
+            /** Set By */
+            set_by: number | null;
+            /**
+             * Set At
+             * Format: date-time
+             */
+            set_at: string;
+        };
+        /**
+         * ModelCataloguePrice
+         * @description How a call to the model is priced. `status`: `priced`; `unpriced` (no price known, so a call records no cost);
+         *     `listed_zero` (upstream lists 0, recorded as no cost until a person marks the model `free`); `free` (a person said
+         *     so: a call costs 0). `source_layer`: the layer the prices in force came from, null when unpriced.
+         */
+        ModelCataloguePrice: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "priced" | "unpriced" | "listed_zero" | "free" | "local";
+            /** Source Layer */
+            source_layer: ("snapshot" | "fetch" | "override") | null;
+        };
+        /**
+         * ModelCatalogueProvider
+         * @description A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models
+         *     it lists and how many of those carry an override.
+         */
+        ModelCatalogueProvider: {
+            /** Provider */
+            provider: string;
+            /** Name */
+            name: string;
+            /** Api */
+            api: string | null;
+            /** Model Count */
+            model_count: number;
+            /** Overridden Count */
+            overridden_count: number;
+        };
+        /**
+         * ModelCatalogueRefused
+         * @description Why nothing was stored: `set_and_reset` (one field both set and reset), `empty` (nothing set or reset).
+         */
+        ModelCatalogueRefused: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "set_and_reset" | "empty";
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * ModelCatalogueResponse
+         * @description Every provider, by id. `snapshot_taken_at`: when the list baked into the image was fetched; `fetched_at`: when
+         *     the last good fetch was made, which replaces the snapshot; either null when there is none. A fetch is tried every
+         *     `refresh_s` seconds.
+         */
+        ModelCatalogueResponse: {
+            /** Snapshot Taken At */
+            snapshot_taken_at: string | null;
+            /** Fetched At */
+            fetched_at: string | null;
+            /** Refresh S */
+            refresh_s: number;
+            /** Catalogue Providers */
+            catalogue_providers: components["schemas"]["ModelCatalogueProvider"][];
+        };
+        /**
+         * ModelCatalogueSet
+         * @description The fields a person sets; a field left out or null is not changed. A value equal to upstream's is not stored:
+         *     it resets the field, so upstream's later changes reach it.
+         */
+        ModelCatalogueSet: {
+            /** Name */
+            name?: string | null;
+            /** Tool Call */
+            tool_call?: boolean | null;
+            /** Structured Output */
+            structured_output?: boolean | null;
+            /** Context Tokens */
+            context_tokens?: number | null;
+            /** Max Output Tokens */
+            max_output_tokens?: number | null;
+            /** Input Usd Per Mtok */
+            input_usd_per_mtok?: number | null;
+            /** Output Usd Per Mtok */
+            output_usd_per_mtok?: number | null;
+            /** Cache Read Usd Per Mtok */
+            cache_read_usd_per_mtok?: number | null;
+            /** Cache Write Usd Per Mtok */
+            cache_write_usd_per_mtok?: number | null;
+            /** Free */
+            free?: boolean | null;
+            /** Hidden */
+            hidden?: boolean | null;
+        };
+        /**
+         * ModelCatalogueTier
+         * @description The prices a prompt longer than `above_prompt_tokens` pays (input, cache-read and cache-write tokens together).
+         */
+        ModelCatalogueTier: {
+            /** Above Prompt Tokens */
+            above_prompt_tokens: number;
+            /** Input Usd Per Mtok */
+            input_usd_per_mtok: number | null;
+            /** Output Usd Per Mtok */
+            output_usd_per_mtok: number | null;
+            /** Cache Read Usd Per Mtok */
+            cache_read_usd_per_mtok: number | null;
+            /** Cache Write Usd Per Mtok */
+            cache_write_usd_per_mtok: number | null;
         };
         /**
          * MovePieceRequest
@@ -8044,6 +8287,180 @@ export interface operations {
                 };
             };
             /** @description `unavailable`: the choices could not be read or written */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_catalogue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogueResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the stored layers could not be read or written */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_models: {
+        parameters: {
+            query: {
+                provider: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogueModelsResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: the catalogue lists no such provider */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a parameter outside its bounds gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the stored layers could not be read or written */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    change_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelCatalogueChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogueModel"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a change that cannot be made; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogueRefused"];
+                };
+            };
+            /** @description `unavailable`: the stored layers could not be read or written */
             503: {
                 headers: {
                     [name: string]: unknown;

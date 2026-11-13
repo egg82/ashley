@@ -4,11 +4,11 @@ every call recorded in the spend ledger. Contract: `Inference`."""
 import time
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import date
 from typing import TypeVar
 
 from pydantic import BaseModel
 
+from .catalogue import ModelCatalogue
 from .embed_router import EmbedCalls
 from .embedding import EmbedRole, Embedded, EmbedTask
 from .image import Aspect, Imaged
@@ -18,9 +18,8 @@ from .keyed_providers import KeyedProviders
 from .household_routes import HouseholdRoutes
 from .inference import Inference, InferenceCutOff, InferenceRefused, InferenceRejected, InferenceUnavailable
 from .model import Prompt, Route, Task, ToolCalls, Usage
-from .prices import Prices
 from .provider import Failure, Provider, ProviderFailed, ProviderRefused, ToolUse, Wired
-from .roster import Roster, utc_today
+from .roster import Roster
 from .routes import TASKS, Routes
 from .spend import Outcome, SpendLedger
 from .speech import AudioFormat, Heard, Speech, SpeechTask, Transcript
@@ -40,21 +39,21 @@ class Failed:
 
 
 class RoutedInference(Inference):
-    def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, prices: Prices,
-                 clock: Callable[[], float] = time.monotonic, today: Callable[[], date] = utc_today,
-                 image_cap: ImageCap | None = None, keyed: KeyedProviders | None = None,
+    def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, catalogue: ModelCatalogue,
+                 clock: Callable[[], float] = time.monotonic, image_cap: ImageCap | None = None, keyed: KeyedProviders | None = None,
                  households: HouseholdRoutes | None = None) -> None:
         """`providers` are the wired ones that need no key, by `Wired.name` (two with one name raise ValueError); a
         route naming any other is unwired. `keyed` adds the providers the keys in force turn on: every call first awaits
         `KeyedProviders.refresh`, then sees its `current` beside `providers`, so a key added or rotated on any pod is
         used within its refresh bound; a provider whose build `refresh` reports changed stops resting. A name `keyed`
         can carry that `providers` also has raises ValueError. `clock` is monotonic seconds, for resting and for each
-        call's duration; `today` is the UTC date a call is priced on; `image_cap` is what limits pictures, none meaning
+        call's duration; `catalogue` prices each call when it is recorded and is refreshed before each call;
+        `image_cap` is what limits pictures, none meaning
         none may be drawn. `households` picks the routes a text call (`generate`, `step`) walks from the household of
         its `conversation_id` (`HouseholdRoutes.for_call`); None walks `routes` for every call. `routes` stays what
         speech, embeddings, voiceprints, pictures and `cooldown_s` use. Which providers are resting is held in this process only: a restarted pod tries each once
         again, which costs one failed call."""
-        self._roster = Roster(routes, providers, ledger, prices, clock, today, keyed)
+        self._roster = Roster(routes, providers, ledger, catalogue, clock, keyed)
         self._households = households
         self._speech = SpeechCalls(self._roster)
         self._embedding = EmbedCalls(self._roster)
@@ -105,13 +104,14 @@ class RoutedInference(Inference):
 
     async def _walk(self, task: Task, prompt: Prompt, output: type[T],
                     conversation_id: int | None) -> T | ToolCalls:
-        """The first answer from the task's routes in order, skipping unwired and resting ones. Raises
+        """The first answer from the task's routes in order, skipping unwired and resting ones and, for a prompt with
+        tools, models the catalogue lists without tool calls. Raises
         InferenceRejected when every route called failed `error`, InferenceCutOff when a reply was cut off at the token
         limit, else InferenceUnavailable."""
         await self._roster.refresh()
         routes = None if self._households is None else await self._households.for_call(conversation_id)
         failures = Failed()
-        for route, provider in self._roster.candidates(task, Provider, routes):
+        for route, provider in self._roster.candidates(task, Provider, routes, bool(prompt.tools)):
             answer = await self._attempt(task, route, provider, prompt, output, conversation_id, failures)
             if answer is not None:
                 return answer

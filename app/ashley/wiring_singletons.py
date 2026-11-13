@@ -7,6 +7,8 @@ from collections.abc import Coroutine
 from functools import partial
 from typing import Any
 
+import httpx2
+
 from . import logs, services
 from .channels import bench_job, errand, outbox, resume
 from .channels.discord import bot as discord_bot, client as discord_client, config as discord_config
@@ -27,7 +29,8 @@ from .files.mirror import MirroredStore
 from .files.orphans import PostgresCandidates
 from .files.store import NullStore, ObjectStore
 from .home_assistant.media_player import play_for
-from .inference import watch as inference_watch
+from .inference import catalogue_config, catalogue_refresh, catalogue_snapshot, watch as inference_watch
+from .inference.postgres_catalogue import PostgresCatalogue
 from .looks import warm_pod
 from .looks.keys import PREFIX as LOOKS_PREFIX
 from .looks.looker import Looker
@@ -68,10 +71,17 @@ def wire_lease(settings: Settings) -> None:
         services.register(Lease, PostgresLease(settings.database_url))
 
 
+def _catalogue_refresh() -> Coroutine[Any, Any, None]:
+    config = catalogue_config.load()
+    fetch = partial(catalogue_snapshot.fetch, config, httpx2.AsyncClient(follow_redirects=False))
+    body = partial(catalogue_refresh.run, config, PostgresCatalogue(services.get(Database)), fetch)
+    return services.get(Lease).run(catalogue_refresh.NAME, body)
+
+
 def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`: fail-back
     when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
-    turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
+    turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, fetching the model catalogue, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
     Discord session when `discord_bot_token` is, and web push when her VAPID identity is (`push_config.vapid`)."""
     running: list[Coroutine[Any, Any, None]] = []
     if settings.etcd_url and settings.failback == "off":
@@ -87,6 +97,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     running.append(services.get(Lease).run(bench_job.NAME, bench_job.BenchJobRunner().run))
     running.append(services.get(Lease).run(resume.NAME, resume.run))
     running.append(services.get(Lease).run(inference_watch.NAME, partial(inference_watch.run, inference_watch.load())))
+    running.append(_catalogue_refresh())
     running.append(services.get(Lease).run(wake_runner.NAME, wake_runner.run))
     running.append(services.get(Lease).run(deposit_sense.NAME, deposit_sense.run))
     running.append(services.get(Lease).run(watches_job.NAME, watches_job.run))

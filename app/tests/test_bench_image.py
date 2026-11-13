@@ -6,7 +6,6 @@ errors that say why, and the log holds no prompt."""
 import hashlib
 import json
 import logging
-from datetime import date
 
 import pytest
 from ashley import services
@@ -18,7 +17,7 @@ from ashley.inference.image_quota import ImageCap, ImageLimit, drawn
 from ashley.inference.inference import Inference, NullInference
 from ashley.inference.model import Route, Task, ToolCall, ToolResult
 from ashley.inference.postgres import PostgresSpendLedger
-from ashley.inference.prices import Prices
+from catalogue_support import NONE
 from ashley.inference.provider import ProviderRefused
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import Routes
@@ -53,8 +52,8 @@ def wire(database: PoolDatabase, *makers: ScriptedMaker) -> MemoryStore:
     text: dict[Task, tuple[Route, ...]] = {t: (Route("none", "m", 1.0),) for t in get_args(Task)}
     routes = Routes(text, 300.0, image={"image": tuple(Route(m.name, f"{m.name}-model", 5.0) for m in makers)})
     cap = ImageCap(lambda household_id, window_s: drawn(database, household_id, window_s), ImageLimit(LIMIT, 86400))
-    services.register(Inference, RoutedInference(routes, makers, PostgresSpendLedger(database), Prices({}),
-                                                 today=lambda: date(2026, 11, 3), image_cap=cap))
+    services.register(Inference, RoutedInference(routes, makers, PostgresSpendLedger(database), NONE,
+                                                 image_cap=cap))
     services.register(Live, FakeLive())
     services.register(Workshop, PostgresWorkshop(database, RULES))
     store = MemoryStore()
@@ -189,7 +188,7 @@ def test_the_tool_is_not_offered_without_an_object_store_or_an_image_model(db_ur
         services.register(ObjectStore, NullStore())
         services.register(Inference, RoutedInference(Routes({t: (Route("none", "m", 1.0),) for t in get_args(Task)},
                                                             300.0), [], PostgresSpendLedger(PoolDatabase(db_url)),
-                                                     Prices({})))
+                                                     NONE))
         assert (await BenchImageTools(1, 1, 1, 1).catalogue()).specs == ()
         services.register(ObjectStore, MemoryStore())
         services.register(Inference, NullInference())

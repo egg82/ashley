@@ -4,7 +4,8 @@ for a household's page. Callers import only this module; `spend_view` implements
 (`ashley.inference.spend_catalog`).
 
 The ledger is the app's, not a household's, so every household sees the same usage; the household's time zone sets where
-a day begins. Cost is the ledger's own: published list prices (`prices.json`) times the usage a provider reported."""
+a day begins. Cost is the ledger's own: the model catalogue's list prices (`ashley.inference.catalogue`) times the usage a provider
+reported."""
 
 from abc import abstractmethod
 from dataclasses import dataclass

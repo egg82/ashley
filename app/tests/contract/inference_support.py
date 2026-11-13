@@ -2,28 +2,25 @@
 `SpendLedger`, prices and routes built from values, and a router assembled through its public constructor."""
 
 import asyncio
-from datetime import date
 from collections.abc import Coroutine, Iterable, Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
 from ashley.inference.model import Entry, Message, Prompt, Route, SystemPrompt, Task, ToolChoice, ToolSpec, Usage
-from ashley.inference.prices import Period, Prices, Tier
+from ashley.inference.catalogue import ModelCatalogue
 from ashley.inference.provider import Completion, Failure, Provider, ProviderFailed, ProviderRefused, ToolUse
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import TASKS, Routes
 from ashley.inference.spend import Call, SpendLedger
+from catalogue_support import flat, of
 from pydantic import BaseModel
 
 FAILURES: tuple[Failure, ...] = ("unavailable", "invalid_output", "error")
 USAGE = Usage(input_tokens=1000, output_tokens=500, cache_read_tokens=200, cache_write_tokens=100)
-TIER = Tier(None, input=Decimal("3"), cache_write=Decimal("3.75"), cache_read=Decimal("0.3"), output=Decimal("15"))
-TODAY = date(2026, 10, 25)
-OPEN = Period(None, None, (TIER,))
-PRICES = Prices({"alpha": {"m1": (OPEN,), "m2": (OPEN,)}, "beta": {"m1": (OPEN,)}})
+PRICES = of({"alpha": {"m1": flat(), "m2": flat()}, "beta": {"m1": flat()}})
 USAGE_COST = Decimal("0.010935")
-"""`USAGE` at `TIER`: (1000 * 3 + 100 * 3.75 + 200 * 0.3 + 500 * 15) / 1,000,000."""
+"""`USAGE` at `flat()`'s prices: (1000 * 3 + 100 * 3.75 + 200 * 0.3 + 500 * 15) / 1,000,000."""
 COOLDOWN_S = 300.0
 
 
@@ -161,9 +158,9 @@ def prompt(*texts: str, system: Mapping[str, str] | None = None) -> Prompt:
 
 
 def router(routes: Routes, providers: Iterable[Provider], ledger: SpendLedger | None = None,
-           clock: Clock | None = None, prices: Prices = PRICES, today: date = TODAY) -> RoutedInference:
+           clock: Clock | None = None, prices: ModelCatalogue = PRICES) -> RoutedInference:
     return RoutedInference(routes, providers, ledger if ledger is not None else FakeLedger(), prices,
-                           clock if clock is not None else Clock(), lambda: today)
+                           clock if clock is not None else Clock())
 
 
 def outcomes(ledger: FakeLedger) -> list[tuple[str, str, str]]:

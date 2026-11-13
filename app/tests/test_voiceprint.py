@@ -5,17 +5,17 @@ import math
 import os
 import random
 import struct
-from datetime import date
 from pathlib import Path
 
 import pytest
-from ashley.inference import prices, routes
+from ashley.inference import routes
 from ashley.inference.inference import InferenceUnavailable, NullInference
 from ashley.inference.model import Usage
 from ashley.inference.provider import ProviderFailed
 from ashley.inference.sherpa_voiceprint import SherpaVoiceEmbedder
 from ashley.inference.speech import AudioFormat
 from ashley.settings import Settings
+from catalogue_support import shipped
 from speech_support import run
 from voiceprint_support import ScriptedVoiceEmbedder, voiceprint_router
 
@@ -75,7 +75,7 @@ def test_the_shipped_voiceprint_route_is_priced_at_zero_and_unwired_without_a_pr
     loaded = routes.load({"sherpa": SherpaVoiceEmbedder("sherpa", "/nowhere")})
     [route] = loaded.for_task("voiceprint")
     assert route.provider == "sherpa"
-    cost = prices.load().cost_usd(route.provider, route.model, Usage(0, 0, audio_ms=5000), date(2026, 10, 27))
+    cost = shipped().priced().cost_usd(route.provider, route.model, Usage(0, 0, audio_ms=5000))
     assert cost is not None and cost == 0
     with pytest.raises(InferenceUnavailable):
         run(NullInference().voiceprint(FORMAT, PCM))

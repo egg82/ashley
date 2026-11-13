@@ -5,7 +5,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from ashley import services
-from ashley.inference import prices, routes
+from ashley.inference import routes
+from catalogue_support import shipped
 from ashley.inference.inference import Inference
 from ashley.inference.model import Entry, Message, SystemPrompt, ToolChoice, ToolSpec, Usage
 from ashley.inference.provider import Completion, Provider, ProviderFailed, ProviderRefused, ToolUse
@@ -60,7 +61,7 @@ class Capturing(Provider):
 def wire(provider: Provider) -> MemoryLedger:
     """The real `ModelActionJudge` over the shipped routes and `provider`, registered in place of the Null Object."""
     ledger = MemoryLedger()
-    services.register(Inference, RoutedInference(routes.load({"anthropic": provider}), [provider], ledger, prices.load()))
+    services.register(Inference, RoutedInference(routes.load({"anthropic": provider}), [provider], ledger, shipped()))
     services.register(ActionJudge, ModelActionJudge())
     return ledger
 

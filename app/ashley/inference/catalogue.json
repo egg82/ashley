@@ -1,0 +1,7 @@
+{
+  "url": "https://models.dev/api.json",
+  "refresh_s": 21600,
+  "retry_s": 600,
+  "timeout_s": 60,
+  "providers": {"gemini": "google", "gemini_image": "google", "openai_image": "openai"}
+}

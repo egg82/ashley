@@ -5,7 +5,6 @@ import asyncio
 import logging
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
-from datetime import date
 from typing import Any, get_args
 
 from ashley.inference import routes
@@ -20,7 +19,6 @@ from pydantic import BaseModel
 SECRET = "sk-SECRET-route-param-0xBEEF"
 TASK_ORDER: tuple[Task, ...] = get_args(Task)
 PROVIDERS = ("a", "b", "c", "d")
-TODAY = date(2026, 12, 1)
 
 
 def route(provider: str, model: str, timeout_s: float = 10, **params: object) -> dict[str, object]:

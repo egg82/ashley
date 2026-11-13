@@ -17,7 +17,7 @@ from ashley.inference.keyed import Built, KeyedProvider
 from ashley.inference.keyed_providers import KeyedProviders
 from ashley.inference.kinds import ANTHROPIC
 from ashley.inference.model import Entry, Message, Prompt, SystemPrompt, ToolChoice, ToolSpec, Usage
-from ashley.inference.prices import Prices
+from catalogue_support import NONE
 from ashley.inference.provider import Completion, Provider, ProviderFailed, ToolUse, Wired
 from ashley.inference.provider_keys import KeyInForce, KeysUnavailable, ProviderKeys
 from ashley.inference.router import RoutedInference
@@ -199,7 +199,7 @@ def build(key: str) -> Built:
 def inference(keys: Keys, clock: list[float]) -> RoutedInference:
     k = KeyedProviders([replace(ANTHROPIC, build=build)], keys, {}, clock=lambda: clock[0], refresh_s=30)
     data = {"cooldown_s": 300, "tasks": {t: [{"provider": "anthropic", "model": "m", "timeout_s": 5}] for t in TASKS}}
-    return RoutedInference(parse(data, k.checkers()), [], MemoryLedger(), Prices({}), clock=lambda: clock[0], keyed=k)
+    return RoutedInference(parse(data, k.checkers()), [], MemoryLedger(), NONE, clock=lambda: clock[0], keyed=k)
 
 
 PROMPT = Prompt({"default": SystemPrompt("s")}, (Message("person", "hi"),))

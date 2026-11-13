@@ -7,8 +7,6 @@ import logging
 from collections.abc import AsyncGenerator, Coroutine, Iterable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from datetime import date
-from decimal import Decimal
 from typing import Any, TypeVar
 
 import pytest
@@ -18,13 +16,13 @@ from ashley.db.pool import PoolDatabase
 from ashley.inference import watch
 from ashley.inference.model import (Entry, Message, Prompt, Route, SystemPrompt, Task, ToolCall, ToolCalls, ToolChoice,
                                     ToolSpec, Usage)
-from ashley.inference.prices import Period, Prices, Tier
 from ashley.inference.provider import Completion, Failure, Provider, ProviderFailed, ProviderRefused, ToolUse
 from ashley.inference.postgres import PostgresSpendLedger, last_call_id
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import TASKS, Routes
 from ashley.inference.spend import Call, Outcome
 from ashley.inference.watch import WatchConfig
+from catalogue_support import flat, of
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -98,9 +96,7 @@ async def rig(url: str) -> AsyncGenerator[Rig]:
 
 # --- a router over scripted providers ---------------------------------------------------------------------------
 
-TIER = Tier(None, input=Decimal("3"), cache_write=Decimal("3.75"), cache_read=Decimal("0.3"), output=Decimal("15"))
-OPEN = Period(None, None, (TIER,))
-PRICES = Prices({"alpha": {"m1": (OPEN,)}, "beta": {"m1": (OPEN,)}})
+PRICES = of({"alpha": {"m1": flat()}, "beta": {"m1": flat()}})
 USAGE = Usage(input_tokens=10, output_tokens=5, cache_read_tokens=0, cache_write_tokens=0)
 
 
@@ -139,7 +135,7 @@ def routed(ledger: PostgresSpendLedger, order: Iterable[Provider], task: Task = 
     providers = list(order)
     routes = tuple(Route(p.name, "m1", 10.0, "default", {}) for p in providers)
     by_task: dict[Task, tuple[Route, ...]] = {k: routes for k in TASKS}
-    return RoutedInference(Routes(by_task, 0.001), providers, ledger, PRICES, lambda: 0.0, lambda: date(2026, 11, 2))
+    return RoutedInference(Routes(by_task, 0.001), providers, ledger, PRICES, lambda: 0.0)
 
 
 def prompt(tools: tuple[ToolSpec, ...] = ()) -> Prompt:

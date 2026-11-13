@@ -3274,6 +3274,204 @@
         }
       }
     },
+    "/api/catalogue": {
+      "get": {
+        "summary": "Read Catalogue",
+        "description": "200 `ModelCatalogueResponse`; 401 `unauthorized`; 403 `admin_only`; 503 `unavailable`.",
+        "operationId": "read_catalogue",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogueResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the stored layers could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalogue/models": {
+      "get": {
+        "summary": "Read Models",
+        "description": "200 `ModelCatalogueModelsResponse`; 401 `unauthorized`; 403 `admin_only`; 404 `not_found`; 503\n`unavailable`.",
+        "operationId": "read_models",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Provider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogueModelsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the stored layers could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the catalogue lists no such provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a parameter outside its bounds gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Change Model",
+        "description": "200 `ModelCatalogueModel` as stored; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 422\n`ModelCatalogueRefused`; 503 `unavailable`.",
+        "operationId": "change_model",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelCatalogueChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogueModel"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the stored layers could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a change that cannot be made; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogueRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lexicon": {
       "get": {
         "summary": "Read Lexicon",
@@ -10832,6 +11030,682 @@
         ],
         "title": "MessageResponse",
         "description": "Her reply. `body` is rendered for `medium`, the device's: for `spoken`, plain sentences to hand a TTS engine. It\nholds only her words; `receipts` is what code shows beside them, which a device that speaks says none of."
+      },
+      "ModelCatalogueChange": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model"
+          },
+          "set": {
+            "$ref": "#/components/schemas/ModelCatalogueSet"
+          },
+          "reset": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "name",
+                "tool_call",
+                "structured_output",
+                "context_tokens",
+                "max_output_tokens",
+                "input_usd_per_mtok",
+                "output_usd_per_mtok",
+                "cache_read_usd_per_mtok",
+                "cache_write_usd_per_mtok",
+                "free",
+                "hidden"
+              ]
+            },
+            "type": "array",
+            "maxItems": 11,
+            "title": "Reset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "set"
+        ],
+        "title": "ModelCatalogueChange",
+        "description": "A change to one model, for the whole deployment: `set` these fields and `reset` those to upstream's. A model\nupstream does not list is added by setting its fields."
+      },
+      "ModelCatalogueFields": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tool_call": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call"
+          },
+          "structured_output": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured Output"
+          },
+          "context_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Tokens"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "input_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Usd Per Mtok"
+          },
+          "output_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Usd Per Mtok"
+          },
+          "cache_read_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Read Usd Per Mtok"
+          },
+          "cache_write_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Write Usd Per Mtok"
+          },
+          "free": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free"
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCatalogueTier"
+            },
+            "type": "array",
+            "title": "Tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "tool_call",
+          "structured_output",
+          "context_tokens",
+          "max_output_tokens",
+          "input_usd_per_mtok",
+          "output_usd_per_mtok",
+          "cache_read_usd_per_mtok",
+          "cache_write_usd_per_mtok",
+          "free",
+          "hidden",
+          "tiers"
+        ],
+        "title": "ModelCatalogueFields",
+        "description": "One model's fields; null is not known. `free` and `hidden` are a person's only; `tiers` come from upstream only,\nand a person's price on any price field replaces them."
+      },
+      "ModelCatalogueModel": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/ModelCatalogueFields"
+          },
+          "defaults": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelCatalogueFields"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "defaults_layer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "snapshot",
+                  "fetch"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaults Layer"
+          },
+          "overrides": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCatalogueOverride"
+            },
+            "type": "array",
+            "title": "Overrides"
+          },
+          "price": {
+            "$ref": "#/components/schemas/ModelCataloguePrice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "fields",
+          "defaults",
+          "defaults_layer",
+          "overrides",
+          "price"
+        ],
+        "title": "ModelCatalogueModel",
+        "description": "One model. `fields` are in force; `defaults` are upstream's, from `defaults_layer`, null for a model only a person lists;\n`overrides` the fields a person set, each reset by naming it in a change's `reset`."
+      },
+      "ModelCatalogueModelsResponse": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCatalogueModel"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "models"
+        ],
+        "title": "ModelCatalogueModelsResponse",
+        "description": "The models of one provider, by id."
+      },
+      "ModelCatalogueOverride": {
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "enum": [
+              "name",
+              "tool_call",
+              "structured_output",
+              "context_tokens",
+              "max_output_tokens",
+              "input_usd_per_mtok",
+              "output_usd_per_mtok",
+              "cache_read_usd_per_mtok",
+              "cache_write_usd_per_mtok",
+              "free",
+              "hidden"
+            ],
+            "title": "Field Name"
+          },
+          "set_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set By"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Set At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_name",
+          "set_by",
+          "set_at"
+        ],
+        "title": "ModelCatalogueOverride",
+        "description": "A field a person set: who (`set_by`, a person id, null once they are gone) and when."
+      },
+      "ModelCataloguePrice": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "priced",
+              "unpriced",
+              "listed_zero",
+              "free",
+              "local"
+            ],
+            "title": "Status"
+          },
+          "source_layer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "snapshot",
+                  "fetch",
+                  "override"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Layer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "source_layer"
+        ],
+        "title": "ModelCataloguePrice",
+        "description": "How a call to the model is priced. `status`: `priced`; `unpriced` (no price known, so a call records no cost);\n`listed_zero` (upstream lists 0, recorded as no cost until a person marks the model `free`); `free` (a person said\nso: a call costs 0). `source_layer`: the layer the prices in force came from, null when unpriced."
+      },
+      "ModelCatalogueProvider": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "api": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api"
+          },
+          "model_count": {
+            "type": "integer",
+            "title": "Model Count"
+          },
+          "overridden_count": {
+            "type": "integer",
+            "title": "Overridden Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "name",
+          "api",
+          "model_count",
+          "overridden_count"
+        ],
+        "title": "ModelCatalogueProvider",
+        "description": "A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models\nit lists and how many of those carry an override."
+      },
+      "ModelCatalogueRefused": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "set_and_reset",
+              "empty"
+            ],
+            "title": "Reason"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason",
+          "detail"
+        ],
+        "title": "ModelCatalogueRefused",
+        "description": "Why nothing was stored: `set_and_reset` (one field both set and reset), `empty` (nothing set or reset)."
+      },
+      "ModelCatalogueResponse": {
+        "properties": {
+          "snapshot_taken_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Taken At"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "refresh_s": {
+            "type": "integer",
+            "title": "Refresh S"
+          },
+          "catalogue_providers": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCatalogueProvider"
+            },
+            "type": "array",
+            "title": "Catalogue Providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "snapshot_taken_at",
+          "fetched_at",
+          "refresh_s",
+          "catalogue_providers"
+        ],
+        "title": "ModelCatalogueResponse",
+        "description": "Every provider, by id. `snapshot_taken_at`: when the list baked into the image was fetched; `fetched_at`: when\nthe last good fetch was made, which replaces the snapshot; either null when there is none. A fetch is tried every\n`refresh_s` seconds."
+      },
+      "ModelCatalogueSet": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tool_call": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call"
+          },
+          "structured_output": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured Output"
+          },
+          "context_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Tokens"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "input_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Usd Per Mtok"
+          },
+          "output_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Usd Per Mtok"
+          },
+          "cache_read_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Read Usd Per Mtok"
+          },
+          "cache_write_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Write Usd Per Mtok"
+          },
+          "free": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free"
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelCatalogueSet",
+        "description": "The fields a person sets; a field left out or null is not changed. A value equal to upstream's is not stored:\nit resets the field, so upstream's later changes reach it."
+      },
+      "ModelCatalogueTier": {
+        "properties": {
+          "above_prompt_tokens": {
+            "type": "integer",
+            "title": "Above Prompt Tokens"
+          },
+          "input_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Usd Per Mtok"
+          },
+          "output_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Usd Per Mtok"
+          },
+          "cache_read_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Read Usd Per Mtok"
+          },
+          "cache_write_usd_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Write Usd Per Mtok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "above_prompt_tokens",
+          "input_usd_per_mtok",
+          "output_usd_per_mtok",
+          "cache_read_usd_per_mtok",
+          "cache_write_usd_per_mtok"
+        ],
+        "title": "ModelCatalogueTier",
+        "description": "The prices a prompt longer than `above_prompt_tokens` pays (input, cache-read and cache-write tokens together)."
       },
       "MovePieceRequest": {
         "properties": {

@@ -5,18 +5,19 @@ import json
 from importlib import resources
 
 import pytest
-from ashley.inference import prices, spend_catalog
+from ashley.inference import catalogue_config, spend_catalog
 
 
 def shipped(name: str) -> object:
     return json.loads(resources.files("ashley.inference").joinpath(name).read_text())
 
 
-def test_the_shipped_catalog_loads_with_every_priced_provider_and_no_budget() -> None:
+def test_the_shipped_catalog_loads_with_every_mapped_provider_and_no_budget() -> None:
     catalog = spend_catalog.load()
     assert catalog.monthly_usd == {}
-    priced = set(prices.load().by_model)
-    assert priced <= set(catalog.providers)
+    config = catalogue_config.load()
+    assert set(config.providers) <= set(catalog.providers)
+    assert config.local == {"fastembed", "sherpa", "wyoming"}
     assert {"anthropic", "openai", "gemini", "gemini_image", "openai_image", "elevenlabs"} <= set(catalog.providers)
 
 

@@ -8,7 +8,7 @@ from ashley.inference.inference import InferenceUnavailable
 from ashley.inference.keyed_providers import KeyedProviders
 from ashley.inference.reply import Reply
 from ashley.inference.router import RoutedInference
-from contract.inference_support import COOLDOWN_S, PRICES, TODAY, Clock, FakeLedger, FakeProvider, fail, prompt, route, settle, table
+from contract.inference_support import COOLDOWN_S, PRICES, Clock, FakeLedger, FakeProvider, fail, prompt, route, settle, table
 from pkb_support import A, B, Recorder, ScriptedKeys, keyed
 
 KEY1, KEY2 = "sk-router-key-1111", "sk-router-key-2222"
@@ -21,7 +21,7 @@ def routed(keys: ScriptedKeys, env: dict[str, str] | None = None, clock: Clock |
     recorder = recorder or Recorder()
     kp = KeyedProviders([keyed(recorder, A), keyed(recorder, B)], keys, env or {}, clock, 30.0)
     router = RoutedInference(table([route(r) for r in routes or [A]]), providers or [], FakeLedger(), PRICES, clock,
-                             lambda: TODAY, keyed=kp)
+                             keyed=kp)
     return router, kp, clock, recorder
 
 
@@ -37,7 +37,7 @@ def test_a_provider_name_a_keyed_provider_can_carry_raises_even_when_it_is_not_w
     recorder = Recorder()
     kp = KeyedProviders([keyed(recorder, A)], ScriptedKeys(), {})
     with pytest.raises(ValueError):
-        RoutedInference(table([route(A)]), [FakeProvider(A)], FakeLedger(), PRICES, Clock(), lambda: TODAY, keyed=kp)
+        RoutedInference(table([route(A)]), [FakeProvider(A)], FakeLedger(), PRICES, Clock(), keyed=kp)
 
 
 def test_a_call_serves_from_the_key_in_force_and_a_rotated_key_is_used_after_the_bound() -> None:

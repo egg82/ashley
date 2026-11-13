@@ -1,7 +1,6 @@
 """The spend ledger rows `RoutedInference` writes: one per call made with the right outcome, usage, cost and duration;
 none for a skipped route; and a ledger that fails costing the caller nothing."""
 
-from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -9,13 +8,16 @@ from ashley import logs
 from ashley.inference.routes import TASKS
 from ashley.inference.model import Task
 from ashley.inference.inference import InferenceRefused, InferenceUnavailable
-from ashley.inference.model import Usage
-from ashley.inference.prices import Period, Prices, Tier
+from ashley.inference.model import Message, Usage
+from ashley.inference.catalogue import CatalogueState, ModelCatalogue, PricedCatalogue
+from ashley.inference.catalogue_model import ModelFields
 from ashley.inference.provider import Failure
 from ashley.inference.reply import Reply
 from ashley.inference.router import RoutedInference
 from ashley.inference.spend import Call
+from catalogue_support import flat, of
 from conversations_support import events
+from inference_tools_support import tool_prompt
 from inference_support import (FAILURES, USAGE, USAGE_COST, Clock, FakeLedger, FakeProvider, fail, ok, prompt,
                                refuse, route, router, settle, table)
 
@@ -162,55 +164,44 @@ def test_a_working_ledger_logs_no_spend_unrecorded(capsys: pytest.CaptureFixture
     assert len(events(out, "inference.call")) == 1, "control: the logger is capturing"
 
 
-# --- the date a call is priced on ----------------------------------------------------------------------------------
+# --- the catalogue a call is priced from --------------------------------------------------------------------------
 
-CHEAP = Tier(None, Decimal(1), Decimal(0), Decimal(0), Decimal(0))
-DEAR = Tier(None, Decimal(4), Decimal(0), Decimal(0), Decimal(0))
-LAST_DAY = date(2026, 11, 30)
-FIRST_DAY = date(2026, 12, 1)
-SWITCHING = Prices({"alpha": {"m1": (Period(None, LAST_DAY, (CHEAP,)), Period(FIRST_DAY, None, (DEAR,)))}})
 MILLION = Usage(1_000_000, 0)
 
 
-def priced_on(day: date) -> Decimal | None:
-    ledger = FakeLedger()
-    ask(router(table([route("alpha")]), [FakeProvider("alpha", [ok(usage=MILLION)])], ledger, prices=SWITCHING,
-               today=day))
-    return ledger.rows[0].cost_usd
+class Swapping(ModelCatalogue):
+    """A catalogue whose layers a test swaps; counts each refresh."""
+
+    def __init__(self, first: ModelCatalogue) -> None:
+        self.current = first
+        self.refreshes = 0
+
+    async def refresh(self) -> None:
+        self.refreshes += 1
+
+    def priced(self) -> PricedCatalogue:
+        return self.current.priced()
+
+    async def state(self) -> CatalogueState:
+        return await self.current.state()
 
 
-def test_a_call_is_priced_in_the_period_covering_the_date_it_is_made_on() -> None:
-    assert priced_on(date(2026, 1, 1)) == Decimal(1)
-    assert priced_on(LAST_DAY) == Decimal(1)
-    assert priced_on(FIRST_DAY) == Decimal(4)
-    assert priced_on(date(2030, 1, 1)) == Decimal(4)
-
-
-def test_a_date_no_period_covers_records_the_usage_and_a_null_cost() -> None:
-    gap = Prices({"alpha": {"m1": (Period(None, date(2026, 10, 31), (CHEAP,)), Period(FIRST_DAY, None, (DEAR,)))}})
-    ledger = FakeLedger()
-    ask(router(table([route("alpha")]), [FakeProvider("alpha", [ok(usage=MILLION)])], ledger, prices=gap,
-               today=date(2026, 11, 15)))
-    assert ledger.rows[0].usage == MILLION
-    assert ledger.rows[0].cost_usd is None
-
-
-def test_the_date_is_read_at_each_call_not_once_when_the_router_is_made() -> None:
-    days = [LAST_DAY]
-    ledger = FakeLedger()
-    inference = RoutedInference(table([route("alpha")]), [FakeProvider("alpha", [ok(usage=MILLION)])], ledger,
-                                SWITCHING, Clock(), lambda: days[0])
+def test_each_call_is_priced_from_the_catalogue_as_it_is_then_after_a_refresh() -> None:
+    swapping, ledger = Swapping(of({"alpha": {"m1": flat("1")}})), FakeLedger()
+    inference = router(table([route("alpha")]), [FakeProvider("alpha", [ok(usage=MILLION)] * 3)], ledger,
+                       prices=swapping)
     ask(inference)
-    days[0] = FIRST_DAY
+    swapping.current = of({"alpha": {"m1": flat("4")}})
     ask(inference)
     ask(inference)
     assert [r.cost_usd for r in ledger.rows] == [Decimal(1), Decimal(4), Decimal(4)]
+    assert swapping.refreshes == 3
 
 
-def test_failed_and_refused_calls_are_priced_on_the_date_too() -> None:
+def test_failed_and_refused_calls_are_priced_too() -> None:
     ledger = FakeLedger()
     inference = router(table([route("alpha")]), [FakeProvider("alpha", [fail("error", MILLION), refuse(MILLION)])],
-                       ledger, prices=SWITCHING, today=FIRST_DAY)
+                       ledger, prices=of({"alpha": {"m1": flat("4")}}))
     with pytest.raises(InferenceUnavailable):
         ask(inference)
     with pytest.raises(InferenceRefused):
@@ -218,17 +209,29 @@ def test_failed_and_refused_calls_are_priced_on_the_date_too() -> None:
     assert [r.cost_usd for r in ledger.rows] == [Decimal(4), Decimal(4)]
 
 
-def test_without_a_today_calls_are_priced_on_the_current_utc_date() -> None:
-    before = datetime.now(UTC).date()
-    day = before
-    yesterday = day - timedelta(days=1)
-    only_today = Prices({"alpha": {"m1": (Period(day, day, (CHEAP,)),)}})
-    not_today = Prices({"alpha": {"m1": (Period(None, yesterday, (CHEAP,)),)}})
+@pytest.mark.parametrize("listed", [{}, {"alpha": {"m2": flat()}}, {"alpha": {"m1": flat("0", "0", "0", "0")}}],
+                         ids=["no provider", "not the model", "listed as zero"])
+def test_a_model_with_no_known_price_records_its_usage_and_a_null_cost(listed: dict[str, dict[str, ModelFields]]) -> None:
     ledger = FakeLedger()
-    for prices in (only_today, not_today):
-        inference = RoutedInference(table([route("alpha")]), [FakeProvider("alpha", [ok(usage=MILLION)])], ledger,
-                                    prices, Clock())
-        ask(inference)
-    if datetime.now(UTC).date() != before:
-        pytest.skip("the UTC date changed during the test")
-    assert [r.cost_usd for r in ledger.rows] == [Decimal(1), None]
+    ask(router(table([route("alpha")]), [FakeProvider("alpha", [ok(usage=MILLION)])], ledger, prices=of(listed)))
+    assert ledger.rows[0].usage == MILLION and ledger.rows[0].cost_usd is None
+
+
+def test_a_step_with_tools_skips_a_model_listed_without_tool_calls(capsys: pytest.CaptureFixture[str]) -> None:
+    logs.setup()
+    listed = of({"alpha": {"m1": flat(tool_call=False)}, "beta": {"m1": flat()}})
+    a, b = FakeProvider("alpha", [ok(), ok()]), FakeProvider("beta", [ok()])
+    inference = router(table([route("alpha"), route("beta")]), [a, b], FakeLedger(), prices=listed)
+    settle(inference.step("chat", tool_prompt(Message("person", "lights")), Reply))
+    assert (len(a.asked), len(b.asked)) == (0, 1)
+    skipped = events(capsys.readouterr().out, "inference.route_skipped")
+    assert [(e["provider"], e["reason"]) for e in skipped] == [("alpha", "no_tool_calls")]
+    ask(inference)
+    assert len(a.asked) == 1, "a call offering no tools still uses it"
+
+
+def test_a_step_with_tools_uses_a_model_the_catalogue_does_not_list() -> None:
+    a = FakeProvider("alpha", [ok()])
+    inference = router(table([route("alpha")]), [a], FakeLedger(), prices=of({}))
+    settle(inference.step("chat", tool_prompt(Message("person", "lights")), Reply))
+    assert len(a.asked) == 1
