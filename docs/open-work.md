@@ -86,9 +86,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
 5. **Web app, what is left.** Its rooms are built: sign-in, chat, memory (the facts she holds and where each was learned; a line
    dragged out of chat is input only, never shown back on the line), Devices (linked accounts, Discord linking,
    notifications, the household's devices) and the kiosk, with open screens kept current by Live. Left:
-   - **Her mark shows where she is working when the page is not there**: a bench she changes from another channel (the
-     satellite at the real bench) while the person's page is in chat. When she moves the page herself, her mark already
-     goes with it, or waits on the bearing (`decisions.md`, "She moves the person's page herself").
    - **What we're working on**, beside her room's history: the person's open errands (item 7) and benches (item 11),
      each with its state (running, waiting on you, done), filled in as those items land. A quick question stays in
      the history; asking her to do or make something gets a place that outlasts the conversation.
