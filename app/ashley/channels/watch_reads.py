@@ -34,7 +34,8 @@ class ChannelToolReads(ToolReads):
 
 
 def _inbound(household_id: int, person_id: int) -> Inbound:
-    """A turn nobody waits on, for the person alone, with only the tools that read."""
+    """A turn nobody waits on, for the person alone, with only the tools that read. No model reads what its tools
+    return (the check hashes it), so nothing outside starts it; the wake's own turn carries the watch's taint."""
     return Inbound(household_id=household_id, thread=f"push:{person_id}", text="watch", kind="chat", medium="text",
                    audience="owner", speaker_id=person_id, shared=False, place=None, channel="device", remembers=False,
-                   unprompted=True, author="household", reads_only=True)
+                   unprompted=True, author="household", reads_only=True, taint=None)
