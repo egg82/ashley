@@ -54,7 +54,8 @@ The repository needs one variable, `DOCKERHUB_USERNAME`, and one secret, `DOCKER
 with write access); GHCR uses the workflow's own `GITHUB_TOKEN`.
 
 Secrets are in the deployment's secret store, read by External Secrets; never in either repo. The object store's
-endpoints, bucket and S3 key and the download-link key are the app's `FILES_*` settings (`app/ashley/settings.py`);
+endpoints, bucket and S3 key are its file storage connection, seeded from `FILES_ENDPOINTS`, `FILES_BUCKET`,
+`FILES_ACCESS_KEY` and `FILES_SECRET_KEY`; the download-link key is the one `FILES_*` setting (`app/ashley/settings.py`);
 the endpoints are this site's NAS first, then the other site's. The etcd private keys live in the deployment's secret
 store.
 
