@@ -5720,9 +5720,10 @@ export interface components {
         };
         /**
          * WireFact
-         * @description A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,
-         *     and `option_values`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);
-         *     empty when the row has none.
+         * @description A row of a bench's measurements piece shown beside her reply, once: a choice, or a guessed number a check of the
+         *     turn's run rests on (its `value` with its unit). `label` and `value` as she set them, and `option_values`, each a tap
+         *     that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`); empty when the row has none,
+         *     as a number's.
          */
         WireFact: {
             /** Bench Id */
@@ -5755,7 +5756,7 @@ export interface components {
          * WireReceipts
          * @description The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its
          *     summary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is
-         *     held; whether it can still be agreed to is `ChatConversationTurn.agree`. `choice_rows` the choice rows of a bench shown to
+         *     held; whether it can still be agreed to is `ChatConversationTurn.agree`. `choice_rows` the rows of a bench shown to
          *     the person this turn, as they stood then.
          */
         WireReceipts: {

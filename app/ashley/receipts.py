@@ -30,9 +30,10 @@ class Receipt:
 
 @dataclass(frozen=True)
 class Fact:
-    """A choice row of a bench's measurements piece shown to the person beside her reply, once for its name and value
+    """A row of a bench's measurements piece shown to the person beside her reply, once for its name and value
     (`ashley.workshop.commands.Surfaced`): `bench_id`, `piece_id`, the row's `name`, and its `label`, `value` and
-    `options` as they were (`options` empty when it has none); a tap on an option sets the row."""
+    `options` as they were (`options` empty when it has none: a guessed number, or a choice with none); a tap on an
+    option sets the row."""
 
     bench_id: int
     piece_id: int
@@ -56,7 +57,7 @@ class Fact:
 class Receipts:
     """What code shows beside her answer, kept with her turn and never part of her words: after a tainted turn, `done`
     the changes the action judge let run and `held` the calls waiting for the person's OK, in the order made; on a
-    bench, `facts`, the choice rows shown to the person this turn. At least one is non-empty; `proposal_id` is the held
+    bench, `facts`, the rows shown to the person this turn. At least one is non-empty; `proposal_id` is the held
     proposal, set exactly when `held` is non-empty. Raises ValueError otherwise."""
 
     done: tuple[Receipt, ...] = ()

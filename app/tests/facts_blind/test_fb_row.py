@@ -16,7 +16,7 @@ OPTIONS = ["flat woven strap", "round cord"]
 def test_a_row_with_no_kind_is_a_number_as_before() -> None:
     assert ok(NUMBER)
     assert ok({**NUMBER, "source": "bound", "tolerance": 1})
-    assert ok({**NUMBER, "source": "guessed", "asked": True, "ref": "r" * MAX_REF})
+    assert ok({**NUMBER, "source": "guessed", "ref": "r" * MAX_REF})
 
 
 @pytest.mark.parametrize("bad", [{"unit": "cm"}, {"value": "12"}, {"source": "stated"}, {"source": "seen"}, {"extra": 1}])

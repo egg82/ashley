@@ -1,10 +1,9 @@
 // A measurements piece read as a table: each value with its unit and where it came from. A `guessed` row is hatched, as
-// an unknown is elsewhere, so what still needs measuring stands out, and says when the person has already been asked.
+// an unknown is elsewhere, so what still needs measuring stands out.
 // A choice row (`kind: "choice"`, what kind of thing something is) shows its label and its value in words.
 // A body that is not the shape is shown as the text it is. Edited as JSON in the ordinary editor.
 type Row = {
   name: string; label?: string; value: number | string; unit?: string; source: string; tolerance?: number; ref?: string;
-  asked: boolean;
 };
 
 const SOURCES = ['measured', 'stated', 'seen', 'datasheet', 'accepted', 'bound', 'guessed'];
@@ -12,7 +11,7 @@ const SOURCES = ['measured', 'stated', 'seen', 'datasheet', 'accepted', 'bound',
 function rowOf(raw: unknown): Row | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
-  const { kind, name, label, value, unit, source, tolerance, ref, asked } = r;
+  const { kind, name, label, value, unit, source, tolerance, ref } = r;
   if (typeof name !== 'string' || typeof source !== 'string') return null;
   const choice = kind === 'choice' && typeof label === 'string' && typeof value === 'string';
   if (!choice && (kind !== undefined || typeof value !== 'number' || typeof unit !== 'string')) return null;
@@ -23,7 +22,6 @@ function rowOf(raw: unknown): Row | null {
     unit: choice ? undefined : (unit as string),
     tolerance: typeof tolerance === 'number' ? tolerance : undefined,
     ref: typeof ref === 'string' && ref ? ref : undefined,
-    asked: asked === true,
   };
 }
 
@@ -64,7 +62,6 @@ export function MeasurementsView({ body }: { body: string }) {
               )}
               <td>
                 <span class="meas-src" data-source={SOURCES.includes(r.source) ? r.source : 'guessed'}>{r.source}</span>
-                {r.asked ? <span class="meta"> asked</span> : null}
               </td>
             </tr>
           ))}

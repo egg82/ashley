@@ -1,6 +1,6 @@
 """A measurements piece from `decide`'s contract: its body is a JSON object of `items`, each a name (an identifier,
 unique in the piece), a finite value, a unit and a source from `measurements.UNITS` and `SOURCES`, with an optional
-tolerance (above 0 on a `bound` row), ref and, on a guessed row, `asked`, checked on every add and edit
+tolerance (above 0 on a `bound` row), ref, checked on every add and edit
 (`bad_measurements`); her edit of a confirmed row's number alone is refused `confirmed_measurement`."""
 
 import json
@@ -85,25 +85,23 @@ def test_measurements_read_back_as_their_fields() -> None:
     body(item(source="accepted")), body(item(source="accepted", tolerance=0, ref="go with it")),
     body(item(source="bound", tolerance=1.5)), body(item(source="bound", tolerance=0.01, unit="count")),
     body(item(unit="g", value=450)), body(item(unit="ml", value=250)), body(item(unit="min", value=90)),
-    body(item(source="guessed", asked=True)), body(item(source="guessed", asked=False))])
-def test_accepted_bound_the_plan_units_and_an_asked_guess_are_accepted(text: str) -> None:
+    body(item(source="guessed"))])
+def test_accepted_bound_the_plan_units_and_a_guess_are_accepted(text: str) -> None:
     assert outcome(text) == "accepted"
 
 
 @pytest.mark.parametrize("text", [
     body(item(source="bound")), body(item(source="bound", tolerance=0)), body(item(source="bound", tolerance=-1)),
-    body(item(asked=True)), body(item(asked=False)), body(item(source="accepted", asked=True)),
-    body(item(source="bound", tolerance=1, asked=True)), body(item(source="datasheet", asked=True)),
-    body(item(source="guessed", asked=1)), body(item(source="guessed", asked="yes")),
-    body(item(source="guessed", asked=None) | {"asked": None}),
+    body(item(source="guessed", asked=True)), body(item(asked=False)), body(item(source="datasheet", asked=True)),
     body(item(unit="kg")), body(item(unit="l")), body(item(unit="h")), body(item(unit="G")), body(item(source="Accepted"))])
-def test_a_bound_without_a_range_and_asked_off_a_guess_are_refused(text: str) -> None:
+def test_a_bound_without_a_range_and_the_retired_asked_key_are_refused(text: str) -> None:
     assert outcome(text) == "bad_measurements"
 
 
-def test_asked_reads_back_and_defaults_to_false() -> None:
-    got = measurements.items_of(body(item(source="guessed", asked=True), item(name="b", source="guessed")))
-    assert got is not None and [isinstance(m, measurements.Measurement) and m.asked for m in got] == [True, False]
+def test_a_number_is_shown_by_its_value_and_unit_and_a_choice_by_its_value() -> None:
+    got = measurements.items_of(body(item(value=15, unit="mm"), item(name="b", value=2.5, unit="count")))
+    assert got is not None and [measurements.shown_value(m) for m in got] == ["15 mm", "2.5 count"]
+    assert [measurements.shown_label(m) for m in got] == ["board width", "b"]
 
 
 HER = By(None)
@@ -138,7 +136,7 @@ def test_her_edit_of_a_confirmed_number_alone_is_refused(text: str) -> None:
 @pytest.mark.parametrize("text", [
     BASE, rows(board_width={"value": 61, "ref": "caliper, second reading"}),
     rows(board_width={"value": 61, "source": "accepted"}), rows(board_width={"value": 61, "source": "guessed"}),
-    rows(board_width={"source": "guessed"}), rows(guess={"value": 4}), rows(guess={"value": 4, "asked": True}),
+    rows(board_width={"source": "guessed"}), rows(guess={"value": 4}),
     rows(board_width={"ref": "other"}), rows(board_width={}), rows(strap={}),
     rows(strap={"value": 19, "source": "measured", "tolerance": None, "ref": "the person's calipers"}),
     body(*json.loads(BASE)["items"], item(name="new_row", value=5)), ""])
@@ -161,7 +159,7 @@ def test_the_confirmed_check_runs_only_on_measurements_pieces() -> None:
 
 def test_what_she_is_told_names_every_source_and_unit() -> None:
     hint = bench_results.HINTS["bad_measurements"]
-    for word in (*measurements.SOURCES, *measurements.UNITS, "asked"):
+    for word in (*measurements.SOURCES, *measurements.UNITS):
         assert word in hint, word
     listed = bench_specs.INSTRUCTIONS.split("each row with its source:")[1].split(".")[0]
     for source in measurements.SOURCES:

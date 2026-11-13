@@ -1,6 +1,5 @@
 """The measurements a model run starts with: the bench's measurements pieces merged into the one `measurements.json`
-that `ashley_cad.measured` and `ashley_cad.chosen` read, `{"items": [...]}`, each row as its piece wrote it but for a
-number's `asked`."""
+that `ashley_cad.measured` and `ashley_cad.chosen` read, `{"items": [...]}`, each row as its piece wrote it."""
 
 import json
 from collections.abc import Iterable

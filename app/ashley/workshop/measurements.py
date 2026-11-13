@@ -11,7 +11,6 @@ A number (a row with no `kind`) is an object with
   thing whose true size is anywhere in `value` ± `tolerance`) or `guessed`;
 - `tolerance`: optional, a finite ± of at least 0 in the unit; a `bound` row must have one above 0;
 - `ref`: optional text of at most `MAX_REF` characters (where a datasheet is, what measured it, the photo piece seen);
-- `asked`: optional boolean, only on a `guessed` row: true once the person has been asked for it and has not answered;
 - `given`: optional, the name of a choice row in the same piece that this number belongs to (a strap's width is given
   its form).
 
@@ -50,7 +49,7 @@ TURN_SOURCES = frozenset(("stated", "accepted"))
 PIECE_SOURCES = frozenset(("seen", "datasheet"))
 CHOICE_SOURCES = TURN_SOURCES | PIECE_SOURCES | {GUESSED}
 _REQUIRED = frozenset(("name", "value", "unit", "source"))
-_FIELDS = _REQUIRED | {"tolerance", "ref", "asked", "given"}
+_FIELDS = _REQUIRED | {"tolerance", "ref", "given"}
 _CHOICE_REQUIRED = frozenset(("kind", "name", "label", "value", "source"))
 _CHOICE_FIELDS = _CHOICE_REQUIRED | {"options", "turn", "piece", "ref"}
 
@@ -63,7 +62,6 @@ class Measurement:
     source: str
     tolerance: float | None
     ref: str | None
-    asked: bool = False
     given: str | None = None
 
 
@@ -117,6 +115,17 @@ def confirmed(row: Row) -> bool:
     return row.source != GUESSED
 
 
+def shown_value(row: Row) -> str:
+    """What the person is shown of `row`, and what a `Surfaced` names it by: a choice's value, a number's value and
+    unit (`15 mm`)."""
+    return row.value if isinstance(row, Choice) else f"{format(row.value, '.15g')} {row.unit}"
+
+
+def shown_label(row: Row) -> str:
+    """What `row` is about, for the person: a choice's label, a number's name with its underscores read as spaces."""
+    return row.label if isinstance(row, Choice) else row.name.replace("_", " ")
+
+
 def rewrites_confirmed(before: str, after: str) -> bool:
     """Whether `after` changes what a confirmed row of `before` holds (a number's value, unit or tolerance; a choice's
     value) under the same name and kind, while keeping where it came from as it was (a number's source and ref; a
@@ -167,7 +176,7 @@ def _one(fields: dict[str, Any]) -> Measurement | None:
         return None
     name, unit, source = fields["name"], fields["unit"], fields["source"]
     value, tolerance, ref = _number(fields["value"]), _number(fields.get("tolerance", 0)), fields.get("ref", "")
-    asked, given = fields.get("asked", False), fields.get("given")
+    given = fields.get("given")
     if not isinstance(name, str) or not NAME.fullmatch(name):
         return None
     if not isinstance(unit, str) or unit not in UNITS or not isinstance(source, str) or source not in SOURCES:
@@ -176,12 +185,10 @@ def _one(fields: dict[str, Any]) -> Measurement | None:
         return None
     if not isinstance(ref, str) or len(ref) > MAX_REF:
         return None
-    if not isinstance(asked, bool) or ("asked" in fields and source != GUESSED):
-        return None
     if "given" in fields and (not isinstance(given, str) or not NAME.fullmatch(given)):
         return None
     return Measurement(name, value, unit, source, tolerance if "tolerance" in fields else None,
-                       ref if "ref" in fields else None, asked, given)
+                       ref if "ref" in fields else None, given)
 
 
 def _choice(fields: dict[str, Any]) -> Choice | None:

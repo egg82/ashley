@@ -18,8 +18,8 @@ Grader (None when there is no verdict):
 - `asked_form`: her answer asks what the real thing the build must fit looks like, or for a photo of it.
 - `claimed_unbacked`: her answer says the change is made while her last run in the window did not run clean (no run,
   not exit 0, a failed check or an overlap).
-- `measurement_reasks`: rows her answer asks for that were asked before: marked `asked` on the bench at the ask's start
-  where the bench carries that flag (`reask_basis` `asked_flag`), else asked by an earlier answer (`grader`).
+- `measurement_reasks`: rows her answer asks for that were asked before: named by a `Surfaced` on the bench before the ask's
+  start where the bench's log holds any (`reask_basis` `shown`), else asked by an earlier answer (`grader`).
 Per replay: `form_before_model`, whether a photo look or a form question came before her first model change (None when
 she made none)."""
 
@@ -129,9 +129,9 @@ def measure(record: Record, scope_kinds: Sequence[str] = ("model",)) -> list[Ask
         end = steps[i + 1].at if i + 1 < len(steps) else float("inf")
         window = Window(ask, end, record, piece_kinds)
         verdict = record.verdicts.get(window.answer_id or -1)
-        flagged = window.asked_flagged()
-        reasks = None if verdict is None else len(set(verdict.asked_rows) & (asked_before if flagged is None else flagged))
-        out.append(window.measures(scope_kinds, verdict, reasks, "grader" if flagged is None else "asked_flag"))
+        shown = window.shown_rows()
+        reasks = None if verdict is None else len(set(verdict.asked_rows) & (asked_before if shown is None else shown))
+        out.append(window.measures(scope_kinds, verdict, reasks, "grader" if shown is None else "shown"))
         asked_before |= set(verdict.asked_rows) if verdict is not None else set()
     return out
 
@@ -178,13 +178,12 @@ class Window:
         runs = self.runs()
         return None if not runs else self.record.runs.get(runs[-1].seq)
 
-    def asked_flagged(self) -> set[str] | None:
-        """The rows marked `asked` on the bench at the ask's start; None when no row carries the flag at all."""
-        found = [r for pid, body in bodies_at(self.record.commands, self.ask.at).items()
-                 if self.piece_kinds.get(pid) == "measurements" for r in items(body).values()]
-        if not any("asked" in r for r in found):
+    def shown_rows(self) -> set[str] | None:
+        """The names of the rows a `Surfaced` named before the ask's start; None when the log holds no Surfaced at all."""
+        surfaced = [c for c in self.record.commands if c.effect is not None and c.effect.get("type") == "shown"]
+        if not surfaced:
             return None
-        return {str(r["name"]) for r in found if r.get("asked") is True}
+        return {str(r["name"]) for c in surfaced if c.at < self.ask.at and c.effect is not None for r in c.effect["rows"]}
 
     def measures(self, scope_kinds: Sequence[str], verdict: Verdict | None, reasks: int | None,
                  basis: str) -> AskMeasures:

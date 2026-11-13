@@ -159,6 +159,34 @@ def test_a_bench_pieces_run_is_not_served_with_the_conversation_a_chat_run_is(db
     run(scenario())
 
 
+def test_the_runs_of_a_turn_are_the_benchs_runs_it_asked_for_oldest_first(db_url: str) -> None:
+    alana = owner(db_url)
+    conversation = int(scalar(db_url, "INSERT INTO conversations (household_id, kind) VALUES (%s, 'brainstorm') "
+                                      "RETURNING id", (alana.household_id,)))
+    turns = [int(scalar(db_url, "INSERT INTO turns (conversation_id, household_id, author, text) "
+                                "VALUES (%s, %s, 'person', 'run it') RETURNING id", (conversation, alana.household_id)))
+             for _ in range(2)]
+
+    async def scenario() -> None:
+        async with world(db_url):
+            shop = services.get(Workshop)
+            bench = await shop.open(alana, "b")
+            await shop.apply(alana, bench.id, code(None))
+            other = await run_piece(alana, bench.id, Run(code(None).by, 1, 1, "python"), Asked(conversation, turns[1], "c3"))
+            first = await run_piece(alana, bench.id, Run(code(None).by, 1, 1, "python"), Asked(conversation, turns[0], "c1"))
+            second = await run_piece(alana, bench.id, Run(code(None).by, 1, 1, "python"), Asked(conversation, turns[0], "c2"))
+            runs = services.get(Runs)
+            chat = await runs.start(NewRun(alana.household_id, conversation, turns[0], "c4", "python", "print(1)"))
+            assert first.finished is not None and second.finished is not None and other.finished is not None
+            got = await runs.bench_runs_of_turn(alana.household_id, turns[0])
+            assert [r.id for r in got] == [first.finished.run_id, second.finished.run_id] and chat not in [r.id for r in got]
+            assert other.finished.run_id not in [r.id for r in got]
+            assert all(r.bench is not None and r.bench.bench_id == bench.id for r in got)
+            assert await runs.bench_runs_of_turn(alana.household_id + 1, turns[0]) == []
+
+    run(scenario())
+
+
 def test_a_run_is_never_undone_and_undoing_the_edit_before_it_keeps_the_run(db_url: str) -> None:
     alana = owner(db_url)
 

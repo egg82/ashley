@@ -8,6 +8,7 @@ from ashley.db.pool import PoolDatabase
 from ashley.live.live import Live
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.commands import Add, Edit, ShownRow
+from ashley.workshop.measurements import Choice
 from ashley.workshop.model import HER, By, Owner, Text
 from ashley.workshop.postgres import PostgresWorkshop
 from ashley.workshop.surface import surface
@@ -42,8 +43,9 @@ def test_each_choice_is_recorded_shown_once_and_again_only_when_its_value_change
             before = await shop.read(alana, bench.id)
             changed_at = (await shop.open_benches(alana))[0].last_changed_at
             first = await surface(alana, bench.id)
-            assert [(p, r.name, r.value, r.options) for p, r in first] == [(1, "form", "flat strap",
-                                                                            ("flat strap", "round cord"))]
+            assert [(p, r.name, r.value, r.options) for p, r in first if isinstance(r, Choice)] == [
+                (1, "form", "flat strap", ("flat strap", "round cord"))]
+            assert len(first) == 1
             view = await shop.read(alana, bench.id)
             assert view.surfaced == frozenset({(1, ShownRow("form", "flat strap"))})
             assert view.pieces == before.pieces and view.undo_next == before.undo_next == 2

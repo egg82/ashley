@@ -43,11 +43,11 @@ HINTS: dict[Reason, str] = {
                 "false, what you write goes out when you say it is worth saying), who (a person.* entity id) and what "
                 "(a slug): set, the rule answers only a wake whose who or what is exactly that; when several rules "
                 "answer one wake, the one setting the most of who and what runs, and a tie runs none)",
-    "bad_measurements": 'a measurements piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "asked"}]}: '
+    "bad_measurements": 'a measurements piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "given"}]}: '
                         "name an identifier unique in the piece, value a finite number, unit mm (every length in millimetres), deg, "
                         "count, g (grams), ml (millilitres) or min (minutes), source measured, datasheet, accepted, bound or guessed, "
                         "tolerance an optional ± of 0 or more (above 0 on a bound row), ref optional text up to 200 characters, "
-                        "asked an optional true or false on a guessed row only, given optionally the name of a choice row in the "
+                        "given optionally the name of a choice row in the "
                         "same piece that the number belongs to. A choice row is "
                         '{"kind": "choice", "name", "label", "value", "options", "source", "turn", "piece", "ref"}: label (up to 60 '
                         "characters) and value (up to 80) plain words, options optionally 2 to 6 such values with value one of "

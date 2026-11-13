@@ -116,7 +116,7 @@ class Point:
 
 @dataclass(frozen=True)
 class ShownRow:
-    """A choice row of a measurements piece as the person was shown it: its `name` and its `value` then."""
+    """A row of a measurements piece as the person was shown it: its `name` and its value then (`measurements.shown_value`)."""
 
     name: str
     value: str
@@ -124,9 +124,9 @@ class ShownRow:
 
 @dataclass(frozen=True)
 class Surfaced:
-    """Record that choice `rows` of piece `piece_id`, a measurements piece, were shown to the person beside a turn of
-    hers, each by its name and value then. It changes no piece and is never undone. A row counts as shown while some
-    accepted Surfaced names its current name and value (`workshop.BenchView.surfaced`), so a row whose value changes is
+    """Record that `rows` of piece `piece_id`, a measurements piece (choices, and guessed numbers a check rests on), were
+    shown to the person beside a turn of hers, each by its name and value then. It changes no piece and is never undone.
+    A row counts as shown while some accepted Surfaced names its current name and value (`workshop.BenchView.surfaced`), so a row whose value changes is
     shown again."""
 
     by: By

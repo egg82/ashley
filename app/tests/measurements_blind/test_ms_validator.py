@@ -202,7 +202,7 @@ def test_a_well_formed_body_reads_back_what_was_written_in_order(items: list[dic
     got = items_of(body)
     assert got == tuple(
         Measurement(i["name"], float(i["value"]), i["unit"], i["source"],
-                    float(i["tolerance"]) if "tolerance" in i else None, i.get("ref"), i.get("asked", False))
+                    float(i["tolerance"]) if "tolerance" in i else None, i.get("ref"))
         for i in items)
 
 

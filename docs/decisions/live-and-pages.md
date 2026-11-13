@@ -209,11 +209,11 @@ there, so the person is not left on an empty bench while her answer sits in chat
   ingredients; recipe data on the site frame record, which is per address and cannot hold a headcount; a field on the
   reader piece, whose body is text for pointing at; a person-side add, since a recipe is a page she read.
 - **What is still open on a bench reaches every later turn.** The moment layer (`ashley.tools.bench_now.open_rows`)
-  lists each guessed row of the bench's household-written measurements pieces, asked or not, however far into its
-  piece, so a fresh bench turn starts from what is still to settle. A row marked asked is not asked again while the
-  work goes on around it; when the step at hand depends on it, she says once that it is open and what she assumed, and
+  lists each guessed row of the bench's household-written measurements pieces, shown or not, however far into its
+  piece, so a fresh bench turn starts from what is still to settle. A number shown to the person (a `Surfaced`) is
+  not asked again while the work goes on around it; when the step at hand depends on it, she says once that it is open and what she assumed, and
   goes on with the guess shown unconfirmed. A guessed choice row is listed too, by its label and value. Rejected: a new
-  store of open questions, while unconfirmed rows and `asked` carry them.
+  store of open questions, while unconfirmed rows and `Surfaced` carry them.
 - **Code on a bench is a piece.** A bench turn (the thread's own bench, or one the page moved to) is offered `bench_run`,
   which runs a code piece and records the run on the bench and the piece, and not the loose `run_code`, whose runs show
   nowhere on a bench. Rejected: offering both; she used the general one four times in a row and the bench stayed empty.

@@ -152,6 +152,14 @@ class PostgresRuns(Runs):
                 row = await cur.fetchone()
         return 0 if row is None else int(row[0])
 
+    async def bench_runs_of_turn(self, household_id: int, turn_id: int) -> list[Run]:
+        with _translated():
+            async with self._database.connection() as conn:
+                cur = await conn.execute(f"SELECT {_RUN} FROM code_runs WHERE turn_id = %s AND household_id = %s "
+                                         "AND bench_id IS NOT NULL ORDER BY id", (turn_id, household_id))
+                rows = await cur.fetchall()
+        return [_run(row) for row in rows]
+
     async def last_on_bench(self, household_id: int, bench_id: int) -> Mapping[int, Run]:
         with _translated():
             async with self._database.connection() as conn:

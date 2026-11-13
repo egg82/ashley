@@ -43,8 +43,7 @@ refs = st.text(min_size=1, max_size=MAX_REF)
 
 @st.composite
 def item(draw: st.DrawFn, name: str | None = None) -> dict[str, Any]:
-    """One well-formed item, with each optional key present or absent: a `bound` row always has a tolerance above 0,
-    and only a `guessed` row may say whether it was `asked`."""
+    """One well-formed item, with each optional key present or absent: a `bound` row always has a tolerance above 0."""
     out: dict[str, Any] = {"name": name if name is not None else draw(names), "value": draw(numbers),
                            "unit": draw(units), "source": draw(sources)}
     if out["source"] == "bound":
@@ -53,8 +52,6 @@ def item(draw: st.DrawFn, name: str | None = None) -> dict[str, Any]:
         out["tolerance"] = draw(tolerances)
     if draw(st.booleans()):
         out["ref"] = draw(refs)
-    if out["source"] == "guessed" and draw(st.booleans()):
-        out["asked"] = draw(st.booleans())
     return out
 
 

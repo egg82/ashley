@@ -10,7 +10,7 @@ from ashley.runs.model import Outcome, Output
 from ashley.workshop import measurements_file
 from ashley.api.bench_report_models import report_of_wire
 from ashley.tools.run_model import extras
-from ashley.workshop.model_report import Check, Island, ModelReport, Overlap, Part, PrintCheck, PrintPart, holds, report_of
+from ashley.workshop.model_report import Check, Island, ModelReport, Overlap, Part, PrintCheck, PrintPart, holds, open_guesses, report_of
 
 PART = {"name": "lid", "volume": 1200.5, "bbox": {"min": [0, 0, 0], "max": [40, 30, 10]}}
 
@@ -157,10 +157,15 @@ def test_the_wire_and_her_tool_result_carry_the_overlaps_as_numbers() -> None:
     assert isinstance(told, dict) and told["overlaps"][0]["volume_mm3"] == 1600.0
 
 
-def test_a_guessed_row_marked_asked_still_leaves_its_checks_unconfirmed() -> None:
-    inputs = {"measurements.json": json.dumps({"items": [
-        {"name": "a", "value": 1, "unit": "mm", "source": "guessed", "asked": True}]})}
-    assert checks_of(ran(report([check(rests_on=["a"])])), inputs)[0].verdict == "unconfirmed"
+def test_the_open_guesses_are_the_guessed_numbers_an_unconfirmed_check_rests_on() -> None:
+    inputs = measures(a="guessed", b="measured", c="guessed", d="guessed")
+    out = ran(report([check(rests_on=["a", "b"]), check(rests_on=["c"], actual=0.5), check(rests_on=["b"])]))
+    assert open_guesses(out, inputs) == {"a"}
+
+
+def test_a_name_the_run_does_not_hold_or_a_run_with_no_report_has_no_open_guess() -> None:
+    assert open_guesses(ran(report([check(rests_on=["gone"])])), measures(a="guessed")) == set()
+    assert open_guesses(ran(report([check(rests_on=["a"])]), "failed", 1), measures(a="guessed")) == set()
 
 
 # The `print` section and failed checks the CAD helper wrote for the gate block in deploy/cad/test_ashley_print.py
