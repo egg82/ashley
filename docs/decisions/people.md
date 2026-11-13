@@ -10,7 +10,7 @@ talking with nothing guessed. She keeps no passwords of her own.
 
 - **Her web address is public from the start** (Cloudflare tunnel and the anycast gateway), so every route
   beyond `/api/health`, `/api/ready` and the page shell requires a signed-in person or device (below) from the day
-  it is added, even before the web app has sign-in: an unauthenticated request gets 401, never data.
+  it is added: an unauthenticated request gets 401, never data.
 - **The provider is any OIDC one.** Authentik is the household's; CI signs in against a real Dex
   (`app/tests/test_signin_dex.py`) as the second, so nothing in sign-in is Authentik-specific. The account's username is
   `preferred_username`, else `name`.
@@ -25,7 +25,7 @@ talking with nothing guessed. She keeps no passwords of her own.
   `Devices.allow` so every pod on both sites shares it): over it is 429 `rate_limited`. The numbers are
   `app/ashley/channels/device_rate.json`. Every refusal is one `api.device_refused` log line with the device id and
   its reason, never the token.
-- **Every device carries every tool** until a device should not; scoping is decided per device then, not in advance.
+- **Every device carries every tool**; scoping is decided per device when one should not.
 - **An OIDC account maps to a person by its `sub`, which the admin maps after its first sign-in.** The
   provider's `sub` can be a hash of its user id, so nobody knows it beforehand. A sign-in by an account no person has is refused
   (`/?signin=unmapped`) and recorded with its OIDC username in `signin_unmapped`; the admin reads
@@ -55,7 +55,7 @@ they work.
   (`ashley.api.admin_gate.may_change`), and granting or revoking admin. A route that is admin-only as a whole takes
   `admin_gate.Admin` as its signed-in person. Anyone else gets 403 `admin_only`. The person API carries `admin`, so the
   client hides what a person cannot do, but the server checks every change; hiding is never the check.
-- **Not admin-only:** a household's own settings and connections stay any member's, as before. The settings that
+- **Not admin-only:** a household's own settings and connections stay any member's. The settings that
   decide taint or judging are still written only by a person through the web; on a `deployment` connection that person
   must be an admin, since the setting then applies to every household.
 - **The app decides (`ADMIN_GROUP` unset).** Admin is a field on the person (`people.admin`), not a system: People
@@ -68,8 +68,6 @@ they work.
     sign-in calls `Admins.ensure_one`, one conditional write under the same lock, so sign-ins racing on two pods make
     one admin, and always the same person. On a new deployment that person is the first to sign in. Sign-in already
     needs the provider to admit the account, so this is open to no stranger.
-  - A deployment that had people when the flag arrived made every person of its first household an admin, which kept
-    what they could do; an admin revokes the rest.
 - **The provider decides (`ADMIN_GROUP` set).** The group of that name in the ID token's `groups` claim is the only
   source of truth; the sign-in asks for the `groups` scope as well. Each sign-in stores what the claim said on the
   session it opens and on every other live session of that person (`sessions.admin`), granting or revoking, and a
