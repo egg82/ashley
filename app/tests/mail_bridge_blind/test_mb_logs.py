@@ -6,7 +6,7 @@ import time
 
 import pytest
 from mail_bridge_blind_kube_support import FakeKube, Running, texts
-from mail_bridge_blind_support import VAULT, World, b64, forms
+from mail_bridge_blind_support import FAST, VAULT, World, b64, forms
 
 EXTRA = b"KEYCHAINBYTES-51d2"
 
@@ -22,6 +22,7 @@ def test_routes_and_singleton_log_no_vault_token_or_address(world: World, kube: 
     world.event(pod, "user_signed_out", "alana@proton.test")
     world.fetch(pod)
     world.beat(pod)
+    world.age(FAST["fence_s"] + FAST["fence_margin_s"])
     with Running(world, kube) as job:
         job.wait_for(lambda: len(kube.created) == 1, limit=6)
     tokens = [pod.token, *kube.tokens_made()]

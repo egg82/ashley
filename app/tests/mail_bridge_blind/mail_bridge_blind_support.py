@@ -182,6 +182,15 @@ class World:
             pod.last_beat = time.monotonic()
         return Answer(200 if got.status_code == 204 else got.status_code, got.text)
 
+    def age(self, seconds: float, *pods: Pod) -> None:
+        """Move the record's last sign of life (heartbeat and start) `seconds` into the past by the database's clock, as
+        if they had come that much sooner; each of `pods` has its `last_beat` moved with them."""
+        with psycopg.connect(self.url) as conn:
+            conn.execute("UPDATE proton_bridge SET heartbeat_at = heartbeat_at - make_interval(secs => %(s)s), "
+                         "started_at = started_at - make_interval(secs => %(s)s)", {"s": seconds})
+        for pod in pods:
+            pod.last_beat -= seconds
+
     def fetch(self, pod: Pod, epoch: int | None = None) -> httpx2.Response:
         return self.client.get(f"{PREFIX}/vault", params={"epoch": pod.epoch if epoch is None else epoch},
                                headers=pod.auth())

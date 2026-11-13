@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from mail_bridge_blind_kube_support import FakeKube, Running
-from mail_bridge_blind_support import IMAGE, NS, World, sha
+from mail_bridge_blind_support import FAST, IMAGE, NS, World, sha
 
 
 def made_once(world: World, kube: FakeKube) -> dict[str, Any]:
@@ -38,6 +38,7 @@ def test_the_token_is_minted_per_epoch_and_the_record_keeps_only_its_hash(world:
         assert job.wait_for(lambda: len(kube.created) == 1)
         first = world.state()
         kube.end_pod(first.pod, "deleted")
+        world.age(FAST["fence_s"])
         assert job.wait_for(lambda: len(kube.created) == 2, limit=6)
     state = world.state()
     tokens = kube.tokens_made()
@@ -69,6 +70,7 @@ def test_the_record_names_the_pod_that_was_made_and_the_site_that_made_it(world:
 def test_nothing_in_the_manifest_or_secret_carries_a_vault_or_a_password(world: World, kube: FakeKube) -> None:
     pod = world.begin("site-b", "away")
     world.put(pod, 0, b"VAULTBYTES-7f3a9c-0")
+    world.age(FAST["fence_s"] + FAST["fence_margin_s"])
     with Running(world, kube) as job:
         job.wait_for(lambda: len(kube.created) == 1, limit=6)
     text = json.dumps([kube.created, kube.secrets_by_name])
