@@ -1,0 +1,20 @@
+Planted against c2ee030 into `tests/test_balance_below.py`, one at a time, suite green before each; "caught" is a
+FAILED line naming a test. 8 of 8 caught.
+
+postgres_deposits.py
+ B1  drop `WHERE NOT balance_lows.low` from the fall's upsert      fires again while still below
+ B2  `recovered` updates nothing                                  never fires again after recovering
+ B3  drop `settled_at IS NULL` from the fall's armed row          a cancelled rule fires
+
+deposit_sense.py
+ B4  `cents >= threshold` -> `>`                                  a balance exactly at the threshold counts as below
+ B5  accounts read whether or not a balance rule is armed         an extra Sure call every poll
+
+deposit_rule.py
+ B6  `matches` ignores `below_cents`                              a balance rule fires on transactions
+
+reminder_turn.py
+ B7  the turn states the balance as the threshold                 she is told the wrong figure
+
+money_rule_args.py
+ B8  direction and balance_below both accepted                    an ambiguous rule is armed

@@ -82,6 +82,16 @@ def test_only_accounts_are_read_while_only_balance_rules_are_armed(db_url: str) 
     run(go())
 
 
+def test_accounts_are_not_read_while_only_transaction_rules_are_armed(db_url: str) -> None:
+    async def go() -> None:
+        async with house(db_url, DepositSure()) as h:
+            await h.arm(DepositRule(CHECKING, "Checking", 100_000, "Acme"))
+            await deposit_sense.poll(NOW)
+            assert {p for p, _, _ in h.sure.seen} == {"/api/v1/transactions"}
+
+    run(go())
+
+
 def test_a_balance_rule_and_a_transaction_rule_are_judged_in_one_poll(db_url: str) -> None:
     async def go() -> None:
         sure = DepositSure(rows=[deposit("t1", "Payroll", 150_000, NOW.date(), merchant="Acme")])
@@ -182,7 +192,7 @@ def test_the_rule_reads_in_words_survives_json_and_matches_no_transaction() -> N
     assert describe(LOW) == "the balance of Checking falling below 200.00"
     assert from_json(to_json(LOW)) == LOW
     assert "below_cents" not in to_json(DepositRule(CHECKING, "Checking", 1))
-    assert not matches(LOW, Transaction("t", NOW.date(), CHECKING, 100, True, ("Acme",), "out"), NOW.date())
+    assert not matches(LOW, Transaction("t", NOW.date(), CHECKING, 100, True, ("Acme",), "in"), NOW.date())
     low = Landed(-5, NOW.date(), "Checking", None, below_cents=0)
     assert landed_from_json(landed_to_json(low)) == low
     with pytest.raises(ValueError):
