@@ -8,7 +8,7 @@ Her method documents per kind of work, and what a household may override.
   kind is a household's row (`skill_kinds`: a slug and a label), started by her or the person when they set a bench's
   work to a name the household has none for, and its first skill version is written the same way. A slug is checked by
   shape (`app/ashley/skills/skills.json`: pattern and length), never against a list, so she is never handed a gap
-  ("electronics", "garden planning") to give back; code, 3D, research and writing are what the seeds may start with.
+  ("electronics", "garden planning") to give back.
   Rejected: a fixed list of kinds in `skills.json` (a kind a bench needs and the list lacks would be hers to ask a
   person for). A bench carries its kind, `benches.work`; she sets it with `bench_work` (a new kind needs its `label`)
   and the person may change it in the bench's bar, which can also start a kind. It is a bench field changed by an operation outside
@@ -19,12 +19,11 @@ Her method documents per kind of work, and what a household may override.
   (`skill_versions`), so what she learns in one household never reaches another and any person of the household sees the
   same method. Until the household first edits a kind, the skill is the seed that ships (`ashley.skills.seeds`,
   `app/ashley/skills/seeds/<kind>.md`, whose front matter names the kind, its label and the source skill it was
-  `seeded_from`; a seed's kind exists for every household). Four ship (code, 3d, research, writing), each rewritten
+  `seeded_from`; a seed's kind exists for every household). The seeds are code, 3d, research and writing, each rewritten
   for a bench from a personal Claude Code skill with every host, path, name, dated incident and Claude Code mechanic removed
   (`tests/test_skill_seeds.py` scans for those shapes). They are loaded once when the process wires and read at each
   use, never copied into a household's rows, so a household's edit is never touched by a seed that changes later; the
-  first
-  edit replaces it for that household only, and a rollback to version 0 is the seed again. Rejected: one global
+  first edit replaces it for that household only, and a rollback to version 0 is the seed again. Rejected: one global
   skill she edits for everyone (one household's conversations would rewrite another's method); copying the seeds into
   every household's rows at creation (an improved seed would never reach an unedited kind); a skill per person (method
   is not personal, and each person would teach her again).
@@ -58,8 +57,7 @@ Her method documents per kind of work, and what a household may override.
   or kiosk device) the call's `Heard.language` carries the code, and each `Transcriber` sends it in place of its route's
   `language` param (Wyoming `Transcribe.language`, OpenAI `language`), so `routes.json` keeps its default for a
   household that cannot be read. Reply: for a household whose language is not English, `# This household` adds one
-  line naming the language (`ashley.persona.facts.LANGUAGE`); an English household's prompt is byte-identical to
-  before. A person who writes or speaks to her in another language is answered in theirs, the household's language
+  line naming the language (`ashley.persona.facts.LANGUAGE`); an English household's prompt is unchanged. A person who writes or speaks to her in another language is answered in theirs, the household's language
   being the default; that is a rule in the prompt, never code over their words. Spoken audio is still transcribed in
   the household's language, so another language works in a chat, not aloud. Rejected: detecting the spoken
   language per utterance, since the household has already said which it speaks.
@@ -72,7 +70,7 @@ Her method documents per kind of work, and what a household may override.
   asks, acting on the house, memory, and every kind file and the errand section, which carry no markers and are wholly
   locked. A heading belongs to the text before the section it heads, so an override replaces a body and never a heading.
 - **Fits into Skills, as a second family in its changelog.** An override is a versioned document per household and
-  key, which is what a skill is: `skill_versions` gains `family` (`skill` or `persona`, in the key), and a persona
+  key, which is what a skill is: `skill_versions` has a `family` (`skill` or `persona`, in the key), and a persona
   section's id goes in `kind`. Versions are append-only and a revert is a new version, as a skill's rollback is; the
   writes take an advisory lock per household and section. What differs is held by the table: a `persona` row is
   always a person's and `live` (no proposals, no bench), and its body may be null, meaning "the shipped text", so a
