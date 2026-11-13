@@ -10,16 +10,19 @@ from collections.abc import Callable
 import httpx2
 import psycopg
 import pytest
+from ashley import services
 from ashley.connections.connections import Connections, ConnectionsUnavailable, NullConnections
 from ashley.connections.kinds import FIRST_HOUSEHOLD
 from ashley.files import config as files_config, repair, sweep
 from ashley.files.connected_store import REFRESH_S, ConnectedStore
 from ashley.files.mirror import MirroredStore
 from ashley.files.s3 import S3Store
-from ashley.files.store import StoreUnavailable
+from ashley.files.memory import MemoryStore
+from ashley.files.store import NullStore, ObjectStore, StoreUnavailable
 from ashley.files.store_kind import KIND, NAME, Keys, check, keys_of
 from ashley.files.store_seed import Outcome, seed_store
 from ashley.people import admin
+from ashley.tools.bench_files import BenchFileTools
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import scalar
 from files_support import FakeS3, sync
@@ -133,6 +136,26 @@ async def test_a_row_is_not_read_again_within_the_refresh_bound() -> None:
     assert await store.current() is first and reads == [1]
     clock.now += 1
     assert await store.current() is first and reads == [1, 1], "an unreadable row leaves the env's store, tried again after the bound"
+
+
+def test_the_file_tools_are_offered_only_while_a_store_is_held(db_url: str) -> None:
+    alana = first_household(db_url)
+
+    async def scenario() -> list[int]:
+        clock = Clock()
+        async with connections_on(db_url) as connections:
+            store = stored(None, lambda: connections, clock)
+            services.register(ObjectStore, store)
+            try:
+                tools = BenchFileTools(FIRST_HOUSEHOLD, alana, 1)
+                seen = [len((await tools.catalogue()).specs), int(await store.available())]
+                await connections.add(FIRST_HOUSEHOLD, NAME, "", ROW.endpoints, ROW.secret(), alana)
+                clock.now += REFRESH_S
+                return [*seen, len((await tools.catalogue()).specs), int(await store.available())]
+            finally:
+                services.unregister(ObjectStore)
+    assert asyncio.run(scenario()) == [0, 0, 1, 1]
+    assert asyncio.run(NullStore().available()) is False and asyncio.run(MemoryStore().available()) is True
 
 
 @sync

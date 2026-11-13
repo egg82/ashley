@@ -20,6 +20,11 @@ class ObjectStore(Service):
     def null(cls) -> "ObjectStore":
         return NullStore()
 
+    async def available(self) -> bool:
+        """Whether a store holds bytes now, so a caller offers what needs one. True unless this is `NullStore`, or a
+        `ConnectedStore` with none connected. Never raises."""
+        return True
+
     @abstractmethod
     async def put(self, key: str, data: bytes) -> int:
         """Keep `data` under `key`, replacing what was there, and return how many copies now hold it (at least 1).
@@ -45,6 +50,9 @@ class ObjectStore(Service):
 
 class NullStore(ObjectStore):
     """What an unwired process sees: every call raises StoreUnavailable."""
+
+    async def available(self) -> bool:
+        return False
 
     async def put(self, key: str, data: bytes) -> int:
         raise StoreUnavailable("no object store is wired")
