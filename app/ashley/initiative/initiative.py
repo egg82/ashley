@@ -7,7 +7,8 @@ house starts carries the facts of its moment (`moment.Moment`), gathered before 
 before she is asked (`planned`): the plan's outcome reaches her as that call's instruction. Every other unprompted turn
 carries none, and goes out on her `Reply.says` alone, except a remark nobody asked for (`remark.Chance`): code allows
 one before she is asked (`remark`), and lets it out only when she says it is worth saying and it is no line she
-already sent."""
+already sent. Whether she tends her home channel in a slot of time (`tend.Tending`) is decided the same way: a roll
+first (`tend_rolls`), then the slot's facts (`tend`); what she writes on that turn goes out on her `says`."""
 
 from abc import abstractmethod
 
@@ -16,6 +17,8 @@ from ..services import Service
 from .moment import Moment, Plan
 from .remark import RATES, Chance, Rates, Verdict, repeats, rolls, verdict
 from .score import planned
+from . import tend as tending_rules
+from .tend import Tending, Verdict as TendVerdict
 from .weights import Weights
 
 
@@ -45,6 +48,14 @@ class Initiative(Service):
     def remark_speaks(self, reply: Reply, line: str, chance: Chance) -> bool:
         """Whether `reply`, delivered as `line`, goes out as a remark at `chance`. Pure."""
 
+    @abstractmethod
+    def tend_rolls(self, seed: str) -> bool:
+        """Whether the slot `seed` (`tend.Tending.seed`) rolls a tending, before its channel is read. Pure."""
+
+    @abstractmethod
+    def tend(self, tending: Tending) -> TendVerdict:
+        """Whether she tends her home channel at `tending`, before her turn runs. Pure."""
+
 
 class NullInitiative(Initiative):
     """What an unwired process sees: she never speaks unprompted."""
@@ -64,15 +75,22 @@ class NullInitiative(Initiative):
     def remark_speaks(self, reply: Reply, line: str, chance: Chance) -> bool:
         return False
 
+    def tend_rolls(self, seed: str) -> bool:
+        return False
+
+    def tend(self, tending: Tending) -> TendVerdict:
+        return "rolled_out"
+
 
 class Scored(Initiative):
     """The moment's score and seeded roll (`score.planned`) under `weights`: a reply goes out when she says it is worth
     saying and, at a moment, the plan is not silent. A remark is allowed by `rates` (`remark.verdict`) and goes out
-    when she says it is worth saying and it repeats no line she sent."""
+    when she says it is worth saying and it repeats no line she sent. A tending is allowed by `tending` (`tend.verdict`)."""
 
-    def __init__(self, weights: Weights, rates: Rates = RATES) -> None:
+    def __init__(self, weights: Weights, rates: Rates = RATES, tending: tending_rules.Rates = tending_rules.RATES) -> None:
         self._weights = weights
         self._rates = rates
+        self._tending = tending
 
     def planned(self, moment: Moment) -> Plan:
         return planned(moment, self._weights)
@@ -88,3 +106,9 @@ class Scored(Initiative):
 
     def remark_speaks(self, reply: Reply, line: str, chance: Chance) -> bool:
         return reply.says != "none" and self.remark(chance) == "allowed" and not repeats(line, chance)
+
+    def tend_rolls(self, seed: str) -> bool:
+        return tending_rules.rolls(seed, self._tending)
+
+    def tend(self, tending: Tending) -> TendVerdict:
+        return tending_rules.verdict(tending, self._tending, self._weights)

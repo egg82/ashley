@@ -20,10 +20,11 @@ class PostsFailed(Exception):
 
 @dataclass(frozen=True)
 class Post:
-    """One message: its snowflake `id`, the author's display name, whether a bot wrote it, when it was `at` sent (ISO
-    8601 as Discord gives it) and its `text`. Everything but `id` was written outside her control."""
+    """One message: its snowflake `id`, its author's snowflake `author_id`, the author's display name, whether a bot wrote it, when it was `at` sent (ISO
+    8601 as Discord gives it) and its `text`. Everything but the ids was written outside her control."""
 
     id: int
+    author_id: int
     author: str
     bot: bool
     at: str

@@ -48,6 +48,16 @@ weight's sign is part of that data's contract, so the loader refuses a recent gr
   household within `repeat_within_days`, compared by fingerprint (case, punctuation and spacing ignored), never by
   asking a model. It never goes to a phone. Rejected: a model call per channel message to ask whether she has
   something to say, which costs a call for every message and keeps no rate.
+- **When she tends her home channel on Discord is decided the same way** (`ashley.initiative.tend`, rates in
+  `app/ashley/initiative/tend.json`). Time is cut into slots; each server's slot is rolled against `chance`, seeded by
+  the device and slot, before anything is read. One that rolls in is scored from facts measured from the channel's
+  messages sent before the slot began, so any process deciding a slot decides the same: how long since her last
+  message there and how many people wrote since, each a share up to its weight. It is refused when a fact cannot be
+  read, in the household's night, within `min_gap_h` of her last message, or under the threshold. The Discord
+  singleton's session looks every `check_every_s` (`ashley.channels.discord.home`), so no singleton was added. An
+  allowed slot is her own turn, the household's, on the channel's thread, offered only the tools that change that
+  channel; its source is the slot's, so a slot handed in again after a failover is one turn, and her reply goes out
+  through the outbox on `says` alone.
 - **Rejected: leaving the judgement to the prompt.** No history, so no rate.
 
 ## Home Assistant wakes her; she decides

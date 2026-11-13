@@ -148,6 +148,14 @@ own conversation. One unrevoked device holds a server, so revoking it frees the 
 - **A reply is split for Discord's 2000-character limit in code**, at paragraph, then line, then word breaks, into at
   most `max_messages` messages, the last ending `…` when cut. Every send parses no mentions, so her text can never
   ping `@everyone` or a role. In a channel the first message replies to the one she answers.
+- **Her home channel is hers to change, on her own initiative only.** Its topic and pins are changed by tools
+  scoped to the household's `home_channel_id`, with no argument naming another channel
+  (`ashley.tools.discord_home_tools.HomeTools` over `ashley.tools.discord_home.HomeChannel`); she pins and unpins
+  only messages the bot wrote. They are offered by a field, `ashley.channels.model.Inbound.tends_home`, which holds
+  only on a turn that is unprompted and the household's, so no reply to anyone, in `#ashley` or elsewhere, is ever
+  offered them and a mention cannot rewrite her channel. What she posts there is her reply on that turn, through the
+  outbox; no tool posts, so there is one path into the channel. The server's owner grants Manage Channels and Manage
+  Messages on `#ashley` alone, as a channel permission override.
 - **While she thinks she shows typing.** A turn that cannot be made posts a line from data (`unavailable_text`,
   `refused_text`); a failed send is logged and dropped, since a late duplicate is worse than a gap.
 - **The library is hikari** (asyncio, typed, every cache off, runs in the caller's loop with no signal handlers),

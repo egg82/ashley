@@ -25,6 +25,7 @@ from ..tools.bench_skills import BenchSkillTools
 from ..tools.bench_tidy import BenchTidyTools
 from ..tools.bench_tools import BenchTools
 from ..tools.composite import CompositeTools
+from ..tools.discord_home_tools import HomeTools
 from ..tools.discord_read import DiscordReadTools
 from ..tools.errand_step import ErrandStepTools
 from ..tools.everyday import HouseholdTools
@@ -83,7 +84,8 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     names; with `reads_only`, to those that change nothing, where the reply reaches the speaker alone and else to none.
     From a server channel (`discord_channel`) with a known speaker, reading that channel's recent messages (`discord_read`). With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
     by; the conversation she is in (`said`) is what they check a URL the person gave against. With `errand` and a known
-    speaker, `check_again` (`errand`) beside all of that, not narrowed."""
+    speaker, `check_again` (`errand`) beside all of that, not narrowed. On a turn tending her home channel
+    (`Inbound.tends_home`), the tools that change that channel (`home`), and on no other turn."""
     everyday = HouseholdTools(inbound.household_id)
 
     def usable() -> Tools:
@@ -92,7 +94,7 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
         return CompositeTools({EVERYDAY: everyday, **rest, READERS: readers})
 
     added = {**sources(inbound, arrival, said and said[0], results, said, usable), **_mail(inbound),
-             **_code(inbound, said)}
+             **_code(inbound, said), **_home(inbound)}
     own = narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added}) if added else everyday)
     readers = ReaderTools(lambda names: Reading(Only(own, names)))
     if inbound.speaker_id is None:
@@ -115,6 +117,11 @@ def hands_off(inbound: Inbound) -> bool:
     """Whether this turn may hand a bench job to a worker: a bench's talk, the reply reaching the speaker alone, and
     nobody having woken it, so a woken turn cannot chain jobs."""
     return owner_alone(inbound) and not inbound.unprompted
+
+
+def _home(inbound: Inbound) -> Mapping[str, Tools]:
+    home = inbound.tends_home
+    return {} if home is None else {"home": HomeTools(home)}
 
 
 def _mail(inbound: Inbound) -> Mapping[str, Tools]:

@@ -50,4 +50,4 @@ class HttpChannelPosts(ChannelPosts):
 def _post(m: dict[str, Any]) -> Post:
     author = m["author"]
     name = author.get("global_name") or author["username"]
-    return Post(int(m["id"]), str(name), bool(author.get("bot", False)), str(m["timestamp"]), str(m.get("content") or ""))
+    return Post(int(m["id"]), int(author["id"]), str(name), bool(author.get("bot", False)), str(m["timestamp"]), str(m.get("content") or ""))

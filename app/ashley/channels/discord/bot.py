@@ -1,6 +1,7 @@
 """The Discord singleton (`decisions.md`, "Discord is a bot, its Gateway a singleton"): under the lease `discord`, one
 Gateway session that answers DMs from mapped accounts and, in any channel of a household's server, messages that
-mention her or reply to her; on any other message there from a household member she may make a remark (`remark`).
+mention her or reply to her; on any other message there from a household member she may make a remark (`remark`);
+and she tends her home channel when `Initiative` allows it a slot of time (`home`).
 
 Logs `discord.connected` (servers), `discord.disconnected` (reason), `discord.caught_up` (messages, channels, pruned,
 unsettled),
@@ -21,7 +22,7 @@ from ...people.people import People, PeopleUnavailable
 from ..devices import Devices, DevicesUnavailable
 from ..model import DiscordServer, Inbound, Outbound
 from ..respond import RespondRefused, RespondUnavailable, respond as turn
-from . import later, remark
+from . import home, later, remark
 from .chunks import chunks
 from .receipts import receipt_lines
 from .client import Connect, Discord, DiscordFailed
@@ -73,7 +74,8 @@ class Bot:
         `unavailable_text`; RespondRefused → `refused_text` (same reply_to rule). A DiscordFailed on send stops that
         reply's remaining chunks and is logged; a DiscordFailed on typing is ignored.
         While the session is open, the replies the outbox holds for Discord threads are posted every `later_poll_s`
-        (`later.drain`)."""
+        (`later.drain`), and she tends each server's home channel on her own initiative (`home.tend`), each such turn
+        in flight like a reply."""
         servers = await services.get(Devices).discord_servers()
         async with self._connect() as discord:
             logs.info(log, "discord.connected", servers=len(servers))
@@ -81,6 +83,8 @@ class Bot:
             reason = "error"
             posting = asyncio.create_task(later.drain(discord, self._config, self._later_poll_s,
                                                       asyncio.sleep))
+            tending = asyncio.create_task(home.tend(discord.me, replies.start, self._respond, self._now,
+                                                    asyncio.sleep))
             try:
                 await self._catch_up(discord, {s.home_channel_id for s in servers}, replies)
                 async for message in discord.messages():
@@ -92,7 +96,8 @@ class Bot:
                 raise
             finally:
                 posting.cancel()
-                await asyncio.gather(posting, return_exceptions=True)
+                tending.cancel()
+                await asyncio.gather(posting, tending, return_exceptions=True)
                 await replies.cancel()
                 logs.info(log, "discord.disconnected", reason=reason)
 
