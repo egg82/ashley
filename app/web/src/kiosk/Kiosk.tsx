@@ -4,6 +4,7 @@
 // whole leaves the fixed page above. An unpaired screen shows the pairing form.
 import { useEffect } from 'preact/hooks';
 import { AshleyMark } from '../components/AshleyMark';
+import { Announcement } from '../speech/Announcement';
 import { Board } from './Board';
 import { Controls } from './Controls';
 import { Glance } from './Glance';
@@ -53,6 +54,7 @@ export function Kiosk() {
       <main class="kiosk k-laid">
         <header class="k-frame"><Her size={72} /></header>
         <Board layout={arranged} />
+        <Announcement />
       </main>
     );
   return (
@@ -65,6 +67,7 @@ export function Kiosk() {
         <Controls />
       </section>
       <Talk />
+      <Announcement />
     </main>
   );
 }

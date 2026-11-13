@@ -1,6 +1,7 @@
 // The kiosk's live feed, `GET /api/kiosk/live`, seen as the device (`session/feed.ts` keeps it open): her state in any
 // shared turn drives her mark (`liveMark`), a turn stored on the device's thread and "something may have been missed"
-// go to the callbacks `startLive` is given, which read the conversation back, and a change to a screen goes to `listenScreen`'s. While it is down, `liveUp` is false and
+// go to the callbacks `startLive` is given, which read the conversation back, a change to a screen goes to `listenScreen`'s,
+// and what she announces here plays through `speech/announce.ts`. While it is down, `liveUp` is false and
 // the page looks for itself on its slow timers.
 import type { TurnFailedWhy } from '../session/live';
 import { computed, signal } from '@preact/signals';
@@ -9,6 +10,7 @@ import { reportKioskVisibility } from '../api/screens';
 import type { MarkState } from '../components/AshleyMark';
 import { createFeed } from '../session/feed';
 import { createReporting, screenToken } from '../session/screen';
+import { announced } from '../speech/announce';
 
 type Doing = 'listening' | 'thinking' | 'speaking';
 
@@ -38,6 +40,7 @@ const feed = createFeed(() => kioskLiveFeed(screenToken), {
     if (event.type === 'state') hear(event.turn, event.state, event.at_most_s * 1000);
     else if (event.type === 'failed') turnFailed(event.why);
     else if (event.type === 'screen') screenChanged(event.device_id);
+    else if (event.type === 'announce') void announced(event.clip);
     else readTurn();
   },
   resync() {

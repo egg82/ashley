@@ -15,6 +15,7 @@ const stubs: Record<string, string> = {
   '../shell/her/moves': 'export const herMoved = () => {}; export const benchChangedBy = (...a) => { (globalThis.bench ??= []).push(a); };',
   '../shell/her/state': 'export const herLive = () => {}; export const herLiveLost = () => {};',
   '../api/screens': 'export const reportVisibility = async () => {};',
+  '../speech/announce': 'export const announced = async (clip) => { (globalThis.announced ??= []).push(clip); };',
   './screen': 'export const screenToken = "t"; export const createReporting = () => ({ start() {}, stop() {} });',
   './feed': 'export const createFeed = (_open, handlers) => { globalThis.feedHandlers = handlers; return { up: () => false, open: () => {}, close: () => {} }; };',
 };
@@ -109,4 +110,11 @@ test('a bench change on the feed hands the bench and who made it to her mark', (
   feedHandlers().heard({ type: 'bench', bench_id: 7, seq: 2, by: 'her' });
   feedHandlers().heard({ type: 'bench', bench_id: 8, seq: 3, by: 'person' });
   assert.deepEqual((globalThis as { bench?: unknown[] }).bench, [[7, 'her'], [8, 'person']]);
+});
+
+test('an announcement the feed hears goes to the page\'s announcer with its clip', () => {
+  const world = globalThis as unknown as { feedHandlers: { heard: (e: unknown) => void }; announced?: string[] };
+  world.feedHandlers.heard({ type: 'announce', clip: 'tok-a' });
+  world.feedHandlers.heard({ type: 'turn', thread: 'person:1:web' });
+  assert.deepEqual(world.announced, ['tok-a']);
 });

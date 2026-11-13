@@ -10,6 +10,7 @@ import type {
   CommandRefused,
   CommandRequest,
   ChatReply,
+  ClipLine,
   BenchMessage,
   ChatMessage,
   CorrectionRequest,
@@ -397,4 +398,14 @@ export function chatVoiceUrl(id: number): string {
 /** Where her voice for turn `id` is read, for the kiosk's thread. */
 export function kioskVoiceUrl(id: number): string {
   return `/api/kiosk/turns/${id}/voice`;
+}
+
+/** Where her voice for an announced clip is read; the token is its only credential. */
+export function clipVoiceUrl(clip: string): string {
+  return `/api/voice/clips/${encodeURIComponent(clip)}`;
+}
+
+/** The line shown beside an announced clip's voice. */
+export async function getClipLine(clip: string): Promise<ClipLine> {
+  return answer(await fetch(`/api/voice/clips/${encodeURIComponent(clip)}/line`), 200, 'GET /api/voice/clips/{token}/line');
 }

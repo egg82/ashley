@@ -1,11 +1,13 @@
 // The one owner of the person's live feed, `GET /api/live`: open while a person is signed in, reopened with backoff when
 // it drops (`feed.ts`). Her state goes to `shell/her/state.ts` and her moving the page to `shell/her/moves.ts`; a turn
 // on one of the person's threads, a change to one of their benches, a change to a screen of the household, and "read back what you show" (the feed opened, or
-// may have missed something), and her cue of a video piece's player, go to whoever listens. While it is down, `liveUp`
+// may have missed something), and her cue of a video piece's player, go to whoever listens; what she announces to
+// this screen plays through `speech/announce.ts`. While it is down, `liveUp`
 // is false and a room that shows something live looks for itself.
 import { liveFeed } from '../api/client';
 import { reportVisibility } from '../api/screens';
 import { benchChangedBy, herMoved } from '../shell/her/moves';
+import { announced } from '../speech/announce';
 import { herLive, herLiveLost } from '../shell/her/state';
 import type { Cue } from '../rooms/workshop/pieces/player';
 import { createFeed } from './feed';
@@ -30,6 +32,7 @@ const feed = createFeed(() => liveFeed(screenToken), {
     else if (event.type === 'screen') screenChanges.forEach((h) => h(event.device_id, event.seq));
     else if (event.type === 'cue') benchCues.forEach((h) => h(event.bench_id, event.piece_id, event, 'her'));
     else if (event.type === 'page') herMoved(event.room, event.bench_id ?? null);
+    else if (event.type === 'announce') void announced(event.clip);
   },
   resync() {
     herLiveLost();
