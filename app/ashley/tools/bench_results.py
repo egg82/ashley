@@ -74,6 +74,7 @@ HINTS: dict[Reason, str] = {
     "bad_body": "a job piece is written by the jobs' runner alone: it is neither added nor edited by hand; a job is "
                 "handed off with bench_hand_off and cancelled with bench_job_cancel",
     "bad_cue": "seek takes seconds from the start, 0 or more and under 100 hours; play and pause take none",
+    "bad_rows": "only a measurements piece's current choice rows can be shown, each once; read the piece again",
 }
 
 
