@@ -279,8 +279,8 @@ its wake id the turn's `source`, its tools agreed through `Proposals`. What an e
   sets the next, and of two sites under `PostgresLease` only the holder runs checks, the next taken by whichever
   holds the lease then.
 - **Not built yet:** the slow ask answered later ("look into X") held on the errand and told at her next reply, the
-  stale "let me check" told at the next chance, standing errands, and her own automations awaiting the person's OK
-  while the errand carries on (open-work, "Errands").
+  stale "let me check" told at the next chance, and her own automations awaiting the person's OK while the errand
+  carries on (open-work, "Errands").
 - **Rejected: a store of its own** (a plan table with due times and its own leased job). It would be a second
   scheduler beside the `wakes` queue, copying its claim, resume-by-`source`, refire and delivery, and a second list
   for the person beside their reminders.
@@ -296,3 +296,42 @@ its wake id the turn's `source`, its tools agreed through `Proposals`. What an e
   check the same `source`, which the turn loop takes for the same turn.
 - **Rejected: a `Reply` field for the next check.** Every turn's reply schema would carry it; a tool offered only on a
   check costs nothing elsewhere.
+
+**A standing errand is a repeating reminder that names her method.** Work done for good on a schedule ("each morning,
+look for new listings near the park") is a team of workers behind her, never beside her: nobody talks to a bot, and
+what the work finds reaches a person through her. Fits into: the `wakes` queue and Skills. A reminder that names its
+tools is already a worker's turn, run by the `wakes` singleton under `Lease`, checkpointed and resumed by `source`,
+its tools agreed through `Proposals`; a Skill is already a method document per kind of work. A standing errand is the
+two together: `ashley.senses.wakes.Reminder.method` names the household's kind of work, and the reminder must repeat
+and has no `ends_at`, so it never finishes.
+
+- **Its method loads as a bench's skill does.** The reminder turn sets `Inbound.method`, and
+  `ashley.tools.standing_method.StandingMethodTools` reads the household's skill of that kind when the turn's tools are
+  built and places it in its instructions, beside the turn's tools as narrowed and never narrowed itself, so it sits in
+  the stable part of the prompt and is never stored in the conversation's history. Read at each round, so an edit to
+  the skill reaches the next round, and a round resumed on another pod reads it again. A skill that cannot be read or
+  has no body gives one fixed instruction to carry out nothing this round and say nothing.
+- **Its findings take an errand's path.** Its turn is not `promised`: Initiative decides from her `says`, so a round
+  with nothing new stays quiet and one that finds something goes out by the reminder's route, as an open-ended
+  errand's check does.
+- **She sets one with `remind`'s `method`** on the person's ask, beside a repeat: a person asks her as they ask for any
+  reminder, the tools it names are proposed and agreed as any acting reminder's, and it is listed, changed and
+  cancelled as one (`method` shown in the list). A method naming no kind of the household's with a body is refused,
+  naming the kinds it has; a change that would stop it repeating is refused (cancel ends it).
+- **The table:** `wakes` gains `method`, a slug of `app/ashley/skills/skills.json`'s shape, allowed only on a
+  repeating `time` reminder with no `ends_at`; each next occurrence carries it on.
+- **Logs:** `skills.loaded` with the kind, version and length, or `skills.unavailable` with the kind; never the body.
+- **Measured by** `app/tests/test_standing_errand_store.py` (the store and the tools) and
+  `app/tests/errand_checks/test_standing_errands_run.py`: a round follows the seeded method, is offered only its named
+  tool, tells what it found and stays quiet when there is nothing new, its next round carries the method, a method
+  that cannot be read says to carry out nothing, and a round killed on one pod is finished on another with its method.
+- **Not built yet:** a standing errand woken by a house wake or a watch instead of its rule; a finding held until her
+  next reply to the person when Initiative keeps it quiet; a person setting one from the web app.
+- **Rejected: a bot store** (Rakazo's agents, each with its own inbox and schedule). It would be a second scheduler and
+  a second kind of method beside the `wakes` queue and Skills, which already hold both halves.
+- **Rejected: bots messaging each other** (Rakazo's `message_bot`, with a hop counter against loops), until two
+  standing errands actually need to; a sub-agent inside one turn (`look_up`'s pattern) covers handing off work.
+- **Rejected: the method's text in the reminder's message.** Every round would add the skill's body to the push
+  thread's history, which later turns read again.
+- **Rejected: a `remind` enum of the household's kinds.** Every turn offering `remind` would read the kinds to build
+  it; a refused call names them instead.
