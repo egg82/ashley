@@ -32,11 +32,14 @@ class Place:
 class By:
     """Who made a change: a person (`person_id` set) or her (`person_id` None). `outside` is set on a change of hers made
     in a turn that had read outside words: the piece it adds or edits is then marked `outside` for good. It is not stored
-    with the command. `runner` is set on the bench jobs' runner alone, whose command is logged with it."""
+    with the command. `runner` is set on the bench jobs' runner alone, whose command is logged with it. `turn` is the
+    person's turn a change of hers was made in, logged with the command so the turn's changes can be undone together
+    (`Workshop.undo_turn`); None for a person's change and for hers made outside a turn."""
 
     person_id: int | None
     outside: bool = False
     runner: bool = False
+    turn: int | None = None
 
     @property
     def author(self) -> Author:

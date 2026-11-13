@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from ashley.workshop.commands import Command
-from ashley.workshop.model import Bench, Change, Owner, Piece
+from ashley.workshop.model import Bench, By, Change, Owner, Piece
 from ashley.workshop.reactions import Unseen
-from ashley.workshop.workshop import Applied, BenchView, Logged, Placed, Workshop
+from ashley.workshop.workshop import Applied, BenchView, Logged, Placed, TurnUndone, Workshop
 
 EPOCH = datetime(2026, 10, 29, tzinfo=UTC)
 
@@ -20,6 +20,8 @@ class FakeWorkshop(Workshop):
     changes: dict[int, Change] = field(default_factory=dict[int, Change])
     outcome: Applied = Applied(7, "accepted", 7)
     raises: Exception | None = None
+    turn_undone: TurnUndone = TurnUndone((3, 2), ())
+    turn_undos: list[tuple[By, int]] = field(default_factory=list[tuple[By, int]])
     applied: list[tuple[Owner, int, Command]] = field(default_factory=list[tuple[Owner, int, Command]])
     reads: list[tuple[Owner, int]] = field(default_factory=list[tuple[Owner, int]])
 
@@ -53,6 +55,10 @@ class FakeWorkshop(Workshop):
             raise self.raises
         self.applied.append((owner, bench_id, command))
         return self.outcome
+
+    async def undo_turn(self, owner: Owner, bench_id: int, by: By, seq: int) -> TurnUndone:
+        self.turn_undos.append((by, seq))
+        return self.turn_undone
 
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:
         raise NotImplementedError

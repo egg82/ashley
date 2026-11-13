@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field, replace
+from typing import Any
 from datetime import UTC, datetime
 
 import pytest
@@ -77,6 +78,9 @@ class Benches(Workshop):
         raise NotImplementedError
 
     async def apply(self, owner: Owner, bench_id: int, command: Command) -> Applied:
+        raise NotImplementedError
+
+    async def undo_turn(self, owner: Owner, bench_id: int, by: Any, seq: int) -> Any:
         raise NotImplementedError
 
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:

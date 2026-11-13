@@ -22,8 +22,9 @@ from . import postgres_rows as rows
 from .commands import (Add, Added, Archived, Command, Cued, Edit, Install, Propose, Removed, Rename, Renamed, Restored, Run,
                        ScreenCommand, piece_of, type_of)
 from .decide import Accepted, Decision
-from .model import Bench, Owner
+from .model import Bench, By, Owner
 from .postgres_apply import decided
+from .postgres_turn import undo_all
 from .postgres_screen import PostgresScreens
 from .proposals import pending
 from . import screen_seed
@@ -31,7 +32,7 @@ from .rules import Rules, load_screen
 from .reactions import Unseen
 from .undo_walk import next_undo
 from .workshop import (Applied, BenchClosed, BenchNotFound, BenchView, Logged, Placed, ScreenView, SiteFrame,
-                       UnknownOwner, Workshop, WorkshopUnavailable)
+                       TurnUndone, UnknownOwner, Workshop, WorkshopUnavailable)
 
 log = logging.getLogger("ashley.workshop")
 READ_ONLY_TRANSACTION = "25006"
@@ -69,6 +70,13 @@ def _text_of(command: Command) -> str:
     if isinstance(command, Rename):
         return command.title
     return f"{command.text.title}{command.text.body}" if isinstance(command, Edit) else ""
+
+
+class _GroupRefused(Exception):
+    """A turn's undo had a refusal: raised inside the transaction so none of it is kept."""
+
+    def __init__(self, result: TurnUndone) -> None:
+        self.result = result
 
 
 def _announced(owner: Owner, bench_id: int, decision: Accepted, command: Command) -> Event:
@@ -211,6 +219,31 @@ class PostgresWorkshop(Workshop):
         if isinstance(decision, Accepted):
             services.get(Live).publish(_announced(owner, bench_id, decision, command))
         return applied
+
+    async def undo_turn(self, owner: Owner, bench_id: int, by: By, seq: int) -> TurnUndone:
+        if by.person_id not in (None, owner.person_id):
+            raise ValueError("a person's command is made on their own bench")
+        try:
+            with _translated():
+                async with self._database.connection() as conn:
+                    found = await rows.bench(conn, owner, bench_id, lock=True)
+                    if found is None:
+                        raise BenchNotFound(str(bench_id))
+                    bench, next_seq = found
+                    if bench.closed_at is not None:
+                        raise BenchClosed(str(bench_id))
+                    done, last = await undo_all(conn, bench_id, bench.household_id, next_seq, bench.title, self._rules,
+                                                by, seq)
+                    if done.refused:
+                        raise _GroupRefused(done)
+        except _GroupRefused as e:
+            logs.info(log, "workshop.undo_turn", bench=bench_id, undone=0, refused=len(e.result.refused))
+            return e.result
+        logs.info(log, "workshop.undo_turn", bench=bench_id, undone=len(done.undone), refused=0)
+        if last is not None:
+            services.get(Live).publish(BenchChanged(Shown(owner.household_id, owner.person_id), bench_id, last,
+                                                    "her" if by.person_id is None else "person"))
+        return done
 
     async def screen(self, household_id: int, device_id: int) -> ScreenView:
         with _translated():

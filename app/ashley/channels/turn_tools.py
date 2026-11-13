@@ -148,7 +148,8 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["bench"] = BenchTools(household, person, bench, lead=inbound.lead or (arrival is not None and arrival.fresh),
                                     results=results,
                                     said=None if conversation_id is None else said_links.by_people(conversation_id),
-                                    turns=None if conversation_id is None else said_links.turns_by_people(conversation_id))
+                                    turns=None if conversation_id is None else said_links.turns_by_people(conversation_id),
+                                    turn_id=None if turn is None else turn[1])
         found["tidy"] = BenchTidyTools(bench)
         found["automations"] = BenchAutomationTools(household, person, bench)
         found["skills"] = BenchSkillTools(household, person, bench)
