@@ -4,7 +4,7 @@ import re
 
 import pytest
 from ashley import logs
-from contract_support import client, unreachable_conninfo
+from contract_support import client, down_client
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from logging import getLogger
@@ -33,7 +33,7 @@ def test_a_request_is_one_line_with_method_route_status_and_duration(
 
 def test_a_failing_request_logs_its_real_status(capsys: pytest.CaptureFixture[str]) -> None:
     logs.setup()
-    with client(unreachable_conninfo("canarypw")) as c:
+    with down_client("canarypw") as c:
         capsys.readouterr()
         assert c.get("/api/ready").status_code == 503
     out = capsys.readouterr().out
@@ -43,7 +43,7 @@ def test_a_failing_request_logs_its_real_status(capsys: pytest.CaptureFixture[st
 
 def test_health_is_not_logged(capsys: pytest.CaptureFixture[str]) -> None:
     logs.setup()
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         capsys.readouterr()
         for _ in range(3):
             assert c.get("/api/health").status_code == 200
@@ -81,7 +81,7 @@ def test_no_query_string_header_value_or_client_address_is_ever_logged(
 
 def test_an_unknown_route_is_logged_once_without_its_query_string(capsys: pytest.CaptureFixture[str]) -> None:
     logs.setup()
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         capsys.readouterr()
         assert c.get("/api/nope?zqsecret=1").status_code == 404
     out = capsys.readouterr().out
@@ -117,7 +117,7 @@ def test_an_unmatched_path_is_not_logged_as_a_route(capsys: pytest.CaptureFixtur
     """The access line carries the route template; a request that matches no route has none, so its raw path (which
     could hold an id) is not written."""
     logs.setup()
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         capsys.readouterr()
         assert c.get("/api/users/zq4815162342").status_code == 404
     out = capsys.readouterr().out

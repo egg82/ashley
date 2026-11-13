@@ -22,7 +22,7 @@ from ashley.people.model import Person
 from ashley.settings import Settings
 from ashley.signin.model import LinkPending, SignedIn
 from ashley.signin.sessions import Sessions, SessionsUnavailable
-from contract_support import unreachable_conninfo
+from contract_support import down_database, unreachable_conninfo
 from fastapi.testclient import TestClient
 from later_support import FakeOutbox
 
@@ -147,7 +147,8 @@ class World:
 
 @pytest.fixture
 def world(monkeypatch: pytest.MonkeyPatch) -> Generator[World]:
-    app = create_app(Settings(database_url=unreachable_conninfo(), build_version="t", public_url=PUBLIC))
+    conninfo = unreachable_conninfo()
+    app = create_app(Settings(database_url=conninfo, build_version="t", public_url=PUBLIC), down_database(conninfo))
     sessions = FakeSessions(ALANA, ELLA, TWELVE)
     conversations, outbox, loop = FakeConversations(), FakeOutbox(), TurnLoop()
     services.register(Sessions, sessions)

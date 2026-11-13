@@ -29,7 +29,7 @@ from ashley.tools.everyday import Everyday
 from ashley.tools.tools import Catalogue, Tools
 from ashley.workshop.workshop import Workshop
 from device_controls_support import FakeScreenControls
-from contract_support import OPENAPI, unreachable_conninfo
+from contract_support import OPENAPI, down_database, unreachable_conninfo
 from fastapi.testclient import TestClient
 from later_support import FakeOutbox
 from live_support import FakeLive
@@ -167,7 +167,8 @@ class Kiosk:
 
 @pytest.fixture
 def kiosk(monkeypatch: pytest.MonkeyPatch) -> Generator[Kiosk]:
-    app = create_app(Settings(database_url=unreachable_conninfo(), build_version="t", public_url=PUBLIC))
+    conninfo = unreachable_conninfo()
+    app = create_app(Settings(database_url=conninfo, build_version="t", public_url=PUBLIC), down_database(conninfo))
     sessions = FakeSessions(ALANA, ELLA, TWELVE)
     world = Kiosk(TestClient(app, base_url=PUBLIC), FakeDevices(), FakeScreenControls(), sessions,
                   FakeConversations(), TurnLoop(), FakeTools(), FakePresence(), FakePeople(), monkeypatch)

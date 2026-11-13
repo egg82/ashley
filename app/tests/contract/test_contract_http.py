@@ -7,7 +7,7 @@ import psycopg
 import pytest
 from ashley import services
 from ashley.db.database import Database, DatabaseUnavailable, Probe
-from contract_support import OPENAPI, client, declared_responses, unreachable_conninfo, violations
+from contract_support import OPENAPI, client, declared_responses, down_client, violations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from psycopg import AsyncConnection, sql
@@ -26,7 +26,7 @@ def test_health_conforms_with_the_database_up(empty_database: str) -> None:
 
 
 def test_health_is_200_with_the_database_unreachable() -> None:
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         r = c.get("/api/health")
     assert r.status_code == 200
     assert violations(declared_responses("/api/health")["200"], r.json()) == []
@@ -35,7 +35,7 @@ def test_health_is_200_with_the_database_unreachable() -> None:
 @settings(max_examples=15, deadline=None)
 @given(st.text(alphabet="0123456789.abcdef-+", min_size=1, max_size=20))
 def test_health_reports_the_running_build(version: str) -> None:
-    with client(unreachable_conninfo(), build_version=version) as c:
+    with down_client(build_version=version) as c:
         assert c.get("/api/health").json()["version"] == version
 
 
@@ -49,7 +49,7 @@ def test_ready_conforms_with_a_writable_primary(empty_database: str) -> None:
 
 
 def test_ready_is_503_with_the_declared_error_when_the_database_is_unreachable() -> None:
-    with client(unreachable_conninfo("canarypw")) as c:
+    with down_client("canarypw") as c:
         r = c.get("/api/ready")
     assert r.status_code == 503
     assert violations(declared_responses("/api/ready")["503"], r.json()) == []
@@ -61,7 +61,7 @@ def test_ready_is_503_with_the_declared_error_when_the_database_is_unreachable()
 def test_ready_recovers_per_request_not_per_boot(empty_database: str) -> None:
     """Readiness reflects the database now: one app instance answers 200 against a good database, and an app aimed at
     a dead one answers 503 on every request, repeatedly."""
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         assert {c.get("/api/ready").status_code for _ in range(2)} == {503}
     with client(empty_database) as c:
         assert {c.get("/api/ready").status_code for _ in range(3)} == {200}
@@ -71,7 +71,7 @@ def test_ready_recovers_per_request_not_per_boot(empty_database: str) -> None:
 def test_every_declared_path_answers_only_declared_statuses(path: str, method: str, empty_database: str) -> None:
     declared = set(declared_responses(path, method))
     with (client(empty_database, follow_redirects=False) as up,
-          client(unreachable_conninfo(), follow_redirects=False) as down):
+          down_client(follow_redirects=False) as down):
         statuses = {str(up.request(method, path).status_code), str(down.request(method, path).status_code)}
     assert statuses <= declared
 
@@ -103,7 +103,7 @@ class FixedDatabase(Database):
 
 @pytest.mark.parametrize("writable", [True, False])
 def test_ready_reports_what_the_database_service_found(writable: bool) -> None:
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         services.register(Database, FixedDatabase(Probe(reachable=True, writable=writable)))
         r = c.get("/api/ready")
     assert r.status_code == 200
@@ -111,7 +111,7 @@ def test_ready_reports_what_the_database_service_found(writable: bool) -> None:
 
 
 def test_ready_is_503_whenever_the_database_service_is_unreachable() -> None:
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         services.register(Database, FixedDatabase(Probe(reachable=False, writable=False)))
         assert c.get("/api/ready").status_code == 503
 
