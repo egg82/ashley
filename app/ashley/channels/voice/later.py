@@ -9,11 +9,9 @@ Logs `voice.later` per reply taken: device (None when the thread names no satell
 import logging
 
 from ... import logs, services
-from ..model import Satellite
 from ..outbox import Later, Outbox, OutboxUnavailable
-from .clips import Clips, ClipsUnavailable
-from .connection import Announcer
 from .run import Pipeline
+from .saying import said
 from .session import Links, Sleep
 
 log = logging.getLogger("ashley.channels.voice")
@@ -41,23 +39,9 @@ async def drain(links: Links, pipeline: Pipeline, poll_s: float, sleep: Sleep) -
 
 async def say(later: Later, links: Links, pipeline: Pipeline) -> None:
     device = _device(later.thread)
-    outcome, clip = await _said(later, links.get(device) if device is not None else None, pipeline)
+    outcome, clip = await said(later.outbound.body, later.age_ms, links.get(device) if device is not None else None,
+                               pipeline)
     logs.info(log, "voice.later", device=device, outcome=outcome, clip=clip, age_ms=later.age_ms)
-
-
-async def _said(later: Later, link: tuple[Satellite, Announcer] | None, pipeline: Pipeline) -> tuple[str, int | None]:
-    if link is None:
-        return "not_connected", None
-    satellite, session = link
-    try:
-        clip = await services.get(Clips).add(satellite.device.id, later.outbound.body, later.age_ms)
-    except ClipsUnavailable:
-        return "clips_unavailable", None
-    url = f"{pipeline.clip_base_url}/api/voice/clips/{clip.token}"
-    speaker, play = satellite.room_speaker, pipeline.play
-    if speaker is not None and play is not None and await play(satellite.device.household_id, speaker, url):
-        return "room_speaker", clip.id
-    return ("announced" if session.announce(url) else "no_media_player"), clip.id
 
 
 def _device(thread: str) -> int | None:
