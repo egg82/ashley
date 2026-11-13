@@ -494,8 +494,7 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       seeds its scratch household's connection instead of taking the env.
     - Fits into: Connections and Homes; the settings and the cluster repo's ExternalSecret.
 
-The next three make existing systems general (`engineering.md`, "Her systems are general, and she wires them"), in
-this order.
+The next makes an existing system general (`engineering.md`, "Her systems are general, and she wires them").
 
 30. **The ledger's events.** "Balance below" and "bill due" become events her rules can match. Fits into: Ledger and
     Senses.
