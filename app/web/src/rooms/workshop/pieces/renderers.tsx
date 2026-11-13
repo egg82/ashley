@@ -1,6 +1,6 @@
 // How a piece's body is shown, chosen by its kind's data (`GET /api/workshop/kinds`), never by its name: a `stored`
 // kind's body is its content, shown by the kind's `format` (Markdown, plain text as typed, code in a block, or an
-// automation's summary with its JSON, or a reader's page text with her highlight, `ReaderView.tsx`, or a diagram's Mermaid source drawn, `DiagramView.tsx`, or a recipe as a card, `RecipeView.tsx`); a `live` kind's body is a reference shown in a frame (`FrameView.tsx`); a `large` kind's body names bytes the server keeps, shown by `FileView.tsx`; a
+// automation's summary with its JSON, or a reader's page text with her highlight, `ReaderView.tsx`, or a diagram's Mermaid source drawn, `DiagramView.tsx`, or a recipe as a card, `RecipeView.tsx`); a `live` kind's body is a reference shown as it is now: in a frame (`FrameView.tsx`), or a Claude Code session's screen (`SessionView.tsx`); a `large` kind's body names bytes the server keeps, shown by `FileView.tsx`; a
 // kind the rules no longer list is shown as plain text, saying so. The glyph is the kind's label's first letter.
 import type { ComponentChildren } from 'preact';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -15,6 +15,7 @@ import { FactsView } from './FactsView';
 import { ModelView } from './ModelView';
 import { WakeView } from './WakeView';
 import { SiteView, VideoView } from './FrameView';
+import { SessionView } from './SessionView';
 import { FileView } from './FileView';
 import { MediaView } from './MediaView';
 import { ReaderView } from './ReaderView';
@@ -78,6 +79,7 @@ function Live({ bench, piece, format }: { bench: number; piece: BenchPiece; form
   if (!piece.body.trim()) return <div class="pbody"><span class="meta">Empty. Edit to set it.</span></div>;
   if (format === 'site') return <SiteView piece={piece} />;
   if (format === 'video') return <VideoView bench={bench} piece={piece} />;
+  if (format === 'session') return <SessionView body={piece.body} />;
   return <div class="pbody"><span class="unk">a live source, which this page can't show</span></div>;
 }
 

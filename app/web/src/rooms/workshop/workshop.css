@@ -112,6 +112,12 @@
 .rline { line-height: 24px; overflow-wrap: anywhere; }
 .rstate { font-weight: 600; color: var(--text); }
 .rstate.ok { color: var(--ok); }
+/* new here: a session piece, a Claude Code session's screen as it runs */
+.pbody.session { display: grid; gap: 6px; }
+.pbody.session .rline { margin: 0; }
+.session-screen { margin: 0; max-height: 320px; overflow: auto; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-1);
+  background: var(--ink-0); color: var(--text-2); font: 12px/1.45 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.pbody.session:not([data-state="live"]) .session-screen { opacity: 0.6; }
 /* new here: a site or video piece, framed */
 .pbody.frame { display: grid; gap: 8px; }
 .frame-box { display: block; width: 100%; border: 1px solid var(--line); border-radius: var(--r-1); background: var(--ink-0); }
