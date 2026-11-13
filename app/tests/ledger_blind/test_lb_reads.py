@@ -12,8 +12,8 @@ def test_accounts_are_neutral_records_with_the_backends_balance_text(db_url: str
     async def scenario(w: World) -> None:
         page = await w.ledger.accounts(w.household_id, 25)
         assert isinstance(page, Page)
-        assert page.rows == (Account(CHECKING, "Checking", "$1,234.56", "depository", "asset"),
-                             Account("a2", "Visa", "-$300.00", "depository", "liability"))
+        assert page.rows == (Account(CHECKING, "Checking", "$1,234.56", "depository", "asset", 123_456),
+                             Account("a2", "Visa", "-$300.00", "depository", "liability", -30_000))
         assert page.total == 7
     run(db_url, scenario)
 
