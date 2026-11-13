@@ -186,7 +186,7 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
     system = prompt.system(inbound.kind, who, inbound.place, catalogue, remembered.recalled,
                            remembered.standing or (), phone=phone is not None,
                            page_open=page_open if phone is not None else None, aloud=aloud.offered(inbound),
-                           said_before=prompt.said_before(carried.relevant, who.household),
+                           overhears=inbound.overhears, said_before=prompt.said_before(carried.relevant, who.household),
                            while_away=owed.lines(away, who.household), overrides=await taste_read)
     ran = await history_runs.carried(inbound.household_id, carried.recent, said, LIMITS[inbound.kind])
     messages = prompt.messages(carried.recent, said, who.household, ran, inbound.note, carried.places)

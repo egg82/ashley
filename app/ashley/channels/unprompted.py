@@ -1,6 +1,7 @@
-"""Her reply on a turn nobody is waiting on (`Inbound.unprompted`): whether it goes out is `Initiative`'s to say, unless
-the person asked for it earlier (`Inbound.promised`, a reminder), and one that does not is stored as `QUIET`, so no
-later turn carries words she never said. Logs `initiative.decided` with the conversation and `speaks`, once per turn
+"""Whether her reply goes out. On a turn nobody is waiting on (`Inbound.unprompted`) it is `Initiative`'s to say, unless
+the person asked for it earlier (`Inbound.promised`, a reminder); on a turn that may have been overheard
+(`Inbound.overhears`) it is her `Reply.says`. One that does not go out is stored as `QUIET`, so no later turn carries
+words she never said. Logs `initiative.decided` with the conversation and `speaks`, once per turn
 Initiative decides, never the reply."""
 
 import logging
@@ -15,7 +16,10 @@ log = logging.getLogger("ashley.channels")
 
 
 def speaks(reply: Reply, inbound: Inbound) -> bool:
-    """Whether `reply` goes out: always on a turn someone asked for, now or earlier, else as `Initiative` decides."""
+    """Whether `reply` goes out: on a turn that may have been overheard (`Inbound.overhears`), unless she set `says`
+    `none`; else always on a turn someone asked for, now or earlier, and otherwise as `Initiative` decides."""
+    if inbound.overhears:
+        return reply.says != "none"
     return not _initiative_decides(inbound) or services.get(Initiative).speaks(reply)
 
 
@@ -24,8 +28,11 @@ def _initiative_decides(inbound: Inbound) -> bool:
 
 
 def says(reply: Reply, inbound: Inbound) -> Says:
-    """`reply.says` as the turn honours it: `none` when it does not go out (`speaks`), else `reply`."""
-    return "reply" if speaks(reply, inbound) else "none"
+    """`reply.says` as the turn honours it: `none` when it does not go out (`speaks`), `offer` when she offered on a
+    turn that may have been overheard, else `reply`."""
+    if not speaks(reply, inbound):
+        return "none"
+    return "offer" if inbound.overhears and reply.says == "offer" else "reply"
 
 
 def as_said(reply: Reply, inbound: Inbound) -> Reply:

@@ -130,7 +130,9 @@ class Inbound:
     (`Turn.attachment`) and read by her with it; the adapter that sets it sets `taint` `pasted` when `channels.pasted`
     says it is over the threshold. `said_aloud` says the words came from the page's record button, set only by the web
     chat and kiosk adapters from the request: it offers her to answer aloud (`channels.aloud.offered`), and `medium` stays
-    `text`."""
+    `text`. `overhears` says what she heard may not have been meant for her (a satellite's wake word fires on room audio),
+    set only by the voice adapter: it offers her `Reply.says` `offer` and `none`, and code honours them
+    (`channels.unprompted.says`)."""
 
     household_id: int
     thread: str
@@ -166,6 +168,7 @@ class Inbound:
     agree: int | None = None
     attachment: Attachment | None = None
     said_aloud: bool = False
+    overhears: bool = False
 
     @property
     def lands_on(self) -> int | None:

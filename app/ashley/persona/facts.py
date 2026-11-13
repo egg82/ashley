@@ -31,6 +31,10 @@ ALOUD = ("{name} said this aloud, on a page that can play your voice: set `aloud
          "`text` is shown either way.")
 ALOUD_UNKNOWN = ("This was said aloud, on a screen that can play your voice: set `aloud` to have `spoken` played "
                  "there. `text` is shown either way.")
+OVERHEARD = ("A device in this room heard your name and woke, and what it heard may not have been said to you. Said "
+             "to you, or when you are unsure, set `says` to reply. Not said to you but something you could do for "
+             "them: set `says` to offer, and `spoken` and `text` are one short question asking whether they want you "
+             "to. Not said to you and nothing to offer: set `says` to none, and nothing is said.")
 REMEMBERED = ("What you learned in earlier conversations that may bear on this message. Put the id of each one your "
               "reply relies on in `used_facts`. One marked (only if asked) you answer when asked about it directly, "
               "and never bring up yourself.")
@@ -83,7 +87,7 @@ def check(household: Household, speaker: Person | None, home: frozenset[int] | N
 
 def facts(
     now: datetime, household: Household, speaker: Person | None, home: frozenset[int] | None, place: str | None,
-    phone: bool = False, page_open: bool | None = None, aloud: bool = False,
+    phone: bool = False, page_open: bool | None = None, aloud: bool = False, overhears: bool = False,
 ) -> str:
     lines = ["# Now", "", f"It is {when(now)}."]
     lines.append(
@@ -94,6 +98,8 @@ def facts(
                      (PHONE_WOKEN_OPEN if page_open else PHONE_WOKEN).format(name=speaker.name))
     if aloud:
         lines.append(ALOUD_UNKNOWN if speaker is None else ALOUD.format(name=speaker.name))
+    if overhears:
+        lines.append(OVERHEARD)
     if home is None:
         lines.append("You don't know who is home.")
     else:
