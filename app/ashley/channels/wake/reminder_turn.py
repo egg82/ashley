@@ -8,14 +8,14 @@ page shows as it does any turn of its thread (`Inbound.device_id`). Her answer i
 queued in the outbox, which drops what waits too long; each delivery is recorded on the reminder, and one not reached
 at its room or screen is pushed to the phone (`ashley.channels.push.reminders`). It offers only the tools that change nothing (`Inbound.reads_only`), so she can look at their money before she words it
 and never act on it unattended, unless the reminder names the tools its turn may use (`Reminder.tools`, which its maker
-agreed to: `Inbound.tools_only`), when it carries them out and says what it did. Its conversation is not remembered. A reminder a deposit or withdrawal fired carries it
-(`Reminder.landed`), which she states from its fields. A reminder a tainted turn made starts tainted `inherited`
+agreed to: `Inbound.tools_only`), when it carries them out and says what it did. Its conversation is not remembered. A reminder a deposit, a withdrawal or a balance falling
+below fired carries it (`Reminder.landed`), which she states from its fields. A reminder a tainted turn made starts tainted `inherited`
 (`Reminder.taint`), since its brief was written under outside words. The wake's id is the turn's `source`, so an occurrence handed in twice is one turn."""
 
 from dataclasses import replace
 
 from ...people.model import Person
-from ...senses.deposit_rule import Landed
+from ...senses.deposit_rule import Landed, money
 from ...senses.wakes import Reminder
 from ..model import Device, Inbound
 
@@ -68,6 +68,10 @@ def _what_to_do(reminder: Reminder, person: Person, where: str) -> str:
 def _landed(landed: Landed | None) -> str:
     if landed is None:
         return ""
+    if landed.below_cents is not None:
+        return (f"The balance that fell: {landed.account_name} is at {money(landed.cents)}, below "
+                f"{money(landed.below_cents)}, as read on {landed.day.isoformat()}. {_judge(landed)}"
+                f"Say where it stands, from these figures.\n")
     amount = f"{landed.cents // 100}.{landed.cents % 100:02d}"
     if landed.direction == "out":
         source = "" if landed.payee is None else f", to {landed.payee}"

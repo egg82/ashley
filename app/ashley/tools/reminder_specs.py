@@ -75,7 +75,10 @@ def remind_on_money(names: Sequence[str]) -> ToolSpec:
                     "it is refused. Conditions are general predicates you compose per ask (see conditions); code "
                     "judges them against the account's history. When it fires you are handed the transaction's "
                     "amount, day, payer and account, which conditions held, and the payer's history in the account, "
-                    "as well as what you wrote. It stays set and fires on every match until it is cancelled. Returns "
+                    "as well as what you wrote. It stays set and fires on every match until it is cancelled. "
+                    "Or, with balance_below in place of direction, it waits on the account's balance falling below "
+                    "that amount (no min_amount, payee or conditions): it fires once when the balance falls below, "
+                    "and again only after it has come back up; you are handed the balance and the threshold. Returns "
                     "the rule in words.", {
                         "type": "object",
                         "properties": {
@@ -83,7 +86,12 @@ def remind_on_money(names: Sequence[str]) -> ToolSpec:
                                     "description": "whom to remind: the speaker, or another person of the household"},
                             "direction": {"type": "string", "enum": list(DIRECTIONS),
                                           "description": "in for a deposit into the account, out for money leaving "
-                                                         "it (a payment, a bill, a purchase)"},
+                                                         "it (a payment, a bill, a purchase); give this or "
+                                                         "balance_below"},
+                            "balance_below": {"type": "number",
+                                              "description": "wait on the account's balance falling below this, in "
+                                                             "its own currency, as 200 or 0 (overdrawn), instead of "
+                                                             "on money moving; give this or direction"},
                             "account_id": {"type": "string", "maxLength": MAX_NAME,
                                            "description": "the account the money moves in, by the id money_accounts "
                                                           "or a transaction there gives"},
@@ -108,7 +116,7 @@ def remind_on_money(names: Sequence[str]) -> ToolSpec:
                                      "description": "what to remind them of once it has happened; you are "
                                                     "also handed the transaction's own figures"},
                         },
-                        "required": ["for", "direction", "account_id", "account", "what"],
+                        "required": ["for", "account_id", "account", "what"],
                     }, outside=False, tier="runs", label="Set a reminder that waits on money moving")
 
 
