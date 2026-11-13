@@ -36,14 +36,19 @@ DOOR = "binary_sensor.back_door"
 
 
 class Recording(PostgresWatches):
-    """The real store, noting each check it recorded."""
+    """The real store, noting each check it recorded: `stored` is set at each one, and `parked` (set by the job's pause)
+    is cleared at each, so it is set again only once the job has finished the round that recorded it."""
 
     recorded: list[Check]
+    stored: asyncio.Event
+    parked: asyncio.Event
 
     async def record(self, watch_id: int, version: int, check: Check) -> bool:
         stored = await super().record(watch_id, version, check)
         if stored:
             self.recorded.append(check)
+            self.parked.clear()
+            self.stored.set()
         return stored
 
 
@@ -66,12 +71,14 @@ class World:
         self.ticks.set()
 
     async def recorded(self, kind: type, n: int = 1) -> None:
-        """Wait, a few milliseconds at a time, until the store has recorded `n` checks of `kind`."""
-        for _ in range(400):
-            if sum(isinstance(c, kind) for c in self.store.recorded) >= n:
-                return
-            await asyncio.sleep(0.005)
-        raise AssertionError(f"never recorded {n} {kind.__name__}: {self.store.recorded}")
+        """Wait until the store has recorded `n` checks of `kind`."""
+        while sum(isinstance(c, kind) for c in self.store.recorded) < n:
+            self.store.stored.clear()
+            await self.store.stored.wait()
+
+    async def parked(self) -> None:
+        """Wait until the job is paused with nothing left to do since the last check it recorded."""
+        await self.store.parked.wait()
 
 
 @asynccontextmanager
@@ -81,10 +88,11 @@ async def world(url: str, ha: FakeHa) -> AsyncGenerator[World]:
     db = PoolDatabase(url, connect_timeout_s=5.0)
     await db.open()
     store = Recording(db)
-    store.recorded = []
+    store.recorded, store.stored, store.parked = [], asyncio.Event(), asyncio.Event()
     naps, ticks = Naps(), asyncio.Event()
 
     async def pause(_: float) -> None:
+        store.parked.set()
         await ticks.wait()
         ticks.clear()
 
@@ -133,6 +141,7 @@ def test_a_change_the_house_tells_wakes_her_at_once_through_the_subscription(db_
             await w.tick()
             await w.recorded(Quiet)
             assert ha.subscribed() == [DOOR]
+            await w.parked()
             await w.due_now()
             await ha.change(DOOR, "on")
             await w.recorded(Woke)
