@@ -9,6 +9,7 @@ from ashley import services, wiring_sandbox as wiring
 from ashley.runs.kube_api import KubeApi
 from ashley.runs.media import Media
 from ashley.runs.media_kubernetes import KubernetesMedia
+from speech_support import no_whisper
 from ashley.settings import Settings
 import httpx2
 
@@ -38,11 +39,11 @@ def test_media_needs_the_sandbox_and_the_link_key() -> None:
 
 def test_an_image_pinned_by_digest_is_wired_and_a_floating_tag_is_refused(api: KubeApi) -> None:
     settings = Settings(media_image=IMAGE, media_app_url="http://app:8080", **SANDBOX)
-    wiring.wire_media(settings, api)
+    wiring.wire_media(settings, api, no_whisper)
     assert isinstance(services.get(Media), KubernetesMedia)
     loose = Settings(media_image="registry.example/media:latest", media_app_url="http://app:8080", **SANDBOX)
     with pytest.raises(ValueError, match="pinned"):
-        wiring.wire_media(loose, api)
+        wiring.wire_media(loose, api, no_whisper)
 
 
 def test_unwired_nothing_is_offered() -> None:

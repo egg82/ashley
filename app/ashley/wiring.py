@@ -58,7 +58,9 @@ from .files.s3 import S3Store
 from .files.store import ObjectStore
 from .inference import spend_catalog
 from .inference.balance import ProviderBalances
+from .connections.address_in_force import AddressInForce
 from .inference.compatible import KIND as COMPATIBLE
+from .inference.wyoming_kind import KIND as WYOMING
 from .inference.kinds import KEYED
 from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
@@ -143,7 +145,8 @@ from .tools.look_up_config import LookUpConfig
 from .tools.pages import Pages
 from .tools.places import PlacesTools
 from .tools.tools import Tools
-from .tools.web_search import WebSearchTools
+from .tools.search_connection import KIND as SEARXNG, ConnectedWebSearch
+from .tools.web_search import WebSearch
 from .printables.config import PrintablesConfig
 from .tools import page_reader, printables_fetch, site_probe
 from .tools.printables_search import PrintablesSearchTools
@@ -156,7 +159,7 @@ from .workshop.workshop import Workshop
 
 CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
                                                 replace(GOOGLE, resources=mailboxes),
-                                                *(k.kind for k in KEYED), COMPATIBLE)  # the panel's order
+                                                *(k.kind for k in KEYED), COMPATIBLE, WYOMING, SEARXNG)  # the panel's order
 
 
 def configured_kinds(settings: Settings) -> tuple[ConnectionKind, ...]:
@@ -265,7 +268,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     register_proposals(services.get(Database), *outside_config.keeps())
     services.register(Initiative, Scored(WEIGHTS))
     if settings.sandbox_token_file:
-        api = wire_sandbox(settings, closers)
+        api = wire_sandbox(settings, closers, AddressInForce(lambda: services.get(Connections), WYOMING.name,
+                                                              settings.wyoming_stt_url))
         if settings.mail_bridge_image:
             wire_mail_bridge(settings, api)
     elif settings.sandbox_podman:
@@ -318,7 +322,7 @@ def tools(closers: list[Callable[[], Coroutine[Any, Any, None]]],
           searxng_url: str) -> tuple[Tools, Callable[[Home], Tools], Callable[[int], Tools]]:
     """The look-up over the web, for a household with no house, and what builds a household's tools over its house:
     the house's tools and the look-up with places near it. All share one search client. The web is searched only
-    with `searxng_url` set (`SEARXNG_URL`)."""
+    while there is an address, the SearXNG connection's or `searxng_url` where there is none, read on each use."""
     config = search_config.load()
     looking = look_up_config.load()
     house = home_assistant_config.load()
@@ -327,7 +331,7 @@ def tools(closers: list[Callable[[], Coroutine[Any, Any, None]]],
     rules = Rules(house.excluded, (), irreversible.load())
     search_http = httpx2.AsyncClient(headers={"User-Agent": "ashley (household assistant)"})
     closers.append(search_http.aclose)
-    web = WebSearchTools(search_http, config, searxng_url) if searxng_url else None
+    web = ConnectedWebSearch(search_http, config, AddressInForce(lambda: services.get(Connections), SEARXNG.name, searxng_url))
     models = printables_fetch.register(search_http)
     page_reader.register(search_http)
     site_probe.register()
@@ -349,7 +353,7 @@ def tools(closers: list[Callable[[], Coroutine[Any, Any, None]]],
     return CompositeTools({"search": look_up(None)}), over, without_house
 
 
-def look_up_sources(web: WebSearchTools | None, places: Tools | None, models: PrintablesConfig,
+def look_up_sources(web: WebSearch | None, places: Tools | None, models: PrintablesConfig,
                      http: httpx2.AsyncClient, config: LookUpConfig) -> Tools:
     """One look-up's sources: the web and its pages when wired, numbered for this look-up alone, Printables' models,
     numbered on from them, and places when wired."""

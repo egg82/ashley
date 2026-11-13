@@ -181,3 +181,8 @@ def router(task: SpeechTask, *providers: Transcriber | Speaker, ledger: MemoryLe
 def usage_of(call: Call) -> Usage:
     assert call.usage is not None
     return call.usage
+
+
+async def no_whisper() -> str:
+    """The speech service's address for a wiring test with none: empty, so a recording is transcribed from captions only."""
+    return ""

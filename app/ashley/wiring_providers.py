@@ -1,15 +1,15 @@
-"""Which providers the settings turn on: one per keyless inference setting that is present, the env's keys for the
-keyed ones (`ashley.inference.kinds`) and the env's local OpenAI-compatible server (`ashley.inference.compatible`).
+"""Which providers the settings turn on: the in-process embedding and voiceprint models, the env's keys for the
+keyed ones (`ashley.inference.kinds`), the env's local OpenAI-compatible server (`ashley.inference.compatible`) and the
+env's Wyoming address (`ashley.inference.wyoming_kind`).
 Called by `ashley.wiring.wire`."""
 
 import os
 
-from .inference import compatible
+from .inference import compatible, wyoming_kind
 from .inference.fastembed_embedder import FastEmbedder
 from .inference.provider import Wired
 from .inference.provider_keys import KeyInForce
 from .inference.sherpa_voiceprint import SherpaVoiceEmbedder
-from .inference.wyoming_stt import WyomingTranscriber
 from .settings import Settings
 
 
@@ -29,12 +29,14 @@ def env_compatible(settings: Settings) -> dict[str, KeyInForce]:
                                          compatible.KIND.base_url(url) or url, compatible.LOCAL)}
 
 
+def env_addressed(settings: Settings) -> dict[str, str]:
+    """The env's address for each provider reached at an address and no key, by its kind name; empty when unset."""
+    return {wyoming_kind.NAME: settings.wyoming_stt_url}
+
+
 def providers(settings: Settings) -> list[Wired]:
-    """One provider per keyless inference setting that is present: Wyoming speech-to-text, and the in-process embedding
-    and voiceprint models."""
+    """The providers no connection turns on: the in-process embedding and voiceprint models."""
     wired: list[Wired] = []
-    if settings.wyoming_stt_url:
-        wired.append(WyomingTranscriber("wyoming", settings.wyoming_stt_url))
     wired.append(FastEmbedder("fastembed", settings.embed_models_dir))
     if os.path.isfile(settings.voiceprint_model_path):
         wired.append(SherpaVoiceEmbedder("sherpa", settings.voiceprint_model_path))

@@ -30,7 +30,8 @@ class Settings:
     `routes_file` is a path to the operator's overlay of the shipped routes (`ashley.inference.routes.overlay`).
     `ha_url` (`http://homeassistant.local:8123`) and `ha_token` (a long-lived access token) wire Home Assistant's tools and
     presence; both or neither, since one without the other can reach nothing (ValueError).
-    `wyoming_stt_url` (`tcp://host:port`) wires the Wyoming speech-to-text provider; empty, it is not wired. OpenAI
+    `wyoming_stt_url` (`tcp://host:port`) seeds the Wyoming speech-to-text connection at start (`ashley.connections.address_seed`);
+    once a row exists it wins, and with none and no row the provider is not wired. OpenAI
     transcription needs only OpenAI's key, ElevenLabs' speech only its key.
     `voice_clip_base_url` (`https://ashley.example.com`) is where satellites and room speakers fetch her spoken
     replies; set, and with etcd, the satellite connections singleton runs. It needs `esphome_noise_psk`, the satellites'
@@ -75,7 +76,7 @@ class Settings:
     namespace reaches the app) let her take frames of a video and transcribe a recording in pods of that namespace
     (`ashley.runs.media_kubernetes`); both or neither, and they need the sandbox settings and the download-link key
     (ValueError); wiring refuses an image not pinned by digest (ValueError). The pod reaches the speech service at
-    `wyoming_stt_url`; without one a recording is transcribed only from captions it carries.
+    the Wyoming connection's address (`wyoming_stt_url` until there is a row); without one a recording is transcribed only from captions it carries.
     `mail_bridge_image` (Proton Mail Bridge and its keeper, `apps/ashley-mail-bridge`, pinned by digest) keeps one Bridge pod,
     as a singleton under the lease, in `mail_bridge_namespace`, which reaches the app at `mail_bridge_app_url`
     (`https://host`, a certificate the image's trust store accepts); the room's login reaches the keeper at

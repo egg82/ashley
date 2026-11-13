@@ -58,21 +58,30 @@ class ConnectionProviderKeys(ProviderKeys):
     label, and `compatible_env` (label to key, the env's local server) stands in for a label no row has, as `env` does
     for a kind.
 
+    `addressed` are the kinds reached at an address and no key (Wyoming): the first household's household-held connection
+    of each is in force under the kind's name, with its `base_url` and an empty secret, and `addressed_env` (kind name
+    to the env's address) stands in where there is no row.
+
     `connections` is called on each read, so it follows the service the locator holds then. Reads only; logs nothing
     (the caller logs what changed)."""
 
     def __init__(self, connections: Callable[[], Connections], kinds: Iterable[str], env: Mapping[str, str],
-                 compatible: str | None = None, compatible_env: Mapping[str, KeyInForce] | None = None) -> None:
+                 compatible: str | None = None, compatible_env: Mapping[str, KeyInForce] | None = None,
+                 addressed: Iterable[str] = (), addressed_env: Mapping[str, str] | None = None) -> None:
         self._connections = connections
         self._kinds = tuple(kinds)
         self._env = dict(env)
         self._compatible = compatible
         self._compatible_env = dict(compatible_env or {})
+        self._addressed = tuple(addressed)
+        self._addressed_env = dict(addressed_env or {})
 
     async def in_force(self) -> Mapping[str, KeyInForce]:
         keys = {kind: KeyInForce(kind, secret, None) for kind, secret in self._env.items()
                 if secret and kind in self._kinds}
         keys.update(self._compatible_env)
+        keys.update({kind: KeyInForce(kind, "", None, address) for kind, address in self._addressed_env.items()
+                     if address and kind in self._addressed})
         connections = self._connections()
         if not connections.can_open():
             return keys
@@ -85,6 +94,9 @@ class ConnectionProviderKeys(ProviderKeys):
             c = opened.connection
             if c.kind == self._compatible:
                 keys[c.label] = KeyInForce(c.kind, opened.secret, c.id, c.base_url, c.label, c.catalogue_provider)
+            elif c.kind in self._addressed and c.kind not in rows:
+                rows.add(c.kind)
+                keys[c.kind] = KeyInForce(c.kind, "", c.id, c.base_url)
             elif c.kind in self._kinds and c.kind not in rows:
                 rows.add(c.kind)
                 keys[c.kind] = KeyInForce(c.kind, opened.secret, c.id)

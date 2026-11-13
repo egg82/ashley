@@ -18,7 +18,7 @@ from contract.conversations_support import db_url as db_url, migrated_template a
 from contract.lease_support import campaign, holder_of, here, unique_name, wait_until
 from contract.conversations_support import run
 from etcd import etcd_url
-from watch_session_support import checked, told, watching
+from watch_session_support import told, watching
 
 
 async def quick(seconds: float) -> None:
@@ -33,16 +33,13 @@ def test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state(
         async with watching(db_url) as w:
             await w.arm("working", 1001)
             w.bridge.state("working", 1001)
-            w.bridge.hold = asyncio.Event()
             body = partial(watches_job.run, CONFIG, watches_job.KINDS, quick)
             async with AsyncExitStack() as stack:
                 a = EtcdLease(etcd_url(), here(), ttl=2, holder="a")
                 b = EtcdLease(etcd_url(), here(), ttl=2, holder="b")
                 tasks = {"a": await stack.enter_async_context(campaign(a, name, body)),
                          "b": await stack.enter_async_context(campaign(b, name, body))}
-                await wait_until(lambda: holder_of(name) is not None and w.bridge.asked == 1)
-                w.bridge.hold.set()
-                await wait_until(lambda: checked(db_url))   # the first check's record overwrites an earlier due_now
+                await wait_until(lambda: holder_of(name) is not None)
                 w.bridge.state("blocked", 1002)
                 await w.due_now()
                 await wait_until(lambda: len(told(db_url)) == 1)

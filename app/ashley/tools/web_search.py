@@ -3,6 +3,7 @@ results' titles, snippets and sites, each numbered, and SearXNG's direct answers
 a result's page by its number (`pages.Pages`), so it never names a URL."""
 
 import time
+from typing import Protocol
 from urllib.parse import urlsplit
 
 import httpx2
@@ -36,6 +37,15 @@ class _Body(BaseModel):
 
     results: list[_Result]
     answers: list[str | _Answer | object] = []
+
+
+class WebSearch(Protocol):
+    """What the look-up needs of the web search: the tools it offers, none when there is no search to reach, and a call
+    numbering its results from `first` (`WebSearchTools.numbered`)."""
+
+    async def catalogue(self) -> Catalogue: ...
+
+    async def numbered(self, call: ToolCall, first: int) -> tuple[ToolResult, list[str]]: ...
 
 
 class WebSearchTools(Tools):
