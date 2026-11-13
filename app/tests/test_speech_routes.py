@@ -90,8 +90,8 @@ def test_the_speech_settings_wire_their_providers_against_the_shipped_routes() -
     settings = from_env(env)
     assert (settings.wyoming_stt_url, settings.elevenlabs_api_key) == ("tcp://stt:10300", "k")
     try:
-        assert len(wire(settings)) == 4, "the keyed providers, the live feed, Homes and the search client to close"
-        assert len(wire(from_env({"DATABASE_URL": env["DATABASE_URL"]}))) == 4, "the same four without a key"
+        assert len(wire(settings)) == 5, "the keyed providers, the live feed, Homes, the search and Discord posts clients to close"
+        assert len(wire(from_env({"DATABASE_URL": env["DATABASE_URL"]}))) == 5, "the same five without a key"
     finally:
         services.unregister(Database)
         services.unregister(Inference)
