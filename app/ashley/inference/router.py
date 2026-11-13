@@ -17,7 +17,7 @@ from .image_router import ImageCalls
 from .keyed_providers import KeyedProviders
 from .household_routes import HouseholdRoutes
 from .inference import Inference, InferenceCutOff, InferenceRefused, InferenceRejected, InferenceUnavailable
-from .model import Prompt, Route, Task, ToolCalls, Usage
+from .model import TOOLLESS, Prompt, Route, Task, ToolCalls, Usage
 from .provider import Failure, Provider, ProviderFailed, ProviderRefused, ToolUse, Wired
 from .roster import Roster
 from .routes import TASKS, Routes
@@ -92,6 +92,8 @@ class RoutedInference(Inference):
     async def step(self, task: Task, prompt: Prompt, output: type[T], *,
                    conversation_id: int | None = None) -> T | ToolCalls:
         _check_task(task)
+        if prompt.tools and task in TOOLLESS:
+            raise ValueError(f"task {task} offers no tools")
         return await self._walk(task, prompt, output, conversation_id)
 
     async def generate(self, task: Task, prompt: Prompt, output: type[T], *, conversation_id: int | None = None) -> T:

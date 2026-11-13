@@ -106,7 +106,8 @@ class Inference(Service):
         `inference.call` per call made, with outcome `ok` for a call that returned tool calls. A route that answers
         with tool calls answers the step; the next step starts again from the first route, so one loop may be carried
         by more than one provider. Tool calls naming a tool not in `prompt.tools`, or repeating an id, fail that call
-        `invalid_output`. A prompt with no tools is allowed, and then always gets a reply. A prompt with tools skips each
+        `invalid_output`. A prompt with no tools is allowed, and then always gets a reply; one with tools for a task in
+        `model.TOOLLESS` raises ValueError before calling anything. A prompt with tools skips each
         route whose model the catalogue lists without tool calls (reason `no_tool_calls`). Tool names, arguments and
         results are never logged; `inference.call` adds `tool_calls`, the number asked for (0 for a reply)."""
 

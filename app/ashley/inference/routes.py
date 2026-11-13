@@ -10,7 +10,7 @@ from typing import Any, get_args
 
 from .embedding import EmbedTask
 from .image import ImageTask
-from .model import DEFAULT_VARIANT, Route, Task, TaskName
+from .model import DEFAULT_VARIANT, TOOLLESS, Route, Task, TaskName
 from .speech import SpeechTask
 from .voiceprint import VoiceprintTask
 from .provider import Provider, Wired
@@ -132,8 +132,8 @@ def parse(data: object, providers: Mapping[str, Wired]) -> Routes:
     provider before its key exists. A route naming a present provider has its params checked by that provider's
     `check_params` (`check_transcribe_params`, `check_speak_params`, `check_embed_params`, `check_voiceprint_params`, `check_image_params` for the other tasks). A present
     provider that cannot do the route's task (a text task needs a `Provider`, `transcribe` a `Transcriber`, `speak` a
-    `Speaker`, `embed` an `Embedder`, `voiceprint` a `VoiceEmbedder`, `image` an `ImageMaker`)
-    is a ValueError. Raises ValueError naming the task and route index of what is wrong."""
+    `Speaker`, `embed` an `Embedder`, `voiceprint` a `VoiceEmbedder`, `image` an `ImageMaker`; a text task outside
+    `model.TOOLLESS` a `Provider` that `takes_tools`) is a ValueError. Raises ValueError naming the task and route index of what is wrong."""
     top = _object(data)
     if top is None or set(top) != {"cooldown_s", "tasks"}:
         raise ValueError("routes: expected exactly cooldown_s and tasks")
@@ -252,6 +252,8 @@ def _check_params(task: str, provider: Wired, params: Mapping[str, object]) -> N
         provider.check_image_params(params)
     elif (task not in SPEECH_TASKS and task not in EMBED_TASKS and task not in VOICEPRINT_TASKS
           and task not in IMAGE_TASKS and isinstance(provider, Provider)):
+        if not provider.takes_tools and task not in TOOLLESS:
+            raise ValueError(f"provider {provider.name!r} takes no tools, and task {task} can offer them")
         provider.check_params(params)
     else:
         raise ValueError(f"provider {provider.name!r} cannot do task {task}")

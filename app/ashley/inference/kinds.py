@@ -2,15 +2,18 @@
 on (`ashley.inference.keyed.KeyedProvider`). Each kind is the deployment's (`ConnectionKind.deployment`), held by the
 household, one per provider, at the provider's one API address, and checked with the key by one read
 (`key_check.answered`): the models list of Anthropic, OpenAI and Gemini, and ElevenLabs' subscription, the read the
-Usage room's quota makes."""
+Usage room's quota makes. The Claude subscription's OAuth token is checked by one short call through the CLI it is
+used with (`claude_cli.check`)."""
 
 from collections.abc import Awaitable, Callable
+from dataclasses import replace
 
 import httpx2
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
 from ..connections.kinds import Check, ConnectionKind, Refusal
+from . import claude_cli
 from .elevenlabs_quota import ElevenLabsQuota
 from .elevenlabs_tts import ElevenLabsSpeaker
 from .gemini_image import GeminiImageMaker
@@ -83,6 +86,10 @@ def _elevenlabs(key: str) -> Built:
                  _closing(client.aclose))
 
 
+def _claude_cli(token: str) -> Built:
+    return Built((claude_cli.ClaudeCliProvider(claude_cli.NAME, token),), {}, _closing())
+
+
 ANTHROPIC = KeyedProvider(
     _kind("anthropic", "Anthropic", ANTHROPIC_API,
           _check("/v1/models", lambda k: {"x-api-key": k, "anthropic-version": "2023-06-01"}), "the Claude Console"),
@@ -99,6 +106,20 @@ ELEVENLABS = KeyedProvider(
     _kind("elevenlabs", "ElevenLabs", ELEVENLABS_API, _check("/v1/user/subscription", lambda k: {"xi-api-key": k}),
           "your ElevenLabs profile"),
     frozenset({"elevenlabs"}), _elevenlabs)
+CLAUDE_CLI = KeyedProvider(
+    replace(
+        _kind(claude_cli.NAME, "Claude subscription", ANTHROPIC_API, claude_cli.check, "claude setup-token"),
+        blurb="The deployment’s Claude subscription, reached through the Claude Code CLI with the token "
+              "“claude setup-token” prints. Routes that offer no tools may name it; its calls use the subscription’s "
+              "allowance, not API credit.",
+        connected="Connected. Routes that name the Claude subscription use this token from now on.",
+        removed="Removed. She calls the Claude subscription only if the deployment’s own setup has a token for it.",
+        secret_field="token", secret_label="OAuth token, from “claude setup-token”", secret_noun="token",
+        refusals={"bad_url": "the Claude subscription is reached at its own address",
+                  "key_refused": "Claude turned that token away; run “claude setup-token” again and paste the new one",
+                  "unreachable": "the Claude CLI did not answer in time; try again shortly",
+                  "wrong_service": "what answered is not Claude"}),
+    frozenset({claude_cli.NAME}), _claude_cli)
 
-KEYED: tuple[KeyedProvider, ...] = (ANTHROPIC, OPENAI, GEMINI, ELEVENLABS)
+KEYED: tuple[KeyedProvider, ...] = (ANTHROPIC, OPENAI, GEMINI, ELEVENLABS, CLAUDE_CLI)
 """Every keyed provider, in the order the connections room shows them."""
