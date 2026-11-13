@@ -28,7 +28,8 @@ _LISTED: LiteralString = (
 """A reminder its person still needs to see: still to fire, fired and not delivered, or failed, and not dismissed."""
 _SETTLED: LiteralString = (
     "settled_at = now(), outcome = %(outcome)s, "
-    "delivery = CASE WHEN kind = 'reminder' AND route <> 'quiet' AND %(outcome)s = 'turn' THEN 'sending' END")
+    "delivery = CASE WHEN (kind = 'reminder' AND route <> 'quiet' OR kind = 'house' AND route_device_id IS NOT NULL) "
+    "AND %(outcome)s = 'turn' THEN 'sending' END")
 _SETTLE_AND_NEXT = (
     "WITH s AS (UPDATE wakes SET " + _SETTLED + " WHERE id = %(id)s AND settled_at IS NULL "
     "RETURNING household_id, kind, person_id, made_by, brief, repeat, route, tools, taint, made_conversation_id, "
@@ -124,6 +125,11 @@ class PostgresWakes(Wakes):
         if stored is None:
             raise WakesUnavailable("the wake was neither stored nor found")
         return Received(int(stored[0]), bool(stored[1]))
+
+    async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
+        await self._count("UPDATE wakes SET person_id = %s, route = %s, route_device_id = %s "
+                          "WHERE id = %s AND kind = 'house' AND settled_at IS NULL",
+                          (person_id, route, device_id, wake_id))
 
     async def schedule(self, reminder: Reminder) -> int:
         _checked(reminder)

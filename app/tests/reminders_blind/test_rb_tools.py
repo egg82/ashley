@@ -66,6 +66,9 @@ class Memory(Wakes):
         self.items[wake_id] = changed
         return True
 
+    async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
+        return None
+
     async def prune(self, older_than_s: float) -> int:
         return 0
 
