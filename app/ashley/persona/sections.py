@@ -80,7 +80,12 @@ def render(text: str, overrides: Mapping[str, str]) -> str:
     """`text` with each `allowed` section's body replaced by `overrides[id]` (stripped) when present, marker lines
     dropped, sections joined by one blank line. Overrides for other ids are ignored. Deterministic. Raises ValueError
     as `parse` does."""
-    return "\n\n".join(_body(s, overrides) for s in parse(text))
+    return "\n\n".join(body for _, body in bodies(text, overrides))
+
+
+def bodies(text: str, overrides: Mapping[str, str]) -> tuple[tuple[str, str], ...]:
+    """`render`'s sections as `(id, body)` pairs in file order, each body as `render` joins it."""
+    return tuple((s.id, _body(s, overrides)) for s in parse(text))
 
 
 def _body(section: Section, overrides: Mapping[str, str]) -> str:
