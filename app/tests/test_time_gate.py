@@ -1,11 +1,11 @@
-"""The per-test CPU ceiling (tests/time_gate.py) can fail: the verdict function says so on both sides of the ceiling,
-the hook is armed in this run, and a real pytest run of a busy test goes red while a sleeping one passes."""
+"""The per-test wall-clock ceiling (tests/time_gate.py) can fail: the verdict functions say so on both sides of their
+ceilings, the hook is armed in this run, and real pytest runs go red on a test that waits, a slow fixture and a slow
+teardown, name a slow shared fixture rather than the test that happened to reach it, and pass a fast test."""
 
 import gc
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -26,15 +26,17 @@ def test_the_collector_is_warmed_outside_the_tests() -> None:
 
 def test_over_the_ceiling_is_slow() -> None:
     assert time_gate.too_slow("tests/x.py::t", time_gate.CEILING_S + 0.01)
+    assert time_gate.shared_too_slow("tree", time_gate.SHARED_CEILING_S + 0.01)
 
 
 def test_under_the_ceiling_is_fine() -> None:
     assert not time_gate.too_slow("tests/x.py::t", time_gate.CEILING_S)
+    assert not time_gate.shared_too_slow("tree", time_gate.SHARED_CEILING_S)
 
 
 def test_ci_judges_with_the_gate_on() -> None:
     if os.environ.get("CI") != "true":
-        pytest.skip("only CI must judge; a shared workstation's load moves CPU seconds past the ceiling")
+        pytest.skip("only CI must judge; a shared workstation's load moves wall time past the ceiling")
     assert time_gate.enforced(), "CI runs with TIME_GATE unset: no test is judged (set it in the CI workflow)"
 
 
@@ -47,32 +49,49 @@ def test_the_switch_reads_time_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not time_gate.enforced()
 
 
-def test_waiting_is_not_cpu() -> None:
-    start = time_gate.cpu_now()
-    time.sleep(0.3)
-    assert time_gate.cpu_now() - start < 0.1
-
-
-def test_the_held_list_starts_empty_and_excuses_only_its_members() -> None:
-    assert time_gate.HELD == frozenset()
-    assert time_gate.too_slow("tests/x.py::t", 99.0)
+def test_a_held_entry_excuses_only_itself() -> None:
+    for nodeid in time_gate.HELD:
+        assert time_gate.too_slow(nodeid + "x", 99.0)
+        assert not time_gate.too_slow(nodeid, 99.0)
+    assert time_gate.too_slow("tests/x.py::not_held", 99.0)
 
 
 def pytest_run(tmp_path: Path, body: str) -> subprocess.CompletedProcess[str]:
+    tmp_path.mkdir(exist_ok=True)
     (tmp_path / "test_probe.py").write_text(body)
-    # No plugin autoload: loading xdist, hypothesis and timeout is most of a child session's CPU.
-    env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": str(TESTS), "TEST_CEILING_S": "0.15", "TIME_GATE": "1",
-           "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
+    # No plugin autoload: loading xdist, hypothesis and timeout is most of a child session's start.
+    env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": str(TESTS), "TEST_CEILING_S": "0.4", "TEST_SHARED_CEILING_S": "0.6",
+           "TIME_GATE": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
     return subprocess.run(
         [sys.executable, "-m", "pytest", "-q", "-p", "time_gate", "-p", "no:cacheprovider", "--rootdir", str(tmp_path), str(tmp_path)],
         capture_output=True, text=True, env=env, cwd=tmp_path, check=False)
 
 
-def test_a_real_run_fails_a_busy_test(tmp_path: Path) -> None:
-    busy = pytest_run(tmp_path, "import time_gate\n\ndef test_busy():\n    t = time_gate.cpu_now()\n    while time_gate.cpu_now() - t < 0.25:\n        pass\n")
-    assert busy.returncode == 1 and "per-test ceiling" in busy.stdout and "test_busy" in busy.stdout, busy.stdout
+SLOW_CASES = {
+    "a wait in the body": "import time\n\ndef test_slow():\n    time.sleep(0.8)\n",
+    "a slow fixture": "import time, pytest\n\n@pytest.fixture\ndef slow():\n    time.sleep(0.8)\n\ndef test_slow(slow):\n    pass\n",
+    "a slow teardown": "import time, pytest\n\n@pytest.fixture\ndef slow():\n    yield\n    time.sleep(0.8)\n\ndef test_slow(slow):\n    pass\n",
+    "phases each under the ceiling and over it together": ("import time, pytest\n\n@pytest.fixture\ndef slow():\n"
+        "    time.sleep(0.25)\n    yield\n    time.sleep(0.25)\n\ndef test_slow(slow):\n    time.sleep(0.25)\n"),
+}
 
 
-def test_a_real_run_passes_a_waiting_test(tmp_path: Path) -> None:
-    waiting = pytest_run(tmp_path, "import time\n\ndef test_waits():\n    time.sleep(0.6)\n")
-    assert waiting.returncode == 0 and "1 passed" in waiting.stdout, waiting.stdout
+@pytest.mark.parametrize("body", SLOW_CASES.values(), ids=SLOW_CASES.keys())
+def test_a_real_run_fails_a_slow_test(tmp_path: Path, body: str) -> None:
+    run = pytest_run(tmp_path, body)
+    assert run.returncode == 1 and "per-test ceiling" in run.stdout and "test_slow took" in run.stdout, run.stdout
+
+
+def test_a_shared_fixture_is_charged_by_name_not_to_the_test_that_reached_it(tmp_path: Path) -> None:
+    body = ("import time, pytest\n\n@pytest.fixture(scope='session')\ndef tree():\n    time.sleep(0.2)\n\n"
+            "def test_first(tree):\n    pass\n\ndef test_second(tree):\n    pass\n")
+    under = pytest_run(tmp_path / "under", body)
+    assert under.returncode == 0 and "2 passed" in under.stdout, under.stdout
+    over = pytest_run(tmp_path / "over", body.replace("0.2", "0.9"))   # its own dir: a same-size rewrite reuses the .pyc
+    assert over.returncode == 1 and "shared fixture tree took" in over.stdout, over.stdout
+    assert "test_first took" not in over.stdout, over.stdout
+
+
+def test_a_real_run_passes_a_fast_test(tmp_path: Path) -> None:
+    fast = pytest_run(tmp_path, "def test_fast():\n    assert sum(range(1000)) == 499500\n")
+    assert fast.returncode == 0 and "1 passed" in fast.stdout, fast.stdout

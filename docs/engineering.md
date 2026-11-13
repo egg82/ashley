@@ -80,18 +80,29 @@ only the first): name a test helper `<suite>_support.py` after its suite.
 `test_decision_citations.py` fails when a decision title quoted after a mention of `decisions.md` is not an index entry
 and starts no single heading or bold lead in `docs/decisions/`, or when the index and those files' `##` headings disagree.
 
-Each test gets a CPU ceiling in CI (`tests/time_gate.py`, judged only where `TIME_GATE=1`, since a busy workstation's
-load alone pushes fast tests over); `TIME_GATE=1 python -m pytest -q` lists the ones over 1 s locally. The ceiling is
-calibrated to the CPU: a current desktop CPU ran the suite's CPU about twice as fast as an older server CPU, so 1 s on
-the one is 2 s on the other. GitHub's hosted runners have not been measured against either, so `ci.yml` takes the
-slower CPU's `TEST_CEILING_S=2.0` until a hosted run's durations calibrate it, and each shard runs two xdist workers
-on its four vCPUs, leaving the rest to Postgres.
-A test never starts another Python: a child that imports pytest and the app costs most of the ceiling. Run a nested
-session in process with `pytester` instead, and pay one-time start-up in a fixture, which the gate does not time.
-The garbage collector is one such cost: `tests/conftest.py` freezes what is imported at session start and sweeps after
-each test, so no test is charged a full collection pass for the cycles its predecessors left.
-Two suites at once on one shared runner push tests that take about 1 s past 2 s; hosted runners give each job its
-own machine, so `ci.yml` needs no lock between pipelines.
+**Scope and test budget.** Ashley is one app with an HTTP API, a client and a few pods, tested by about 20,000 tests.
+A pull request's checks take about 5 minutes of wall clock, and the `tests` job's `timeout-minutes` in `ci.yml` is
+each shard's budget: a shard that outgrows it is a defect to fix, never a timeout to raise. Measure against the outside
+figure, a unit test in milliseconds and 0.05 s at most (PaperMC's whole CI, compile included, runs about 7,500 tests in
+under 7 minutes), never against this suite's own past.
+
+**Test depth follows risk.** Logic that fails silently or loses data (the conversation and in-flight stores,
+migrations, leases and failover, permissions and taint, money, parsers of outside text) gets behaviour-level tests,
+written blind where it is a contract, and one suite per contract: the writer adds no duplicate of the blind suite.
+Glue (routes, wiring, config plumbing) gets one smoke test per entry point. The client gets render-and-look, never
+snapshot assertions. One-off scripts get none.
+
+Each test gets a wall-clock ceiling in CI over its setup, call and teardown (`tests/time_gate.py`, `TEST_CEILING_S`,
+judged only where `TIME_GATE=1`, since a busy workstation's load is not the code's). A fixture shared across tests is
+timed by name against its own ceiling, since under xdist which test reaches it first is chance. What the gate excuses
+today is `tests/time_gate_held.py`, which may only shrink. Time never comes from the wall in a test: a timeout, lease
+or retry takes an injected value, and a dependency that is down fails at once (`contract_support.down_database` is the
+real pool over a closed port with 0.1 s timeouts). Each shard runs two xdist workers on its four vCPUs, leaving the
+rest to Postgres; hosted runners give each job its own machine, so `ci.yml` needs no lock between pipelines.
+A test does not start another Python where `pytester` can run the nested session in process: a child that imports
+pytest and the app costs about a second.
+The garbage collector is off inside tests: `tests/conftest.py` freezes what is imported at session start and, every
+25 tests, collects and freezes what survived, so a pass walks only what the tests since the last one made.
 
 ## Choosing models
 
