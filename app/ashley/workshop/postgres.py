@@ -159,7 +159,8 @@ class PostgresWorkshop(Workshop):
                 proposals = pending(pieces, await rows.install_effects(conn, bench_id))
                 pointers = await rows.pointers(conn, bench_id)
                 measured = await frames.site_frames(conn, bench_id)
-        return BenchView(found[0], pieces, tuple(recent), changed, undo_next, shelf, proposals, pointers, measured)
+                shown = await rows.surfaced(conn, bench_id)
+        return BenchView(found[0], pieces, tuple(recent), changed, undo_next, shelf, proposals, pointers, measured, shown)
 
     async def record_site_frame(self, household_id: int, bench_id: int, url: str, frame: SiteFrame) -> None:
         if has_nul(url) or has_nul(frame.title):

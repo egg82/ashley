@@ -8,7 +8,7 @@ from psycopg import AsyncConnection
 from .reactions import Done, Unseen
 
 Conn = AsyncConnection[tuple[Any, ...]]
-_PERSON = "c.person_id IS NOT NULL AND c.outcome = 'accepted' AND c.command->>'type' NOT IN ('cue', 'point')"
+_PERSON = "c.person_id IS NOT NULL AND c.outcome = 'accepted' AND c.command->>'type' NOT IN ('cue', 'point', 'surfaced')"
 _PIECE = "COALESCE(c.effect->>'piece_id', c.effect->'piece'->>'id')::integer"
 
 

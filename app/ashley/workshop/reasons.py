@@ -6,7 +6,7 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
                  "nothing_to_undo", "changed_since", "not_runnable", "bad_automation", "bad_site", "bad_video",
                  "not_installable", "incomplete", "no_proposal", "needs_person", "bad_wake", "not_video", "bad_cue",
                  "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_measurements", "bad_controls",
-                 "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body", "bad_citation"]
+                 "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body", "bad_citation", "bad_rows"]
 """Why a command was refused:
 - `unknown_kind`: an Add of a kind `kinds.json` does not have.
 - `bad_title`: a title (a piece's, or a Rename's) empty, only whitespace, or longer than `title_max_chars`.
@@ -41,6 +41,8 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
   piece that it does not name or that is not an image, file, reader, site or recipe piece of the bench
   (`workshop.decide.CITABLE`). Her bench tools refuse a cited turn that is not the person's on the bench's talk the same
   way, before the command is built.
+- `bad_rows`: a Surfaced of a piece that is not a measurements piece, or one a turn that had read outside words wrote,
+  or naming no rows, a name twice, or a row that is not a choice the piece holds now under that name and value.
 - `not_video`: a Cue of a piece whose kind's format is not `video`, `clip` or `audio`.
 - `bad_cue`: a Cue to seek without `seconds` or with `seconds` not in 0 to `embed.MAX_START`, or to play or pause with
   `seconds`.
@@ -63,4 +65,4 @@ REASONS: tuple[Reason, ...] = ("unknown_kind", "bad_title", "too_long", "full", 
                                "bad_site", "bad_video", "not_installable", "incomplete", "no_proposal", "needs_person",
                                "bad_wake", "not_video", "bad_cue", "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_measurements",
                                "bad_controls", "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body",
-                               "bad_citation")
+                               "bad_citation", "bad_rows")

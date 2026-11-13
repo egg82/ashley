@@ -6,7 +6,7 @@ from typing import Any, get_args
 
 from .commands import (Add, Added, Archive, Archived, Command, Cue, CueAction, Cued, Edit, Edited, Effect, Install,
                        Installed, Move, Moved, Point, Pointed, Propose, Proposed, Ran, Remove, Removed, Rename, Renamed, Restore,
-                       Restored, Run, Undo, Uninstalled, type_of)
+                       Restored, Run, Shown, ShownRow, Surfaced, Undo, Uninstalled, type_of)
 from .model import SIZES, By, Piece, Place, Size, Text
 from .reader import Passage
 
@@ -31,6 +31,8 @@ def _encode(command: Command) -> Json:
         return {**out, "action": command.action, "seconds": command.seconds}
     if isinstance(command, Point):
         return {**out, "base_version": command.base_version, "passage": _passage(command.passage)}
+    if isinstance(command, Surfaced):
+        return {**out, "rows": _rows(command.rows)}
     if isinstance(command, Move):
         return {**out, "place": _place(command.place)}
     if isinstance(command, Edit):
@@ -68,6 +70,8 @@ def _decode(raw: Json, by: By) -> Command:
         return Cue(by, int(raw["piece_id"]), _action(raw["action"]), _seconds(raw["seconds"]))
     if kind == "point":
         return Point(by, int(raw["piece_id"]), int(raw["base_version"]), _passage_of(raw["passage"]))
+    if kind == "surfaced":
+        return Surfaced(by, int(raw["piece_id"]), _rows_of(raw["rows"]))
     if kind == "archive":
         return Archive(by, int(raw["piece_id"]))
     if kind == "restore":
@@ -100,6 +104,8 @@ def encode_effect(effect: Effect) -> Json:
     if isinstance(effect, Pointed):
         return {"type": "pointed", "piece_id": effect.piece_id, "version": effect.version,
                 "passage": _passage(effect.passage)}
+    if isinstance(effect, Shown):
+        return {"type": "shown", "piece_id": effect.piece_id, "rows": _rows(effect.rows)}
     if isinstance(effect, Proposed):
         return {"type": "proposed", "piece_id": effect.piece_id, "version": effect.version, "enabled": effect.enabled,
                 "turn_off": effect.turn_off}
@@ -134,6 +140,8 @@ def decode_effect(raw: Json) -> Effect:
         return Cued(int(raw["piece_id"]), _action(raw["action"]), _seconds(raw["seconds"]))
     if kind == "pointed":
         return Pointed(int(raw["piece_id"]), int(raw["version"]), _passage_of(raw["passage"]))
+    if kind == "shown":
+        return Shown(int(raw["piece_id"]), _rows_of(raw["rows"]))
     if kind == "proposed":
         return Proposed(int(raw["piece_id"]), int(raw["version"]), bool(raw["enabled"]), _maybe(raw["turn_off"]))
     if kind == "installed":
@@ -163,6 +171,14 @@ def _passage(passage: Passage | None) -> Json | None:
 
 def _passage_of(raw: Json | None) -> Passage | None:
     return None if raw is None else Passage(int(raw["paragraph"]), int(raw["start"]), int(raw["end"]))
+
+
+def _rows(rows: tuple[ShownRow, ...]) -> list[Json]:
+    return [{"name": r.name, "value": r.value} for r in rows]
+
+
+def _rows_of(raw: list[Json]) -> tuple[ShownRow, ...]:
+    return tuple(ShownRow(str(r["name"]), str(r["value"])) for r in raw)
 
 
 def _maybe(raw: object) -> str | None:

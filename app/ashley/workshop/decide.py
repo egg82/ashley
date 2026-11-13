@@ -7,10 +7,11 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 
-from . import automation_config, embed, job_body, measurements, reader, recipe, screen_controls, stored_file, wake_rule
+from . import (automation_config, embed, job_body, measurements, reader, recipe, screen_controls, stored_file, surfacing,
+               wake_rule)
 from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Move, Moved,
                        Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored, Run,
-                       Undo)
+                       Shown, Surfaced, Undo)
 from .effects import apply, inverse, shelved, titled
 from .model import By, Piece, Place, Text
 from .rules import BodyFormat, Kind, Rules
@@ -105,10 +106,11 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
     - Point: `no_such_piece`, `unknown_kind`, `not_reader` (its kind's format is not `reader`), `stale_base`,
       `bad_passage` (a passage that is not a non-empty range inside one paragraph of the piece's text; none is allowed
       and takes the highlight away). Its effect, `Pointed`, changes no piece.
+    - Surfaced: `no_such_piece`, then `surfacing.judged`'s (`unknown_kind`, `bad_rows`). Its effect, `Shown`, changes no piece.
     - Rename: `bad_title`. Its effect, `Renamed`, changes no piece.
     - Archive: `no_such_piece` (not on the layout), `required`. The piece goes to the front of the shelf, the others move up.
     - Restore: `no_such_piece` (not on the shelf), `full`. The piece goes last, at the size it had.
-    - Undo: `nothing_to_undo` (an Undo cannot be undone: there is no redo; nor can a Run, which ran, a Propose, a Cue or a Point; nor
+    - Undo: `nothing_to_undo` (an Undo cannot be undone: there is no redo; nor can a Run, which ran, a Propose, a Cue, a Point or a Surfaced; nor
       can a command older than the last `rules.undo_window` commands, refusals and Undos counted:
       `seq < next_seq - undo_window`), `needs_person` (her Undo of an Install), `changed_since`
       (a command already undone,
@@ -186,6 +188,8 @@ def _effect_of(state: BenchState, command: Command, rules: Rules, seq: int) -> E
         return _cue(piece, command, rules)
     if isinstance(command, Point):
         return _point(piece, command, rules)
+    if isinstance(command, Surfaced):
+        return surfacing.judged(piece, command, rules)
     if isinstance(command, Install):
         return _install(state, piece, command, rules)
     return _edit(state, piece, command, rules)
@@ -358,7 +362,7 @@ def _restore(state: BenchState, command: Restore, rules: Rules, seq: int) -> Eff
 def _undo(state: BenchState, command: Undo, rules: Rules, seq: int) -> Effect | Reason:
     reachable = seq - rules.undo_window <= command.seq < seq and command.seq not in state.undos
     done = state.effects.get(command.seq) if reachable else None
-    if done is None or isinstance(done, (Ran, Proposed, Cued, Pointed)):
+    if done is None or isinstance(done, (Ran, Proposed, Cued, Pointed, Shown)):
         return "nothing_to_undo"
     if isinstance(done, Installed) and command.by.person_id is None:
         return "needs_person"
