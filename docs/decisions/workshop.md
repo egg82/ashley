@@ -13,18 +13,17 @@ make Undo reach a closed bench's opening and closing.
 The Workshop service (`app/ashley/workshop/`) answers one question: what is on this bench, and who changed what. Every
 call names the owner asking, and anyone else's bench is the same 404 as one that does not exist.
 
-A bench is a project, and may be months or years of work. What runs on it is for prototyping, testing and debugging,
-never for running things for real (a few days or a week at most, typically only while working on it).
-What a bench makes that is meant to last (an automation, a script she runs on a schedule) leaves the bench for the
-system that owns that kind of thing, and the bench stays for the work that goes on. While on the bench it may run in
-shadow or for a short trial; nothing on a bench is relied on. Closing a bench puts the project away, not ends it.
+A bench is a project, and may be months or years of work. What runs on it is for prototyping, testing and debugging
+(a short trial or a shadow run, typically only while working on it), never for running things for real: nothing on a
+bench is relied on. What a bench makes that is meant to last (an automation, a script she runs on a schedule) leaves
+the bench for the system that owns that kind of thing, and the bench stays for the work that goes on.
 
 An automation finished on a bench goes to one of three homes, which she proposes and the person approves: **Home
 Assistant**, when it is simple enough to be reliable there (she reads and writes HA automations); **her own rule
 runner**, when it needs more than HA can express, with HA for its triggers and its actions; or **an app of its own
 in the cluster**, built through her herdr VM, when it is bigger than a rule. All three stay open to her, and she
-chooses after planning it with the person on the bench. Home Assistant is the first built, end to end (below); the
-rule runner and the app path are open-work item 23.
+chooses after planning it with the person on the bench. Home Assistant is built end to end (below); the rule runner and
+the app path are open-work item 23.
 
 - **A piece is work product with a kind**, and kinds are data (Type Object, `app/ashley/workshop/kinds.json`): a label,
   the longest body, a family, and a body format. `stored`: the body is the content, in Postgres (`document`, `note`).
@@ -62,8 +61,7 @@ rule runner and the app path are open-work item 23.
   client's button never offers one. Rejected: a stored undo pointer or per-screen stack, which drifts when her changes
   or another tab's arrive; a redo stack, which nothing here needs yet; skipping past a command that cannot be undone
   to an older one, which would undo work the person has not seen unwound.
-  - **Undo reaches back over a window, not the whole log**, so its cost and reach stop growing with a bench's age
-    (months or years of work). The window is the last `undo_window` commands by `seq` (`workshop.json`, 200), refusals,
+  - **Undo reaches back over a window, not the whole log**, so its cost and reach stop growing with a bench's age. The window is the last `undo_window` commands by `seq` (`workshop.json`, 200), refusals,
     Runs and Undos counted, because a press of Undo is itself a command and spends a slot: a long walk back reaches
     about half the window in changes. `decide` refuses an Undo naming a command with `seq < next_seq - undo_window`
     `nothing_to_undo`, and the read walks only those commands, fetched with a bounded query (`LIMIT`), so both agree on
@@ -99,8 +97,7 @@ rule runner and the app path are open-work item 23.
   shared turn loop, as web chat is, owner the speaker and its only audience, held answers stored as her turn and
   announced as a `LiveTurn` for that thread. Any channel that can name the thread can carry it later.
 - **A bench shows its whole talk, not only the open conversation.** A conversation records the thread it started on
-  (`conversations.thread`, written by `for_thread`; before that column existed only the thread's current conversation
-  was placed), so `GET /api/benches/{id}/conversations` pages every conversation on `bench:<id>` through the same
+  (`conversations.thread`, written by `for_thread`), so `GET /api/benches/{id}/conversations` pages every conversation on `bench:<id>` through the same
   `history_page` her room's history uses, and the page shows them above the open one under the same dividers
   (`Earlier`). Only the bench's owner reads it, anyone else's id is 404, and a conversation reads by its id under the
   taking-part key. A closed talk is not an empty one: a bench lives for days, longer than a brainstorm stays open.
@@ -130,7 +127,7 @@ rule runner and the app path are open-work item 23.
     deleted once it is back (repair may copy it across first, which only costs one more pass). The references are read
     after the listing, so a piece committed during a pass is seen; what remains is the seconds between that read and
     the delete, which the grace and the second pass make a retry of old bytes' problem alone. Rejected: a second lister
-    (the sweep goes through `ObjectStore.listing`, which `keys` is now defined by); candidates held in memory, which a
+    (the sweep goes through `ObjectStore.listing`, which `keys` is defined by); candidates held in memory, which a
     failover or rollout loses; deleting on first sight, which a put racing the pass would lose.
   - Rejected: an NFS PVC per site. It is two unreplicated filesystems, and mounting both sites' exports from each means
     `hard` mounts that hang a surviving site's pods in D state when the other site goes, or `soft` mounts that trade the
@@ -263,8 +260,7 @@ rule runner and the app path are open-work item 23.
   the speaker known): `open_bench` with a title of hers, returning the bench's id and the room's path,
   `/workshop/<id>`, which her reply links to; the link opens the bench in place, and she can take the page there
   herself ("She moves the person's page herself").
-- **A person opens a bench from the list by asking** (a field that asks "What are we making?" implies she will
-  answer what is asked). `POST /api/benches` takes an `ask` (the talk's 1 to 4000
+- **A person opens a bench from the list by asking** (a field that asks "What are we making?" implies she answers what is asked). `POST /api/benches` takes an `ask` (the talk's 1 to 4000
   characters), a `title`, or both. An ask is the person's first message in the bench's talk, whole, and she answers it
   in a bench turn that leads, as on a bench she opened herself: the route builds the talk's `Inbound` with `lead`
   (`ashley.api.bench_opening`), which `channels.turn_tools` reads as it reads a fresh `Arrival`, so there is one lead
@@ -274,7 +270,7 @@ rule runner and the app path are open-work item 23.
   title, refused `bad_title` when empty or past `title_max_chars`; its effect `Renamed` changes no piece, and Undo
   names the title back (`changed_since` once a later rename stands). A bench opened with only an ask is titled from it
   (`ashley.workshop.provisional.provisional_title`, cut at a word with an ellipsis) until the lead has her rename it
-  in her first turn. The person's own rename is not on the wire yet. Rejected: asking the model for the title in the
+  in her first turn. The person's own rename has no route. Rejected: asking the model for the title in the
   open request, which would make opening wait on a model call; a title column she writes outside the log, which
   would be neither undoable nor on Live.
 - **Logs** carry bench, command and piece ids, the command's type, the kind, the author (`person` or `ashley`) and the
@@ -300,8 +296,7 @@ store a debounce the command log already is; a timer per bench in a pod, which a
 - **The last command she has seen is the newest `bench_reactions` record's `to_seq`**, not a column the bench keeps,
   because the same rows bound how often she reacts. It is written once the turn is handed to the loop. Her next
   reaction is handed only the person's commands after it, as `#seq type kind piece` (ids and kinds, at most `listed`,
-  with a count of the earlier ones), in the stored household turn; nothing is handed twice. A bench that had work
-  before this existed starts with a record at its newest command.
+  with a count of the earlier ones), in the stored household turn; nothing is handed twice.
 - **A reaction handed in twice is one turn.** Its `source` is the bench and the last command handed
   (`bench_react:<bench>:<to_seq>`); the turn loop's inflight row makes a killed runner's turn finish on any pod
   ("Work in flight survives its pod"). The turn is `unprompted` on the bench's thread with the owner as speaker and
@@ -324,10 +319,10 @@ store a debounce the command log already is; a timer per bench in a pod, which a
 
 ## Her bench's text is checked for what editing left stale
 
-Her notes rot: over nine whole-body edits one note went from 1.3k to 4k characters because each edit kept the old text and
-bolted the update on, a header was pasted in front of the list it introduced, and two pieces went on saying a thing
-was still not found after another piece had found it. She had the text in context each
-time, so it is method, not memory. Two changes, neither of which decides anything for her. Fits into: the Workshop (the
+Her notes rot: each whole-body edit kept the old text and bolted the update on (one note grew from 1.3k to 4k characters
+over nine edits), a header was pasted in front of the list it introduced, and two pieces went on saying a thing was
+still not found after another piece had found it. She had the text in context each time, so the cause is method, not
+memory. Two changes, neither of which decides anything for her. Fits into: the Workshop (the
 text it holds), Inference (a new task, as `memory_judge` is), and the reactions' shape (a trigger derived from state,
 the last-seen recorded); it adds no singleton and no Command. Rejected: a model that rewrites or deletes the text
 itself, since she is the judge and the checker is cheap and sometimes wrong; a rule that caps a note's growth, which
