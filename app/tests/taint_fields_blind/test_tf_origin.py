@@ -16,6 +16,7 @@ from ashley.senses.wakes import Reminder, Wake, WatchWake
 from ashley.watches.rows import changed_wake
 from ashley.workshop.reactions import Done, Unseen
 from ashley.workshop.wake_rule import WakeRule
+from ashley.initiative.moment import Moment
 from discord_support import ALANA, CHANNEL, FAMILY, GUEST_ID, GUILD, ME, message
 from watch_job_support import NOW, watch as a_watch
 from watch_session_support import SESSION
@@ -48,7 +49,7 @@ def test_the_origins_are_kept_on_the_inbound(origin: str) -> None:
 
 def test_a_house_wake_does_not_taint_by_origin() -> None:
     wake = Wake(1, "evt-1", "arrived", "person.sam", "front_door", datetime(2026, 11, 5, 12, 0, tzinfo=UTC))
-    made = wake_turn.inbound(5, wake, WakeRule("arrived", "Greet them.", ("look",)), SAM)
+    made = wake_turn.inbound(5, wake, WakeRule("arrived", "Greet them.", ("look",)), SAM, Moment("wake:5"), "full")
     assert made.taint is None
     assert made.unprompted and made.source == "wake:5", "control: this is the wake's turn"
 

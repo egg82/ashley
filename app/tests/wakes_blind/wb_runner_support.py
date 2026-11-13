@@ -14,7 +14,8 @@ from ashley import services
 from ashley.channels.outbox import Outbox
 from ashley.channels.postgres_outbox import PostgresOutbox
 from ashley.channels.wake import runner
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.inference.model import Prompt, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ashley.inference.reply import Reply
 from ashley.live.live import Live
@@ -140,7 +141,7 @@ async def stack(world: World, initiative: Initiative | None = None) -> AsyncGene
         services.register(Workshop, workshop)
         services.register(Live, FakeLive())
         services.register(Outbox, PostgresOutbox(db, 600.0, POLICY))
-        services.register(Initiative, initiative or WorthSaying())
+        services.register(Initiative, initiative or speaking())
         services.register(People, HaPeople(Household(world.who.household_id, "home", "America/Denver", "", (world.who,)),
                                            who=world.who))
         for pod in (world.first, world.second):

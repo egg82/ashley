@@ -1,8 +1,8 @@
-"""Whether her reply goes out. On a turn nobody is waiting on (`Inbound.unprompted`) it is `Initiative`'s to say, unless
-the person asked for it earlier (`Inbound.promised`, a reminder); on a turn that may have been overheard
-(`Inbound.overhears`) it is her `Reply.says`. One that does not go out is stored as `QUIET`, so no later turn carries
-words she never said. Logs `initiative.decided` with the conversation and `speaks`, once per turn
-Initiative decides, never the reply."""
+"""Whether her reply goes out. On a turn nobody is waiting on (`Inbound.unprompted`) it is `Initiative`'s to say, from
+the reply and the turn's `Inbound.moment`, unless the person asked for it earlier (`Inbound.promised`, a reminder); on
+a turn that may have been overheard (`Inbound.overhears`) it is her `Reply.says`. One that does not go out is stored as
+`QUIET`, so no later turn carries words she never said. Logs `initiative.decided` with the conversation and `speaks`,
+and at a moment its plan's score, roll and outcome, once per turn Initiative decides, never the reply."""
 
 import logging
 
@@ -20,7 +20,7 @@ def speaks(reply: Reply, inbound: Inbound) -> bool:
     `none`; else always on a turn someone asked for, now or earlier, and otherwise as `Initiative` decides."""
     if inbound.overhears:
         return reply.says != "none"
-    return not _initiative_decides(inbound) or services.get(Initiative).speaks(reply)
+    return not _initiative_decides(inbound) or services.get(Initiative).speaks(reply, inbound.moment)
 
 
 def _initiative_decides(inbound: Inbound) -> bool:
@@ -46,6 +46,12 @@ def as_said(reply: Reply, inbound: Inbound) -> Reply:
 def decided(reply: Reply, inbound: Inbound, conversation_id: int) -> bool:
     """`speaks`, logged when the turn is unprompted."""
     out = speaks(reply, inbound)
-    if _initiative_decides(inbound):
+    if not _initiative_decides(inbound):
+        return out
+    if inbound.moment is None:
         logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out)
+        return out
+    plan = services.get(Initiative).planned(inbound.moment)
+    logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out, score=round(plan.score, 3),
+              outcome=plan.outcome, roll=None if plan.roll is None else round(plan.roll, 4))
     return out

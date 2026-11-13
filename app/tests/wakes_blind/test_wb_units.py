@@ -10,7 +10,8 @@ from ashley.channels import unprompted
 from ashley.channels.model import Inbound
 from ashley.channels.turn_tools import for_turn, sources
 from ashley.connections.connections import Connections
-from ashley.initiative.initiative import Initiative, NullInitiative, WorthSaying
+from ashley.initiative.initiative import Initiative, NullInitiative, Scored
+from ashley.initiative.weights import WEIGHTS
 from ashley.inference.model import ToolCall
 from ashley.inference.reply import Reply
 from ashley.tools.only import Only
@@ -221,11 +222,12 @@ def test_only_matches_an_entry_after_a_domain_prefix_and_not_a_suffix_of_a_word(
 
 WORTH = Reply(spoken="Hi.", text="Hi.", says="reply")
 NOT_WORTH = Reply(spoken="Hi.", text="Hi.", says="none")
+SCORED = Scored(WEIGHTS)
 
 
 def test_worth_saying_is_the_replys_own_field_and_pure() -> None:
-    assert WorthSaying().speaks(WORTH) is True and WorthSaying().speaks(NOT_WORTH) is False
-    assert [WorthSaying().speaks(NOT_WORTH) for _ in range(3)] == [False] * 3
+    assert SCORED.speaks(WORTH, None) is True and SCORED.speaks(NOT_WORTH, None) is False
+    assert [SCORED.speaks(NOT_WORTH, None) for _ in range(3)] == [False] * 3
 
 
 def test_a_reply_defaults_to_worth_saying() -> None:
@@ -235,11 +237,11 @@ def test_a_reply_defaults_to_worth_saying() -> None:
 def test_the_words_never_decide_it() -> None:
     quiet = Reply(spoken="I have nothing to say.", text="", says="reply")
     loud = Reply(spoken="", text="", says="none")
-    assert WorthSaying().speaks(quiet) is True and WorthSaying().speaks(loud) is False
+    assert SCORED.speaks(quiet, None) is True and SCORED.speaks(loud, None) is False
 
 
 def test_the_unwired_initiative_never_speaks() -> None:
-    assert NullInitiative().speaks(WORTH) is False and Initiative.null().speaks(WORTH) is False
+    assert NullInitiative().speaks(WORTH, None) is False and Initiative.null().speaks(WORTH, None) is False
 
 
 def inbound(**changes: Any) -> Inbound:
@@ -253,7 +255,7 @@ def test_a_reply_to_a_person_always_goes_out_whatever_initiative_says() -> None:
     assert unprompted.speaks(WORTH, inbound()) is True and unprompted.speaks(NOT_WORTH, inbound()) is True
 
 
-@pytest.mark.parametrize("policy,reply,goes", [(WorthSaying(), WORTH, True), (WorthSaying(), NOT_WORTH, False),
+@pytest.mark.parametrize("policy,reply,goes", [(SCORED, WORTH, True), (SCORED, NOT_WORTH, False),
                                               (NullInitiative(), WORTH, False)])
 def test_an_unprompted_reply_goes_out_as_initiative_decides(policy: Initiative, reply: Reply, goes: bool) -> None:
     services.register(Initiative, policy)
@@ -261,7 +263,7 @@ def test_an_unprompted_reply_goes_out_as_initiative_decides(policy: Initiative, 
 
 
 def test_a_reply_that_goes_out_is_recorded_unchanged_and_one_that_does_not_is_quiet_in_every_field() -> None:
-    services.register(Initiative, WorthSaying())
+    services.register(Initiative, SCORED)
     assert unprompted.as_said(WORTH, inbound(unprompted=True)) == WORTH
     quiet = unprompted.as_said(NOT_WORTH, inbound(unprompted=True))
     assert quiet.spoken == unprompted.QUIET and quiet.text == unprompted.QUIET

@@ -136,6 +136,17 @@ class Due:
     age_s: float
 
 
+@dataclass(frozen=True)
+class SaidBefore:
+    """What came before a house wake, for the person it is about: when they last spoke to her (`heard_at`), when she
+    last took a turn on a house wake of the same event about them, kept quiet or not (`greeted_at`), and when a turn of
+    hers on any house wake about them last went out (`spoke_at`); each None when there was none."""
+
+    heard_at: datetime | None
+    greeted_at: datetime | None
+    spoke_at: datetime | None
+
+
 class Wakes(Service):
     @classmethod
     def null(cls) -> "Wakes":
@@ -216,6 +227,11 @@ class Wakes(Service):
         so it may be pruned. False, changing nothing, unless it is the household's, listed, fired, and for
         `person_id` or made by them. Raises WakesUnavailable."""
 
+    @abstractmethod
+    async def said_before(self, wake_id: int, person_id: int) -> SaidBefore:
+        """What came before the house wake `wake_id` for `person_id`, the person it is about, leaving out the wake's own
+        turn. All None when the wake does not exist. Raises WakesUnavailable."""
+
 
 class NullWakes(Wakes):
     """What an unwired process sees: every call raises, so a wake is never taken in and quietly dropped."""
@@ -257,4 +273,7 @@ class NullWakes(Wakes):
         raise WakesUnavailable("wakes are not wired")
 
     async def dismiss(self, household_id: int, person_id: int, wake_id: int) -> bool:
+        raise WakesUnavailable("wakes are not wired")
+
+    async def said_before(self, wake_id: int, person_id: int) -> SaidBefore:
         raise WakesUnavailable("wakes are not wired")

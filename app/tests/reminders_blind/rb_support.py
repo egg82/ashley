@@ -17,7 +17,8 @@ from ashley.channels.push.config import load as load_push_config
 from ashley.channels.push.sender import Notification, Sender, Sent
 from ashley.channels.push.subscriptions import Browser, Subscription, Subscriptions
 from ashley.db.pool import PoolDatabase
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.inference.reply import Reply
 from ashley.live.live import Live
@@ -25,7 +26,7 @@ from ashley.people.model import Account, Household, Person
 from ashley.people.people import People
 from ashley.senses.postgres_wakes import PostgresWakes
 from ashley.senses.repeat import Repeat
-from ashley.senses.wakes import Outcome, Reminder, Wakes
+from ashley.senses.wakes import Outcome, Reminder, SaidBefore, Wakes
 from ashley.tools.tools import Catalogue, Tools
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.postgres import PostgresWorkshop
@@ -201,6 +202,9 @@ class KillableWakes(Wakes):
     async def dismiss(self, household_id: int, person_id: int, wake_id: int) -> bool:
         return await self.inner.dismiss(household_id, person_id, wake_id)
 
+    async def said_before(self, wake_id: int, person_id: int) -> SaidBefore:
+        return await self.inner.said_before(wake_id, person_id)
+
 
 @dataclass
 class Stack:
@@ -250,7 +254,7 @@ async def stack(world: World, initiative: Initiative | None = None) -> AsyncGene
         services.register(Workshop, PostgresWorkshop(db, workshop_rules.load()))
         services.register(Live, FakeLive())
         services.register(Outbox, PostgresOutbox(db, 600.0, POLICY))
-        services.register(Initiative, initiative or WorthSaying())
+        services.register(Initiative, initiative or speaking())
         home = Household(world.who.household_id, "home", "America/Denver", "", (world.who, sam))
         services.register(People, Folk(home))
         for pod in (world.first, world.second):

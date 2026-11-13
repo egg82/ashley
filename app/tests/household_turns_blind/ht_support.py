@@ -18,7 +18,8 @@ from ashley.conversations.postgres_inflight import PostgresInFlight
 from ashley.db.pool import PoolDatabase
 from ashley.inference.inference import Inference
 from ashley.inference.model import Message, Prompt
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.people.model import Account, Household, Person
 from ashley.people.people import People
 from ashley.senses.postgres_wakes import PostgresWakes
@@ -115,7 +116,7 @@ async def world(url: str) -> AsyncGenerator[World]:
     services.register(Inference, model)
     services.register(Wakes, made.wakes)
     services.register(Workshop, made.workshop)
-    services.register(Initiative, WorthSaying())
+    services.register(Initiative, speaking())
     try:
         yield made
     finally:

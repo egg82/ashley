@@ -18,7 +18,8 @@ from ashley.channels.push.config import load as load_push_config
 from ashley.channels.push.sender import Notification, Sender, Sent
 from ashley.channels.push.subscriptions import Browser, Subscription, Subscriptions
 from ashley.db.pool import PoolDatabase
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.inference.reply import Reply
 from ashley.live.live import Live
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
@@ -238,7 +239,7 @@ async def flow(world: World, initiative: Initiative | None = None) -> AsyncGener
         services.register(Workshop, PostgresWorkshop(db, workshop_rules.load()))
         services.register(Live, FakeLive())
         services.register(Outbox, PostgresOutbox(db, 600.0, POLICY))
-        services.register(Initiative, initiative or WorthSaying())
+        services.register(Initiative, initiative or speaking())
         people = (world.who, Person(sam, world.who.household_id, "Sam"))
         services.register(People, Folk(Household(world.who.household_id, "home", "America/Denver", "", people)))
         for pod in (world.first, world.second):

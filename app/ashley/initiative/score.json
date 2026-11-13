@@ -1,0 +1,12 @@
+{
+  "threshold": 0.0,
+  "heard": {"weight": 1.0, "full_at_s": 28800},
+  "night": {"weight": -1.5, "from_hour": 22, "to_hour": 7},
+  "others_home": {"weight": -0.2, "cap": 3},
+  "greeted": {"weight": -3.0, "within_s": 3600},
+  "spoke": {"weight": -1.0, "within_s": 1800},
+  "odds": [
+    {"from": 0.0, "full": 0.55, "short": 0.35, "silent": 0.1},
+    {"from": 0.5, "full": 0.75, "short": 0.25, "silent": 0.0}
+  ]
+}

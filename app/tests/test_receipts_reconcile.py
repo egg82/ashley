@@ -13,7 +13,8 @@ from ashley.channels.outbox import Pushed
 from ashley.channels.storing import stored
 from ashley.conversations.model import Receipt, Receipts
 from ashley.conversations.quiet import QUIET
-from ashley.initiative.initiative import Initiative, WorthSaying
+from ashley.initiative.initiative import Initiative
+from initiative_support import speaking
 from ashley.inference.reply import Reply
 from ashley.people.model import Person
 from ashley.tools import outside_config
@@ -26,7 +27,7 @@ ALANA = Person(1, 7, "Alana")
 
 @pytest.fixture(autouse=True)
 def initiative() -> None:
-    services.register(Initiative, WorthSaying())
+    services.register(Initiative, speaking())
 
 
 def woken(thread: str = "household:7") -> Inbound:

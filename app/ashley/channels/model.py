@@ -5,6 +5,7 @@ from typing import Literal
 
 from ..conversations.model import Attachment, Channel, Kind, Receipts
 from ..inference.reply import Says
+from ..initiative.moment import Moment
 from ..workshop.model import thread_of
 
 Medium = Literal["spoken", "text"]
@@ -132,7 +133,8 @@ class Inbound:
     chat and kiosk adapters from the request: it offers her to answer aloud (`channels.aloud.offered`), and `medium` stays
     `text`. `overhears` says what she heard may not have been meant for her (a satellite's wake word fires on room audio),
     set only by the voice adapter: it offers her `Reply.says` `offer` and `none`, and code honours them
-    (`channels.unprompted.says`)."""
+    (`channels.unprompted.says`).     `moment` is the facts `Initiative` plans an unprompted turn from, gathered before it starts (a house wake's,
+    `channels.wake.moment`), so whichever runner finishes it decides the same; None on every other turn."""
 
     household_id: int
     thread: str
@@ -169,6 +171,7 @@ class Inbound:
     attachment: Attachment | None = None
     said_aloud: bool = False
     overhears: bool = False
+    moment: Moment | None = None
 
     @property
     def lands_on(self) -> int | None:
