@@ -44,9 +44,9 @@ jobs:
       SHARDS: 8
       CI: "true"
       TIME_GATE: "1"   # tests/time_gate.py judges only here; tests/test_time_gate.py fails under CI without it
-      # The 1 s ceiling is calibrated on a desktop CPU; hosted runners are unmeasured, so they take the 2 s of an older
-      # server CPU, which spent 2.0 times the desktop's CPU on the same suite (docs/engineering.md).
+      # Wall-clock ceilings over setup + call + teardown: per test, and per fixture shared across tests.
       TEST_CEILING_S: "2.0"
+      TEST_SHARED_CEILING_S: "10.0"
       # tests/test_household_names.py: the household's names, held only as this secret; unset (forks), it skips.
       ASHLEY_HOUSEHOLD_NAMES: ${{ secrets.ASHLEY_HOUSEHOLD_NAMES }}
       ASHLEY_TEST_DATABASE_URL: postgresql://postgres@127.0.0.1/postgres
