@@ -4,8 +4,8 @@ out, or none, so the cap per person per day and "never the same line" are counte
 
 from alembic import op
 
-revision: str = "0121"
-down_revision: str | None = "0112"
+revision: str = "0117"
+down_revision: str | None = "0116"
 
 
 def upgrade() -> None:
