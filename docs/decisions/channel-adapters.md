@@ -76,7 +76,8 @@ the hallway may see, and does what anyone there may do.
   every change is logged and undoable as on a bench. The screen announces `ScreenChanged` to the household's screens.
   Rejected: a Surfaces table and log of its own, a second decide/undo for the same arrangement; a jsonb layout on
   `devices`, which has no log or undo.
-- **The touch controls are the screen's `controls` piece**, its body the button list. A person edits it in the
+- **The touch controls are the screen's `controls` piece**, its body the button list. `GET /api/devices` says
+  `takes_controls` for a device that takes them (`ashley.channels.model.Listed.takes_controls`); clients never infer it. A person edits it in the
   Devices room and she edits it when asked, both as an Edit naming the version read, so one of two concurrent edits
   is refused `stale_base` and redone on the other. Each light or scene must be in the house's catalogue, checked by
   the caller before the Command. A press still runs `house_do` by code. A light's action is turn on, turn off or toggle
