@@ -14,16 +14,13 @@ import logging
 import time
 from collections.abc import Callable
 from urllib.parse import urlsplit
-from dataclasses import replace
 from importlib import resources
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .. import logs, services
-from ..inference.inference import Inference, InferenceRefused, InferenceUnavailable
-from ..inference.model import (DEFAULT_VARIANT, Entry, Message, Prompt, SystemPrompt, Task, ToolCall, ToolCalls, ToolChoice,
-                               ToolResult, ToolResults, ToolSpec)
-from . import cut, results
+from .. import logs
+from ..inference.model import DEFAULT_VARIANT, SystemPrompt, Task, ToolCall, ToolResult, ToolSpec
+from . import reader, results
 from .look_up_config import LookUpConfig
 from .tools import Catalogue, Tools, ToolsUnavailable
 
@@ -41,11 +38,6 @@ PARAMETERS = {"type": "object", "properties": {
     "required": ["question", "now"]}
 SPEC = ToolSpec(NAME, DESCRIPTION, PARAMETERS, reads=True, outside=True)
 SOURCE_CHARS = 80
-
-
-def _seen(content: str, limit: int) -> str:
-    got = cut.visible(content, limit)
-    return content if got is None else got.text
 
 
 class Reference(BaseModel):
@@ -71,10 +63,6 @@ class LookedUp(BaseModel):
                                                     "search page); otherwise empty.")
 
 
-class _NoAnswer(Exception):
-    """The loop ended without a reply: inference was unavailable or refused, or it asked for tools under `none`."""
-
-
 class LookUpTools(Tools):
     def __init__(self, sources: Callable[[], Tools], config: LookUpConfig) -> None:
         """`sources` makes the search sources for one look-up; it is called once for each `catalogue` and `call`."""
@@ -90,7 +78,7 @@ class LookUpTools(Tools):
 
     async def call(self, call: ToolCall) -> ToolResult:
         started = time.monotonic()
-        loop = _Loop()
+        loop = _Loop(reader.Took())
         if call.name != NAME:
             return loop.done(call, "unknown_tool", started, ToolResult(call.id, f"no tool named {call.name}", True))
         question = call.arguments.get("question")
@@ -99,37 +87,13 @@ class LookUpTools(Tools):
         sources = self._sources()
         try:
             catalogue = await sources.catalogue()
-            got = await self._run(loop, sources, _asked(question.strip(), call.arguments.get("now")), catalogue.specs)
-        except (ToolsUnavailable, _NoAnswer):
+            got = await reader.read(TASK, self._system, reader.asked(question.strip(), call.arguments.get("now")), sources,
+                                    catalogue.specs, reader.Limits(self._config.max_rounds, self._config.result_chars),
+                                    LookedUp, loop.took)
+        except (ToolsUnavailable, reader.NoAnswer):
             return loop.done(call, "unavailable", started, ToolResult(call.id, "the look-up did not answer", True))
         loop.found = got.found
         return loop.done(call, "ok", started, ToolResult(call.id, self._bounded(got)))
-
-    async def _run(self, loop: "_Loop", sources: Tools, question: str, tools: tuple[ToolSpec, ...]) -> LookedUp:
-        """Steps under tool choice `auto` for up to `max_rounds` rounds of tool calls, then one under `none`. Raises
-        _NoAnswer."""
-        entries: list[Entry] = [Message("person", question)]
-        for rounds in range(self._config.max_rounds + 1):
-            choice: ToolChoice = "auto" if rounds < self._config.max_rounds else "none"
-            got = await self._step(Prompt(self._system, tuple(entries), tools, choice))
-            if isinstance(got, LookedUp):
-                return got
-            if choice == "none":
-                break
-            loop.rounds, loop.calls = rounds + 1, loop.calls + len(got.calls)
-            entries += [got, await self._results(sources, got)]
-        raise _NoAnswer()
-
-    async def _step(self, prompt: Prompt) -> LookedUp | ToolCalls:
-        try:
-            return await services.get(Inference).step(TASK, prompt, LookedUp)
-        except (InferenceUnavailable, InferenceRefused) as e:
-            raise _NoAnswer() from e
-
-    async def _results(self, sources: Tools, asked: ToolCalls) -> ToolResults:
-        """Each call in the order asked, one at a time, each result cut to `result_chars`."""
-        results = [await sources.call(c) for c in asked.calls]
-        return ToolResults(tuple(replace(r, content=_seen(r.content, self._config.result_chars)) for r in results))
 
     def _bounded(self, got: LookedUp) -> str:
         sources = [s[:SOURCE_CHARS] for s in got.sources[:self._config.max_sources]]
@@ -151,22 +115,14 @@ class LookUpTools(Tools):
         return found
 
 
-def _asked(question: str, now: object) -> str:
-    """The question as the sub-agent reads it: after the moment it was asked, when she gave one."""
-    if isinstance(now, str) and now.strip():
-        return f"Now: {now.strip()[:80]}\n\n{question}"
-    return question
-
-
 class _Loop:
     """What one call's loop took, for its log line."""
 
-    def __init__(self) -> None:
-        self.rounds = 0
-        self.calls = 0
+    def __init__(self, took: reader.Took) -> None:
+        self.took = took
         self.found = False
 
     def done(self, call: ToolCall, outcome: str, started: float, result: ToolResult) -> ToolResult:
-        logs.info(log, "tools.call", tool=call.name, outcome=outcome, rounds=self.rounds, calls=self.calls,
+        logs.info(log, "tools.call", tool=call.name, outcome=outcome, rounds=self.took.rounds, calls=self.took.calls,
                   found=self.found, duration_ms=int((time.monotonic() - started) * 1000))
         return result

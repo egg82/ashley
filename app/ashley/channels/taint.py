@@ -15,4 +15,4 @@ def specs_outside(tools: tuple[ToolSpec, ...]) -> dict[str, bool]:
 def taints(name: str, result: ToolResult, outside: Mapping[str, bool]) -> bool:
     """Whether the result of the call to `name` taints a turn: its own `outside` when it says, else its spec's in
     `outside`; a name not there taints."""
-    return outside.get(name, True) if result.outside is None else result.outside
+    return result.taints(outside.get(name, True))

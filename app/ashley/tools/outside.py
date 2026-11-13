@@ -155,7 +155,7 @@ class Outside(Tools):
         if sorted_ is not None and not got.is_error:
             await self._done(call, spec, sorted_)
             got = self._explained(got, sorted_)
-        return await self._recorded(call.name, got, got.outside if got.outside is not None else spec is None or spec.outside)
+        return await self._recorded(call.name, got, got.taints(spec is None or spec.outside))
 
     async def receipts(self) -> Receipts | None:
         """What code shows beside her reply (`conversations.model.Receipts`): the changes the action judge let run this
