@@ -154,11 +154,12 @@ const clientStub = (names: string[]): string => names.map((name) => {
 const recordStub = `export class MicRefused extends Error { constructor(why) { super(why); this.why = why; } }
 export const record = async () => { globalThis.__voiceLog.push("mic.open"); return { stop: async () => new Blob(), cancel: () => {} }; };`;
 
-function importedFromClient(): string[] {
+function importedFrom(module: 'client' | 'speech'): string[] {
   const names = new Set<string>();
+  const from = new RegExp(`import\\s*(?:type\\s*)?\\{([^}]*)\\}\\s*from\\s*'\\.\\./api/${module}'`, 'g');
   for (const file of ['voice.ts', 'talk.ts']) {
     const source = readFileSync(`${here}${file}`, 'utf8');
-    for (const match of source.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*'\.\.\/api\/client'/g)) {
+    for (const match of source.matchAll(from)) {
       for (const part of match[1]!.split(',')) {
         const name = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]!;
         if (name && !/^type\s/.test(part.trim())) names.add(name);
@@ -169,7 +170,9 @@ function importedFromClient(): string[] {
 }
 
 const bundle = (async () => {
-  const stubs: Record<string, string> = { '../api/client': clientStub(importedFromClient()), './record': recordStub };
+  const stubs: Record<string, string> = {
+    '../api/client': clientStub(importedFrom('client')), '../api/speech': clientStub(importedFrom('speech')), './record': recordStub,
+  };
   const built = await build({
     stdin: { contents: "export * as voice from './voice.ts'; export { talk } from './talk.ts';", resolveDir: here,
              loader: 'ts' },

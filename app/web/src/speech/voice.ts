@@ -3,7 +3,7 @@
 // page starts later; a window opens when a message said aloud is sent (`awaitVoice`) and plays her voiced turns that
 // arrive in it (`offer`), in this tab only.
 import { signal, type ReadonlySignal } from '@preact/signals';
-import { chatVoiceUrl, getSpokenLimits } from '../api/client';
+import { chatVoiceUrl, getSpokenLimits } from '../api/speech';
 
 /** A turn as the conversation read-back lists it: the fields playback decides on. */
 export interface VoiceTurn {

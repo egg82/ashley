@@ -2,7 +2,8 @@
 // turn, with what only this page knows laid over its end (her room's `overlaid`). The lines and composer are her
 // room's; only the routes differ.
 import { computed, signal } from '@preact/signals';
-import { getBenchConversation, getBenchPage, sendOnBench, transcribeChat } from '../../../api/client';
+import { getBenchConversation, getBenchPage, sendOnBench } from '../../../api/client';
+import { transcribeChat } from '../../../api/speech';
 import { onResync, onThreadTurn, onTurnFailed } from '../../../session/live';
 import { herAsked, herHears, herNoReply, herReplied, herRoomLeft, herSaidLater, herState, herWorking } from '../../../shell/her/state';
 import { talk } from '../../../speech/talk';

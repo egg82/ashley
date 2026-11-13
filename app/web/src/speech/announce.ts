@@ -3,7 +3,7 @@
 // more. Only a page in the foreground takes one; a newer announcement replaces the one showing. A play the browser
 // refuses shows a play control instead, as her spoken replies do (`voice.ts`).
 import { signal, type ReadonlySignal } from '@preact/signals';
-import { clipVoiceUrl, getClipLine } from '../api/client';
+import { clipVoiceUrl, getClipLine } from '../api/speech';
 
 /** `playing`: her voice is playing or about to; `blocked`: the browser refused to start it, so a control plays it on a
  * tap; `said`: it finished, and the line stays until `LINGER_MS` has passed. */

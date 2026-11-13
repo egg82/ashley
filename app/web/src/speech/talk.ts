@@ -2,7 +2,8 @@
 // the words to the composer's own send, so a spoken message is a typed one. What went wrong is a note, one at a time,
 // cleared by the next press.
 import { computed, signal, type ReadonlySignal } from '@preact/signals';
-import { ApiError, getSpokenLimits } from '../api/client';
+import { ApiError } from '../api/client';
+import { getSpokenLimits } from '../api/speech';
 import type { SpokenLimits, Transcript } from '../api/types';
 import { MicRefused, record, type Recording } from './record';
 import { primeVoice, stopVoice } from './voice';

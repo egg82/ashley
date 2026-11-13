@@ -9,11 +9,12 @@ import type * as Kiosk from './state.ts';
 // what the kiosk tells the voice owner and what its mark says while her voice is held.
 const stubs: Record<string, string> = {
   '../api/client': `export class ApiError extends Error {}
-    export const kioskVoiceUrl = (id) => '/kiosk/' + id;
     export const sendKiosk = async (body) => { globalThis.calls.push(['send', body.said_aloud]); return { body: 'ok', follows: false }; };
     export const getKioskConversation = async () => globalThis.conversation;
     export const getKioskControls = async () => [], getKioskDevice = async () => ({}), getKioskGlance = async () => ({}), getKioskLayout = async () => ({ laid_out: false, seq: 0, placed: [] }),
-      pairKiosk = async () => ({}), runKioskControl = async () => true, transcribeKiosk = async () => ({ text: '' });`,
+      pairKiosk = async () => ({}), runKioskControl = async () => true;`,
+  '../api/speech': `export const kioskVoiceUrl = (id) => '/kiosk/' + id;
+    export const transcribeKiosk = async () => ({ text: '' });`,
   '../rooms/her/owed': `export const owedAt = () => -1;`,
   '../session/watch': `export const watchBuild = () => ({ check() {}, stop() {} });`,
   '../speech/talk': `export const talk = () => ({ phase: { value: 'idle' }, cancel() {} });`,

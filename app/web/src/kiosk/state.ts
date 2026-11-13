@@ -5,7 +5,6 @@ import { computed, signal } from '@preact/signals';
 import {
   ApiError,
   getKioskControls,
-  kioskVoiceUrl,
   getKioskConversation,
   getKioskDevice,
   getKioskGlance,
@@ -13,8 +12,8 @@ import {
   pairKiosk,
   runKioskControl,
   sendKiosk,
-  transcribeKiosk,
 } from '../api/client';
+import { kioskVoiceUrl, transcribeKiosk } from '../api/speech';
 import type { KioskControl, KioskDevice, KioskGlance } from '../api/types';
 import type { MarkState } from '../components/AshleyMark';
 import { writing } from '../household/format';
