@@ -16,6 +16,7 @@ TIDY_TOOLS = ("bench_dismiss",)
 SKILL_TOOLS = ("bench_work", "skill_read", "skill_edit", "skill_rollback")
 
 DEVICES = "household_devices"
+READERS = "send_readers"
 SAYS = "please open_bench and bench_read and bench_edit, open a bench for me"
 
 
@@ -31,7 +32,7 @@ def test_a_turn_that_adds_nothing_gets_its_households_everyday_tools_alone(db_ur
             for channel, medium in ways:
                 assert isinstance(for_turn(inbound(None, SAYS, channel=channel, medium=medium)), HouseholdTools)
                 assert set(sources(inbound(e.world.alana, SAYS, channel=channel, medium=medium))) == {"reminders", "devices", "house_change", "screen"}
-            assert await names(for_turn(inbound(e.world.alana))) == ["lights_on", "weather", *REMINDING, DEVICES]
+            assert await names(for_turn(inbound(e.world.alana))) == ["lights_on", "weather", *REMINDING, DEVICES, READERS]
             result = await for_turn(inbound(e.world.alana)).call(call("weather"))
             assert (result.content, result.is_error) == ("shared:weather", False)
 
@@ -49,7 +50,7 @@ def test_the_kiosk_and_voice_and_discord_never_get_bench_tools_whatever_they_say
                        REMINDING))
             for turn, reminding in shapes:
                 found = await names(for_turn(turn))
-                assert found == ["lights_on", "weather", *reminding, *([] if turn.speaker_id is None else [DEVICES])], turn
+                assert found == ["lights_on", "weather", *reminding, *([] if turn.speaker_id is None else [DEVICES, READERS])], turn
                 for tool in (*BENCH_TOOLS, *TIDY_TOOLS, *SKILL_TOOLS, "open_bench"):
                     result = await for_turn(turn).call(call(tool, title="x", piece_id=1))
                     assert result.is_error
@@ -64,7 +65,7 @@ def test_a_bench_turn_is_the_shared_catalogue_plus_that_benchs_tools_and_nothing
             a, b = await opened(e, e.world.alana, "a"), await opened(e, e.world.alana, "b")
             await put(e, e.world.alana, b, person_add(e.world.alana, "only-on-b", "SECRET-B"))
             turn = for_turn(inbound(e.world.alana, bench_id=a))
-            assert await names(turn) == ["lights_on", "weather", *BENCH_TOOLS, *TIDY_TOOLS, *SKILL_TOOLS, *REMINDING, DEVICES]
+            assert await names(turn) == ["lights_on", "weather", *BENCH_TOOLS, *TIDY_TOOLS, *SKILL_TOOLS, *REMINDING, DEVICES, READERS]
             catalogue = await turn.catalogue()
             assert catalogue.instructions is not None and "SHARED-GUIDANCE" in catalogue.instructions
             assert "bench_read" in catalogue.instructions
@@ -98,7 +99,7 @@ def test_the_web_chat_that_opens_benches_gets_open_bench_and_no_bench_tools(db_u
         async with env(db_url) as e:
             bench = await opened(e, e.world.alana)
             turn = for_turn(inbound(e.world.alana, opens_benches=True))
-            assert await names(turn) == ["lights_on", "weather", "open_bench", *REMINDING, DEVICES]
+            assert await names(turn) == ["lights_on", "weather", "open_bench", *REMINDING, DEVICES, READERS]
             for tool in BENCH_TOOLS:
                 assert (await turn.call(call(tool, piece_id=1))).is_error
             opened_by_her = await turn.call(call("open_bench", title="Garden plan"))
@@ -155,10 +156,10 @@ def test_an_unreachable_shared_source_is_named_and_the_turns_own_tools_still_ans
             services.register(Tools, Shared(down=True))
             catalogue = await for_turn(inbound(e.world.alana, bench_id=bench)).catalogue()
             assert catalogue.unreachable == (EVERYDAY,)
-            assert [s.name for s in catalogue.specs] == [*BENCH_TOOLS, *TIDY_TOOLS, *SKILL_TOOLS, *REMINDING, DEVICES]
+            assert [s.name for s in catalogue.specs] == [*BENCH_TOOLS, *TIDY_TOOLS, *SKILL_TOOLS, *REMINDING, DEVICES, READERS]
             services.register(Tools, Shared(unreachable=("house",)))
             nested = await for_turn(inbound(e.world.alana, bench_id=bench)).catalogue()
-            assert "house" in nested.unreachable and len(nested.specs) == 2 + len(BENCH_TOOLS) + len(TIDY_TOOLS) + len(SKILL_TOOLS) + len(REMINDING) + 1
+            assert "house" in nested.unreachable and len(nested.specs) == 2 + len(BENCH_TOOLS) + len(TIDY_TOOLS) + len(SKILL_TOOLS) + len(REMINDING) + 2
 
     run(scenario())
 

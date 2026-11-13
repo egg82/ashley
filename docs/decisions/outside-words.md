@@ -53,6 +53,7 @@ Today's tools, set by the field at each spec:
 | true | `git_projects`, `git_tree`, `git_read_file` | a repository holds files, names and messages written by anyone |
 | true | `claude_read` | a session's screen shows what Claude Code read |
 | true | `money_transactions` | payee names and payment memos written by merchants and payers |
+| true, narrowed per result | `send_readers` | the result is true when a reader that answered read a result that taints (`ashley.tools.readers`), else false |
 | true, narrowed per result | `watch` | the result is its kind's `outside` in `ashley/watches/watches.json`: false for `claude_session` (status and seq), true for `mail_inbox` (senders and subjects) |
 | true | `bench_frames`, `bench_transcribe` | frames and speech of a video from elsewhere |
 | true, narrowed per action and entity | `house_ask` | the result is false when the action is one the household's `household_reads` setting names and every entity the call named is listed for it (`todo.get_items` on the lists only the household writes), or the action is one its `service_reads` setting names (a travel-time script, `weather.get_forecasts`: Google's and the forecaster's text), else true: a list a job fills with web page titles, calendar events (anyone can send an invite), feeds, scripts, any action or entity not named |

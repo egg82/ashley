@@ -36,7 +36,7 @@ def test_the_collection_reaches_every_source_a_turn_can_offer() -> None:
     assert len(names) >= FLOOR
     assert {"remind", "remind_on_money", "arm_reminder", "change_reminder", "bench_read", "bench_run", "open_bench",
             "look_up", "household_devices", "house_automations", "bench_propose_install", "skill_read", "move_page",
-            "git_projects", "money_accounts", "run_code", "watch", "unwatch", "watches"} <= names
+            "git_projects", "money_accounts", "run_code", "watch", "unwatch", "watches", "send_readers"} <= names
 
 
 def test_every_provider_a_text_task_routes_to_is_gated() -> None:
