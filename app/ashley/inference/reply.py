@@ -7,8 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..text import Cleaned
 
-Says = Literal["reply", "none"]
-"""Whether her reply is said (`reply`) or not said at all (`none`). Code honours `none` only where the turn offers it
+Says = Literal["reply", "offer", "none"]
+"""Whether her reply is said (`reply`), is one short question offering to do something she overheard (`offer`), or is
+not said at all (`none`). Code honours `offer` and `none` only where the turn offers them
 (`ashley.channels.unprompted.says`)."""
 
 
@@ -87,4 +88,6 @@ class Reply(BaseModel):
     says: Says = Field(
         default="reply", description="none only on a turn you were woken for (a wake from the house, or the person "
                                      "pausing on a bench; the message says which) when nothing in it is worth saying "
-                                     "to them now; then nothing you write is sent. reply on every other turn.")
+                                     "to them now, or when `# Now` says you may stay silent; then nothing you write is "
+                                     "sent. offer only when `# Now` says you may offer: `spoken` and `text` are then one "
+                                     "short question asking whether they want you to do it. reply on every other turn.")

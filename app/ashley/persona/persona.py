@@ -28,7 +28,7 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
     memory recalled for this message, best first, or None when memory could not be reached, which she is told, and
     `standing` is then empty. `standing` is the facts that hold every time (`Memory.profile`). `phone` is whether this
     reply's `text` may go to the speaker's phone (`Reply.to_phone`), which only a known speaker can have; `page_open`, on a turn she was woken for, whether the speaker has a page open
-    (None: not a fact this turn is given). `aloud` is whether this message was said aloud on a page that can play her voice, which offers `Reply.aloud` (`channels.aloud.offered`). `said_before` is
+    (None: not a fact this turn is given). `aloud` is whether this message was said aloud on a page that can play her voice, which offers `Reply.aloud` (`channels.aloud.offered`). `overhears` is whether what she heard may not have been said to her (`Inbound.overhears`), which offers `Reply.says` `offer` and `none`. `said_before` is
     older turns that may bear on this message, one line each, already filtered to what this reply may hear. `while_away` is
     what she did since for asks she could not carry out, one line each, to tell. `tools_now` is the tool sources' state
     at this moment (`Catalogue.now`), in the `moment` layer. `overrides` is the household's text for the persona's
@@ -49,6 +49,7 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
     phone: bool = False
     page_open: bool | None = None
     aloud: bool = False
+    overhears: bool = False
     said_before: tuple[str, ...] = ()
     while_away: tuple[str, ...] = ()
     tools_now: str | None = None
@@ -83,7 +84,7 @@ def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
         facts.while_away(context.while_away),
         facts.tools_now(context.tools_now),
         facts.facts(context.now, context.household, context.speaker, context.home, context.place, context.phone,
-                      context.page_open, context.aloud),
+                      context.page_open, context.aloud, context.overhears),
     ]
     return {variant: SystemPrompt(_assemble(variant, kind, context.overrides, context.household, stable), _join(moment))
             for variant in prose.variants()}

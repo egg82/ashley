@@ -8,7 +8,9 @@ conversation id; TTS start with the text and TTS end with the clip's URL, which 
 speaker the two TTS events are left out (a device with no TTS start goes back to idle at run end) and Home Assistant
 plays the URL there instead; if Home Assistant refuses, the device plays it after all.
 
-An empty transcript ends the run quietly: run end and nothing else. A pending reply (no words: her answer comes through
+An empty transcript ends the run quietly: run end and nothing else. What she heard may not have been said to her
+(`Inbound.overhears`), so her reply may decline (`Outbound.says` `none`): the run then ends after intent end with
+nothing played and the conversation not continued, so a false wake records one utterance and no more. A pending reply (no words: her answer comes through
 the outbox from the runner that finishes her turn) ends it after intent end, with nothing played. A failure sends an error event (`code`, `message`)
 and run end: `stt-provider-unavailable` when no transcription route answered, `intent-failed` when her reply was refused
 or unavailable, `tts-failed` when the clip could not be stored. Once there is a transcript, her voice's route is warmed
@@ -19,8 +21,9 @@ The transcript is asked for in the language of the device's household (`people.l
 
 Open screens are told through `Mark`: listening to the transcript, speaking from the reply's hand-over.
 
-Logs `voice.run` once per run: device, outcome (`ok`, `room_speaker`, `empty`, `pending`, `aborted`, the failure's
-reason, or `error` after `voice.run_error` with the traceback), clip id, `stt_provider` and `stt_model` (the route
+Logs `voice.run` once per run: device, outcome (`ok`, `room_speaker`, `empty`, `silent`, `pending`, `aborted`, the
+failure's reason, or `error` after `voice.run_error` with the traceback), `says` (`reply`, `offer` or `none`, once she
+answered), clip id, `stt_provider` and `stt_model` (the route
 that transcribed), and `wake_to_stt_end_ms` (speech plus the end-of-speech wait), `stt_ms` (end of speech to transcript) and `respond_ms`, each present only once reached. The clip
 route logs `voice.clip` with the TTS route and timings. Never audio or text."""
 
@@ -89,6 +92,7 @@ class Run:
         self._speech_ended: float | None = None
         self._ms: dict[str, int] = {}
         self._stt: dict[str, str] = {}
+        self._says: dict[str, str] = {}
         self._clip: int | None = None
         self._warming: asyncio.Task[None] | None = None
         self._identify = Identify(satellite.device, pipeline.speaker)
@@ -112,7 +116,7 @@ class Run:
             self._mark.heard()
             self._identify.close()
             logs.info(log, "voice.run", device=self._satellite.device.id, outcome=outcome, clip=self._clip, **self._stt,
-                      **self._ms)
+                      **self._says, **self._ms)
 
     async def _carry(self) -> str:
         self._send(Event.VOICE_ASSISTANT_RUN_START)
@@ -144,8 +148,12 @@ class Run:
         except RespondUnavailable:
             return self._fail("intent-failed", "respond_unavailable")
         self._ms["respond_ms"] = _ms_since(started)
+        self._says = {"says": out.says}
         self._send(Event.VOICE_ASSISTANT_INTENT_END,
                    {"conversation_id": str(out.conversation_id), "continue_conversation": "0"})
+        if out.says == "none":
+            self._send(Event.VOICE_ASSISTANT_RUN_END)
+            return "silent"
         if not out.body:
             self._send(Event.VOICE_ASSISTANT_RUN_END)
             return "pending"
@@ -202,7 +210,8 @@ class Run:
         device = self._satellite.device
         return Inbound(household_id=device.household_id, thread=f"device:{device.id}", text=text, kind=device.kind,
                        medium="spoken", audience=device.audience, speaker_id=None, shared=True, place=device.place,
-                       channel="voice", remembers=device.remembers, heard_as=heard_as, later=True, taint=None)
+                       channel="voice", remembers=device.remembers, heard_as=heard_as, later=True, taint=None,
+                       overhears=True)
 
     def _fail(self, code: str, reason: str) -> str:
         self._send(Event.VOICE_ASSISTANT_ERROR, {"code": code, "message": _MESSAGES[code]})
