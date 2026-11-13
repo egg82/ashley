@@ -110,7 +110,7 @@ def test_a_server_that_never_answers_is_unreachable_after_the_timeout(world: Wor
         silent.bind(("127.0.0.1", 0))
         silent.listen(4)
         port = silent.getsockname()[1]
-        quick = dataclasses.replace(CONFIG, timeout_s=1)
+        quick = dataclasses.replace(CONFIG, timeout_s=0.2)
         services.register(Mailbox, RoutedMailbox({PROTON.name: ImapMailbox(("127.0.0.1",), quick, port, port)}))
         failed(world.turn().call(SEARCH, mailbox=ALANA_ADDRESS), "unreachable")
         failed(world.turn().call(SEND, mailbox=ALANA_ADDRESS, to=["a@x.test"], subject="s", body="b"), "unreachable")
