@@ -151,9 +151,8 @@ The first version worth switching to adds one thing to what runs today: her own 
     code and media), Object store, Tools.
 P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A turn that has read outside words asks before it
     does anything consequential the person did not ask for"). Left: (1) a move to trash or spam goes to the judge only when
-    every target carries the provider's own spam or promotions label, which the adapter reads; (2) a page listing
-    `outside_actions`, "what she did on her own and why"; (3) a live `python -m ashley.evals action-judge` run and the
-    model-golf pick of the final route. Fits into: Mail (the adapter's labels), Channels (`Outside`), Inference.
+    every target carries the provider's own spam or promotions label, which the adapter reads; (2) a live
+    `python -m ashley.evals action-judge` run and the model-golf pick of the final route. Fits into: Mail (the adapter's labels), Channels (`Outside`), Inference.
 43. **A flaky pool test.** `app/tests/test_db_pool.py::test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_left`
     once caught `other_connections=(1,)` in its "fresh" baseline on a busy CI runner: the baseline needs to wait out
     the previous test's connection, or count only its own.
