@@ -2,6 +2,7 @@
 registries and helpers through the WebSocket API (`ha_registry`, `ha_changes`). Needs an admin user's token. Tunables are
 data, `house.json`. Logs nothing itself; her tools log what they ask."""
 
+import asyncio
 from collections.abc import Mapping
 from typing import Any, Literal
 from urllib.parse import quote
@@ -20,6 +21,7 @@ from .house_settings import HouseSettings
 class HaHouse(House):
     def __init__(self, home_assistant: HomeAssistant, settings: HouseSettings) -> None:
         commands = Commands(home_assistant, settings)
+        self._settings = settings
         self._rest = Rest(home_assistant, settings)
         self._registries = Registries(commands)
         self._changes = Changes(self._rest, commands)
@@ -89,6 +91,22 @@ class HaHouse(House):
 
     async def delete_config(self, kind: ConfigKind, config_id: str) -> bool:
         return await self._changes.delete_config(kind, config_id)
+
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        for attempt in range(self._settings.entity_tries):
+            if attempt:
+                await asyncio.sleep(self._settings.entity_wait_s)
+            thing = next((i.thing for i in await self.configs(kind) if i.id == config_id and i.thing), None)
+            if thing is not None:
+                return thing
+        return None
+
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        service = "turn_on" if enabled else "turn_off"
+        try:
+            await self._rest.send("POST", f"/api/services/automation/{service}", service, {"entity_id": thing})
+        except HouseRejected as e:
+            raise HouseUnavailable(f"{service}: refused") from e
 
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         return await self._changes.create_record(kind, fields)

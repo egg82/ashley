@@ -88,6 +88,12 @@ class RecordingHouse(House):
         self._note("delete_config", kind, config_id)
         return self.there
 
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        raise AssertionError("not used")
+
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        raise AssertionError("not used")
+
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         self._note("create_record", kind, dict(fields))
         return f"new-{kind}"

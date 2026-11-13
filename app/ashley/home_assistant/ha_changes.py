@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from typing import Any
 from urllib.parse import quote
 
-from .ha_json import JsonObject, is_object, listed, obj, rows, text
+from .ha_json import JsonObject, is_object, listed, moment, obj, rows, text
 from .ha_rest import Rest
 from .ha_socket import Commands
 from .house import ConfigItem, ConfigKind, HouseRejected, RecordKind
@@ -41,8 +41,7 @@ class Changes:
                          for t, items in zip(HELPERS, lists, strict=True) for h in rows(items) if text(h.get("id")))
         states = rows(await self._rest.get("/api/states", f"list {kind}"))
         found = [s for s in states if text(s.get("entity_id")).startswith(kind + ".")]
-        return tuple(ConfigItem(_config_id(kind, s), text(obj(s.get("attributes")).get("friendly_name")) or text(s.get("entity_id")))
-                     for s in found if _config_id(kind, s))
+        return tuple(_item(kind, s) for s in found if _config_id(kind, s) or kind == "automation")
 
     async def config(self, kind: ConfigKind, config_id: str) -> Mapping[str, Any] | None:
         if kind == "helper":
@@ -161,6 +160,13 @@ class Changes:
             if row.get(_ID_KEY[kind]) == name or text(row.get("name")).casefold() == wanted:
                 return text(row.get(_ID_KEY[kind]))
         raise HouseRejected(f"no {kind} named {name}")
+
+
+def _item(kind: str, state: JsonObject) -> ConfigItem:
+    attributes, thing = obj(state.get("attributes")), text(state.get("entity_id"))
+    enabled = text(state.get("state")) == "on" if kind == "automation" else None
+    return ConfigItem(_config_id(kind, state) or None, text(attributes.get("friendly_name")) or thing, thing, enabled,
+                      moment(attributes.get("last_triggered")))
 
 
 def _config_id(kind: str, state: JsonObject) -> str:

@@ -120,8 +120,16 @@ class Performed:
 
 @dataclass(frozen=True)
 class ConfigItem:
-    id: str
+    """One automation, script or helper: its config `id` (None for an automation the house runs but holds no config
+    for, written in YAML, which cannot be read or written by id) and `name`. An automation or script also names the
+    `thing` it shows as in `states` and when it last ran (`last_ran`, None for never); an automation whether it is
+    `enabled`."""
+
+    id: str | None
     name: str
+    thing: str | None = None
+    enabled: bool | None = None
+    last_ran: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -179,6 +187,16 @@ class House(ABC):
         """Delete a config; False when there was none. Raises HouseUnavailable."""
 
     @abstractmethod
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        """The `thing` an automation or script shows as, waiting for it: one just written appears only once the house
+        has reloaded it, so this looks a few times apart (`house.json`); None when it has not appeared. Raises
+        HouseUnavailable."""
+
+    @abstractmethod
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        """Turn the automation shown as `thing` on or off. Raises HouseUnavailable."""
+
+    @abstractmethod
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         """Create an area, floor or label; its id. Raises HouseRejected, HouseUnavailable."""
 
@@ -232,6 +250,12 @@ class NullHouse(House):
     async def delete_config(self, kind: ConfigKind, config_id: str) -> bool:
         raise HouseUnavailable("no house")
 
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        raise HouseUnavailable("no house")
+
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        raise HouseUnavailable("no house")
+
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         raise HouseUnavailable("no house")
 
@@ -243,3 +267,16 @@ class NullHouse(House):
 
     async def diagnostics(self, integration_id: str) -> Mapping[str, Any] | None:
         raise HouseUnavailable("no house")
+
+
+async def has_action(house: House, name: str) -> bool | None:
+    """Whether the house offers the action `name` (`domain.name`); None when that cannot be told: no house, out of
+    reach, a name that is not `domain.name`, or a house that lists no actions at all, which no working one does."""
+    domain, _, action = name.partition(".")
+    if not domain or not action or "." in action:
+        return None
+    try:
+        offered = await house.actions()
+    except HouseUnavailable:
+        return None
+    return any(a.name == name for a in offered) if offered else None

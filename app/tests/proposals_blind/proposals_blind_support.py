@@ -147,6 +147,12 @@ class RecordingHouse(House):
         self.calls.append(("delete_config", (kind, config_id)))
         return True
 
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        raise AssertionError("not used")
+
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        raise AssertionError("not used")
+
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         self.calls.append(("create_record", (kind,)))
         return "new"
