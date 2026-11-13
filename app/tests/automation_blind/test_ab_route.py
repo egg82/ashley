@@ -2,8 +2,7 @@
 fake house: what the house holds afterwards, what the bench shows on the piece, the refusals as 409, a retried request
 that writes nothing twice, and that no route lets her install."""
 
-import asyncio
-from collections.abc import Generator
+from collections.abc import Awaitable, Generator
 
 import pytest
 from ab_support import CONFIG, body, edit, propose
@@ -39,8 +38,19 @@ def read(client: TestClient, bench: int) -> BenchDetail:
     return BenchDetail.model_validate(client.get(f"/api/benches/{bench}").json())
 
 
-def by_her(bench: int, piece: int = 1, version: int = 1, enabled: bool = False, turn_off: str | None = None) -> int:
-    return asyncio.run(services.get(Workshop).apply(OWNER, bench, propose(piece, version, enabled, turn_off))).seq
+async def _await[T](awaitable: Awaitable[T]) -> T:
+    return await awaitable
+
+
+def on_app_loop[T](client: TestClient, awaitable: Awaitable[T]) -> T:
+    """Awaits on the app's own event loop: the database pool wakes its waiters from that loop's thread, so another loop
+    awaiting it sleeps until its next timer, production's 5 s connect timeout."""
+    assert client.portal is not None
+    return client.portal.call(_await, awaitable)
+
+
+def by_her(client: TestClient, bench: int, piece: int = 1, version: int = 1, enabled: bool = False, turn_off: str | None = None) -> int:
+    return on_app_loop(client, services.get(Workshop).apply(OWNER, bench, propose(piece, version, enabled, turn_off))).seq
 
 
 def press(client: TestClient, bench: int, proposal: int, piece: int = 1) -> tuple[int, dict[str, object]]:
@@ -54,7 +64,7 @@ def test_the_bench_shows_her_proposal_then_the_install_writes_exactly_what_was_p
     command(client, bench, ADD)
     shown = read(client, bench).pieces[0].automation
     assert shown is not None and shown.install_proposal is None and shown.last_install is None
-    seq = by_her(bench, enabled=True, turn_off=OLD)
+    seq = by_her(client, bench, enabled=True, turn_off=OLD)
     shown = read(client, bench).pieces[0].automation
     assert shown is not None and shown.install_proposal is not None and shown.last_install is None
     assert (shown.install_proposal.seq, shown.install_proposal.piece_version, shown.install_proposal.enabled,
@@ -77,7 +87,7 @@ def test_undo_through_the_route_takes_the_install_back_out_of_the_house(signed_i
     client = signed_in(ALANA)
     bench = opened(client).id
     command(client, bench, ADD)
-    _, got = press(client, bench, by_her(bench, turn_off=OLD))
+    _, got = press(client, bench, by_her(client, bench, turn_off=OLD))
     assert house.enabled[OLD] is False
     status, undone = command(client, bench, {"type": "undo", "seq": got["seq"]})
     assert status == 200
@@ -93,7 +103,7 @@ def test_a_retried_install_request_is_refused_no_proposal_and_writes_nothing_mor
     client = signed_in(ALANA)
     bench = opened(client).id
     command(client, bench, ADD)
-    seq = by_her(bench)
+    seq = by_her(client, bench)
     assert press(client, bench, seq)[0] == 200
     writes = list(house.writes)
     status, body_ = press(client, bench, seq)
@@ -110,7 +120,7 @@ def test_refusals_are_409_with_their_reason_and_the_house_is_untouched(signed_in
     status, refused = command(client, bench, {**ADD, "body": "{not json"})
     assert status == 409 and CommandRefused.model_validate(refused).reason == "bad_automation"
     assert press(client, bench, 9)[0] == 409
-    seq = by_her(bench)
+    seq = by_her(client, bench)
     command(client, bench, {"type": "edit", "piece_id": 1, "base_version": 1, "title": "porch",
                             "body": body(alias="v2")})
     expect = {"stale": press(client, bench, seq), "none": press(client, bench, 99),
@@ -128,12 +138,12 @@ def test_a_piece_changed_since_the_proposal_is_stale_base_and_its_new_proposal_i
     client = signed_in(ALANA)
     bench = opened(client).id
     command(client, bench, ADD)
-    old = by_her(bench)
-    asyncio.run(services.get(Workshop).apply(OWNER, bench, edit(OWNER, 1, 1, alias="v2")))
+    old = by_her(client, bench)
+    on_app_loop(client, services.get(Workshop).apply(OWNER, bench, edit(OWNER, 1, 1, alias="v2")))
     shown = read(client, bench).pieces[0].automation
     assert shown is not None and shown.install_proposal is None
     assert press(client, bench, old)[0] == 409
-    assert press(client, bench, by_her(bench, version=2))[0] == 200
+    assert press(client, bench, by_her(client, bench, version=2))[0] == 200
     assert house.configs[automation_id_for(bench, 1)]["alias"] == "v2"
 
 
@@ -143,7 +153,7 @@ def test_home_assistant_refusing_the_config_is_answered_200_and_the_piece_shows_
     bench = opened(client).id
     command(client, bench, ADD)
     house.refuse = "invalid trigger"
-    status, _ = press(client, bench, by_her(bench, turn_off=OLD))
+    status, _ = press(client, bench, by_her(client, bench, turn_off=OLD))
     assert status == 200
     last = read(client, bench).pieces[0].automation
     assert last is not None and last.last_install is not None
@@ -159,7 +169,7 @@ def test_an_install_over_an_automation_this_bench_never_installed_shows_failed_a
     ident = automation_id_for(bench, 1)
     house.add(ident, "theirs", marker=1)
     theirs = dict(house.configs[ident])
-    press(client, bench, by_her(bench, turn_off=OLD))
+    press(client, bench, by_her(client, bench, turn_off=OLD))
     last = read(client, bench).pieces[0].automation
     assert last is not None and last.last_install is not None and last.last_install.install_ending == "failed"
     assert house.configs[ident] == theirs and house.writes == [] and house.enabled[OLD] is True
@@ -169,7 +179,7 @@ def test_another_household_gets_404_for_an_install_and_nothing_is_written(signed
     client = signed_in(ALANA)
     bench = opened(client).id
     command(client, bench, ADD)
-    seq = by_her(bench)
+    seq = by_her(client, bench)
     other = signed_in(SAM)
     status, _ = press(other, bench, seq)
     assert status == 404 and house.writes == []
@@ -181,7 +191,7 @@ def test_the_commands_route_has_no_way_for_her_to_install(signed_in: As, house: 
     client = signed_in(ALANA)
     bench = opened(client).id
     command(client, bench, ADD)
-    seq = by_her(bench)
+    seq = by_her(client, bench)
     status, _ = command(client, bench, {"type": "install", "piece_id": 1, "proposal": seq, "by": "ashley",
                                         "automation_id": "ashley_bench_1_piece_1"})
     assert status in (200, 409, 422)
