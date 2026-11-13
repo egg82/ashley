@@ -73,7 +73,7 @@ class Sizes:
 
 
 _ONE = [MessageParam(role="user", content=".")]
-_STUB = ToolSpec("x", "x", {"type": "object"})
+_STUB = ToolSpec("x", "x", {"type": "object"}, reads=True, outside=False)  # counted, never offered or called
 
 
 def _tools(specs: Sequence[ToolSpec]) -> Request:
