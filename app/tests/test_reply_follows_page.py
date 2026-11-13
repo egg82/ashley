@@ -7,7 +7,14 @@ from dataclasses import dataclass, field, replace
 
 import pytest
 from ashley import services
+from ashley.channels.inflight import Work
+from ashley.channels.live_turn import Showing
 from ashley.channels.model import Inbound
+from ashley.channels.settled import Ended, settle
+from ashley.channels.unsaid import unreachable
+from ashley.conversations.model import NewTurn
+from ashley.inference.inference import InferenceUnavailable
+from ashley.live.events import ThreadTurn
 from ashley.channels.respond import respond
 from ashley.conversations.model import Conversation
 from ashley.inference.inference import Inference, T
@@ -324,3 +331,63 @@ def test_thinking_is_told_again_once_half_of_what_a_screen_believes_has_passed(
 def test_thinking_is_not_told_again_before_half_of_what_a_screen_believes_has_passed(
         wired: Fakes, shop: Shop, monkeypatch: pytest.MonkeyPatch) -> None:
     assert _thinking_told(wired, monkeypatch, at_most_s=10.0, per_step_s=1.0) == 1
+
+
+class _Kept(Work):
+    """Work that outlives its runner and has not yet told the person her thinking is out of reach."""
+
+    def __init__(self) -> None:
+        self.told = False
+
+    @property
+    def retries(self) -> bool:
+        return True
+
+    @property
+    def unreachable_told(self) -> bool:
+        return self.told
+
+    async def told_unreachable(self) -> None:
+        self.told = True
+
+
+def _unreachable(wired: Fakes, moved_to: int | None) -> tuple[Showing, _Kept, int, int]:
+    """A device-spoken turn (a channel that is not a page) in chat whose page is on `moved_to`, ended on an
+    unreachable model."""
+    async def scenario() -> tuple[Showing, _Kept, int, int]:
+        inbound = replace(CHAT, medium="spoken", audience="shared", shared=True, device_id=4, moved_to=moved_to)
+        chat = await wired.conversations.for_thread(HOME.id, inbound.thread, "chat", [ALANA.id])
+        said = await wired.conversations.add_turn(chat.id, NewTurn("person", inbound.text, ALANA.id, "shared", None))
+        showing, work = Showing(inbound, "t"), _Kept()
+        ended = Ended(inbound, chat.id, said.id, ALANA, showing)
+        assert await settle(work, InferenceUnavailable(), "inference_unavailable", ended, 1.0)
+        assert work.told
+        return showing, work, chat.id, said.id
+
+    return asyncio.run(scenario())
+
+
+def test_the_unreachable_line_of_a_turn_moved_to_a_bench_is_said_in_the_bench_talk_not_where_it_began(
+        wired: Fakes, shop: Shop) -> None:
+    _unreachable(wired, 9)
+    chat, talk = turn_in(wired, "person:1:web"), turn_in(wired, "bench:9")
+    assert [t.author for t in chat.turns] == ["person"]
+    assert [(t.author, t.follows, t.carried_from) for t in talk.turns] == [("person", False, chat.turns[0].id),
+                                                                             ("ashley", True, None)]
+    assert talk.turns[1].text == unreachable().text and talk.turns[1].answers == talk.turns[0].id
+
+
+def test_the_unreachable_line_of_a_turn_that_did_not_move_is_said_where_it_began(wired: Fakes, shop: Shop) -> None:
+    _unreachable(wired, None)
+    chat = turn_in(wired, "person:1:web")
+    assert [(t.author, t.follows, t.answers) for t in chat.turns] == [("person", False, None),
+                                                                     ("ashley", True, chat.turns[0].id)]
+    assert "bench:9" not in wired.conversations.threads
+
+
+def test_the_screen_is_told_of_the_bench_talk_when_the_unreachable_line_is_said_there(wired: Fakes, shop: Shop) -> None:
+    _unreachable(wired, 9)
+    live = services.get(Live)
+    assert isinstance(live, FakeLive)
+    told = [e.thread for e in live.published if isinstance(e, ThreadTurn)]
+    assert told[-1] == "bench:9" and "person:1:web" not in told[-1:]

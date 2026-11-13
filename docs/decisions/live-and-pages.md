@@ -90,7 +90,7 @@ there, so the person is not left on an empty bench while her answer sits in chat
   first step after the move (`continued.carried`, from `_Turn.arrive`), so the open bench reads the person's line owed an
   answer and her thinking dots under it, not an empty talk. A held line she says after the move is said in the
   bench's talk, answering the carried ask (`continued.held_on_bench`; `Work.say` renews the claim for a conversation
-  other than the claim's); one said before the move stays in the thread the turn began on. Before a step she is
+  other than the claim's); one said before the move stays in the thread the turn began on. So is the line that her thinking is out of reach (`ashley.channels.settled`), and the Live event names that talk. Before a step she is
   announced as thinking again once half of `thinking_at_most_s` has passed (`Showing.still_working`), so a longer turn is not
   shown idle while it works.
 - **A cue drives a video piece's player and is no change to the bench** (`ashley.workshop.commands.Cue`, tool
