@@ -1,12 +1,15 @@
 """A fake Sure behind `httpx2.MockTransport`, answering `/api/v1/{accounts,transactions,categories,balance_sheet}` in
-the shapes Sure's jbuilder views write (we-promise/sure 117bea5d, `app/views/api/v1/*`), and an in-memory Connections
-holding one household's Sure. Every request is recorded with its path, query and key, so a test can see what was asked
-and with what."""
+the shapes Sure's jbuilder views write (we-promise/sure 117bea5d, `app/views/api/v1/*`), one category at
+`/api/v1/categories/:id`, and `PUT /api/v1/transactions/:id` as `Api::V1::TransactionsController#update` answers it
+(131e786: 404 `not_found` for an id not the household's, 422 for a split's part, 403 `insufficient_scope` for a key that
+may only read), and an in-memory Connections holding one household's Sure. Every request is recorded with its path,
+query and key, and every PUT with its body, so a test can see what was asked and with what."""
 
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 import httpx2
 from ashley import services
@@ -73,6 +76,9 @@ class FakeSure:
     raw: bytes | None = None
     answers: dict[str, object] = field(default_factory=bodies)
     seen: list[tuple[str, dict[str, str], str | None]] = field(default_factory=list[tuple[str, dict[str, str], str | None]])
+    written: list[tuple[str, object]] = field(default_factory=list[tuple[str, object]])
+    reads_only: bool = False
+    split_parts: set[str] = field(default_factory=set[str])
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         self.seen.append((request.url.path, dict(request.url.params), request.headers.get("x-api-key")))
@@ -82,10 +88,43 @@ class FakeSure:
             return httpx2.Response(401, json={"error": "unauthorized"})
         if self.raw is not None:
             return httpx2.Response(200, content=self.raw, headers={"content-type": "text/html"})
+        if request.method == "PUT":
+            return self._put(request)
+        if request.url.path.startswith("/api/v1/categories/"):
+            return self._category(request.url.path.rsplit("/", 1)[1])
         body = self.answers.get(request.url.path)
         if body is None:
             return httpx2.Response(404, json={"error": "not_found"})
         return httpx2.Response(200, content=json.dumps(body).encode(), headers={"content-type": "application/json"})
+
+    def _rows(self, path: str, key: str) -> list[dict[str, Any]]:
+        loose: Any = self.answers[path]
+        return loose[key]
+
+    def _category(self, id_: str) -> httpx2.Response:
+        found = next((c for c in self._rows("/api/v1/categories", "categories") if c["id"] == id_), None)
+        if found is None:
+            return httpx2.Response(404, json={"error": "not_found", "message": "Category not found"})
+        return httpx2.Response(200, json=found)
+
+    def _put(self, request: httpx2.Request) -> httpx2.Response:
+        """Sure's update: the transaction's category set to the body's `category_id`, the transaction answered."""
+        if self.reads_only:
+            return httpx2.Response(403, json={"error": "insufficient_scope",
+                                              "message": "This action requires the 'write' scope"})
+        id_ = request.url.path.removeprefix("/api/v1/transactions/")
+        body = json.loads(request.content)
+        self.written.append((request.url.path, body))
+        found = next((t for t in self._rows("/api/v1/transactions", "transactions") if t["id"] == id_), None)
+        if found is None:
+            return httpx2.Response(404, json={"error": "not_found", "message": "Transaction not found"})
+        if id_ in self.split_parts:
+            return httpx2.Response(422, json={"error": "validation_failed", "message": "Split child transactions "
+                                              "cannot be edited directly. Use the split editor."})
+        category_id = body["transaction"]["category_id"]
+        category = next(c for c in self._rows("/api/v1/categories", "categories") if c["id"] == category_id)
+        found["category"] = {k: category[k] for k in ("id", "name", "color", "icon")}
+        return httpx2.Response(200, json=found)
 
     def client(self) -> HttpSure:
         return HttpSure(httpx2.AsyncClient(transport=httpx2.MockTransport(self.handle), follow_redirects=False), 5)

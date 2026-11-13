@@ -1,12 +1,12 @@
-"""The port to Sure's REST API (`ashley.services`): one GET under a base URL with an API key, answering the parsed JSON
-body. Reads only. The key travels in the `X-Api-Key` header and is never logged or put in an exception message; a
-call logs `sure.get` with the endpoint's path (no query), the status and duration_ms."""
+"""The port to Sure's REST API (`ashley.services`): a GET or a PUT under a base URL with an API key, answering the
+parsed JSON body. The key travels in the `X-Api-Key` header and is never logged or put in an exception message; a call
+logs `sure.get` or `sure.put` with the endpoint's path (no query, no body), the status and duration_ms."""
 
 import logging
 import time
 from abc import abstractmethod
 from collections.abc import Mapping
-from typing import Literal
+from typing import Any, Literal
 
 import httpx2
 
@@ -17,9 +17,11 @@ from ..services import Service
 log = logging.getLogger("ashley.sure")
 _HTTPS = frozenset({"https"})
 
-Reason = Literal["refused", "unreachable", "not_sure"]
-"""Why a call failed: `refused`, Sure turned the key away (401, 403); `unreachable`, no answer, a timeout, a redirect,
-or a server error; `not_sure`, what answered is not Sure's API (404, or a body that is not its JSON)."""
+Reason = Literal["refused", "unreachable", "not_sure", "not_found", "rejected"]
+"""Why a call failed: `refused`, Sure turned the key away (401, 403, a key without the scope a write needs included);
+`unreachable`, no answer, a timeout, a redirect, or a server error; `not_sure`, what answered is not Sure's API (a 404
+that is not Sure's, or a body that is not its JSON); `not_found`, Sure's own 404 for a record the household does not
+have; `rejected`, Sure would not make the change (422)."""
 
 
 class SureFailed(Exception):
@@ -43,9 +45,17 @@ class Sure(Service):
     async def get(self, base: str, api_key: str, path: str, params: Mapping[str, str | int]) -> object:
         """The parsed JSON of `GET {base}{path}?{params}`, `path` starting `/api/v1/`. Raises SureFailed."""
 
+    @abstractmethod
+    async def put(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
+        """The parsed JSON answer to `PUT {base}{path}` with the JSON `body`, `path` starting `/api/v1/`. Raises
+        SureFailed."""
+
 
 class NullSure(Sure):
     async def get(self, base: str, api_key: str, path: str, params: Mapping[str, str | int]) -> object:
+        raise SureFailed("unreachable")
+
+    async def put(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
         raise SureFailed("unreachable")
 
 
@@ -58,7 +68,10 @@ class HttpSure(Sure):
     async def get(self, base: str, api_key: str, path: str, params: Mapping[str, str | int]) -> object:
         return await self._send("get", base, api_key, path, dict(params), None)
 
-    async def _send(self, method: Literal["get"], base: str, api_key: str, path: str,
+    async def put(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
+        return await self._send("put", base, api_key, path, None, dict(body))
+
+    async def _send(self, method: Literal["get", "put"], base: str, api_key: str, path: str,
                     params: dict[str, str | int] | None, body: dict[str, object] | None) -> object:
         started = time.monotonic()
         try:
@@ -72,13 +85,26 @@ class HttpSure(Sure):
         if response.status_code in (401, 403):
             raise SureFailed("refused")
         if response.status_code == 404:
-            raise SureFailed("not_sure")
+            raise SureFailed("not_found" if _sures_not_found(response) else "not_sure")
+        if response.status_code == 422:
+            raise SureFailed("rejected")
         if not response.is_success:
             raise SureFailed("unreachable")
         try:
             return response.json()
         except ValueError as e:
             raise SureFailed("not_sure") from e
+
+
+def _sures_not_found(response: httpx2.Response) -> bool:
+    """Whether a 404 is Sure's own answer for a record it does not have (`{"error": "not_found"}`, or
+    `record_not_found` from its API base), rather than no such endpoint."""
+    try:
+        body: object = response.json()
+    except ValueError:
+        return False
+    loose: Any = body
+    return isinstance(body, dict) and dict[object, object](loose).get("error") in ("not_found", "record_not_found")
 
 
 def _logged(method: str, path: str, status: int | str, started: float) -> None:

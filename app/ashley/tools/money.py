@@ -1,7 +1,10 @@
-"""The household's finances, read through the Ledger (`ashley.ledger.ledger`), as her money tools (`money_specs`).
-Offered per turn by `ashley.channels.turn_tools.for_turn` only where the reply reaches the speaker alone
-(`ashley.channels.audience.owner_alone`). A household with no ledger is offered none. Tool arguments and results are
-never logged; `tools.call` carries the tool, outcome and row count."""
+"""The household's finances, read through the Ledger (`ashley.ledger.ledger`), and a transaction's category set
+through it, as her money tools (`money_specs`). Offered per turn by `ashley.channels.turn_tools.for_turn` only where the
+reply reaches the speaker alone (`ashley.channels.audience.owner_alone`), so a change is made only for a named person of
+the household; `money_categorise` is not a read, so a reads-only turn is not offered it and a turn that has read outside
+words sorts it by its tier (`ashley.tools.outside`). A household with no ledger is offered none. Tool arguments and
+results are never logged; `tools.call` carries the tool, outcome and row count (for a categorisation, how many were
+set)."""
 
 import time
 from collections.abc import Sized
@@ -9,10 +12,10 @@ from collections.abc import Sized
 from .. import services
 from ..inference.model import ToolCall, ToolResult
 from ..ledger.ledger import Ledger
-from ..ledger.model import LedgerFailed, LedgerUnavailable, NotConnected, Reason
+from ..ledger.model import LedgerFailed, LedgerUnavailable, NotConnected, Reason, UnknownCategory
 from . import bench_results, money_render
 from .money_config import MoneyConfig
-from .money_specs import ACCOUNTS, CATEGORIES, INSTRUCTIONS, NAMES, NET_WORTH, specs, transaction_query
+from .money_specs import ACCOUNTS, CATEGORIES, CATEGORISE, INSTRUCTIONS, NAMES, NET_WORTH, categorisation, specs, transaction_query
 from .tools import Catalogue, Tools, ToolsUnavailable
 
 _FAILED: dict[Reason, tuple[str, str]] = {
@@ -22,6 +25,9 @@ _FAILED: dict[Reason, tuple[str, str]] = {
 """The outcome and the reason a model is told for each way a read fails."""
 
 _UNAVAILABLE = "the household's connections cannot be read"
+_REFUSED_CHANGE = ("Sure turned the change away; the household's key may only read, and someone in the household can "
+                   "replace it in settings with one that may write")
+_UNKNOWN_CATEGORY = "category_id is not one of the household's categories; money_categories lists them"
 
 
 class MoneyTools(Tools):
@@ -47,8 +53,12 @@ class MoneyTools(Tools):
             return bench_results.failed(call, started, "unavailable", _UNAVAILABLE)
         except NotConnected:
             return bench_results.failed(call, started, "not_connected", "the household has not connected Sure")
+        except UnknownCategory:
+            return bench_results.failed(call, started, "bad_arguments", _UNKNOWN_CATEGORY)
         except LedgerFailed as e:
             outcome, hint = _FAILED[e.reason]
+            if call.name == CATEGORISE and e.reason == "refused":
+                hint = _REFUSED_CHANGE
             return bench_results.failed(call, started, outcome, hint)
         if isinstance(got, str):
             return bench_results.failed(call, started, "bad_arguments", got)
@@ -62,6 +72,11 @@ class MoneyTools(Tools):
             return money_render.categories(await ledger.categories(household, self._config.categories_max))
         if call.name == NET_WORTH:
             return money_render.net_worth(await ledger.net_worth(household))
+        if call.name == CATEGORISE:
+            asked = categorisation(dict(call.arguments), self._config)
+            if isinstance(asked, str):
+                return asked
+            return money_render.categorised(await ledger.categorise(household, asked.category_id, asked.transaction_ids))
         query = transaction_query(dict(call.arguments), self._config)
         if isinstance(query, str):
             return query
@@ -77,6 +92,9 @@ class MoneyTools(Tools):
 
 
 def _rows(got: dict[str, object]) -> int:
+    if "set" in got:
+        set_ = got["set"]
+        return set_ if isinstance(set_, int) else 0
     for key in ("accounts", "transactions", "categories"):
         rows = got.get(key)
         if isinstance(rows, Sized):

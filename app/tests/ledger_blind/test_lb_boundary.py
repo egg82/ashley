@@ -73,7 +73,7 @@ def test_the_neutral_package_imports_no_adapter(package_tree: dict[Path, Parsed]
     assert offenders == [] and any(p.parts[0] == "ledger" for p, _, _ in found)
 
 
-def test_the_port_has_reads_and_no_write() -> None:
+def test_the_port_has_reads_and_one_write_categorise() -> None:
     public = {n for n, _ in inspect.getmembers(port.Ledger, inspect.isfunction) if not n.startswith("_")}
-    assert public == {"connected", "accounts", "categories", "net_worth", "transactions"}
+    assert public == {"connected", "accounts", "categories", "net_worth", "transactions", "categorise"}
     assert {n for n in vars(SureLedger) if not n.startswith("_")} <= public

@@ -109,7 +109,7 @@ that is not a read.
 - **`judged` (c)**: the harm is real: it sends household data out, cannot be undone, opens the house, hides or deletes
   things, changes what she or the house does later, or spends. `mail_send`, a mail move to archive, spam or trash, locks,
   alarms, garage, gate and door covers, sirens, cameras, automations, scripts, `button.press`, `notify.*`, `homeassistant.*`,
-  `house_change`, `bench_propose_install`, the Claude Code tools, `skill_edit`, `skill_rollback`, `change_reminder`,
+  `house_change`, `bench_propose_install`, the Claude Code tools, `skill_edit`, `skill_rollback`, `money_categorise`, `change_reminder`,
   `cancel_reminder`, and `default`: any tool or action not listed.
 - **`agrees` tools** stay refused in a tainted turn, so a delete still needs a later untainted `house_confirm`, and a
   reminder or watch with `tools` still needs `arm_reminder`.

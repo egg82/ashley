@@ -2,7 +2,9 @@
 as the backend formats them, ids only where another tool takes them, and `cut` true when the backend holds more than was
 shown."""
 
-from ..ledger.model import Account, Category, Entry, NetWorth, Page
+from collections.abc import Mapping
+
+from ..ledger.model import Account, Categorised, Category, Entry, NetWorth, Page
 
 
 def _cut(shown: int, total: int | None) -> bool:
@@ -17,7 +19,8 @@ def accounts(found: Page[Account]) -> dict[str, object]:
 
 
 def transaction(t: Entry) -> dict[str, object]:
-    row: dict[str, object] = {"date": t.date, "name": t.name}
+    row: dict[str, object] = {"date": t.date, "name": t.name} if t.id is None else {"id": t.id, "date": t.date,
+                                                                                   "name": t.name}
     if t.amount is not None:
         row["amount"] = t.amount
     if t.classification is not None:
@@ -50,6 +53,17 @@ def categories(found: Page[Category]) -> dict[str, object]:
             row["parent"] = c.parent
         rows.append(row)
     return {"categories": rows, "cut": _cut(len(rows), found.total)}
+
+
+def categorised(done: Mapping[str, Categorised]) -> dict[str, object]:
+    """How many were set, and the ids of those that were not: `not_found`, no such transaction of the household;
+    `rejected`, Sure would not change it."""
+    out: dict[str, object] = {"set": sum(1 for v in done.values() if v == "set")}
+    for outcome in ("not_found", "rejected"):
+        ids = [i for i, v in done.items() if v == outcome]
+        if ids:
+            out[outcome] = ids
+    return out
 
 
 def net_worth(worth: NetWorth) -> dict[str, object]:

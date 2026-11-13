@@ -23,8 +23,8 @@ same family's accounts; one HA is the one house), so a key per person would add 
   (`ashley.channels.audience.owner_alone`): the channel names the speaker, its audience is `owner`, it is not shared,
   and no device's screen shows the thread. A person's web chat, their bench talk and their Discord DM qualify; a
   satellite, the hallway tablet and a household's Discord channel never do, voice match or not.
-- **She only reads**, through the Ledger (below; Sure's REST API behind it) with `ashley.tools.money.MoneyTools`: accounts, transactions by date,
-  account, category, words and type, categories, and net worth. Each answer is compact, capped
+- **She reads, and sets a transaction's category**, through the Ledger (below; Sure's REST API behind it) with `ashley.tools.money.MoneyTools`: accounts, transactions by date,
+  account, category, words and type, categories, and net worth, and `money_categorise` (below). Each answer is compact, capped
   (`app/ashley/tools/money.json`) and marked `cut` when Sure holds more. Each answered read moves the connection's
   `checked_at`, which the room shows. So does an answered read of any kind: Sure's in `SureLedger`, a code host's in
   `RoutedCodeHost` (the `Access` carries its connection id), Home Assistant's on each JSON response of its client and each WebSocket command it answers successfully
@@ -114,7 +114,20 @@ Her money tools and the deposit sense read `ashley.ledger.ledger.Ledger`, never 
 registered in `ashley.wiring`, with no tool or rule rewritten. The household's ledger is its Sure connection until a
 second kind exists; the adapter finds it, so a caller passes a household id.
 
-- **Reads only.** The interface has no write, so no adapter can write; categorising is a separate piece (`open-work.md`).
+- **One write: a transaction's category** (`Ledger.categorise`: one of the household's categories for a few
+  transactions, each one's outcome `set`, `not_found` or `rejected`; `UnknownCategory` and nothing changed for a
+  category that is not the household's). Sure's adapter checks the category (`GET /api/v1/categories/:id`) and puts
+  each transaction (`PUT /api/v1/transactions/:id` with only `category_id`, which Sure then locks against its rules and
+  syncs); Sure has no bulk update in its API. Its key must have Sure's write scope; a read-only key is `refused`.
+- **Categorising goes through the gate every change uses, with no gate of its own.** `money_categorise` is a change
+  (`reads` false), offered only where the money tools are, so only for a named person of the household with the reply
+  reaching them alone, which is what `ConnectionResources.permits` asks to change a household connection's resource; a
+  reads-only turn is not offered it. Its tier is `judged` (`decisions.md`, "A turn that has read outside words asks
+  before it does anything consequential the person did not ask for"): it changes records the household's budgets and
+  reports rest on, and a turn that read the transactions has read payee text written outside, so a categorisation the
+  person's own words do not ask for is held for their OK and agreed with `carry_out` or the Agree tap. Rejected:
+  `runs`, as mail labels are, since a stranger's memo could recategorise the books in bulk; a confirm tool of its own,
+  which would duplicate the held proposal.
 - **`Entry` is not `criteria.record.Transaction`.** A tool shows a row the criteria cannot judge (no id, no amount, an
   undated one), so the ledger's record keeps every field optional the way the backend does, and the sense derives the
   judged record from it (`ashley.senses.ledger_transactions.deposit_from`). Rejected: one record for both, which would
@@ -122,7 +135,7 @@ second kind exists; the adapter finds it, so a caller passes a household id.
 - **Failures are `LedgerFailed(reason)`** (`refused`, `unreachable`, `unrecognised`), `LedgerUnavailable` when the
   household's link cannot be read, `NotConnected` when it has none. The tools' error texts still say Sure (and
   `not_sure` for `unrecognised`), since the model is told the source is Sure; they change with the first second backend.
-- Rejected: an adapter per tool. The records are the contract, and four tools plus the sense share one reader.
+- Rejected: an adapter per tool. The records are the contract, and the tools plus the sense share one adapter.
 
 ## A model provider's key is a connection
 

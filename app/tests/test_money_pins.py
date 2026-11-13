@@ -18,7 +18,7 @@ from ashley.sure.client import Sure
 from ashley.sure.ledger import SureLedger
 from ashley.tools import money_config
 from ashley.tools.money import MoneyTools
-from ashley.tools.money_specs import ACCOUNTS, CATEGORIES, INSTRUCTIONS, NAMES, NET_WORTH, TRANSACTIONS, specs
+from ashley.tools.money_specs import ACCOUNTS, CATEGORIES, INSTRUCTIONS, NET_WORTH, READS, TRANSACTIONS, specs
 from money_support import CHECKING, FakeSure, HeldConnections, account, page
 
 
@@ -69,9 +69,9 @@ def test_every_answer_is_the_same_bytes(held: HeldConnections, sure: FakeSure) -
         '"type": "depository", "classification": "asset"}, {"id": "a2", "name": "Visa", "balance": "$300.00", '
         '"type": "depository", "classification": "liability"}], "cut": false}')
     assert run(TRANSACTIONS).content == (
-        '{"transactions": [{"date": "2026-10-30", "name": "Groceries run", "amount": "$12.34", '
+        '{"transactions": [{"id": "t-Groceries run", "date": "2026-10-30", "name": "Groceries run", "amount": "$12.34", '
         '"classification": "expense", "account": "Checking", "category": "Groceries", "merchant": "Corner Grocer"}, '
-        '{"date": "2026-10-29", "name": "To savings", "amount": "$100.00", "classification": "expense", '
+        '{"id": "t-To savings", "date": "2026-10-29", "name": "To savings", "amount": "$100.00", "classification": "expense", '
         '"account": "Checking", "merchant": "Corner Grocer", "transfer": true}], "cut": false, "matched": 2}')
     assert run(CATEGORIES).content == (
         '{"categories": [{"id": "7d1e2f3a-4b5c-4d6e-8f70-81a2b3c4d5e6", "name": "Groceries", "parent": "Food"}], '
@@ -184,10 +184,10 @@ def test_the_rows_logged_are_the_rows_shown(held: HeldConnections, sure: FakeSur
     answers(sure, "/api/v1/accounts")["accounts"] = [account("a1", "A", "$1.00")]
     logs.setup()
     capsys.readouterr()
-    for name in NAMES:
+    for name in READS:
         run(name)
     lines = [ln for ln in capsys.readouterr().out.splitlines() if "event=tools.call" in ln]
-    rows = {name: [ln for ln in lines if f"tool={name} " in ln] for name in NAMES}
+    rows = {name: [ln for ln in lines if f"tool={name} " in ln] for name in READS}
     assert [(n, len(ls), "rows=%d" % want in ls[0]) for (n, ls), want in zip(rows.items(), (1, 2, 3, 1), strict=True)] == [
         (ACCOUNTS, 1, True), (TRANSACTIONS, 1, True), (CATEGORIES, 1, True), (NET_WORTH, 1, True)]
 
