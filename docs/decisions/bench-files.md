@@ -114,7 +114,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     end) so the controls scrub. `video` stays the embedded provider kind. A cue (`bench_cue`) drives any of the three; the
     page says what she did in a line of text beside the player, which needs no motion.
   - **A transcript is a reader piece beside the recording**, one `[m:ss] text` line per segment, with no address (a
-    reader's `url` may now be empty: text from no page). `bench_transcribe` takes captions first: a `.srt`/`.vtt` file piece
+    reader's `url` may be empty: text from no page). `bench_transcribe` takes captions first: a `.srt`/`.vtt` file piece
     she names (`captions_piece`, parsed in the app), else the captions inside the file, else the sound. The sound is cut
     into windows of `window_s` seconds, each sent to the speech service and stamped by its start, so a time is exact to a
     window, not a word; a window of near silence is not sent, since whisper invents words for it.
@@ -122,7 +122,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     recording piece's id and the second each line starts at, written by `bench_transcribe` and served as
     `BenchPiece.reader.recording`. Nothing is read back from the title or the `[m:ss]` text, which stay for people and
     for her. A body whose lines no longer number its starts (it was edited) serves no `recording`, since a time then
-    belongs to no line. A transcript made before this has none and its lines do not play.
+    belongs to no line. An older transcript has none and its lines do not play.
   - **A click on a transcript line plays the recording from there, and the line being spoken is marked.** The client's
     cue path is the one mechanism: her `bench_cue` arrives as `BenchCued` and a person's click is `cueBenchPlayer`
     (`app/web/src/session/live.ts`), a seek then a play to the same listeners (`MediaView`'s `driveFile`), tagged by
@@ -191,12 +191,12 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     read-only by the runner as `inputs/<piece id>.<ext>` and never carried back as output. The bytes are not recorded
     with the run: its files hold `inputs.json`, the index (piece id, name, path, size, sha256, and `left_out` with why:
     `too_large` or `unavailable`), without the last run's. A script names a piece by id, `ashley_cad.existing(7)`; the
-    reply names the ones the run was not given. `inputs` omitted keeps every model file a candidate, which breaks
-    no script she has, and `[]` is none; a named piece that is not a model file on the bench, does not fit with the
-    ones named, or cannot be read refuses the run before it is logged (`bad_inputs`, naming the piece), (with the bytes against the cap), where an
-    unnamed one is left out. Naming files that together exceed the cap still refuses. The ceiling is therefore on what a script uses, not on what the bench holds (two
-    versions of one design no longer shut each other out). Her script text is never read for `existing(...)`. The ceiling is the pod object: Kubernetes takes about 1.5 MiB for it,
-    and the environment is where the job already rides. Rejected: mounting from the object store, which needs the pod to
+    reply names the ones the run was not given. `inputs` omitted keeps every model file a candidate, and `[]` is none. A
+    named piece that is not a model file on the bench, cannot be read, or does not fit the cap together with the other
+    named ones refuses the run before it is logged (`bad_inputs`, naming the piece), where an unnamed one is left out.
+    The ceiling is therefore on what a script uses, not on what the bench holds, so two versions of one design do not
+    shut each other out. Her script text is never read for `existing(...)`. The cap comes from the pod object:
+    Kubernetes takes about 1.5 MiB for it, and the environment is where the job already rides. Rejected: mounting from the object store, which needs the pod to
     reach the store or an init container to hold its credentials. Rejected: a field on the model piece naming its
     inputs, a second place beside the pieces for the same fact. Rejected: finding `existing(...)` calls in the script
     text, which is regex over what she wrote.
@@ -206,7 +206,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     that as a solid of its triangles; a 3MF reads the same way, converted from the unit it declares; a STEP is imported
     as it is. An STL's unit is not in the file, so `existing(piece, unit=)` says it (default `mm`). A mesh that does not
     close, or whose faces point inward, is refused. `joined` and `cut_away` do the boolean and fail when the result
-    lost or invented volume, because a boolean on a real mesh (the ADIS16480 IMU model) returned only the added box.
+    lost or invented volume, because a boolean on a real IMU mesh returned only the added box.
     Rejected: trusting `+` and `-` on a mesh. Rejected: a mesh boolean library, which the image would have to carry
     for a repair that the person's STEP export avoids.
   - **The page shows the view, the downloads and the checks.** A model piece's card is the latest run's `model.glb`
