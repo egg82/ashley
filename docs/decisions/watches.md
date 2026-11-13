@@ -223,9 +223,11 @@ flight survives its pod").
 
 1. A house entity, subscribed through Home Assistant's WebSocket (`subscribe_trigger`) by the job instead of polled.
    That needs a held connection, which `ashley.home_assistant.ha_socket` does not have (one command per connection).
-2. The ledger: the armed money reminder becomes a watch whose items are `ashley.criteria.record.Transaction`s, its
-   rule judged by the money predicates. `ashley.senses.deposit_sense` and its `deposit_reads` cursor are then deleted.
 
+- **Rejected: the ledger as a kind.** A balance fires once per fall until it recovers, which a baseline moved only on a
+  wake cannot record; history predicates read the payer's whole history, not one item's change; and a money reminder
+  is `promised` and routed to a device, while a watch turn is Initiative's to send. The deposit sense stays in Senses
+  (`docs/decisions/senses.md`, "A reminder can wait on a deposit").
 - **Rejected: running the checks inside the `wakes` sweep.** That would keep one singleton, but a turn takes minutes
   and runs in that sweep, so checks would wait behind it, and a read hanging on a bridge would delay due reminders.
 - **Rejected: starting the turn from the check** (hand off, then record): two steps, held together only by the

@@ -88,7 +88,9 @@ The first version worth switching to adds one thing to what runs today: her own 
    the chosen values are kept as data in `app/ashley/inference/routes.json` beside the model. They matter: Gemini's
    chat route had to move to low reasoning effort because thinking consumed the 2048-token limit and cut replies off.
    The instrument is the house eval (`python -m ashley.evals house`); real conversations once she is live (the parity
-   item) are a second pass, not a precondition. Item 8's prompt cuts land first, so the search runs on the trimmed
+   item) are a second pass, not a precondition. Seen live on the Responses provider: `gpt-6-luna` at reasoning `none`
+   answered the moment line instead of the tool result in 2 of 4 probes, because the moment layer is the last input
+   after a tool round; whether the moment should precede the tool round is a question for this search. Item 8's prompt cuts land first, so the search runs on the trimmed
    prompt; item 8 stays its own item (ablation of the one shared prompt, where this picks per task). Add CLI providers:
    `claude -p` on the subscription (its OAuth token is in the deployment's secret store, but the image
    has no `claude` binary yet) and `opencode`. Then routes that ask several models at once and keep the best answer,
@@ -139,8 +141,6 @@ The first version worth switching to adds one thing to what runs today: her own 
     - **A Home Assistant subscription**: a watch on a house entity subscribes through HA's WebSocket
       (`subscribe_trigger`) instead of polling, held by the singleton, so she needs no automation installed to watch an
       entity.
-    - **The ledger**: `ashley.senses.deposits` is one particular watch over the Ledger today; it becomes a kind of this,
-      and the copy is deleted.
     - **The kiosk's calendar glance** takes its calendar from a `tool` watch over `house_ask` `calendar.get_events`.
     - Fits into: Watches (its kinds are Type Objects), Senses (the `wakes` queue), Tools (arming), and item 7's
       standing errands, which watches wake.
@@ -158,6 +158,9 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     every target carries the provider's own spam or promotions label, which the adapter reads; (2) a page listing
     `outside_actions`, "what she did on her own and why"; (3) a live `python -m ashley.evals action-judge` run and the
     model-golf pick of the final route. Fits into: Mail (the adapter's labels), Channels (`Outside`), Inference.
+43. **A flaky pool test.** `app/tests/test_db_pool.py::test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_left`
+    once caught `other_connections=(1,)` in its "fresh" baseline on a busy CI runner: the baseline needs to wait out
+    the previous test's connection, or count only its own.
 8. **Golf the system prompt.** Token counts per section are built: `python -m ashley.evals prompt-sizes` (stable sections, moment, each tool and
    source, reply schema; run it in the pod before each cut). Cut by ablation
    against the eval battery, keeping a cut only when nothing regresses (`model-golf`). Most of it is Home Assistant's:
