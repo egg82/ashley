@@ -15,7 +15,7 @@ from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.model import Opened
 from ..ledger.ledger import Ledger
 from ..ledger.model import (Account, Categorised, Category, Entry, LedgerFailed, LedgerUnavailable, NetWorth, NotConnected,
-                            Page, Reason, TransactionQuery, UnknownCategory)
+                            Page, Reason, Recurring, TransactionQuery, UnknownCategory)
 from . import wire
 from .client import Reason as SureReason, Sure, SureFailed
 
@@ -46,6 +46,10 @@ class SureLedger(Ledger):
     async def transactions(self, household_id: int, query: TransactionQuery) -> Page[Entry]:
         got = await _read(household_id, "/api/v1/transactions", _params(query), wire.Transactions)
         return Page(tuple(entry_from(t) for t in got.transactions), _total(got.pagination))
+
+    async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
+        got = await _read(household_id, "/api/v1/recurring_transactions", {"per_page": limit}, wire.RecurringTransactions)
+        return Page(tuple(_recurring_from(r) for r in got.recurring_transactions), _total(got.pagination))
 
     async def categorise(self, household_id: int, category_id: str,
                          transaction_ids: Sequence[str]) -> Mapping[str, Categorised]:
@@ -89,6 +93,14 @@ def entry_from(t: wire.Transaction) -> Entry:
         account=account.name if account else None, category=category.name if category else None,
         merchant=merchant.name if merchant else None, transfer=t.transfer is not None, excluded=t.excluded,
         split=t.split_parent)
+
+
+def _recurring_from(r: wire.RecurringTransaction) -> Recurring:
+    return Recurring(
+        id=r.id, name=r.name, merchant=r.merchant.name if r.merchant else None,
+        account_id=r.account.id if r.account else None, cents=int((abs(r.amount) * 100).to_integral_value()),
+        due=r.next_expected_date, kind="income" if r.bill_type == "income" else "expense", autopay=r.autopay,
+        ended=r.status == "inactive")
 
 
 async def _set(sure: Sure, base: str, key: str, transaction_id: str, category_id: str) -> Categorised:

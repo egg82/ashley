@@ -7,7 +7,7 @@ from abc import abstractmethod
 from collections.abc import Mapping, Sequence
 
 from ..services import Service
-from .model import Account, Categorised, Category, Entry, NetWorth, NotConnected, Page, TransactionQuery
+from .model import Account, Categorised, Category, Entry, NetWorth, NotConnected, Page, Recurring, TransactionQuery
 
 
 class Ledger(Service):
@@ -36,6 +36,11 @@ class Ledger(Service):
         """The transactions `query` asks for. Raises LedgerFailed, LedgerUnavailable, NotConnected."""
 
     @abstractmethod
+    async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
+        """Up to `limit` of the payments the household's backend has found repeating. Raises LedgerFailed,
+        LedgerUnavailable, NotConnected."""
+
+    @abstractmethod
     async def categorise(self, household_id: int, category_id: str,
                          transaction_ids: Sequence[str]) -> Mapping[str, Categorised]:
         """Set each of `transaction_ids` to the household's category `category_id`, in order; what became of each, by
@@ -60,6 +65,9 @@ class NullLedger(Ledger):
         raise NotConnected
 
     async def transactions(self, household_id: int, query: TransactionQuery) -> Page[Entry]:
+        raise NotConnected
+
+    async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
         raise NotConnected
 
     async def categorise(self, household_id: int, category_id: str,

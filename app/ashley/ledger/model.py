@@ -33,6 +33,25 @@ class Account:
 
 
 @dataclass(frozen=True)
+class Recurring:
+    """A payment the backend has found repeating: `id` as the backend gives it, `name` it is called and the `merchant`
+    behind it when known, the `account_id` it comes out of or into, `cents` the amount it is expected at, unsigned,
+    `due` the day it is next expected (YYYY-MM-DD, None when the backend has no date), `kind` (`expense` for a bill or a
+    subscription, `income` for money that comes in), `autopay` whether it pays itself, and `ended` whether the backend
+    has stopped expecting it. One the backend has only suggested is not `ended`."""
+
+    id: str
+    name: str
+    merchant: str | None
+    account_id: str | None
+    cents: int
+    due: str | None
+    kind: Kind
+    autopay: bool
+    ended: bool
+
+
+@dataclass(frozen=True)
 class Category:
     """A transaction category: `id` as `TransactionQuery.category_id` takes it, `name`, and its parent's name."""
 

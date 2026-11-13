@@ -12,7 +12,7 @@ from ashley.connections.connections import Connections
 from ashley.ledger.ledger import Ledger, NullLedger
 from ashley.ledger.model import Entry, LedgerFailed, LedgerUnavailable, NotConnected, TransactionQuery
 from ashley.sure.client import Sure
-from money_support import CHECKING, GROCERIES, FakeSure, HeldConnections, params_of
+from money_support import CHECKING, GROCERIES, FakeSure, HeldConnections, params_of, recurring
 
 
 pytestmark = pytest.mark.usefixtures("sure_ledger_wired")
@@ -50,6 +50,8 @@ def test_unwired_there_is_no_ledger_and_nothing_to_read() -> None:
     with pytest.raises(NotConnected):
         asyncio.run(ledger().net_worth(HOME))
     with pytest.raises(NotConnected):
+        asyncio.run(ledger().recurring(HOME, 5))
+    with pytest.raises(NotConnected):
         asyncio.run(ledger().transactions(HOME, TransactionQuery(per_page=5)))
 
 
@@ -86,6 +88,26 @@ def test_accounts_categories_and_net_worth_are_neutral_records(held: HeldConnect
     assert (worth.net_worth, worth.assets, worth.liabilities, worth.currency) == ("$934.56", "$1,234.56", "$300.00", "USD")
     assert params_of(sure.seen, "/api/v1/balance_sheet") == {}
     assert held.answers == [1, 1, 1]
+
+
+def test_recurring_payments_are_neutral_records_with_unsigned_cents(sure: FakeSure) -> None:
+    got = asyncio.run(ledger().recurring(HOME, 9))
+    assert params_of(sure.seen, "/api/v1/recurring_transactions") == {"per_page": "9"} and got.total == 2
+    assert [(r.id, r.name, r.merchant, r.account_id, r.cents, r.due, r.kind, r.autopay, r.ended) for r in got.rows] == [
+        ("r1", "Internet", "Fibre Co", CHECKING, 5_999, "2026-11-15", "expense", False, False),
+        ("r2", "Payroll", None, CHECKING, 200_000, "2026-11-30", "income", False, False)]
+
+
+def test_a_recurring_payment_that_is_ended_or_without_a_date_or_amount_is_read_as_such(sure: FakeSure) -> None:
+    sure.answers["/api/v1/recurring_transactions"] = {"recurring_transactions": [
+        {**recurring("r3", "Gym", None, "-20.5", bill_type="subscription", autopay=True, status="inactive"),
+         "account": None}], "pagination": None}
+    (row,) = asyncio.run(ledger().recurring(HOME, 5)).rows
+    assert (row.cents, row.due, row.kind, row.autopay, row.ended, row.account_id) == (2_050, None, "expense", True, True, None)
+    sure.answers["/api/v1/recurring_transactions"] = {"recurring_transactions": [recurring("r4", "Gym", None, "lots")]}
+    with pytest.raises(LedgerFailed) as e:
+        asyncio.run(ledger().recurring(HOME, 5))
+    assert e.value.reason == "unrecognised"
 
 
 def test_a_transaction_is_an_entry_with_unsigned_cents(sure: FakeSure) -> None:
