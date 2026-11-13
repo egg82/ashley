@@ -41,14 +41,13 @@ breaking her.
   - **A task that offers tools refuses a model listed without tool calls**: the router skips that route
     (`inference.route_skipped`, reason `no_tool_calls`). A model the catalogue does not list is not refused.
   - **Route provider names map to catalogue providers** in `catalogue.json` where they differ (`gemini` is Google's).
-    models.dev's prices are the current ones, and each call's cost is fixed in its ledger row when it is made, so the
-    shipped table's dated price periods went with it.
+    models.dev's prices are the current ones, and each call's cost is fixed in its ledger row when it is made, so
+    there are no dated price periods.
   - **A price override is flat**: a person's price on any price field replaces upstream's prompt-length tiers.
   - Rejected: committing the snapshot. The list is several megabytes and changes weekly; a build already fetches the
     embedding model, so the image carries the list the same way.
   - Rejected: keeping a shipped price table beside models.dev for the models it lacks. That is two homes for one
-    fact; a model models.dev does not list (`gpt-image-2.5-flare` when this was written) is unpriced until an admin
-    sets its prices.
+    fact; a model models.dev does not list is unpriced until an admin sets its prices.
 - **Tool use is a step, and the caller owns the loop.** `Inference.step` makes one call and returns either the reply
   or the tool calls the model asked for; the caller runs them and calls again with the results. So a conversation
   turn, a sub-agent and an orchestrator share one Inference, each loop carries its own limit as data, and a loop may
@@ -65,8 +64,8 @@ breaking her.
   know if...") comes before `spoken` and `text` in the schema, so the model writes it first and the answer after; it
   is never spoken, written, sent or stored, and `respond.done` logs only whether it was set (`offered`). The prose rule
   against closing on an offer stays: with the field first and the rule, offers closed 0 of 24 `command` replies (Haiku)
-  and 0 of 40 `chat` (gemini-3.8-flash) on two runs, against 18 and 10 on main; without the rule, 5 of 24 `command`.
-  She sets the field on most replies (about 23 of 24 and 27 of 40); that costs a few tokens and reaches no one. The
+  and 0 of 40 `chat` (gemini-3.8-flash), against 18 and 10 with the prose rule alone; with the field and no rule, 5 of 24 `command`.
+  She sets the field on most replies; that costs a few tokens and reaches no one. The
   `command` kind's prompt, which cuts a long ask to two sentences, puts the offer of the rest in the field too.
   - Rejected: the field after `text`. Written after the answer, it held only partly (11 then 9 of 24 `command`,
     2 of 40 `chat`), and the offer was often written in both places.
@@ -75,7 +74,7 @@ breaking her.
   - Rejected: the prose rule alone (the 18 and 10 above), and any scan of her words for an offer.
 - **A provider's rejection of a schema keyword is checked before it ships.** A schema one provider accepts can make
   another answer 400 to every call, and the route list then falls through to the next model, so nothing looks broken.
-  Gemini did this for about two hours: `remind_on_money.conditions` had `maxItems` on an array and on its array items
+  Gemini did this once: `remind_on_money.conditions` had `maxItems` on an array and on its array items
   beside the strict reply format (found by removing either, which made the call succeed). Bounds live in the
   parser (`reminder_conditions.parse`), not the schema. `tests/test_provider_schemas.py` collects every schema each
   chat provider is sent, through `channels.turn_tools.for_turn` and the wire modules (`openai_wire.tools`,
