@@ -205,6 +205,19 @@ subscription, the read the Usage room already makes), and the router opens the p
   seeds the row at each pod's start (`ashley.channels.discord.token_seed`), never over a row, and the row then wins;
   with no row the env's token answers. The session follows a changed token (`channel-adapters.md`, "Discord is a bot,
   its Gateway a singleton").
+- **Her file storage is a connection** (`ashley.files.store_kind`, a `files` kind): a `deployment` kind held by the first
+  household, one S3-compatible bucket reached at one endpoint per site. Its address is the endpoints, comma-separated
+  this site's first (`ConnectionKind.addresses`), and its one secret is the bucket and both keys as a JSON object, since a
+  connection seals a single secret. It is checked by one signed listing at every endpoint, so a typo in a site's address
+  is caught when it is saved. `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY` and `FILES_SECRET_KEY` seed the row at
+  each pod's start (`ashley.files.store_seed`), never over a row, and the row then wins; with no row the env's store
+  answers, and with neither every call is `StoreUnavailable` and the sweep and repair idle. `FILES_LINK_KEY` stays an env
+  var. The store is `ashley.files.connected_store.ConnectedStore`, a cache and not state: it reads the row again by the
+  first call once the last read is `REFRESH_S` old, so a store added, replaced or removed in the room reaches every pod
+  within that bound, and a read that fails keeps what was wired. It is registered whenever the env names a store or
+  `CONNECTIONS_KEY` is set, so with a key the bench file tools are offered before a store is connected and fail as
+  unavailable until one is. Rejected: a connection per endpoint, which would make a person keep one bucket's keys in
+  step across rows and leave "this site's first" to row order.
 - Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
   Connections already has.
 - Rejected: one `inference_provider` kind with the provider named in the label or address. The provider would then be

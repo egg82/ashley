@@ -71,6 +71,13 @@ class S3Store(ObjectStore):
             if not more or not token:
                 return found
 
+    async def probe(self) -> int:
+        """The status of one signed listing asking for at most one key of the bucket: 200 when the bucket answers to
+        these keys, 403 when the keys are refused, 404 when the bucket is not there. Raises StoreUnavailable when the
+        server cannot be reached."""
+        params = {"list-type": "2", "max-keys": "1"}
+        return (await self._send("GET", f"/{self._bucket}", params, b"")).status_code
+
     def _path(self, key: str) -> str:
         return f"/{self._bucket}/{quote(key, safe='/-_.~')}"
 

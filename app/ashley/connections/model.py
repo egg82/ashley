@@ -18,7 +18,7 @@ Holder = Literal["household", "person"]
 ResourceKind = Literal["mailbox"]
 """What a connection reaches, as its service names it."""
 
-Port = Literal["house", "ledger", "code_host", "herdr", "mail", "inference", "search", "chat"]
+Port = Literal["house", "ledger", "code_host", "herdr", "mail", "inference", "search", "chat", "files"]
 """What a service is for: the question a consumer asks, whichever service answers it. A kind declares the ports it
 implements (`ConnectionKind.ports`); a consumer opens a port, never a kind."""
 

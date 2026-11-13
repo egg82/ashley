@@ -53,9 +53,9 @@ from .conversations.postgres_inflight import PostgresInFlight
 from .db.database import Database
 from .db.pool import PoolDatabase
 from .errands.register import register as register_errands
-from .files.mirror import MirroredStore
-from .files.s3 import S3Store
+from .files.connected_store import ConnectedStore
 from .files.store import ObjectStore
+from .files.store_kind import KIND as FILES, Keys
 from .inference import spend_catalog
 from .inference.balance import ProviderBalances
 from .connections.address_in_force import AddressInForce
@@ -160,7 +160,7 @@ from .workshop.workshop import Workshop
 
 CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
                                                 replace(GOOGLE, resources=mailboxes),
-                                                *(k.kind for k in KEYED), COMPATIBLE, WYOMING, SEARXNG, DISCORD)  # the panel's order
+                                                *(k.kind for k in KEYED), COMPATIBLE, WYOMING, SEARXNG, DISCORD, FILES)  # the panel's order
 
 
 def configured_kinds(settings: Settings) -> tuple[ConnectionKind, ...]:
@@ -213,13 +213,12 @@ def _wire_connections(settings: Settings) -> list[Callable[[], Coroutine[Any, An
 
 
 def wire_files(settings: Settings) -> Callable[[], Coroutine[Any, Any, None]]:
-    """The object store over every endpoint in `files_endpoints`: the one store for a single endpoint, otherwise
-    every site's as a `MirroredStore`, this site's first. Returns the closer of the HTTP client."""
+    """The object store the first household's connection names (`ashley.files.connected_store`), else the one over
+    the env's `files_endpoints`. Returns the closer of the HTTP client."""
     http = httpx2.AsyncClient(timeout=30.0, follow_redirects=False)
-    stores: list[ObjectStore] = [S3Store(endpoint.strip(), settings.files_bucket, settings.files_access_key,
-                                         settings.files_secret_key, http)
-                                 for endpoint in settings.files_endpoints.split(",") if endpoint.strip()]
-    services.register(ObjectStore, stores[0] if len(stores) == 1 else MirroredStore(stores))
+    env = Keys(settings.files_endpoints, settings.files_bucket, settings.files_access_key,
+               settings.files_secret_key) if settings.files_endpoints else None
+    services.register(ObjectStore, ConnectedStore(lambda: services.get(Connections), env, http))
     return http.aclose
 
 
@@ -262,7 +261,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     if settings.connections_key:
         closers.extend(_wire_connections(settings))
     register_herdr(settings.herdr_client_cert_file, settings.herdr_client_key_file)
-    if settings.files_endpoints:
+    if settings.files_endpoints or settings.connections_key:
         closers.append(wire_files(settings))
     services.register(Wakes, PostgresWakes(services.get(Database)))
     services.register(Deposits, PostgresDeposits(services.get(Database)))

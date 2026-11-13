@@ -108,7 +108,7 @@ the app path are open-work item 23.
   site's NAS S3 endpoint, the ones WAL-G writes to). The piece's body is a JSON
   descriptor of its bytes (`ashley.workshop.stored_file`: `sha256`, `size`, `media_type`, `name`), capped by the kind's
   `max_chars`; the bytes are one object, `bench/<household id>/<sha256>`, in one bucket. A write goes to every endpoint
-  of `FILES_ENDPOINTS` at once (this site's first) and counts when one took it; a read takes the first endpoint that has
+  of the file storage connection's address at once (this site's first) and counts when one took it; a read takes the first endpoint that has
   it; a singleton under the lease (`ashley.files.repair`, every `repair_interval_s`) copies what one site holds and the
   other lacks under the bench and look prefixes, and does nothing while a site cannot be listed. So both sites reach the bytes with no shared mount, and
   an upload made while a site is down is whole on both within an hour of its return. The Postgres row is the index and

@@ -28,6 +28,7 @@ from .connections.connections import Connections
 from .db.database import Database
 from .files import config as files_config, repair as files_repair, sweep as files_sweep
 from .files.intake import PREFIX as FILES_PREFIX
+from .files.connected_store import ConnectedStore
 from .files.mirror import MirroredStore
 from .files.orphans import PostgresCandidates
 from .files.store import NullStore, ObjectStore
@@ -113,7 +114,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     store = services.get(ObjectStore)
     if not isinstance(store, NullStore):
         files = files_config.load()
-        if isinstance(store, MirroredStore):
+        if isinstance(store, (MirroredStore, ConnectedStore)):
             running.append(services.get(Lease).run(files_repair.NAME, partial(files_repair.run, store, REPAIRED_PREFIXES, files.repair_interval_s)))
         referenced = partial(named_keys, workshop_rules.load())
         sweeping = partial(files_sweep.run, store, referenced, PostgresCandidates(), files)
