@@ -40,7 +40,7 @@ from ..inference.reply import Reply
 from ..people.people import PeopleUnavailable
 from ..workshop.model import thread_of
 from . import (aloud, answering, bench_after, continued, history, history_runs, inflight, inflight_config, keep, limits, owed, person_turn, prompt,
-               recall, settled, speaker, steering, storing, taste, to_phone, tool_loop, unprompted, unsaid)
+               recall, settled, speaker, steering, storing, turn_prompt, tool_loop, unprompted, unsaid)
 from .checkpoint import Checkpoint
 from .offered import fields as offered_fields
 from .landing import Landing
@@ -177,17 +177,11 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
     """`respond` from step 3 for the person turn `said`, already stored, its work begun by `begin` with the first
     checkpoint (which raises ValueError when the turn is answered elsewhere)."""
     source = Landing(inbound, (conversation.id, said.id), LIMITS)
-    taste_read = asyncio.create_task(taste.overrides(inbound.household_id))
-    catalogue, remembered, phone, page_open, carried, away = await asyncio.gather(
-        tool_loop.offered(source), recall.remembered(inbound, who), to_phone.reachable(inbound, who.speaker),
-        to_phone.looking(inbound, who.speaker), history.carried(inbound, who.speaker, conversation.id, said, LIMITS[inbound.kind]),
-        owed.untold(inbound, who.speaker))
+    prompted = await turn_prompt.build(inbound, who, source, history.carried(
+        inbound, who.speaker, conversation.id, said, LIMITS[inbound.kind]))
+    catalogue, remembered, phone, carried, away, system = (prompted.catalogue, prompted.remembered, prompted.phone,
+                                                           prompted.carried, prompted.away, prompted.system)
     logs.info(log, "respond.offered", conversation=conversation.id, **offered_fields(catalogue))
-    system = prompt.system(inbound.kind, who, inbound.place, catalogue, remembered.recalled,
-                           remembered.standing or (), phone=phone is not None,
-                           page_open=page_open if phone is not None else None, aloud=aloud.offered(inbound),
-                           overhears=inbound.overhears, said_before=prompt.said_before(carried.relevant, who.household),
-                           while_away=owed.lines(away, who.household), overrides=await taste_read)
     ran = await history_runs.carried(inbound.household_id, carried.recent, said, LIMITS[inbound.kind])
     messages = prompt.messages(carried.recent, said, who.household, ran, inbound.note, carried.places)
     offered = recall.offered_ids(remembered.standing, remembered.recalled)

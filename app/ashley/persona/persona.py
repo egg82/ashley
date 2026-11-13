@@ -70,14 +70,7 @@ def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
     what was said before and the facts of the moment are `moment`, so a cached `stable` survives the clock moving.
     Raises ValueError for a naive `now`, a `speaker` or anyone in `home` not in `context.household`, `phone` with no
     `speaker`, or a kind with no file. Deterministic: the same arguments give the same text, so a cached prompt prefix stays cached."""
-    facts.check(context.household, context.speaker, context.home, context.now)
-    if context.phone and context.speaker is None:
-        raise ValueError("only a known speaker has a phone")
-    stable = [
-        facts.tools(context.tool_instructions, context.tools_reachable, context.tools_unreachable),
-        facts.profile(context.household),
-        facts.standing(context.standing, context.now),
-    ]
+    parts = stable_parts(kind, context)
     moment = [
         facts.remembered(context.remembered, context.now),
         facts.said_before(context.said_before),
@@ -86,7 +79,21 @@ def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
         facts.facts(context.now, context.household, context.speaker, context.home, context.place, context.phone,
                       context.page_open, context.aloud, context.overhears),
     ]
-    return {variant: SystemPrompt(_assemble(variant, kind, context.overrides, context.household, stable), _join(moment))
+    return {variant: SystemPrompt(_join([text for _, text in found]), _join(moment))
+            for variant, found in parts.items()}
+
+
+def stable_parts(kind: Kind, context: Context) -> Mapping[str, tuple[tuple[str, str], ...]]:
+    """What `system` joins by a blank line into each variant's `stable`, as `(id, text)` pairs in order: one
+    `persona.<section id>` per section of the persona (`sections.bodies`), `kind` (the kind's rules), `tools`,
+    `profile` and `standing`, the last three only when `system` has text for them. Raises ValueError as `system` does."""
+    facts.check(context.household, context.speaker, context.home, context.now)
+    if context.phone and context.speaker is None:
+        raise ValueError("only a known speaker has a phone")
+    after = (("tools", facts.tools(context.tool_instructions, context.tools_reachable, context.tools_unreachable)),
+             ("profile", facts.profile(context.household)),
+             ("standing", facts.standing(context.standing, context.now)))
+    return {variant: _assemble(variant, kind, context.overrides, context.household, after)
             for variant in prose.variants()}
 
 
@@ -95,8 +102,9 @@ def _join(parts: list[str | None]) -> str:
 
 
 def _assemble(variant: str, kind: Kind, overrides: Mapping[str, str], household: Household,
-              after: list[str | None]) -> str:
+              after: tuple[tuple[str, str | None], ...]) -> tuple[tuple[str, str], ...]:
     who, rules = prose.read(variant, sections.FILE), prose.read(variant, f"kinds/{kind}.md")
     if who is None or rules is None:
         raise ValueError(f"no persona text for kind {kind!r} in variant {variant!r}")
-    return _join([facts.in_units(sections.render(who, overrides), household), rules, *after])
+    found = [(f"persona.{id}", facts.in_units(body, household)) for id, body in sections.bodies(who, overrides)]
+    return tuple((id, text) for id, text in (*found, ("kind", rules), *after) if text)
