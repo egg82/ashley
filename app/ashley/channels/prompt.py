@@ -6,8 +6,8 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from ..conversations.model import Attachment, Kind, Place, Turn
-from ..inference.model import Message, Role, SystemPrompt
+from ..conversations.model import Attachment, Place, Turn
+from ..inference.model import Message, Role
 from ..memory.model import Recalled
 from ..people.model import Household
 from ..persona import persona
@@ -17,19 +17,19 @@ from . import history_receipts, placed
 from .speaker import Who
 
 
-def system(kind: Kind, who: Who, place: str | None, catalogue: Catalogue | None,
-           remembered: tuple[Recalled, ...] | None,
-           standing: tuple[Recalled, ...] = (), phone: bool = False,
-           page_open: bool | None = None, said_before: tuple[str, ...] = (),
-           while_away: tuple[str, ...] = (), aloud: bool = False, overhears: bool = False,
-           overrides: Mapping[str, str] = persona.NO_OVERRIDES) -> Mapping[str, SystemPrompt]:
-    """`persona.system` for this moment in the household's local time; `catalogue` None when tools are unreachable,
+def context(who: Who, place: str | None, catalogue: Catalogue | None,
+            remembered: tuple[Recalled, ...] | None,
+            standing: tuple[Recalled, ...] = (), phone: bool = False,
+            page_open: bool | None = None, said_before: tuple[str, ...] = (),
+            while_away: tuple[str, ...] = (), aloud: bool = False, overhears: bool = False,
+            overrides: Mapping[str, str] = persona.NO_OVERRIDES) -> persona.Context:
+    """The `persona.Context` for this moment in the household's local time; `catalogue` None when tools are unreachable,
     `remembered` None when memory is, and `standing` is then empty; `phone`, whether `text` may go to the speaker's
     phone, and `page_open` whether they have a page open, told on a turn she was woken for; `said_before`, the relevant older turns as `said_before` renders them; `while_away`, the errand results to tell
     (`channels.owed.lines`); `aloud`, whether she may answer aloud (`channels.aloud.offered`); `overhears`, whether
     she may offer or stay silent (`Inbound.overhears`); `overrides`, the
     household's persona overrides (`channels.taste.overrides`)."""
-    context = persona.Context(
+    return persona.Context(
         now=datetime.now(ZoneInfo(who.household.timezone)),
         household=who.household,
         speaker=who.speaker,
@@ -49,7 +49,6 @@ def system(kind: Kind, who: Who, place: str | None, catalogue: Catalogue | None,
         while_away=while_away,
         overrides=overrides,
     )
-    return persona.system(kind, context)
 
 
 def messages(carried: Iterable[Turn], said: Turn, household: Household,
