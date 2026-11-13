@@ -494,11 +494,6 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       seeds its scratch household's connection instead of taking the env.
     - Fits into: Connections and Homes; the settings and the cluster repo's ExternalSecret.
 
-28. **The unreachable line follows a turn to its bench.** When her thinking is out of reach after the held line, the
-    line saying so (`ashley.channels.settled`) is stored in the conversation the turn began in, even when the page
-    moved the turn to a bench's talk; it belongs where the answer will land. Fits into: Channels (the in-flight work
-    already knows where a carried turn lands).
-
 The next three make existing systems general (`engineering.md`, "Her systems are general, and she wires them"), in
 this order.
 
