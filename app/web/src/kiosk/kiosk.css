@@ -25,6 +25,13 @@
 .k-person { height: 34px; padding: 0 14px 0 6px; border-radius: 17px; font-size: 16px; color: var(--text); gap: 8px; }
 .k-person .who.sm { width: 24px; height: 24px; font-size: 11px; }
 .k-none { font-size: 16px; color: var(--text-2); }
+.k-agenda { display: grid; gap: 14px; }
+.k-agenda-label { align-self: start; padding-top: 4px; }
+.k-day h3 { margin: 0 0 6px; }
+.k-day ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.k-day li { display: grid; grid-template-columns: 5.5em 1fr; gap: 12px; align-items: baseline; font-size: 18px; color: var(--text); }
+.k-when { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 16px; }
+.k-what { overflow-wrap: anywhere; }
 
 /* controls: big touch targets */
 .k-controls { display: grid; gap: 12px; }
