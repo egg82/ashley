@@ -10,6 +10,7 @@ from typing import Any, get_args
 
 from ..inference.model import Entry, Image, Message, SystemPrompt, ToolCall, ToolCalls, ToolResult, ToolResults
 from ..initiative.moment import Moment
+from ..initiative.remark import Chance
 from ..tools.action_judge import JudgeUnavailable, Verdict, checked
 from .escalation import Trigger
 from .keep import Act
@@ -152,12 +153,19 @@ def _inbound(raw: dict[str, Any]) -> Inbound:
         raise ValueError("not a taint origin")
     made = _pair(fields.pop("made_in", None))
     moment = fields.pop("moment", None)
-    return Inbound(**fields, taint=origin, made_in=made, moment=None if moment is None else _moment(moment))
+    remark = fields.pop("remark", None)
+    return Inbound(**fields, taint=origin, made_in=made, moment=None if moment is None else _moment(moment),
+                   remark=None if remark is None else _remark(remark))
 
 
 def _moment(raw: dict[str, Any]) -> Moment:
     return Moment(str(raw["seed"]), raw["hour"], raw["others_home"], raw["since_heard_s"], raw["since_greeted_s"],
                   raw["since_spoke_s"])
+
+
+def _remark(raw: dict[str, Any]) -> Chance:
+    return Chance(str(raw["seed"]), raw["hour"], raw["sent"], raw["since_typed_s"], bool(raw["typing_known"]),
+                  tuple(str(f) for f in raw["said"]))
 
 
 def _judged(raw: Any) -> dict[str, Verdict]:

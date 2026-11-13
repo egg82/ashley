@@ -1,12 +1,12 @@
 """The Discord singleton (`decisions.md`, "Discord is a bot, its Gateway a singleton"): under the lease `discord`, one
 Gateway session that answers DMs from mapped accounts and, in any channel of a household's server, messages that
-mention her or reply to her.
+mention her or reply to her; on any other message there from a household member she may make a remark (`remark`).
 
 Logs `discord.connected` (servers), `discord.disconnected` (reason), `discord.caught_up` (messages, channels, pruned,
 unsettled),
 `discord.ignored` (message, reason), `discord.unmapped` (user, message), `discord.claimed_elsewhere` (message),
 `discord.replied` (message, conversation, chunks, duration_ms), `discord.failed` (message, reason) and
-`discord.send_failed` (message, status). Never content."""
+`discord.send_failed` (message, status), and `discord.remarked` (message, conversation, says). Never content."""
 
 import asyncio
 import logging
@@ -21,7 +21,7 @@ from ...people.people import People, PeopleUnavailable
 from ..devices import Devices, DevicesUnavailable
 from ..model import DiscordServer, Inbound, Outbound
 from ..respond import RespondRefused, RespondUnavailable, respond as turn
-from . import later
+from . import later, remark
 from .chunks import chunks
 from .receipts import receipt_lines
 from .client import Connect, Discord, DiscordFailed
@@ -99,6 +99,7 @@ class Bot:
     async def _catch_up(self, discord: Discord, homes: set[int], replies: "_Replies") -> None:
         now = self._now()
         pruned = await self._prune(now)
+        await remark.prune(now)
         since = now - timedelta(seconds=self._config.catch_up_s)
         last = await self._last(since)
         stranded = await self._unsettled(since)
@@ -146,6 +147,11 @@ class Bot:
             if claimed:
                 await self._settle(message)
             return
+        if inbound.remark is not None:
+            if claimed:
+                await self._settle(message)
+            await self._remark(message, inbound)
+            return
         if not (claimed or await self._claim(message)):
             return
         started = time.perf_counter()
@@ -185,7 +191,25 @@ class Bot:
             logs.info(log, "discord.unmapped", user=message.author_id, message=message.id)
         elif isinstance(got, str):
             logs.info(log, "discord.ignored", message=message.id, reason=got)
+        if got == "not_addressed":
+            return await remark.offered(message, servers, person, self._now())
         return got if isinstance(got, Inbound) else None
+
+    async def _remark(self, message: Message, inbound: Inbound) -> None:
+        """Her remark's turn, claimed in `Remarks` and settled with what went out. What goes out is queued in the outbox
+        by the turn and posted by `later.drain`, never here. A turn another runner finishes stays unsettled, so it is
+        counted toward the day's cap."""
+        source = inbound.source or ""
+        try:
+            out = await self._respond(inbound)
+        except (RespondUnavailable, RespondRefused):
+            logs.warning(log, "discord.failed", message=message.id, reason="remark_turn")
+            await remark.settle(inbound.household_id, source, None)
+            return
+        if out.follows:
+            return
+        await remark.settle(inbound.household_id, source, None if out.says == "none" else out.body)
+        logs.info(log, "discord.remarked", message=message.id, conversation=out.conversation_id, says=out.says)
 
     async def _claim(self, message: Message) -> bool:
         try:

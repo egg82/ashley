@@ -1,0 +1,6 @@
+{
+  "chance": 0.04,
+  "per_day": 2,
+  "typing_within_s": 900,
+  "repeat_within_days": 30
+}
