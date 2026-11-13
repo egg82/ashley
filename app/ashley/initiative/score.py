@@ -13,7 +13,7 @@ def score(moment: Moment, weights: Weights) -> float:
     total = 0.0
     if moment.since_heard_s is not None:
         total += weights.heard * min(max(moment.since_heard_s, 0.0) / weights.heard_full_at_s, 1.0)
-    if moment.hour is not None and _at_night(moment.hour, weights):
+    if moment.hour is not None and at_night(moment.hour, weights):
         total += weights.night
     if moment.others_home is not None:
         total += weights.others_home * min(moment.others_home, weights.others_cap) / weights.others_cap
@@ -50,7 +50,8 @@ def _placed(plan: Plan, moment: Moment) -> Plan:
     return plan
 
 
-def _at_night(hour: int, weights: Weights) -> bool:
+def at_night(hour: int, weights: Weights) -> bool:
+    """Whether `hour` is inside the weights' night hours, which may run across midnight."""
     start, end = weights.night_from, weights.night_to
     return start <= hour < end if start < end else hour >= start or hour < end
 
