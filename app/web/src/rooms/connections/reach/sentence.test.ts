@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { ConnectionKindInfo, HouseholdConnection } from '../../../api/types';
 import { holderOf, hostOf, sentenceOf } from './sentence.ts';
 
-const alex = { id: 1, household_id: 1, name: 'Alex', admin: true };
+const alex = { id: 1, household_id: 1, name: 'Sam', admin: true };
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   id: 1, kind: 'sure', label: '', base_url: 'https://money.example/path', added_by: alex, added_at: '', checked_at: '', personal: false,
   needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
@@ -22,13 +22,13 @@ test('a household connection reads as the household’s, with the host of its ad
 
 test('a personal connection is its holder’s own', () => {
   const s = sentenceOf(conn({ kind: 'gitlab', personal: true }), kind({ name: 'gitlab', title: 'GitLab' }));
-  assert.equal(text(s), 'She reads Alex’s repositories on GitLab');
+  assert.equal(text(s), 'She reads Sam’s repositories on GitLab');
 });
 
 test('a kind with no address says its one mailbox, and a mail bridge counts its mailboxes', () => {
   const box = { ref: 'a@x', kind: 'mailbox' as const, name: 'a@x', shared: false };
   const google = sentenceOf(conn({ kind: 'google', personal: true, resources: [box] }), kind({ name: 'google', title: 'Google', takes_address: false }));
-  assert.equal(text(google), 'She works in Alex’s Google account');
+  assert.equal(text(google), 'She works in Sam’s Google account');
   assert.equal(google.address, 'a@x');
   const proton = sentenceOf(conn({ kind: 'proton', personal: true, resources: [box, { ...box, ref: 'b@x', name: 'b@x' }] }), kind({ name: 'proton', title: 'Proton Mail', takes_address: false }));
   assert.equal(text(proton), 'She reads 2 Proton Mail mailboxes through the bridge');
@@ -37,7 +37,7 @@ test('a kind with no address says its one mailbox, and a mail bridge counts its 
 
 test('a label the person gave is the name, and an unknown kind still reads as a sentence', () => {
   const s = sentenceOf(conn({ kind: 'later', label: 'Spare', personal: true }), kind({ name: 'later', title: 'Later' }));
-  assert.equal(text(s), 'She reaches Spare for Alex');
+  assert.equal(text(s), 'She reaches Spare for Sam');
 });
 
 test('who holds it, and an address with a pinned certificate or a bridge scheme', () => {

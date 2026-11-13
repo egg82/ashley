@@ -4,7 +4,7 @@ import type { ConnectionKindInfo, HouseholdConnection } from '../../../api/types
 import { needOf, scopeLabel } from './needs.ts';
 
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
-  id: 1, kind: 'gitlab', label: '', base_url: '', added_by: { id: 1, household_id: 1, name: 'Alex', admin: true }, added_at: '', checked_at: '',
+  id: 1, kind: 'gitlab', label: '', base_url: '', added_by: { id: 1, household_id: 1, name: 'Sam', admin: true }, added_at: '', checked_at: '',
   personal: true, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
 });
 const kind = (over: Partial<ConnectionKindInfo>): ConnectionKindInfo => ({
@@ -21,7 +21,7 @@ test('a pasted kind that was refused is fixed by pasting a new secret', () => {
   assert.equal(n?.fix, 'replace');
   assert.equal(n?.action, 'Paste a new token');
   assert.equal(n?.title, 'Reconnect GitLab');
-  assert.match(n?.says ?? '', /Alex’s GitLab/);
+  assert.match(n?.says ?? '', /Sam’s GitLab/);
 });
 
 test('a consent-screen kind that was refused, or lacks scopes, is fixed through the consent screen', () => {

@@ -12,7 +12,7 @@ export function teethOf(c: HouseholdConnection): Tooth[] {
   return c.resources.map((r) => ({ ref: r.ref, name: r.name, shared: r.shared }));
 }
 
-/** "1 shared with the household, 5 kept to Alex"; empty when it reaches no resources. */
+/** "1 shared with the household, 5 kept to Sam"; empty when it reaches no resources. */
 export function teethSummary(c: HouseholdConnection): string {
   const shared = c.resources.filter((r) => r.shared).length;
   const kept = c.resources.length - shared;
