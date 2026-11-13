@@ -9,6 +9,10 @@ export function count(n: number): string {
   return COUNT(n);
 }
 
+export function callsOf(n: number): string {
+  return `${count(n)} ${n === 1 ? 'call' : 'calls'}`;
+}
+
 export function tokens(n: number): string {
   return n < 10_000 ? COUNT(n) : COMPACT(n);
 }
@@ -22,9 +26,14 @@ export function money(usd: number): string {
   return `${sign}$${v < 0.01 ? v.toFixed(4) : v.toFixed(3)}`;
 }
 
-/** The second line of a usage cell: what was used, from only the calls that reported it. */
+/** A cost to the digit the ledger holds it, for the detail a person asks for. */
+export function exactMoney(usd: number): string {
+  return `$${String(Number(usd.toFixed(8)))}`;
+}
+
+/** What was used, from only the calls that reported it. */
 export function usedLine(t: SpendTotals): string {
-  const parts = [`${count(t.calls)} ${t.calls === 1 ? 'call' : 'calls'}`];
+  const parts = [callsOf(t.calls)];
   if (t.input_tokens !== null && t.output_tokens !== null && t.input_tokens + t.output_tokens > 0) {
     parts.push(`${tokens(t.input_tokens)} in`, `${tokens(t.output_tokens)} out`);
   }
@@ -33,18 +42,9 @@ export function usedLine(t: SpendTotals): string {
   return parts.join(' · ');
 }
 
-/** A span's cost cell: an amount, or the reason there is none. `unpriced` is the calls the amount leaves out. */
-export type Cost =
-  | { kind: 'none' }
-  | { kind: 'unreported' }
-  | { kind: 'unpriced' }
-  | { kind: 'amount'; usd: number; unpriced: number };
-
-export function costOf(t: SpendTotals): Cost {
-  if (t.calls === 0) return { kind: 'none' };
-  if (t.metered_calls === 0) return { kind: 'unreported' };
-  if (t.cost_usd === null) return { kind: 'unpriced' };
-  return { kind: 'amount', usd: t.cost_usd, unpriced: t.unpriced_calls };
+/** The time of day, in the household's zone and clock. */
+export function timeOf(iso: string, zone: string): string {
+  return new Intl.DateTimeFormat(locale(), { hour: hour(), minute: '2-digit', timeZone: zone }).format(new Date(iso));
 }
 
 /** "2 min ago", or the time of day once it is over an hour old. */
@@ -52,7 +52,7 @@ export function ago(iso: string, now: Date, zone: string): string {
   const mins = Math.max(0, Math.round((now.getTime() - new Date(iso).getTime()) / 60_000));
   if (mins < 1) return 'just now';
   if (mins < 60) return `${mins} min ago`;
-  return `at ${new Intl.DateTimeFormat(locale(), { hour: hour(), minute: '2-digit', timeZone: zone }).format(new Date(iso))}`;
+  return `at ${timeOf(iso, zone)}`;
 }
 
 export function day(iso: string, zone: string): string {

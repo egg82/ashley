@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { SpendTotals } from '../../api/types.ts';
 import { writing } from '../../household/format.ts';
-import { ago, costOf, count, money, usedLine } from './format.ts';
+import { ago, count, exactMoney, money, usedLine } from './format.ts';
 
 const none: SpendTotals = {
   calls: 0, metered_calls: 0, unpriced_calls: 0, input_tokens: null, output_tokens: null, cache_read_tokens: null,
@@ -17,16 +17,9 @@ test('money keeps a cheap call visible and never rounds a real cost to zero', ()
   assert.equal(money(-2), '-$2.00');
 });
 
-test('a span with no calls, no reported usage, no price, or a price each say which', () => {
-  assert.deepEqual(costOf(none), { kind: 'none' });
-  assert.deepEqual(costOf({ ...none, calls: 3 }), { kind: 'unreported' });
-  assert.deepEqual(costOf({ ...none, calls: 3, metered_calls: 2, unpriced_calls: 2 }), { kind: 'unpriced' });
-  assert.deepEqual(costOf({ ...none, calls: 3, metered_calls: 2, unpriced_calls: 1, cost_usd: 0.5 }), { kind: 'amount', usd: 0.5, unpriced: 1 });
-});
-
-test('a priced cost of zero is an amount, not an absence', () => {
-  assert.deepEqual(costOf({ ...none, calls: 1, metered_calls: 1, cost_usd: 0 }), { kind: 'amount', usd: 0, unpriced: 0 });
-  assert.equal(money(0), '$0.00');
+test('an exact cost keeps the digits the ledger holds and drops float noise', () => {
+  assert.equal(exactMoney(47.03478235), '$47.03478235');
+  assert.equal(exactMoney(0.1 + 0.2), '$0.3');
 });
 
 test('the used line names only what was reported', () => {

@@ -44,6 +44,7 @@ export type PersonaRefusalBody = components['schemas']['PersonaRefusalBody'];
 export type SpendProvider = components['schemas']['SpendProvider'];
 export type SpendTotals = components['schemas']['SpendTotals'];
 export type SpendBalance = components['schemas']['SpendBalance'];
+export type SpendEstimate = components['schemas']['SpendEstimate'];
 export type HouseholdConnection = components['schemas']['HouseholdConnection'];
 export type ConnectionsResponse = components['schemas']['ConnectionsResponse'];
 export type ConnectionRefused = components['schemas']['ConnectionRefused'];
