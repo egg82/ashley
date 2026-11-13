@@ -67,6 +67,11 @@ def unwired() -> Generator[None]:
     gc.disable()
     yield
     services.clear()
+
+
+def pytest_runtest_logfinish(nodeid: str, location: tuple[str, int | None, str]) -> None:
+    """Between tests, after the time gate has judged the last one: a sweep frees what earlier tests left, so charging it
+    to whichever test is the 25th would fail a different test each run."""
     if next(TESTS_RUN) % SWEEP_EVERY == 0:
         sweep()
 
