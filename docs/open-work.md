@@ -529,8 +529,3 @@ this order.
   services"), and each person links their own accounts (Discord); what each person may connect for themselves beyond
   that is open.
 
-29. **The Workshop's install and the House port are one.** `ashley.home_assistant.automations.Automations` (list, read, write,
-    delete, enable an automation, used by the Workshop's install, her bench automation tools and `automations_of`) is the
-    House's `configs("automation")` and `write_config` with an enable switch. Move those callers onto `Home.house`, give the
-    port the enable/disable and the entity-appeared wait, delete `Automations`, `RestAutomations`, `NullAutomations` and
-    `automations.json`, and the second copy of the REST config paths with them. Fits into: Homes and the Workshop's carry-out.
