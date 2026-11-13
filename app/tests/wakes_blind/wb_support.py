@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 import psycopg
-from ashley.senses.wakes import Delivery, Due, Outcome, Received, Reminder, SaidBefore, Scheduled, Wake, Wakes
+from ashley.senses.wakes import Delivery, Due, Outcome, Received, Reminder, Route, SaidBefore, Scheduled, Wake, Wakes
 
 NOW = datetime(2026, 10, 31, 12, 0, tzinfo=UTC)
 
@@ -79,10 +79,12 @@ class MemoryWakes(Wakes):
     async def refire(self, wake_id: int, after_s: float) -> int:
         return 0
 
-    async def undelivered(self, limit: int, retry_s: float, within_s: float) -> tuple[Delivery, ...]:
+    async def undelivered(self, limit: int, retry_s: float, within_s: float, *, at: Route = "phone", device_tries: int = 0,
+                          device_retry_s: float = 0.0) -> tuple[Delivery, ...]:
         return ()
 
-    async def claim(self, wake_id: int, retry_s: float) -> bool:
+    async def claim(self, wake_id: int, retry_s: float, *, at: Route = "phone", device_tries: int = 0,
+                    device_retry_s: float = 0.0) -> bool:
         return False
 
     async def delivered(self, wake_id: int, reached: bool) -> None:

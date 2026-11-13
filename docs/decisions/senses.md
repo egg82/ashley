@@ -200,11 +200,19 @@ Tools (`ReminderTools`, with `Only` as a wake turn uses it); nothing new is a sy
 - **A count is sugar for an end.** Her `count` becomes the day of the count-th occurrence (`until_after`) and only
   `until` is stored, so a rule has one way to end and an edit never restarts a count. Rejected: storing the count, which
   needs a remaining-count that each occurrence row decrements, or restarts when the series is moved.
-- **A reminder's words go where its route says.** `phone` (the default, today's behaviour) or `quiet`: the turn runs,
-  her answer is stored in the person's conversation, nothing is pushed and the reminder is never listed as undelivered.
-  A turn that acts and has nothing to add is quiet. Rejected for now: a room's speaker or the kiosk as a route. A
-  satellite's reply goes through the Outbox, which drops what it cannot say (the satellite not connected), and a
-  reminder is never lost silently; it needs a delivery with the reminder's own retries first (`open-work.md`, "A reminder said in a room").
+- **A reminder's words go where its route says.** `phone` (the default), `quiet` (the turn runs, her answer is stored
+  in the person's conversation, nothing is pushed and the reminder is never listed as undelivered; a turn that acts and
+  has nothing to add is quiet), `room` or `screen`, each naming a device by its id from the household's own devices
+  (`Reminder.device_id`): a satellite for a room, a text device that is not a satellite, a Discord server or the house
+  for a screen (`ashley.channels.wake.reminder_device`), judged by form, never by name. A room or screen reminder's
+  turn runs on that device's thread with its audience and place, so what she says is fit for whoever is there.
+- **Every route's delivery is the reminder's own record**, its tries counted and timed on its row, claimed per try, so
+  any pod on either site resumes them and never tries twice at once (`Wakes.undelivered`, `Wakes.claim`). A room is
+  tried by the satellites singleton, which alone holds the connections (`ashley.channels.voice.reminders`); a screen
+  counts as shown while a screen of that device is open on either site (`Screens.showing`). Not reached after
+  `device_tries` tries, `device_retry_s` apart (`wakes.json`), it is pushed to the phone, which has its own tries; a
+  device removed sends it to the phone at once. Rejected: the Outbox, which drops a reply its satellite cannot say;
+  a second delivery table beside the reminder's row.
 - **A reminder names the tools its turn may use**, by name, through `Only` as a wake rule does (`Reminder.tools`; none
   named keeps the tools that only read). Only tools the speaker has in the turn she sets it in can be named
   (`ReminderTools` is given the turn's other tools), never the reminder tools themselves, and only in a turn that

@@ -16,6 +16,7 @@ from collections.abc import Awaitable, Callable
 from ... import logs, services
 from ..model import Outbound
 from ..outbox import Later, Outbox, OutboxUnavailable
+from ..wake import screen_delivery
 from . import reminders
 from .config import Config
 from .sending import URL, cut, sent_to
@@ -36,7 +37,7 @@ def thread(person_id: int) -> str:
 
 async def drain(sender: Sender, config: Config, poll_s: float, sleep: Callable[[float], Awaitable[None]]) -> None:
     """Every `poll_s` until cancelled, push each reply waiting for a push thread, then each fired reminder whose push
-    is due a try (`reminders.deliver`)."""
+    is due a try (`reminders.deliver`), and try each routed to a screen (`screen_delivery.deliver`)."""
     failing = False
     while True:
         try:
@@ -50,6 +51,7 @@ async def drain(sender: Sender, config: Config, poll_s: float, sleep: Callable[[
             for later in waiting:
                 await push(sender, config, later)
         await reminders.deliver(sender, config)
+        await screen_delivery.deliver()
         await sleep(poll_s)
 
 

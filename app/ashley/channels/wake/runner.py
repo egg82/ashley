@@ -34,6 +34,7 @@ from ...senses.home_assistant_presence import SYSTEM
 from ...senses.wakes import Due, Outcome, Reminder, Wake, Wakes, WakesUnavailable, WatchWake
 from ...watches.watches import WatchesUnavailable
 from ...workshop.workshop import WorkshopUnavailable
+from ..devices import DevicesUnavailable
 from ..respond import RespondRefused, RespondUnavailable, respond
 from . import reminder, wake_turn, watch_turn
 from .bench_reacts import BenchReacts
@@ -81,7 +82,7 @@ async def _taken(due: Due) -> None:
     started = time.perf_counter()
     try:
         outcome, next_due = await _outcome(due)
-    except (WorkshopUnavailable, PeopleUnavailable, RespondUnavailable, WatchesUnavailable) as e:
+    except (WorkshopUnavailable, PeopleUnavailable, DevicesUnavailable, RespondUnavailable, WatchesUnavailable) as e:
         logs.warning(log, "wakes.deferred", wake=due.id, reason=type(e).__name__)
         return
     if await _fires_again(due, outcome):

@@ -16,7 +16,7 @@ from ..home_assistant.change import Change
 from . import deposit_rule
 from . import repeat as repeats
 from .deposit_rule import DepositRule
-from .wakes import MAX_BRIEF, MAX_TOOLS, Reminder
+from .wakes import MAX_BRIEF, MAX_TOOLS, Reminder, stored_route
 
 
 @dataclass(frozen=True)
@@ -189,17 +189,18 @@ def _reminder_to_json(r: Reminder) -> dict[str, Any]:
     return {"household_id": r.household_id, "person_id": r.person_id, "made_by": r.made_by, "brief": r.brief,
             "due_at": r.due_at.isoformat(), "repeat": None if r.repeat is None else repeats.to_json(r.repeat),
             "route": r.route, "tools": None if r.tools is None else list(r.tools), "taint": r.taint,
-            "made_in": None if r.made_in is None else list(r.made_in)}
+            "made_in": None if r.made_in is None else list(r.made_in), "device_id": r.device_id}
 
 
 def _reminder_from_json(raw: Mapping[str, Any]) -> Reminder:
     return Reminder(int(raw["household_id"]), int(raw["person_id"]), int(raw["made_by"]), str(raw["brief"]),
                     datetime.fromisoformat(raw["due_at"]),
                     None if raw["repeat"] is None else repeats.from_json(raw["repeat"]), None,
-                    "quiet" if raw["route"] == "quiet" else "phone",
+                    stored_route(raw["route"]),
                     None if raw["tools"] is None else tuple(raw["tools"]),
                     None if raw.get("taint") is None else str(raw["taint"]),
-                    None if raw.get("made_in") is None else (int(raw["made_in"][0]), int(raw["made_in"][1])))
+                    None if raw.get("made_in") is None else (int(raw["made_in"][0]), int(raw["made_in"][1])),
+                    None if raw.get("device_id") is None else int(raw["device_id"]))
 
 
 REMINDERS = Topic[ReminderPayload]("reminder", _decode_reminders)

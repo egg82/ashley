@@ -27,10 +27,20 @@ fired."""
 MAX_BRIEF = 500
 MAX_TOOLS = 20
 
-Route = Literal["phone", "quiet"]
+Route = Literal["phone", "quiet", "room", "screen"]
 ROUTES: tuple[Route, ...] = get_args(Route)
 """Where a fired reminder's words go: `phone`, pushed to the browsers of the person it is for; `quiet`, only stored
-in their conversation, for a reminder whose turn acts and has nothing to add."""
+in their conversation, for a reminder whose turn acts and has nothing to add; `room`, said aloud through the satellite
+`Reminder.device_id`; `screen`, shown on the device `Reminder.device_id`'s screen (the kiosk). A room or screen not
+reached after its tries there (`Wakes.undelivered`) goes to the phone."""
+
+
+def stored_route(raw: object) -> Route:
+    """A route as stored; `phone` for anything that is not one."""
+    for route in ROUTES:
+        if raw == route:
+            return route
+    return "phone"
 
 State = Literal["scheduled", "sending", "undelivered", "failed"]
 
@@ -64,7 +74,8 @@ class Reminder:
     (`Checkpoint.tainted`: its origin or the tool that read outside words), None for a household's own: its firing turn
     starts tainted `inherited` when it is set, since its `brief` was written under outside words. `made_in` is the
     conversation and turn that made it when `taint` is set, which the judge's words for that firing turn are read from;
-    None for a reminder made before it was kept."""
+    None for a reminder made before it was kept. `device_id` is the satellite or screen a `room` or `screen` route names,
+    None for any other route and once that device is removed."""
 
     household_id: int
     person_id: int
@@ -77,12 +88,13 @@ class Reminder:
     tools: tuple[str, ...] | None = None
     taint: str | None = None
     made_in: tuple[int, int] | None = None
+    device_id: int | None = None
 
 
 @dataclass(frozen=True)
 class Scheduled:
     """A reminder the person still needs to see, by its wake id, and where it stands (`state`): `scheduled`, still to
-    fire; `sending`, fired and its push not yet tried; `undelivered`, fired but no push reached their phone yet;
+    fire; `sending`, fired and not yet tried; `undelivered`, fired but not yet reached where its route says;
     `failed`, it could not fire. A delivered or cancelled reminder, or one they dismissed, is not listed. `deposit` is
     the rule of a reminder that waits on a deposit (`ashley.senses.deposits`), whose `reminder.due_at` is when it was
     set."""
@@ -95,12 +107,14 @@ class Scheduled:
 
 @dataclass(frozen=True)
 class Delivery:
-    """A fired reminder whose push is to be tried: for `person_id` of `household_id`, tried `attempts` times so far."""
+    """A fired reminder whose words are to be tried where its route says: for `person_id` of `household_id`, tried
+    `attempts` times so far; `device_id` is the satellite or screen this try is at, None for the phone."""
 
     id: int
     household_id: int
     person_id: int
     attempts: int
+    device_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -180,7 +194,7 @@ class Wakes(Service):
         """Settle the wake with `outcome`; False, changing nothing, when it was settled already or does not exist.
         With `next_due`, a repeating reminder's next occurrence is stored, due then, in the same statement, and only
         when this call settled it, so an occurrence has one successor however many runners settle it. A reminder
-        settled `turn` is `sending` until its push is tried (`undelivered`, `delivered`). Raises WakesUnavailable."""
+        settled `turn` on any route but `quiet` is `sending` until it is tried (`undelivered`, `delivered`). Raises WakesUnavailable."""
 
     @abstractmethod
     async def reminders(self, household_id: int, person_id: int) -> tuple[Scheduled, ...]:
@@ -205,20 +219,24 @@ class Wakes(Service):
         exist. Raises WakesUnavailable."""
 
     @abstractmethod
-    async def undelivered(self, limit: int, retry_s: float, within_s: float) -> tuple[Delivery, ...]:
-        """At most `limit` reminders fired with a turn (`settle` with `turn` marks one `sending`) whose push is not yet
-        delivered, not dismissed, fired less than `within_s` ago, and not tried in the last `retry_s`; the longest fired first.
-        Raises WakesUnavailable."""
+    async def undelivered(self, limit: int, retry_s: float, within_s: float, *, at: Route = "phone",
+                          device_tries: int = 0, device_retry_s: float = 0.0) -> tuple[Delivery, ...]:
+        """At most `limit` reminders fired with a turn (`settle` with `turn` marks one `sending`) not yet delivered, not
+        dismissed, fired less than `within_s` ago, whose next try is `at` (`room` or `screen` while a route to a device
+        that still exists has been tried fewer than `device_tries` times, else `phone`), and not tried in the last
+        `device_retry_s` after a try at a device or `retry_s` after one at the phone; the longest fired first. Raises
+        WakesUnavailable."""
 
     @abstractmethod
-    async def claim(self, wake_id: int, retry_s: float) -> bool:
-        """Take this try at a reminder's push, atomically: True for the one caller that finds it `sending` or
-        `undelivered`, not dismissed and not tried in the last `retry_s`, and times the try now; False,
+    async def claim(self, wake_id: int, retry_s: float, *, at: Route = "phone", device_tries: int = 0,
+                    device_retry_s: float = 0.0) -> bool:
+        """Take this try at a reminder's delivery, atomically: True for the one caller that finds it `sending` or
+        `undelivered`, not dismissed, its next try `at` and due as `undelivered` says, and times the try now; False,
         changing nothing, for any other. Raises WakesUnavailable."""
 
     @abstractmethod
     async def delivered(self, wake_id: int, reached: bool) -> None:
-        """Record one try at a reminder's push: `reached` marks it delivered, which takes it off the list; otherwise
+        """Record one try at a reminder's delivery: `reached` marks it delivered, which takes it off the list; otherwise
         `undelivered`, with the try counted and timed. Raises WakesUnavailable."""
 
     @abstractmethod
@@ -263,10 +281,12 @@ class NullWakes(Wakes):
     async def refire(self, wake_id: int, after_s: float) -> int:
         raise WakesUnavailable("wakes are not wired")
 
-    async def undelivered(self, limit: int, retry_s: float, within_s: float) -> tuple[Delivery, ...]:
+    async def undelivered(self, limit: int, retry_s: float, within_s: float, *, at: Route = "phone",
+                          device_tries: int = 0, device_retry_s: float = 0.0) -> tuple[Delivery, ...]:
         raise WakesUnavailable("wakes are not wired")
 
-    async def claim(self, wake_id: int, retry_s: float) -> bool:
+    async def claim(self, wake_id: int, retry_s: float, *, at: Route = "phone", device_tries: int = 0,
+                    device_retry_s: float = 0.0) -> bool:
         raise WakesUnavailable("wakes are not wired")
 
     async def delivered(self, wake_id: int, reached: bool) -> None:

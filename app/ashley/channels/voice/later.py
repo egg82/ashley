@@ -10,6 +10,7 @@ import logging
 
 from ... import logs, services
 from ..outbox import Later, Outbox, OutboxUnavailable
+from . import reminders
 from .run import Pipeline
 from .saying import said
 from .session import Links, Sleep
@@ -20,7 +21,8 @@ PREFIX = "device:"
 
 
 async def drain(links: Links, pipeline: Pipeline, poll_s: float, sleep: Sleep) -> None:
-    """Every `poll_s` until cancelled, say each reply waiting for a satellite; `links` maps each connected
+    """Every `poll_s` until cancelled, say each reply waiting for a satellite, then each fired reminder due a try in
+    its room (`reminders.deliver`); `links` maps each connected
     satellite's device id to it and its session."""
     failing = False
     while True:
@@ -34,6 +36,7 @@ async def drain(links: Links, pipeline: Pipeline, poll_s: float, sleep: Sleep) -
             failing = False
             for later in waiting:
                 await say(later, links, pipeline)
+        await reminders.deliver(links, pipeline)
         await sleep(poll_s)
 
 

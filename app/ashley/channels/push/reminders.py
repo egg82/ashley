@@ -1,7 +1,8 @@
 """Fired reminders' pushes, sent by the push singleton (`later.drain`) from her stored answer, and recorded on the
 reminder (`ashley.senses.wakes.Wakes.delivered`), so a reminder is never lost silently: one that reached no browser
 (none subscribed, or every send failed) is listed `undelivered` at once and tried again every `retry_s` for
-`deliver_for_s` after it fired (`ashley.channels.wake.config.CONFIG`). Not through the outbox, which deletes what it
+`deliver_for_s` after it fired (`ashley.channels.wake.config.CONFIG`); one routed to a room or screen comes here once
+it was not reached there (`ashley.senses.wakes.Wakes.undelivered`). Not through the outbox, which deletes what it
 hands out and drops what waits past `stale_s`.
 
 Logs `push.reminder` per try: wake, person, attempt, `sent`, `gone`, `failed`, and the outcome (`delivered`,
@@ -28,7 +29,8 @@ BATCH = 20
 async def deliver(sender: Sender, config: Config) -> int:
     """Try each fired reminder whose push is due a try; how many were tried."""
     try:
-        due = await services.get(Wakes).undelivered(BATCH, WAKES.retry_s, WAKES.deliver_for_s)
+        due = await services.get(Wakes).undelivered(BATCH, WAKES.retry_s, WAKES.deliver_for_s,
+                                                    device_tries=WAKES.device_tries)
     except WakesUnavailable:
         logs.warning(log, "push.reminders_unavailable", reason="wakes")
         return 0
@@ -62,7 +64,8 @@ async def _tried(sender: Sender, config: Config, delivery: Delivery) -> int:
     if answer.text == QUIET:
         return await _kept_quiet(delivery)
     try:
-        if not await services.get(Wakes).claim(delivery.id, WAKES.retry_s):
+        if not await services.get(Wakes).claim(delivery.id, WAKES.retry_s, device_tries=WAKES.device_tries,
+                                               device_retry_s=WAKES.device_retry_s):
             logs.info(log, "push.reminder", wake=delivery.id, person=delivery.person_id, outcome="claimed_elsewhere")
             return 0
     except WakesUnavailable:

@@ -5,5 +5,7 @@
   "keep_s": 604800,
   "fire_attempts": 3,
   "retry_s": 300,
-  "deliver_for_s": 86400
+  "deliver_for_s": 86400,
+  "device_tries": 3,
+  "device_retry_s": 60
 }

@@ -36,7 +36,12 @@ PROPERTIES: dict[str, dict[str, object]] = {
 }
 DELIVERY: dict[str, object] = {"type": "string", "enum": list(ROUTES),
             "description": "phone to push what you say to their phone (the default); quiet to say nothing to "
-                           "them, for a reminder that only does something"}
+                           "them, for a reminder that only does something; room to say it aloud through a satellite, "
+                           "or screen to show it on a shared screen, either named by device (its phone if not "
+                           "reached there)"}
+DEVICE: dict[str, object] = {"type": "integer",
+          "description": "with room or screen, the id of the device from household_devices: a satellite for room, a "
+                         "screen for screen"}
 TOOLS: dict[str, object] = {"type": "array", "items": {"type": "string"}, "maxItems": MAX_TOOLS,
          "description": "the names of tools that its turn may use when it falls due, from the tools you have now; "
                         "without it only tools that look, never ones that act. The person must agree to ones that act"}
@@ -92,7 +97,7 @@ def route_of(raw: object, default: Route) -> Route:
     for route in ROUTES:
         if raw == route:
             return route
-    raise BadArguments("delivery is phone or quiet")
+    raise BadArguments("delivery is phone, quiet, room or screen")
 
 
 def tools_of(raw: object, usable: Mapping[str, ToolSpec]) -> tuple[str, ...] | None:

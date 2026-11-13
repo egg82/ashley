@@ -8,7 +8,7 @@ turn): one that acts is only proposed, as a money rule is, and `arm_reminder` ag
 are wall-clock times in the household's zone. Logs `tools.call` with the tool, outcome and wake id, never an argument."""
 
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -25,7 +25,7 @@ from ..senses.proposal_gate import Refusal
 from ..senses.proposal_payloads import REMINDERS, MoneyRule, ReminderChange, ReminderPayload, ReminderSchedule, WatchSchedule
 from ..senses.proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
 from ..senses.repeat import LOCAL_FORMAT
-from ..senses.wakes import Reminder, Scheduled, Wakes, WakesUnavailable
+from ..senses.wakes import Reminder, Route, Scheduled, Wakes, WakesUnavailable
 from . import bench_results, reminder_conditions as conditions, reminder_shape as shape, reminder_specs as specs, tainted, watch_agreed
 from .bench_args import BadArguments, check_names
 from .tools import Catalogue, Tools, ToolsUnavailable
@@ -39,12 +39,14 @@ _REFUSALS: dict[Refusal, str] = {
 
 class ReminderTools(Tools):
     def __init__(self, household_id: int, speaker_id: int, *, private: bool, turn: tuple[int, int] | None = None,
-                 usable: Callable[[], Tools] | None = None) -> None:
+                 usable: Callable[[], Tools] | None = None,
+                 routable: Callable[[Route, int], Awaitable[bool]] | None = None) -> None:
         """`turn` is the conversation and the person's turn she is answering; without it she can propose nothing.
         `usable` gives the tools the speaker has in this turn (not these ones): a reminder may name those, and with
-        none it names none."""
+        none it names none. `routable` says whether a device of the household may carry a `room` or `screen` route
+        (raising ToolsUnavailable when that cannot be told); without it neither can be set."""
         self._household_id, self._speaker_id, self._private, self._turn = household_id, speaker_id, private, turn
-        self._usable = usable
+        self._usable, self._routable = usable, routable
 
     async def catalogue(self) -> Catalogue:
         household = await self._household()
@@ -125,9 +127,10 @@ class ReminderTools(Tools):
         due_at = shape.first_due(repeat, local, zone, datetime.now(UTC))
         usable = await self._usable_specs()
         tools = shape.tools_of(args.get("tools"), usable)
+        route, device = await self._route(args, "phone", None)
         reminder = Reminder(self._household_id, _person(household, args.get("for")), self._speaker_id,
-                            _what(args.get("what")), due_at, repeat, None, shape.route_of(args.get("delivery"), "phone"),
-                            tools, tainted.current(), tainted.made_in())
+                            _what(args.get("what")), due_at, repeat, None, route, tools, tainted.current(),
+                            tainted.made_in(), device)
         if shape.acts(tools, usable):
             return await self._proposed(call, started, reminder, None, zone)
         try:
@@ -172,7 +175,8 @@ class ReminderTools(Tools):
             return bench_results.failed(call, started, "not_found", "no reminder of theirs still to fire has that id; list them again")
         zone, current = ZoneInfo(household.timezone), found[0]
         usable = await self._usable_specs()
-        changed = _changed(args, current, zone, usable)
+        changed = _changed(args, current, zone, usable,
+                           await self._route(args, current.reminder.route, current.reminder.device_id))
         before = set(current.reminder.tools or ())
         if shape.acts(tuple(n for n in changed.tools or () if n not in before), usable):
             return await self._proposed(call, started, changed, wake_id, zone)
@@ -180,6 +184,21 @@ class ReminderTools(Tools):
             return bench_results.failed(call, started, "not_found", "that reminder has fired or is gone; list them again")
         return bench_results.ok(call, started, {"changed": wake_id,
                                                 "at": changed.due_at.astimezone(zone).strftime(LOCAL_FORMAT)}, wake=wake_id)
+
+    async def _route(self, args: Mapping[str, object], route: Route, device: int | None) -> tuple[Route, int | None]:
+        """The route and device the arguments give, `route` and `device` where they leave them out; the device is one
+        `routable` takes for that route."""
+        route = shape.route_of(args.get("delivery"), route)
+        if route not in ("room", "screen"):
+            if args.get("device") is not None:
+                raise BadArguments("device is only for room or screen")
+            return route, None
+        raw = args.get("device", device)
+        if isinstance(raw, int) and not isinstance(raw, bool) and self._routable is not None \
+                and await self._routable(route, raw):
+            return route, raw
+        raise BadArguments(f"device is the id of a {'satellite' if route == 'room' else 'screen'} from "
+                           "household_devices")
 
     async def _sees_deposits(self) -> bool:
         """Whether her money tools can show her past deposits: the household has connected Sure."""
@@ -236,7 +255,8 @@ class ReminderTools(Tools):
             rule = payload.rule
             made = await services.get(Deposits).arm(Reminder(r.household_id, r.person_id, r.made_by, r.brief,
                                                              datetime.now(UTC), None, route=r.route, tools=r.tools,
-                                                             taint=r.taint, made_in=r.made_in), rule)
+                                                             taint=r.taint, made_in=r.made_in, device_id=r.device_id),
+                                                    rule)
             return bench_results.ok(call, started, {"id": made, "when": describe(rule)}, wake=made)
         if isinstance(payload, ReminderChange):
             if not await services.get(Wakes).edit(self._household_id, self._speaker_id, payload.target, r):
@@ -327,8 +347,9 @@ def _what(raw: object) -> str:
     return raw
 
 
-def _changed(args: Mapping[str, object], current: Scheduled, zone: ZoneInfo, usable: Mapping[str, ToolSpec]) -> Reminder:
-    """`current`'s reminder with the arguments applied; what is not given stays."""
+def _changed(args: Mapping[str, object], current: Scheduled, zone: ZoneInfo, usable: Mapping[str, ToolSpec],
+             routed: tuple[Route, int | None]) -> Reminder:
+    """`current`'s reminder with the arguments applied and its route and device `routed`; what is not given stays."""
     r = current.reminder
     timing = "at" in args or any(k in args for k in shape.REPEAT_KEYS)
     if timing and current.deposit is not None:
@@ -340,8 +361,8 @@ def _changed(args: Mapping[str, object], current: Scheduled, zone: ZoneInfo, usa
         due_at = shape.first_due(repeat, local, zone, datetime.now(UTC))
     tools = shape.tools_of(args["tools"], usable) if "tools" in args else r.tools
     return Reminder(r.household_id, r.person_id, r.made_by, _what(args["what"]) if "what" in args else r.brief,
-                    due_at, repeat, None, shape.route_of(args.get("delivery"), r.route), tools,
-                    tainted.current() or r.taint, tainted.made_in() if tainted.current() else r.made_in)
+                    due_at, repeat, None, routed[0], tools, tainted.current() or r.taint,
+                    tainted.made_in() if tainted.current() else r.made_in, routed[1])
 
 
 def _shown(s: Scheduled, names: Mapping[int, str], zone: ZoneInfo) -> dict[str, object]:
@@ -359,6 +380,8 @@ def _shown(s: Scheduled, names: Mapping[int, str], zone: ZoneInfo) -> dict[str, 
         shown["until"] = r.repeat.until.isoformat()
     if r.route != "phone":
         shown["delivery"] = r.route
+    if r.device_id is not None:
+        shown["device"] = r.device_id
     if r.tools is not None:
         shown["tools"] = list(r.tools)
     return shown

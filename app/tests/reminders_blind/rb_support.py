@@ -26,7 +26,7 @@ from ashley.people.model import Account, Household, Person
 from ashley.people.people import People
 from ashley.senses.postgres_wakes import PostgresWakes
 from ashley.senses.repeat import Repeat
-from ashley.senses.wakes import Outcome, Reminder, SaidBefore, Wakes
+from ashley.senses.wakes import Outcome, Reminder, Route, SaidBefore, Wakes
 from ashley.tools.tools import Catalogue, Tools
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.postgres import PostgresWorkshop
@@ -190,11 +190,15 @@ class KillableWakes(Wakes):
     async def refire(self, wake_id: int, after_s: float) -> int:
         return await self.inner.refire(wake_id, after_s)
 
-    async def undelivered(self, limit: int, retry_s: float, within_s: float) -> Any:
-        return await self.inner.undelivered(limit, retry_s, within_s)
+    async def undelivered(self, limit: int, retry_s: float, within_s: float, *, at: Route = "phone", device_tries: int = 0,
+                          device_retry_s: float = 0.0) -> Any:
+        return await self.inner.undelivered(limit, retry_s, within_s, at=at, device_tries=device_tries,
+                                            device_retry_s=device_retry_s)
 
-    async def claim(self, wake_id: int, retry_s: float) -> bool:
-        return await self.inner.claim(wake_id, retry_s)
+    async def claim(self, wake_id: int, retry_s: float, *, at: Route = "phone", device_tries: int = 0,
+                    device_retry_s: float = 0.0) -> bool:
+        return await self.inner.claim(wake_id, retry_s, at=at, device_tries=device_tries,
+                                      device_retry_s=device_retry_s)
 
     async def delivered(self, wake_id: int, reached: bool) -> None:
         await self.inner.delivered(wake_id, reached)
