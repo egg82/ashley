@@ -61,13 +61,13 @@ def test_a_spoken_turn_stores_what_was_said_and_no_receipt_text() -> None:
 
 def test_a_spoken_turn_with_a_reachable_speaker_queues_exactly_one_receipt_only_push() -> None:
     _, queued = stored(REPLY, spoken(), ALANA, 1, 31, 5, (), BOTH)
-    assert queued == (Pushed(7, "push:1", Outbound(31, "text", "", agree=7, receipts=BOTH)),)
+    assert queued == (Pushed(7, "push:1", Outbound(31, "text", "", receipts=BOTH)),)
 
 
 def test_when_she_chose_the_phone_the_copy_carries_the_receipts_and_no_second_push_is_queued() -> None:
     sent = REPLY.model_copy(update={"to_phone": True})
     _, queued = stored(sent, spoken(), ALANA, 1, 31, 5, (), BOTH)
-    assert queued == (Pushed(7, "push:1", Outbound(31, "text", WORDS, agree=7, receipts=BOTH)),)
+    assert queued == (Pushed(7, "push:1", Outbound(31, "text", WORDS, receipts=BOTH)),)
 
 
 def test_an_unreachable_speaker_gets_none_queued_and_the_one_log_line_carries_counts(
@@ -88,9 +88,9 @@ def test_a_written_reply_queues_no_receipt_push_of_its_own() -> None:
 def test_the_reply_queued_for_a_thread_carries_her_words_untouched_and_the_receipts() -> None:
     async def go() -> None:
         got = await pushed(REPLY, written(), 31, BOTH)
-        assert got == (Pushed(7, "person:1:web", Outbound(31, "text", WORDS, agree=7, receipts=BOTH)),)
+        assert got == (Pushed(7, "person:1:web", Outbound(31, "text", WORDS, receipts=BOTH)),)
         [bare] = await pushed(REPLY, written(), 31)
-        assert bare.outbound.receipts is None and bare.outbound.agree is None
+        assert bare.outbound.receipts is None
 
     run(go())
 
@@ -104,12 +104,12 @@ CONFIG = push_config.load()
 
 
 def test_her_notification_is_her_words_with_the_agree_action_and_no_receipt_text() -> None:
-    note = notified(CONFIG, Outbound(31, "text", WORDS, agree=7, receipts=BOTH))
+    note = notified(CONFIG, Outbound(31, "text", WORDS, receipts=BOTH))
     assert (note.title, note.body, note.agree) == (CONFIG.title, WORDS, 7) and no_receipt_text(note.body)
 
 
 def test_a_receipts_only_push_says_the_headlines_under_a_title_for_what_it_holds() -> None:
-    both = notified(CONFIG, Outbound(31, "text", "", agree=7, receipts=BOTH))
+    both = notified(CONFIG, Outbound(31, "text", "", receipts=BOTH))
     assert both.title == CONFIG.held_title and both.agree == 7
     assert both.body == "Changed something in the house; Sent an email"
     done = notified(CONFIG, Outbound(31, "text", "", receipts=DONE_ONLY))

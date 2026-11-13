@@ -384,8 +384,8 @@ never repeated, and a proposal gone by then ends the work with no outcome.
 **What the page and the notification are told.** `ChatConversationTurn.agree` is the proposal's id, on her final answer to
 the turn it was held in, while that proposal is the person's own and unexpired (`agree.waiting`; null on every other
 turn and on a bench or kiosk read). A reply with held receipts is queued with `Outbound.receipts`
-(`outbox.receipts`; the outbox row still carries the proposal id as `outbox.agree`), and its notification carries
-`Notification.agree`; the service worker offers an Agree action that POSTs it from the notification. A refused tap says why in place.
+(`outbox.receipts`), and its notification carries
+`Notification.agree`, read from `Receipts.proposal_id`; the service worker offers an Agree action that POSTs it from the notification. A refused tap says why in place.
 
 **Logs:** `agree.refused` (person, reason), `agree.done` (conversation, turn, duration_ms), `agree.failed` (error class);
 `outside.carried_out` as for `carry_out`. Never arguments, summaries or results.

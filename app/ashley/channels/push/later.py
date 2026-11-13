@@ -1,6 +1,6 @@
 """Replies the `Outbox` holds for push threads (`push:<person id>`), sent by the push singleton, under the lease
 `push`, to every browser that person subscribed: title `Config.title`, the reply cut to `Config.body_chars`, a click
-opening the app at `/`, with an Agree action when the reply carries a held proposal (`Outbound.agree`). Receipts are
+opening the app at `/`, with an Agree action when the reply carries a held proposal (`Receipts.proposal_id`). Receipts are
 not in the body: a tap through to the page shows them; only a reply that is receipts alone (a spoken turn's) says
 their headlines. A browser whose
 push service answers 404 or 410 is forgotten; any other failure keeps it.
@@ -57,11 +57,12 @@ def notified(config: Config, outbound: Outbound) -> Notification:
     """The notification for `outbound`: her words under the app's title, with the Agree action for a held proposal;
     when it has no words, only receipts, their headlines under the title for what they hold."""
     receipts = outbound.receipts
+    agree = None if receipts is None else receipts.proposal_id
     if outbound.body or receipts is None:
-        return Notification(config.title, cut(plain_text(outbound.body), config.body_chars), URL, outbound.agree)
+        return Notification(config.title, cut(plain_text(outbound.body), config.body_chars), URL, agree)
     title = config.held_title if receipts.held else config.done_title
     headlines = "; ".join(r.headline for r in (*receipts.done, *receipts.held))
-    return Notification(title, cut(headlines, config.body_chars), URL, outbound.agree)
+    return Notification(title, cut(headlines, config.body_chars), URL, agree)
 
 
 async def push(sender: Sender, config: Config, later: Later) -> None:

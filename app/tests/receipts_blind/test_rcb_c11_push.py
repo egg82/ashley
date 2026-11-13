@@ -19,8 +19,7 @@ HER_WORDS = "Okay, I did one thing and one waits."
 
 
 def queued(receipts: Receipts | None, body: str = HER_WORDS) -> Later:
-    agree = None if receipts is None else receipts.proposal_id
-    return Later(1, 1, thread(1), Outbound(5, "text", body, receipts=receipts, agree=agree), 100)
+    return Later(1, 1, thread(1), Outbound(5, "text", body, receipts=receipts), 100)
 
 
 def sent(subs: FakeSubscriptions, later: Later) -> FakeSender:

@@ -197,9 +197,7 @@ class Outbound:
     """Her reply for the channel to deliver: `body` rendered for `medium` (`render.render`). `follows` is true when it
     only says she will check, and the answer will come through the `Outbox` for the thread. `says` is her
     reply's `Reply.says` as code honoured it (`unprompted.says`): `none` when she kept it to herself
-    (`unprompted.QUIET` is what was stored). `agree` is the id of the
-    held proposal `receipts` shows, so a channel that can offer one tap offers it (the web push notification's Agree
-    action); it is set from `receipts` for one release and then dropped. `receipts` is what code shows beside the
+    (`unprompted.QUIET` is what was stored). `receipts` is what code shows beside the
     reply (`conversations.model.Receipts`), never part of `body`; None when there is none."""
 
     conversation_id: int
@@ -207,7 +205,6 @@ class Outbound:
     body: str
     follows: bool = False
     says: Says = "reply"
-    agree: int | None = None
     receipts: Receipts | None = None
 
 

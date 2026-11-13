@@ -66,4 +66,4 @@ def copy(reply: Reply, phone: int | None, household_id: int, conversation_id: in
         return None
     logs.info(log, "push.to_phone", conversation=conversation_id, person=phone, outcome="queued")
     return Pushed(household_id, thread(phone), Outbound(
-        conversation_id, "text", reply.text, agree=None if receipts is None else receipts.proposal_id, receipts=receipts))
+        conversation_id, "text", reply.text, receipts=receipts))
