@@ -2,19 +2,19 @@
 
 ## Her mail is a port with two adapters, and Proton's runs as a leased Bridge
 
-**Parts 1 (OAuth secrets), 2 (the mail port, Gmail's adapter and the read tools), 3 (holders and resources), 4 (Bridge as a leased singleton), 5 (Proton's mailbox) and 6 (changes to mail) are built; the rest is designed** (open-work, "Mail"; the parts are listed under "The build, in parts"). She reads, searches, drafts, labels and sends a person's email,
+She reads, searches, drafts, labels and sends a person's email,
 and a watch over their inbox wakes a standing errand that sorts it and tells them what matters. Households use
 either provider, so mail is a port with two adapters from the start: **Gmail** over Gmail's API, connected through
 Google OAuth, and **Proton**, which has no public API, over IMAP and SMTP to Proton Mail Bridge, which she runs in the
 clusters as a leased singleton. Mail is the first source a stranger can write to at will, so every part of it rests
 on "A turn that has read outside words asks before it does anything consequential the person did not ask for": no mail tool ships before `Outside` does.
 
-**Fits into** existing systems, with one new one:
+**Fits into** Connections, Tools, Watches and Errands, with one new system, Mail:
 
-- **Connections** gains what mail is the first to need, and every later kind reuses: who holds a connection is the
+- **Connections** carries what mail is the first to need, and every later kind reuses: who holds a connection is the
   connection's, not the kind's; what a connection reaches is a list of resources, each shared or kept; a kind's
   secret can come from OAuth. Proton is a kind whose connecting runs through Bridge.
-- **Mail**, a new system: a port, `ashley.mail.mailbox.Mailbox`, over neutral records, with an adapter per
+- **Mail**, the new system: a port, `ashley.mail.mailbox.Mailbox`, over neutral records, with an adapter per
   provider. It meets the four tests in `docs/systems.md` as the Ledger does: many callers (her mail tools, the inbox
   watch kind, the sorting errand, and later her readers, open-work "Readers she sends out"); one question ("what is in
   this mailbox, and change it as asked"); a second implementation from the start; and it owns policy (what a
@@ -53,7 +53,7 @@ drawn from that schema, with pickers over what the service has now (`ConnectionK
 
 ### Who holds a connection, and who sees what it reaches
 
-**Holding is the connection's.** `ConnectionKind.personal` becomes `holders`, the set of `household` and `person` a
+**Holding is the connection's.** `ConnectionKind.holders` is the set of `household` and `person` a
 kind allows: Sure and Home Assistant the household's, a code host and herdr a person's, Google and Proton either. A
 connection's `person_id` stays the one field that says which. The person who added a personal connection hands it to
 the household, or takes back one they handed over, with `PATCH /api/connections/{id}` and `holder`; only `added_by`
@@ -64,7 +64,7 @@ that would pass the kind's `most` for the new holder is 409 `too_many`.
 **Seeing is the resource's.** A personal Google login reaches all of its owner's mail (and later calendars), so
 sharing the household's address must not share the login. A connection lists its **resources** as the service names
 them: for mail, a mailbox (a Gmail account is one; a Proton account in split address mode is one per address). The
-kind lists them (`ConnectionKind` gains `resources(opened)`) when the connection is stored and again whenever the
+kind lists them (`ConnectionKind.resources(opened)`) when the connection is stored and again whenever the
 room is opened, and a resource that disappears is dropped. Each resource of a personal connection is **kept** until
 its owner **shares** it with the household (`PATCH /api/connections/{id}/resources/{ref}`, owner only). Every
 resource of a household connection is shared, since the household already holds the login.
@@ -80,12 +80,12 @@ A satellite or the hallway tablet can read the household's shared address aloud;
 the speaker of a change ("A voice names the speaker as a hint, never as a credential"). A change in a tainted turn is
 held only where agreement can follow, which `Outside` already requires.
 
-**The migration** adds `connection_resources`: `household_id` (as every table carries it), `connection_id` (cascading), `ref` (the service's own id, 1 to 200
+**The table** `connection_resources` holds `household_id` (as every table carries it), `connection_id` (cascading), `ref` (the service's own id, 1 to 200
 characters), `kind` (`mailbox` today), `name` (what the room shows), `shared` (boolean), unique on
-(`connection_id`, `ref`). The check on `person_id` that `personal` implied moves to the service, which reads the
+(`connection_id`, `ref`). The service, not a table check, holds the rule that a connection's `person_id` agrees with its
 kind's `holders`.
 
-**What the build settled** (`ashley.connections.resources.ConnectionResources`, `ashley.connections.moves.move`):
+**How the gate is built** (`ashley.connections.resources.ConnectionResources`, `ashley.connections.moves.move`):
 
 - **The gate is `ConnectionResources.usable(use, changing)`**, `use` being `ashley.connections.resources.Use`
   (household, the speaker the channel names, whether the reply reaches them alone; `ashley.channels.audience.use_of`
@@ -105,15 +105,15 @@ kind's `holders`.
   first. A silent rename would leave a connection under a name its owner never chose.
 - **A mailbox's address is stored when the connection is** (`ashley.mail.resources.mailboxes`, the Google kind's
   `resources`, registered in `ashley.wiring.CONNECTION_KINDS`), refreshed after each opening of the room has been answered
-  (the room lists stored rows and never waits on a service), and read for a
-  connection stored before that on the first turn that uses it. A tool call naming a mailbox the turn may not use is
+  (the room lists stored rows and never waits on a service), and read on the first turn that uses a connection stored
+  without one. A tool call naming a mailbox the turn may not use is
   refused from stored addresses and reaches no mail service. A service that cannot say what a connection reaches leaves
   what is stored.
 
 ### A kind's secret can come from OAuth
 
-A kind declares how it is connected (`ConnectionKind` gains `connect`): `Pasted` (an address and a secret a person
-pastes, every kind today), `OAuth` (`ashley.connections.oauth.OAuthProvider` and the scopes the kind asks
+A kind declares how it is connected (`ConnectionKind.connect`): `Pasted` (an address and a secret a person
+pastes), `OAuth` (`ashley.connections.oauth.OAuthProvider` and the scopes the kind asks
 for), or Bridge's login (Proton, below). For an OAuth kind the
 sealed secret is the refresh token, and the row also keeps the sealed access token and its expiry, so a pod on
 either site reuses an access token another pod obtained instead of refreshing per call.
@@ -131,33 +131,31 @@ either site reuses an access token another pod obtained instead of refreshing pe
   authenticated read with the new access token (Google's userinfo for the account's address), and the scopes Google
   says it granted are stored with the row. A person who unticks a scope on the consent screen gets a connection whose
   tools needing it are not offered, and the room says what is missing.
-- **Renewal is a compare-and-set.** `connections` gains `secret_version`. A pod whose access token is within
+- **Renewal is a compare-and-set.** `connections.secret_version` is the version. A pod whose access token is within
   `refresh_margin_s` of expiry refreshes, then writes the new access token (and the new refresh token, when the
   provider sent one) only where `secret_version` is still the one it read, raising it. A pod that loses reads the row
   again and uses the winner's token. Google keeps its refresh token, and a provider that rotates (Microsoft) is
   covered by the same write, since two pods may refresh at once and the loser's token would otherwise overwrite the
   current one.
-- **A refused refresh marks the connection, never deletes it.** `connections` gains `needs`: null, `reconnect` (an
+- **A refused refresh marks the connection, never deletes it.** `connections.needs` is null, `reconnect` (an
   OAuth grant refused: `invalid_grant`, revoked, expired) or `login` (a Proton account Bridge signed out, below). The
   room shows it, her tools over it answer `needs_reconnect` rather than empty results, and connecting again over it
   replaces the secret and clears it.
-- **Google is the first provider**, for the `mail` port (`Port` gains `mail`; the calendar is a later port of the
-  same kind). The kind is `google`, one per owner, its scopes `openid`, `email` and the mail scopes of the parts built
-  so far. The client's `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` live in the
+- **Google is the first provider**, for the `mail` port (the calendar is a later port of the
+  same kind). The kind is `google`, one per owner, its scopes `openid`, `email` and `gmail.modify`. The client's `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` live in the
   deployment's secret store; unset, connecting answers 503 and the room says it is not set up.
 - **The consent screen is published, unverified.** Google's own documentation says an app whose publishing status is
   Testing gets refresh tokens that expire after seven days, unless it asks only for `openid`, `email` and `profile`.
   Gmail's read, modify and compose scopes are restricted, so a published app that is not verified shows Google's
-  unverified-app warning and is capped at 100 users, which a household never reaches. Verification would mean a
+  unverified-app warning and is capped at 100 users, which a household never reaches; verification would mean a
   security assessment for an app nobody outside the household uses. Google also drops a refresh token unused for six
-  months and keeps at most 100 per account and client, dropping the oldest. A reconnect replaces the stored token
-  with the newest, so the limit only drops tokens she no longer holds, and a connection her tools use never sits
-  unused that long.
+  months and keeps at most 100 per account and client, dropping the oldest. A reconnect replaces the stored token,
+  so the limit only drops tokens she no longer holds, and a connection her tools use never sits unused that long.
 
 ### Bridge runs as a leased singleton whose vault outlives its pod
 
 Bridge's state is an encrypted vault (`vault.enc`: the Proton sessions and the IMAP passwords it issues), the keychain that opens it (`pass` with a GPG key, all files), and a message cache it rebuilds from Proton.
-A spike on Bridge 3.27.1 found:
+Measured on Bridge 3.27.1:
 
 - The vault opens on another host. Moved alone with its keychain to a container with another hostname, after the
   first Bridge was killed, every address logged in over IMAP within seconds with the same passwords, and nobody
@@ -189,8 +187,8 @@ run from copies of one vault.
   `ashley` (its tests run in that image, as the CAD helper's do). It starts Bridge with its gRPC frontend, watches
   `vault.enc`, relays Bridge's IMAP and SMTP from its loopback to the pod's ports, and talks to the app over internal
   routes, `app/ashley/api/mail_bridge.py`, with a token minted per epoch whose hash the record keeps. The gRPC
-  calls and events named here are in Bridge's `bridge.proto` on its main branch; that the frontend runs with no GUI
-  attached, and that 3.27.1 has the same calls, was checked against a real 3.27.1 (below).
+  calls and events named here are in Bridge's `bridge.proto`; that the frontend runs with no GUI attached, and that
+  3.27.1 has the same calls, was checked against a real 3.27.1 (below).
 - **The singleton**, `ashley.mail.proton_bridge_job.run`, under `ashley.referee.lease.Lease` named
   `proton_bridge`, so it runs only on the site whose Patroni member leads. Each move between sites therefore costs
   one full resync (about 18 minutes for that account), accepted because moves are rare and her tools say
@@ -239,7 +237,7 @@ signed out) to the record. A Proton mailbox whose account's `synced_epoch` is no
 `syncing` with the progress Bridge last reported, never an empty mailbox; the room shows the same. Neither the record
 nor the tools read Bridge's log lines.
 
-**What part 4 settled that the design left open.**
+**How the Bridge pieces are built.**
 
 - **Signatures, routes, environment.** The keeper's routes are `GET` and `PUT /api/mail-bridge/keeper/vault`, `POST
   .../heartbeat` and `POST .../events`, each with `Authorization: Bearer <token>` and the epoch in the body (the query on
@@ -287,15 +285,13 @@ nor the tools read Bridge's log lines.
   not the record's epoch; the room reads it from `GET /api/mail-bridge/accounts`, and part 5's mailbox asks
   `ProtonBridge.accounts()` for the same. An account's addresses are kept on that row; `connection_resources` (part 3) is
   filled from them when the two parts meet.
-- **Kubernetes calls for secrets.** `KubeApi` gains `create_secret`, `secret`, `secrets` (by label) and `delete_secret`; the
+- **Kubernetes calls for secrets.** `KubeApi` has `create_secret`, `secret`, `secrets` (by label) and `delete_secret`; the
   token Secret is named for its pod and made when the epoch is raised, for the pod to mount; the app reads the token and
   certificate from the record (`ProtonBridge.keeper_access`), never from the Secret. Every epoch but the current one has its pod and Secret deleted.
 
-**What the app needs from the cluster repo** (both sites through the shared base): a namespace where
-the app's ServiceAccount may create and delete the Bridge pod and its token Secret; egress from that pod to Proton;
-on each site, a Bridge Service of its own with a fixed LoadBalancer address (as Postgres has) for the IMAP, SMTP and keeper
-ports, each reaching the pod when it runs in that site's cluster;
-and the image built by CI as `apps/ashley-mail-bridge:<hash>`, pinned as the other pod images are. Concretely: a namespace
+**What the app needs from the cluster repo** (both sites through the shared base): on each site, a Bridge Service of its
+own with a fixed LoadBalancer address (as Postgres has), reaching the pod when it runs in that site's cluster; the image
+built by CI as `apps/ashley-mail-bridge:<hash>`, pinned as the other pod images are; and a namespace
 (`MAIL_BRIDGE_NAMESPACE`) in which the app's ServiceAccount may `create`, `get`, `list` and `delete` pods and Secrets; a
 Service selecting `ashley.yggdrasil.pub/mail-bridge=true` on ports 8080 (keeper), 2143 (IMAP) and 2025 (SMTP), whose
 `https` address, with the other site's, is `MAIL_BRIDGE_KEEPER_URL`; a network policy admitting the app alone to the keeper port, the pod to the app
@@ -341,7 +337,7 @@ past that limit is refused. A send or draft in a turn that has read nothing outs
 runs, as any change does. Moving to the trash is offered; deleting forever is not. A connection granted only the read
 scope answers each change `needs_reconnect` (the room already lists the scope it is missing).
 
-**What the build of the changes settled** (`ashley.mail.mailbox.Mailbox.draft`, `send` and `change`,
+**How changes are made** (`ashley.mail.mailbox.Mailbox.draft`, `send` and `change`,
 `ashley.tools.mail_change_specs`, `ashley.tools.mail_args`):
 
 - **The gate for changing is `ConnectionResources.usable(use, True)`**, so a shared mailbox is changed only on a turn
@@ -352,8 +348,8 @@ scope answers each change `needs_reconnect` (the room already lists the scope it
   label (`TRASH`, `SPAM`, `INBOX`, `UNREAD`) cannot be reached by a name; moving is the folder (`inbox`, `archive`, `spam`,
   `trash`, each leaving the other folders it was in) and read state is `unread`.
 - **A send is posted once and never retried**; a timeout answers `unreachable`, which leaves open whether it went.
-- **Scopes.** The Google kind asks for `gmail.modify` in place of `gmail.readonly`; it includes the reads, and a
-  connection made earlier keeps reading.
+- **Scopes.** The Google kind asks for `gmail.modify`, which includes the reads; a connection granted only
+  `gmail.readonly` keeps reading.
 
 **Settings are data**, `app/ashley/mail/mail.json`: page sizes and caps, `max_body_chars`, `max_recipients`,
 `max_change_ids`, the OAuth `refresh_margin_s`, and Bridge's `heartbeat_s`, `fence_s`, `fence_margin_s`, `restart_s`
@@ -366,13 +362,13 @@ takes the newest `max_items` messages in the inbox, each an item keyed by its me
 `subject`, `unread` and `labels`. Its default `when` is `[[new]]`, so a message read or labelled elsewhere wakes
 nothing. Its `outside` is true: senders and subjects are written by strangers. A read answered `syncing` records no
 check and is tried again at `retry_s`, so a failover's resync neither pauses the watch nor reads as every message
-gone; the check gains that outcome, `ashley.watches.model.Later`. A message that arrives and leaves the
+gone; the check's outcome for it is `ashley.watches.model.Later`. A message that arrives and leaves the
 window between two checks is not seen, which `interval_s` keeps rare. The watch's target is the mailbox's address, as
 the mail tools name one, and a read opens it as the person who armed the watch, in a turn that reaches them alone, so a
 kept mailbox is read only for its owner and a shared one for any member. `Later` is also what the kind's read answers, so
 a read and its check are the same value.
 
-**The sort is a standing watch.** A watch gains `brief` (what this watch's turn is for, as a reminder's brief is:
+**The sort is a standing watch.** A watch carries `brief` (what this watch's turn is for, as a reminder's brief is:
 people's data, never logged) and `standing`. A standing watch's `expires_at` moves forward by `hours` on every
 successful read, so it lasts while its mailbox answers and ends only when disarmed or after its source has failed
 for `hours`. A watch that is not standing still always ends. She arms one when asked ("sort my mail and tell me what
@@ -387,9 +383,9 @@ offered a watch that could not read.
 **The sort's changes go by their tier.** A label added or removed, a read state and a draft are tier b, so the woken turn
 makes them without asking and each is recorded and shown under her reply (`decisions.md`, "A turn that has read outside
 words asks before it does anything consequential the person did not ask for"). A move to the archive, spam or trash
-and a send are tier c: with no judge built they wait for the person's OK. The household's labels are the mailbox's user
+and a send are tier c: no judge is built, so they wait for the person's OK. The household's labels are the mailbox's user
 labels, which a label call names, and a system label can only be reached through `folder`, so a stranger's message can
-choose which messages get a label but cannot reach a move. The brief no longer needs to name the mailbox for a label to run.
+choose which messages get a label but cannot reach a move. The brief need not name the mailbox for a label to run.
 
 **What survives a failover:** the connection rows, resources, OAuth tokens, the Bridge vault, its epoch and the
 watches are in Postgres. A pod on either site serves the Gmail tools on its next call. Proton mail answers `syncing`
@@ -410,8 +406,8 @@ None carries an address, a subject, a body, a query, a token, a password or the 
 
 **Measured by:**
 
-- Blind contract tests per part, written from this section by an agent that has not seen the implementation, then a
-  planted-mutant run:
+- Blind contract tests per piece (`app/tests/mail_*_blind`), written from this section by an agent that has not seen
+  the implementation, then a planted-mutant run:
   - holders: a move reseals and a sealed value moved without it does not open; only `added_by` takes one back; a kept
     mailbox is not offered on a shared channel, and a shared one is;
   - OAuth: two pods refreshing at once leave one current secret and both answer; a callback taken by another person
@@ -448,8 +444,7 @@ None carries an address, a subject, a body, a query, a token, a password or the 
 - **Rejected: UIDs as message ids for Proton.** A resync assigns new ones.
 - **Rejected: holding every send even in an untainted turn.** A send the person dictated in their own words is their
   change, as any other is; a reply to mail has read the mail and is held.
-- **Rejected: a Google app left in testing.** Its refresh tokens die weekly, and reconnecting every week is a person
-  step.
+- **Rejected: a Google app left in testing.** Its refresh tokens die weekly.
 - **Rejected: the sort as a repeating reminder.** New mail is a change with no event, which is what watches are for,
   and a reminder on a clock either wakes for nothing or lags the mail.
 - **Rejected: a per-label grant agreed with the watch.** Labels are tier b, so the sort runs without one; a second
@@ -462,30 +457,22 @@ None carries an address, a subject, a body, a query, a token, a password or the 
 
 Each part is one merge request with its own blind suite, and ships alone. Mail's read tools wait for `Outside`.
 
-1. **OAuth secrets.** `OAuthProvider`, `connect_pending`, the callback, renewal by compare-and-set, `needs`, and the
-   `google` kind with only `openid` and `email`, checked by userinfo. A Google account can be connected and shows as
-   checked; no tool reads it. It comes first because Gmail, the first useful mail, needs it.
-2. **The mail port and Gmail's read tools.** `Port` gains `mail`, `Mailbox` and its records, `GmailMailbox` read
-   calls, `mail_boxes`, `mail_labels`, `mail_search`, `mail_read`, and `gmail.readonly` added to the kind. Personal
-   connections only, so the gate is `owner_alone`. The first thing a person can use: "what's in my mail".
-3. **Holders and resources.** `holders`, moving a connection, `connection_resources`, sharing, and the gate by
-   resource. It comes before Proton because the household's shared address is the first resource someone shares.
-4. **Bridge as a leased singleton.** The image, the keeper, the record, the singleton and its fence, logging in from
-   the room, and Proton accounts and their addresses as connections and resources, with their sync state in the room.
-   No mail tool yet, so the fence is proven before any turn depends on it. Built, except that the addresses are kept
-   on the account row until holders and resources (part 3) give them a table.
-5. **Proton's mailbox.** `ImapMailbox` read calls behind the same tools, `syncing` answers, and message ids by
-   `Message-ID`. Built; what it settled follows this list.
-6. **Changes to mail.** Built on both adapters: `mail_draft`, `mail_label` and `mail_send`, Gmail's scope raised to
-   `gmail.modify` (a reconnect, which the room asks for), and the body limit held against `app/ashley/tools/outside.json`.
-7. **The inbox watch.** The `mail_inbox` kind and the `Later` check. Built.
-8. **The sort.** `brief` and `standing` on watches and her arming of one with mail tools. Built.
+1. **OAuth secrets**: `OAuthProvider`, `connect_pending`, the callback, renewal, `needs` and the `google` kind. First,
+   because Gmail needs it.
+2. **The mail port and Gmail's read tools**, personal connections only, so the gate is `owner_alone`.
+3. **Holders and resources**, before Proton because the household's shared address is the first resource someone shares.
+4. **Bridge as a leased singleton**, with no mail tool, so the fence is proven before any turn depends on it. The
+   addresses are kept on the account row; `connection_resources` is filled from it.
+5. **Proton's mailbox**: `ImapMailbox` behind the same tools.
+6. **Changes to mail** on both adapters, the body limit held against `app/ashley/tools/outside.json`.
+7. **The inbox watch** and the `Later` check.
+8. **The sort**: `brief` and `standing` on watches.
 
-**What part 5 settled** (`ashley.mail.imap.ImapMailbox`, `ashley.mail.routed.RoutedMailbox`):
+**How Proton's mailbox is built** (`ashley.mail.imap.ImapMailbox`, `ashley.mail.routed.RoutedMailbox`):
 
 - **One Mailbox in the locator, routed by kind.** `ashley.wiring` registers `RoutedMailbox`, which sends each call to the
   adapter of `Account.kind`; the Proton adapter is in it only where Bridge is wired, and a connection of a kind with no
-  adapter is `refused`. `Account` gains `kind` and `address` (the mailbox of a Proton connection the call is for, since one
+  adapter is `refused`. `Account` carries `kind` and `address` (the mailbox of a Proton connection the call is for, since one
   connection reaches one per address), which the tools and the inbox watch fill from the connection and its resource. The
   tools hold no provider branch. `can_read` and `can_change` take the connection's kind with its scopes and the router asks
   that kind's adapter alone: a Proton connection has no scopes, so an empty scope list means nothing about the kind;
@@ -503,9 +490,10 @@ Each part is one merge request with its own blind suite, and ships alone. Mail's
   `Drafts`, `Trash` and `Spam`, and the answer is checked for the same id. A message with no `Message-ID` is named
   `nomid-` and a hash of its date, sender and subject, and found by reading the newest 200 of each folder. An id is
   the header's first `message_id_chars` (64) characters, not a hash of it: the same id after a resync, found by the same
-  substring search, no table to keep. RFC 5322 allows a line of 998 characters but real ids (Gmail's, Outlook's, list
-  software's) are under 100 and carry their entropy at the front, so two messages share a 64-character prefix only in a
-  pathological mailbox; the first match is read, and a change is checked against the sender and subject the person was shown.
+  substring search, no table to keep. Real ids (Gmail's, Outlook's, list
+  software's) are under 100 characters and carry their entropy at the front, so two messages share a 64-character prefix
+  only in a pathological mailbox; the first match is read, and a change is checked against the sender and subject the
+  person was shown.
 - **Folders and labels as Bridge keeps them.** A label is the folder `Labels/<name>` holding a copy of each message with
   it; a search with no folder covers inbox, archive, sent and drafts, orders the hits by when Bridge received them, and
   cursors by offset; `has_attachment` is filtered on the message, as IMAP cannot search it.
