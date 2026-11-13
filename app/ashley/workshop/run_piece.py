@@ -95,7 +95,7 @@ async def run_piece(owner: Owner, bench_id: int, command: Run, asked: Asked | No
         return PieceRun(applied, None)
     turn = (None, None, None) if asked is None else (asked.conversation_id, asked.turn_id, asked.call_id)
     new = NewRun(owner.household_id, *turn, language=language, script=piece.text.body, files=files,
-                 inputs=models.blobs, bench=BenchRun(bench_id, applied.seq, piece.id, piece.version))
+                 inputs=models.files, bench=BenchRun(bench_id, applied.seq, piece.id, piece.version))
     try:
         finished = await run_once(new)
     except RunsUnavailable:

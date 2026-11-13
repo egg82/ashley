@@ -6,7 +6,7 @@ Each language is one `Profile` under `languages`, and Python's is required: how 
 (`script_timeout_s`) and the pod may live (`pod_deadline_s`, its `activeDeadlineSeconds`, which includes starting it), its
 `cpu` limit and `cpu_request`, its `memory` (request and limit), the size of its working directory (`work_mib`), the most of
 the pod's log read (`log_bytes`, which varies with the language's output) and `artifact_bytes` (the most binary output it
-carries back, left out for none) and `input_bytes` (the most binary input it is given, left out for none). Python's profile also carries its pinned `image`; any other language's is given at start
+carries back, left out for none) and `input_bytes` (the most binary input it is given, in an emptyDir of its own beside the working directory, left out for none). Python's profile also carries its pinned `image`; any other language's is given at start
 (`CAD_IMAGE`) through `with_image`, and a language with no image is not run."""
 
 import json
@@ -87,7 +87,7 @@ def parse(data: object) -> RunsConfig:
     wrong type or is not positive, `languages` lacks Python or names another thing, an image is not pinned by digest
     (Python's is in the file; another language's is given at start), a profile's pod deadline leaves the
     script no time to be stopped by its own timeout first, its log has no room for both output streams, or its artifacts
-    or inputs may be larger than its working directory."""
+    may be larger than its working directory."""
     loose: Any = data
     if not isinstance(data, dict):
         raise ValueError("runs config is an object")
@@ -143,5 +143,3 @@ def _check_room(profile: Profile, output_chars: int) -> None:
         raise ValueError("log_bytes: room for both output streams, each character escaped at its longest")
     if profile.artifact_bytes > profile.work_mib * MIB:
         raise ValueError("artifact_bytes: no more than the working directory holds")
-    if profile.input_bytes > profile.work_mib * MIB:
-        raise ValueError("input_bytes: no more than the working directory holds")

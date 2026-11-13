@@ -2,6 +2,8 @@
 capabilities, user 65534, the profile's limits), and the job's variables are named on it, never valued, since a process
 listing shows every argument."""
 
+from pathlib import Path
+
 import pytest
 from ashley.runs import config
 from ashley.runs.model import Job
@@ -13,13 +15,14 @@ IMAGE = "registry.example/cad@sha256:" + "0" * 64
 
 def test_the_container_is_cut_off_and_its_variables_are_named_not_valued() -> None:
     runs = config.load().with_image("build123d", IMAGE)
-    job = Job("run-7", "build123d", "print('secret-ish script')", inputs={"piece-7.stl": b"solid x"})
+    job = Job("run-7", "build123d", "print('secret-ish script')", files={"a.txt": "x"})
     container = manifest(job, runs, RUNNER, "gvisor")["spec"]["containers"][0]
     env = {str(e["name"]): str(e["value"]) for e in container["env"]}
     profile = runs.profile("build123d")
     assert profile is not None
-    argv = PodmanSandbox(runs).arguments(job.name, profile, env, container["command"])
+    argv = PodmanSandbox(runs).arguments(job.name, profile, env, container["command"], Path("/tmp/inputs-dir"))
     joined = " ".join(argv)
+    assert "--volume /tmp/inputs-dir:/work/inputs:ro" in joined
     for flag in ("--network none", "--read-only", "--user 65534:65534", "--cap-drop ALL", "--memory 1g", "--cpus 1"):
         assert flag in joined
     assert len(env) >= 4 and all(f"--env {name}" in joined for name in env)

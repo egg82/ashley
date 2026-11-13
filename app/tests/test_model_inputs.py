@@ -1,9 +1,12 @@
 """A model run is handed the bench's STL, 3MF and STEP file pieces: real files, put on the bench as an upload is, reach
 the sandbox as binary inputs under their piece ids with an index (`inputs.json`) the CAD helper reads. What does not fit
-the language's `input_bytes`, or cannot be read from the store, is named in the index with why; nothing else rides along."""
+the language's `input_bytes`, or is not in the store, is named in the index with why; nothing else rides along. The
+bytes are not read here: the inputs are references, and the pod's init container fetches them."""
 
+import base64
 import json
 from dataclasses import replace
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -14,7 +17,11 @@ from ashley.files.memory import MemoryStore
 from ashley.files.sniff import sniff
 from files_support import PDF
 from ashley.files.store import ObjectStore
+from ashley.runs import input_links
 from ashley.runs.config import RunsConfig
+from ashley.runs.model import InputFile
+from ashley.runs.pod_spec import manifest
+from ashley.files import links
 from ashley.workshop.bench_file import add_file
 from ashley.workshop.model_inputs import InputRefused
 from ashley.workshop.commands import Add, Archive, Move, Run
@@ -86,11 +93,56 @@ def test_a_model_run_gets_each_model_file_under_its_piece_id_and_an_index_of_the
             await run_as(alana, bench.id, script)
             job = box.jobs[0]
             ext = {n: n.rsplit(".", 1)[1].lower() for n in names}
-            assert dict(job.inputs) == {f"{ids[n]}.{ext[n]}": real(n) for n in names}
+            assert dict(job.inputs) == {f"{ids[n]}.{ext[n]}": InputFile(alana.household_id, sha256(real(n)).hexdigest(), len(real(n)))
+                                        for n in names}
             index = json.loads(job.files["inputs.json"])
             assert index["left_out"] == []
             assert [(i["piece"], i["name"], i["file"], i["size"]) for i in index["items"]] == [
                 (ids[n], n, f"inputs/{ids[n]}.{ext[n]}", len(real(n))) for n in names]
+            services.unregister(ObjectStore)
+
+    run(scenario())
+
+
+def big_stl(name: str, facets: int = 75) -> bytes:
+    """An ASCII STL of about 600 KB: `facets` copies of the real file's facets."""
+    body = real(ASCII_STL).decode().split("\n", 1)[1].rsplit("endsolid", 1)[0]
+    return f"solid {name}\n{body * facets}endsolid {name}\n".encode()
+
+
+def test_two_models_past_the_old_total_reach_one_run_through_the_init_container(db_url: str) -> None:
+    alana = owner(db_url)
+    box = Box(outputs=[OK], offered=BOTH)
+    models = {"left.stl": big_stl("left"), "right.stl": big_stl("right")}
+    assert sum(map(len, models.values())) > 768 * 1024
+
+    async def scenario() -> None:
+        async with world(db_url, box):
+            services.register(ObjectStore, MemoryStore())
+            bench = await services.get(Workshop).open(alana, "b")
+            script = await script_on(alana, bench.id)
+            ids: dict[str, int] = {}
+            for name, data in models.items():
+                _, applied = await add_file(alana, bench.id, By(alana.person_id), data, name, "", RULES)
+                assert applied.outcome == "accepted" and applied.piece_id is not None
+                ids[name] = applied.piece_id
+            await run_as(alana, bench.id, script)
+            job = box.jobs[0]
+            assert sorted(job.inputs) == sorted(f"{i}.stl" for i in ids.values())
+            assert json.loads(job.files["inputs.json"])["left_out"] == []
+            key = b"k" * 32
+            urls = input_links.sign(job.inputs, "http://10.0.0.5:8000", key, 2_000_000_000)
+            pod = manifest(job, CONFIG.with_image("build123d", "registry.test/cad@sha256:" + "c" * 64), "RUNNER", "gvisor", "FETCHER", urls)["spec"]
+            fetch, run_container = pod["initContainers"][0], pod["containers"][0]
+            task = json.loads(base64.b64decode(fetch["env"][0]["value"]))
+            assert sorted(f["name"] for f in task["files"]) == sorted(job.inputs)
+            assert sum(f["size"] for f in task["files"]) == sum(map(len, models.values()))
+            assert fetch["command"][-1] == "FETCHER" and fetch["volumeMounts"] == [{"name": "inputs", "mountPath": "/inputs"}]
+            assert {"name": "inputs", "mountPath": "/work/inputs", "readOnly": True} in run_container["volumeMounts"]
+            assert not any("http" in str(e["value"]) for e in run_container["env"])
+            for item in task["files"]:
+                grant = links.check(key, item["url"].rsplit("/", 1)[1], 1_999_999_999)
+                assert grant is not None and (grant.household_id, grant.sha256) == (alana.household_id, item["sha256"])
             services.unregister(ObjectStore)
 
     run(scenario())

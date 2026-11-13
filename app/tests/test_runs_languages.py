@@ -51,7 +51,7 @@ def box(fake: FakeKube, runs: RunsConfig, clock: Clock | None = None) -> Kuberne
 
 def test_the_shipped_build123d_profile_is_60_seconds_one_cpu_and_a_gibibyte_with_no_image() -> None:
     loaded = config.load()
-    assert loaded.languages["build123d"] == Profile("", 60, 120, "1", "500m", "1Gi", 32, 8 * 1024 * 1024, 16 * 1024 * 1024, 768 * 1024)
+    assert loaded.languages["build123d"] == Profile("", 60, 120, "1", "500m", "1Gi", 32, 8 * 1024 * 1024, 16 * 1024 * 1024, 16 * 1024 * 1024)
     assert loaded.offered() == ("python",) and loaded.profile("build123d") is None
 
 

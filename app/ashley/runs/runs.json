@@ -25,7 +25,7 @@
       "work_mib": 32,
       "log_bytes": 8388608,
       "artifact_bytes": 16777216,
-      "input_bytes": 786432
+      "input_bytes": 16777216
     }
   }
 }

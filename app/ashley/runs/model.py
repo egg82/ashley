@@ -16,16 +16,27 @@ stopped answering, or the pod or its log went missing); the script may have run.
 
 
 @dataclass(frozen=True)
+class InputFile:
+    """A binary file a job starts with, by reference: the object `household_id`/`sha256` in the object store
+    (`ashley.files.intake.key_of`), `size` bytes. The bytes never pass through the job; the sandbox has them put where
+    the script reads them."""
+
+    household_id: int
+    sha256: str
+    size: int
+
+
+@dataclass(frozen=True)
 class Job:
     """One script to run. `stdin` is its standard input; `files` (name -> text) are in its working directory when it
-    starts, and `inputs` (name -> bytes) in its `inputs/`, read-only and never carried back. `name` is unique per run and safe as a Kubernetes name (`run-<id>`)."""
+    starts, and `inputs` (name -> InputFile) in its `inputs/`, read-only and never carried back. `name` is unique per run and safe as a Kubernetes name (`run-<id>`)."""
 
     name: str
     language: Language
     script: str
     stdin: str = ""
     files: Mapping[str, str] = field(default_factory=dict[str, str])
-    inputs: Mapping[str, bytes] = field(default_factory=dict[str, bytes])
+    inputs: Mapping[str, InputFile] = field(default_factory=dict[str, InputFile])
 
 
 @dataclass(frozen=True)
@@ -84,7 +95,7 @@ class NewRun:
     stdin: str = ""
     files: Mapping[str, str] = field(default_factory=dict[str, str])
     bench: BenchRun | None = None
-    inputs: Mapping[str, bytes] = field(default_factory=dict[str, bytes])
+    inputs: Mapping[str, InputFile] = field(default_factory=dict[str, InputFile])
 
     def __post_init__(self) -> None:
         given = (self.conversation_id is not None, self.turn_id is not None, self.call_id is not None)

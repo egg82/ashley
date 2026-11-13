@@ -9,7 +9,7 @@ Work done outside her own turn: sandboxed script runs, bench jobs handed to work
 (gVisor's systrap platform, which needs no nested virtualisation, so virtual-machine nodes run it), and is
 recorded in Postgres before and after (`ashley.runs`, "Code runs" in `systems.md`).
 
-- **The pod can reach nothing and holds nothing.** The namespace denies all ingress and egress (no DNS either) and
+- **The pod can reach nothing and holds nothing** (but for a pod with binary inputs, below). The namespace denies all ingress and egress (no DNS either) and
   enforces Pod Security `restricted`; the pod mounts no token (`automountServiceAccountToken: false`, and the
   namespace's default ServiceAccount has none), uses no host namespace, gets no service links and no resolver, runs
   as nobody with no capabilities on a read-only root, with CPU and memory limits and two size-limited emptyDirs.
@@ -22,11 +22,25 @@ recorded in Postgres before and after (`ashley.runs`, "Code runs" in `systems.md
 - **The job goes in through the pod spec, the output comes out through the log.** The script, input and files are
   environment variables, one per value (Linux caps one at 128 KiB); the runner prints one marked JSON line, which
   is re-checked and cut to the limits, since the script can print that line too. The app needs only to create, read,
-  log and delete pods in that one namespace. Rejected: a ConfigMap or Secret per run, another object to grant and
+  log and delete pods in that one namespace. Binary inputs are the exception, below. Rejected: a ConfigMap or Secret per run, another object to grant and
   clean up. Rejected: `exec` or attach to stream output, a wider grant and a connection held for the run.
+- **A job's binary inputs are fetched by an init container, never sent in the spec.** A job carries references to
+  objects in the store (`InputFile`); the app signs one short-lived link for each (`ashley.files.links`, the key every
+  pod shares, ending with the pod's deadline) and an init container on the language's own image (`runs/fetcher.py`,
+  standard library) fetches them from the app, `SANDBOX_APP_URL`, into an emptyDir of the profile's `input_bytes`,
+  checking each file's size and digest (a mismatch or any failure fails the pod, reported `failed` with "an input could
+  not be fetched"). The run container mounts that volume read-only at `inputs/` and holds no link; the store's credentials
+  are never in a pod. A pod with inputs alone carries `ashley.yggdrasil.pub/run-inputs`, which the namespace's network
+  policy (the cluster repo) admits to egress to the app's address and port and nothing else; every other run pod still
+  reaches nothing. Pod networking is per pod, so the run container shares that route while such a pod lives: what its
+  script can reach is the app's port, whose routes need a session or a signed link it was never given. The pod has no resolver,
+  so `SANDBOX_APP_URL` is `http://<Service ClusterIP>:<port>`. Without it a run with inputs is `unavailable`. Podman reads the
+  same references from the store and mounts them. Rejected: sending the bytes in the pod spec (a 768 KiB ceiling).
+  Rejected: relabelling the pod once the fetch ends so the policy drops the route, which waits on the kubelet's label
+  propagation for seconds in a 30-second pod.
 - **A language is a profile of the one Sandbox.** Every language, Python included, is a `Profile` under `runs.json`'s
   `languages` with its own timeout, deadline, CPU, memory, working-directory size, log size, `artifact_bytes` (the
-  binary output it carries back) and `input_bytes` (the binary input it is given; Python carries none of either), read the same way by every caller (`RunsConfig.profile`); only
+  binary output it carries back) and `input_bytes` (the binary input it is given, 16 MiB for build123d; Python carries none of either), read the same way by every caller (`RunsConfig.profile`); only
   Python's carries its `image` in the file, since another language's is given at start. The top level keeps what a
   run shares whatever its language: namespace, RuntimeClass, the chars limits and file count (one reply shape) and
   the poll. Rejected: python as the top-level fields beside a `languages` map, two shapes for one idea.

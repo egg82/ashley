@@ -1,5 +1,6 @@
 """Process configuration, read once from the environment."""
 
+import ipaddress
 import os
 import re
 from collections.abc import Mapping
@@ -74,6 +75,9 @@ class Settings:
     `cad_image` (Python with build123d and `ashley_cad`, pinned by digest) is the image of the build123d language of the same
     sandbox, run in pods of the same namespace under the same rules; it needs the sandbox settings (ValueError) and wiring
     refuses an image not pinned by digest (ValueError). Unset, the sandbox runs Python only.
+    `sandbox_app_url` is the address a run's pod reaches the app at to fetch the binary inputs of a model run
+    (`ashley.runs.input_links`), `http://<IP address>:<port>` (a Service's ClusterIP: the pod has no resolver); it needs the
+    sandbox settings and the download-link key (ValueError). Unset, a run that has inputs is unavailable.
     `media_image` (Python with ffmpeg and the Wyoming client, pinned by digest) and `media_app_url` (where a pod in the sandbox
     namespace reaches the app) let her take frames of a video and transcribe a recording in pods of that namespace
     (`ashley.runs.media_kubernetes`); both or neither, and they need the sandbox settings and the download-link key
@@ -147,6 +151,7 @@ class Settings:
     sandbox_runtime_class: str = "gvisor"
     look_image: str = ""
     cad_image: str = ""
+    sandbox_app_url: str = ""
     look_app_url: str = ""
     look_warm_url: str = ""
     media_image: str = ""
@@ -220,6 +225,10 @@ class Settings:
             raise ValueError("LOOK_WARM_URL needs LOOK_IMAGE")
         if self.cad_image and not self.sandbox_token_file:
             raise ValueError("CAD_IMAGE needs SANDBOX_TOKEN_FILE")
+        if self.sandbox_app_url and not (self.sandbox_token_file and self.files_link_key):
+            raise ValueError("SANDBOX_APP_URL needs SANDBOX_TOKEN_FILE and FILES_LINK_KEY")
+        if self.sandbox_app_url and not _names_an_address(self.sandbox_app_url):
+            raise ValueError("SANDBOX_APP_URL must be http://<IP address>:<port>: a run's pod has no resolver")
         bridge = (self.mail_bridge_image, self.mail_bridge_namespace, self.mail_bridge_app_url, self.mail_bridge_keeper_url)
         if any(bridge) and not all(bridge):
             raise ValueError("MAIL_BRIDGE_IMAGE, MAIL_BRIDGE_NAMESPACE, MAIL_BRIDGE_APP_URL and MAIL_BRIDGE_KEEPER_URL "
@@ -234,6 +243,16 @@ class Settings:
             raise ValueError("MEDIA_IMAGE and MEDIA_APP_URL must be set together")
         if self.media_image and not (self.sandbox_token_file and (self.files_link_key or self.connections_key)):
             raise ValueError("MEDIA_IMAGE needs SANDBOX_TOKEN_FILE, and FILES_LINK_KEY or CONNECTIONS_KEY")
+
+
+def _names_an_address(url: str) -> bool:
+    """Whether `url` is `http://<IP address>:<port>` with no path."""
+    parts = urlsplit(url)
+    try:
+        ipaddress.ip_address(parts.hostname or "")
+        return parts.scheme == "http" and parts.port is not None and parts.path == ""
+    except ValueError:
+        return False
 
 
 def from_env(env: Mapping[str, str] = os.environ) -> Settings:
@@ -276,6 +295,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     media_app_url=env.get("MEDIA_APP_URL", "").strip().rstrip("/"),
                     look_image=env.get("LOOK_IMAGE", "").strip(), cad_image=env.get("CAD_IMAGE", "").strip(),
                     look_app_url=env.get("LOOK_APP_URL", "").strip().rstrip("/"),
+                    sandbox_app_url=env.get("SANDBOX_APP_URL", "").strip().rstrip("/"),
                     look_warm_url=env.get("LOOK_WARM_URL", "").strip().rstrip("/"),
                     mail_bridge_image=env.get("MAIL_BRIDGE_IMAGE", "").strip(),
                     mail_bridge_namespace=env.get("MAIL_BRIDGE_NAMESPACE", "").strip(),

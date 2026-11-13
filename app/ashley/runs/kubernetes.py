@@ -1,5 +1,6 @@
 """The Kubernetes sandbox: each job in a pod of its own in the sandbox namespace, under gVisor, with no network, no
-token and a deadline (`pod_spec.manifest`); its output read from the pod's log; the pod deleted however the run
+token and a deadline (`pod_spec.manifest`); a job's binary inputs are fetched by an init container from links the app signs
+(`input_links`), the one thing the pod may reach; its output read from the pod's log; the pod deleted however the run
 ends. Pods a stopped app pod left behind are deleted by the next run once they are past twice the longest pod deadline.
 Logs carry the pod's name, the outcome and durations, never the script or what it printed."""
 
@@ -12,7 +13,7 @@ from importlib import resources
 from typing import Any
 
 from .. import logs
-from . import envelope
+from . import envelope, input_links
 from .config import Profile, RunsConfig
 from .kube_api import KubeApi, KubeError
 from .loose import as_list, as_object
@@ -22,6 +23,7 @@ from .sandbox import Sandbox, SandboxUnavailable
 
 log = logging.getLogger("ashley.runs")
 RUNNER = resources.files("ashley.runs").joinpath("runner.py").read_text()
+FETCHER = resources.files("ashley.runs").joinpath("fetcher.py").read_text()
 UNKNOWN = Output("unknown", None, "", "")
 START_GRACE_S = 15
 """How long past the pod's deadline to keep asking whether it finished, for the kubelet to report it."""
@@ -30,7 +32,13 @@ START_GRACE_S = 15
 class KubernetesSandbox(Sandbox):
     def __init__(self, api: KubeApi, config: RunsConfig, namespace: str, runtime_class: str,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-                 clock: Callable[[], float] = time.monotonic) -> None:
+                 clock: Callable[[], float] = time.monotonic, app_url: str = "", link_key: bytes = b"",
+                 wall: Callable[[], float] = time.time) -> None:
+        """`app_url` is where a pod in the namespace reaches the app, no trailing slash, and `link_key` the key that signs
+        the links to a job's inputs; without both, a job with inputs is unavailable."""
+        self._app_url = app_url
+        self._link_key = link_key
+        self._wall = wall
         self._api = api
         self._config = config
         self._namespace = namespace
@@ -53,9 +61,14 @@ class KubernetesSandbox(Sandbox):
             logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", language=job.language,
                          error="language not run")
             raise SandboxUnavailable(f"{job.language} is not run")
+        if job.inputs and not (self._app_url and self._link_key):
+            logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", error="no address for inputs")
+            raise SandboxUnavailable("inputs cannot be fetched: no app address or link key")
         await self._sweep()
+        links = input_links.sign(job.inputs, self._app_url, self._link_key, int(self._wall()) + profile.pod_deadline_s)
         try:
-            await self._api.create_pod(self._namespace, manifest(job, self._config, RUNNER, self._runtime_class))
+            pod = manifest(job, self._config, RUNNER, self._runtime_class, FETCHER, links)
+            await self._api.create_pod(self._namespace, pod)
             output = await self._finished(job.name, started, profile)
         except KubeError as e:
             logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", error=str(e),
@@ -98,6 +111,9 @@ class KubernetesSandbox(Sandbox):
             return found
         if _get(pod, "status", "reason") == "DeadlineExceeded":
             return Output("timed_out", None, "", "")
+        fetch = as_list(_get(pod, "status", "initContainerStatuses")) or [{}]
+        if _get(fetch[0], "state", "terminated", "exitCode") not in (None, 0):
+            return Output("failed", None, "", "an input could not be fetched, so the script did not run")
         statuses = as_list(_get(pod, "status", "containerStatuses")) or [{}]
         first: object = statuses[0]
         if _get(first, "state", "terminated", "reason") == "OOMKilled":

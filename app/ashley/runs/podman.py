@@ -1,6 +1,7 @@
 """A sandbox on this machine: each job in a podman container of its own, from the pod `pod_spec.manifest` would make
 (the same image, environment, command and limits), with no network, a read-only root, no capabilities, user 65534 and
-the two size-limited scratch directories; its output read from the container's stdout as a pod's log is read. A
+the two size-limited scratch directories and the job's inputs, read from the object store into a directory mounted
+read-only at `/work/inputs`; its output read from the container's stdout as a pod's log is read. A
 container's name adds a random suffix to the job's, since two processes on one machine number their runs alike. For a
 process off the cluster (an eval run on a workstation, or `SANDBOX_PODMAN=trusted`); it has no gVisor, so it runs only code its caller trusts as
 much as its own. Logs `runs.sandbox` with the container's name, the outcome and duration_ms, never the script."""
@@ -8,12 +9,17 @@ much as its own. Logs `runs.sandbox` with the container's name, the outcome and 
 import asyncio
 import logging
 import os
+import tempfile
 import time
 import uuid
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from importlib import resources
+from pathlib import Path
 
-from .. import logs
+from .. import logs, services
+from ..files.intake import key_of
+from ..files.store import ObjectStore, StoreUnavailable
 from . import envelope
 from .config import Profile, RunsConfig
 from .model import Job, Language, Output
@@ -42,22 +48,27 @@ class PodmanSandbox(Sandbox):
         profile = self._config.profile(job.language)
         if profile is None:
             raise SandboxUnavailable(f"{job.language} is not run")
-        container = manifest(job, self._config, RUNNER, runtime_class="")["spec"]["containers"][0]
+        container = manifest(replace(job, inputs={}), self._config, RUNNER, runtime_class="")["spec"]["containers"][0]
         env = {str(e["name"]): str(e["value"]) for e in container["env"]}
         name = f"ashley-{job.name}-{uuid.uuid4().hex[:8]}"
-        output = await self._ran(name, self.arguments(name, profile, env, container["command"]), env, profile)
+        with tempfile.TemporaryDirectory(prefix="ashley-inputs-") as inputs:
+            await _fetch(job, Path(inputs))
+            output = await self._ran(name, self.arguments(name, profile, env, container["command"], Path(inputs) if job.inputs else None),
+                                     env, profile)
         logs.info(log, "runs.sandbox", pod=job.name, outcome=output.outcome, exit_code=output.exit_code,
                   duration_ms=int((time.monotonic() - started) * 1000))
         return output
 
-    def arguments(self, name: str, profile: Profile, env: Mapping[str, str], command: Sequence[str]) -> list[str]:
+    def arguments(self, name: str, profile: Profile, env: Mapping[str, str], command: Sequence[str],
+                  inputs: Path | None = None) -> list[str]:
         """The job's variables are named here and handed through podman's own environment: a file of them would hold
-        lines longer than podman reads."""
+        lines longer than podman reads. `inputs` is the directory mounted read-only as `/work/inputs`."""
         scratch = f"rw,size={profile.work_mib}m,mode=1777"
         return [self._podman, "run", "--rm", "--name", name, "--network", "none", "--read-only",
                 "--user", "65534:65534", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
                 "--memory", memory(profile.memory), "--cpus", cpus(profile.cpu), "--tmpfs", f"/work:{scratch}",
-                "--tmpfs", f"/out:{scratch}", "--workdir", "/work", *(a for n in env for a in ("--env", n)),
+                "--tmpfs", f"/out:{scratch}", *(["--volume", f"{inputs}:/work/inputs:ro"] if inputs else []),
+                "--workdir", "/work", *(a for n in env for a in ("--env", n)),
                 profile.image, *command]
 
     async def _ran(self, name: str, arguments: list[str], env: Mapping[str, str], profile: Profile) -> Output:
@@ -79,6 +90,24 @@ class PodmanSandbox(Sandbox):
         if found is not None:
             return found
         return Output("out_of_memory" if proc.returncode == KILLED else "failed", None, "", "")
+
+
+async def _fetch(job: Job, directory: Path) -> None:
+    """Write each of the job's inputs, from the object store, into `directory`, readable by the container's user.
+    Raises SandboxUnavailable for one the store does not give."""
+    directory.chmod(0o755)
+    store = services.get(ObjectStore)
+    for name, file in job.inputs.items():
+        try:
+            data = await store.get(key_of(file.household_id, file.sha256))
+        except StoreUnavailable as e:
+            raise SandboxUnavailable("an input could not be read from the store") from e
+        if data is None:
+            raise SandboxUnavailable("an input is not in the store")
+        if Path(name).name != name:
+            raise SandboxUnavailable("an input has no plain name")
+        (directory / name).write_bytes(data)
+        (directory / name).chmod(0o444)
 
 
 def host_environment() -> dict[str, str]:

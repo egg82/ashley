@@ -48,7 +48,8 @@ def wire_sandbox(settings: Settings, closers: list[Callable[[], Coroutine[Any, A
     if settings.cad_image:
         sandbox = sandbox.with_image("build123d", settings.cad_image)
     api = KubeApi(kube, settings.sandbox_token_file)
-    services.register(Sandbox, KubernetesSandbox(api, sandbox, settings.sandbox_namespace, settings.sandbox_runtime_class))
+    services.register(Sandbox, KubernetesSandbox(api, sandbox, settings.sandbox_namespace, settings.sandbox_runtime_class,
+                                                 app_url=settings.sandbox_app_url, link_key=settings.files_link_key.encode()))
     if settings.look_image:
         wire_looker(settings, api, closers)
     if settings.media_image:
