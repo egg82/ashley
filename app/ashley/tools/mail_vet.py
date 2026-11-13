@@ -14,7 +14,7 @@ from collections.abc import Sequence
 
 from .. import logs
 from ..mail.mailbox import Mailbox
-from ..mail.model import Account, Draft, MailFailed, MailQuery
+from ..mail.model import Account, Draft, MailFailed, MailQuery, Target
 from .action_judge import Vetting, View
 
 log = logging.getLogger("ashley.tools")
@@ -51,6 +51,20 @@ async def _sent_before(mailbox: Mailbox, account: Account, address: str) -> bool
     except MailFailed:
         return False
     return any(address in h.to.casefold() for h in page.items)
+
+
+JUNK_MOVES = ("spam", "trash")
+
+
+async def not_junk(mailbox: Mailbox, account: Account, targets: Sequence[Target]) -> Vetting | None:
+    """`not_junk` as the reason unless the provider itself marks every target as spam or promotions (`Mailbox.junk`); None
+    when it does, so the judge is asked as for any other judged change. A provider that cannot answer asks too."""
+    try:
+        marked = await mailbox.junk(account, tuple(targets))
+    except MailFailed:
+        marked = False
+    logs.info(log, "outside.junk", targets=len(targets), marked=marked)
+    return None if marked else Vetting(ask="not_junk")
 
 
 def vetting(draft: Draft, sender: str, strange: Sequence[str]) -> Vetting:

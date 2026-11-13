@@ -61,6 +61,22 @@ def change(session: Imap, targets: tuple[Target, ...], what: MailChange, config:
     return len(wanted)
 
 
+def in_spam(session: Imap, targets: tuple[Target, ...], config: MailConfig) -> bool:
+    """Whether every target sits in Bridge's `Spam` folder, which Proton's own filter fills. Bridge offers no
+    promotions mark over IMAP. A target that is not found, or not the message shown, is not."""
+    names = session.folders()
+    wanted = list({t.id: t for t in targets}.values())
+    if not wanted:
+        return False
+    try:
+        found = [located(session, names, t.id, config) for t in wanted]
+    except MailFailed as e:
+        if e.reason == "not_found":
+            return False
+        raise
+    return all(f.folder == "spam" and _is_shown(f, t) for f, t in zip(found, wanted, strict=True))
+
+
 def _folders(named: tuple[str, ...], names: tuple[str, ...]) -> list[str]:
     """Bridge's folder for each label name, once each. Raises MailFailed `not_found` for one that is none of the
     mailbox's labels."""

@@ -18,9 +18,10 @@ Decision = Literal["run", "ask"]
 ModelReason = Literal["asked_directly", "follows_from_request", "follows_from_brief", "not_asked", "target_not_in_request",
                       "exceeds_request", "data_leaves_household", "undoes_safety", "unclear"]
 """The reasons the judge itself gives."""
-Reason = Literal[ModelReason, "no_judge", "judge_unavailable", "recipient_unknown", "no_words"]
+Reason = Literal[ModelReason, "no_judge", "judge_unavailable", "recipient_unknown", "no_words", "not_junk"]
 """A `ModelReason`, or one code gives when no judge answered: none wired, none reachable, a recipient that is no one the
-household knows, or no words of the person's to judge by."""
+household knows, no words of the person's to judge by, or a move to spam or trash of a message the provider does not
+mark as spam or promotions."""
 UNJUDGED = "I couldn't check this one, so it waits for your OK"
 
 

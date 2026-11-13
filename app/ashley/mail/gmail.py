@@ -28,6 +28,8 @@ from .targets import shown
 _READ_SCOPES = frozenset({"gmail.readonly", "gmail.modify"})
 _CHANGE_SCOPES = frozenset({"gmail.modify"})
 _ID_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+_JUNK = frozenset({"SPAM", "CATEGORY_PROMOTIONS"})
+"""The labels Gmail itself puts on a message it filed as spam or as promotions."""
 _FOLDER_LABELS = {"INBOX": "inbox", "SENT": "sent", "DRAFT": "drafts", "SPAM": "spam", "TRASH": "trash"}
 
 
@@ -115,6 +117,20 @@ class GmailMailbox(Mailbox):
                                   {"ids": [t.id for t in wanted], "addLabelIds": add, "removeLabelIds": remove}, Empty)
             return len(wanted), len(wanted)
         return await self._timed("change", account, work)
+
+    async def junk(self, account: Account, targets: tuple[Target, ...]) -> bool:
+        async def work(token: str) -> tuple[bool, int]:
+            wanted = list({t.id: t for t in targets}.values())
+            if not wanted or not all(_valid_id(t.id, self._config) for t in wanted):
+                return False, 0
+            found = await asyncio.gather(*(self._found(token, t.id) for t in wanted), return_exceptions=True)
+            failed = next((e for e in found if isinstance(e, MailFailed) and e.reason != "not_found"), None)
+            if failed is not None:
+                raise failed
+            marked = all(isinstance(f, MessageShape) and _is_shown(f, t) and not _JUNK.isdisjoint(f.labelIds)
+                         for f, t in zip(found, wanted, strict=True))
+            return marked, len(wanted)
+        return await self._timed("junk", account, work)
 
     async def _composed(self, token: str, draft: Draft) -> dict[str, str]:
         """The `raw` (and `threadId`) Gmail takes for `draft`, threaded under the message it answers."""

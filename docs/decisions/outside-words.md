@@ -140,6 +140,11 @@ action, and the risk that it misreads those words is accepted. Code branches onl
   judged change and reads the exact request the provider is sent.
 - **A `mail_send` recipient** must be a household mailbox's address, one this mailbox sent to before (a sent-folder search
   of the port), or an address in the person's words; otherwise the call is asked as `recipient_unknown`, with no judge call.
+- **A mail move to spam or trash** reaches the judge only when the provider itself marks every target as spam or
+  promotions (`Mailbox.junk`, read by the adapter, never from the message's words); otherwise it is asked as `not_junk`,
+  with no judge call. Gmail's mark is the `SPAM` or `CATEGORY_PROMOTIONS` label. Proton, over Bridge's IMAP, offers no
+  promotions mark, so its mark is the message sitting in `Spam`. An adapter that reads no mark, a message it cannot find
+  and a failed read all mean not marked. A move to the archive is judged as before.
 - **The verdict is saved through `Steps`** (`Checkpoint.judged`, by call id) before the call runs, and a resumed runner
   reads it back; so does a verdict of `ask`.
 - **The explanation** is stored with a held call (`HeldCall.explanation`) and in `outside_actions`, shown with the call in

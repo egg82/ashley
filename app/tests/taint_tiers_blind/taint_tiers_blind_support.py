@@ -87,7 +87,7 @@ OUTSIDE_RETENTION_DAYS = 90
 PLANT = "PLANTED-outside-text-7f3a"
 REASONS = {"asked_directly", "follows_from_request", "follows_from_brief", "not_asked", "target_not_in_request",
            "exceeds_request", "data_leaves_household", "undoes_safety", "unclear", "no_judge", "judge_unavailable",
-           "recipient_unknown", "no_words"}
+           "recipient_unknown", "no_words", "not_junk"}
 
 
 async def said() -> Sequence[str]:

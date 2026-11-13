@@ -69,4 +69,6 @@ async def _reached(call: ToolCall, spec: ToolSpec | None, source: Tools, words: 
 
 def _said(reason: Reason, config: OutsideConfig) -> str:
     """What the person is told when code, not the judge, asks."""
-    return config.unknown_recipient if reason == "recipient_unknown" else action_judge.UNJUDGED
+    if reason == "recipient_unknown":
+        return config.unknown_recipient
+    return config.not_junk if reason == "not_junk" else action_judge.UNJUDGED

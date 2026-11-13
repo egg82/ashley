@@ -82,6 +82,11 @@ class ImapMailbox(Mailbox):
             return done, done
         return await self._imap("change", account, work)
 
+    async def junk(self, account: Account, targets: tuple[Target, ...]) -> bool:
+        def work(session: Imap) -> tuple[bool, int]:
+            return imap_writes.in_spam(session, targets, self._config), len(targets)
+        return await self._imap("junk", account, work)
+
     def _send(self, login: Login, draft: Draft) -> str:
         """Build the message, looking up the one it answers over IMAP when it answers one, and hand it to SMTP."""
         session = Imap.open(login, self._config.timeout_s) if draft.reply_to else None
