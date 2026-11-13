@@ -1,10 +1,9 @@
-"""Helpers for the lease contract tests: raw etcd access to observe and perturb state, a switchable network fault,
-a probe that counts concurrent bodies, and logfmt parsing."""
+"""Helpers for the lease contract tests: raw etcd access to observe and perturb state, the same calls on the fake
+etcd (`FakeStand`), a probe that counts concurrent bodies, and logfmt parsing."""
 
 import asyncio
 import base64
 import re
-import time
 import uuid
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
@@ -12,9 +11,11 @@ from typing import Any
 
 import httpx2
 from ashley.referee.active_site import ActiveSite
-from ashley.referee.etcd_lease import PREFIX
+import virtual_time
+from ashley.referee.etcd_lease import PREFIX, EtcdLease
 from ashley.referee.lease import Body
 from etcd import etcd_url
+from etcd_fake import FakeEtcd, Link
 
 FIELD = re.compile(r'(\w+)=("(?:[^"\\]|\\.)*"|\S*)')
 
@@ -79,40 +80,6 @@ def revoke(lease_id: str) -> None:
     _post("/v3/lease/revoke", {"ID": lease_id})
 
 
-class Switch(httpx2.AsyncBaseTransport):
-    """The real transport until `down` is set, then every request fails to connect."""
-
-    def __init__(self) -> None:
-        self.down = False
-        self._inner = httpx2.AsyncHTTPTransport()
-
-    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
-        if self.down:
-            raise httpx2.ConnectError("switched off", request=request)
-        return await self._inner.handle_async_request(request)
-
-    async def aclose(self) -> None:
-        await self._inner.aclose()
-
-
-class SlowTxn(httpx2.AsyncBaseTransport):
-    """Forwards everything, but once `slow` is set a transaction's response reaches the client 0.8 s after etcd has
-    already applied it: the window in which a lease is taken and its holder does not yet know."""
-
-    def __init__(self) -> None:
-        self.slow = False
-        self._inner = httpx2.AsyncHTTPTransport()
-
-    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
-        response = await self._inner.handle_async_request(request)
-        if self.slow and request.url.path.endswith("/kv/txn"):
-            await asyncio.sleep(0.8)
-        return response
-
-    async def aclose(self) -> None:
-        await self._inner.aclose()
-
-
 class Arena:
     """Every body in a scenario reports here, so overlap across holders is counted at the moment it happens."""
 
@@ -143,7 +110,7 @@ class Arena:
             except asyncio.CancelledError:
                 if self.on_cancel is not None:
                     self.on_cancel()
-                self.cancels.append((tag, time.monotonic()))
+                self.cancels.append((tag, asyncio.get_running_loop().time()))
                 raise
             finally:
                 self.running -= 1
@@ -165,9 +132,11 @@ async def campaign(lease: Any, name: str, body: Body) -> AsyncGenerator[asyncio.
 
 
 async def wait_until(predicate: Callable[[], object], timeout: float = 8.0) -> None:
-    deadline = time.monotonic() + timeout
+    """Poll until `predicate` holds, failing after `timeout` seconds of the loop's clock."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
     while not predicate():
-        assert time.monotonic() < deadline, "timed out waiting"
+        assert loop.time() < deadline, "timed out waiting"
         await asyncio.sleep(0.02)
 
 
@@ -176,6 +145,53 @@ def run(scenario: Awaitable[None], limit: float = 25.0) -> None:
         await asyncio.wait_for(scenario, limit)
 
     asyncio.run(bounded())
+
+
+class FakeStand:
+    """The fake etcd through the calls the real one is reached by above, its scenarios run on the virtual clock."""
+
+    run = staticmethod(virtual_time.run)
+
+    def __init__(self) -> None:
+        self.etcd = FakeEtcd()
+
+    def lease(self, site: ActiveSite, ttl: int, holder: str, link: Link | None = None) -> EtcdLease:
+        return EtcdLease("", site, ttl=ttl, holder=holder, connect=self.etcd.connect(link))
+
+    def here(self) -> ActiveSite:
+        self.etcd.put(LEADER, "here")
+        return ActiveSite("here", LEADER)
+
+    def put(self, key: str, value: str) -> None:
+        self.etcd.put(key, value)
+
+    def holder_of(self, name: str) -> str | None:
+        return self.etcd.value(PREFIX + name)
+
+    def lease_id_of(self, name: str) -> str | None:
+        lease_id = self.etcd.lease_of(PREFIX + name)
+        return None if lease_id is None else str(lease_id)
+
+    def revoke(self, lease_id: str) -> None:
+        self.etcd.revoke(int(lease_id))
+
+
+class RealStand:
+    """The real etcd through the same calls as `FakeStand`, for a test run against both."""
+
+    run = staticmethod(run)
+
+    def __init__(self) -> None:
+        self.url = etcd_url()
+
+    def lease(self, site: ActiveSite, ttl: int, holder: str) -> EtcdLease:
+        return EtcdLease(self.url, site, ttl=ttl, holder=holder)
+
+    here = staticmethod(here)
+    put = staticmethod(put)
+    holder_of = staticmethod(holder_of)
+    lease_id_of = staticmethod(lease_id_of)
+    revoke = staticmethod(revoke)
 
 
 def events(out: str, event: str, name: str | None = None) -> list[dict[str, str]]:

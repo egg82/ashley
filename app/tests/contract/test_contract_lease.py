@@ -1,4 +1,5 @@
-"""Lease contract: mutual exclusion, handover, release, the Null Object and the wiring."""
+"""Lease contract: mutual exclusion, handover, release, the Null Object and the wiring. The tests on `FakeStand` run on
+the fake etcd and the virtual clock; the rest against the real etcd."""
 
 import asyncio
 from contextlib import AsyncExitStack
@@ -12,33 +13,33 @@ from ashley.referee.postgres_lease import PostgresLease
 from ashley.settings import Settings
 from ashley.wiring import wire
 from etcd import etcd_url
-from lease_support import Arena, campaign, events, here, holder_of, put, run, unique_name, wait_until
+from lease_support import Arena, FakeStand, campaign, events, here, holder_of, put, run, unique_name, wait_until
 
 
 def test_exactly_one_of_three_holders_runs_the_body() -> None:
-    url, name, arena = etcd_url(), unique_name(), Arena()
+    etcd, name, arena = FakeStand(), unique_name(), Arena()
 
     async def scenario() -> None:
         async with AsyncExitStack() as stack:
             tasks: dict[str, asyncio.Task[None]] = {}
             for i in range(3):
-                lease = EtcdLease(url, here(), ttl=2, holder=f"h{i}")
+                lease = etcd.lease(etcd.here(), ttl=2, holder=f"h{i}")
                 tasks[f"h{i}"] = await stack.enter_async_context(campaign(lease, name, arena.body(f"h{i}")))
             await wait_until(lambda: arena.starts)
             for _ in range(40):
                 await asyncio.sleep(0.05)
                 assert arena.running == 1
             winner = arena.starts[0]
-            assert holder_of(name) == winner
+            assert etcd.holder_of(name) == winner
             standbys = [t for tag, t in tasks.items() if tag != winner]
             for t in standbys:
                 t.cancel()
             await asyncio.wait(standbys)
         assert len(arena.starts) == 1
         assert arena.max_running == 1
-        assert holder_of(name) is None
+        assert etcd.holder_of(name) is None
 
-    run(scenario())
+    etcd.run(scenario())
 
 
 def test_distinct_names_do_not_exclude_each_other() -> None:
@@ -72,23 +73,24 @@ def test_cancelling_run_cancels_the_body_and_frees_the_key_at_once() -> None:
 
 
 def test_the_standby_takes_over_promptly_when_the_holder_is_cancelled() -> None:
-    url, name, arena = etcd_url(), unique_name(), Arena()
+    """ttl=10 on the fake's clock: were the key left to expire, the standby could not start within the 6 s allowed."""
+    etcd, name, arena = FakeStand(), unique_name(), Arena()
 
     async def scenario() -> None:
         async with AsyncExitStack() as stack:
-            a = await stack.enter_async_context(campaign(EtcdLease(url, here(), ttl=10, holder="a"), name, arena.body("a")))
+            a = await stack.enter_async_context(campaign(etcd.lease(etcd.here(), 10, "a"), name, arena.body("a")))
             await wait_until(lambda: arena.starts)
-            await stack.enter_async_context(campaign(EtcdLease(url, here(), ttl=10, holder="b"), name, arena.body("b")))
+            await stack.enter_async_context(campaign(etcd.lease(etcd.here(), 10, "b"), name, arena.body("b")))
             await asyncio.sleep(0.5)
             assert arena.starts == ["a"]
             a.cancel()
             await asyncio.wait({a})
-            assert holder_of(name) != "a"
+            assert etcd.holder_of(name) != "a"
             await wait_until(lambda: arena.starts == ["a", "b"], timeout=6)
             assert arena.max_running == 1
-            assert holder_of(name) == "b"
+            assert etcd.holder_of(name) == "b"
 
-    run(scenario())
+    etcd.run(scenario())
 
 
 def test_a_waiting_run_that_is_cancelled_never_takes_the_key() -> None:

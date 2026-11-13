@@ -1,5 +1,5 @@
-"""EtcdHold contract against a real etcd: one key per test, set/replace/release, expiry with the lease, and an
-unreachable etcd (held reads as True, everything else raises)."""
+"""EtcdHold contract against a real etcd: one key per test, set/replace/release, expiry with the lease (on the fake
+etcd and the virtual clock), and an unreachable etcd (held reads as True, everything else raises)."""
 
 import asyncio
 import base64
@@ -7,9 +7,11 @@ from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 
 import pytest
+import virtual_time
 from ashley.referee.etcd_gateway import EtcdUnavailable
 from ashley.referee.hold import EtcdHold, Hold
 from etcd import etcd_url
+from etcd_fake import FakeEtcd
 from lease_support import delete, kv_at, revoke, run, unique_name
 
 DEAD = "http://127.0.0.1:1"
@@ -174,19 +176,23 @@ def test_the_hold_goes_when_its_lease_is_revoked(key: str) -> None:
     run(after())
 
 
-def test_a_short_hold_expires_on_its_own(key: str) -> None:
-    hold = EtcdHold(etcd_url(), key=key)
+def test_a_short_hold_expires_on_its_own() -> None:
+    """On the fake etcd and the virtual clock."""
+    etcd, key = FakeEtcd(), "/ashley-test/hold/short"
+    hold = EtcdHold("", key=key, connect=etcd.connect())
 
     async def scenario() -> None:
+        loop = asyncio.get_running_loop()
         await hold.set(timedelta(seconds=1))
-        deadline = now() + timedelta(seconds=20)
+        assert await hold.held() is True
+        deadline = loop.time() + 20
         while await hold.held():
-            assert now() < deadline, "a one-second hold never expired"
+            assert loop.time() < deadline, "a one-second hold never expired"
             await asyncio.sleep(0.2)
         assert await hold.until() is None
-        assert kv_at(key) is None
+        assert etcd.value(key) is None
 
-    run(scenario(), limit=40)
+    virtual_time.run(scenario())
 
 
 def test_an_unreachable_etcd_reads_as_held() -> None:
