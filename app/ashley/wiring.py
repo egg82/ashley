@@ -19,6 +19,7 @@ from .channels import outbox, resume
 from .channels.outbox import Outbox
 from .channels.postgres_outbox import PostgresOutbox
 from .channels.push import config as push_config
+from .channels.watch_reads import ChannelToolReads
 from .channels.spend_report import SpendReport
 from .channels.spend_view import SpendView
 from .channels.push.postgres_subscriptions import PostgresSubscriptions
@@ -129,6 +130,7 @@ from .mail.routed import RoutedMailbox
 from .mail.resources import mailboxes
 from .herdr.register import register as register_herdr
 from .watches.register import register as register_watches
+from .watches.tool_reads import ToolReads
 from .codehost import config as codehost_config
 from .codehost.github import GitHubHost
 from .codehost.gitlab import GitLabHost
@@ -281,6 +283,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Screens, PostgresScreens(services.get(Database)))
     register_errands(services.get(Database))
     register_watches(services.get(Database))
+    services.register(ToolReads, ChannelToolReads())
     if push_config.checked(settings) is not None:
         services.register(Subscriptions, PostgresSubscriptions(services.get(Database)))
     if settings.oidc_issuer:

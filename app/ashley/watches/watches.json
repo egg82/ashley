@@ -61,6 +61,16 @@
       "track": ["from", "subject", "unread", "labels"],
       "when": [[{"kind": "new", "negate": false}]],
       "handoff_until": [[{"kind": "gone", "negate": false}]]
+    },
+    "tool": {
+      "interval_s": 300,
+      "hours": 24,
+      "max_hours": 168,
+      "handoff_hours": 24,
+      "outside": true,
+      "track": ["hash"],
+      "when": [[{"kind": "gone", "negate": false}], [{"kind": "gone", "negate": true}]],
+      "handoff_until": [[{"kind": "gone", "negate": false}]]
     }
   }
 }
