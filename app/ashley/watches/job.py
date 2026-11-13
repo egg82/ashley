@@ -31,9 +31,19 @@ Group = tuple[str, int, int]
 
 async def run(config: WatchesConfig = CONFIG, kinds: Registry = KINDS,
               sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
-    """Tick every `tick_s` until cancelled."""
+    """Tick every `tick_s`, or sooner when a kind's `hold` nudges, until cancelled; each kind's `hold` runs alongside."""
+    nudged = asyncio.Event()
+    async with asyncio.TaskGroup() as held:
+        for kind in kinds.all():
+            held.create_task(kind.hold(nudged.set))
+        await _ticks(config, kinds, sleep, nudged)
+
+
+async def _ticks(config: WatchesConfig, kinds: Registry, sleep: Callable[[float], Awaitable[None]],
+                 nudged: asyncio.Event) -> None:
     failing = False
     while True:
+        nudged.clear()
         try:
             await tick(config, kinds)
         except WatchesUnavailable:
@@ -42,7 +52,22 @@ async def run(config: WatchesConfig = CONFIG, kinds: Registry = KINDS,
             failing = True
         else:
             failing = False
-        await sleep(config.tick_s)
+        await _pause(sleep, config.tick_s, nudged)
+
+
+async def _pause(sleep: Callable[[float], Awaitable[None]], seconds: float, nudged: asyncio.Event) -> None:
+    """`sleep(seconds)`, cut short by a nudge; what `sleep` raises is raised."""
+    if nudged.is_set():
+        return
+    napping, nudge = asyncio.ensure_future(sleep(seconds)), asyncio.ensure_future(nudged.wait())
+    try:
+        await asyncio.wait((napping, nudge), return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        nudge.cancel()
+        if not napping.done():
+            napping.cancel()
+    if napping.done() and not nudge.done():
+        await napping
 
 
 async def tick(config: WatchesConfig = CONFIG, kinds: Registry = KINDS) -> Counter[str]:

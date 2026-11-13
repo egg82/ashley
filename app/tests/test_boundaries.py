@@ -52,7 +52,7 @@ ALLOWED: dict[str, set[str]] = {
     "persona": {"conversations", "inference", "memory", "people", "stamp"},
     "referee": {"logs", "services", "settings"},
     "criteria": set[str](),
-    "watches": {"connections", "criteria", "db", "errands", "herdr", "logs", "mail", "services", "text"},
+    "watches": {"connections", "criteria", "db", "errands", "herdr", "home_assistant", "logs", "mail", "services", "text"},
     "ledger": {"services"},
     "senses": {"conversations", "criteria", "db", "home_assistant", "ledger", "logs", "people", "services"},
     "services": {"logs"},

@@ -71,6 +71,16 @@
       "track": ["hash"],
       "when": [[{"kind": "gone", "negate": false}], [{"kind": "gone", "negate": true}]],
       "handoff_until": [[{"kind": "gone", "negate": false}]]
+    },
+    "ha_entity": {
+      "interval_s": 1,
+      "hours": 24,
+      "max_hours": 168,
+      "handoff_hours": 24,
+      "outside": false,
+      "track": ["state"],
+      "when": [[{"kind": "changed", "negate": false, "field": "state"}]],
+      "handoff_until": [[{"kind": "gone", "negate": false}]]
     }
   }
 }

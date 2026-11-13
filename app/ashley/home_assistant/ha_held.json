@@ -1,0 +1,6 @@
+{
+  "backoff_s": 1,
+  "max_backoff_s": 300,
+  "idle_s": 900,
+  "ping_s": 30
+}

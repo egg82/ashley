@@ -2,7 +2,7 @@
 holds each kind's defaults. A name no kind has gets the Null kind, so a stale row pauses instead of breaking the tick."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from ..criteria.record import Change
 from .config import CONFIG
@@ -50,6 +50,12 @@ class Kind(ABC):
         """What a person calls the watch's target; the target itself when the kind cannot say."""
         return watch.target
 
+    async def hold(self, nudge: Callable[[], None]) -> None:
+        """Run by the job for as long as it runs, so only under its lease: a kind told of changes by its source, not
+        polling it, holds its connections here and calls `nudge` when a read may now return something new, which checks
+        the due watches at once. Returns at once for a kind that polls. Never raises but CancelledError."""
+        return None
+
 
 class NullKind(Kind):
     """The kind of a name nothing implements: every read fails `unknown_kind`."""
@@ -68,3 +74,6 @@ class Registry:
 
     def get(self, name: str) -> Kind:
         return self._kinds.get(name, NullKind())
+
+    def all(self) -> tuple[Kind, ...]:
+        return tuple(self._kinds.values())
