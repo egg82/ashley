@@ -62,6 +62,7 @@ from .connections.address_in_force import AddressInForce
 from .inference.compatible import KIND as COMPATIBLE
 from .inference.wyoming_kind import KIND as WYOMING
 from .channels.discord.token_kind import KIND as DISCORD
+from .channels.voice.key_kind import KIND as SATELLITE_KEY
 from .inference.kinds import KEYED
 from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
@@ -160,7 +161,7 @@ from .workshop.workshop import Workshop
 
 CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
                                                 replace(GOOGLE, resources=mailboxes),
-                                                *(k.kind for k in KEYED), COMPATIBLE, WYOMING, SEARXNG, DISCORD, FILES)  # the panel's order
+                                                *(k.kind for k in KEYED), COMPATIBLE, WYOMING, SEARXNG, DISCORD, FILES, SATELLITE_KEY)  # the panel's order
 
 
 def configured_kinds(settings: Settings) -> tuple[ConnectionKind, ...]:

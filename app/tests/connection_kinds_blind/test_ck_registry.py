@@ -16,6 +16,7 @@ from ashley.mail.resources import mailboxes
 from ashley.sure.kind import SURE
 from ashley.channels.discord.token_kind import KIND as DISCORD
 from ashley.files.store_kind import KIND as FILES
+from ashley.channels.voice.key_kind import KIND as ESPHOME
 from ashley.inference.wyoming_kind import KIND as WYOMING
 from ashley.tools.search_connection import KIND as SEARXNG
 from ashley.wiring import CONNECTION_KINDS
@@ -38,11 +39,11 @@ def custom(name: str, personal: bool = False, fixed: str | None = None) -> Conne
 
 def test_the_four_services_and_the_herdr_bridge_are_the_registered_kinds() -> None:
     assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google", *PROVIDERS,
-                                                                    "openai_compatible", "wyoming", "searxng", "discord", "files"))
+                                                                    "openai_compatible", "wyoming", "searxng", "discord", "files", "esphome"))
     assert {k.name: k for k in CONNECTION_KINDS} == {"sure": SURE, "home_assistant": HOME_ASSISTANT, "gitlab": GITLAB,
                                                      "github": GITHUB, "herdr": HERDR, "google": replace(GOOGLE, resources=mailboxes),
                                                      **{k.kind.name: k.kind for k in KEYED}, COMPATIBLE.name: COMPATIBLE,
-                                                     WYOMING.name: WYOMING, SEARXNG.name: SEARXNG, DISCORD.name: DISCORD, FILES.name: FILES}
+                                                     WYOMING.name: WYOMING, SEARXNG.name: SEARXNG, DISCORD.name: DISCORD, FILES.name: FILES, ESPHOME.name: ESPHOME}
 
 
 @pytest.mark.parametrize(("name", "personal", "field"), [
@@ -62,7 +63,7 @@ def test_every_kind_has_words_for_a_person_and_a_refusal_text_for_each_reason(na
 
 
 def test_only_github_has_one_address() -> None:
-    assert {k.name for k in CONNECTION_KINDS if k.fixed_address is not None} == {"github", "google", "discord", *PROVIDERS}
+    assert {k.name for k in CONNECTION_KINDS if k.fixed_address is not None} == {"github", "google", "discord", "esphome", *PROVIDERS}
     assert GITHUB.fixed_address is not None and GITHUB.fixed_address.startswith("https://")
 
 

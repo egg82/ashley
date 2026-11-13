@@ -58,7 +58,7 @@ ENV: dict[str, tuple[str, str]] = {
     "WYOMING_STT_URL": (S, "the first household's Wyoming speech-to-text connection; the row wins"),
     "SEARXNG_URL": (S, "the first household's SearXNG connection; the row wins"),
     "DISCORD_BOT_TOKEN": (S, "the first household's Discord connection; the row wins"),
-    "ESPHOME_NOISE_PSK": (D, "the household's own devices' key"),
+    "ESPHOME_NOISE_PSK": (S, "the first household's satellites connection; the row wins"),
     "FILES_ENDPOINTS": (S, "the first household's file storage connection; the row wins"),
     "FILES_BUCKET": (S, "the first household's file storage connection; the row wins"),
     "FILES_ACCESS_KEY": (S, "the first household's file storage connection; the row wins"),
@@ -95,7 +95,7 @@ SEEDS: dict[str, str] = {
     "ELEVENLABS_API_KEY": "elevenlabs", "HA_URL": "home_assistant", "HA_TOKEN": "home_assistant",
     "LOCAL_LLM_URL": "openai_compatible", "LOCAL_LLM_API_KEY": "openai_compatible",
     "WYOMING_STT_URL": "wyoming", "SEARXNG_URL": "searxng",
-    "DISCORD_BOT_TOKEN": "discord",
+    "DISCORD_BOT_TOKEN": "discord", "ESPHOME_NOISE_PSK": "esphome",
     "FILES_ENDPOINTS": "files", "FILES_BUCKET": "files", "FILES_ACCESS_KEY": "files", "FILES_SECRET_KEY": "files",
 }
 """The connection kind each seed names; it must be a kind the app registers."""
@@ -111,7 +111,6 @@ ROOT_SECRETS: dict[str, str] = {
 person or a household is a connection, never an entry here."""
 
 TO_MOVE: set[str] = {
-    "ESPHOME_NOISE_PSK",
     "FILES_LINK_KEY", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY",
 }
 """Names that fail the rule today: debt, not approval. Each must be named in backticks in `docs/open-work.md`, and

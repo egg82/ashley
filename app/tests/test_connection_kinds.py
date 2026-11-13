@@ -12,7 +12,7 @@ pytestmark = pytest.mark.usefixtures("connection_kinds_wired")
 
 def test_the_adapters_declare_their_kinds_in_panel_order() -> None:
     assert [k.name for k in CONNECTION_KINDS] == ["home_assistant", "sure", "gitlab", "github", "herdr", "google",
-                                                  "anthropic", "openai", "gemini", "elevenlabs", "openai_compatible", "wyoming", "searxng", "discord", "files"]
+                                                  "anthropic", "openai", "gemini", "elevenlabs", "openai_compatible", "wyoming", "searxng", "discord", "files", "esphome"]
     assert [k.default_holder == "person" for k in CONNECTION_KINDS] == [False, False, True, True, True, True,
                                                                         False, False, False, False, False, False, False, False, False]
 

@@ -219,6 +219,12 @@ subscription, the read the Usage room already makes), and the router opens the p
   file, look, media and printables tools ask before they are offered; the sweep and repair start with any real store
   and idle under their lease while none is held. Rejected: a connection per endpoint, which would make a person keep one bucket's keys in
   step across rows and leave "this site's first" to row order.
+- **Her satellites' key is a connection** (`ashley.channels.voice.key_kind`, a `voice` kind): the Noise key a household's
+  ESPHome devices share, held by the household at a fixed placeholder address and checked by its shape alone, since
+  nothing answers for it. Household settings (`connection_settings`) are lists of ids on an existing connection and hold
+  no secret, so the key is sealed like any credential. `ESPHOME_NOISE_PSK` seeds the first household's row at each pod's
+  start (`ashley.channels.voice.key_seed`), never over a row; a satellite is reached with its own household's key, and the
+  env's answers for the first household alone (`ashley.channels.voice.key_in_force`).
 - Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
   Connections already has.
 - Rejected: one `inference_provider` kind with the provider named in the label or address. The provider would then be
