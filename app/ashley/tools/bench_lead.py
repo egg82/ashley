@@ -15,7 +15,7 @@ def lead(adds: int) -> str:
         "house gives, or a site or video piece put up by its result number, one specific page or video and never a "
         "search page; when no result is the thing itself, put none up. A draft that is code is one of the pieces; "
         "run it. Anything else that would help, say in a line and let the person say yes. Decide what can be decided: "
-        "make the reasonable choices yourself and state each in a line. Ask only about a choice that is genuinely the "
-        "person's (a preference, a trade-off with no right answer), at most one or two, once the draft is on the "
+        "make the reasonable choices yourself and record each choice as a choice row, guessed, with its options. Ask "
+        "only about a choice that is genuinely the person's (a preference, a trade-off with no right answer), at most one or two, once the draft is on the "
         "bench. If the bench's title is only the start of what they asked (bench_read shows it), give it a short name "
         "with bench_rename in this first turn.")
