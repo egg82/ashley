@@ -13,6 +13,7 @@ HELD: frozenset[str] = frozenset({
     # real etcd lease TTLs and partitions
     "tests/contract/test_contract_lease_faults.py::test_a_partitioned_holder_leaves_its_body_time_to_clean_up_before_etcd_frees_the_key",
     "tests/contract/test_contract_lease_faults.py::test_a_partitioned_holder_stops_its_body_before_etcd_frees_the_key",
+    "tests/contract/test_contract_lease_faults.py::test_a_revoked_lease_cancels_the_body_logs_the_loss_and_campaigns_again",
     "tests/contract/test_contract_lease_faults.py::test_a_run_cancelled_just_after_etcd_granted_it_the_key_leaves_no_key_behind",
     "tests/contract/test_contract_lease_faults.py::test_etcd_unreachable_is_logged_once_per_streak_and_carries_no_address",
     "tests/contract/test_contract_lease_faults.py::test_waiting_on_another_holder_is_logged_once_not_once_per_retry",
