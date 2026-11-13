@@ -18,7 +18,7 @@ class PostgresClips(Clips):
         self._database = database
         self._retention_s = retention_s
 
-    async def add(self, device_id: int, body: str, since_wake_ms: int) -> NewClip:
+    async def add(self, device_id: int, body: str, since_wake_ms: int, line: str | None = None) -> NewClip:
         token = secrets.token_urlsafe(32)
         try:
             async with self._database.connection() as conn:
@@ -27,10 +27,10 @@ class PostgresClips(Clips):
                     (self._retention_s,),
                 )
                 cur = await conn.execute(
-                    "INSERT INTO voice_clips (token_sha256, household_id, device_id, body, woke_at) "
-                    "SELECT %s, household_id, id, %s, clock_timestamp() - make_interval(secs => %s) FROM devices "
+                    "INSERT INTO voice_clips (token_sha256, household_id, device_id, body, line, woke_at) "
+                    "SELECT %s, household_id, id, %s, %s, clock_timestamp() - make_interval(secs => %s) FROM devices "
                     "WHERE id = %s RETURNING id",
-                    (_sha256(token), body, since_wake_ms / 1000, device_id),
+                    (_sha256(token), body, line, since_wake_ms / 1000, device_id),
                 )
                 row = await cur.fetchone()
         except (DatabaseUnavailable, psycopg.Error) as e:
@@ -43,11 +43,11 @@ class PostgresClips(Clips):
             async with self._database.connection() as conn:
                 cur = await conn.execute(
                     "SELECT id, device_id, body, "
-                    "(extract(epoch FROM clock_timestamp() - woke_at) * 1000)::bigint FROM voice_clips "
+                    "(extract(epoch FROM clock_timestamp() - woke_at) * 1000)::bigint, line FROM voice_clips "
                     "WHERE token_sha256 = %s AND created_at >= clock_timestamp() - make_interval(secs => %s)",
                     (_sha256(token), self._retention_s),
                 )
                 row = await cur.fetchone()
         except (DatabaseUnavailable, psycopg.Error) as e:
             raise ClipsUnavailable("database unreachable") from e
-        return None if row is None else Clip(row[0], row[1], row[2], row[3])
+        return None if row is None else Clip(row[0], row[1], row[2], row[3], row[4])

@@ -109,6 +109,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/voice/clips/{token}/line": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Voice Clip Line
+         * @description 200 `ClipLine`; 404 `not_found` for a token that names no clip, an expired one, or one no screen shows (a
+         *     satellite's); 503 `unavailable` when the clip could not be read.
+         */
+        get: operations["get_voice_clip_line"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/turns/{turn_id}/voice": {
         parameters: {
             query?: never;
@@ -2631,6 +2652,14 @@ export interface components {
             base_version: number;
         };
         /**
+         * ClipLine
+         * @description The line a screen shows while her voice for the clip plays: plain text, as she wrote it.
+         */
+        ClipLine: {
+            /** Line */
+            line: string;
+        };
+        /**
          * CommandApplied
          * @description The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece), null for a
          *     change of the bench itself (an undo of a rename).
@@ -3570,6 +3599,22 @@ export interface components {
             takes_controls: boolean;
         };
         /**
+         * LiveAnnounce
+         * @description She announced something to this screen (on a person's, they are away; on the hallway tablet, someone is home):
+         *     a page in the foreground plays her voice from `GET /api/voice/clips/{clip}` and shows the line
+         *     `GET /api/voice/clips/{clip}/line` gives. `clip` is the clip's token, its only credential, fetchable for a short
+         *     while; nothing is kept for a screen that did not hear it.
+         */
+        LiveAnnounce: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "announce";
+            /** Clip */
+            clip: string;
+        };
+        /**
          * LiveBench
          * @description Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back. `by` is
          *     who made the command (null when no one did): a page not showing the bench says she is working there when it is
@@ -3615,7 +3660,7 @@ export interface components {
          * LiveEvent
          * @description One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`.
          */
-        LiveEvent: components["schemas"]["LiveState"] | components["schemas"]["LiveTurn"] | components["schemas"]["LiveFailed"] | components["schemas"]["LiveBench"] | components["schemas"]["LiveCue"] | components["schemas"]["LivePage"] | components["schemas"]["LiveScreen"] | components["schemas"]["LiveResync"];
+        LiveEvent: components["schemas"]["LiveState"] | components["schemas"]["LiveTurn"] | components["schemas"]["LiveFailed"] | components["schemas"]["LiveBench"] | components["schemas"]["LiveCue"] | components["schemas"]["LivePage"] | components["schemas"]["LiveScreen"] | components["schemas"]["LiveAnnounce"] | components["schemas"]["LiveResync"];
         /**
          * LiveFailed
          * @description A turn on `thread`, one of this person's own, ended with no reply after its request had returned pending (an
@@ -5982,6 +6027,47 @@ export interface operations {
                 content: {
                     "audio/mpeg": unknown;
                     "audio/wav": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_voice_clip_line: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The token in the URL her run sent the device */
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipLine"];
                 };
             };
             /** @description Not Found */

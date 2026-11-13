@@ -21,11 +21,13 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from .. import logs, services
 from ..live import live as live_config
-from ..live.events import BenchChanged, BenchCued, Event, HerState, PageMoved, ScreenChanged, TurnFailed, Viewer, Watcher
+from ..live.events import (Announced, BenchChanged, BenchCued, Event, HerState, PageMoved, ScreenChanged, TurnFailed, Viewer,
+                           Watcher)
 from ..live.fanout import Resync, Subscription
 from ..live.live import Live, LiveUnavailable
 from ..live.screens import Screens, ScreensUnavailable
-from .live_models import LiveBench, LiveCue, LiveEvent, LiveFailed, LivePage, LiveResync, LiveScreen, LiveState, LiveTurn
+from .live_models import (LiveAnnounce, LiveBench, LiveCue, LiveEvent, LiveFailed, LivePage, LiveResync, LiveScreen, LiveState,
+                          LiveTurn)
 from .models import ErrorResponse
 from .person import Person
 
@@ -114,4 +116,6 @@ def wire(got: Event | Resync) -> LiveEvent:
         return LiveEvent(LivePage(type="page", room=got.room, bench_id=got.bench_id))
     if isinstance(got, TurnFailed):
         return LiveEvent(LiveFailed(type="failed", thread=got.thread, why=got.why))
+    if isinstance(got, Announced):
+        return LiveEvent(LiveAnnounce(type="announce", clip=got.clip))
     return LiveEvent(LiveTurn(type="turn", thread=got.thread))

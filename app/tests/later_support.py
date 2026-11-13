@@ -52,16 +52,19 @@ def waiting(thread: str, body: str, conversation_id: int = 41, medium: str = "sp
 
 
 class FakeClips(Clips):
-    """Records each `add` as (device_id, body, since_wake_ms) and answers token `tok-<n>`; `error` fails them all."""
+    """Records each `add` as (device_id, body, since_wake_ms), and its line in `lines`, and answers token `tok-<n>`;
+    `error` fails them all."""
 
     def __init__(self) -> None:
         self.added: list[tuple[int, str, int]] = []
+        self.lines: list[str | None] = []
         self.error: ClipsUnavailable | None = None
 
-    async def add(self, device_id: int, body: str, since_wake_ms: int) -> NewClip:
+    async def add(self, device_id: int, body: str, since_wake_ms: int, line: str | None = None) -> NewClip:
         if self.error is not None:
             raise self.error
         self.added.append((device_id, body, since_wake_ms))
+        self.lines.append(line)
         return NewClip(len(self.added), f"tok-{len(self.added)}")
 
     async def get(self, token: str) -> None:

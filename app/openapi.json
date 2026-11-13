@@ -251,6 +251,56 @@
         ]
       }
     },
+    "/api/voice/clips/{token}/line": {
+      "get": {
+        "summary": "Get Voice Clip Line",
+        "description": "200 `ClipLine`; 404 `not_found` for a token that names no clip, an expired one, or one no screen shows (a\nsatellite's); 503 `unavailable` when the clip could not be read.",
+        "operationId": "get_voice_clip_line",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipLine"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The token in the URL her run sent the device"
+          }
+        ]
+      }
+    },
     "/api/chat/turns/{turn_id}/voice": {
       "get": {
         "summary": "Chat Turn Voice",
@@ -8810,6 +8860,20 @@
         "title": "ClearHighlightRequest",
         "description": "Take the highlight off reader piece `piece_id`, as it is at `base_version` (a `Point` with no passage). Refused\n`not_reader` for any other piece and `stale_base` when it has changed since."
       },
+      "ClipLine": {
+        "properties": {
+          "line": {
+            "type": "string",
+            "title": "Line"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line"
+        ],
+        "title": "ClipLine",
+        "description": "The line a screen shows while her voice for the clip plays: plain text, as she wrote it."
+      },
       "CommandApplied": {
         "properties": {
           "seq": {
@@ -10890,6 +10954,26 @@
         "title": "ListedDevice",
         "description": "One of the household's devices. `form` is what it is wired to, not what it is called: a voice `satellite`, a\nhousehold's `discord_server`, the household's Home Assistant (`household`, which hands in wakes), or `other` (the hallway\ntablet is one). `audience` is who hears or reads what it\nsays and `medium` how it reaches them. `takes_controls` is whether it is a screen that shows touch controls, so the\ncontrols editor belongs on it; clients never work it out from `form` or `medium`. Never a token, host or server id."
       },
+      "LiveAnnounce": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "announce",
+            "title": "Type"
+          },
+          "clip": {
+            "type": "string",
+            "title": "Clip"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "clip"
+        ],
+        "title": "LiveAnnounce",
+        "description": "She announced something to this screen (on a person's, they are away; on the hallway tablet, someone is home):\na page in the foreground plays her voice from `GET /api/voice/clips/{clip}` and shows the line\n`GET /api/voice/clips/{clip}/line` gives. `clip` is the clip's token, its only credential, fetchable for a short\nwhile; nothing is kept for a screen that did not hear it."
+      },
       "LiveBench": {
         "properties": {
           "type": {
@@ -11002,6 +11086,9 @@
             "$ref": "#/components/schemas/LiveScreen"
           },
           {
+            "$ref": "#/components/schemas/LiveAnnounce"
+          },
+          {
             "$ref": "#/components/schemas/LiveResync"
           }
         ],
@@ -11010,6 +11097,7 @@
         "discriminator": {
           "propertyName": "type",
           "mapping": {
+            "announce": "#/components/schemas/LiveAnnounce",
             "bench": "#/components/schemas/LiveBench",
             "cue": "#/components/schemas/LiveCue",
             "failed": "#/components/schemas/LiveFailed",

@@ -37,13 +37,13 @@ async def opened(url: str) -> tuple[PoolDatabase, PostgresClips]:
     return database, PostgresClips(database, RETENTION_S)
 
 
-def add(url: str, device_id: int, body: str, since_wake_ms: int = 1500) -> NewClip:
+def add(url: str, device_id: int, body: str, since_wake_ms: int = 1500, line: str | None = None) -> NewClip:
     made: list[NewClip] = []
 
     async def scenario() -> None:
         database, clips = await opened(url)
         try:
-            made.append(await clips.add(device_id, body, since_wake_ms))
+            made.append(await clips.add(device_id, body, since_wake_ms, line))
         finally:
             await database.close()
 
@@ -83,6 +83,14 @@ def test_a_stored_clip_is_fetched_by_its_token_which_is_kept_only_as_its_hash(db
     assert scalar(db_url, "SELECT household_id FROM voice_clips WHERE id = %s", (made.id,)) == \
         satellite.device.household_id
     assert get(db_url, made.token[:-1]) is None and get(db_url, "") is None
+    assert got.line is None
+
+
+def test_a_clip_announced_on_a_screen_keeps_its_line_beside_its_body(db_url: str) -> None:
+    device = satellite_row(db_url, household(db_url)).device.id
+    made = add(db_url, device, "Ash Lee is here.", line="Ashley is here.")
+    got = get(db_url, made.token)
+    assert got is not None and (got.body, got.line) == ("Ash Lee is here.", "Ashley is here.")
 
 
 def test_a_write_sweeps_clips_past_the_retention_and_keeps_the_rest(db_url: str) -> None:
@@ -122,7 +130,7 @@ class OneClip(Clips):
     def __init__(self, clip: Clip | None = None, down: bool = False) -> None:
         self.clip, self.down, self.asked = clip, down, list[str]()
 
-    async def add(self, device_id: int, body: str, since_wake_ms: int) -> NewClip:
+    async def add(self, device_id: int, body: str, since_wake_ms: int, line: str | None = None) -> NewClip:
         raise AssertionError("not used")
 
     async def get(self, token: str) -> Clip | None:
@@ -175,6 +183,23 @@ def test_the_route_answers_404_and_503_with_the_error_body(clips: OneClip, audio
     assert r.status_code == status
     assert ErrorResponse.model_validate(r.json()).code == code
     assert clips.asked == ["tok-en_1"]
+
+
+@pytest.mark.parametrize(("clips", "status", "body"), [
+    (OneClip(Clip(7, 3, "Ash Lee is here.", 0, "Ashley is here.")), 200, {"line": "Ashley is here."}),
+    (OneClip(Clip(7, 3, "a satellite's", 0)), 404, None),
+    (OneClip(None), 404, None),
+    (OneClip(down=True), 503, None),
+])
+def test_the_line_route_gives_a_screens_line_and_nothing_for_a_satellites_clip(
+        clips: OneClip, status: int, body: dict[str, str] | None) -> None:
+    services.register(Clips, clips)
+    r = client().get("/api/voice/clips/tok-en_1/line")
+    assert r.status_code == status and clips.asked == ["tok-en_1"]
+    if body is None:
+        assert ErrorResponse.model_validate(r.json()).code == ("unavailable" if status == 503 else "not_found")
+    else:
+        assert r.json() == body
 
 
 def test_any_token_shape_is_404_never_a_validation_error() -> None:

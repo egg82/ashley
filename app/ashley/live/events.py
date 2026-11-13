@@ -158,7 +158,21 @@ class ScreenChanged:
             raise ValueError("a screen's change is shown to the whole household")
 
 
-Event = HerState | ThreadTurn | TurnFailed | BenchChanged | BenchCued | PageMoved | ScreenChanged
+@dataclass(frozen=True)
+class Announced:
+    """She announced something to this screen: it plays the clip `clip` names and shows its line
+    (`ashley.channels.voice.clips.Clips`). `clip` is the clip's token, its only credential, short-lived and never
+    logged, which is why the event goes to one person's screens or one device's alone, never the household's."""
+
+    shown: Shown
+    clip: str
+
+    def __post_init__(self) -> None:
+        if self.shown.person_id is None and self.shown.device_id is None:
+            raise ValueError("an announcement is shown to one person or one device")
+
+
+Event = HerState | ThreadTurn | TurnFailed | BenchChanged | BenchCued | PageMoved | ScreenChanged | Announced
 Watcher = Viewer | DeviceViewer
 
 
@@ -201,6 +215,8 @@ def encode(event: Event) -> str:
         return json.dumps({**base, "type": "page", "room": event.room, "bench_id": event.bench_id})
     if isinstance(event, TurnFailed):
         return json.dumps({**base, "type": "failed", "thread": event.thread, "why": event.why})
+    if isinstance(event, Announced):
+        return json.dumps({**base, "type": "announce", "clip": event.clip})
     return json.dumps({**base, "type": "turn", "thread": event.thread})
 
 
@@ -224,6 +240,8 @@ def decode(payload: str) -> Event | None:
                              None if raw["seconds"] is None else float(raw["seconds"]))
         if raw["type"] == "screen":
             return ScreenChanged(shown, int(raw["screen"]), int(raw["seq"]))
+        if raw["type"] == "announce":
+            return Announced(shown, str(raw["clip"]))
         if raw["type"] == "page" and raw["room"] in get_args(PageRoom):
             return PageMoved(shown, raw["room"], None if raw["bench_id"] is None else int(raw["bench_id"]))
     except (ValueError, KeyError, TypeError):
