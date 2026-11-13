@@ -178,6 +178,13 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
 - **The wake word opens a conversation; she keeps the mic open within it.** After she speaks, or when she opens
   a conversation herself, the satellite listens for the reply with no wake word, then closes on silence. Flowing
   conversation without a constant stream.
+- **A wake may be overheard, so her reply may decline or offer.** The voice adapter marks each wake's turn
+  `Inbound.overhears`, which offers her `Reply.says` `offer` (one short question whether they want her to do what she
+  heard) and `none`, told in `# Now`, and code honours them there alone (`ashley.channels.unprompted.says`). On
+  `none` nothing is played, no clip is stored, the conversation is not continued (so a false wake records one
+  utterance and no more), and the turn is stored as her staying quiet, as a woken turn's is. `voice.run` logs `says`;
+  how often `none` is chosen on real wakes decides whether bare "Ashley" can wake her. `says` is the one field for
+  every channel (a woken turn's silence too); a person's turn on any other channel is said whatever it holds.
 - **Rejected: always-on listening.** Every room's audio streamed to two clusters is a privacy and bandwidth cost
   the household didn't ask for.
 - **A tablet on HA Assist can stay a satellite while her own pipeline runs beside it** on an Atom Echo; the hallway
