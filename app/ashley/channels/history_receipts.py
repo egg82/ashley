@@ -12,12 +12,14 @@ _STATUS = {"ran": _CONFIG.agreed_ran, "failed": _CONFIG.agreed_failed, "not_run"
 
 def line(receipts: Receipts) -> str:
     """The marked line for `receipts`: each change that ran by its headline, then each call waiting for the person's OK
-    by its headline and code's summary of it."""
+    by its headline and code's summary of it, then each choice row shown by its label and value."""
     parts: list[str] = []
     if receipts.done:
         parts.append(_CONFIG.history_done.format(items="; ".join(r.headline for r in receipts.done)))
     if receipts.held:
         parts.append(_CONFIG.history_held.format(items="; ".join(_held(r) for r in receipts.held)))
+    if receipts.facts:
+        parts.append(_CONFIG.history_facts.format(items="; ".join(f"{f.label}: {f.value}" for f in receipts.facts)))
     return _CONFIG.history_line.format(receipts="  ".join(parts))
 
 

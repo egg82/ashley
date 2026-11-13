@@ -46,10 +46,11 @@ def receipt_push(receipts: Receipts | None, inbound: Inbound, phone: int | None,
                  conversation_id: int, silent: bool = False) -> Pushed | None:
     """The receipts alone, queued for the phone of `phone` (`to_phone.reachable`), when the turn is on a spoken channel,
     which says none of them, or `silent`: she was woken and kept it to herself, so no reply carries them: an `Outbound`
-    with no body. None when there are none or the receipts go out with her reply; and
+    with no body. None when there are none (the choice rows of `Receipts.facts` are the bench page's alone) or the
+    receipts go out with her reply; and
     when the speaker has no phone to reach it is logged `receipts.unshown` (conversation, medium, done, held) and the
     stored turn is where they are kept."""
-    if receipts is None or not (inbound.medium == "spoken" or (silent and inbound.unprompted)):
+    if receipts is None or not (receipts.done or receipts.held) or not (inbound.medium == "spoken" or (silent and inbound.unprompted)):
         return None
     if phone is None:
         logs.info(log, "receipts.unshown", conversation=conversation_id, medium=inbound.medium, done=len(receipts.done),

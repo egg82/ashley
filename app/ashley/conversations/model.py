@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-from ..receipts import AgreedCall, AgreedOutcome, Receipt, Receipts
+from ..receipts import AgreedCall, AgreedOutcome, Fact, Receipt, Receipts
 
-__all__ = ["AgreedCall", "AgreedOutcome", "Receipt", "Receipts"]
+__all__ = ["AgreedCall", "AgreedOutcome", "Fact", "Receipt", "Receipts"]
 
 Kind = Literal["command", "chat", "brainstorm"]
 """Set in code by whoever opens the conversation; it decides length, model and channels downstream."""

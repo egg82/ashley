@@ -10,7 +10,7 @@ from collections.abc import Mapping
 import httpx2
 
 from ashley.tools import look_up_config
-from ashley.tools.bench_now import OPEN_HEAD, now, open_rows
+from ashley.tools.bench_now import OPEN_HEAD, OUTSIDE_HEAD, now, open_rows
 from ashley.tools.pages import Pages
 from ashley.tools.results import Results
 from ashley.tools.web_search import WebSearchTools
@@ -61,6 +61,17 @@ def test_rows_written_after_outside_words_are_not_listed_and_none_says_nothing()
     assert open_rows(tainted, RULES) == [] and OPEN_HEAD not in now(tainted, RULES, 40)
     settled = view(piece(2, "measurements", rows(HEADCOUNT)))
     assert OPEN_HEAD not in now(settled, RULES, 40)
+
+
+def test_a_piece_written_after_outside_words_gets_an_ids_only_line_with_its_count_of_unconfirmed_rows() -> None:
+    form = {"kind": "choice", "name": "turkey_brand", "label": "Turkey Marker XYZ", "value": "Kirkland", "source": "guessed"}
+    tainted = view(piece(1, "measurements", rows(HEADCOUNT)), piece(2, "measurements", rows(HEADCOUNT, TURKEY, PIES, form),
+                                                                    outside=True),
+                   piece(3, "measurements", rows(HEADCOUNT), outside=True))
+    text = now(tainted, RULES, 40)
+    assert text.endswith(f'{OUTSIDE_HEAD}\n{{"piece": 2, "unconfirmed": 3}}')
+    assert "Kirkland" not in text and "Turkey Marker XYZ" not in text and "turkey_breast" not in text
+    assert OUTSIDE_HEAD not in now(view(piece(2, "measurements", rows(TURKEY))), RULES, 40)
 
 
 def test_a_read_page_with_a_recipe_gives_the_recipe_first() -> None:

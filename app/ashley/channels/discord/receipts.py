@@ -13,8 +13,9 @@ LIMIT = 2000
 def receipt_lines(receipts: Receipts | None, config: Config) -> str | None:
     """The message for `receipts`: a line for each change that ran, then each call waiting with its summary in full, and
     last a line saying to answer yes to go ahead when any waits. Every line begins `-# `. None when there are no
-    receipts. Cut, with its last line kept whole, to fit one Discord message."""
-    if receipts is None:
+    receipts, or none but the bench page's choice rows (`Receipts.facts`). Cut, with its last line kept whole, to fit one
+    Discord message."""
+    if receipts is None or not (receipts.done or receipts.held):
         return None
     lines = [*(_line(_WORDS.done_label, r, None) for r in receipts.done),
              *(_line(_WORDS.held_label, r, r.detail) for r in receipts.held)]

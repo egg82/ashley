@@ -29,30 +29,57 @@ class Receipt:
 
 
 @dataclass(frozen=True)
+class Fact:
+    """A choice row of a bench's measurements piece shown to the person beside her reply, once for its name and value
+    (`ashley.workshop.commands.Surfaced`): `bench_id`, `piece_id`, the row's `name`, and its `label`, `value` and
+    `options` as they were (`options` empty when it has none); a tap on an option sets the row."""
+
+    bench_id: int
+    piece_id: int
+    name: str
+    label: str
+    value: str
+    options: tuple[str, ...] = ()
+
+    def to_json(self) -> dict[str, object]:
+        return {"bench_id": self.bench_id, "piece_id": self.piece_id, "name": self.name, "label": self.label,
+                "value": self.value, "options": list(self.options)}
+
+    @staticmethod
+    def from_json(raw: Mapping[str, Any]) -> "Fact":
+        """The inverse of `to_json`. Raises KeyError for a missing key."""
+        return Fact(int(raw["bench_id"]), int(raw["piece_id"]), str(raw["name"]), str(raw["label"]), str(raw["value"]),
+                    tuple(str(o) for o in raw["options"]))
+
+
+@dataclass(frozen=True)
 class Receipts:
-    """What code shows beside a tainted turn's answer, kept with her turn and never part of her words: `done` the
-    changes the action judge let run, `held` the calls waiting for the person's OK, in the order made. At least one is
-    non-empty; `proposal_id` is the held proposal, set exactly when `held` is non-empty. Raises ValueError otherwise."""
+    """What code shows beside her answer, kept with her turn and never part of her words: after a tainted turn, `done`
+    the changes the action judge let run and `held` the calls waiting for the person's OK, in the order made; on a
+    bench, `facts`, the choice rows shown to the person this turn. At least one is non-empty; `proposal_id` is the held
+    proposal, set exactly when `held` is non-empty. Raises ValueError otherwise."""
 
     done: tuple[Receipt, ...] = ()
     held: tuple[Receipt, ...] = ()
     proposal_id: int | None = None
+    facts: tuple[Fact, ...] = ()
 
     def __post_init__(self) -> None:
-        if not self.done and not self.held:
+        if not self.done and not self.held and not self.facts:
             raise ValueError("receipts show something")
         if bool(self.held) != (self.proposal_id is not None):
             raise ValueError("a proposal is named exactly when something is held")
 
     def to_json(self) -> dict[str, object]:
         return {"done": [r.to_json() for r in self.done], "held": [r.to_json() for r in self.held],
-                "proposal_id": self.proposal_id}
+                "proposal_id": self.proposal_id, "facts": [f.to_json() for f in self.facts]}
 
     @staticmethod
     def from_json(raw: Mapping[str, Any]) -> "Receipts":
-        """The inverse of `to_json`. Raises KeyError for a missing key, ValueError for receipts that show nothing."""
+        """The inverse of `to_json`; receipts stored before `facts` read with none. Raises KeyError for a missing key,
+        ValueError for receipts that show nothing."""
         return Receipts(tuple(Receipt.from_json(r) for r in raw["done"]), tuple(Receipt.from_json(r) for r in raw["held"]),
-                        raw["proposal_id"])
+                        raw["proposal_id"], tuple(Fact.from_json(f) for f in raw.get("facts", ())))
 
 
 @dataclass(frozen=True)
