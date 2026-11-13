@@ -39,9 +39,9 @@ open('/opt/ashley/models/voiceprint/nemo_en_titanet_small.onnx', 'wb').write(dat
  && chmod -R a+rX /opt/ashley/models
 COPY ashley ./ashley
 # The model catalogue's first layer (`ashley.inference.catalogue_snapshot`): models.dev's list as it is at build, so a
-# new deployment prices calls before its first fetch. A list that cannot be fetched or read fails the build.
+# new deployment prices calls before its first fetch. A list that cannot be fetched leaves no snapshot.
 RUN python -m ashley.inference.catalogue_snapshot /opt/ashley/catalogue/models.json \
- && chmod -R a+rX /opt/ashley/catalogue
+ && mkdir -p /opt/ashley/catalogue && chmod -R a+rX /opt/ashley/catalogue
 COPY --from=client /built ./build
 # The commit this image is built from (CI passes it); /api/health reports it.
 ARG BUILD_VERSION=dev

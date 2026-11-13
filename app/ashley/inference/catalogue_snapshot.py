@@ -1,7 +1,8 @@
 """The catalogue's first layer: models.dev's list as it was when the image was built, so a new deployment prices calls
 before its first fetch. The image build runs `python -m ashley.inference.catalogue_snapshot <path>`, which fetches the
 list (`catalogue_config`'s url, a few tries), reads it as the refresh would and writes it with the time it was taken;
-a list that cannot be fetched or read fails the build. The running app reads it from `SNAPSHOT`."""
+when it cannot be fetched or read, no snapshot is written and the build goes on, so models.dev being down never blocks
+a release. The running app reads it from `SNAPSHOT`."""
 
 import asyncio
 import json
@@ -57,7 +58,9 @@ async def main(out: Path) -> int:
             print(f"catalogue snapshot: providers={len(read.catalogue.providers)} "
                   f"models={read.catalogue.model_count()} skipped={read.skipped}")
             return 0
-    return 1
+    print("catalogue snapshot: none written; the image prices from the stored fetch until its first refresh",
+          file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":
