@@ -8,6 +8,7 @@ window of."""
 
 import time
 from collections.abc import Iterable
+from dataclasses import replace
 
 from .. import services
 from ..people.units import metric_of
@@ -28,7 +29,7 @@ from ..files.store import StoreUnavailable
 from . import bench_config, bench_file_text, bench_lead, bench_now, bench_page, bench_results, bench_view
 from .tainted import her
 from .bench_args import (COMMAND_TOOLS, BadArguments, check_names, command_of, offset_of, piece_id_of,
-                         quote_of, replacement_of)
+                         quote_of, replacement_of, seq_of, whole_turn_of)
 from .bench_citations import Citations, PeopleTurns
 from .bench_config import BenchToolsConfig
 from .bench_reference import References, Refused, Said
@@ -48,7 +49,8 @@ _OWN = _READS + ("bench_replace", "bench_point")
 class BenchTools(Tools):
     def __init__(self, household_id: int, person_id: int, bench_id: int, rules: Rules = RULES,
                  config: BenchToolsConfig = CONFIG, lead: bool = False, results: Results | None = None,
-                 said: Said | None = None, turns: PeopleTurns | None = None) -> None:
+                 said: Said | None = None, turns: PeopleTurns | None = None, turn_id: int | None = None) -> None:
+        self._turn_id = turn_id   # the person's turn this is built for, logged with each change she makes
         self._lead = lead
         self._added = 0   # pieces she added this turn, counted only on a fresh arrival
         self._owner = Owner(household_id, person_id)
@@ -98,6 +100,8 @@ class BenchTools(Tools):
                 return await self._replace(call, started)
             if call.name == "bench_point":
                 return await self._point(call, started)
+            if call.name == "bench_undo" and whole_turn_of(call.arguments):
+                return await self._undo_turn(call, started)
             return await self._command(call, started)
         except BadArguments as e:
             return bench_results.failed(call, started, "bad_arguments", str(e), bench=self._bench)
@@ -216,12 +220,23 @@ class BenchTools(Tools):
     async def _apply(self, call: ToolCall, started: float, command: Command, whole: bool = True) -> ToolResult:
         """Apply `command`; `whole` is whether what it wrote was a whole body she composed, to edit again as such."""
         kind = type_of(command)
+        command = replace(command, by=replace(command.by, turn=self._turn_id))
         applied = await services.get(Workshop).apply(self._owner, self._bench, command)
         if applied.outcome != "accepted":
             return bench_results.failed(call, started, applied.outcome, bench_results.HINTS[applied.outcome],
                                         bench=self._bench, command=kind, seq=applied.seq)
         return bench_results.ok(call, started, self._wrote(command, applied, whole), bench=self._bench, command=kind,
                                 seq=applied.seq, piece=applied.piece_id)
+
+    async def _undo_turn(self, call: ToolCall, started: float) -> ToolResult:
+        done = await services.get(Workshop).undo_turn(self._owner, self._bench, replace(her(), turn=self._turn_id),
+                                                      seq_of(call.arguments))
+        if done.refused:
+            named = "; ".join(f"seq {s} {r}: {bench_results.HINTS[r]}" for s, r in done.refused)
+            return bench_results.failed(call, started, done.refused[0][1], f"nothing was undone: {named}",
+                                        bench=self._bench, command="undo", refused=len(done.refused))
+        return bench_results.ok(call, started, {"undone": list(done.undone)}, bench=self._bench, command="undo",
+                                undone=len(done.undone))
 
     def _wrote(self, command: Command, applied: Applied, whole: bool) -> dict[str, object]:
         """What her accepted command left, for the model; what she wrote herself she has seen whole."""

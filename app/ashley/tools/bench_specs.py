@@ -139,8 +139,10 @@ def specs(rules: Rules) -> tuple[ToolSpec, ...]:
                  "with its id, kind, title and version.", _object({}, ()), reads=True, outside=True),
         ToolSpec("bench_restore", "Bring a piece back from the shelf, last on the bench at the size it had.",
                  _object({"piece_id": _INT}, ("piece_id",)), outside=False, tier="runs"),
-        ToolSpec("bench_undo", "Undo the change with this seq (yours or theirs); `undo_next` in bench_read is the next-older change not yet undone. An undo cannot be undone.",
-                 _object({"seq": _INT}, ("seq",)), outside=False, tier="runs"),
+        ToolSpec("bench_undo", "Undo the change with this seq (yours or theirs); `undo_next` in bench_read is the next-older change not yet undone. An undo cannot be undone. "
+                 "With `whole_turn` true, undo every change you made in the turn that made that seq, together: if any of them "
+                 "cannot be undone (it changed since), none is, and each refusal is named.",
+                 _object({"seq": _INT, "whole_turn": {"type": "boolean"}}, ("seq",)), outside=False, tier="runs"),
         ToolSpec("bench_rename", "Give this bench its name: a few words for what it is for, as you would label a folder. "
                  "The bench's title is the person's list of what they are working on.",
                  _object({"title": _STR}, ("title",)), outside=False, tier="runs"),

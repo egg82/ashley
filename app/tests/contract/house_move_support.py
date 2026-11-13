@@ -63,6 +63,9 @@ class Benches(Workshop):
     async def apply(self, owner: Owner, bench_id: int, command: Any) -> Any:
         raise NotImplementedError
 
+    async def undo_turn(self, owner: Owner, bench_id: int, by: Any, seq: int) -> Any:
+        raise NotImplementedError
+
     async def log(self, owner: Owner, bench_id: int) -> Any:
         raise NotImplementedError
 

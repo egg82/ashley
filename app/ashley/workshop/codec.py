@@ -14,8 +14,10 @@ Json = dict[str, Any]
 
 
 def encode_command(command: Command) -> Json:
-    """The command as JSON; the runner's carries `runner`, since `decide` judges a `by_code` kind by it."""
-    return {**_encode(command), **({"runner": True} if command.by.runner else {})}
+    """The command as JSON; the runner's carries `runner`, since `decide` judges a `by_code` kind by it, and a change made in a turn
+    carries `turn`."""
+    return {**_encode(command), **({"runner": True} if command.by.runner else {}),
+            **({"turn": command.by.turn} if command.by.turn is not None else {})}
 
 
 def _encode(command: Command) -> Json:
@@ -47,7 +49,9 @@ def _encode(command: Command) -> Json:
 
 
 def decode_command(raw: Json, by: By) -> Command:
-    return _decode(raw, replace(by, runner=True) if raw.get("runner") is True else by)
+    turn = raw.get("turn")
+    by = replace(by, runner=True) if raw.get("runner") is True else by
+    return _decode(raw, by if not isinstance(turn, int) else replace(by, turn=turn))
 
 
 def _decode(raw: Json, by: By) -> Command:

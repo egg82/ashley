@@ -133,6 +133,16 @@ class Applied:
 
 
 @dataclass(frozen=True)
+class TurnUndone:
+    """What `undo_turn` decided, all or nothing: `undone` the `seq`s of the turn's commands now taken back, newest first
+    (empty when anything was refused), and `refused` each command that could not be undone with its reason. Nothing to
+    undo is one refusal, of the `seq` asked, `nothing_to_undo`."""
+
+    undone: tuple[int, ...]
+    refused: tuple[tuple[int, Reason], ...]
+
+
+@dataclass(frozen=True)
 class Placed:
     """A piece's body where it stands: on bench `bench_id` of `owner_id`, at `version`."""
 
@@ -211,6 +221,15 @@ class Workshop(Service):
         with the bench id, seq, command type, piece id, kind, author (`person` or `ashley`) and outcome."""
 
     @abstractmethod
+    async def undo_turn(self, owner: Owner, bench_id: int, by: By, seq: int) -> TurnUndone:
+        """Undo together the accepted commands of the turn that made command `seq` (those with the same `By.turn`), newest
+        first, each by an Undo `by` made as `apply` would make it, each judged by the ordinary undo rules (`changed_since`
+        and the rest), in one transaction: if any is refused none is undone and nothing is logged, and every refusal is
+        returned. A command with no turn, a Run and the like, an Undo and a command already undone are not part of
+        the group; an empty group is `nothing_to_undo`. After it commits, publishes `BenchChanged`. Raises what `apply`
+        raises."""
+
+    @abstractmethod
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:
         """Every command of bench `bench_id`, in `seq` order from 1: replayed from empty through `decide` with the
         service's rules, it reproduces `read`'s pieces and shelf and each row's outcome. Raises BenchNotFound;
@@ -287,6 +306,9 @@ class NullWorkshop(Workshop):
         raise WorkshopUnavailable("no workshop is wired")
 
     async def apply(self, owner: Owner, bench_id: int, command: Command) -> Applied:
+        raise WorkshopUnavailable("no workshop is wired")
+
+    async def undo_turn(self, owner: Owner, bench_id: int, by: By, seq: int) -> TurnUndone:
         raise WorkshopUnavailable("no workshop is wired")
 
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:

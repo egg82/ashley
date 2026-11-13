@@ -83,6 +83,19 @@ def offset_of(args: Mapping[str, object]) -> int:
     return offset
 
 
+def seq_of(args: Mapping[str, object]) -> int:
+    """The `seq` argument. Raises BadArguments."""
+    return _int(args, "seq")
+
+
+def whole_turn_of(args: Mapping[str, object]) -> bool:
+    """The optional `whole_turn` of `bench_undo`, False when absent. Raises BadArguments."""
+    value = args.get("whole_turn", False)
+    if not isinstance(value, bool):
+        raise BadArguments("whole_turn is true or false")
+    return value
+
+
 def _add(args: Mapping[str, object]) -> Command:
     return Add(her(), _str(args, "kind"), Text(_str(args, "title"), _str(args, "body")), _size(args, "medium"))
 

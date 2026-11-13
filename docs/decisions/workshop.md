@@ -71,6 +71,16 @@ the app path are open-work item 23.
     back at about 25 changes. Rejected: a window counted in accepted changes only, which needs the whole log read to
     find its start. Rejected: a new refusal reason; to her tools and the person an Undo too far back is the same as one
     naming a command that is not an undoable change (`nothing_to_undo` and its hint).
+  - **Her changes carry the turn that made them, and "undo that" undoes the turn together.** `By.turn` (the person's
+    turn her bench tools were built for, `BenchTools(turn_id=)`) is logged in the command's JSON beside `runner`, so
+    no table changes; a person's change and one made outside a turn carry none. `bench_undo` with `whole_turn` true
+    names any `seq` of the turn and `Workshop.undo_turn` undoes every accepted command made in that turn, newest
+    first, each as an ordinary Undo in one transaction. Runs, Proposes, Cues, Points, Surfaceds, Installs, Undos and
+    commands an Undo already took back are not in the group. It is all or nothing: if any command is refused
+    (`changed_since`, `full`, `nothing_to_undo` past the window) the transaction rolls back, nothing is undone or
+    logged, and every refusal comes back to her by `seq` and reason. Rejected: undoing the commands that can be and
+    reporting the rest, which leaves half a turn unwound that the person has not seen; a turn id she types, which
+    would be her words, when the turn is read from the stored command.
 - **What is not on the layout now but may be wanted again goes on the bench's shelf** (a bench lasts as long as its
   project, so what it holds outgrows `max_pieces`). `Archive` takes a piece off the layout onto the shelf, the pieces
   after it moving up; it no longer counts toward `max_pieces`, keeps its text, version and runs, and takes no edit,

@@ -6,6 +6,7 @@ And `open_bench` opens a bench for the speaker, returning its id and the room's 
 import asyncio
 import json
 from dataclasses import dataclass, field, replace
+from typing import Any
 from datetime import UTC, datetime
 
 import pytest
@@ -79,6 +80,9 @@ class Opening(Workshop):
         raise NotImplementedError
 
     async def apply(self, owner: Owner, bench_id: int, command: Command) -> Applied:
+        raise NotImplementedError
+
+    async def undo_turn(self, owner: Owner, bench_id: int, by: Any, seq: int) -> Any:
         raise NotImplementedError
 
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:
