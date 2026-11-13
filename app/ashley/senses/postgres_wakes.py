@@ -15,13 +15,13 @@ from .wakes import (MAX_BRIEF, MAX_TOOLS, Delivery, Due, Outcome, Received, Remi
                     Wakes, WakesUnavailable, WatchWake, stored_route)
 
 _DUE = ("SELECT id, kind, household_id, event_id, event, who, what, at, person_id, made_by, brief, due_at, repeat, "
-        "extract(epoch FROM clock_timestamp() - due_at), landed, route, tools, watch_id, changes, taint, made_conversation_id, made_turn_id, route_device_id, ends_at, plan FROM wakes "
+        "extract(epoch FROM clock_timestamp() - due_at), landed, route, tools, watch_id, changes, taint, made_conversation_id, made_turn_id, route_device_id, ends_at, plan, method FROM wakes "
         "WHERE settled_at IS NULL AND trigger = 'time' "
         "AND due_at <= now() ORDER BY due_at, id LIMIT %s")
 _REMINDER: LiteralString = (
     "SELECT id, household_id, person_id, made_by, brief, due_at, repeat, deposit_rule, CASE WHEN settled_at IS NULL THEN 'scheduled' "
     "WHEN delivery = 'sending' THEN 'sending' WHEN delivery = 'undelivered' THEN 'undelivered' ELSE 'failed' END, "
-    "route, tools, taint, made_conversation_id, made_turn_id, route_device_id, ends_at, plan FROM wakes ")
+    "route, tools, taint, made_conversation_id, made_turn_id, route_device_id, ends_at, plan, method FROM wakes ")
 _LISTED: LiteralString = (
     "kind = 'reminder' AND dismissed_at IS NULL AND (settled_at IS NULL OR delivery IN ('sending', 'undelivered') "
     "OR outcome IN ('failed', 'no_person'))")
@@ -33,12 +33,12 @@ _SETTLED: LiteralString = (
 _SETTLE_AND_NEXT = (
     "WITH s AS (UPDATE wakes SET " + _SETTLED + " WHERE id = %(id)s AND settled_at IS NULL "
     "RETURNING household_id, kind, person_id, made_by, brief, repeat, route, tools, taint, made_conversation_id, "
-    "made_turn_id, route_device_id), "
+    "made_turn_id, route_device_id, method), "
     "n AS (INSERT INTO wakes (household_id, kind, event_id, event, at, due_at, person_id, made_by, brief, repeat, "
-    "route, tools, taint, made_conversation_id, made_turn_id, route_device_id) "
+    "route, tools, taint, made_conversation_id, made_turn_id, route_device_id, method) "
     "SELECT household_id, 'reminder', 'reminder:' || gen_random_uuid(), 'reminder', %(next)s, %(next)s, person_id, "
     "made_by, brief, "
-    "repeat, route, tools, taint, made_conversation_id, made_turn_id, route_device_id FROM s WHERE kind = 'reminder' AND repeat IS NOT NULL RETURNING id) "
+    "repeat, route, tools, taint, made_conversation_id, made_turn_id, route_device_id, method FROM s WHERE kind = 'reminder' AND repeat IS NOT NULL RETURNING id) "
     "SELECT (SELECT count(*) FROM s), (SELECT count(*) FROM n)")
 _FOLLOW_UP = (
     "WITH p AS (SELECT * FROM wakes WHERE id = %(id)s AND household_id = %(household)s AND kind = 'reminder' "
@@ -77,7 +77,7 @@ def _due(r: tuple[Any, ...]) -> Due:
     wake: Wake | Reminder | WatchWake
     if r[1] == "reminder":
         wake = _reminder(r[2], r[8], r[9], r[10], r[11], r[12], r[14], r[15], r[16], r[19], r[20], r[21], r[22], r[23],
-                         r[24])
+                         r[24], r[25])
     elif r[1] == "watch":
         wake = WatchWake(int(r[2]), int(r[8]), int(r[17]), "paused" if r[6] == "paused" else "changed", dict(r[18]))
     else:
@@ -88,13 +88,14 @@ def _due(r: tuple[Any, ...]) -> Due:
 def _reminder(household_id: Any, person_id: Any, made_by: Any, brief: Any, due_at: Any, repeat: Any,
               landed: Any = None, route: Any = "phone", tools: Any = None, taint: Any = None,
               made_conversation: Any = None, made_turn: Any = None, device_id: Any = None, ends_at: Any = None,
-              plan: Any = None) -> Reminder:
+              plan: Any = None, method: Any = None) -> Reminder:
     return Reminder(int(household_id), int(person_id), int(made_by), str(brief), due_at,
                     None if repeat is None else from_json(repeat), None if landed is None else landed_from_json(landed),
                     stored_route(route),
                     None if tools is None else tuple(str(t) for t in tools), None if taint is None else str(taint),
                     None if made_turn is None else (int(made_conversation), int(made_turn)),
-                    None if device_id is None else int(device_id), ends_at, None if plan is None else str(plan))
+                    None if device_id is None else int(device_id), ends_at, None if plan is None else str(plan),
+                    None if method is None else str(method))
 
 
 def _made_in(reminder: Reminder) -> tuple[int | None, int | None]:
@@ -110,6 +111,8 @@ def _checked(reminder: Reminder) -> None:
         raise ValueError("a room or screen route names its device, and no other route does")
     if reminder.ends_at is not None and (reminder.repeat is not None or reminder.due_at > reminder.ends_at):
         raise ValueError("an errand never repeats and falls due no later than it ends")
+    if reminder.method is not None and (reminder.repeat is None or reminder.ends_at is not None):
+        raise ValueError("a standing errand repeats and never ends")
 
 
 def _plan_checked(plan: str) -> None:
@@ -158,12 +161,12 @@ class PostgresWakes(Wakes):
             raise ValueError("only an errand's next check carries a plan")
         made = await self._one(
             "INSERT INTO wakes (household_id, kind, event_id, event, at, due_at, person_id, made_by, brief, repeat, "
-            "route, tools, taint, made_conversation_id, made_turn_id, route_device_id, ends_at) VALUES (%s, 'reminder', "
-            "'reminder:' || gen_random_uuid(), 'reminder', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-            "RETURNING id",
+            "route, tools, taint, made_conversation_id, made_turn_id, route_device_id, ends_at, method) VALUES (%s, "
+            "'reminder', 'reminder:' || gen_random_uuid(), 'reminder', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+            "%s, %s) RETURNING id",
             (reminder.household_id, reminder.due_at, reminder.due_at, reminder.person_id, reminder.made_by,
              reminder.brief, _repeat(reminder), reminder.route, _tools(reminder), reminder.taint,
-             *_made_in(reminder), reminder.device_id, reminder.ends_at))
+             *_made_in(reminder), reminder.device_id, reminder.ends_at, reminder.method))
         if made is None:
             raise WakesUnavailable("the reminder was not stored")
         return int(made[0])
@@ -201,7 +204,8 @@ class PostgresWakes(Wakes):
         rows = await self._all(_REMINDER + "WHERE household_id = %s AND " + _LISTED + " AND (person_id = %s "
                                "OR made_by = %s) ORDER BY due_at, id", (household_id, person_id, person_id))
         return tuple(Scheduled(int(r[0]), _reminder(*r[1:7], route=r[9], tools=r[10], taint=r[11], made_conversation=r[12],
-                                                  made_turn=r[13], device_id=r[14], ends_at=r[15], plan=r[16]), r[8],
+                                                  made_turn=r[13], device_id=r[14], ends_at=r[15], plan=r[16],
+                                                  method=r[17]), r[8],
                                None if r[7] is None else rule_from_json(r[7]))
                      for r in rows)
 

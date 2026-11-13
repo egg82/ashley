@@ -41,6 +41,7 @@ from ..tools.open_bench import OpenBenchTools
 from ..tools.reminders import ReminderTools
 from ..tools.results import Results
 from ..tools.run_code import RunCodeTools
+from ..tools.standing_method import StandingMethodTools
 from ..tools.tools import Tools
 from ..tools.watches import WatchTools
 from . import said_links
@@ -61,6 +62,8 @@ _CLAUDE_CODE = claude_code_config()
 READABLE_CHARS = smallest_result_chars(load_limits())
 ERRAND = "errand"
 """The key `check_again` goes under on a check of an errand, beside the turn's tools as narrowed, never narrowed itself."""
+METHOD = "method"
+"""The key a standing errand's method goes under, beside the turn's tools as narrowed, never narrowed itself."""
 
 
 def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arrival | None = None,
@@ -84,8 +87,9 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     names; with `reads_only`, to those that change nothing, where the reply reaches the speaker alone and else to none.
     From a server channel (`discord_channel`) with a known speaker, reading that channel's recent messages (`discord_read`). With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
     by; the conversation she is in (`said`) is what they check a URL the person gave against. With `errand` and a known
-    speaker, `check_again` (`errand`) beside all of that, not narrowed. On a turn tending her home channel
-    (`Inbound.tends_home`), the tools that change that channel (`home`), and on no other turn."""
+    speaker, `check_again` (`errand`) beside all of that, not narrowed; with `method` and a known speaker, the
+    standing errand's method (`method`) likewise. On a turn tending her home channel (`Inbound.tends_home`), the tools
+    that change that channel (`home`), and on no other turn."""
     everyday = HouseholdTools(inbound.household_id)
 
     def usable() -> Tools:
@@ -100,9 +104,12 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     if inbound.speaker_id is None:
         return own
     turn = narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added, READERS: readers}))
-    if inbound.errand is None:
-        return turn
-    return CompositeTools({"turn": turn, ERRAND: ErrandStepTools(inbound.household_id, inbound.errand)})
+    beside: dict[str, Tools] = {}
+    if inbound.errand is not None:
+        beside[ERRAND] = ErrandStepTools(inbound.household_id, inbound.errand)
+    if inbound.method is not None:
+        beside[METHOD] = StandingMethodTools(inbound.household_id, inbound.method)
+    return CompositeTools({"turn": turn, **beside}) if beside else turn
 
 
 def narrowed(inbound: Inbound, offered: Tools) -> Tools:

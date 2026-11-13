@@ -43,6 +43,10 @@ def remind(names: Sequence[str], acting: bool = True) -> ToolSpec:
                                                             "you check on it, do what you can each time and "
                                                             "set each next check yourself, for up to this many "
                                                             "hours; it never repeats"},
+                            "method": {"type": "string", "maxLength": 40,
+                                       "description": "make it a standing errand, work you do each time it comes "
+                                                      "round and never finish: the household's kind of work whose "
+                                                      "method you follow then; it must repeat"},
                         },
                         "required": ["for", "at", "what"],
                     }, outside=False, tier="runs", label="Set a reminder")
@@ -148,7 +152,9 @@ CANCEL_SPEC = ToolSpec(CANCEL, "Cancel one of their reminders by its id, from re
 INSTRUCTIONS = ("When someone asks you to remind them, or another person of the household, of something at a time, "
                 "set it with remind; times are the household's local time. Put everything they will need then in "
                 "what, since you will see only that when it falls due. For an ask you carry out over time and keep "
-                "checking on until it is done, set errand_hours: each check is a turn of yours that may set the next.")
+                "checking on until it is done, set errand_hours: each check is a turn of yours that may set the next. For work they "
+                "want done on a schedule for good, set method and a repeat: each time, you do it by that method and "
+                "tell them only what is new.")
 PRIVATE = (" You can list their reminders with reminders, change one with change_reminder (it keeps its id) and "
            "cancel one with cancel_reminder.")
 ACTING = (" A reminder can do something instead of only telling them: name the tools it may use in tools, and say "

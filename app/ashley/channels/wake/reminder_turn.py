@@ -15,7 +15,11 @@ below or a bill coming due fired carries it (`Reminder.landed`), which she state
 An errand's occurrence (`Reminder.ends_at`) is one check of it: she is given the ask, what she noted at the check
 before (`Reminder.plan`) and when it ends, and offered `check_again` (`Inbound.errand`) to set the next. It is not
 `promised`: whether she says anything at a check is Initiative's, from her `says`, so a check with nothing to tell
-stays quiet."""
+stays quiet.
+
+A standing errand's occurrence (`Reminder.method`) is one round of work that never finishes: she is given the ask, and
+the household's skill of that kind loads as her method (`Inbound.method`). It is not `promised` either, so a round
+with nothing new to tell stays quiet, and what she finds reaches the person by its route when she says it."""
 
 from datetime import UTC
 from zoneinfo import ZoneInfo
@@ -33,14 +37,15 @@ def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, d
     """The turn; `device` is the satellite or screen its route names (`reminder_device.of`), None for the phone.
     `zone` is the household's, which an errand's end is shown in (UTC when None)."""
     errand = reminder.ends_at is not None
+    standing = reminder.method is not None
     phone = Inbound(household_id=reminder.household_id, thread=f"push:{person.id}",
                     text=said(reminder, person, made_by, device, zone), kind="chat", medium="text", audience="owner",
                     speaker_id=person.id, shared=False, place=None, channel="device", remembers=False, later=True,
                     later_by="turn", source=f"wake:{wake_id}", unprompted=True,
-                    promised=not _judged(reminder) and not errand,
+                    promised=not _judged(reminder) and not errand and not standing,
                     tools_only=reminder.tools, reads_only=reminder.tools is None,
                     taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in,
-                    errand=wake_id if errand else None)
+                    errand=wake_id if errand else None, method=reminder.method)
     if device is None:
         return phone
     return moved(phone, reminder.route, device)
@@ -57,6 +62,8 @@ def said(reminder: Reminder, person: Person, made_by: Person, device: Device | N
     if reminder.ends_at is not None:
         return _errand(reminder, person, asked, reminder.ends_at.astimezone(zone or UTC).strftime(LOCAL_FORMAT),
                        _where(reminder, device))
+    if reminder.method is not None:
+        return _standing(reminder, person, asked, _where(reminder, device))
     return (f"[A reminder you set, not words anyone said: for {person.name}; {asked} you to remind them.]\n"
             f"What to remind them of: {reminder.brief}\n"
             f"{_landed(reminder.landed)}{_what_to_do(reminder, person, _where(reminder, device))}")
@@ -70,6 +77,14 @@ def _errand(reminder: Reminder, person: Person, asked: str, ends: str, where: st
             f"It runs until {ends}. Do what you can now with the tools you have. If it is not done and there is time, "
             f"set your next check with check_again; if you do not, the errand ends here. Tell {person.name} only what "
             f"they would want to hear now, such as that it is done or cannot be; otherwise set `says` to none. {where}")
+
+
+def _standing(reminder: Reminder, person: Person, asked: str, where: str) -> str:
+    return (f"[A standing errand you carry out each time it comes round, not words anyone said: for {person.name}; "
+            f"{asked} you to keep doing it.]\nWhat they asked: {reminder.brief}\n"
+            f"Do this round now, following the method for it in your instructions, with the tools you have. Tell "
+            f"{person.name} only what they would want to hear now, such as something new you found or that it cannot "
+            f"be done; otherwise set `says` to none. {where}")
 
 
 def _where(reminder: Reminder, device: Device | None) -> str:
