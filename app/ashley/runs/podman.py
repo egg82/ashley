@@ -17,10 +17,8 @@ from dataclasses import replace
 from importlib import resources
 from pathlib import Path
 
-from .. import logs, services
-from ..files.intake import key_of
-from ..files.store import ObjectStore, StoreUnavailable
-from . import envelope
+from .. import logs
+from . import envelope, inputs
 from .config import Profile, RunsConfig
 from .model import Job, Language, Output
 from .pod_spec import manifest
@@ -94,18 +92,15 @@ class PodmanSandbox(Sandbox):
 
 async def _fetch(job: Job, directory: Path) -> None:
     """Write each of the job's inputs, from the object store, into `directory`, readable by the container's user.
-    Raises SandboxUnavailable for one the store does not give."""
+    Raises SandboxUnavailable for one the store does not give intact."""
     directory.chmod(0o755)
-    store = services.get(ObjectStore)
     for name, file in job.inputs.items():
-        try:
-            data = await store.get(key_of(file.household_id, file.sha256))
-        except StoreUnavailable as e:
-            raise SandboxUnavailable("an input could not be read from the store") from e
-        if data is None:
-            raise SandboxUnavailable("an input is not in the store")
         if Path(name).name != name:
             raise SandboxUnavailable("an input has no plain name")
+        try:
+            data = await inputs.read(file)
+        except inputs.InputUnavailable as e:
+            raise SandboxUnavailable(str(e)) from e
         (directory / name).write_bytes(data)
         (directory / name).chmod(0o444)
 

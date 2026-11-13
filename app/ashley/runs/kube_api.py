@@ -3,14 +3,19 @@ their logs, and the Secrets a pod is handed (Proton Bridge's keeper token). The 
 
 import base64
 import logging
+from collections.abc import AsyncIterable
 from pathlib import Path
 from typing import Any
 
+import anyio
 import httpx2
+from httpx2.websockets import WebSocketDisconnect, WebSocketNetworkError, WebSocketUpgradeError
 
 from .loose import as_list, as_object
 
 log = logging.getLogger("ashley.runs")
+STDIN_CHANNEL, STATUS_CHANNEL, CLOSE_SIGNAL = 0, 3, 255
+V5, V4 = "v5.channel.k8s.io", "v4.channel.k8s.io"
 
 
 class KubeError(Exception):
@@ -57,6 +62,49 @@ class KubeApi:
                                json={"gracePeriodSeconds": 0, "propagationPolicy": "Background"}, missing_ok=True)
         return got is not None
 
+    async def attach_stdin(self, namespace: str, name: str, container: str, chunks: AsyncIterable[bytes],
+                           timeout_s: float) -> None:
+        """Send `chunks` to the standard input of `container` in the pod (pods/attach over a WebSocket), then close it.
+        The container's stdin must be open (`stdin` and `stdinOnce`) and the container running. Raises KubeError when the
+        attach is refused or broken, or the container's end reports a failure; what `chunks` raises is raised after the
+        stream is closed. Needs a server that closes stdin on request (`v5.channel.k8s.io`); on `v4` the close ends the
+        attach, which closes stdin too."""
+        source_error: Exception | None = None
+        try:
+            with anyio.fail_after(timeout_s):
+                async with self._http.websocket(
+                        self._attach_url(namespace, name), params={"container": container, "stdin": "true",
+                                                                   "stdout": "false", "stderr": "false", "tty": "false"},
+                        headers={"Authorization": f"Bearer {self._token()}"}, subprotocols=[V5, V4],
+                        timeout=timeout_s, keepalive_ping_interval_seconds=None) as ws:
+                    try:
+                        async for chunk in chunks:
+                            await ws.send_bytes(bytes([STDIN_CHANNEL]) + chunk)
+                    except Exception as e:
+                        source_error = e
+                    if source_error is None and ws.subprotocol == V5:
+                        await ws.send_bytes(bytes([CLOSE_SIGNAL, STDIN_CHANNEL]))
+                        await _until_closed(ws)
+        except BaseExceptionGroup as group:
+            errors = group.split(Exception)[0]
+            first = errors.exceptions[0] if errors else None
+            raise (first if isinstance(first, KubeError) else KubeError(type(first).__name__)) from group
+        except (WebSocketDisconnect, WebSocketNetworkError, WebSocketUpgradeError, httpx2.HTTPError, TimeoutError) as e:
+            raise KubeError(type(e).__name__) from e
+        if source_error is not None:
+            raise source_error
+
+    def _attach_url(self, namespace: str, name: str) -> str:
+        base = str(self._http.base_url).rstrip("/")
+        scheme = "wss" if base.startswith("https") else "ws"
+        return f"{scheme}://{base.split('://', 1)[1]}/api/v1/namespaces/{namespace}/pods/{name}/attach"
+
+    def _token(self) -> str:
+        try:
+            return self._token_file.read_text().strip()
+        except OSError as e:
+            raise KubeError(f"token unreadable: {type(e).__name__}") from e
+
     async def create_secret(self, namespace: str, name: str, labels: dict[str, str], data: dict[str, str]) -> None:
         """An Opaque Secret with `data` (plain text; the call encodes it). Raises KubeError, `http 409` when one by that
         name exists."""
@@ -85,10 +133,7 @@ class KubeApi:
         return got is not None
 
     async def _call(self, method: str, path: str, missing_ok: bool = False, **kwargs: Any) -> httpx2.Response | None:
-        try:
-            token = self._token_file.read_text().strip()
-        except OSError as e:
-            raise KubeError(f"token unreadable: {type(e).__name__}") from e
+        token = self._token()
         try:
             got = await self._http.request(method, path, headers={"Authorization": f"Bearer {token}"}, **kwargs)
         except httpx2.HTTPError as e:
@@ -98,6 +143,18 @@ class KubeApi:
         if got.status_code >= 400:
             raise KubeError(f"http {got.status_code}")
         return got
+
+
+async def _until_closed(ws: Any) -> None:
+    """Read the attach's frames until the server closes it, raising KubeError for a status on the error channel that is
+    not a success."""
+    while True:
+        try:
+            frame: bytes = await ws.receive_bytes()
+        except WebSocketDisconnect:
+            return
+        if frame[:1] == bytes([STATUS_CHANNEL]) and b'"Success"' not in frame:
+            raise KubeError("attach reported a failure")
 
 
 def _decoded(secret: dict[str, Any] | None) -> dict[str, str]:

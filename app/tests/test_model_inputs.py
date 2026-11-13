@@ -1,7 +1,7 @@
 """A model run is handed the bench's STL, 3MF and STEP file pieces: real files, put on the bench as an upload is, reach
 the sandbox as binary inputs under their piece ids with an index (`inputs.json`) the CAD helper reads. What does not fit
 the language's `input_bytes`, or is not in the store, is named in the index with why; nothing else rides along. The
-bytes are not read here: the inputs are references, and the pod's init container fetches them."""
+bytes are not read here: the inputs are references, and the app pushes them into the pod's init container."""
 
 import base64
 import json
@@ -17,11 +17,10 @@ from ashley.files.memory import MemoryStore
 from ashley.files.sniff import sniff
 from files_support import PDF
 from ashley.files.store import ObjectStore
-from ashley.runs import input_links
+from ashley.runs import inputs
 from ashley.runs.config import RunsConfig
 from ashley.runs.model import InputFile
 from ashley.runs.pod_spec import manifest
-from ashley.files import links
 from ashley.workshop.bench_file import add_file
 from ashley.workshop.model_inputs import InputRefused
 from ashley.workshop.commands import Add, Archive, Move, Run
@@ -130,19 +129,16 @@ def test_two_models_past_the_old_total_reach_one_run_through_the_init_container(
             job = box.jobs[0]
             assert sorted(job.inputs) == sorted(f"{i}.stl" for i in ids.values())
             assert json.loads(job.files["inputs.json"])["left_out"] == []
-            key = b"k" * 32
-            urls = input_links.sign(job.inputs, "http://10.0.0.5:8000", key, 2_000_000_000)
-            pod = manifest(job, CONFIG.with_image("build123d", "registry.test/cad@sha256:" + "c" * 64), "RUNNER", "gvisor", "FETCHER", urls)["spec"]
-            fetch, run_container = pod["initContainers"][0], pod["containers"][0]
-            task = json.loads(base64.b64decode(fetch["env"][0]["value"]))
+            pod = manifest(job, CONFIG.with_image("build123d", "registry.test/cad@sha256:" + "c" * 64), "RUNNER", "gvisor",
+                           "UNPACKER")["spec"]
+            unpack, run_container = pod["initContainers"][0], pod["containers"][0]
+            task = json.loads(base64.b64decode(unpack["env"][0]["value"]))
             assert sorted(f["name"] for f in task["files"]) == sorted(job.inputs)
             assert sum(f["size"] for f in task["files"]) == sum(map(len, models.values()))
-            assert fetch["command"][-1] == "FETCHER" and fetch["volumeMounts"] == [{"name": "inputs", "mountPath": "/inputs"}]
+            assert unpack["stdin"] and unpack["command"][-1] == "UNPACKER"
             assert {"name": "inputs", "mountPath": "/work/inputs", "readOnly": True} in run_container["volumeMounts"]
-            assert not any("http" in str(e["value"]) for e in run_container["env"])
-            for item in task["files"]:
-                grant = links.check(key, item["url"].rsplit("/", 1)[1], 1_999_999_999)
-                assert grant is not None and (grant.household_id, grant.sha256) == (alana.household_id, item["sha256"])
+            pushed = b"".join([c async for c in inputs.tar(job.inputs)])
+            assert len(pushed) > sum(map(len, models.values())) > 768 * 1024
             services.unregister(ObjectStore)
 
     run(scenario())

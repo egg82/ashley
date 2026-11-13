@@ -1,6 +1,6 @@
 """The Kubernetes sandbox: each job in a pod of its own in the sandbox namespace, under gVisor, with no network, no
-token and a deadline (`pod_spec.manifest`); a job's binary inputs are fetched by an init container from links the app signs
-(`input_links`), the one thing the pod may reach; its output read from the pod's log; the pod deleted however the run
+token and a deadline (`pod_spec.manifest`); a job's binary inputs are pushed by the app into its init container's
+standard input through the Kubernetes API (`KubeApi.attach_stdin`), so the pod has no network; its output read from the pod's log; the pod deleted however the run
 ends. Pods a stopped app pod left behind are deleted by the next run once they are past twice the longest pod deadline.
 Logs carry the pod's name, the outcome and durations, never the script or what it printed."""
 
@@ -13,17 +13,17 @@ from importlib import resources
 from typing import Any
 
 from .. import logs
-from . import envelope, input_links
+from . import envelope, inputs
 from .config import Profile, RunsConfig
 from .kube_api import KubeApi, KubeError
 from .loose import as_list, as_object
 from .model import Job, Language, Output
-from .pod_spec import LABEL, manifest
+from .pod_spec import INIT, LABEL, manifest
 from .sandbox import Sandbox, SandboxUnavailable
 
 log = logging.getLogger("ashley.runs")
 RUNNER = resources.files("ashley.runs").joinpath("runner.py").read_text()
-FETCHER = resources.files("ashley.runs").joinpath("fetcher.py").read_text()
+UNPACKER = resources.files("ashley.runs").joinpath("unpack.py").read_text()
 UNKNOWN = Output("unknown", None, "", "")
 START_GRACE_S = 15
 """How long past the pod's deadline to keep asking whether it finished, for the kubelet to report it."""
@@ -32,13 +32,7 @@ START_GRACE_S = 15
 class KubernetesSandbox(Sandbox):
     def __init__(self, api: KubeApi, config: RunsConfig, namespace: str, runtime_class: str,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-                 clock: Callable[[], float] = time.monotonic, app_url: str = "", link_key: bytes = b"",
-                 wall: Callable[[], float] = time.time) -> None:
-        """`app_url` is where a pod in the namespace reaches the app, no trailing slash, and `link_key` the key that signs
-        the links to a job's inputs; without both, a job with inputs is unavailable."""
-        self._app_url = app_url
-        self._link_key = link_key
-        self._wall = wall
+                 clock: Callable[[], float] = time.monotonic) -> None:
         self._api = api
         self._config = config
         self._namespace = namespace
@@ -61,15 +55,11 @@ class KubernetesSandbox(Sandbox):
             logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", language=job.language,
                          error="language not run")
             raise SandboxUnavailable(f"{job.language} is not run")
-        if job.inputs and not (self._app_url and self._link_key):
-            logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", error="no address for inputs")
-            raise SandboxUnavailable("inputs cannot be fetched: no app address or link key")
         await self._sweep()
-        links = input_links.sign(job.inputs, self._app_url, self._link_key, int(self._wall()) + profile.pod_deadline_s)
         try:
-            pod = manifest(job, self._config, RUNNER, self._runtime_class, FETCHER, links)
+            pod = manifest(job, self._config, RUNNER, self._runtime_class, UNPACKER)
             await self._api.create_pod(self._namespace, pod)
-            output = await self._finished(job.name, started, profile)
+            output = await self._fed(job, started, profile) or await self._finished(job.name, started, profile)
         except KubeError as e:
             logs.warning(log, "runs.sandbox", pod=job.name, outcome="unavailable", error=str(e),
                          duration_ms=self._ms(started))
@@ -79,6 +69,36 @@ class KubernetesSandbox(Sandbox):
         logs.info(log, "runs.sandbox", pod=job.name, outcome=output.outcome, exit_code=output.exit_code,
                   duration_ms=self._ms(started))
         return output
+
+    async def _fed(self, job: Job, started: float, profile: Profile) -> Output | None:
+        """Push the job's inputs into its pod's init container once that is running; None when there are none or all went
+        in. `failed` when it never ran in time, ended first, or the attach or an input failed: the script did not run.
+        Logs `runs.inputs_failed` with the pod and the reason."""
+        if not job.inputs:
+            return None
+        try:
+            await self._init_running(job.name, started, profile)
+            left = max(1.0, profile.pod_deadline_s - (self._clock() - started))
+            await self._api.attach_stdin(self._namespace, job.name, INIT, inputs.tar(job.inputs), left)
+        except (KubeError, inputs.InputUnavailable, ValueError) as e:
+            logs.warning(log, "runs.inputs_failed", pod=job.name, error=type(e).__name__, detail=str(e)[:60])
+            return Output("failed", None, "", "the inputs could not be sent to the pod, so the script did not run")
+        return None
+
+    async def _init_running(self, name: str, started: float, profile: Profile) -> None:
+        """Wait until the pod's init container runs. Raises KubeError when it ended or the pod is gone first, or it was
+        not running by the pod's deadline."""
+        while self._clock() - started <= profile.pod_deadline_s:
+            pod = await self._api.pod(self._namespace, name)
+            if pod is None:
+                raise KubeError("pod gone")
+            state = _get((as_list(_get(pod, "status", "initContainerStatuses")) or [{}])[0], "state")
+            if _get(state, "running") is not None:
+                return
+            if _get(state, "terminated") is not None or _get(pod, "status", "phase") in ("Succeeded", "Failed"):
+                raise KubeError("init container ended")
+            await self._sleep(self._config.poll_s)
+        raise KubeError("init container never ran")
 
     async def _finished(self, name: str, started: float, profile: Profile) -> Output:
         """Raises KubeError only for a pod last seen pending past its deadline."""
@@ -113,7 +133,7 @@ class KubernetesSandbox(Sandbox):
             return Output("timed_out", None, "", "")
         fetch = as_list(_get(pod, "status", "initContainerStatuses")) or [{}]
         if _get(fetch[0], "state", "terminated", "exitCode") not in (None, 0):
-            return Output("failed", None, "", "an input could not be fetched, so the script did not run")
+            return Output("failed", None, "", "an input was not received intact, so the script did not run")
         statuses = as_list(_get(pod, "status", "containerStatuses")) or [{}]
         first: object = statuses[0]
         if _get(first, "state", "terminated", "reason") == "OOMKilled":

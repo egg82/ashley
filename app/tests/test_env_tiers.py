@@ -78,7 +78,6 @@ ENV: dict[str, tuple[str, str]] = {
     "SANDBOX_RUNTIME_CLASS": (D, "infra placement"),
     "MEDIA_IMAGE": (D, "infra placement: an image pinned by digest"),
     "MEDIA_APP_URL": (D, "infra placement: an in-cluster URL"),
-    "SANDBOX_APP_URL": (D, "infra placement: an in-cluster URL"),
     "LOOK_IMAGE": (D, "infra placement: an image pinned by digest"),
     "CAD_IMAGE": (D, "infra placement: an image pinned by digest"),
     "LOOK_APP_URL": (D, "infra placement: an in-cluster URL"),
