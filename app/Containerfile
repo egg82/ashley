@@ -9,6 +9,18 @@ COPY web/src ./src
 COPY web/icons ./icons
 RUN node build.mjs /built
 
+# The Claude Code CLI (`ashley.inference.claude_cli`): Anthropic's native linux-x64 build of one exact version, checked
+# against the checksum its release manifest lists for it. Its own stage so a code change does not fetch it again.
+FROM docker.io/library/python:3.13-slim AS claude
+ARG CLAUDE_VERSION=2.1.311
+ARG CLAUDE_SHA256=86dc1fcc69498159eaf15f446613e847010f9036bfbbdffd4c49350be8489ada
+RUN python -c "import hashlib, sys, urllib.request; \
+data = urllib.request.urlopen(sys.argv[1], timeout=300).read(); \
+assert hashlib.sha256(data).hexdigest() == sys.argv[2], 'claude binary checksum mismatch'; \
+open('/claude', 'wb').write(data)" \
+  "https://downloads.claude.ai/claude-code-releases/$CLAUDE_VERSION/linux-x64/claude" "$CLAUDE_SHA256" \
+ && chmod 755 /claude && /claude --version
+
 FROM docker.io/library/python:3.13-slim
 
 # Runs with a read-only root filesystem: nothing is written outside /tmp.
@@ -37,6 +49,7 @@ open('/opt/ashley/models/voiceprint/nemo_en_titanet_small.onnx', 'wb').write(dat
  done \
  && test -s /opt/ashley/models/voiceprint/nemo_en_titanet_small.onnx \
  && chmod -R a+rX /opt/ashley/models
+COPY --from=claude /claude /usr/local/bin/claude
 COPY ashley ./ashley
 # The model catalogue's first layer (`ashley.inference.catalogue_snapshot`): models.dev's list as it is at build, so a
 # new deployment prices calls before its first fetch. A list that cannot be fetched leaves no snapshot.
