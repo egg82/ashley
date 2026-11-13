@@ -9,6 +9,7 @@ from bjb_support import (ACCESS, MARK_BODY, MARK_BRIEF, MARK_TITLE, ROOT, World,
                          scenario, state_of)
 from files_support import ELF, PNG
 from ashley import services
+from ashley.files import config as files_config
 from ashley.workshop.workshop import Workshop
 from bench_run_support import code as run_code
 from ashley.herdr.model import Status
@@ -335,7 +336,7 @@ def test_c13_a_file_over_the_ceiling_is_refused_not_downloaded_into_a_piece(db_u
         sid = only_session(w)
         w.bridge.out[sid] = {"ok.txt": b"fine\n", "RESULT.md": b"r"}
         w.bridge.settle(sid, "done")
-        w.bridge.phantom[sid] = [out_file("huge.bin", limit("max_bytes_in") + 1)]
+        w.bridge.phantom[sid] = [out_file("huge.bin", files_config.load().max_bytes + 1)]
         got = await step(w, job)
         assert got.state == "done" and got.refused >= 1 and len(got.outputs) == 1
         assert "huge.bin" not in {c[2] for c in w.bridge.named("download")}
