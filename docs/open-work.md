@@ -14,9 +14,8 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
     - **Env values that belong in a connection or a setting** (`decisions.md`, "Env var, file, connection or setting"; the
       `TO_MOVE` set in `app/tests/test_env_tiers.py`, which fails if one is not named here).
-      `ESPHOME_NOISE_PSK` is the household's own devices' key, so it moves to the household's settings. `FILES_LINK_KEY`,
-      `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are deployment secrets that could be generated on first start into a
-      sealed deployment row. Fits into: Connections.
+      `FILES_LINK_KEY`, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are deployment secrets that could be generated on first
+      start into a sealed deployment row. Fits into: Connections.
     - **What is left of the model catalogue:** an override that defines a provider, an admin page over
       `/api/catalogue`, and a price for `gpt-image-2.5-flare`, which models.dev does not list. Fits into: Inference.
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
