@@ -14,7 +14,7 @@ import { UploadButton } from './Upload';
 
 export type View = 'talk' | 'pieces';
 
-const DID: Record<LoggedCommand['type'], string> = { add: 'add', edit: 'edit', move: 'move', remove: 'remove', run: 'run', propose: 'proposal', install: 'install', archive: 'archive', restore: 'restore', undo: 'undo', rename: 'rename', cue: 'cue', point: 'point' };
+const DID: Record<LoggedCommand['type'], string> = { add: 'add', edit: 'edit', move: 'move', remove: 'remove', run: 'run', propose: 'proposal', install: 'install', archive: 'archive', restore: 'restore', undo: 'undo', rename: 'rename', cue: 'cue', point: 'point', surfaced: 'choices shown' };
 
 function Undo({ bench }: { bench: BenchDetail }) {
   const target = undoTarget(bench);

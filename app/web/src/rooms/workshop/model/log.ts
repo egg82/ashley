@@ -3,8 +3,9 @@
 import type { BenchDetail, LoggedCommand } from '../../../api/types';
 
 export type Author = LoggedCommand['author'];
-/** What a command did to a piece; a rename changes the bench, not a piece, and a cue changes neither. */
-export type Did = Exclude<LoggedCommand['type'], 'rename' | 'cue'>;
+/** What a command did to a piece; a rename changes the bench, not a piece, and a cue or a record of choices shown
+ * (`surfaced`, beside her reply) changes neither. */
+export type Did = Exclude<LoggedCommand['type'], 'rename' | 'cue' | 'surfaced'>;
 
 /** One accepted command between two reads: the piece it changed, who made it, and what it was. */
 export interface Stamp {
@@ -24,7 +25,7 @@ export function stampsOf(before: BenchDetail | null, after: BenchDetail): Stamp[
   const since = latestSeq(before.recent);
   return after.recent
     .filter((c) => c.seq > since && c.outcome === 'accepted')
-    .flatMap((c) => (c.piece_id === null || c.type === 'rename' || c.type === 'cue' ? [] : [{ piece: c.piece_id, by: c.author, did: c.type, seq: c.seq }]));
+    .flatMap((c) => (c.piece_id === null || c.type === 'rename' || c.type === 'cue' || c.type === 'surfaced' ? [] : [{ piece: c.piece_id, by: c.author, did: c.type, seq: c.seq }]));
 }
 
 /** The command the next press of "Undo" takes back, as the server walked it (`undo_next`); `command` is null when it is

@@ -3,6 +3,7 @@
 export const copy = {
   done: 'Done',
   held: 'Waiting for your OK',
+  facts: 'Her choices',
   gone: 'No longer waiting for your OK.',
   why: 'Why',
   failed: "Didn't work",

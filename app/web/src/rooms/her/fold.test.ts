@@ -4,8 +4,8 @@ import type { WireReceipts } from '../../api/types';
 import { foldLine, foldOf } from './fold.ts';
 
 const ran = { headline: 'Sent an email', detail: null, why: null };
-const done: WireReceipts = { ran: [ran], held: [], proposal_id: null };
-const held: WireReceipts = { ran: [], held: [{ headline: 'Unlock the door', detail: null, why: null }], proposal_id: 4 };
+const done: WireReceipts = { ran: [ran], held: [], proposal_id: null, facts: [] };
+const held: WireReceipts = { ran: [], held: [{ headline: 'Unlock the door', detail: null, why: null }], proposal_id: 4, facts: [] };
 
 test('pictures and the done note fold into one line, closed', () => {
   const folded = foldOf(done, [{}, {}]);

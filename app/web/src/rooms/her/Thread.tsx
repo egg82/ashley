@@ -14,6 +14,7 @@ import { Fold } from './Fold';
 import { RunDetails } from './RunDetails';
 import { AgreeButton } from './AgreeButton';
 import { Agreed, Held } from './Receipts';
+import { Facts } from './Facts';
 import { canKeep, keep } from './remember';
 import { VoiceMark } from '../../speech/VoiceMark';
 
@@ -65,6 +66,7 @@ function Said({ line, name, conversation }: { line: Line; name: string; conversa
         <LineText hers={hers} text={line.text} />
         {hers && turn !== undefined && <VoiceMark turn={turn} />}
         {hers && line.receipts && <Held receipts={line.receipts} agree={line.agree} />}
+        {hers && line.receipts && <Facts receipts={line.receipts} />}
         {hers && !line.receipts && line.agree !== undefined && <AgreeButton proposal={line.agree} />}
         {!hers && line.agreed && <Agreed agreed={line.agreed} />}
         {line.attachment && <Paste attachment={line.attachment} />}
