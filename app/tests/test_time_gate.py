@@ -102,3 +102,13 @@ def test_a_slow_test_after_a_shared_fixture_is_still_charged(tmp_path: Path) -> 
 def test_a_real_run_passes_a_fast_test(tmp_path: Path) -> None:
     fast = pytest_run(tmp_path, "def test_fast():\n    assert sum(range(1000)) == 499500\n")
     assert fast.returncode == 0 and "1 passed" in fast.stdout, fast.stdout
+
+
+def test_the_margin_lists_a_test_over_half_the_ceiling_and_passes_the_run(tmp_path: Path) -> None:
+    """The near test comes second, so a readout that kept only the first test's charge would miss it."""
+    body = "import time\n\ndef test_fast():\n    pass\n\ndef test_near():\n    time.sleep(0.3)\n"
+    run = pytest_run(tmp_path, body)
+    assert run.returncode == 0 and "2 passed" in run.stdout, run.stdout
+    margin = run.stdout.split("time gate margin", 1)[-1]
+    assert "test_near" in margin and "test_fast" not in margin, run.stdout
+    assert "1 tests over half the 0.4s ceiling, 0 of them held" in margin, run.stdout
