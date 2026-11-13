@@ -15,9 +15,9 @@ photo from the phone, and both land in the same exchange.
 - **Each channel declares its audience** (who can hear or read it), which private-answer routing checks: a
   Discord DM is its owner's alone, a shared Discord channel is the household's, a kitchen satellite is whoever is
   home.
-- **Channels planned:** voice satellites, Discord (where a household may already talk), the web app with web push,
-  and an MCP server so Claude Code sessions can ask her things or tell her to remember them, authenticated as
-  their user.
+- **Channels planned:** an MCP server, so Claude Code sessions can ask her things or tell her to remember them,
+  authenticated as their user. Voice satellites, Discord (where a household may already talk) and the web app with web
+  push are built.
 - **Spoken words differ from written ones.** Memory, text and prompts use real spellings (the pet's name as written); the
   voice channel applies the household's pronunciation words on the way out, so TTS quirks never reach memory or
   text.
@@ -98,15 +98,16 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   `persona.system` returns a `SystemPrompt` (`stable`, then `moment`: what she remembers, what was said before, the
   clock and who is speaking), and `AnthropicProvider` puts one cache breakpoint on the last tool, one on the end of
   `stable`, and one on the last block of the last turn. `moment` is sent after the history, not in the system prompt,
-  so the history is a prefix that survives from one message to the next (the clock in the system block put it
-  before every message and no history prefix could be read): on Anthropic the last block of the last user turn,
+  so the history is a prefix that survives from one message to the next (the clock in the system block would sit
+  before every message, and no history prefix could be read): on Anthropic the last block of the last user turn,
   after the tail breakpoint (a new user turn when the last turn is not a user's), labelled `MOMENT_LABEL` ("not words
   anyone said"); on Chat Completions (Gemini, ChatGPT, local) a user message after the last entry. Measured on one
-  conversation's two consecutive messages (~12K-token prefix): Anthropic read 8,173 of 11,995 tokens before and 11,944
-  after, on both Sonnet and Opus; Gemini's implicit cache read 0 before and 8,706 of 10,553 after. The mid-conversation
-  system role (prompt-caching.md) is not used: it is not available on every model she routes to. The tail breakpoint
-  is what lets the next tool round of a reply read the history this round wrote; without it each round re-paid the whole history (a measured 4-round turn: reads stayed at
-  the system prompt's size while uncached input grew by a round's content each time). Each Anthropic call logs
+  conversation's two consecutive messages (~12K-token prefix), moving the moment out of the system prompt took
+  Anthropic's cache read from 8,173 to 11,944 of ~11,995 tokens, on both Sonnet and Opus, and Gemini's implicit cache
+  from 0 to 8,706 of 10,553. The mid-conversation system role (prompt-caching.md) is not used: it is not available on
+  every model she routes to. The tail breakpoint is what lets the next tool round of a reply read the history this
+  round wrote; without it each round re-pays the whole history (a measured 4-round turn: reads stayed at the system
+  prompt's size while uncached input grew by a round's content each time). Each Anthropic call logs
   `inference.cache_layers`: a hash of the tools, the stable text and the turns, with the cache tokens read and written,
   so a miss inside the TTL is attributed to the layer whose hash moved. Rejected: the moment in the system prompt,
   the mid-conversation system role, top-level automatic caching (the
@@ -131,10 +132,10 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   reads (`ToolSpec.reads`), and a tool not known to only read, or a name the loop was not offered, is a change; the
   repeat rule uses it (a change that ran lets a read made before it run again). Her house reads are their own tools
   (`house_state`, `house_find`, `house_history`, `house_ask`); an action that only returns data, or a script in the household's `reads`
-  setting (its Home Assistant connection's settings), is asked through `house_ask`. She had reached for writes on read asks ("is the porch light on", `HassLightSet`); what
-  watches that is the house eval's attempted writes on its `read_only` cases (main before any gate: 1 of 22 runs in one
-  eval, 0 in another), and item 8's prompt cuts are measured by it. The eval keeps its own read allow-list
-  (`house_reads.json`) rather than reading `reads`: a guard that trusts what it checks cannot fail.
+  setting (its Home Assistant connection's settings), is asked through `house_ask`. What watches for writes on read
+  asks ("is the porch light on", `HassLightSet`) is the house eval's attempted writes on its `read_only` cases. The
+  eval keeps its own read allow-list (`house_reads.json`) rather than reading `reads`: a guard that trusts what it
+  checks cannot fail.
   - Rejected: a `declare_change` tool she must call before a change. A self-declaration by the model that errs
     protects nothing and costs steps: she called it on 8 of 12 information asks with `what` "none" or "nothing", and
     on action asks declared "none needed" and then made the change.
@@ -180,9 +181,9 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   or asked again, inside the `Held` (`stepping`) for `resume` to take as that round's step (a bench step ran 92 s and
   the person saw nothing).
   - The aside is the held line, so it is written as one: a whole sentence that stands alone, not a label for the call
-    (live, a held line read "And the choices note.", a fragment of the call it rode on). The aside and a fast cascade
-    step's own `holding` field (open-work item 6) are different fields; what they share is the builder of the held
-    `Reply`, `aside.holding`.
+    ("And the choices note." read as a fragment of the call it rode on). The aside and a fast cascade
+    step's own `holding` field are different fields; what they share is the builder of the held `Reply`,
+    `aside.holding`.
   - Rejected: a `holding` field on `Reply` as the source of a held line on a long turn. A step that calls tools has no
     `Reply`; the required argument is the field that exists on that step.
   - Rejected: a `hold` tool carrying the line. It is optional, so she can skip it, and skipping a holding line is the
@@ -252,8 +253,8 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
     every channel, and only the Gateway singleton holds a client.
   - **Long work is three layers, and this is only the last.** The outbox says something on a thread now. Which person,
     which channel and whether now is a good moment is Initiative's; a result nobody has heard yet is held on its
-    errand until it is told (open-work, "Errands"). An answer that outlives `stale_s` is stored on the thread and its push dropped; once errands land
-    it is told at the next chance.
+    errand until it is told (`decisions.md`, "Errands"). An answer that outlives `stale_s` is stored on the thread and
+    its push dropped.
   - Rejected: a hook that delivers the early reply while the turn runs, with the answer as `respond`'s return value.
     Each adapter would need that hook and, for Initiative, a second way to push: two delivery paths per channel. A new
     wake on the same satellite also cancels the run, and the answer with it.
@@ -270,9 +271,9 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   person who types while she is still working gets each message's runs under the answer to that message. Her turn
   records the person turn it answers (`NewTurn.answers`, the `turns.answers` column; the held line and the answer both
   carry it, a resumed answer too; null for a turn answering none; a person turn with it is refused), set where
-  `respond` stores her turns. It is not on the wire: the page is given the runs already placed. Migration 0037
-  backfilled older turns by position only where unambiguous (held lines and at most one answer between two person
-  turns); the rest stay null and show no runs. The page shows each as a collapsed disclosure
+  `respond` stores her turns. It is not on the wire: the page is given the runs already placed. Turns older than the
+  column are placed by position only where unambiguous (held lines and at most one answer between two person turns);
+  the rest are null and show no runs. The page shows each as a collapsed disclosure
   ("Ran Python · exit 0", or timed out, out of memory, failed, outcome unknown, no result recorded), opening to the
   script, input, output and files (`app/web/src/rooms/her/RunDetails.tsx`), the same component on all three surfaces.
   A run made by a bench's Run command (`NewRun.bench`) is its piece's: it shows on the code piece only, never under her
@@ -340,8 +341,9 @@ a shared device starts out unknown.
 
 - **A shared device signs in as a device**, with its own account mapped to a place and an audience, never to a
   person. The hallway tablet is everyone's kiosk.
-- **The speaker on a shared device comes from signals in code**: HA presence (one person home is that person),
-  voice identification later. Until one names someone, the speaker is unknown and gets shared facts only.
+- **The speaker on a shared device comes from signals in code**: HA presence (one person home is that person) and
+  voice identification, a hint (`channel-adapters.md`, "A voice names the speaker as a hint, never as a credential").
+  Until one names someone, the speaker is unknown and gets shared facts only.
 
 ## A person reads back their earlier conversations
 
