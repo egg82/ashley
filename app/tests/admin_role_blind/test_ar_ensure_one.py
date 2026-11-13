@@ -8,6 +8,7 @@ from admin_role_blind_support import (PUBLIC, MultiIdp, World, admin_ids, app_mo
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from fastapi.testclient import TestClient
 from httpx2 import ASGITransport, AsyncClient
+import psycopg
 import pytest
 
 
@@ -65,16 +66,17 @@ def test_app_mode_two_sign_ins_at_once_leave_exactly_one_new_admin(db_url: str, 
                                           for c, (code, state) in zip((a, b), grants)))
             assert [d.status_code for d in done] == [302, 302]
 
-    async def scenario() -> None:
+    async def scenario(conn: psycopg.Connection) -> None:
         async with app.router.lifespan_context(app):
             for _ in range(6):
                 await one_round((world.sub(world.ivy), world.sub(world.sam)))
-                await asyncio.to_thread(_check_and_reset, db_url, world)
+                await asyncio.to_thread(_check_and_reset, conn, world)
 
-    asyncio.run(scenario())
+    with psycopg.connect(db_url, autocommit=True) as conn:
+        asyncio.run(scenario(conn))
 
 
-def _check_and_reset(url: str, world: World) -> None:
-    got = admin_ids(url)
+def _check_and_reset(conn: psycopg.Connection, world: World) -> None:
+    got = [row[0] for row in conn.execute("SELECT id FROM people WHERE admin ORDER BY id").fetchall()]
     assert got == [world.alana], f"two sign-ins at once must make exactly one admin, the earliest person: {got}"
-    set_admin(url, world.alana, False)
+    conn.execute("UPDATE people SET admin = false WHERE id = %s", (world.alana,))
