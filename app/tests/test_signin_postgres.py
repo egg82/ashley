@@ -99,15 +99,14 @@ async def _begin_waits_for_a_peer_then_the_peer_locks(url: str, table: str, begi
         assert await started is True
 
 
-@pytest.mark.xfail(strict=True, reason="begin deletes before it locks, so two begins at once deadlock: a 503")
 def test_two_sign_ins_starting_at_once_do_not_deadlock(db_url: str) -> None:
     run(_begin_waits_for_a_peer_then_the_peer_locks(db_url, "signin_pending", lambda s: s.begin("s1", PENDING)))
 
 
-@pytest.mark.xfail(strict=True, reason="begin_link deletes before it locks, so two begins at once deadlock")
 def test_two_links_starting_at_once_do_not_deadlock(db_url: str) -> None:
+    hid, pid, _ = household(db_url)
     run(_begin_waits_for_a_peer_then_the_peer_locks(
-        db_url, "link_pending", lambda s: s.begin_link("l1", LinkPending(1, 1, "verifier-1"))))
+        db_url, "link_pending", lambda s: s.begin_link("l1", LinkPending(hid, pid, "verifier-1"))))
 
 
 def test_only_a_mapped_account_opens_a_session_and_its_token_finds_the_person(db_url: str) -> None:

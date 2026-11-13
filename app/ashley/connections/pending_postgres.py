@@ -30,9 +30,9 @@ class PostgresConnectPending(ConnectPending):
         sealed = self._sealer.seal(pending.verifier, _bound(pending.household_id, pending.person_id))
         with translated():
             async with self._database.connection() as conn:
+                await conn.execute("LOCK TABLE connect_pending IN SHARE ROW EXCLUSIVE MODE")
                 await conn.execute("DELETE FROM connect_pending WHERE created_at < now() - make_interval(mins => %s)",
                                    (self._minutes,))
-                await conn.execute("LOCK TABLE connect_pending IN SHARE ROW EXCLUSIVE MODE")
                 cur = await conn.execute(
                     "INSERT INTO connect_pending (state_sha256, household_id, person_id, kind, label, holder, verifier) "
                     "SELECT %s, %s, %s, %s, %s, %s, %s WHERE (SELECT count(*) FROM connect_pending) < %s",

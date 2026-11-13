@@ -67,9 +67,9 @@ class PostgresSessions(Sessions):
 
     async def begin(self, state: str, pending: Pending) -> bool:
         async with self._conn() as conn:
+            await conn.execute("LOCK TABLE signin_pending IN SHARE ROW EXCLUSIVE MODE")
             await conn.execute("DELETE FROM signin_pending WHERE created_at < now() - make_interval(mins => %s)",
                                (self._policy.pending_minutes,))
-            await conn.execute("LOCK TABLE signin_pending IN SHARE ROW EXCLUSIVE MODE")
             cur = await conn.execute(
                 "INSERT INTO signin_pending (state_sha256, verifier, nonce, next) "
                 "SELECT %s, %s, %s, %s WHERE (SELECT count(*) FROM signin_pending) < %s",
@@ -128,9 +128,9 @@ class PostgresSessions(Sessions):
 
     async def begin_link(self, state: str, pending: LinkPending) -> bool:
         async with self._conn() as conn:
+            await conn.execute("LOCK TABLE link_pending IN SHARE ROW EXCLUSIVE MODE")
             await conn.execute("DELETE FROM link_pending WHERE created_at < now() - make_interval(mins => %s)",
                                (self._policy.pending_minutes,))
-            await conn.execute("LOCK TABLE link_pending IN SHARE ROW EXCLUSIVE MODE")
             cur = await conn.execute(
                 "INSERT INTO link_pending (state_sha256, household_id, person_id, verifier) "
                 "SELECT %s, %s, %s, %s WHERE (SELECT count(*) FROM link_pending) < %s",
