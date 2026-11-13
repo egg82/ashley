@@ -15,7 +15,7 @@ from .errors import BridgeError
 from .herdr import Agent, Herdr, HerdrError
 from .logs import Log
 from .runner import HerdrMissing, HerdrTimeout
-
+from .transcripts import Transcripts, latest
 T = TypeVar("T")
 
 LABEL = re.compile(r"[a-z][a-z0-9_-]{0,31}")  # herdr's rule for an agent name
@@ -30,6 +30,7 @@ class Session:
     dir: str
     status: str
     seq: int
+    last_typed_at: str | None
 
     def wire(self) -> dict[str, object]:
         return {
@@ -38,7 +39,7 @@ class Session:
             "dir": self.dir,
             "status": self.status,
             "seq": self.seq,
-            "last_typed_at": None,
+            "last_typed_at": self.last_typed_at,
         }
 
 
@@ -56,13 +57,14 @@ def guarded(call: Callable[[], T], unsure: str = "herdr_unavailable") -> T:
 
 
 class Sessions:
-    def __init__(self, herdr: Herdr, roots: tuple[str, ...], start_timeout_ms: int, log: Log,
+    def __init__(self, herdr: Herdr, roots: tuple[str, ...], start_timeout_ms: int, log: Log, transcripts: Transcripts,
                  settle_s: float = 10.0, pause: Callable[[float], None] = time.sleep, keep_job_dirs: int = 20) -> None:
         self.herdr = herdr
         self.keep_job_dirs = keep_job_dirs
         self.settle_s = settle_s
         self.pause = pause
         self.log = log
+        self.transcripts = transcripts
         self.roots = tuple(os.path.realpath(r) for r in roots)
         self.start_timeout_ms = start_timeout_ms
         self.changing = threading.Lock()
@@ -71,6 +73,10 @@ class Sessions:
         agents = guarded(self.herdr.agents)
         tabs = guarded(self.herdr.tab_labels)
         return [self.shape(a, tabs.get(a.tab_id, "")) for a in agents]
+
+    def last_typed(self, listed: list[Session]) -> str | None:
+        """The latest time any of the listed sessions was typed into."""
+        return latest([s.last_typed_at for s in listed])
 
     def read(self, session_id: str, lines: int) -> dict[str, object]:
         agent = self.find(session_id)
@@ -82,6 +88,7 @@ class Sessions:
             agent = self.find(session_id)
             if agent.status in REFUSED:
                 raise BridgeError(REFUSED[agent.status])
+            self.transcripts.ledger.record(session_id, body)
             guarded(lambda: self.herdr.prompt(agent.pane_id, body), unsure="unconfirmed")
 
     def close(self, session_id: str) -> None:
@@ -171,12 +178,12 @@ class Sessions:
                 return agent
         raise BridgeError("not_found")
 
-    @staticmethod
-    def shape(agent: Agent, tab_label: str) -> Session:
+    def shape(self, agent: Agent, tab_label: str) -> Session:
         return Session(
             id=agent.session_id,
             label=agent.name or tab_label,
             dir=os.path.basename(agent.cwd.rstrip("/")),
             status=agent.status,
             seq=agent.seq,
+            last_typed_at=self.transcripts.last_typed(agent.session_id),
         )

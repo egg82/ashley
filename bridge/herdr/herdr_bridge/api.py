@@ -119,7 +119,8 @@ class Api:
         return req.body
 
     def listing(self) -> dict[str, object]:
-        return {"sessions": [s.wire() for s in self.sessions.sessions()], "last_typed_at": None,
+        listed = self.sessions.sessions()
+        return {"sessions": [s.wire() for s in listed], "last_typed_at": self.sessions.last_typed(listed),
                 "roots": list(self.sessions.roots)}
 
     def prompt(self, sid: str, req: Request) -> dict[str, object]:

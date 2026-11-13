@@ -78,8 +78,9 @@ bytes; an error is `{"error": <code>}`.
 | `GET /v1/sessions/{id}/out` | | `files`: `name` and `bytes` of each regular file directly in `out/` (none when `out/` is absent) |
 | `GET /v1/sessions/{id}/out/{name}` | | the file's bytes, `application/octet-stream` |
 
-`id` is the Claude session id. `status` is `idle`, `working`, `blocked`, `done` or `unknown`. `last_typed_at` is
-always `null` for now.
+`id` is the Claude session id. `status` is `idle`, `working`, `blocked`, `done` or `unknown`. `last_typed_at` is the
+ISO time you last typed into the session, and the list's own `last_typed_at` the latest of its sessions' (see Last typed);
+`null` when there is none or the transcript cannot be read.
 
 | Code | Status | Meaning |
 |---|---|---|
@@ -133,21 +134,34 @@ listed session runs in, or anything in `ashley-jobs` that is not named `j<digits
 job's `out/` and closes its session before its folder is old enough to go. The line `call=job_dirs_pruned removed=<n>`
 records a removal.
 
+### Last typed
+
+The bridge reads Claude Code's own transcript for each listed session (`<claude dir>/projects/<project>/<session id>.jsonl`;
+the claude dir is `$CLAUDE_CONFIG_DIR`, else `~/.claude`) and reports the time of the latest message you typed. A message
+counts when it is a user record that is not a tool result, not `isMeta`, `isCompactSummary` or `isSidechain`, whose `origin`
+is absent or `human`, and whose `promptSource` is absent, `typed` or `queued`. Messages from peer sessions, task
+notifications and `claude -p` do not count.
+
+herdr pastes a prompt Ashley sends, and Claude Code records the paste as it records typing, so the bridge keeps a ledger of
+what it sent: `sent-prompts.jsonl` in the state directory, one line per prompt holding the session, a sha256 of the text
+(never the text) and the time. A transcript message with the same text in that session within 300 seconds after a send
+(5 before) is hers. The ledger keeps 7 days and at most 2000 prompts. Only the bytes a transcript gained since the last
+list are read. Typing into a session herdr does not list is not seen.
+
 ## Upgrading
 
-0.3.0 starts a job session with the folder-scoped permissions above and keeps only the newest 20 job folders. Nothing
-about the calls changed, and the settings file needs no edit (`keep_job_dirs` is optional). From a checkout of this repository at the new version:
+0.4.0 answers `last_typed_at`. Nothing about the other calls changed, and the settings file needs no edit. From a checkout
+of this repository at the new version:
 
 ```bash
 ~/.local/share/ashley-herdr-bridge/venv/bin/pip install --upgrade ./bridge/herdr
 systemctl --user restart ashley-herdr-bridge
-~/.local/share/ashley-herdr-bridge/venv/bin/pip show ashley-herdr-bridge | grep '^Version'   # 0.3.0
+~/.local/share/ashley-herdr-bridge/venv/bin/pip show ashley-herdr-bridge | grep '^Version'   # 0.4.0
 journalctl --user -u ashley-herdr-bridge -n 3                                                  # call=serve status=listening
 ```
 
 The token, fingerprint and recorded person are kept, herdr and its sessions are not touched, and the service files did not
-change. Sessions already open keep the permissions they started with; the next job starts with the new ones. Until it is
-upgraded, a 0.1.0 bridge answers `whoami` without `capabilities`, and Ashley will not hand it file work.
+change. Prompts sent before the upgrade are not in the ledger.
 
 ## Logs
 

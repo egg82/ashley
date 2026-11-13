@@ -13,7 +13,7 @@ from herdr_bridge.files import Limits
 from herdr_bridge.herdr import Herdr
 from herdr_bridge.sessions import Sessions
 from herdr_bridge_blind_pki import Pki, make_pki as make_pki
-from herdr_bridge_blind_support import Bridge, MemoryLog, build_bridge, no_pause
+from herdr_bridge_blind_support import Bridge, MemoryLog, build_bridge, no_pause, transcripts_beside
 
 __all__ = ["Bridge", "Pki", "make_pki", "build_bridge", "files_bridge", "put", "listing", "fetch", "data_of", "tree",
            "session_dir"]
@@ -26,7 +26,7 @@ def files_bridge(b: Bridge, **limits: int) -> Bridge:
     same state and the same herdr, as a restart is. GUESS: the Api takes the Config as `config=`."""
     herdr = Herdr(b.herdr, 5.0)
     config = replace(b.config, **limits)
-    sessions = Sessions(herdr, config.roots, config.start_timeout_ms, b.log, settle_s=0.05, pause=no_pause)
+    sessions = Sessions(herdr, config.roots, config.start_timeout_ms, b.log, transcripts_beside(b.state_dir), settle_s=0.05, pause=no_pause)
     b.api = Api(Auth(b.state_dir), sessions, herdr, b.log, Limits(config.max_file_bytes, config.max_files))
     return b
 
