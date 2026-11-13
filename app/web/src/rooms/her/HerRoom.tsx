@@ -1,5 +1,5 @@
 // Her room, at the centre of the field: her mark and state on top, the open conversation on the person's web thread
-// below it, and the composer at the foot. "This conversation" sits beside it on wide screens. Scrolling up past the
+// below it, and the composer at the foot. Who hears it sits beside it on wide screens. Scrolling up past the
 // open conversation reads the person's earlier ones in above it, read only, under a divider each.
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { person } from '../../session/session';
@@ -57,7 +57,7 @@ export function HerRoom() {
           {ready && before > 0 && began && <Divider at={began} channel="web" place={null} />}
           {ready && <Thread lines={shown} name={person.value?.name ?? ''} thinking={thinking} conversation={open} />}
           {ready && reading !== 'loading' && before === 0 && !shown.length && !thinking && (
-            <p class="chat-quiet meta">Ask her anything, or ask her to take care of something.</p>
+            <p class="chat-quiet meta">Nothing yet. Whatever you say to her, here or anywhere else, shows up here.</p>
           )}
         </div>
         <Composer thread={`person:${person.value?.id ?? 0}:web`} disabled={sending.value || state !== 'ready'} send={send}

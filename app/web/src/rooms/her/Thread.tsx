@@ -19,11 +19,11 @@ import { VoiceMark } from '../../speech/VoiceMark';
 
 const MISSED: Record<Missed, string> = {
   refused: 'She declined to answer that.',
-  unreachable: "Can't reach her. No reply.",
-  failed: "That didn't go through. No reply.",
+  unreachable: "Can't reach Ashley, so she didn't get that. Try sending it again.",
+  failed: "That didn't send. Try sending it again.",
   stalled: "She didn't finish that one. Try sending it again.",
-  retrying: "Couldn't finish that. Trying again.",
-  unfinished: "Couldn't finish that.",
+  retrying: "She couldn't finish that and is trying again.",
+  unfinished: "She couldn't finish that. Ask again if you still want it.",
   too_big: 'That was too big to do in one go. Try asking for a smaller part.',
 };
 
