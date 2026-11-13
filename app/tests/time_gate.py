@@ -27,8 +27,10 @@ CEILING_S = float(os.environ.get("TEST_CEILING_S", "2.0"))
 SHARED_CEILING_S = float(os.environ.get("TEST_SHARED_CEILING_S", "10.0"))
 SHARED_SCOPES = frozenset({"session", "package", "module"})
 SPENT_KEY = pytest.StashKey[float]()
+WALL_PROPERTY = "time_gate_wall_s"
 _shared_s = [0.0]   # wall seconds this worker has spent in shared fixtures
 _shared_over: list[str] = []
+_near: list[tuple[float, str]] = []   # (charge, nodeid) of each test over half the ceiling, seen by the controller
 
 
 def enforced() -> bool:
@@ -79,6 +81,7 @@ def pytest_runtest_makereport(
     if report.when != "teardown" or not report.passed or not enforced():
         return report
     spent = item.stash[SPENT_KEY] - _shared_s[0]   # phases' wall time less the shared fixtures' seconds inside them
+    report.user_properties.append((WALL_PROPERTY, spent))   # xdist carries it to the controller's margin readout
     over, _shared_over[:] = list(_shared_over), []
     if too_slow(item.nodeid, spent):
         over.append(f"{item.nodeid} took {spent:.2f}s of wall clock, setup and teardown included")
@@ -87,3 +90,21 @@ def pytest_runtest_makereport(
         report.longrepr = (f"{'; '.join(over)}: over the per-test ceiling of {CEILING_S}s or the shared-fixture "
                            f"ceiling of {SHARED_CEILING_S}s (tests/time_gate.py). Speed it up or split it")
     return report
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    for name, value in report.user_properties:
+        if name == WALL_PROPERTY and isinstance(value, float) and value > CEILING_S / 2:
+            _near.append((value, report.nodeid))
+
+
+def pytest_terminal_summary(terminalreporter: pytest.TerminalReporter) -> None:
+    """The margin, never a verdict: every judged test over half the ceiling, so one drifting toward it shows before it
+    fails a run."""
+    if not enforced():
+        return
+    terminalreporter.section("time gate margin")
+    for spent, nodeid in sorted(_near, reverse=True):
+        terminalreporter.write_line(f"{spent:5.2f}s {'held ' if nodeid in HELD else ''}{nodeid}")
+    held = sum(nodeid in HELD for _, nodeid in _near)
+    terminalreporter.write_line(f"{len(_near)} tests over half the {CEILING_S}s ceiling, {held} of them held")
