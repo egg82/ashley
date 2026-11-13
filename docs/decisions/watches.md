@@ -3,21 +3,19 @@
 ## Watches wake her when what a read returns changes, until a condition or a time
 
 Some changes send no event: a Claude Code session the person nudged themselves finishing, a calendar event moved, a
-list edited (open-work, "Watches"). A watch is a read she repeats on a schedule with no model in the check; when what
-it returns changes, she is woken with what changed. The general mechanism has one kind so far, a Claude Code session,
-and it replaced the session sense. She can watch any of the person's sessions ("keep an eye on that one"), not only
-those she handed work to, and every watch ends at its `until` or its expiry.
+list edited. A watch is a read she repeats on a schedule with no model in the check; when what it returns changes,
+she is woken with what changed. A kind says what is read (`docs/systems.md` lists them); this file's worked kind is a
+Claude Code session. She can watch any of the person's sessions ("keep an eye on that one"), not only those she handed
+work to, and every watch ends at its `until` or its expiry.
 
 - Fits into: a new system, Watches. It meets the four tests in `docs/systems.md`: many callers, one question ("wake
-  her when what this returns changes, until X"), a second implementation already planned (a polled tool, a Home
-  Assistant subscription), and it owns each watch's baseline. Its kinds are a Type Object: code reads the source, and
-  data holds the defaults. An unknown kind gets a Null kind whose every read fails, so a stale row pauses instead of
-  breaking the tick. The session sense was the first copy it absorbed. Changes go into the
-  `wakes` queue (Senses), and the wakes runner runs the turn. Arming sits beside the reminder tools (Tools), and
-  agreement goes through `Proposals`.
+  her when what this returns changes, until X"), several implementations, and it owns each watch's baseline. Its kinds
+  are a Type Object: code reads the source, and data holds the defaults. An unknown kind gets a Null kind whose every
+  read fails, so a stale row pauses instead of breaking the tick. Changes go into the `wakes` queue (Senses), and the
+  wakes runner runs the turn. Arming sits beside the reminder tools (Tools), and agreement goes through `Proposals`.
 
 **A watch is one row: what it reads, which changes wake her, and when it ends.** A watch reads one target of one kind
-for one person (for this slice's kind `claude_session`, a session id on that person's bridge). From each read the kind
+for one person (for `claude_session`, a session id on that person's bridge). From each read the kind
 takes **items**, a map from an item's identity to its tracked fields. Tracked fields are scalars: text cut to
 `max_value_chars`, a number, a boolean or null, and an item holds at most `max_items` of them. For `claude_session` an
 item is keyed by its session id and its `track` is `status` and `seq`; the label is kept only for display. A watch also has
@@ -46,11 +44,10 @@ when some item new, changed or gone in that check satisfies it. Unchanged items 
 `field` must be a tracked field of the kind, and a condition may hold at most `max_alternatives` alternatives of
 `max_predicates` predicates each. Anything else is refused, never guessed.
 
-**`when` defaults to the kind's.** For `claude_session` (in the settings file, below), the default reproduces today's session
-sense: `[[one_of status [blocked, done], changed seq], [equals status idle, changed seq, not (equals status done, of
+**`when` defaults to the kind's.** For `claude_session` (in the settings file, below) the default is
+`[[one_of status [blocked, done], changed seq], [equals status idle, changed seq, not (equals status done, of
 before)]]`. A stop or a block wakes her. `working` does not. `done` becoming `idle` is only someone looking at the
-finish, and wakes nothing. Her tool does not set `when` in this slice; the polled kind, whose defaults cannot know
-what she wants, adds it.
+finish, and wakes nothing. Her tool never sets `when`; each kind's data does.
 
 **A check compares against the state at the last wake.** The first successful read is a silent **baseline**. A watch
 armed by a hand-off takes the state the session was in when she handed it work, so nothing old replays. After that,
@@ -100,7 +97,7 @@ The store writes the `wakes` row itself because the row and the baseline it repo
 wake per household, a `record` repeated at the same version cannot store two.
 
 **The job** is `ashley.watches.job.run`, a singleton under `ashley.referee.lease.Lease` named `watches`,
-started in `ashley.wiring_singletons.singletons` where `herdr_watch` was. Each tick (`tick_s`):
+started in `ashley.wiring_singletons.singletons`. Each tick (`tick_s`):
 
 1. `expire(keep_s)`.
 2. `due(batch)`, grouped by kind, household and person. Each group's kind reads once (`ashley.watches.kinds.Kind`:
@@ -127,11 +124,11 @@ runner killed mid-turn resumes the same turn.
 Initiative decides from `worth_saying` whether it goes out. It runs on the talk of the bench that armed the watch
 while that bench is open, otherwise on the person's phone thread, with the person as the one it is with. The stored
 message is the household's turn, written by the kind from fields alone (for a session: its label and status, never
-its screen). Her brief arrives only as the turn's `note`: the kind's note for the change (today's done and blocked
-notes move into the `claude_session` kind), which wake in the series this is and since when, and whether the watch
+its screen). Her brief arrives only as the turn's `note`: the kind's note for the change (the `claude_session` kind's done and blocked
+notes), which wake in the series this is and since when, and whether the watch
 has now ended. Its tools follow `Reminder.tools`: none named means only the tools that read
 (`ashley.tools.reading.Reading`), and named tools go through `ashley.tools.only.Only`. One exception: a hand-off
-watch keeps today's turn, with the thread's tools. The person handed that session work, and "For code and the cluster
+watch's turn has the thread's tools. The person handed that session work, and "For code and the cluster
 she is a front for Claude Code" already lets her act on it.
 
 **Her tools** (`ashley.tools.watches.WatchTools`) are offered where the reply reaches the speaker alone
@@ -150,19 +147,16 @@ a herdr bridge). Arguments and results are never logged.
 - `unwatch`: `kind` and `target`. She disarms by what she watched, never by an id she may have lost between messages.
 - `watches`: the speaker's live watches, each with kind, label, `until`, expiry and, when paused, the reason.
 
-`claude_start` and `claude_prompt` keep arming as they do today, through `ashley.tools.claude_watching.watching`, now
-`Watches.arm` with `armed_by` `handoff`, the kind's `handoff_until` and `handoff_hours`, and the session's state as the
-baseline. Their result still says `watched`.
-
-**The earlier session sense is gone.** Its poller, store, tunables and turn module are deleted, its cases are ported
-to the `claude_session` kind (below), and its table is migrated and dropped.
+`claude_start` and `claude_prompt` arm through `ashley.tools.claude_watching.watching`: `Watches.arm` with `armed_by`
+`handoff`, the kind's `handoff_until` and `handoff_hours`, and the session's state as the baseline. Their result says
+`watched`.
 
 **Settings are data**, `app/ashley/watches/watches.json`: `tick_s`, `batch`, `read_timeout_s`, `fail_after`,
 `retry_s`, `wake_max_age_s`, `keep_s`, `max_live`, `max_items`, `max_value_chars`, `max_alternatives`,
 `max_predicates`, and `kinds`, one entry per kind. The `claude_session` entry holds `interval_s` (15, as `poll_s`
 was), `hours` (24), `max_hours` (168), `handoff_hours` (72), `track` (`status`, `seq`), `when`, `handoff_until` and `outside` (false).
 
-**The migration** takes the next free number after main's head when it is built:
+**The tables:**
 
 - `watches`: id, `household_id`, `person_id` (a foreign key to `people (id, household_id)`, cascading), `kind`
   (a slug), `target` (1 to 200 characters), `label` (1 to 100), `bench_id` (nullable), `armed_by` (`ashley`,
@@ -175,9 +169,8 @@ was), `hours` (24), `max_hours` (168), `handoff_hours` (72), `track` (`status`, 
 - `wakes`: the kind check gains `watch`. New columns: `watch_id` (references `watches`, cascading) and `changes` (a
   JSON object). A check requires that `watch_id` is set exactly for kind `watch`, and that a watch wake has
   `changes` and `person_id` and no device. There is an index on `watch_id` where unsettled.
-- Each `herdr_watched` row becomes a `claude_session` watch: `armed_by` `handoff`, its status and `seq` as the
-  baseline, the kind's defaults as of the migration for `when` and `until`, and `expires_at` `handoff_hours` from
-  the migration. Then `herdr_watched` is dropped, so a deploy forgets no session she was watching.
+- `herdr_watched`, the earlier session sense's table, is migrated into `claude_session` watches (handoff, its status
+  and `seq` as the baseline, the kind's defaults) and dropped (`app/tests/test_herdr_watched_migration.py`).
 
 **What survives a failover:** everything, because the state lives in Postgres. A check is a read plus one
 transaction. A check cut short records nothing, and the next holder repeats the read, which changes nothing. A
@@ -195,46 +188,43 @@ flight survives its pod").
 **Measured by:**
 
 - Blind contract tests of `Watches`, written from the method table by an agent that has not seen the implementation,
-  then a planted-mutant run, as Errands had. They cover: arming the same target twice, `record` at a stale version,
+  then a planted-mutant run. They cover: arming the same target twice, `record` at a stale version,
   a second `Woke` at one version storing one wake, `due` skipping a watch with an unsettled wake, pausing at
   `fail_after` and resuming, and expiry pruning only watches with no unsettled wake.
 - Property tests of the pure parts. `diff(a, a)` is empty. `diff(b, a)` is `diff(a, b)` with new and gone swapped.
   A predicate on a missing side is false. `negate` flips. An alternative holds only when all its predicates hold.
-- The session-sense cases (`app/tests/test_watch_session.py`, `app/tests/test_watch_session_lease.py`) are ported to the
+- The session cases (`app/tests/test_watch_session.py`, `app/tests/test_watch_session_lease.py`) run against the
   `claude_session` kind under its default `when`: a second finish wakes, `done` to `idle` does not,
   `working` does not, `blocked` does, a session first seen replays nothing, a closed hand-off session ends silently,
-  and a holder killed between read and record loses and repeats nothing. One change from today: a herdr restart that
-  resets `seq` with the status unchanged now wakes her (`changed seq`), where it did not before; the turn is kept
-  quiet when there is nothing to say. Another: the baseline moves only on a wake, so after a finish she was told, a
-  later `working` then `idle` reads as the person looking at that finish and wakes nothing.
+  and a holder killed between read and record loses and repeats nothing. A herdr restart that resets `seq` with the
+  status unchanged wakes her (`changed seq`); the turn stays quiet when there is nothing to say. The baseline moves
+  only on a wake, so after a finish she was told, a later `working` then `idle` reads as the person looking at that
+  finish and wakes nothing.
 - An eval, `python -m ashley.evals` over cases in data, measuring and never gating. "Keep an eye on that one" arms
   `watch` on the session named, with no `until`. "Tell me when it's closed" gives `until` `[[gone]]`. "Stop watching
-  it" calls `unwatch`. "Tell me when the dryer's done" arms nothing, since no kind reads the house yet.
+  it" calls `unwatch`. "Tell me when the dryer's done" arms nothing, since no kind reads the house.
 
-**The next slices**, in order, each adding a kind as data plus one `Kind` implementation and no rework:
+**Not built yet** (queued in `docs/open-work.md`; each is data plus one `Kind` implementation and no rework):
 
-1. A polled read-only tool: any `ToolSpec.reads` tool with fixed arguments, called through the person's tools, its
-   result's list turned into items by `track`, whose first field is the identity. This covers the calendar
-   (`house_ask` `calendar.get_events`, which also gives the kiosk its calendar) and a list. Her tool gains `when`
-   here, since a tool kind has no default that knows what matters.
+1. A polled read-only tool: any `ToolSpec.reads` tool with fixed arguments, its result's list turned into items by
+   `track`, whose first field is the identity. This covers the calendar (`house_ask` `calendar.get_events`) and a
+   list. Her tool gains `when` here, since a tool kind has no default that knows what matters.
 2. A house entity, subscribed through Home Assistant's WebSocket (`subscribe_trigger`) by the job instead of polled.
    That needs a held connection, which `ashley.home_assistant.ha_socket` does not have (one command per connection).
 3. The ledger: the armed money reminder becomes a watch whose items are `ashley.criteria.record.Transaction`s, its
-   rule judged by the money predicates. `ashley.senses.deposit_sense` and its `deposit_reads` cursor are deleted.
+   rule judged by the money predicates. `ashley.senses.deposit_sense` and its `deposit_reads` cursor are then deleted.
 
 - **Rejected: running the checks inside the `wakes` sweep.** That would keep one singleton, but a turn takes minutes
   and runs in that sweep, so checks would wait behind it, and a read hanging on a bridge would delay due reminders.
-  The `watches` singleton replaces `herdr_watch`, so the count stays the same, and it drops by one when the deposit
-  sense folds in.
-- **Rejected: starting the turn from the check**, as the session sense did (hand off, then record). The record and
-  the hand-off were two steps, held together only by the turn's `source`. A `wakes` row commits with the baseline,
+- **Rejected: starting the turn from the check** (hand off, then record): two steps, held together only by the
+  turn's `source`. A `wakes` row commits with the baseline,
   and the queue's retry and expiry already exist.
 - **Rejected: a hash of the result in place of its fields.** A hash says that something changed, not what. The wake
   must name new, changed and gone items with their values, and `of` `before` must read the earlier one.
 - **Rejected: moving the baseline on every change.** Changes that wake nothing (`working`, a finish someone already
   saw) would disappear between wakes, and the next wake could not say what changed since the last one.
 - **Rejected: a watch with no expiry.** A session kept alive by a hung shell would cost a turn on every stop for days.
-  Today's hand-off watch ended only a week after its session vanished. Claude Code's own Monitors expire on their own.
+  Claude Code's own Monitors expire on their own.
 - **Rejected: `until` as prose** ("until the build passes"). It would need a model in every check, or matching on
   words, and could not be shown back to the person as what the watch waits for. A condition she cannot express in the
   predicates is a question to the person.
@@ -244,7 +234,6 @@ flight survives its pod").
 - **Rejected: pausing on the first failed read.** A laptop that sleeps would pause every watch on its bridge within a
   poll, and the watches would stay paused after it woke. `fail_after` absorbs blips, and a paused watch resumes when
   its source answers.
-- **Rejected for this slice: polling Home Assistant for house entities.** When house entities come (slice 2 above),
-  they come by subscription. Polling every entity a person watches every few seconds costs a REST call each, and
+- **Rejected for this slice: polling Home Assistant for house entities.** They will come by subscription (item 2 above). Polling every entity a person watches every few seconds costs a REST call each, and
   misses a change that flips and flips back between polls (a door opened and closed). A subscription is told of
   each change.
