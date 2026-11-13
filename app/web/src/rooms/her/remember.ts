@@ -24,11 +24,11 @@ function setAsking(turn: number, on: boolean): void {
 }
 
 function whyNot(error: unknown): string {
-  if (!(error instanceof ApiError)) return "Can't reach her. Not remembered.";
+  if (!(error instanceof ApiError)) return "Can't reach Ashley, so nothing was remembered. Try again.";
   if (error.status === 401) void reloadSession();
-  if (error.status === 503) return "Can't reach her. Not remembered.";
-  if (error.status === 422) return "She couldn't make anything of that.";
-  return error.status === 404 ? 'That line is gone.' : "That didn't go through.";
+  if (error.status === 503) return "Can't reach Ashley, so nothing was remembered. Try again.";
+  if (error.status === 422) return "She couldn't make anything of that line. Nothing changed.";
+  return error.status === 404 ? 'That line is gone, so nothing was remembered.' : "Couldn't remember that. Nothing changed. Try again.";
 }
 
 function saidOf(got: RememberResponse): string {
