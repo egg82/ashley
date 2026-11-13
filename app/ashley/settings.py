@@ -89,9 +89,10 @@ class Settings:
     `connections_key` is the app's key for households' connections (`ashley.connections.sealing`), standard base64
     of 32 bytes (wiring raises ValueError otherwise); unset, no connection can be added or read.
     `files_endpoints` (comma-separated `http(s)://host:port` of S3-compatible storage, this site's first and the
-    other sites' after), `files_bucket`, `files_access_key`, `files_secret_key` and `files_link_key` (a secret shared
-    by every pod, base64 or any text of 32 or more characters, that signs download links) wire the object store behind a
-    bench's image and file pieces; all five or none (ValueError). Unset, no file can be taken and no link is minted.
+    other sites' after), `files_bucket`, `files_access_key` and `files_secret_key` seed the object store connection at
+    start (`ashley.files.store_seed`); all four or none (ValueError). Once a connection exists it wins, and with none
+    and no row no file can be taken. `files_link_key` is a secret shared by every pod, base64 or any text of 32 or
+    more characters, that signs download links; unset, no link is minted.
     `herdr_client_cert_file` and `herdr_client_key_file` are the client certificate (issued by the `ashley-bridges` CA)
     and key she presents to a person's herdr bridge (`ashley.herdr`); both or neither (ValueError). Unset, no bridge
     can be reached.
@@ -199,11 +200,9 @@ class Settings:
             raise ValueError("GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be set together")
         if self.google_oauth_client_id and not self.public_url:
             raise ValueError("GOOGLE_OAUTH_CLIENT_ID needs PUBLIC_URL")
-        files = (self.files_endpoints, self.files_bucket, self.files_access_key, self.files_secret_key,
-                 self.files_link_key)
+        files = (self.files_endpoints, self.files_bucket, self.files_access_key, self.files_secret_key)
         if any(files) and not all(files):
-            raise ValueError("FILES_ENDPOINTS, FILES_BUCKET, FILES_ACCESS_KEY, FILES_SECRET_KEY and FILES_LINK_KEY "
-                             "must be set together")
+            raise ValueError("FILES_ENDPOINTS, FILES_BUCKET, FILES_ACCESS_KEY and FILES_SECRET_KEY must be set together")
         if self.files_link_key and len(self.files_link_key) < 32:
             raise ValueError("FILES_LINK_KEY must be at least 32 characters")
         if not DNS_LABEL.fullmatch(self.sandbox_namespace):

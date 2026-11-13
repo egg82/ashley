@@ -31,7 +31,7 @@ def reads(monkeypatch: pytest.MonkeyPatch) -> Generator[list[str]]:
 
 def test_the_first_household_adds_a_key_checked_once_and_never_shown(
         client: TestClient, reads: list[str], db_url: str, caplog: pytest.LogCaptureFixture) -> None:
-    assert [k.name for k in listed(client).offered][-8:-4] == PROVIDERS
+    assert [k.name for k in listed(client).offered][-9:-5] == PROVIDERS
     made = client.post("/api/connections", json={"kind": "anthropic", "label": "", "api_key": KEY}, headers=ORIGIN)
     assert made.status_code == 201, made.text
     assert made.json()["base_url"] == ANTHROPIC_API and reads == [ANTHROPIC_API + "/v1/models"]

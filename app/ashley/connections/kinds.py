@@ -94,7 +94,8 @@ class ConnectionKind:
     the provider name routes use) sets `label_pattern`, the shape every label of it must match whole, and
     `reserved_labels`, names it must not take (`takes_label`); any other kind takes any label. A kind that sets
     `picks_catalogue_provider` lets a person say which model catalogue provider its calls are priced as
-    (`Connection.catalogue_provider`)."""
+    (`Connection.catalogue_provider`). A kind with `addresses` takes several, typed comma-separated, each judged by
+    the address rule and stored in the typed order (the object store's, one per site)."""
 
     name: str
     title: str
@@ -123,6 +124,7 @@ class ConnectionKind:
     label_pattern: str | None = None
     reserved_labels: frozenset[str] = frozenset()
     picks_catalogue_provider: bool = False
+    addresses: bool = False
 
     def __post_init__(self) -> None:
         if self.most < 1:
@@ -147,7 +149,12 @@ class ConnectionKind:
         the address rule; None when it is not an address of this kind."""
         if self.fixed_address is not None:
             return self.fixed_address
-        return None if typed is None else address.base_url(typed, self.schemes, self.pinned)
+        if typed is None:
+            return None
+        if not self.addresses:
+            return address.base_url(typed, self.schemes, self.pinned)
+        each = [address.base_url(part, self.schemes, self.pinned) for part in typed.split(",")]
+        return None if None in each else ",".join(a for a in each if a is not None)
 
 
 class ConnectionKinds(Service):

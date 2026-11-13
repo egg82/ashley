@@ -98,7 +98,7 @@ app at start-up when one of them is missing.
 | Connections, added in the web app: Home Assistant, Sure, GitLab, GitHub, herdr, Google | `CONNECTIONS_KEY`, 32 random bytes in base64, which seals their secrets in the database |
 | Home Assistant for the first household, without the web app | `HA_URL`, `HA_TOKEN` (a long-lived access token) |
 | Web search | `SEARXNG_URL` |
-| Files on benches | `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY`, `FILES_SECRET_KEY`, `FILES_LINK_KEY` (any S3-compatible store) |
+| Files on benches | `FILES_ENDPOINTS`, `FILES_BUCKET`, `FILES_ACCESS_KEY`, `FILES_SECRET_KEY` (any S3-compatible store; they seed its connection), `FILES_LINK_KEY` |
 | Voice | `WYOMING_STT_URL` or `OPENAI_API_KEY` to hear, `ELEVENLABS_API_KEY` (or the first household's ElevenLabs connection) to speak, `VOICE_CLIP_BASE_URL` and `ESPHOME_NOISE_PSK` for satellites |
 | Discord | `DISCORD_BOT_TOKEN`; `DISCORD_OAUTH_CLIENT_ID`, `DISCORD_OAUTH_CLIENT_SECRET` and `PUBLIC_URL` to link accounts |
 | Gmail | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `PUBLIC_URL`, `CONNECTIONS_KEY` |

@@ -16,6 +16,7 @@ from typing import Protocol
 
 from .. import logs
 from .config import FilesConfig
+from .connected_store import ConnectedStore
 from .intake import PREFIX
 from .mirror import MirroredStore
 from .store import ObjectStore, StoreUnavailable
@@ -112,8 +113,13 @@ async def run_once(store: ObjectStore, referenced: Referenced, candidates: Candi
                    clock: Callable[[], datetime] = lambda: datetime.now(UTC)) -> Swept | None:
     """One pass; None when nothing could be judged (no site listed, or the references or candidates could not be
     read or kept: a failure is logged with its frames and nothing is deleted). Logs `files.sweep_started`, one
-    `files.sweep_store` per site and `files.swept`."""
+    `files.sweep_store` per site and `files.swept`; `files.sweep_skipped` when no store is connected."""
     started = time.monotonic()
+    try:
+        store = await store.current() if isinstance(store, ConnectedStore) else store
+    except StoreUnavailable:
+        logs.info(log, "files.sweep_skipped")
+        return None
     logs.info(log, "files.sweep_started")
     try:
         swept = await _pass(store, referenced, candidates, config, clock())
