@@ -30,7 +30,7 @@ OLD = "automation.old_porch"
 def house(signed_in: As) -> Generator[FakeHouse]:
     made = FakeHouse()
     made.add("old_porch", "Old porch", on=True)
-    services.register(Homes, AnyHousehold(made.client()))
+    services.register(Homes, AnyHousehold(made.house()))
     yield made
     services.unregister(Homes)
 

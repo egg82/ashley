@@ -31,7 +31,7 @@ OWNER = Owner(ALANA.household_id, ALANA.id)
 @pytest.fixture
 def house(signed_in: As) -> Generator[FakeHouse]:
     made = FakeHouse()
-    services.register(Homes, AnyHousehold(made.client()))
+    services.register(Homes, AnyHousehold(made.house()))
     yield made
     services.unregister(Homes)
 

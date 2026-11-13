@@ -6,10 +6,10 @@ one Home per household given, which can go down."""
 from dataclasses import dataclass, field
 
 import httpx2
-from ashley.home_assistant.automations import Automations, NullAutomations
+from ashley.home_assistant.automations import NullAutomations
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes, HomesUnavailable
-from ashley.home_assistant.house import NullHouse
+from ashley.home_assistant.house import House, NullHouse
 
 TOKEN = "the-households-ha-token"
 
@@ -50,14 +50,14 @@ class StandIn:
 
 
 class AnyHousehold(Homes):
-    """Every household reaches the same Home, built over `automations`."""
+    """Every household reaches the same Home, built over `house`."""
 
-    def __init__(self, automations: Automations, home_assistant: HomeAssistant | None = None) -> None:
-        self._automations = automations
+    def __init__(self, house: House, home_assistant: HomeAssistant | None = None) -> None:
+        self._house = house
         self._home_assistant = home_assistant or HomeAssistant(httpx2.AsyncClient(base_url="http://ha.test:8123"))
 
     async def of(self, household_id: int) -> Home | None:
-        return Home(household_id, self._home_assistant, self._automations, NullHouse())
+        return Home(household_id, self._home_assistant, NullAutomations(), self._house)
 
     async def check(self, base_url: str, token: str) -> None:
         raise NotImplementedError

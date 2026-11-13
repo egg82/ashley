@@ -106,7 +106,7 @@ def offered() -> list[ToolSpec]:
     people = Household(HOUSEHOLD, "home", "America/Denver", "",
                        (Person(ALANA, HOUSEHOLD, "Alana"), Person(SAM, HOUSEHOLD, "Sam")))
     wired: dict[type[Any], Any] = {Tools: shared, Connections: connections, People: Home(people), Sandbox: Box(),
-                                   Deposits: NullDeposits(), Proposals: _Proposed(), Homes: AnyHousehold(FakeHouse().client())}
+                                   Deposits: NullDeposits(), Proposals: _Proposed(), Homes: AnyHousehold(FakeHouse().house())}
     for interface, provider in wired.items():
         services.register(interface, provider)
     try:

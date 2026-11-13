@@ -11,7 +11,7 @@ import httpx2
 from ashley.connections.connections import Connections, ConnectionsUnavailable
 from ashley.connections.model import Connection, Holder, Kind, Opened
 from ashley.home_assistant.client import HomeAssistant
-from ashley.home_assistant.house import House, HouseUnavailable, Performed, State
+from ashley.home_assistant.house import ConfigItem, ConfigKind, House, HouseUnavailable, Performed, State
 from ashley.home_assistant.rest_automations import AutomationsConfig
 from house_double_support import MemoryHouse, state
 
@@ -162,6 +162,10 @@ class HostHouse(MemoryHouse):
     async def states(self) -> tuple[State, ...]:
         await self._asked("/api/states")
         return await super().states()
+
+    async def configs(self, kind: ConfigKind) -> tuple[ConfigItem, ...]:
+        await self._asked("/api/states")
+        return await super().configs(kind)
 
     async def perform(self, action: str, ids: tuple[str, ...], data: Mapping[str, Any]) -> Performed:
         await self._asked("/api/services/" + action.replace(".", "/"))
