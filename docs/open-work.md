@@ -50,17 +50,14 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
    - **"Hey Ashley" on the device:** `deploy/esphome/wake-words/hey_ashley` is the first Echo's only wake word and
      wakes on "hey/okay Ashley" in a real voice. Count its false wakes over a week of household use and tune its
      cutoff from them. A second model where bare "Ashley" wakes too scored 0 per hour on household audio and about 2
-     on general audio; it waits for the two items below and needs retraining on the `hey_ashley` architecture.
+     on general audio; it waits for the item below, for how often she chooses `none` on real wakes (`voice.run`'s `says`
+     field), and needs retraining on the `hey_ashley` architecture.
    - **Audio from before the wake word.** A mention ("did you ask Ashley to turn off the lights?") reaches her as
      "to turn off the lights", which reads as a command; the words that make it a mention come before the wake.
      ESPHome (2026.10.0) streams from the wake only, so this is our own component: a rolling buffer of the last
      seconds of mic audio, sent ahead of the live stream on a wake. The server needs no change. The Echo has no
      PSRAM and each second of 16 kHz audio is 32 KB, so measure its free heap (`debug:`) before choosing the length;
      a Voice PE has room for several seconds. The buffer never leaves the device unless she wakes.
-   - **A voice reply can decline or offer.** The reply's structured field, as in her Discord home: `reply`, `offer`
-     (one short question when she overheard something she could do, "did you want me to?") or `none` (stay silent).
-     After `none` the follow-up window stays shut, so a false wake records one utterance and no more. Log the field as
-     a count; how often `none` is chosen on real wakes decides whether bare "Ashley" can wake her.
    - **Flash the remaining cubes** (M5Stack's factory Bluetooth-speaker firmware today) from
      `deploy/esphome/m5stack-atom-echo.yaml`: Wi-Fi, the API key and the OTA password from the deployment's secret
      store, decrypted into the build directory only for the build (`docker.io/esphome/esphome:2026.10.0 compile`). A first
@@ -392,7 +389,7 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     | Reads | every person's message, as turns (memory takes note) | when pinged; the read-channel tool for context |
     | Speaks | per message, a structured field on her reply: `reply`, `react` (an emoji) or `none`, erring to reply when asked anything | when pinged; unprompted only as an aside (Asides) |
 
-    The field joins `Reply` for every channel; voice always takes `reply`. Rejected: reading every channel and replying
+    The field is `Reply.says` (`ashley.inference.reply.Says`), shared by every channel; Discord adds `react`, voice takes `reply`, `offer` or `none`. Rejected: reading every channel and replying
     when she has something to say, which is a model call per message and a rate a stateless call cannot keep, and would
     have memory distil every channel.
     - Fits into: Tools (a Discord tool provider beside Home Assistant's) and Initiative (when she tends it: a seeded
