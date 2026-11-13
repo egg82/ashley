@@ -54,9 +54,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
       rather than per worker. Fits into: the structural gates.
 45. **A cold-read distill of each `docs/decisions/` file and of `docs/systems.md`** (`doc-cold-read`): the split moved
     them byte for byte, so they still carry deliberation and history where each should state what is true now.
-47. **Two sign-in starts at once answered 503 once.** Two simultaneous `GET /api/auth/signin` in the admin blind
-    writer's race harness gave one 503 (2026-11-10), unexplained and not in the admin logic. Reproduce with that
-    harness first. Fits into: Sign-in.
 
 1. **Her own voice pipeline, past the first Echo.** One wake on the first Echo (an M5Stack Atom Echo) reaches
    her through her own pipeline: faster-whisper on each site, the turn loop, ElevenLabs, played on the
