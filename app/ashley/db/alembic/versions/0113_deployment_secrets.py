@@ -3,8 +3,8 @@ connections key. Written once, by whichever pod settles it first, and never upda
 
 from alembic import op
 
-revision: str = "0112"
-down_revision: str | None = "0111"
+revision: str = "0113"
+down_revision: str | None = "0112"
 
 
 def upgrade() -> None:
