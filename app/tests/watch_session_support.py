@@ -3,6 +3,7 @@ app's Bridge port answering from the real bridge program over the captured `herd
 status and `state_change_seq` set by the test; a person's herdr connection; browsers subscribed; and the services the
 turn loop reaches (`bench_reacts_support.world`)."""
 
+import asyncio
 import json
 import tempfile
 from collections import Counter
@@ -58,6 +59,9 @@ class RealBridge(Bridge):
         self.program, self.herdr = program, herdr
         self.down = False
         self.asked = 0
+        self.hold: asyncio.Event | None = None
+        """When an event, each listing is taken and then answered only once the event is set, so a check can be kept in
+        flight while the test changes the world."""
 
     def state(self, status: str, seq: int, session: str = SESSION) -> None:
         self.herdr.replies[("agent", "list")] = listing_with({session: (status, seq)})
@@ -68,6 +72,8 @@ class RealBridge(Bridge):
             raise BridgeFailed("herdr_unavailable")
         got = self.program.get("/v1/sessions")
         assert got.status == 200
+        if self.hold is not None:
+            await self.hold.wait()
         return wire.sessions(json.dumps(got.body).encode())
 
     async def whoami(self, access: Access) -> Whoami:
