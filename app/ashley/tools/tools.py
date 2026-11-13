@@ -10,8 +10,8 @@ Tool arguments and results can carry people's data and are never logged; tool na
 are."""
 
 from abc import abstractmethod
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 
 from ..inference.model import Tier, ToolCall, ToolResult, ToolSpec
 from ..services import Service
@@ -31,13 +31,15 @@ class Catalogue:
     the sources that did not answer, in source order (`composite.CompositeTools`). `now` is the source's state at this
     moment (a bench's pieces), for the `moment` layer of the system prompt, never `stable`; None when it has none. `sources` is the keys of the
     sources that answered with a tool, in source order (`composite.CompositeTools`), empty for one that is not a
-    Composite."""
+    Composite. `owners` is the key of the source that offered each tool, by tool name, for a Composite's; empty
+    otherwise and for a tool a wrapper added."""
 
     specs: tuple[ToolSpec, ...]
     instructions: str | None
     unreachable: tuple[str, ...] = ()
     now: str | None = None
     sources: tuple[str, ...] = ()
+    owners: Mapping[str, str] = field(default_factory=dict[str, str])
 
 
 class Tools(Service):

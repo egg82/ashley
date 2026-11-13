@@ -59,7 +59,7 @@ class CompositeTools(Tools):
         now = [c.now.strip() for _, c in reached if c.now and c.now.strip()]
         sources = tuple(key for key, c in reached if c.specs)
         return Catalogue(tuple(specs), "\n\n".join(texts) or None, unreachable + inner, "\n\n".join(now) or None,
-                         sources)
+                         sources, owner)
 
     async def call(self, call: ToolCall) -> ToolResult:
         started = time.monotonic()
