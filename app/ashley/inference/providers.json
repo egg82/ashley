@@ -34,6 +34,12 @@
     "kind": "paid",
     "source": "https://elevenlabs.io/docs/api-reference/user/subscription/get"
   },
+  "claude_cli": {
+    "label": "Claude subscription",
+    "kind": "paid",
+    "why_unknown": "Anthropic documents a subscription's limits (a five-hour session and a weekly limit, shared with the Claude apps) and warnings near them, but no call that returns what remains",
+    "source": "https://support.claude.com/en/articles/11145838-use-claude-code-with-your-pro-max-or-ultra-plan"
+  },
   "fastembed": {"label": "FastEmbed", "kind": "local"},
   "sherpa": {"label": "Sherpa", "kind": "local"},
   "wyoming": {"label": "Wyoming", "kind": "local"}

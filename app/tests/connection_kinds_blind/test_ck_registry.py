@@ -23,7 +23,7 @@ from ashley.wiring import CONNECTION_KINDS
 from connection_kinds_blind_support import KIND_NAMES, kind_named
 
 REASONS = ("bad_url", "key_refused", "unreachable", "wrong_service")
-PROVIDERS = ("anthropic", "openai", "gemini", "elevenlabs")
+PROVIDERS = ("anthropic", "openai", "gemini", "elevenlabs", "claude_cli")
 
 
 async def accepts(base_url: str, secret: str, person_id: int) -> None:

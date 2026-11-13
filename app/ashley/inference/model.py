@@ -25,6 +25,11 @@ structured fields (`ashley.evals.bench_replay_grader`). A new kind of work (an o
 `routes.json`, and a migration widening the spend ledger's check."""
 
 
+TOOLLESS: frozenset[Task] = frozenset({"memory_write", "memory_judge", "bench_tidy", "action_judge", "eval_judge"})
+"""The tasks whose calls never offer tools, which `RoutedInference.step` enforces; only these may be routed to a
+provider that takes none (`provider.Provider.takes_tools`)."""
+
+
 TaskName = Task | SpeechTask | EmbedTask | VoiceprintTask | ImageTask
 """Any task a call can be for: the key of a route list and of a spend row."""
 

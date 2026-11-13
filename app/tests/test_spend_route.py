@@ -64,7 +64,7 @@ def test_the_response_validates_against_its_model_and_lists_every_paid_provider_
     body = get(c)
     assert [w.name for w in body.windows] == ["today", "week", "month"] and body.zone == "America/Denver"
     paid = [p.provider for p in body.providers]
-    assert paid == ["anthropic", "openai", "gemini", "gemini_image", "openai_image", "elevenlabs"]
+    assert paid == ["anthropic", "openai", "gemini", "gemini_image", "openai_image", "elevenlabs", "claude_cli"]
     first = body.providers[0]
     assert first.usage.month.calls == 0 and first.usage.month.input_tokens is None and first.usage.month.cost_usd is None
     assert first.tasks == [] and first.estimate is None

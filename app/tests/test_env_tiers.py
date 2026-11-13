@@ -52,6 +52,7 @@ ENV: dict[str, tuple[str, str]] = {
     "OPENAI_API_KEY": (S, "the first household's provider connection; the row wins"),
     "GEMINI_API_KEY": (S, "the first household's provider connection; the row wins"),
     "ELEVENLABS_API_KEY": (S, "the first household's provider connection; the row wins"),
+    "CLAUDE_CODE_OAUTH_TOKEN": (S, "the first household's Claude subscription connection; the row wins"),
     "HA_URL": (S, "the first household's Home Assistant connection; the row wins"),
     "HA_TOKEN": (S, "the first household's Home Assistant connection; the row wins"),
     "LOCAL_LLM_URL": (S, "the first household's OpenAI-compatible connection labelled local; the row wins"),
@@ -93,7 +94,7 @@ ENV: dict[str, tuple[str, str]] = {
 
 SEEDS: dict[str, str] = {
     "ANTHROPIC_API_KEY": "anthropic", "OPENAI_API_KEY": "openai", "GEMINI_API_KEY": "gemini",
-    "ELEVENLABS_API_KEY": "elevenlabs", "HA_URL": "home_assistant", "HA_TOKEN": "home_assistant",
+    "ELEVENLABS_API_KEY": "elevenlabs", "CLAUDE_CODE_OAUTH_TOKEN": "claude_cli", "HA_URL": "home_assistant", "HA_TOKEN": "home_assistant",
     "LOCAL_LLM_URL": "openai_compatible", "LOCAL_LLM_API_KEY": "openai_compatible",
     "WYOMING_STT_URL": "wyoming", "SEARXNG_URL": "searxng",
     "DISCORD_BOT_TOKEN": "discord", "ESPHOME_NOISE_PSK": "esphome",

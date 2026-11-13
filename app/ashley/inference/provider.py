@@ -79,6 +79,12 @@ class Wired(ABC):
 class Provider(Wired):
     """One reachable model API."""
 
+    @property
+    def takes_tools(self) -> bool:
+        """Whether it can be offered tools. One that cannot may be routed only for a task in `model.TOOLLESS`, which
+        the routes check when they load."""
+        return True
+
     @abstractmethod
     def check_params(self, params: Mapping[str, object]) -> None:
         """Raises ValueError naming the first parameter this provider does not take or a value it would reject.

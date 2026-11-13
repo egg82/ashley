@@ -184,7 +184,7 @@ def test_not_signed_in_is_401(client: TestClient) -> None:
 def test_without_the_apps_key_nothing_can_be_connected(db_url: str, homes: Homes, sure: FakeSure) -> None:
     for c in _client(db_url, homes, sure, ""):
         off = listed(c)
-        assert off.connections == [] and not off.can_connect and len(off.offered) == 15
+        assert off.connections == [] and not off.can_connect and len(off.offered) == 16
         got = put_kind(c, "sure", json={"base_url": BASE, "api_key": KEY}, headers=ORIGIN)
         assert got.status_code == 503 and sure.seen == []
 

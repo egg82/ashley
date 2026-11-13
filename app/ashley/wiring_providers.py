@@ -16,7 +16,8 @@ from .settings import Settings
 def env_keys(settings: Settings) -> dict[str, str]:
     """The env's key for each keyed provider, by its kind name; empty when unset."""
     return {"anthropic": settings.anthropic_api_key, "openai": settings.openai_api_key,
-            "gemini": settings.gemini_api_key, "elevenlabs": settings.elevenlabs_api_key}
+            "gemini": settings.gemini_api_key, "elevenlabs": settings.elevenlabs_api_key,
+            "claude_cli": settings.claude_code_oauth_token}
 
 
 def env_compatible(settings: Settings) -> dict[str, KeyInForce]:

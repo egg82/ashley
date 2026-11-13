@@ -23,7 +23,8 @@ class Settings:
     layout. `failback` is `on` or `off` (ValueError otherwise): off, the fail-back singleton does not run, for a Postgres
     whose own operator decides the preferred site.
     `patroni_password` is Patroni's REST API password, which the fail-back singleton needs to switch over.
-    `anthropic_api_key`, `openai_api_key`, `gemini_api_key` and `elevenlabs_api_key` are the env's keys for those
+    `anthropic_api_key`, `openai_api_key`, `gemini_api_key`, `elevenlabs_api_key` and `claude_code_oauth_token` (the
+    Claude subscription's, for `ashley.inference.claude_cli`) are the env's keys for those
     providers: in force wherever the first household has no connection of the provider's kind, and sealed as that
     connection at start (`ashley.inference.key_seed`); once a row exists it wins. `local_llm_url` (with
     `local_llm_api_key`, which a local server may not need) wires a local provider when set.
@@ -123,6 +124,7 @@ class Settings:
     ha_token: str = ""
     wyoming_stt_url: str = ""
     elevenlabs_api_key: str = ""
+    claude_code_oauth_token: str = ""
     voice_clip_base_url: str = ""
     esphome_noise_psk: str = ""
     discord_bot_token: str = ""
@@ -254,6 +256,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     ha_url=env.get("HA_URL", ""), ha_token=env.get("HA_TOKEN", ""),
                     wyoming_stt_url=env.get("WYOMING_STT_URL", ""),
                     elevenlabs_api_key=env.get("ELEVENLABS_API_KEY", ""),
+                    claude_code_oauth_token=env.get("CLAUDE_CODE_OAUTH_TOKEN", ""),
                     voice_clip_base_url=env.get("VOICE_CLIP_BASE_URL", "").rstrip("/"),
                     esphome_noise_psk=env.get("ESPHOME_NOISE_PSK", ""),
                     discord_bot_token=env.get("DISCORD_BOT_TOKEN", ""),
