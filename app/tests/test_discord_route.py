@@ -24,7 +24,7 @@ def inbound(**changes: object) -> Inbound:
     """What the household channel yields for Alana's "hello"."""
     base = Inbound(household_id=1, thread=f"discord:{CHANNEL}", text="hello", kind="chat", medium="text",
                    audience="household", speaker_id=ALANA.id, shared=False, place=None, channel="discord", remembers=True, later=True,
-                   source=f"discord:{message().id}")
+                   source=f"discord:{message().id}", discord_channel=CHANNEL)
     return replace(base, **changes)
 
 
@@ -53,23 +53,24 @@ def test_a_server_that_is_not_a_registered_device_is_ignored_even_when_she_is_me
 
 def test_any_channel_of_a_registered_server_is_answered_when_addressed_not_only_the_home_channel() -> None:
     got = route(message(channel_id=SIDE_CHANNEL), ME, SERVERS, ALANA)
-    assert got == inbound(thread=f"discord:{SIDE_CHANNEL}")
+    assert got == inbound(thread=f"discord:{SIDE_CHANNEL}", discord_channel=SIDE_CHANNEL)
     assert route(message(channel_id=SIDE_CHANNEL, mentions_me=False), ME, SERVERS, ALANA) is None, "still needs an address"
 
 
 def test_each_channel_is_its_own_thread_and_the_server_gives_the_settings() -> None:
     threads = {c: route(message(channel_id=c), ME, SERVERS, ALANA) for c in (CHANNEL, SIDE_CHANNEL, SIDE_CHANNEL + 1)}
     assert [t.thread for t in threads.values() if t is not None] == [f"discord:{c}" for c in threads]
-    assert {replace(t, thread="") for t in threads.values() if t is not None} == {inbound(thread="")}
+    assert {replace(t, thread="", discord_channel=CHANNEL) for t in threads.values() if t is not None} == {inbound(thread="")}
+    assert [t.discord_channel for t in threads.values() if t is not None] == list(threads)
 
 
 def test_a_servers_device_is_found_by_guild_whichever_channel_the_ids_collide_with() -> None:
     other = Device(9, 3, "other house", "den", "household", "text", "chat")
     both = {GUILD: DiscordServer(FAMILY, GUILD, CHANNEL), OTHER_GUILD: DiscordServer(other, OTHER_GUILD, OTHER_CHANNEL)}
     assert route(message(guild_id=OTHER_GUILD, channel_id=CHANNEL), ME, both, None) == inbound(
-        household_id=3, thread=f"discord:{CHANNEL}", speaker_id=None, taint="stranger")
+        household_id=3, thread=f"discord:{CHANNEL}", speaker_id=None, taint="stranger", discord_channel=CHANNEL)
     assert route(message(guild_id=GUILD, channel_id=OTHER_CHANNEL), ME, both, ALANA) == inbound(
-        thread=f"discord:{OTHER_CHANNEL}")
+        thread=f"discord:{OTHER_CHANNEL}", discord_channel=OTHER_CHANNEL)
 
 
 def test_household_kind_medium_audience_and_remembers_come_from_the_servers_device() -> None:

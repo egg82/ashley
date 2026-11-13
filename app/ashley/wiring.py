@@ -63,6 +63,7 @@ from .inference.balance import ProviderBalances
 from .connections.address_in_force import AddressInForce
 from .inference.compatible import KIND as COMPATIBLE
 from .inference.wyoming_kind import KIND as WYOMING
+from .channels.discord.token_in_force import TokenInForce
 from .channels.discord.token_kind import KIND as DISCORD
 from .channels.voice.key_kind import KIND as SATELLITE_KEY
 from .inference.kinds import KEYED
@@ -147,6 +148,8 @@ from .tools import home_assistant_config, home_location, house_look_config, hous
 from .tools.action_judge import ActionJudge
 from .tools.action_judge_model import ModelActionJudge
 from .tools.composite import CompositeTools
+from .tools.discord_posts import ChannelPosts
+from .tools.discord_posts_http import HttpChannelPosts
 from .tools.everyday import Everyday, HomesEveryday
 from .tools.house_act import Rules
 from .tools.house_tools import HouseTools
@@ -304,6 +307,10 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
         services.register(DiscordOAuth, HttpDiscordOAuth(DiscordApp(
             settings.discord_oauth_client_id, settings.discord_oauth_client_secret,
             settings.public_url + DISCORD_CALLBACK), discord_http))
+    posts_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
+    closers.append(posts_http.aclose)
+    services.register(ChannelPosts, HttpChannelPosts(
+        TokenInForce(lambda: services.get(Connections), settings.discord_bot_token), posts_http))
     _wire_homes(settings, closers)
     wire_inference(settings, narrow, closers)
     services.register(SpendReport, SpendView(services.get(Database), lambda: services.get(People),

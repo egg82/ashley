@@ -137,7 +137,9 @@ class Inbound:
     `channels.wake.moment`), so whichever runner finishes it decides the same; None on every other turn. `errand` is
     the wake id of the errand occurrence this turn is a check of, set only by the reminder turn
     (`channels.wake.reminder_turn`): it offers her `check_again` (`ashley.tools.errand_step`) whatever else narrows the
-    turn's tools; None on every other turn."""
+    turn's tools; None on every other turn.
+    `discord_channel` is the id of the server channel the message came from, set only by the Discord adapter on a server
+    message (never a DM), and offers her a read of that channel (`tools.discord_read`)."""
 
     household_id: int
     thread: str
@@ -176,6 +178,7 @@ class Inbound:
     overhears: bool = False
     moment: Moment | None = None
     errand: int | None = None
+    discord_channel: int | None = None
 
     @property
     def lands_on(self) -> int | None:

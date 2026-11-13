@@ -51,6 +51,7 @@ Today's tools, set by the field at each spec:
 |---|---|---|
 | true | `look_up` (and its sub-agent's `search_web`, `read_page`, `find_places`, `search_printables`), `printables_files` | web pages, snippets, model pages |
 | true | `git_projects`, `git_tree`, `git_read_file` | a repository holds files, names and messages written by anyone |
+| true | `discord_recent` | the latest messages of the server channel the turn came from, written by anyone who can post there |
 | true | `claude_read` | a session's screen shows what Claude Code read |
 | true | `money_transactions` | payee names and payment memos written by merchants and payers |
 | true, narrowed per result | `send_readers` | the result is true when a reader that answered read a result that taints (`ashley.tools.readers`), else false |

@@ -25,6 +25,7 @@ from ..tools.bench_skills import BenchSkillTools
 from ..tools.bench_tidy import BenchTidyTools
 from ..tools.bench_tools import BenchTools
 from ..tools.composite import CompositeTools
+from ..tools.discord_read import DiscordReadTools
 from ..tools.errand_step import ErrandStepTools
 from ..tools.everyday import HouseholdTools
 from ..tools.house_change import HouseChangeTools
@@ -80,7 +81,7 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     to lead (`bench_lead`).
     `arrival` is told by `open_bench` and `move_page`. With `tools_only`, all of that narrowed to the tools it
     names; with `reads_only`, to those that change nothing, where the reply reaches the speaker alone and else to none.
-    With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
+    From a server channel (`discord_channel`) with a known speaker, reading that channel's recent messages (`discord_read`). With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
     by; the conversation she is in (`said`) is what they check a URL the person gave against. With `errand` and a known
     speaker, `check_again` (`errand`) beside all of that, not narrowed."""
     everyday = HouseholdTools(inbound.household_id)
@@ -178,6 +179,8 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["code_host"] = CodeHostTools(household, person, bench, _CODE_HOST, READABLE_CHARS)
         found["claude_code"] = ClaudeCodeTools(household, person, _CLAUDE_CODE, READABLE_CHARS, bench)
         found["watches"] = WatchTools(household, person, bench_id=bench, turn=turn, usable=usable)
+    if inbound.discord_channel is not None:
+        found["discord_read"] = DiscordReadTools(inbound.discord_channel, READABLE_CHARS)
     found["reminders"] = ReminderTools(household, person, private=owner_alone(inbound), turn=turn, usable=usable,
                                        routable=partial(reminder_device.takes, household))
     found["devices"] = DeviceTools(household)

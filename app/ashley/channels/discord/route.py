@@ -32,7 +32,7 @@ def route(message: Message, me: int, servers: Mapping[int, DiscordServer], perso
       Else from the server's device: household, kind, medium, audience and remembers the device's; thread
       `discord:<channel_id>`, the channel the message is in; speaker `person.id` when `person` is in the device's
       household, else None; `taint` `stranger` unless `person` is in the device's household (the author is in no household, or in another), else None;
-      shared False; place None; later True.
+      shared False; place None; later True; `discord_channel` the channel's id (a DM has none).
     - The text of what the message forwards (`Message.forwarded`) is its `Inbound.attachment`, titled `Forwarded`, never
       part of `text` (`I forwarded this.` when nothing else was typed); `taint` `pasted` when `channels.pasted` says it
       is over the threshold and the message is not `stranger`'s already.
@@ -67,7 +67,7 @@ def decide(message: Message, me: int, servers: Mapping[int, DiscordServer],
         inbound = Inbound(household_id=device.household_id, thread=thread, text="", kind=device.kind,
                           medium=device.medium, audience=device.audience, speaker_id=speaker, shared=False,
                           place=None, channel="discord", remembers=device.remembers, later=True,
-                          taint=None if member else "stranger")
+                          taint=None if member else "stranger", discord_channel=message.channel_id)
     text = message.content.replace(f"<@{me}>", "").replace(f"<@!{me}>", "").strip()
     forwarded = message.forwarded.strip()
     if not (text or forwarded):
