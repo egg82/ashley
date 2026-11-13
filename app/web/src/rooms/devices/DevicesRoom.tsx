@@ -1,139 +1,61 @@
-// Devices, at bearing 070: this device's notifications, and the household's devices with their touch controls.
-import type { ComponentChildren } from 'preact';
+// Devices, at bearing 070: the household's devices drawn as a house and said in words, the selected one with its touch
+// controls, and this browser's notifications.
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
-import type { ListedDevice } from '../../api/types';
+import { herWord } from '../../shell/her/state';
 import { dockIn } from '../../shell/her/dock';
-import { ControlsEditor } from './ControlsEditor';
-import { showsControls } from './controlRows';
+import { DevicePanel } from './DevicePanel';
+import { devices, devicesState, leaveRoom, loadDevices, loadLinked, selected } from './devices';
+import { FloorPlan } from './FloorPlan';
+import { LinkedAccounts } from './LinkedAccounts';
 import { loadLights } from './controls';
-import { devices, devicesState, leaveRoom, loadDevices } from './devices';
-import { loadPush, push, pushBusy, pushSaid, turnOff, turnOn } from './notifications';
+import { loadPush } from './notifications';
+import { placeCount, planOf } from './plan';
+import { PlaceRows } from './PlaceRows';
+import { Notifications } from './PushPanel';
 
-type PushSaid = NonNullable<typeof pushSaid.value>;
-
-const PUSH_NOTE: Record<PushSaid, [string, 'ok' | 'bad' | '']> = {
-  on: ['Turned on for this device.', 'ok'],
-  off: ['Turned off for this device.', 'ok'],
-  denied: ["The browser didn't ask, or wasn't allowed to. Nothing changed.", 'bad'],
-  failed: ["That didn't go through. Nothing changed.", 'bad'],
-  unreachable: ["Can't reach her right now. Nothing changed.", 'bad'],
-};
-
-const IPHONE = 'On iPhone, add her to the Home Screen first (Share, then Add to Home Screen) and turn this on from there.';
-
-function PushNote() {
-  const s = pushSaid.value;
-  if (!s) return null;
-  const [text, tone] = PUSH_NOTE[s];
+function Down({ failed }: { failed: boolean }) {
   return (
-    <div class={`dc-note ${tone}`} role="status">
-      <span>{text}</span>
-      <button class="btn sm ghost" type="button" onClick={() => (pushSaid.value = null)}>Dismiss</button>
-    </div>
-  );
-}
-
-function Cannot({ why, children }: { why: string; children?: ComponentChildren }) {
-  return (
-    <>
-      <div class="dc-act">
-        <button class="btn primary" type="button" disabled>Turn on</button>
-        <span class="unk">{why}</span>
-      </div>
-      {children}
-    </>
-  );
-}
-
-function PushControl() {
-  switch (push.value) {
-    case 'loading':
-      return <p class="meta">Checking this device…</p>;
-    case 'on':
-      return (
-        <div class="dc-done">
-          <div>
-            <b>On for this device</b>
-            <div class="meta">Links and lists she mentions aloud land here</div>
-          </div>
-          <button class="btn sm ghost" type="button" disabled={pushBusy.value} onClick={() => void turnOff()}>Turn off</button>
-        </div>
-      );
-    case 'off':
-      return (
-        <>
-          <p>When a link or a list is better read than heard, she can send it here.</p>
-          <div class="dc-act">
-            <button class="btn primary" type="button" disabled={pushBusy.value} onClick={() => void turnOn()}>Turn on</button>
-            {pushBusy.value && <span class="meta">Asking the browser…</span>}
-          </div>
-          <p class="meta">{IPHONE}</p>
-        </>
-      );
-    case 'unsupported':
-      return <Cannot why="not in this browser"><p class="meta">{IPHONE}</p></Cannot>;
-    case 'unavailable':
-      return <Cannot why="not set up here" />;
-    case 'blocked':
-      return (
-        <Cannot why="blocked by the browser">
-          <p class="meta">Allow notifications for this site in the browser's settings, then come back.</p>
-        </Cannot>
-      );
-    case 'failed':
-      return (
-        <div class="dc-act">
-          <span class="unk">couldn't check this device</span>
-          <button class="btn sm ghost" type="button" onClick={() => void loadPush()}>Try again</button>
-        </div>
-      );
-  }
-}
-
-function Notifications() {
-  return (
-    <div class="panel">
-      <div class="ph"><h3>Notifications on this device</h3></div>
-      <div class="dc-body">
-        <PushControl />
-        <PushNote />
+    <div class="panel set-down" role="alert">
+      <span class="down-dock" data-dock />
+      <div class="set-down-says">
+        {!failed && <span class="her-word unreachable">{herWord.value}</span>}
+        <b>{failed ? "The devices didn't load." : "Can't reach her right now."}</b>
+        <button class="btn" type="button" onClick={() => void loadDevices()}>Try again</button>
       </div>
     </div>
   );
 }
 
-const FORM: Record<ListedDevice['form'], string> = { satellite: 'Satellite', discord_server: 'Discord server', house: 'Home Assistant', other: 'Other' };
-const AUDIENCE: Record<ListedDevice['audience'], string> = { owner: 'Only its owner', household: 'The household', present: 'Whoever is there' };
-
-function Device({ d }: { d: ListedDevice }) {
+function Empty() {
   return (
-    <>
-      <div class="acct-row">
-        <b>{d.name}</b>
-        <span class="pill">{FORM[d.form]}</span>
-        <span class="meta">{d.place} · {AUDIENCE[d.audience]} · {d.medium}</span>
-      </div>
-      {showsControls(d) && <ControlsEditor d={d} />}
-    </>
+    <div class="panel dv-empty">
+      <b>No devices yet.</b>
+      <p class="meta">A satellite, a screen or a Discord server she listens through shows up here once it is set up for this household.</p>
+    </div>
   );
 }
 
-function DeviceList() {
-  switch (devicesState.value) {
-    case 'loading':
-      return <div class="devs-body"><span class="meta">Reading the devices…</span></div>;
-    case 'failed':
-      return (
-        <div class="devs-body">
-          <span class="unk">couldn't read the devices</span>
-          <button class="btn sm ghost" type="button" onClick={() => void loadDevices()}>Try again</button>
-        </div>
-      );
-    case 'ready':
-      return devices.value.length ? <>{devices.value.map((d) => <Device key={d.id} d={d} />)}</> : (
-        <div class="devs-body"><p class="meta">No devices are set up for this household yet.</p></div>
-      );
-  }
+function Count({ n, places }: { n: number; places: number }) {
+  return <span class="meta dv-count">{n} {n === 1 ? 'device' : 'devices'} · {places} {places === 1 ? 'place' : 'places'}</span>;
+}
+
+function Body() {
+  const list = devices.value;
+  const plan = planOf(list);
+  const chosen = list.find((d) => d.id === selected.value);
+  return (
+    <div class="set-grid dv-grid">
+      <div class="set-col">
+        <FloorPlan plan={plan} />
+        <PlaceRows plan={plan} />
+      </div>
+      <div class="set-col">
+        {chosen && <DevicePanel d={chosen} />}
+        <Notifications />
+        <LinkedAccounts />
+      </div>
+    </div>
+  );
 }
 
 export function DevicesRoom() {
@@ -141,6 +63,7 @@ export function DevicesRoom() {
     void loadPush();
     void loadDevices();
     void loadLights();
+    void loadLinked();
     return leaveRoom;
   }, []);
   const here = useRef<HTMLDivElement>(null);
@@ -148,23 +71,19 @@ export function DevicesRoom() {
     const room = here.current?.closest('.room');
     if (room && !room.classList.contains('leaving')) dockIn(room, false);
   }, []);
+  const state = devicesState.value;
+  const down = state === 'unreachable' || state === 'failed';
+  const plan = planOf(devices.value);
   return (
-    <div class="set" ref={here}>
+    <div class="set dv" ref={here}>
       <div class="set-head">
         <h1>Devices</h1>
-        <span class="set-dock" data-dock />
+        {state === 'ready' && devices.value.length > 0 && <Count n={devices.value.length} places={placeCount(plan)} />}
+        {!down && <span class="set-dock" data-dock />}
       </div>
-      <div class="set-grid">
-        <div class="set-col">
-          <Notifications />
-        </div>
-        <div class="set-col">
-          <div class="panel devs">
-            <div class="ph"><h3>Where to find her</h3></div>
-            <DeviceList />
-          </div>
-        </div>
-      </div>
+      {down && <><Down failed={state === 'failed'} /><div class="dv-solo"><Notifications /></div></>}
+      {state === 'loading' && <p class="meta" role="status">Reading the devices…</p>}
+      {state === 'ready' && (devices.value.length === 0 ? <><Empty /><div class="dv-solo"><Notifications /></div></> : <Body />)}
     </div>
   );
 }

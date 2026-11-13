@@ -1,96 +1,50 @@
-// A device's touch controls: each a button for one light of the house, picked from its catalogue, to toggle, turn on or turn off.
-import { useEffect, useState } from 'preact/hooks';
-import { getDeviceControls, putDeviceControls } from '../../api/deviceControls';
-import { onResync, onScreenChanged } from '../../session/live';
+// A screen's touch controls: the tablet drawn as it will look, the house's lights and scenes to put on it, and a save bar
+// that appears only once something differs from what is stored.
+import { useState } from 'preact/hooks';
 import type { ListedDevice } from '../../api/types';
-import { actionFor, added, changed, complete, draftOf, LABEL_MOST, moved, pickName, REFUSED, removed, type Row } from './controlRows';
+import { CardEditor } from './CardEditor';
+import { complete, MOST } from './controlRows';
 import { lights } from './controls';
+import { HouseControls } from './HouseControls';
+import { Tablet } from './Tablet';
+import { useControls } from './useControls';
 
-type Said = { tone: 'ok' | 'bad'; text: string } | null;
-
-function RowEditor({ row, at, last, onRow }: { row: Row; at: number; last: boolean; onRow: (next: Row[] | ((r: Row[]) => Row[])) => void }) {
-  const shown = lights.value.state === 'ready' ? lights.value.lights : [];
-  const known = shown.some((l) => l.entity_id === row.entity_id);
-  return (
-    <div class="ctl-row">
-      <input type="text" value={row.label} maxLength={LABEL_MOST} aria-label="Button label" autocomplete="off"
-        onInput={(e) => onRow((rows) => changed(rows, at, { label: e.currentTarget.value }))} />
-      <select value={row.action} aria-label="What it does" disabled={row.entity_id.startsWith('scene.')}
-        onChange={(e) => onRow((rows) => changed(rows, at, { action: e.currentTarget.value as Row['action'] }))}>
-        {row.entity_id.startsWith('scene.') ? <option value="scene.turn_on">Turn on</option> : (
-          <>
-            <option value="light.toggle">Toggle</option>
-            <option value="light.turn_on">Turn on</option>
-            <option value="light.turn_off">Turn off</option>
-          </>
-        )}
-      </select>
-      <select value={row.entity_id} aria-label="Which light or scene"
-        onChange={(e) => onRow((rows) => changed(rows, at, { entity_id: e.currentTarget.value, action: actionFor(e.currentTarget.value, row.action) }))}>
-        {!known && <option value={row.entity_id}>{row.entity_id} (not found)</option>}
-        {shown.map((l) => <option key={l.entity_id} value={l.entity_id}>{pickName(l)}</option>)}
-      </select>
-      <span class="ctl-move">
-        <button class="btn sm ghost" type="button" aria-label="Move up" disabled={at === 0} onClick={() => onRow((rows) => moved(rows, at, -1))}>Up</button>
-        <button class="btn sm ghost" type="button" aria-label="Move down" disabled={last} onClick={() => onRow((rows) => moved(rows, at, 1))}>Down</button>
-        <button class="btn sm ghost" type="button" aria-label="Remove" onClick={() => onRow((rows) => removed(rows, at))}>Remove</button>
-      </span>
+export function ControlsEditor({ d, onClose }: { d: ListedDevice; onClose: () => void }) {
+  const c = useControls(d.id);
+  const [picked, setPicked] = useState<number | null>(null);
+  const head = (
+    <div class="dv-head">
+      <h2>{d.name}: controls</h2>
+      <span class="meta">What shows on its screen, in this order. At most {MOST}.</span>
     </div>
   );
-}
-
-export function ControlsEditor({ d }: { d: ListedDevice }) {
-  const [rows, setRows] = useState<Row[] | null>(null);
-  const [version, setVersion] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [said, setSaid] = useState<Said>(null);
-  const read = (then?: Said) => getDeviceControls(d.id).then((got) => {
-    setRows(draftOf(got.device_controls));
-    setVersion(got.piece_version);
-    if (then) setSaid(then);
-  }, () => setSaid({ tone: 'bad', text: "Couldn't read this screen's controls." }));
-  useEffect(() => {
-    void read();
-  }, [d.id]);
-  useEffect(() => {
-    const again = () => void read();
-    return (() => {
-      const stops = [onScreenChanged((device) => device === d.id && again()), onResync(again)];
-      return () => stops.forEach((stop) => stop());
-    })();
-  }, [d.id]);
-  const state = lights.value;
-  const save = async () => {
-    if (!rows) return;
-    setBusy(true);
-    try {
-      const got = await putDeviceControls(d.id, rows, version);
-      if (got === 'stale') await read({ tone: 'bad', text: 'The list changed while you were editing it, so nothing was saved. This is what it is now.' });
-      else if ('reason' in got) setSaid({ tone: 'bad', text: REFUSED[got.reason] });
-      else {
-        setRows(draftOf(got.device_controls));
-        setVersion(got.piece_version);
-        setSaid({ tone: 'ok', text: 'Saved. The screen has them on its next read.' });
-      }
-    } catch {
-      setSaid({ tone: 'bad', text: "That didn't go through. Nothing changed." });
-    }
-    setBusy(false);
-  };
-  if (!rows) return <div class="ctl"><span class="meta">{said ? said.text : 'Reading the controls…'}</span></div>;
-  const first = state.state === 'ready' ? state.lights[0] : undefined;
-  return (
-    <div class="ctl">
-      <b>Touch controls</b>
-      {state.state === 'none' && <p class="meta">Connect Home Assistant to pick lights and scenes for this screen.</p>}
-      {state.state === 'failed' && <p class="unk">couldn't read the house's lights and scenes</p>}
-      {rows.length === 0 && state.state === 'ready' && <p class="meta">No controls yet.</p>}
-      {rows.map((r, i) => <RowEditor key={r.name ?? `new-${i}`} row={r} at={i} last={i === rows.length - 1} onRow={(n) => setRows(typeof n === 'function' ? n(rows) : n)} />)}
-      <div class="dc-act">
-        <button class="btn sm" type="button" disabled={!first} onClick={() => setRows(added(rows, first))}>Add a control</button>
-        <button class="btn primary sm" type="button" disabled={busy || !complete(rows)} onClick={() => void save()}>Save</button>
+  if (!c.rows) {
+    return (
+      <div class="panel dv">
+        {head}
+        {c.failed ? <span class="unk">Couldn't read this screen's controls</span> : <p class="meta">Reading the controls…</p>}
+        <button class="btn sm ghost" type="button" onClick={onClose}>Back</button>
       </div>
-      {said && <div class={`dc-note ${said.tone}`} role="status"><span>{said.text}</span></div>}
+    );
+  }
+  const pick = picked !== null && picked < c.rows.length ? picked : null;
+  const shown = lights.value.state === 'ready' ? lights.value.lights : [];
+  return (
+    <div class="panel dv ced">
+      {head}
+      <Tablet rows={c.rows} place={d.place.trim()} name={d.name} picked={pick} lights={shown} onPick={setPicked} onRows={c.edit} />
+      {pick !== null && <CardEditor rows={c.rows} at={pick} onRows={c.edit} onDone={() => setPicked(null)} />}
+      <section class="ced-house">
+        <span class="label">House controls</span>
+        <HouseControls rows={c.rows} onRows={c.edit} />
+      </section>
+      {c.said && <div class={`dc-note ${c.said.tone}`} role="status"><span>{c.said.text}</span></div>}
+      <div class={`ced-save${c.changed ? ' up' : ''}`} hidden={!c.changed && !c.busy}>
+        <span>Controls changed, not saved</span>
+        <button class="btn sm ghost" type="button" disabled={c.busy} onClick={() => { c.discard(); setPicked(null); }}>Discard</button>
+        <button class="btn primary sm" type="button" disabled={c.busy || !complete(c.rows)} onClick={() => void c.save()}>Save</button>
+      </div>
+      <button class="btn sm ghost ced-back" type="button" disabled={c.changed} onClick={onClose}>Done</button>
     </div>
   );
 }

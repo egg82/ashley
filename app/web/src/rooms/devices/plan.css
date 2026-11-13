@@ -1,0 +1,75 @@
+/* The devices room: the floor plan, the rows in words, and the selected device's panel. It sits in devices.css's room frame
+   (.set, .set-head, .set-grid, .set-col, .dc-*, .set-down) and the shell's tokens, .panel, .btn, .label, .meta and .unk. */
+
+.set.dv { max-width: 1160px; }
+.dv-count { margin-left: 4px; }
+.dv-grid { grid-template-columns: minmax(0, 1fr) 380px; }
+.dv-solo, .dv-empty { max-width: 460px; }
+.dv-solo { margin-top: 16px; }
+.dv-empty { padding: 18px 20px; display: grid; gap: 6px; }
+.dv-empty p { margin: 0; }
+@media (max-width: 900px) { .dv-grid { grid-template-columns: 1fr; } }
+
+/* the plan */
+.fp { padding: 18px; display: grid; gap: 14px; }
+.fp-wall { position: relative; display: grid; gap: 12px; padding: 22px 14px 14px; border: 2px solid var(--blue); border-radius: var(--r-3);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 5%, transparent), transparent); }
+.fp-tag { position: absolute; top: -7px; left: 14px; padding: 0 8px; background: var(--ink-1); color: var(--blue-hi); }
+.fp-rooms { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.fp-room { display: grid; gap: 10px; align-content: start; padding: 12px; border: 1.5px solid var(--line-hi); border-radius: var(--r-2); background: var(--ink-1); }
+.fp-room > header { display: flex; align-items: center; justify-content: space-between; }
+.fp-room > header .label { color: var(--blue-hi); }
+.fp-room.whole { border-style: dashed; border-color: var(--blue); background: none; }
+.fp-room.online { border: 1.5px dashed var(--line-hi); border-radius: var(--r-3); padding: 14px; }
+.fp-key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; }
+.fp-key li { display: inline-flex; align-items: center; gap: 6px; }
+
+/* a puck: the device where it sits */
+.pk { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; padding: 10px; text-align: left;
+  border: 1px solid transparent; border-radius: var(--r-2); background: none; color: var(--text); }
+.pk:hover { border-color: var(--line-hi); background: color-mix(in srgb, var(--blue) 5%, transparent); }
+.pk[aria-pressed="true"] { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 12%, var(--ink-2)); box-shadow: 0 0 0 1px var(--blue-glow); }
+.pk-text { display: grid; gap: 3px; min-width: 0; }
+.pk-text b { font-weight: 600; overflow-wrap: anywhere; }
+.pk-sub { font-size: 12px; color: var(--text-2); }
+.pk-glyph { position: relative; display: grid; place-items: center; width: 46px; height: 46px; flex: none;
+  background: radial-gradient(circle at 35% 30%, var(--blue-hi), var(--blue) 55%, #1c55e0); box-shadow: 0 0 14px var(--blue-glow); }
+.pk-glyph.ring { border-radius: 50%; outline: 1.5px solid var(--line-hi); outline-offset: 6px; }
+.pk-glyph.dots { border-radius: var(--r-2); grid-auto-flow: column; gap: 3px; align-content: center; justify-content: center; }
+.pk-glyph.dots i { width: 4px; height: 4px; border-radius: 50%; background: rgba(4,7,12,.7); }
+.pk-glyph svg { width: 22px; height: 22px; fill: none; stroke: var(--ink-0); stroke-width: 2.2; stroke-linecap: round; }
+.pk-who { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.pk-mark { display: inline-flex; gap: 3px; align-items: center; }
+.pk-mark i { width: 7px; height: 7px; border-radius: 50%; background: var(--blue-hi); }
+.pk-who.present .pk-mark i, .pk-mark.dashed i { background: none; border: 1.2px dashed var(--blue-hi); width: 9px; height: 9px; }
+
+.pk-glyph.ring::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid var(--blue-glow); animation: pk-hear calc(var(--t-tracks) * 4) var(--ease-out) infinite; }
+@keyframes pk-hear { from { transform: scale(.9); opacity: .9; } to { transform: scale(1.18); opacity: 0; } }
+:root[data-motion="reduced"] .pk-glyph.ring::after { animation: none; opacity: 0; }
+
+/* rows in words */
+.pr { padding: 6px 18px 12px; }
+.pr-place h3 { display: flex; align-items: center; gap: 12px; margin: 16px 0 6px; font-size: 15px; font-weight: 600; letter-spacing: .01em; color: var(--blue-hi); }
+.pr-place h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.pr-place ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.pr-row { width: 100%; padding: 8px 10px; text-align: left; border: 1px solid transparent; border-radius: var(--r-1); background: none; color: var(--text-2); font-size: 14.5px; line-height: 1.55; }
+.pr-row:hover { background: color-mix(in srgb, var(--blue) 5%, transparent); }
+.pr-row[aria-pressed="true"] { border-color: var(--line-hi); background: var(--ink-2); }
+.pr-row b { color: var(--text); font-weight: 600; }
+.pr-who { color: var(--blue-hi); }
+
+/* the selected device */
+.dv { padding: 18px 20px; display: grid; gap: 14px; }
+.dv-head { display: grid; gap: 2px; }
+.dv-head h2 { font-size: 20px; overflow-wrap: anywhere; }
+.dv-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 18px; margin: 0; }
+.dv-facts dt { color: var(--text-3); }
+.dv-facts dd { margin: 0; }
+.dv > .btn { justify-self: start; }
+
+/* the notifications and accounts panels beside it */
+.la { margin: 0; padding: 0; list-style: none; display: grid; }
+.la-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.la-row:first-child { border-top: 0; }
+.la-handle { color: var(--blue-hi); font: 500 13px/1.4 var(--f-mono); overflow-wrap: anywhere; }
+.la-manage { justify-self: start; }
