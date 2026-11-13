@@ -115,6 +115,26 @@ class Point:
 
 
 @dataclass(frozen=True)
+class ShownRow:
+    """A choice row of a measurements piece as the person was shown it: its `name` and its `value` then."""
+
+    name: str
+    value: str
+
+
+@dataclass(frozen=True)
+class Surfaced:
+    """Record that choice `rows` of piece `piece_id`, a measurements piece, were shown to the person beside a turn of
+    hers, each by its name and value then. It changes no piece and is never undone. A row counts as shown while some
+    accepted Surfaced names its current name and value (`workshop.BenchView.surfaced`), so a row whose value changes is
+    shown again."""
+
+    by: By
+    piece_id: int
+    rows: tuple[ShownRow, ...]
+
+
+@dataclass(frozen=True)
 class Archive:
     """Put piece `piece_id` on the bench's shelf: it leaves the layout (the pieces after it move up one) and no longer
     counts toward `max_pieces`, and keeps its text, version and runs. What is not wanted at all is a Remove."""
@@ -149,11 +169,11 @@ class Rename:
     title: str
 
 
-Command = Add | Remove | Move | Edit | Run | Propose | Install | Archive | Restore | Undo | Rename | Cue | Point
+Command = Add | Remove | Move | Edit | Run | Propose | Install | Archive | Restore | Undo | Rename | Cue | Point | Surfaced
 ScreenCommand = Add | Remove | Move | Edit | Undo
 """The Commands a device's screen takes (`Workshop.apply_screen`): the others are a bench's alone."""
 CommandType = Literal["add", "remove", "move", "edit", "run", "propose", "install", "archive", "restore", "undo",
-                      "rename", "cue", "point"]
+                      "rename", "cue", "point", "surfaced"]
 
 
 def type_of(command: Command) -> CommandType:
@@ -181,6 +201,8 @@ def type_of(command: Command) -> CommandType:
         return "cue"
     if isinstance(command, Point):
         return "point"
+    if isinstance(command, Surfaced):
+        return "surfaced"
     return "undo"
 
 
@@ -246,6 +268,14 @@ class Pointed:
 
 
 @dataclass(frozen=True)
+class Shown:
+    """Choice `rows` of piece `piece_id` were shown to the person. It changes no piece and is never undone."""
+
+    piece_id: int
+    rows: tuple[ShownRow, ...]
+
+
+@dataclass(frozen=True)
 class Proposed:
     """Installing piece `piece_id` as it was at `version` was proposed, with its options. It changes no piece and is
     never undone."""
@@ -302,8 +332,8 @@ class Renamed:
     after: str
 
 
-Effect = (Added | Removed | Edited | Moved | Ran | Cued | Pointed | Proposed | Installed | Uninstalled | Archived | Restored
-          | Renamed)
+Effect = (Added | Removed | Edited | Moved | Ran | Cued | Pointed | Shown | Proposed | Installed | Uninstalled | Archived
+          | Restored | Renamed)
 
 def piece_of(effect: Effect) -> int | None:
     """The id of the piece `effect` changed, None for a `Renamed`, which changed the bench."""

@@ -4,15 +4,15 @@ from collections.abc import Mapping
 from dataclasses import replace
 
 from .commands import (Added, Archived, Cued, Edited, Effect, Installed, Moved, Pointed, Proposed, Ran, Removed, Renamed,
-                       Restored, Uninstalled, piece_of)
+                       Restored, Shown, Uninstalled, piece_of)
 from .model import Piece, Place
 
 
 def apply(pieces: tuple[Piece, ...], effect: Effect, seq: int) -> tuple[Piece, ...]:
     """`pieces` (in order) after `effect`, made by command `seq`, renumbered so their orders are 0 to n-1 again. A
-    `Ran`, `Cued`, `Pointed`, `Proposed`, `Installed`, `Uninstalled` or `Renamed` leaves them as they are (what an install changes is
+    `Ran`, `Cued`, `Pointed`, `Shown`, `Proposed`, `Installed`, `Uninstalled` or `Renamed` leaves them as they are (what an install changes is
     outside the bench); an archive takes the piece out as a removal does, a restore puts it in as an add."""
-    if isinstance(effect, (Ran, Cued, Pointed, Proposed, Installed, Uninstalled, Renamed)):
+    if isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed, Installed, Uninstalled, Renamed)):
         return pieces
     if isinstance(effect, (Added, Restored)):
         listed = list(pieces)
@@ -46,22 +46,22 @@ def shelved(shelf: tuple[Piece, ...], effect: Effect, seq: int) -> tuple[Piece, 
 
 def settled(effect: Effect, effects: Mapping[int, Effect], undos: Mapping[int, int], done_seq: int) -> bool:
     """Whether the piece `effect` (command `done_seq`) changed is as that command left it: every later effect on the
-    piece is a command that a later undo took back, or such an undo. A `Ran`, a `Cued`, a `Pointed` or a `Proposed` changed nothing, so it
+    piece is a command that a later undo took back, or such an undo. A `Ran`, a `Cued`, a `Pointed`, a `Shown` or a `Proposed` changed nothing, so it
     never counts; an `Installed` does, so a change before an install is undone only after the install is."""
     taken_back = set(undos.values())
     return all(s in taken_back or undos.get(s, 0) > done_seq
                for s, e in effects.items()
-               if s > done_seq and not isinstance(e, (Ran, Cued, Pointed, Proposed)) and piece_of(e) == piece_of(effect))
+               if s > done_seq and not isinstance(e, (Ran, Cued, Pointed, Shown, Proposed)) and piece_of(e) == piece_of(effect))
 
 
 def inverse(effect: Effect, pieces: tuple[Piece, ...], shelf: tuple[Piece, ...], title: str,
             effects: Mapping[int, Effect], undos: Mapping[int, int], done_seq: int, seq: int) -> Effect | None:
     """The effect that undoes `effect` (what command `done_seq` did) as command `seq`, on `pieces`, `shelf` and bench
     `title` as they stand, `effects` as done so far and `undos` (undo `seq` to the `seq` it undid); None when the piece has changed
-    since (`settled` fails, or a removed piece is back, or `effect` is a `Ran`, `Cued`, `Pointed` or `Proposed`, which nothing undoes). An
+    since (`settled` fails, or a removed piece is back, or `effect` is a `Ran`, `Cued`, `Pointed`, `Shown` or `Proposed`, which nothing undoes). An
     archive is undone by restoring the piece to its old order (or last), a restore by archiving it again, an install
     by an `Uninstalled` naming it, a rename by renaming the bench back."""
-    if isinstance(effect, (Ran, Cued, Pointed, Proposed, Uninstalled)):
+    if isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed, Uninstalled)):
         return None
     if isinstance(effect, Renamed):
         return Renamed(title, effect.before) if settled(effect, effects, undos, done_seq) else None

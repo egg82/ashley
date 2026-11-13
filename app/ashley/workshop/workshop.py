@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Literal
 
 from ..services import Service
-from .commands import Command, Effect, Reason, ScreenCommand
+from .commands import Command, Effect, Reason, ScreenCommand, ShownRow
 from .model import Author, Bench, By, Change, Owner, Piece
 from .proposals import Proposal
 from .reactions import Unseen
@@ -87,7 +87,8 @@ class BenchView:
     `proposals` holds, for each piece on the layout waiting on the person's approval to install it, her proposal
     (`proposals.pending`). `pointers` holds the highlight of each reader piece that has one, by piece id, whether or not
     the piece has changed since (`Pointer.version`). `frames` holds the measure of each site address recorded on the
-    bench (`record_site_frame`), by address."""
+    bench (`record_site_frame`), by address. `surfaced` holds every (piece id, choice row by name and value) an accepted
+    `Surfaced` named, however old (`surfacing.unshown` reads it)."""
 
     bench: Bench
     pieces: tuple[Piece, ...]
@@ -98,6 +99,7 @@ class BenchView:
     proposals: Mapping[int, Proposal] = field(default_factory=lambda: dict[int, Proposal]())
     pointers: Mapping[int, Pointer] = field(default_factory=lambda: dict[int, Pointer]())
     frames: Mapping[str, SiteFrame] = field(default_factory=lambda: dict[str, SiteFrame]())
+    surfaced: frozenset[tuple[int, ShownRow]] = frozenset()
 
 
 @dataclass(frozen=True)

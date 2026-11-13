@@ -7,7 +7,7 @@ from psycopg import AsyncConnection
 from psycopg.types.json import Jsonb
 
 from .codec import decode_command, decode_effect, encode_command, encode_effect
-from .commands import Command, Effect, Pointed, Renamed, piece_of
+from .commands import Command, Effect, Pointed, Renamed, Shown, ShownRow, piece_of
 from .decide import Accepted, Decision
 from .model import Bench, By, Change, Owner, Piece, Place, Text
 from .undo_walk import Step
@@ -17,7 +17,7 @@ Conn = AsyncConnection[tuple[Any, ...]]
 _BENCH = ("id, household_id, owner_id, title, opened_at, closed_at, next_seq, "
           "(SELECT count(*) FROM bench_pieces p WHERE p.bench_id = benches.id AND NOT p.shelved), "
           "(SELECT max(c.at) FROM bench_commands c WHERE c.bench_id = benches.id AND c.outcome = 'accepted' "
-          "AND c.command->>'type' NOT IN ('cue', 'point')), work")
+          "AND c.command->>'type' NOT IN ('cue', 'point', 'surfaced')), work")
 _PIECE = "piece_id, kind, title, body, version, place_order, place_size, changed_by, outside"
 _LOGGED = "seq, at, person_id, command, outcome, effect"
 
@@ -136,6 +136,19 @@ async def pointers(conn: Conn, bench_id: int) -> dict[int, Pointer]:
     return found
 
 
+async def surfaced(conn: Conn, bench_id: int) -> frozenset[tuple[int, ShownRow]]:
+    """Every (piece id, row) an accepted Surfaced of the bench named, however old."""
+    cur = await conn.execute(
+        "SELECT effect FROM bench_commands WHERE bench_id = %s AND outcome = 'accepted' AND command->>'type' = 'surfaced'",
+        (bench_id,))
+    found: set[tuple[int, ShownRow]] = set()
+    for (raw,) in await cur.fetchall():
+        effect = decode_effect(raw)
+        if isinstance(effect, Shown):
+            found.update((effect.piece_id, r) for r in effect.rows)
+    return frozenset(found)
+
+
 async def effect_of(conn: Conn, bench_id: int, seq: int) -> Effect | None:
     cur = await conn.execute("SELECT effect FROM bench_commands WHERE bench_id = %s AND seq = %s AND effect IS NOT NULL",
                              (bench_id, seq))
@@ -147,7 +160,7 @@ async def steps(conn: Conn, bench_id: int, latest: int) -> list[Step]:
     """The bench's last `latest` commands as the undo walk reads them, oldest first."""
     cur = await conn.execute(
         "SELECT seq, outcome = 'accepted', CASE WHEN command->>'type' = 'undo' THEN command->>'seq' END, "
-        "command->>'type' IN ('run', 'propose', 'cue', 'point') FROM bench_commands WHERE bench_id = %s ORDER BY seq DESC LIMIT %s",
+        "command->>'type' IN ('run', 'propose', 'cue', 'point', 'surfaced') FROM bench_commands WHERE bench_id = %s ORDER BY seq DESC LIMIT %s",
         (bench_id, latest))
     return [Step(int(r[0]), bool(r[1]), None if r[2] is None else int(r[2]), bool(r[3]))
             for r in reversed(await cur.fetchall())]
