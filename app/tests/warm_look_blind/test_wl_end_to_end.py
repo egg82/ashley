@@ -73,7 +73,8 @@ def test_a_browser_that_cannot_start_in_the_pod_sends_the_look_to_a_pod_of_its_o
 
 
 def test_a_second_look_while_the_pod_is_busy_is_taken_in_a_pod_of_its_own(tmp_path: Path) -> None:
-    script, cold = Script(delay_s=0.5), FakeCold(b"cold")
+    hold = threading.Event()
+    script, cold = Script(hold=hold), FakeCold(b"cold")
     with warm_pod(script, tmp_path) as pod:
         looker = warm_looker(pod, cold)
 
@@ -82,6 +83,7 @@ def test_a_second_look_while_the_pod_is_busy_is_taken_in_a_pod_of_its_own(tmp_pa
             while script.launches == 0:
                 await asyncio.sleep(0.01)
             second = await looker.look("look-2", TARGET)
+            hold.set()
             return [await first, second]
 
         shots = go(scenario())

@@ -2,11 +2,15 @@
 what happened to them, for the warm look pod's blind tests."""
 
 import os
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable
+
+
+HOLD_S = 5.0
 
 
 class PwError(Exception):
@@ -21,7 +25,8 @@ class PwTimeout(PwError):
 class Script:
     """What the pretend browsers do. `ready` False makes every wait for the page time out; `sizes` is how many bytes a
     JPEG is at each quality (default: 20 per quality point); `goto_error` fails the navigation; `launch_error` fails the
-    launch; `leave` is what a launch writes into `tmp` (relative paths, a name ending in `/` is a directory)."""
+    launch; `leave` is what a launch writes into `tmp` (relative paths, a name ending in `/` is a directory); a screenshot
+    waits `delay_s`, and until `hold` is set (at most `HOLD_S`) when there is one."""
 
     ready: bool = True
     scale: int = 20
@@ -30,6 +35,7 @@ class Script:
     leave: tuple[str, ...] = ()
     height: int = 1000
     delay_s: float = 0.0
+    hold: threading.Event | None = None
     seen_tmp: list[list[str]] = field(default_factory=list[list[str]])
     events: list[tuple[str, int]] = field(default_factory=list[tuple[str, int]])
     gotos: list[str] = field(default_factory=list[str])
@@ -82,6 +88,8 @@ class FakePage:
     def screenshot(self, **kwargs: Any) -> bytes:
         quality = kwargs.get("quality")
         time.sleep(self.script.delay_s)
+        if self.script.hold is not None:
+            self.script.hold.wait(HOLD_S)
         self.script.qualities.append(quality)
         clip: Any = kwargs.get("clip")
         if clip:
