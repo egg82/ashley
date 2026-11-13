@@ -502,10 +502,6 @@ this order.
 32. **Wake rules matched by who and what.** A wake rule matches on the event alone, and two for one event run no turn
     (`ashley.channels.wake.rule.rule_for`); an optional who/what match lets her keep rules per person or situation,
     the most specific winning. Fits into: Senses (wakes) and Workshop (the wake piece).
-33. **A reminder said in a room.** A reminder's route can name a satellite's room or the kiosk, not only the phone or
-    quiet (`decisions.md`, "Reminders she shapes"). A satellite's reply goes through the Outbox, which drops it when the
-    satellite is not connected, so a room route first needs the reminder's own tries and its undelivered state, as the
-    push has. Fits into: Channels (the voice adapter's `later.drain`, the reminder delivery record).
 34. **Music on the house's speakers.** She plays, pauses, skips, sets the volume of, and searches music from the
     household's services (Spotify, Apple Music, YouTube Music and the like) on its speakers, by room or group: "play
     something mellow in the kitchen", "what's playing upstairs", "pause everything". Playback state is a read anyone
