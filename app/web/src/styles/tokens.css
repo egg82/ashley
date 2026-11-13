@@ -10,6 +10,7 @@
   --blue: #4da3ff; --blue-hi: #8cc4ff; --blue-glow: rgba(77,163,255,.28);        /* the person, and what they touch */
   --cyan: #5fe1ff; --cyan-dim: rgba(95,225,255,.35);                              /* live, from outside; changes a person made at the bench */
   --brass: #f2b45a; --brass-hi: #ffd58a; --brass-dim: rgba(242,180,90,.38); --brass-ink: #2a1a05; /* her, only */
+  --warn: #ff9447; --warn-dim: rgba(255,148,71,.38);                              /* couldn't, or waiting on a person; never her */
   --red: #ff5d6c;                                                                 /* forgetting, only */
   --ok: #4fd18b;                                                                  /* status: answered */
   /* people: a circle each, blue family */
