@@ -4,9 +4,8 @@ Work done outside her own turn: sandboxed script runs, bench jobs handed to work
 
 ## She runs a script in a gVisor pod of its own
 
-`run_code` runs a short script once, on-prem, and gives her what it printed (open-work item 21, Snippets); a bench's
-code piece runs the same way ("The workshop", a Run command). Each run
-is its own pod in namespace `ashley-sandbox` on whichever site she is answering from, under RuntimeClass `gvisor`
+`run_code` runs a short script once, on-prem, and gives her what it printed; a bench's code piece runs the same way
+("The workshop", a Run command). Each run is its own pod in namespace `ashley-sandbox` on whichever site she is answering from, under RuntimeClass `gvisor`
 (gVisor's systrap platform, which needs no nested virtualisation, so virtual-machine nodes run it), and is
 recorded in Postgres before and after (`ashley.runs`, "Code runs" in `systems.md`).
 
@@ -81,7 +80,7 @@ the pieces it made, never its transcript ("A call carries only what this reply n
   the runs recorded against the turn so a resume counts the same; past that, the run is refused `hand_off`.
 - Only the pieces she names go to a worker. A worker adds pieces and changes only its own (`not_yours` otherwise), so
   jobs running in parallel cannot contradict each other or her. She reconciles their results.
-- A job is a row in `bench_jobs` (migration 0094) run by the `bench_jobs` singleton under a lease. An agent job whose pod
+- A job is a row in `bench_jobs` run by the `bench_jobs` singleton under a lease. An agent job whose pod
   dies is retaken from its brief and its own pieces: the bench is the checkpoint, and retaking is safe because nothing it
   can change lies outside them. A Claude Code job is stepped through `starting` (session started, files uploaded,
   prompted) to `running`, and survives a pod the same way: the session is reused and prompted again only when its
@@ -133,14 +132,15 @@ the pieces it made, never its transcript ("A call carries only what this reply n
 ## What she could not do for want of a source, she does once it answers, and says so next time
 
 If she is asked to put something on the shopping list while Home Assistant is unreachable, she says she can't and
-records that she owes it. This is the first errand (open-work, "Errands"): an ask she could not carry out because one
-tool source was out of reach. A singleton does it once that source answers, and its outcome is told to the asker in
-the next reply of hers that may carry it.
+records that she owes it: an errand is an ask she could not carry out because one tool source was out of reach. A
+singleton does it once that source answers, and its outcome is told to the asker in the next reply of hers that may
+carry it.
 
-- Fits into: a new system, Errands, because nothing in `docs/systems.md` holds things to *do* later. The outbox holds
-  things to *say* and deletes them as it takes them; Memory holds what is true. The run reuses the turn loop's
-  orchestrator (`ashley.channels.tool_loop.answer` over `ashley.inference.inference.Inference.step`), the result is a
-  fact, and the job is a singleton under `ashley.referee.lease.Lease` like the memory write job.
+- Fits into: Channels (`docs/systems.md`), which owes and tells errands; Errands is not a system of its own. Nothing
+  there holds things to *do* later: the outbox holds things to *say* and deletes them as it takes them, and Memory
+  holds what is true. The run reuses the turn loop's orchestrator (`ashley.channels.tool_loop.answer` over
+  `ashley.inference.inference.Inference.step`), and the job is a singleton under `ashley.referee.lease.Lease` like the
+  memory write job. Bench jobs, above, share the package and have their own system row.
 
 **She records what she owes from a field.** `Reply` gains `owed` (`ashley.inference.reply.Reply.owed`): the
 key of the source she needed (`house`, `search`) when she could not do what was asked because that source is out of
@@ -193,17 +193,16 @@ first, at most `tell_max`. `respond` reads it for a known speaker beside recall,
 `# While they were away` line: you did this, say so briefly. Once her turn is stored (the answer's, for a held reply),
 `ashley.errands.errands.Errands.told` sets those errands' `told_at`. A failure there is logged
 `respond.told_unrecorded` and costs only saying it again. An unknown speaker carries none, and a private result waits
-for a channel only its owner hears. Raising it unprompted is Initiative's job, through the outbox, and is not part of
-this slice.
+for a channel only its owner hears. Raising it unprompted is Initiative's job, through the outbox.
 
 **Memory and Errands work together without sharing a table.** Memory holds what stays true; an errand holds what she
-owed and how it went. When she tells the result, her turn saying it is an ordinary turn, so anything lasting in it
-reaches Memory the way everything else does, through the write job.
+owed and how it went. Her turn telling the result is an ordinary turn, so anything lasting in it reaches Memory
+through the write job.
 
 **Settings are data**, `app/ashley/errands/errands.json`: `tick_s`, `batch`, `max_attempts`, `max_age_s`,
 `claim_s`, `context_turns`, `max_tool_rounds`, `max_tool_result_chars`, `tell_max`.
 
-**The migration** takes the next free number after main's head when it is built:
+**The tables:**
 
 - `errands`: id, `household_id`, `asker_id`, `conversation_id`, `turn_id` (unique; foreign keys to people and to
   `turns (id, conversation_id)`, each with the household), `source`, `state` (`due`, `running`, `done`, `given_up`),
@@ -225,8 +224,8 @@ source; the same ask while it answers, a bare statement, and an ask that only ma
   continues after a failover (open-work, "Errands"); this one-shot ask has no plan to continue from.
 - **Rejected: noticing the owed ask from her words** ("I can't reach the house"). Behaviour keys on fields.
 - **Rejected: the result as a fact of the asker's with a `told` field.** Memory holds what stays true, and "I put
-  milk on the list" is an event, not a truth; it would sit in the Memory room beside lasting facts, the mixing the
-  write job is kept from: memory and errands are two systems that sometimes work together. What lasts reaches Memory through the turn she tells it in.
+  milk on the list" is an event, not a truth; it would sit in the Memory room beside lasting facts. What lasts
+  reaches Memory through the turn she tells it in.
 - **Rejected: letting the prompt pick the moment** ("mention it when convenient"). A stateless call keeps no rate, so
   code carries every untold result up to the cap, and the model only says it.
 - **Rejected: resuming the original loop** from a stored `Held`'s entries. They carry tool results gone stale by the
