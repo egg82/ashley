@@ -19,6 +19,7 @@ from ashley.conversations.postgres import PostgresConversations
 from ashley.db.database import Database, Probe
 from ashley.db.migrate import migrate
 from ashley.db.pool import PoolDatabase
+from db_pool import DatabasePool
 from pg import admin_url
 from psycopg import AsyncConnection, sql
 from psycopg.conninfo import make_conninfo
@@ -78,8 +79,9 @@ class TouchDatabase(Database):
 
 
 @pytest.fixture(scope="session")
-def migrated_template() -> Generator[str]:
-    """One migrated database per worker, the template every test's database is cloned from."""
+def migrated_template() -> Generator[DatabasePool]:
+    """One migrated database per worker, the template every test's database is cloned from, and the pool that clones
+    them ahead of the tests that take them."""
     admin = admin_url()
     name = f"ashley_tmpl_{uuid.uuid4().hex[:12]}"
     with psycopg.connect(admin, autocommit=True) as conn:
@@ -88,25 +90,24 @@ def migrated_template() -> Generator[str]:
         migrate(make_conninfo(admin, dbname=name))
         with psycopg.connect(admin, autocommit=True) as conn:
             conn.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s", (name,))
-        yield name
+        pool = DatabasePool(admin, name)
+        try:
+            yield pool
+        finally:
+            pool.close()
     finally:
         with psycopg.connect(admin, autocommit=True) as conn:
             conn.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
 
 
 @pytest.fixture
-def db_url(migrated_template: str) -> Generator[str]:
+def db_url(migrated_template: DatabasePool) -> Generator[str]:
     """A fresh database at the head revision, dropped afterwards."""
-    admin = admin_url()
-    name = f"ashley_test_{uuid.uuid4().hex[:12]}"
-    with psycopg.connect(admin, autocommit=True) as conn:
-        conn.execute(sql.SQL("CREATE DATABASE {} TEMPLATE {}").format(
-            sql.Identifier(name), sql.Identifier(migrated_template)))
+    url = migrated_template.take()
     try:
-        yield make_conninfo(admin, dbname=name)
+        yield url
     finally:
-        with psycopg.connect(admin, autocommit=True) as conn:
-            conn.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+        migrated_template.release(url)
 
 
 def scalar(url: str, query: str, params: tuple[object, ...] = ()) -> Any:
