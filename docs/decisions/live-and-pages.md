@@ -51,6 +51,12 @@ to another room, as going to the workbench and back to chat, rather than asking 
   motion), unless the person is in the middle of something: a text field they are in holds text, something is being
   carried, or a piece of the bench shown has an edit open (`app/web/src/shell/her/follow.ts`). Then her mark waits on
   the destination's bearing with an offer to follow or stay; going anywhere themselves ends the offer.
+- **Her work at a bench the page is not on shows the same way** (`workingAway`, `benchChangedBy`). `BenchChanged` carries
+  `by` (`her`, `person`, or none for a measurement), set where the command is announced from `By.person_id`, never
+  inferred. A page not on that bench, told `her`, puts the same offer at the workshop bearing, naming the bench
+  ("Ashley is working on …", the title read from the open benches); a tap flies there. The page never moves. The person
+  going anywhere ends it, a newer change replaces it, and it never displaces a waiting offer to follow a move. A page on
+  the bench shows her change on the piece instead (`Away.tsx`). Her `set_work` and an install's second event carry no `by`.
 - **Her links to the rooms' own paths open in place** (a room, or `/workshop/<id>`), with the same flight; every other
   same-site path is still only its label.
 - **Logs:** each move is one `tools.call` line with the room and bench id. Whether a screen followed or waited is the
