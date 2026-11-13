@@ -41,6 +41,8 @@ breaking her.
   - **A task that offers tools refuses a model listed without tool calls**: the router skips that route
     (`inference.route_skipped`, reason `no_tool_calls`). A model the catalogue does not list is not refused.
   - **Route provider names map to catalogue providers** in `catalogue.json` where they differ (`gemini` is Google's).
+    An OpenAI-compatible connection's route name is its label, and its calls are priced as the catalogue provider its
+    connection names, or unpriced where it names none (`decisions.md`, "A model provider's key is a connection").
     models.dev's prices are the current ones, and each call's cost is fixed in its ledger row when it is made, so
     there are no dated price periods.
   - **A price override is flat**: a person's price on any price field replaces upstream's prompt-length tiers.

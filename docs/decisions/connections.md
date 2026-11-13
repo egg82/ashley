@@ -158,9 +158,26 @@ subscription, the read the Usage room already makes), and the router opens the p
   away. A replaced build's clients are closed at shutdown, not at the swap, since a call in flight may still use them.
 - **Routes are checked against every provider a key could turn on**, built once with a placeholder key that is never
   sent, so a route's parameters fail at start even for a provider whose key arrives later from the room.
-- **Not keys, so not connections:** a local OpenAI-compatible server (`LOCAL_LLM_URL`) and Wyoming speech-to-text
-  (`WYOMING_STT_URL`) stay settings. Each is an address on the operator's own network, usually with no key, while a
-  pasted connection is a secret its service checks; and they run beside the pods, where the env is set anyway.
+- **Any OpenAI-compatible provider is one kind, many per deployment** (`ashley.inference.compatible`): OpenRouter,
+  Groq, Together, Mistral, DeepSeek, or the operator's own Ollama or vLLM, each a name, a base URL and a key, served by
+  `OpenAICompatibleProvider` with no wrapper library. It is a `deployment` kind like the keyed ones, so the first
+  household holds it and only its admins add, replace or remove one. Its label is the provider name routes use, so it
+  is an identifier (`[a-z0-9][a-z0-9_-]{0,39}`) and never a name `providers.json` has; any other is 422 `bad_label`, on a
+  rename too. Its address may be http, for a server on the operator's own network. The check is `GET <base>/models`.
+  The keys cache builds one provider per connection, by label, so a connection added, replaced, renamed or removed
+  reaches every pod within the same 30 seconds. Unlike other kinds' labels, this one is logged, as each call's provider.
+- **Its calls are priced as the catalogue provider a person picked** (`connections.catalogue_provider`): adding one in
+  the room is a pick over the model catalogue's providers that list a base URL (the `api` prefills the address) or a
+  custom address, whose calls are unpriced, never $0 and never priced by the label.
+- **`LOCAL_LLM_URL` and `LOCAL_LLM_API_KEY` seed the connection labelled `local`** at each pod's start
+  (`ashley.inference.key_seed`), never over a row of that label, with no catalogue provider; the row then wins. Until
+  there is one (or with no `CONNECTIONS_KEY`) the env's server answers as `local`, as before.
+- Rejected: reading the catalogue provider from the base URL. The address is a proxy for the pick, and a regional or
+  proxied endpoint of a listed provider would go unpriced or be priced as another.
+- Rejected: routes naming a connection by its id. `routes.json` and `ROUTES_FILE` are written before any row exists;
+  the label is the name both sides can know.
+- **Not keys, so not connections:** Wyoming speech-to-text (`WYOMING_STT_URL`) stays a setting until it moves
+  (`open-work.md`): an address on the operator's own network with no key, beside the pods, where the env is set anyway.
 - Rejected: a store of its own for provider keys, which would repeat the sealing, the room and the check that
   Connections already has.
 - Rejected: one `inference_provider` kind with the provider named in the label or address. The provider would then be
