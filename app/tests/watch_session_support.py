@@ -210,6 +210,11 @@ def told(url: str) -> list[tuple[str, str | None]]:
     return [(e, s) for e, s in got]
 
 
+def checked(url: str) -> bool:
+    """Every live watch has had a check recorded since it was armed or last made due: none is due now."""
+    return bool(scalar(url, "SELECT coalesce(bool_and(next_check_at > now()), false) FROM watches WHERE state <> 'ended'"))
+
+
 def states(url: str) -> list[tuple[str, int]]:
     got = scalar(url, "SELECT coalesce(json_agg(json_build_array(b.value->>'status', (b.value->>'seq')::int)), '[]') "
                       "FROM watches w, jsonb_each(w.baseline) b WHERE w.state <> 'ended'")
