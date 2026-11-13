@@ -12,6 +12,10 @@ connection kind, a `ROOT_SECRETS` entry with its reason, or `TO_MOVE` debt recor
 import ast
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.reads_docs  # run on a docs-only pull request (ci.yml)
+
 ROOT = Path(__file__).resolve().parent.parent
 SETTINGS = ROOT / "ashley" / "settings.py"
 TIERS = {"deployment", "overlay", "seed"}

@@ -11,6 +11,10 @@ import importlib
 import re
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.reads_docs  # run on a docs-only pull request (ci.yml)
+
 REPO = Path(__file__).resolve().parent.parent.parent
 SYSTEMS = REPO / "docs" / "systems.md"
 SPAN = re.compile(r"`([^`\n]+)`")

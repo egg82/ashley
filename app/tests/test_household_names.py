@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.reads_docs  # run on a docs-only pull request (ci.yml)
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 NOT_SCANNED = frozenset({".gitlab-ci.yml"})
 CANARY = "zq-household-canary"  # always held, so the scan is proven able to find a name
