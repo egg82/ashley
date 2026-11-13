@@ -18,7 +18,7 @@ def test_the_list_serves_every_registered_kind_in_order(client: TestClient) -> N
     assert sure_kind.secret_field == "api_key" and sure_kind.takes_address and sure_kind.holders == ["household"]
     assert [k.takes_address for k in kinds] == [True, True, True, False, False, False, False, False, False, True, True, True, False, True, False]
     assert [k.holders for k in kinds] == [["household"], ["household"], ["person"], ["person"],
-                                          ["household", "person"], *[["household"]] * 9]
+                                          ["household", "person"], *[["household"]] * 10]
 
 
 def test_a_name_no_adapter_registered_is_not_found_to_connect_or_remove(client: TestClient, sure: FakeSure) -> None:
