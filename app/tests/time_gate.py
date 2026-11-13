@@ -66,7 +66,7 @@ def pytest_fixture_setup(fixturedef: pytest.FixtureDef[object]) -> Generator[Non
 
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_protocol(item: pytest.Item) -> Generator[None, object, object]:
-    item.stash[SPENT_KEY] = -_shared_s[0]
+    item.stash[SPENT_KEY] = _shared_s[0]
     return (yield)
 
 
@@ -78,7 +78,7 @@ def pytest_runtest_makereport(
     item.stash[SPENT_KEY] = item.stash.get(SPENT_KEY, 0.0) + call.duration
     if report.when != "teardown" or not report.passed or not enforced():
         return report
-    spent = item.stash[SPENT_KEY] - _shared_s[0]   # the shared fixtures' seconds inside this test's phases are left out
+    spent = item.stash[SPENT_KEY] - _shared_s[0]   # phases' wall time less the shared fixtures' seconds inside them
     over, _shared_over[:] = list(_shared_over), []
     if too_slow(item.nodeid, spent):
         over.append(f"{item.nodeid} took {spent:.2f}s of wall clock, setup and teardown included")

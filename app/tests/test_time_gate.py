@@ -92,6 +92,13 @@ def test_a_shared_fixture_is_charged_by_name_not_to_the_test_that_reached_it(tmp
     assert "test_first took" not in over.stdout, over.stdout
 
 
+def test_a_slow_test_after_a_shared_fixture_is_still_charged(tmp_path: Path) -> None:
+    body = ("import time, pytest\n\n@pytest.fixture(scope='session')\ndef tree():\n    time.sleep(0.3)\n\n"
+            "def test_first(tree):\n    pass\n\ndef test_slow(tree):\n    time.sleep(0.8)\n")
+    run = pytest_run(tmp_path, body)
+    assert run.returncode == 1 and "test_slow took" in run.stdout and "test_first took" not in run.stdout, run.stdout
+
+
 def test_a_real_run_passes_a_fast_test(tmp_path: Path) -> None:
     fast = pytest_run(tmp_path, "def test_fast():\n    assert sum(range(1000)) == 499500\n")
     assert fast.returncode == 0 and "1 passed" in fast.stdout, fast.stdout
