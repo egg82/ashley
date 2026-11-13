@@ -26,8 +26,8 @@ FLAG = "UPDATE connection_resources SET shared = %(shared)s WHERE connection_id 
 
 def _resealed(sealer: Sealer, row: tuple[Any, ...], old: bytes, new: bytes) -> tuple[bytes, bytes | None]:
     try:
-        secret = sealer.seal(sealer.open(bytes(row[11]), old), new)
-        access = None if row[12] is None else sealer.seal(sealer.open(bytes(row[12]), old), new)
+        secret = sealer.seal(sealer.open(bytes(row[queries.WIDTH]), old), new)
+        access = None if row[queries.WIDTH + 1] is None else sealer.seal(sealer.open(bytes(row[queries.WIDTH + 1]), old), new)
     except Unsealable as e:
         raise ConnectionsUnavailable("the stored secret does not open under this key") from e
     return secret, access

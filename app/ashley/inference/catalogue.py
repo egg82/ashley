@@ -32,7 +32,8 @@ class CatalogueState:
 
 
 class PricedCatalogue:
-    """The merged layers as the router reads them, by route provider name."""
+    """The merged layers as the router reads them, by route provider name, or (the `_in` methods) by the catalogue
+    provider a connection names, None naming none, for an OpenAI-compatible provider whose route name is a label."""
 
     def __init__(self, merged: Merged, config: CatalogueConfig) -> None:
         self.merged = merged
@@ -48,24 +49,39 @@ class PricedCatalogue:
 
     def cost_usd(self, provider: str, model: str, usage: Usage) -> Decimal | None:
         """The cost of one call, None when it cannot be known (see the module's rule)."""
-        found = self.pricing(provider, model)
-        if found.status in ("local", "free"):
-            return Decimal(0)
-        if found.status != "priced" or found.fields is None or usage.audio_ms or usage.characters:
-            return None
-        prompt = usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens
-        rates = rates_for(found.fields, prompt)
-        parts = ((usage.input_tokens, rates.input_usd_per_mtok), (usage.output_tokens, rates.output_usd_per_mtok),
-                 (usage.cache_read_tokens, rates.cache_read_usd_per_mtok),
-                 (usage.cache_write_tokens, rates.cache_write_usd_per_mtok))
-        if any(tokens and rate is None for tokens, rate in parts):
-            return None
-        return sum((tokens * rate for tokens, rate in parts if tokens and rate is not None), Decimal(0)).scaleb(-6)
+        return _cost(self.pricing(provider, model), usage)
+
+    def cost_usd_in(self, catalogue_provider: str | None, model: str, usage: Usage) -> Decimal | None:
+        """`cost_usd` for a model listed under `catalogue_provider`; None, unpriced, when that is None."""
+        listing = None if catalogue_provider is None else self.merged.listings.get((catalogue_provider, model))
+        return _cost(pricing(listing), usage)
 
     def refuses_tools(self, provider: str, model: str) -> bool:
         """Whether the model is listed as making no tool calls; a model not listed is not refused."""
-        found = self.listing(provider, model)
-        return found is not None and found.fields.tool_call is False
+        return _refuses(self.listing(provider, model))
+
+    def refuses_tools_in(self, catalogue_provider: str | None, model: str) -> bool:
+        """`refuses_tools` for a model listed under `catalogue_provider`; never, when that is None."""
+        return catalogue_provider is not None and _refuses(self.merged.listings.get((catalogue_provider, model)))
+
+
+def _refuses(found: Listing | None) -> bool:
+    return found is not None and found.fields.tool_call is False
+
+
+def _cost(found: Pricing, usage: Usage) -> Decimal | None:
+    if found.status in ("local", "free"):
+        return Decimal(0)
+    if found.status != "priced" or found.fields is None or usage.audio_ms or usage.characters:
+        return None
+    prompt = usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens
+    rates = rates_for(found.fields, prompt)
+    parts = ((usage.input_tokens, rates.input_usd_per_mtok), (usage.output_tokens, rates.output_usd_per_mtok),
+             (usage.cache_read_tokens, rates.cache_read_usd_per_mtok),
+             (usage.cache_write_tokens, rates.cache_write_usd_per_mtok))
+    if any(tokens and rate is None for tokens, rate in parts):
+        return None
+    return sum((tokens * rate for tokens, rate in parts if tokens and rate is not None), Decimal(0)).scaleb(-6)
 
 
 class ModelCatalogue(Service):

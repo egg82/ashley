@@ -58,7 +58,8 @@ from .files.s3 import S3Store
 from .files.store import ObjectStore
 from .inference import spend_catalog
 from .inference.balance import ProviderBalances
-from .inference.key_seed import seed_from_env as seed_keys_from_env
+from .inference.compatible import KIND as COMPATIBLE
+from .inference.key_seed import seed_compatible_from_env, seed_from_env as seed_keys_from_env
 from .inference.kinds import KEYED
 from .inference.routes import Routes, without_fallback
 from .inference.inference import Inference
@@ -98,7 +99,7 @@ from .runs.runs import Runs
 from .tidy.register import register as register_tidy
 from .settings import Settings
 from .wiring_inference import wire_inference
-from .wiring_providers import env_keys
+from .wiring_providers import env_compatible, env_keys
 from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_podman_sandbox, wire_sandbox
 from .wiring_skills import wire_skills
@@ -156,7 +157,7 @@ from .workshop.workshop import Workshop
 
 CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
                                                 replace(GOOGLE, resources=mailboxes),
-                                                *(k.kind for k in KEYED))  # the panel's order
+                                                *(k.kind for k in KEYED), COMPATIBLE)  # the panel's order
 
 
 def configured_kinds(settings: Settings) -> tuple[ConnectionKind, ...]:
@@ -364,19 +365,25 @@ def warmups(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """What every pod runs once at start, for the app to start after `wire`, so the first reply after a deploy does not
     pay for it: the embedding and speaker-embedding models' load; with `HA_URL` set, the env's Home Assistant
     sealed as household 1's connection where it has none (`seed_from_env`); and the env's model provider keys sealed as
-    its connections of their kinds where it has none (`ashley.inference.key_seed`). Each is best effort and never
-    raises."""
+    its connections of their kinds where it has none, and the env's local OpenAI-compatible server as its connection
+    labelled `local` (`ashley.inference.key_seed`). Each is best effort and never raises."""
     inference = services.get(Inference)
     running: list[Coroutine[Any, Any, None]] = [inference.warm("embed"), inference.warm("voiceprint")]
     if settings.ha_url:
         running.append(_seed(settings))
     if any(env_keys(settings).values()):
         running.append(_seed_keys(settings))
+    if env_compatible(settings):
+        running.append(_seed_compatible(settings))
     return running
 
 
 async def _seed_keys(settings: Settings) -> None:
     await seed_keys_from_env(services.get(Connections), KEYED, env_keys(settings))
+
+
+async def _seed_compatible(settings: Settings) -> None:
+    await seed_compatible_from_env(services.get(Connections), env_compatible(settings))
 
 
 async def _seed(settings: Settings) -> None:

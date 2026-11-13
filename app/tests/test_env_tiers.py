@@ -53,8 +53,8 @@ ENV: dict[str, tuple[str, str]] = {
     "ELEVENLABS_API_KEY": (S, "the first household's provider connection; the row wins"),
     "HA_URL": (S, "the first household's Home Assistant connection; the row wins"),
     "HA_TOKEN": (S, "the first household's Home Assistant connection; the row wins"),
-    "LOCAL_LLM_URL": (D, "an outside service's address"),
-    "LOCAL_LLM_API_KEY": (D, "an outside service's credential"),
+    "LOCAL_LLM_URL": (S, "the first household's OpenAI-compatible connection labelled local; the row wins"),
+    "LOCAL_LLM_API_KEY": (S, "the first household's OpenAI-compatible connection labelled local; the row wins"),
     "WYOMING_STT_URL": (D, "an outside service's address"),
     "SEARXNG_URL": (D, "an outside service's address"),
     "DISCORD_BOT_TOKEN": (D, "an outside service's credential"),
@@ -93,6 +93,7 @@ ENV: dict[str, tuple[str, str]] = {
 SEEDS: dict[str, str] = {
     "ANTHROPIC_API_KEY": "anthropic", "OPENAI_API_KEY": "openai", "GEMINI_API_KEY": "gemini",
     "ELEVENLABS_API_KEY": "elevenlabs", "HA_URL": "home_assistant", "HA_TOKEN": "home_assistant",
+    "LOCAL_LLM_URL": "openai_compatible", "LOCAL_LLM_API_KEY": "openai_compatible",
 }
 """The connection kind each seed names; it must be a kind the app registers."""
 
@@ -107,7 +108,7 @@ ROOT_SECRETS: dict[str, str] = {
 person or a household is a connection, never an entry here."""
 
 TO_MOVE: set[str] = {
-    "LOCAL_LLM_URL", "LOCAL_LLM_API_KEY", "WYOMING_STT_URL", "SEARXNG_URL", "DISCORD_BOT_TOKEN", "ESPHOME_NOISE_PSK",
+    "WYOMING_STT_URL", "SEARXNG_URL", "DISCORD_BOT_TOKEN", "ESPHOME_NOISE_PSK",
     "FILES_ENDPOINTS", "FILES_BUCKET", "FILES_ACCESS_KEY", "FILES_SECRET_KEY", "FILES_LINK_KEY", "VAPID_PUBLIC_KEY",
     "VAPID_PRIVATE_KEY",
 }

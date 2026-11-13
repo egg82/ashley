@@ -478,7 +478,9 @@ export interface paths {
          * Connect
          * @description 201 `HouseholdConnection`, added (a personal kind as the signed-in person's own); 400 `ConnectionRefused`;
          *     401 `unauthorized`; 403 `forbidden` or `admin_only`; 404 `not_found`, no such kind; 409 `label_taken` or
-         *     `too_many`; 422 `unsupported`, the body carries the other secret field than the kind's; 503 `unavailable`, also when
+         *     `too_many`; 422 `unsupported`, the body carries the other secret field than the kind's, or a catalogue provider the
+         *     kind takes none of or the catalogue does not list; 422 `bad_label`, a label the kind does not take
+         *     (`ConnectionKind.takes_label`); 503 `unavailable`, also when
          *     connections are not set up here. A kind not offered to the signed-in person's household (`ConnectionKinds.offered`) is 404.
          */
         post: operations["connect"];
@@ -499,7 +501,8 @@ export interface paths {
         /**
          * Replace
          * @description 200 `HouseholdConnection`, with its new address and key or token; 400 `ConnectionRefused`; 401 `unauthorized`;
-         *     403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`.
+         *     403 `forbidden` or `admin_only`; 404 `not_found`; 422 `unsupported`; 503 `unavailable`. A kind that
+         *     `picks_catalogue_provider` stores the body's catalogue provider, none when it names none.
          */
         put: operations["replace"];
         post?: never;
@@ -514,7 +517,8 @@ export interface paths {
          * Change
          * @description 200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401
          *     `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404
-         *     `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 503
+         *     `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 422
+         *     `bad_label`, a label the kind does not take; 503
          *     `unavailable`.
          */
         patch: operations["change"];
@@ -2139,13 +2143,17 @@ export interface components {
          * ApiKeyConnectionRequest
          * @description Replace a connection of a kind whose `secret_field` is `api_key` (Sure, a model provider): `base_url` is the
          *     address it is served at, left out for a kind that has one address (a model provider's); `api_key` is a key made in
-         *     the service's own settings, checked against it before anything is stored.
+         *     the service's own settings, checked against it before anything is stored. `catalogue_provider`, only for a kind
+         *     that `picks_catalogue_provider`, is the model catalogue provider (`GET /api/catalogue`) its calls are priced as;
+         *     left out, a custom address whose calls are unpriced.
          */
         ApiKeyConnectionRequest: {
             /** Base Url */
             base_url?: string | null;
             /** Api Key */
             api_key: string;
+            /** Catalogue Provider */
+            catalogue_provider?: string | null;
         };
         /**
          * Applied
@@ -2596,7 +2604,11 @@ export interface components {
          *     service's own consent screen (`POST /api/connections/oauth/{provider}/start`), or `bridge`, a login to the service's account
          *     made once from the room (`POST /api/mail-bridge/login`); `set_up` is whether this app can
          *     connect it at all (an OAuth kind whose client is not configured is not); `has_settings` whether a person sets anything on a connection of
-         *     it (`GET /api/connections/{id}/settings`).
+         *     it (`GET /api/connections/{id}/settings`). `label_pattern`, when set, is the shape a label of it must match whole
+         *     (an OpenAI-compatible provider's label is the name routes call it by, so it is required and an identifier); some
+         *     names a shipped provider has are refused too (422 `bad_label`). `picks_catalogue_provider` says a new connection
+         *     may name the model catalogue provider it is (`GET /api/catalogue`), whose `api` is its address; without one it is
+         *     at a custom address and its calls are unpriced.
          */
         ConnectionKindInfo: {
             /** Name */
@@ -2644,6 +2656,13 @@ export interface components {
              * @default false
              */
             has_settings: boolean;
+            /** Label Pattern */
+            label_pattern?: string | null;
+            /**
+             * Picks Catalogue Provider
+             * @default false
+             */
+            picks_catalogue_provider: boolean;
         };
         /**
          * ConnectionRefused
@@ -2878,7 +2897,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin" | "admins_from_provider";
+            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin" | "admins_from_provider" | "bad_label";
             /** Detail */
             detail: string;
         };
@@ -2990,7 +3009,9 @@ export interface components {
          *     kept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household
          *     (it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they
          *     added it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it
-         *     up: false for a deployment's connection (a model provider's key) unless they are an admin.
+         *     up: false for a deployment's connection (a model provider's key) unless they are an admin. `catalogue_provider` is
+         *     the model catalogue provider an OpenAI-compatible provider's calls are priced as, null for one at a custom address
+         *     (its calls are unpriced) and for every other kind.
          */
         HouseholdConnection: {
             /** Id */
@@ -3046,6 +3067,8 @@ export interface components {
              * @default true
              */
             can_change: boolean;
+            /** Catalogue Provider */
+            catalogue_provider?: string | null;
         };
         /**
          * HouseholdRefused
@@ -3925,6 +3948,8 @@ export interface components {
             base_url?: string | null;
             /** Api Key */
             api_key: string;
+            /** Catalogue Provider */
+            catalogue_provider?: string | null;
             /** Kind */
             kind: string;
             /** Label */
@@ -6718,7 +6743,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description a body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            /** @description `unsupported`: a secret field or catalogue provider the kind does not take; `bad_label`: a label the kind does not take. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6798,7 +6823,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description a body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            /** @description `unsupported`: a secret field or catalogue provider the kind does not take; `bad_label`: a label the kind does not take. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -6943,7 +6968,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description a body or id outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            /** @description `unsupported`: a holder the kind does not allow; `bad_label`: a label the kind does not take. A body or id outside the request's schema gets FastAPI's own validation error, which is not this schema */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -37,7 +37,9 @@ class HouseholdConnection(BaseModel):
     kept (none for a kind that lists none). `can_hand_over` says the signed-in person may hand it to the household
     (it is theirs and its kind allows the household to hold it); `can_take_back` that they may take it back (they
     added it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it
-    up: false for a deployment's connection (a model provider's key) unless they are an admin."""
+    up: false for a deployment's connection (a model provider's key) unless they are an admin. `catalogue_provider` is
+    the model catalogue provider an OpenAI-compatible provider's calls are priced as, null for one at a custom address
+    (its calls are unpriced) and for every other kind."""
 
     id: int
     label: str
@@ -54,6 +56,7 @@ class HouseholdConnection(BaseModel):
     can_hand_over: bool = False
     can_take_back: bool = False
     can_change: bool = True
+    catalogue_provider: str | None = None
 
 
 class ConnectionKindInfo(BaseModel):
@@ -67,7 +70,11 @@ class ConnectionKindInfo(BaseModel):
     service's own consent screen (`POST /api/connections/oauth/{provider}/start`), or `bridge`, a login to the service's account
     made once from the room (`POST /api/mail-bridge/login`); `set_up` is whether this app can
     connect it at all (an OAuth kind whose client is not configured is not); `has_settings` whether a person sets anything on a connection of
-    it (`GET /api/connections/{id}/settings`)."""
+    it (`GET /api/connections/{id}/settings`). `label_pattern`, when set, is the shape a label of it must match whole
+    (an OpenAI-compatible provider's label is the name routes call it by, so it is required and an identifier); some
+    names a shipped provider has are refused too (422 `bad_label`). `picks_catalogue_provider` says a new connection
+    may name the model catalogue provider it is (`GET /api/catalogue`), whose `api` is its address; without one it is
+    at a custom address and its calls are unpriced."""
 
     name: str
     title: str
@@ -85,6 +92,8 @@ class ConnectionKindInfo(BaseModel):
     connect: Literal["pasted", "oauth", "bridge"] = "pasted"
     set_up: bool = True
     has_settings: bool = False
+    label_pattern: str | None = None
+    picks_catalogue_provider: bool = False
 
 
 class ConnectionsResponse(BaseModel):
@@ -100,10 +109,13 @@ class ConnectionsResponse(BaseModel):
 class ApiKeyConnectionRequest(BaseModel):
     """Replace a connection of a kind whose `secret_field` is `api_key` (Sure, a model provider): `base_url` is the
     address it is served at, left out for a kind that has one address (a model provider's); `api_key` is a key made in
-    the service's own settings, checked against it before anything is stored."""
+    the service's own settings, checked against it before anything is stored. `catalogue_provider`, only for a kind
+    that `picks_catalogue_provider`, is the model catalogue provider (`GET /api/catalogue`) its calls are priced as;
+    left out, a custom address whose calls are unpriced."""
 
     base_url: NoNul | None = Field(default=None, min_length=1, max_length=500)
     api_key: NoNul = Field(min_length=1, max_length=500, pattern=r"^\S+$")
+    catalogue_provider: NoNul | None = Field(default=None, min_length=1, max_length=100)
 
 
 class TokenConnectionRequest(BaseModel):

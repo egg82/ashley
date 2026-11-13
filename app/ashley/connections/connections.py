@@ -67,6 +67,27 @@ class Connections(Service):
         when the owner has one of that kind with that label; TooMany when the owner holds the kind's `most`. Nothing
         is written for any of them."""
 
+    async def add_catalogued(self, household_id: int, kind: Kind, label: str, base_url: str, secret: str,
+                             added_by: int, catalogue_provider: str | None) -> Connection:
+        """`add`, held by the kind's default holder, storing which model catalogue provider the connection's calls are
+        priced as (None: none, so they are unpriced). For a kind that takes one (`ConnectionKind.picks_catalogue_provider`);
+        the caller has checked the catalogue lists it. Raises as `add` does; a store that keeps no catalogue provider
+        raises ConnectionsUnavailable."""
+        raise ConnectionsUnavailable("this store keeps no catalogue provider")
+
+    async def replace_catalogued(self, connection_id: int, household_id: int, person_id: int, base_url: str,
+                                 secret: str, catalogue_provider: str | None) -> Connection | None:
+        """`replace`, setting the catalogue provider as `add_catalogued` stores it. Raises as `replace` does; a store
+        that keeps no catalogue provider raises ConnectionsUnavailable."""
+        raise ConnectionsUnavailable("this store keeps no catalogue provider")
+
+    async def seed_labelled(self, household_id: int, kind: Kind, label: str, base_url: str,
+                            secret: str) -> Connection | None:
+        """`seed` for a kind a household holds several of, each named: the household's connection of `kind` under
+        `label` (non-empty) from her own setup, only where it has none of that kind under that label. Raises as `seed`
+        does; a store that keeps no labels raises ConnectionsUnavailable."""
+        raise ConnectionsUnavailable("this store cannot seed a labelled connection")
+
     async def move(self, connection_id: int, household_id: int, person_id: int, holder: Holder) -> Connection | None:
         """Hand a connection visible to `person_id` to the household, or take one back as theirs, sealing its secret
         again bound to its new holder and setting each of its resources shared (to the household) or kept (back to a

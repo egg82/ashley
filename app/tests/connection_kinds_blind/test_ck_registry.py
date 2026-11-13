@@ -10,6 +10,7 @@ from ashley.connections.kinds import ConnectionKind, ConnectionKinds
 from ashley.google.kind import GOOGLE
 from ashley.herdr.kind import HERDR
 from ashley.home_assistant.kind import HOME_ASSISTANT
+from ashley.inference.compatible import KIND as COMPATIBLE
 from ashley.inference.kinds import KEYED
 from ashley.mail.resources import mailboxes
 from ashley.sure.kind import SURE
@@ -32,10 +33,11 @@ def custom(name: str, personal: bool = False, fixed: str | None = None) -> Conne
 
 
 def test_the_four_services_and_the_herdr_bridge_are_the_registered_kinds() -> None:
-    assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google", *PROVIDERS))
+    assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google", *PROVIDERS,
+                                                                    "openai_compatible"))
     assert {k.name: k for k in CONNECTION_KINDS} == {"sure": SURE, "home_assistant": HOME_ASSISTANT, "gitlab": GITLAB,
                                                      "github": GITHUB, "herdr": HERDR, "google": replace(GOOGLE, resources=mailboxes),
-                                                     **{k.kind.name: k.kind for k in KEYED}}
+                                                     **{k.kind.name: k.kind for k in KEYED}, COMPATIBLE.name: COMPATIBLE}
 
 
 @pytest.mark.parametrize(("name", "personal", "field"), [

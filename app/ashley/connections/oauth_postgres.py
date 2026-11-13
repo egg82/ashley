@@ -44,13 +44,14 @@ class PostgresOAuthConnections(OAuthConnections):
         connection = connection_of(row)
         bound = bound_to(household_id, connection.kind, connection.person_id)
         try:
-            opened = Opened(connection, self._sealer.open(bytes(row[11]), bound))
-            access = None if row[12] is None else self._sealer.open(bytes(row[12]), bound)
+            opened = Opened(connection, self._sealer.open(bytes(row[queries.WIDTH]), bound))
+            access = None if row[queries.WIDTH + 1] is None else self._sealer.open(bytes(row[queries.WIDTH + 1]), bound)
         except Unsealable as e:
             logs.error(log, "connections.unsealable", household=household_id, kind=connection.kind,
                        connection=connection.id)
             raise ConnectionsUnavailable("the stored secret does not open under this key") from e
-        return OAuthState(opened, access, None if row[13] is None else float(row[13]), row[14])
+        expires, version = row[queries.WIDTH + 2], row[queries.WIDTH + 3]
+        return OAuthState(opened, access, None if expires is None else float(expires), version)
 
     async def renewed(self, connection_id: int, version: int, grant: Grant) -> bool:
         with translated():

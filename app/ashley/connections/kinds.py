@@ -2,6 +2,7 @@
 `ConnectionKind` beside itself and `ashley.wiring` registers them; the routes, the stored rows and the panel read the
 `ConnectionKinds` service, and nothing else lists kinds."""
 
+import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Literal
@@ -89,7 +90,11 @@ class ConnectionKind:
     other household and no other can add one (`ConnectionKinds.offered`). A kind not `configured` needs something the
     deployment lacks (the herdr client certificate, Proton Mail Bridge): it stays registered, so a row already stored
     is still listed and removable, but it is offered to no household, no connection can be added, and no port opens one
-    (`ConnectionKinds.of_port`)."""
+    (`ConnectionKinds.of_port`). A kind whose label names something elsewhere (an OpenAI-compatible provider's label is
+    the provider name routes use) sets `label_pattern`, the shape every label of it must match whole, and
+    `reserved_labels`, names it must not take (`takes_label`); any other kind takes any label. A kind that sets
+    `picks_catalogue_provider` lets a person say which model catalogue provider its calls are priced as
+    (`Connection.catalogue_provider`)."""
 
     name: str
     title: str
@@ -115,12 +120,22 @@ class ConnectionKind:
     catalogue: Catalogue | None = None
     deployment: bool = False
     configured: bool = True
+    label_pattern: str | None = None
+    reserved_labels: frozenset[str] = frozenset()
+    picks_catalogue_provider: bool = False
 
     def __post_init__(self) -> None:
         if self.most < 1:
             raise ValueError("a kind allows at least one connection")
         if not self.holders:
             raise ValueError("a kind has at least one holder")
+
+    def takes_label(self, label: str) -> bool:
+        """Whether a connection of this kind may be called `label`: it matches `label_pattern` whole and is not one of
+        `reserved_labels`; always, for a kind with no pattern."""
+        if self.label_pattern is None:
+            return True
+        return re.fullmatch(self.label_pattern, label) is not None and label not in self.reserved_labels
 
     @property
     def default_holder(self) -> Holder:

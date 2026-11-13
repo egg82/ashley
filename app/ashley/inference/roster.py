@@ -4,6 +4,7 @@ resting, and the spend ledger with its one log line per call."""
 import logging
 import time
 from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping
+from decimal import Decimal
 
 from .. import logs
 from .catalogue import ModelCatalogue
@@ -51,13 +52,32 @@ class Roster:
         during the walk is skipped when reached."""
         for route in (self._routes if routes is None else routes).for_task(task):
             provider = self._provider(route.provider)
-            refused = tools and self._catalogue.priced().refuses_tools(route.provider, route.model)
+            refused = tools and self._refuses_tools(route)
             if isinstance(provider, kind) and self._clock_ok(route) and not refused:
                 yield route, provider
                 continue
             reason = ("unwired" if not isinstance(provider, kind) else "no_tool_calls" if refused else "resting")
             logs.info(log, "inference.route_skipped", task=task, provider=route.provider, model=route.model,
                       reason=reason)
+
+    def _compatible(self, route: Route) -> tuple[bool, str | None]:
+        """Whether the route names an OpenAI-compatible provider wired now, and the catalogue provider it is priced as."""
+        priced_as: Mapping[str, str | None] = {} if self._keyed is None else self._keyed.catalogue_providers()
+        return route.provider in priced_as, priced_as.get(route.provider)
+
+    def _refuses_tools(self, route: Route) -> bool:
+        compatible, listed = self._compatible(route)
+        if compatible:
+            return self._catalogue.priced().refuses_tools_in(listed, route.model)
+        return self._catalogue.priced().refuses_tools(route.provider, route.model)
+
+    def _cost(self, route: Route, usage: Usage) -> Decimal | None:
+        """The call's cost; an OpenAI-compatible provider's from the catalogue provider its connection names, so one
+        at a custom address is unpriced."""
+        compatible, listed = self._compatible(route)
+        if compatible:
+            return self._catalogue.priced().cost_usd_in(listed, route.model, usage)
+        return self._catalogue.priced().cost_usd(route.provider, route.model, usage)
 
     def _clock_ok(self, route: Route) -> bool:
         return self.clock() >= self._resting_until.get(route.provider, float("-inf"))
@@ -88,7 +108,7 @@ class Roster:
                      reason: str | None = None) -> None:
         """Logs `inference.call` and enters it in the ledger. `reason` is a failed call's `ProviderFailed` message."""
         duration_ms = max(0, round((self.clock() - started) * 1000))
-        cost = None if usage is None else self._catalogue.priced().cost_usd(route.provider, route.model, usage)
+        cost = None if usage is None else self._cost(route, usage)
         logs.info(log, "inference.call", task=task, provider=route.provider, model=route.model, outcome=outcome,
                   **_reason(reason), **fields, duration_ms=duration_ms)
         try:
