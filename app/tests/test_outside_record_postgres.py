@@ -84,3 +84,22 @@ def test_a_list_written_by_a_tainted_turn_is_outside_within_its_window_only_and_
             assert int(scalar(db_url, "SELECT count(*) FROM outside_writes WHERE entity = 'todo.fresh'")) == 1, "one row"
 
     run(go())
+
+
+def test_a_person_reads_back_only_their_own_newest_first_up_to_the_limit(db_url: str) -> None:
+    home, other = household(db_url), household(db_url)
+    alana, sam, kim = person(db_url, home, "Alana"), person(db_url, home, "Sam"), person(db_url, other, "Kim")
+
+    async def go() -> None:
+        async with record(db_url) as rec:
+            await rec.done(action(home, alana, 1, "old", days_ago=2))
+            await rec.done(action(home, alana, 2, "new", days_ago=1))
+            await rec.done(action(home, sam, 3, "sams"))
+            await rec.done(action(other, kim, 4, "kims"))
+            await rec.done(action(other, alana, 5, "same id elsewhere"))
+            got = await rec.of_person(home, alana, 10)
+            assert [r.action.tool for r in got] == ["new", "old"] and got[0].id > got[1].id
+            assert [r.action.tool for r in await rec.of_person(home, alana, 1)] == ["new"]
+            assert await rec.of_person(home, kim, 10) == ()
+
+    run(go())

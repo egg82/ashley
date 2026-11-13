@@ -4,7 +4,7 @@ list entities `wrote` named."""
 from collections.abc import Sequence
 from datetime import datetime
 
-from ashley.senses.outside_record import DoneAction, OutsideRecord
+from ashley.senses.outside_record import DoneAction, OutsideRecord, Recorded
 
 
 class MemoryRecord(OutsideRecord):
@@ -19,6 +19,10 @@ class MemoryRecord(OutsideRecord):
 
     async def of_turn(self, conversation_id: int, turn_id: int) -> tuple[DoneAction, ...]:
         return tuple(a for a in self.actions if (a.conversation_id, a.turn_id) == (conversation_id, turn_id))
+
+    async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
+        mine = [Recorded(i, a) for i, a in enumerate(self.actions, 1) if (a.household_id, a.person_id) == (household_id, person_id)]
+        return tuple(reversed(mine))[:limit]
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:
         self.writes.add((household_id, entity))

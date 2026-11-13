@@ -881,6 +881,62 @@
         }
       }
     },
+    "/api/outside-actions": {
+      "get": {
+        "summary": "List Outside Actions",
+        "description": "200 `OutsideActionsResponse`; 401 `unauthorized`; 503 `unavailable`; 422 for a `limit` outside 1 to 200.",
+        "operationId": "list_outside_actions",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutsideActionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FastAPI's validation error: a `limit` outside 1 to 200"
+          }
+        }
+      }
+    },
     "/api/reminders": {
       "get": {
         "summary": "List Reminders",
@@ -12168,6 +12224,81 @@
         ],
         "title": "OAuthStartResponse",
         "description": "Where to send this browser to connect: the service's consent page, which returns it to\n`/connections?connect=<outcome>`. Good for one connect, within sign-in's `pending_minutes`."
+      },
+      "OutsideAction": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "runs",
+              "judged"
+            ],
+            "title": "Tier"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "summary",
+          "tier",
+          "explanation",
+          "at"
+        ],
+        "title": "OutsideAction",
+        "description": "A change she made for the signed-in person with no OK, in a turn that had read words written outside the\nhousehold. `label` is the plain headline the person was shown for it, None for one made before headlines were kept;\n`summary` is code's plain-words account of the change, never her words. `tier`: `runs`, a kind of change that always\nruns on its own; `judged`, one the action judge let run. `explanation` is the judge's reason in words, None for\n`runs` and for a judged one that kept none."
+      },
+      "OutsideActionsResponse": {
+        "properties": {
+          "outside_actions": {
+            "items": {
+              "$ref": "#/components/schemas/OutsideAction"
+            },
+            "type": "array",
+            "title": "Outside Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outside_actions"
+        ],
+        "title": "OutsideActionsResponse",
+        "description": "The signed-in person's most recent outside actions, as `outside_actions`, newest first, at most `limit` of them. Rows are kept 90 days.\nOnly theirs: another person's, or another household's, are never listed."
       },
       "PastConversation": {
         "properties": {
