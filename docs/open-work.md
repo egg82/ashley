@@ -523,10 +523,6 @@ this order.
       Check first whether the house's HA runs Music Assistant: it already holds Spotify, Apple Music and YouTube Music
       providers and plays to Cast, AirPlay, Sonos and ESPHome speakers, so one adapter over it may stand in for the
       per-service ones, leaving her own port with a single implementation until a service it lacks is wanted.
-41. **Drop `outbox.agree` and `Outbound.agree`.** Receipts carry the proposal (`Receipts.proposal_id`); the column and the
-    field stay for one release so a pod on the previous image can still send its Agree action. Drop both once both sites
-    run the image that reads `outbox.receipts`. Fits into: Channels (the outbox).
-
 ## Open questions
 
 - **Starting Claude Code sessions** from her (blocked today), and an in-cluster `claude -p` route as other
