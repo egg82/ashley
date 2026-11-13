@@ -1,4 +1,4 @@
-"""A fake Sure behind `httpx2.MockTransport`, answering `/api/v1/{accounts,transactions,categories,balance_sheet}` in
+"""A fake Sure behind `httpx2.MockTransport`, answering `/api/v1/{accounts,transactions,recurring_transactions,categories,balance_sheet}` in
 the shapes Sure's jbuilder views write (we-promise/sure 117bea5d, `app/views/api/v1/*`), one category at
 `/api/v1/categories/:id`, and `PUT /api/v1/transactions/:id` as `Api::V1::TransactionsController#update` answers it
 (131e786: 404 `not_found` for an id not the household's, 422 for a split's part, 403 `insufficient_scope` for a key that
@@ -45,6 +45,18 @@ def transaction(name: str, amount: str, day: str, category: dict[str, object] | 
             "created_at": "2026-10-01T00:00:00Z", "updated_at": "2026-10-01T00:00:00Z"}
 
 
+def recurring(id_: str, name: str, due: str | None, amount: str = "12.00", account_id: str = CHECKING,
+              bill_type: str = "bill", autopay: bool = False, status: str = "suggested",
+              merchant: str | None = None) -> dict[str, object]:
+    """A recurring transaction in the shape Sure's `GET /api/v1/recurring_transactions` returns it: detected, so
+    `manual` is false and `status` is "suggested", with a next expected date."""
+    return {"id": id_, "name": name, "amount": amount, "next_expected_date": due, "expected_day_of_month": 15,
+            "bill_type": bill_type, "autopay": autopay, "status": status, "manual": False,
+            "expected_amount_min": amount, "expected_amount_max": amount, "expected_amount_avg": amount,
+            "merchant": None if merchant is None else {"id": "m-" + id_, "name": merchant},
+            "account": {"id": account_id, "name": "Checking", "account_type": "depository"}}
+
+
 def page(total: int) -> dict[str, object]:
     return {"page": 1, "per_page": 25, "total_count": total, "total_pages": 1}
 
@@ -58,6 +70,10 @@ def bodies() -> dict[str, object]:
                                                   transaction("To savings", "$100.00", "2026-10-29",
                                                               transfer={"id": "x"})],
                                  "pagination": page(2)},
+        "/api/v1/recurring_transactions": {
+            "recurring_transactions": [recurring("r1", "Internet", "2026-11-15", "59.99", merchant="Fibre Co"),
+                                       recurring("r2", "Payroll", "2026-11-30", "2000.00", bill_type="income")],
+            "pagination": page(2)},
         "/api/v1/categories": {"categories": [
             {**groceries, "parent": {"id": "p1", "name": "Food"}, "subcategories_count": 0,
              "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z"}], "pagination": page(1)},
