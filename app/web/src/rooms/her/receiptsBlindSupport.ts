@@ -11,7 +11,7 @@
 import { doneLine, heldCard } from './receipts.ts';
 
 export type WireReceipt = { headline: string; detail: string | null; why: string | null };
-export type WireReceipts = { ran: WireReceipt[]; held: WireReceipt[]; proposal_id: number | null; facts: [] };
+export type WireReceipts = { ran: WireReceipt[]; held: WireReceipt[]; proposal_id: number | null; choice_rows: [] };
 export type Card = { items: WireReceipt[]; agreeable: boolean; proposal: number | undefined } | null;
 
 export const note = (r: WireReceipts | null | undefined): string | null => (r ? doneLine(r) : null);
@@ -19,4 +19,4 @@ export const items = (r: WireReceipts | null | undefined): WireReceipt[] => (r ?
 export const card = (r: WireReceipts | null | undefined, agree: number | undefined): Card => heldCard(r, agree);
 
 export const receipt = (headline: string, detail: string | null = null, why: string | null = null): WireReceipt => ({ headline, detail, why });
-export const wire = (ran: WireReceipt[], held: WireReceipt[] = [], proposal_id: number | null = null): WireReceipts => ({ ran, held, proposal_id, facts: [] });
+export const wire = (ran: WireReceipt[], held: WireReceipt[] = [], proposal_id: number | null = null): WireReceipts => ({ ran, held, proposal_id, choice_rows: [] });

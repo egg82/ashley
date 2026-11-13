@@ -120,7 +120,7 @@ def test_facts_reach_her_history_and_the_wire_and_old_receipts_read_with_none() 
     assert line(shown).endswith("The lanyard: flat strap")
     assert "The lanyard: flat strap" not in line(Receipts((Receipt("Turned on a light"),)))
     wired = wire_receipts(shown)
-    assert wired is not None and [(f.label, f.value, f.options) for f in wired.facts] == [
+    assert wired is not None and [(f.label, f.value, f.option_values) for f in wired.choice_rows] == [
         ("The lanyard", "flat strap", ["flat strap", "round cord"])]
     assert Receipts.from_json(shown.to_json()) == shown
     old = {"done": [{"headline": "Turned on a light", "detail": None, "why": None}], "held": [], "proposal_id": None}
