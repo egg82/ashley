@@ -42,6 +42,12 @@ Needs the model keys (the grader too). With no DIR it says so and exits.
 `python -m ashley.evals bench-replay-capture --bench N --from-turn T DIR`: write that snapshot of bench N from the
 conversation person turn T opened, reading DATABASE_URL (production, through a read-only session) and its object store.
 
+`python -m ashley.evals prompt-sizes [--kind command|chat] [--channel web|voice] [--household N] [--person N] [--ask TEXT] [--json PATH]`:
+what each part of her prompt costs in tokens: each stable-prompt section, the moment layer, each tool and each source's
+tools, and the reply schema, built as her real turn builds them for that household's person and counted with Anthropic's
+`count_tokens` on the first Anthropic route of the kind. Reads only. Needs DATABASE_URL and an Anthropic key (the
+deployment's connection, else the env's). Prints names, characters and tokens, never the prompt's text.
+
 `python -m ashley.evals watch-tools [--runs N] [--case ID]`: how she uses her `watch`, `unwatch` and `watches` tools, through
 her real turn loop with the live model, a person with a fake herdr bridge of three sessions, and her watches real rows
 of a scratch DATABASE_URL (it adds a household), ended after each run. Needs the model keys."""
@@ -54,6 +60,7 @@ from pathlib import Path
 
 from .. import logs, services, wiring
 from ..connections.connections import NullConnections
+from ..connections.kinds import FIRST_HOUSEHOLD
 from ..db.database import Database
 from ..home_assistant.connected_homes import ConnectedHomes
 from ..home_assistant.homes import Homes
@@ -61,7 +68,7 @@ from ..inference.inference import InferenceError
 from ..inference.routes import PinError, Routes, only
 from ..settings import Settings, from_env
 from . import (action_judge, bench_act, bench_replay, bench_replay_run, house, house_live, house_report, memory_recall_hybrid,
-               memory_write, outside_ask, reply_owed, reply_remember, watch_tools)
+               memory_write, outside_ask, prompt_sizes_live, reply_owed, reply_remember, watch_tools)
 
 log = logging.getLogger("ashley.evals")
 
@@ -120,6 +127,13 @@ def parser() -> argparse.ArgumentParser:
     cp.add_argument("--bench", type=int, required=True)
     cp.add_argument("--from-turn", type=int, required=True)
     cp.add_argument("out", metavar="DIR")
+    ps = sub.add_parser("prompt-sizes", help="tokens per section of the system prompt and per tool, as her turn builds them")
+    ps.add_argument("--kind", choices=prompt_sizes_live.KINDS, default="chat", help="the conversation kind")
+    ps.add_argument("--channel", choices=prompt_sizes_live.CHANNELS, default="web", help="the channel the ask arrives on")
+    ps.add_argument("--household", type=int, default=FIRST_HOUSEHOLD, help="the household whose prompt is built")
+    ps.add_argument("--person", type=int, help="the person asking (default: the household's first)")
+    ps.add_argument("--ask", default="Hello.", help="what is said, which memory recalls for")
+    ps.add_argument("--json", metavar="PATH", help="also write the counts as JSON here")
     sub.add_parser("memory-recall-hybrid", help="recall over hybrid_cases.json, by full-text and with embeddings")
     return top
 
@@ -174,6 +188,25 @@ async def _house(settings: Settings, args: argparse.Namespace) -> str:
     if args.json:
         Path(args.json).write_text(house_report.to_json(results) + "\n")
     return house_report.render(results)
+
+
+async def _prompt_sizes(settings: Settings, args: argparse.Namespace) -> str:
+    seen: list[Routes] = []
+    closers = wiring.wire(settings, prompt_sizes_live.keeping(seen))
+    database = services.get(Database)
+    await database.open()
+    try:
+        api = await prompt_sizes_live.client(settings)
+        try:
+            options = prompt_sizes_live.Options(args.kind, args.channel, args.household, args.person, args.ask)
+            return await prompt_sizes_live.run(prompt_sizes_live.counting(api.messages), seen[0], options,
+                                               Path(args.json) if args.json else None)
+        finally:
+            await api.close()
+    finally:
+        for close in closers:
+            await close()
+        await database.close()
 
 
 async def _watch_tools(settings: Settings, args: argparse.Namespace) -> str:
@@ -231,6 +264,8 @@ async def _run(settings: Settings, args: argparse.Namespace) -> str:
         return await _house(settings, args)
     if args.eval == "watch-tools":
         return await _watch_tools(settings, args)
+    if args.eval == "prompt-sizes":
+        return await _prompt_sizes(settings, args)
     return await _memory_write(settings, args)
 
 

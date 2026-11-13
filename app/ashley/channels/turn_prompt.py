@@ -29,6 +29,11 @@ class Prompted:
     system: Mapping[str, SystemPrompt]
 
 
+async def nothing_carried() -> Carried:
+    """No earlier turns, for a prompt built outside a conversation (an eval measuring it)."""
+    return Carried((), (), 0)
+
+
 async def build(inbound: Inbound, who: Who, source: Tools, carried: Awaitable[Carried]) -> Prompted:
     """The turn's tools (`tool_loop.offered` of `source`), memory, phone reach, `carried` and owed errand results read
     together, then the system prompt for each variant (`prompt.system`) with the household's persona overrides."""
