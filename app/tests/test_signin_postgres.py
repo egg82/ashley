@@ -2,7 +2,8 @@
 an account mapped to a person, ends at its expiry, when idle, when closed or when its account goes; its use is written
 at most every `touch_minutes`; refused accounts are kept for the admin and swept after their retention."""
 
-from collections.abc import AsyncGenerator
+import asyncio
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
 
@@ -13,7 +14,7 @@ from ashley.people import admin
 from ashley.people.model import Person
 from ashley.signin import policy as signin_policy
 from ashley.signin.__main__ import main
-from ashley.signin.model import Pending
+from ashley.signin.model import LinkPending, Pending
 from ashley.signin.postgres import PostgresSessions
 from ashley.signin.sessions import SessionsUnavailable
 from contract.contract_support import unreachable_conninfo
@@ -79,6 +80,34 @@ def test_no_more_sign_ins_are_stored_than_the_policy_allows(db_url: str) -> None
             assert await s.take("s2") is None
 
     run(scenario())
+
+
+async def _begin_waits_for_a_peer_then_the_peer_locks(url: str, table: str, begin: Callable[[PostgresSessions], Awaitable[bool]]) -> None:
+    """A peer's transaction holds a row lock on `table` (a delete it has not committed); a begin starts and waits for the
+    table lock; the peer then asks for that lock itself. Where the begin already holds a lock the peer's request waits
+    on, the two deadlock."""
+    async with sessions(url) as s, await psycopg.AsyncConnection.connect(url) as peer:
+        await peer.execute(f"DELETE FROM {table}".encode())
+        started = asyncio.ensure_future(begin(s))
+        while not (await (await peer.execute(
+                "SELECT 1 FROM pg_locks WHERE NOT granted AND mode = 'ShareRowExclusiveLock' AND relation = %s::regclass",
+                (table,))).fetchone()):
+            await asyncio.sleep(0.005)
+        await peer.execute("SET LOCAL lock_timeout = '500ms'")
+        await peer.execute(f"LOCK TABLE {table} IN SHARE ROW EXCLUSIVE MODE".encode())
+        await peer.commit()
+        assert await started is True
+
+
+@pytest.mark.xfail(strict=True, reason="begin deletes before it locks, so two begins at once deadlock: a 503")
+def test_two_sign_ins_starting_at_once_do_not_deadlock(db_url: str) -> None:
+    run(_begin_waits_for_a_peer_then_the_peer_locks(db_url, "signin_pending", lambda s: s.begin("s1", PENDING)))
+
+
+@pytest.mark.xfail(strict=True, reason="begin_link deletes before it locks, so two begins at once deadlock")
+def test_two_links_starting_at_once_do_not_deadlock(db_url: str) -> None:
+    run(_begin_waits_for_a_peer_then_the_peer_locks(
+        db_url, "link_pending", lambda s: s.begin_link("l1", LinkPending(1, 1, "verifier-1"))))
 
 
 def test_only_a_mapped_account_opens_a_session_and_its_token_finds_the_person(db_url: str) -> None:
