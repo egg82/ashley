@@ -354,7 +354,7 @@ def test_live_hears_of_an_accepted_command_after_it_committed_and_of_nothing_els
             await s.log(w.alana, bench_id)
             await s.open_benches(w.alana)
             owner = Shown(w.alana.household_id, w.alana.person_id)
-            assert changed(live) == [BenchChanged(owner, bench_id, 1), BenchChanged(owner, bench_id, 4)]
+            assert changed(live) == [BenchChanged(owner, bench_id, 1, "person"), BenchChanged(owner, bench_id, 4, "her")]
             assert len(live.published) == 2 and live.visible == [1, 4]
 
     run(scenario())

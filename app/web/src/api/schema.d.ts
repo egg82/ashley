@@ -3450,7 +3450,9 @@ export interface components {
         };
         /**
          * LiveBench
-         * @description Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back.
+         * @description Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back. `by` is
+         *     who made the command (null when no one did): a page not showing the bench says she is working there when it is
+         *     `her`.
          */
         LiveBench: {
             /**
@@ -3462,6 +3464,8 @@ export interface components {
             bench_id: number;
             /** Seq */
             seq: number;
+            /** By */
+            by: ("her" | "person") | null;
         };
         /**
          * LiveCue

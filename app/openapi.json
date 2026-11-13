@@ -10478,16 +10478,32 @@
           "seq": {
             "type": "integer",
             "title": "Seq"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "her",
+                  "person"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By"
           }
         },
         "type": "object",
         "required": [
           "type",
           "bench_id",
-          "seq"
+          "seq",
+          "by"
         ],
         "title": "LiveBench",
-        "description": "Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back."
+        "description": "Command `seq` changed bench `bench_id`, one of this person's own: a page showing it reads the bench back. `by` is\nwho made the command (null when no one did): a page not showing the bench says she is working there when it is\n`her`."
       },
       "LiveCue": {
         "properties": {

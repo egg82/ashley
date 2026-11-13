@@ -99,7 +99,7 @@ def wire(got: Event | Resync) -> LiveEvent:
     if isinstance(got, HerState):
         return LiveEvent(LiveState(type="state", turn=got.turn, state=got.state, at_most_s=got.at_most_s))
     if isinstance(got, BenchChanged):
-        return LiveEvent(LiveBench(type="bench", bench_id=got.bench_id, seq=got.seq))
+        return LiveEvent(LiveBench(type="bench", bench_id=got.bench_id, seq=got.seq, by=got.by))
     if isinstance(got, BenchCued):
         return LiveEvent(LiveCue(type="cue", bench_id=got.bench_id, piece_id=got.piece_id, action=got.action,
                                  seconds=got.seconds))

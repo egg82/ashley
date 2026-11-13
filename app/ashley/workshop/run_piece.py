@@ -100,7 +100,8 @@ async def run_piece(owner: Owner, bench_id: int, command: Run, asked: Asked | No
         finished = await run_once(new)
     except RunsUnavailable:
         return PieceRun(applied, None)
-    services.get(Live).publish(BenchChanged(Shown(owner.household_id, owner.person_id), bench_id, applied.seq))
+    services.get(Live).publish(BenchChanged(Shown(owner.household_id, owner.person_id), bench_id, applied.seq,
+                                                  "her" if command.by.person_id is None else "person"))
     return PieceRun(applied, finished)
 
 

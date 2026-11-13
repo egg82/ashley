@@ -107,4 +107,4 @@ def test_the_cue_event_is_part_of_the_live_event_union() -> None:
 
 def test_a_bench_change_is_still_a_bench_event_on_the_wire() -> None:
     sent = json.loads(frame(BenchChanged(Shown(1, 10), 5, 7)).removeprefix(b"data: "))
-    assert sent == {"type": "bench", "bench_id": 5, "seq": 7}
+    assert sent == {"type": "bench", "bench_id": 5, "seq": 7, "by": None}

@@ -8,7 +8,7 @@ from dataclasses import replace
 import pytest
 from ashley import logs
 from ashley.live import live
-from ashley.live.events import (BenchCued, DeviceViewer, HerState, HerStateName, Shown, ThreadTurn, Viewer, decode, encode,
+from ashley.live.events import (BenchChanged, BenchCued, DeviceViewer, HerState, HerStateName, Shown, ThreadTurn, Viewer, decode, encode,
                                 shown_for, shown_to)
 from ashley.live.fanout import RESYNC, Fanout
 
@@ -146,3 +146,12 @@ def test_a_bench_cue_survives_the_wire_and_is_shown_to_its_owner_alone() -> None
     with pytest.raises(ValueError):
         BenchCued(Shown(1, None), 5, 2, "play", None)
     assert decode(encode(cue).replace('"seek"', '"rewind"')) is None
+
+
+def test_who_changed_a_bench_survives_the_wire_and_an_unknown_one_reads_as_no_one() -> None:
+    for by in ("her", "person", None):
+        event = BenchChanged(Shown(1, 10), 5, 2, by)
+        assert decode(encode(event)) == event
+    raw = json.loads(encode(BenchChanged(Shown(1, 10), 5, 2, "her")))
+    assert decode(json.dumps({**raw, "by": "stranger"})) == BenchChanged(Shown(1, 10), 5, 2, None)
+    assert decode(json.dumps({k: v for k, v in raw.items() if k != "by"})) == BenchChanged(Shown(1, 10), 5, 2, None)
