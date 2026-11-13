@@ -9,8 +9,7 @@ sees and does is a `House` (`ashley.home_assistant.house`): neutral records (thi
 areas, floors, labels, integrations, configs, actions) and the operations over them, implemented for Home Assistant by
 `ha_house.HaHouse` over its REST API (states, history, logbook, actions, automation and script configs, diagnostics) and its
 WebSocket API (the registries, helpers, config entries), one command per connection. Swapping the house changes the adapter
-alone. What each API offers in HA 2026.10.4 (read from a live house's `/api/config`; each row checked on it read-only or
-on a scratch container):
+alone. What each API offers in HA 2026.10.4 (read from a live house's `/api/config`; each row checked read-only there or on a scratch container):
 
 | For | REST | WebSocket | MCP (`mcp_server`) |
 |---|---|---|---|
@@ -26,15 +25,15 @@ on a scratch container):
 
 URLs: developers.home-assistant.io/docs/api/rest, /docs/api/websocket, /docs/entity_registry_index, /docs/device_registry_index,
 /docs/area_registry_index, /docs/config_entries_index, /docs/intent_index, /docs/core/integration_diagnostics, and
-home-assistant.io/integrations/mcp_server and /integrations/esphome. Aliases are written `[None, ...]` since 2026.10: the null is
+home-assistant.io/integrations/mcp_server and /integrations/esphome. Aliases are written `[None, ...]`: the null is
 the entity's own name, and plain strings drop it from Assist.
 
 - **Her tools are general primitives, not HA's tools.** `house_state` (the live map of the devices the household lists
   for her by name, `all` for everything), `house_find` (devices, entities, areas, floors, labels, integrations,
   automations, scripts, helpers, actions and their fields, and what an integration reports about itself, by kind),
   `house_history` (a thing's changes, or the logbook), `house_ask` (an action that only returns data) and `house_do` (any
-  other action). An action's fields are a JSON object as text (`data`): Gemini, her chat model, fills an object whose fields the
-  schema does not name with `{}`, and the shopping-list ask failed on it until the schema said text. Things are named by exact id, or by `name`, `area` and `domain` resolved in code against the house's own
+  other action). An action's fields are a JSON object as text (`data`), because Gemini, her chat model, fills an object whose fields the
+  schema does not name with `{}`. Things are named by exact id, or by `name`, `area` and `domain` resolved in code against the house's own
   names, aliases and areas (`house_targets.resolve`): an exact name wins, then the one the household lists, and a name
   fitting several acts on none and says which. Caps are data (`house_look.json`); every list in an answer is whole or says
   it is not (`complete`, `narrow_by`).
@@ -49,13 +48,13 @@ the entity's own name, and plain strings drop it from Assist.
 - **Her instructions are her own guidance over the devices the household lists**, not HA's `Assist` prompt: `home_assistant.md`,
   then one line per area of the entities exposed to Assist (`house_roster.roster`, `House.states` entries that are `featured`),
   fetched when the catalogue is and kept for `catalogue_ttl_s`, then one line of the house's devices (name and model of the
-  registry's devices that have a maker or model, as many as `devices_chars` holds and a count of the rest). The exposure stays
-  the household's curation of what she is told up front and the tie-break between equal names; it no longer limits what she
+  registry's devices that have a maker or model, as many as `devices_chars` holds and a count of the rest). The exposure is
+  the household's curation of what she is told up front and the tie-break between equal names; it does not limit what she
   can reach. The devices line is what makes a question about one ("can the Atom Echos also be Bluetooth proxies?") a lookup:
-  without it she answered from what she knows of the product and called no tool, with it she reads the device's record and
+  without it she answers from what she knows of the product and calls no tool; with it she reads the device's record and
   its integration's diagnostics.
 - **Some of the house's actions she is never offered, as data** (`home_assistant.json`, actions as `domain.name`):
-  `assist_satellite.announce` is excluded since her route to the rooms is the outbox. The scripts that only look something up
+  `assist_satellite.announce` is excluded because her route to the rooms is the outbox. The scripts that only look something up
   are the household's `reads` setting ("A connection has settings its person sets"); an action the house says only returns data is a read too. The kiosk's controls run `house_do`
   by code and name none of the excluded.
 - **She reads the house's state through `house_state`, answered in code** (`house_query` narrows like a map, `house_render` caps it): one
@@ -71,10 +70,9 @@ the entity's own name, and plain strings drop it from Assist.
   aliases ("the lounge lights", "the main bath light"). Reads are the same matcher either way. MCP also reaches only what is
   exposed to Assist, and gives no registries, history, logbook, config or device details, so keeping it would be a second
   implementation of the same questions that drifts. `HomeAssistantTools`, `McpClient` and the `GetLiveContext` parser are gone.
-  House eval, two runs a case on a scratch house carrying the eval's names: main (MCP) 22/22, step-limit hits 0; this 22/22 and,
-  on a rerun, 21/22 (one `unknown-sauna` run asked `house_do`; 8 of 8 on eight more), step-limit hits 0 and 1; her first step reads
-  about 1,200 more input tokens (five house tools, `house_change`, the devices line). Her first run was 20/22: the shopping-list add
-  sent `data` as `{}`.
+  House eval, two runs a case on a scratch house carrying the eval's names: MCP 22/22; the port 22/22, and 21/22 on a
+  rerun (one `unknown-sauna` run asked `house_do`); step-limit hits 0 and 1. Her first step reads about 1,200 more input
+  tokens (five house tools, `house_change`, the devices line).
 - **Rejected: a sub-agent in front of HA** (one `house` tool, Haiku over HA's tools). It cut her main call about 3x
   (11.6k to 4.0k tokens a step) but made five read-only asks slower (sum about 49 s before, 75 to 87 s after): two
   model steps per house call on HA's guidance, and a name that matched nothing came back as prose she re-asked in
