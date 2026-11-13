@@ -11,6 +11,7 @@ def upgrade() -> None:
     op.execute("""
         CREATE TABLE balance_lows (
             armed_id bigint PRIMARY KEY REFERENCES wakes (id) ON DELETE CASCADE,
+            household_id bigint NOT NULL REFERENCES households (id) ON DELETE CASCADE,
             low boolean NOT NULL,
             episode integer NOT NULL CHECK (episode >= 1)
         );
