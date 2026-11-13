@@ -18,6 +18,7 @@ from search_support import events
 
 from ashley import logs, services
 from ashley.db.pool import PoolDatabase
+from ashley.files import config as files_config
 from ashley.files.memory import MemoryStore
 from ashley.files.store import NullStore, ObjectStore
 from ashley.inference.model import ToolCall, ToolResult
@@ -132,7 +133,7 @@ def test_the_add_is_hers_and_can_be_undone(db_url: str) -> None:
 def test_each_refusal_is_its_own_outcome(db_url: str) -> None:
     answers = recorded()
     listed = answers["detail-100301"]["data"]["print"]["stls"]
-    listed += [{"id": "1", "name": "model.f3d", "fileSize": 100}, {"id": "2", "name": "Huge.STL", "fileSize": 30_000_000},
+    listed += [{"id": "1", "name": "model.f3d", "fileSize": 100}, {"id": "2", "name": "Huge.STL", "fileSize": files_config.load().max_bytes + 1},
                {"id": "999999999", "name": "paid.stl", "fileSize": 100}, {"id": "3", "name": "page.stl", "fileSize": 100}]
     answers["link-3"] = {"data": {"getDownloadLink": {"ok": True, "output": {"link": "https://files.printables.com/x"}}}}
     answers["link-2"] = answers["link-1"] = answers["link-200301"]
