@@ -5,24 +5,22 @@ import psycopg
 from contract.conversations_support import db_url as db_url, household, migrated_template as migrated_template, scalar
 from db_pool import DatabasePool
 from pg import admin_url
-from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-TABLES = """SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE c.relkind = 'r' AND n.nspname = 'public' ORDER BY 1"""
-SEQUENCES = "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace " \
-            "WHERE c.relkind = 'S' AND n.nspname = 'public' ORDER BY 1"
+ROW_COUNTS = """SELECT c.relname, (xpath('/row/n/text()', query_to_xml(
+                format('SELECT count(*) AS n FROM %I', c.relname), false, true, '')))[1]::text::bigint
+                FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relkind = 'r' AND n.nspname = 'public' ORDER BY 1"""
+SEQUENCES = "SELECT sequencename, last_value FROM pg_sequences WHERE schemaname = 'public' ORDER BY 1"
 
 
 def state(url: str) -> dict[str, object]:
-    """Every public table's row count and every sequence's position, plus what the server holds for this database
+    """Every public table's row count and every sequence's position (None until its first use), plus what the server holds for this database
     besides the connection reading it."""
     name = conninfo_to_dict(url)["dbname"]
     with psycopg.connect(url, autocommit=True) as conn:
-        counts = {t: conn.execute(sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(t))).fetchone()
-                  for (t,) in conn.execute(TABLES).fetchall()}
-        positions = {s: conn.execute(sql.SQL("SELECT last_value, is_called FROM {}").format(sql.Identifier(s)))
-                     .fetchone() for (s,) in conn.execute(SEQUENCES).fetchall()}
+        counts = dict(conn.execute(ROW_COUNTS).fetchall())
+        positions = dict(conn.execute(SEQUENCES).fetchall())
         others = conn.execute("SELECT count(*) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid()",
                               (name,)).fetchone()
         advisory = conn.execute("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND database = "
