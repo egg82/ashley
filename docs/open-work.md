@@ -496,10 +496,6 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       seeds its scratch household's connection instead of taking the env.
     - Fits into: Connections and Homes; the settings and the cluster repo's ExternalSecret.
 
-27. **When a house entity last changed.** `house_state` and the entity reads show a state with no time, so "the door
-    is open" cannot be told from "has been open since morning". `ashley.home_assistant.house.State.changed` carries HA's `last_changed`; carry it through
-    `ashley.tools.house_render` as an `ashley.stamp.stamp` (`decisions.md`, "Every time she is shown is a
-    household-local stamp"), in the zone from `ashley.people.zone.zone_of`. Fits into: Tools and Homes.
 28. **The unreachable line follows a turn to its bench.** When her thinking is out of reach after the held line, the
     line saying so (`ashley.channels.settled`) is stored in the conversation the turn began in, even when the page
     moved the turn to a bench's talk; it belongs where the answer will land. Fits into: Channels (the in-flight work
