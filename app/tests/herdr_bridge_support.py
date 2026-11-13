@@ -5,7 +5,8 @@ import datetime
 import hashlib
 import json
 import threading
-from collections.abc import Generator, Mapping, Sequence
+import time
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,9 +21,11 @@ from herdr_bridge.config import Config
 from herdr_bridge.files import Limits
 from herdr_bridge.herdr import Herdr
 from herdr_bridge.install import fingerprint
+from herdr_bridge.ledger import Ledger
 from herdr_bridge.runner import Outcome
 from herdr_bridge.server import make_server
 from herdr_bridge.sessions import Sessions
+from herdr_bridge.transcripts import Transcripts
 
 CAPTURED = Path(__file__).resolve().parent / "herdr_captured"
 TOKEN = "t0ken-for-tests"
@@ -95,15 +98,18 @@ class ListLog:
 
 class Bridge:
     def __init__(self, state: Path, runner: FakeHerdr, roots: tuple[str, ...] = (DEFAULT_ROOT,),
-                 limits: Limits = Limits()) -> None:
+                 limits: Limits = Limits(), clock: Callable[[], float] = time.time) -> None:
         (state / TOKEN_FILE).write_text(token_digest(TOKEN) + "\n")
         self.state = state
         self.runner = runner
         self.log = ListLog()
         herdr = Herdr(runner)
         self.pauses: list[float] = []
-        self.api = Api(Auth(state), Sessions(herdr, roots, 5000, self.log, 2.0, self.pauses.append), herdr, self.log,
-                       limits)
+        claude = state.parent / "claude"
+        self.projects = claude / "projects"
+        self.ledger = Ledger(claude / "sent-prompts.jsonl", clock)
+        sessions = Sessions(herdr, roots, 5000, self.log, Transcripts(self.projects, self.ledger), 2.0, self.pauses.append)
+        self.api = Api(Auth(state), sessions, herdr, self.log, limits)
 
     def person_on_disk(self) -> str | None:
         path = self.state / PERSON_FILE

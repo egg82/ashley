@@ -197,7 +197,7 @@ def test_c12_the_file_routes_keep_mtls_auth_and_the_person_lock(bridge: Bridge) 
 def test_c12_whoami_gains_the_files_capability_and_the_new_version(bridge: Bridge) -> None:
     got = bridge.get("/v1/whoami")
     assert got.body["capabilities"] == ["files"]
-    assert got.body["bridge_version"] == "0.3.0"
+    assert got.body["bridge_version"] == "0.4.0"
 
 
 def test_c19_the_files_log_line_names_the_call_and_never_a_file_name_or_its_bytes(bridge: Bridge) -> None:

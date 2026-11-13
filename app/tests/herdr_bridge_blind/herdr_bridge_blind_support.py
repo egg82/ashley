@@ -13,8 +13,10 @@ from herdr_bridge.auth import Auth
 from herdr_bridge.config import Config
 from herdr_bridge.herdr import Herdr
 from herdr_bridge.install import init
+from herdr_bridge.ledger import Ledger
 from herdr_bridge.logs import Log
 from herdr_bridge.sessions import Sessions
+from herdr_bridge.transcripts import Transcripts
 from herdr_bridge_blind_fake import FakeAgent, FakeHerdr
 from herdr_bridge_blind_pki import Pki, write_pair
 
@@ -137,9 +139,15 @@ def build_bridge(tmp: Path, pki: Pki, fake: FakeHerdr | None = None, extra_roots
     herdr_fake = fake or FakeHerdr()
     log = MemoryLog()
     herdr = Herdr(herdr_fake, 5.0)
-    sessions = Sessions(herdr, roots, config.start_timeout_ms, log, settle_s=0.05, pause=no_pause)
+    sessions = Sessions(herdr, roots, config.start_timeout_ms, log, transcripts_beside(state), settle_s=0.05, pause=no_pause)
     api = Api(Auth(state), sessions, herdr, log)
     return Bridge(api, herdr_fake, log, config, config_path, root, outside, token, fingerprint, state, sessions)
+
+
+def transcripts_beside(state: Path) -> Transcripts:
+    """Transcripts and a ledger in a `claude` folder next to the state directory, so the state tree stays as the bridge makes it."""
+    claude = state.parent / "claude"
+    return Transcripts(claude / "projects", Ledger(claude / "sent-prompts.jsonl"))
 
 
 SID = "11111111-2222-4333-8444-555555555555"
@@ -156,7 +164,8 @@ ROUTES = [
 def restarted(b: Bridge) -> Api:
     """A new Api over the same state directory and the same herdr: what a service restart gives."""
     herdr = Herdr(b.herdr, 5.0)
-    sessions = Sessions(herdr, b.config.roots, b.config.start_timeout_ms, b.log, settle_s=0.05, pause=no_pause)
+    sessions = Sessions(herdr, b.config.roots, b.config.start_timeout_ms, b.log, transcripts_beside(b.state_dir),
+                        settle_s=0.05, pause=no_pause)
     return Api(Auth(b.state_dir), sessions, herdr, b.log)
 
 

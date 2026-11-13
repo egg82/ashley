@@ -11,12 +11,15 @@ from .config import CONFIG_DIR, STATE_DIR, Config, ConfigError, load
 from .files import Limits
 from .herdr import Herdr
 from .install import init
+from .ledger import Ledger
 from .logs import Log, StdoutLog
 from .runner import SubprocessRunner
 from .server import make_server
 from .sessions import Sessions
+from .transcripts import Transcripts
 
 CONFIG_PATH = CONFIG_DIR / "config.json"
+CLAUDE_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude"))
 
 
 def parser() -> argparse.ArgumentParser:
@@ -43,7 +46,9 @@ def run_init(args: argparse.Namespace) -> int:
 
 
 def make_api(config: Config, herdr: Herdr, log: Log) -> Api:
-    sessions = Sessions(herdr, config.roots, config.start_timeout_ms, log, keep_job_dirs=config.keep_job_dirs)
+    ledger = Ledger(Path(config.state_dir) / "sent-prompts.jsonl")
+    transcripts = Transcripts(CLAUDE_DIR / "projects", ledger)
+    sessions = Sessions(herdr, config.roots, config.start_timeout_ms, log, transcripts, keep_job_dirs=config.keep_job_dirs)
     return Api(Auth(Path(config.state_dir)), sessions, herdr, log, Limits(config.max_file_bytes, config.max_files))
 
 

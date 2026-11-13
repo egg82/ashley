@@ -82,7 +82,7 @@ def test_a_call_without_a_person_is_refused_and_records_nobody(tmp_path: Path) -
 
 def test_whoami_reports_the_versions(tmp_path: Path) -> None:
     body = bridge(tmp_path).get("/v1/whoami").body
-    assert body == {"bridge_version": "0.3.0", "herdr_version": "0.9.5", "person": PERSON, "capabilities": ["files"]}
+    assert body == {"bridge_version": "0.4.0", "herdr_version": "0.9.5", "person": PERSON, "capabilities": ["files"]}
 
 
 def test_whoami_with_herdr_gone_says_unknown_rather_than_failing(tmp_path: Path) -> None:

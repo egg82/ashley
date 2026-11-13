@@ -50,7 +50,7 @@ def running(tmp_path_factory: pytest.TempPathFactory) -> Generator[Running]:
 
 def test_a_client_with_a_certificate_from_the_configured_ca_is_served(running: Running) -> None:
     status, body, seen = running.whoami(running.client)
-    assert status == 200 and body == {"bridge_version": "0.3.0", "herdr_version": "0.9.5", "person": PERSON,
+    assert status == 200 and body == {"bridge_version": "0.4.0", "herdr_version": "0.9.5", "person": PERSON,
                                   "capabilities": ["files"]}
     assert seen is not None and hashlib.sha256(seen).hexdigest() == running.pin, "the certificate the client sees is the one init would pin"
 

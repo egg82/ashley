@@ -224,7 +224,10 @@ close, nothing else. A session she handed work to going `blocked` or finishing i
 - **The bridge reports when its person last typed**, per session and overall, read from Claude Code's transcript
   (user entries a person typed), minus the prompts the bridge sent itself, since herdr's paste is recorded in the
   transcript exactly as typing is. Only a time crosses the wire. A transcript it cannot read is `null`, and an aside
-  treats `null` as focus. The field exists on the wire and is always `null` until the reader is built.
+  treats `null` as focus. A message counts as typed by its record fields (`origin`, `promptSource`, `isMeta`), never by
+  its words. The overall time is the latest across the sessions herdr lists: typing into a session it does not list
+  is unseen. Only the bytes a transcript gained since the last read are read; the ledger of sent prompts keeps digests,
+  not text (`bridge/herdr/README.md`, "Last typed").
 - **Anyone can connect their own Claude Code**, by running the bridge where their sessions live, registered to
   their person. A session's state is that person's to hear, not the household's.
 - Rejected: the fingerprint as a second stored field. It would add a column and a panel field to every kind for
