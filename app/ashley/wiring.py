@@ -228,12 +228,13 @@ def _wire_devices() -> None:
     services.register(Voices, PostgresVoices(database))
 
 
-def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallback) -> list[Callable[[], Coroutine[Any, Any, None]]]:
+def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallback,
+         database: Database | None = None) -> list[Callable[[], Coroutine[Any, Any, None]]]:
     """Register every service the settings call for. Returns what the process must call on shutdown to release
     the connections `wire` opened itself (the database is closed through its own service). `narrow` reshapes the
-    loaded routes before the router is built."""
+    loaded routes before the router is built; `database` replaces the pool over `settings.database_url`."""
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
-    services.register(Database, PoolDatabase(settings.database_url))
+    services.register(Database, database or PoolDatabase(settings.database_url))
     services.register(Conversations, PostgresConversations(services.get(Database), policy.load()))
     services.register(InFlight, PostgresInFlight(services.get(Database), policy.load(), resume.CONFIG.claim_s))
     services.register(People, PostgresPeople(services.get(Database), bool(settings.admin_group)))

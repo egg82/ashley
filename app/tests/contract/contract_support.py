@@ -6,6 +6,7 @@ import socket
 from pathlib import Path
 from typing import Any
 
+from ashley.db.pool import PoolDatabase
 from ashley.main import create_app
 from ashley.settings import Settings
 from fastapi.testclient import TestClient
@@ -72,6 +73,18 @@ def unreachable_conninfo(password: str = "pw") -> str:
     return f"host=127.0.0.1 port={closed_port()} dbname=ashley user=postgres password={password} connect_timeout=3"
 
 
+def down_database(conninfo: str) -> PoolDatabase:
+    """The real pool over a database that is down, giving up in 0.1 s where production waits seconds."""
+    return PoolDatabase(conninfo, probe_timeout_s=0.1, connect_timeout_s=0.1)
+
+
 def client(conninfo: str, build_version: str = "dev", **kwargs: Any) -> TestClient:
     """A client over the app the factory builds; use it as a context manager so startup and shutdown run."""
     return TestClient(create_app(Settings(database_url=conninfo, build_version=build_version)), **kwargs)
+
+
+def down_client(password: str = "pw", build_version: str = "dev", **kwargs: Any) -> TestClient:
+    """`client` over a database that is down (`unreachable_conninfo`), failing fast through `down_database`."""
+    conninfo = unreachable_conninfo(password)
+    settings = Settings(database_url=conninfo, build_version=build_version)
+    return TestClient(create_app(settings, down_database(conninfo)), **kwargs)

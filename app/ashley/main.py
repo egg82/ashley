@@ -18,11 +18,12 @@ from .web import legal
 from .web.static import mount_client
 
 
-def create_app(settings: settings_module.Settings | None = None) -> FastAPI:
-    """Wire the services and build the app; `settings` defaults to the environment's."""
+def create_app(settings: settings_module.Settings | None = None, database: Database | None = None) -> FastAPI:
+    """Wire the services and build the app; `settings` defaults to the environment's, and `database` to a pool over
+    `settings.database_url` with production's timeouts."""
     settings = settings or settings_module.from_env()
     logs.setup()
-    closers = wiring.wire(settings)
+    closers = wiring.wire(settings, database=database)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:

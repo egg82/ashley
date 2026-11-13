@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from ashley import services
 from ashley.channels.devices import Devices
 from ashley.channels.model import Device, DiscordServer, Listed, Satellite
-from contract_support import client, unreachable_conninfo
+from contract_support import down_client
 from fastapi.testclient import TestClient
 from turns_support import HOUSE, World, register
 
@@ -49,7 +49,7 @@ def bearer(token: str = TOKEN) -> dict[str, str]:
 @contextmanager
 def app(world: World, devices: FakeDevices | None) -> Generator[TestClient]:
     """The app over fakes; `devices` None leaves Devices unwired, its Null Object answering."""
-    with client(unreachable_conninfo()) as c:
+    with down_client() as c:
         register(world)
         if devices is None:
             services.unregister(Devices)

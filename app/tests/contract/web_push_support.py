@@ -18,7 +18,7 @@ from ashley.main import create_app
 from ashley.people.model import Person
 from ashley.settings import Settings
 from ashley.signin.sessions import Sessions
-from contract_support import unreachable_conninfo
+from contract_support import down_database, unreachable_conninfo
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi.testclient import TestClient
@@ -156,7 +156,7 @@ class World:
 def build(config: Settings, wired: bool = True) -> Generator[World]:
     """The app over fakes. Wiring registers `Subscriptions` only when push is set up, so a process without it keeps the
     Null Object: `wired=False` leaves it that way (`subs` then stays empty)."""
-    app = create_app(config)
+    app = create_app(config, down_database(config.database_url))
     subs = FakeSubscriptions()
     services.register(Sessions, FakeSessions(ALANA, ELLA, TWELVE))
     if wired:
