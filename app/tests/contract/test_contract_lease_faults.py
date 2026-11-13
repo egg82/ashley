@@ -32,7 +32,7 @@ def test_a_revoked_lease_cancels_the_body_logs_the_loss_and_campaigns_again(
 
     etcd.run(scenario())
     out = capsys.readouterr().out
-    assert len(events(out, "lease.lost", name)) == 1
+    assert [line["reason"] for line in events(out, "lease.lost", name)] == ["expired"]
     assert len(events(out, "lease.taken", name)) == 2
 
 

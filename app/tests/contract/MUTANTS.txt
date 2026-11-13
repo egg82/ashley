@@ -36,13 +36,15 @@ M22  migrate takes a different lock key per call            migrate: two_concurr
 Totals: 22 planted; 21 killed (2 after a directed test was added), 0 surviving, 1 equivalent.
 
 Lease contract (test_contract_lease.py, test_contract_lease_faults.py; need ASHLEY_TEST_ETCD_URL). Each plant ran
-against both files, green before it (17 passed).
+against both files, green before it (17 passed). The tests that wait on lease TTLs run on the fake etcd and the virtual
+clock (`etcd_fake.py`, `virtual_time.py`); L1, L3, L4, L20, F1 and a campaign without its backoff were planted again
+against them and each was caught by at least the tests that caught it on the real etcd.
 
 #    mutant                                                 first red test(s)
 L1   body never cancelled when the lease is lost            lease_faults: a_revoked_lease_cancels_the_body_*, a_partitioned_holder_stops_*
 L2   body cancelled only once etcd reports expiry           lease_faults: a_partitioned_holder_stops_its_body_before_etcd_frees_the_key
-L3   keepalive TTL 0 counted as success                     EQUIVALENT: the deadline it sets is already past, so the loss is
-                                                            reported at the same moment, as reason=deadline not expired
+L3   keepalive TTL 0 counted as success                     lease_faults: a_revoked_lease_cancels_the_body_* (reason=expired;
+                                                            recorded equivalent until that test asserted the reason)
 L4   cancelling run does not revoke the lease               lease: cancelling_run_cancels_the_body_and_frees_the_key_at_once
 L5   a body that returns/raises does not revoke             lease: a_body_that_ends_frees_the_lease_at_once_*[return|raise]
 L6   an exception from the body ends run                    lease: a_body_that_ends_*[raise]
@@ -60,7 +62,7 @@ L17  NullLease runs the body                                lease: null_lease_ne
 L18  wire never registers a Lease                           lease: wired_with_an_etcd_url_*
 L20  no stop margin (cancel at the lease's own expiry)      lease_faults: a_partitioned_holder_leaves_its_body_time_to_clean_up_*
                                                             (survived until that directed test was added)
-Totals: 18 planted; 17 killed (1 after a directed test was added), 0 surviving, 1 equivalent.
+Totals: 18 planted; 18 killed (2 after a directed test was added), 0 surviving, 0 equivalent.
 
 Active site and fail-back (test_contract_lease_site.py, test_contract_patroni.py, test_contract_failback_policy.py,
 test_contract_failback.py, plus both lease files). Each plant ran against all six, green before it (227 passed).
