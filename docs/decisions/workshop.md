@@ -342,7 +342,7 @@ treats the symptom.
 - **The guidance says it once** (`ashley.tools.bench_specs.INSTRUCTIONS`): a note holds the current state, and an update
   rewrites the section it changes and drops or moves what it supersedes.
 - **A cheap model points at passages** (`ashley.tidy`, task `bench_tidy`, flash-lite first with haiku as the fallback: on one bench's notes flash-lite flagged the stale "not found" lines in every run and haiku in none). It reads the
-  bench's text pieces (`tidy.json` `kinds`: note, document, code, model, measurements; never a page she is reading, a
+  bench's text pieces (`tidy.json` `kinds`: note, document, code, model, facts; never a page she is reading, a
   site, a video or a file) and replies in structured fields, `{piece_id, kind, quote, by_piece_id, why}` with `kind` one
   of `superseded`, `contradicts`, `debris`, `duplicate`. Code keeps a finding only when its piece was sent, the quote is
   in the body the model saw and within the bounds, and it is not a repeat; invented quotes are dropped and counted.

@@ -6,13 +6,13 @@ from typing import Any
 
 from ashley.workshop.commands import Add, Edit
 from ashley.workshop.decide import EMPTY, Accepted, BenchState, Decision, Refused, decide
-from ashley.workshop.measurements import well_formed
+from ashley.workshop.facts import well_formed
 from ashley.workshop.model import HER, By, Text
 from ashley.workshop.rules import Rules, load
 
 RULES: Rules = load()
 ALANA = By(7)
-KIND = "measurements"
+KIND = "facts"
 STATED_SOURCES = ("stated", "accepted")
 CITED_PIECE_SOURCES = ("seen", "datasheet")
 CHOICE_SOURCES = (*STATED_SOURCES, *CITED_PIECE_SOURCES, "guessed")
@@ -63,6 +63,6 @@ def refused_as(decision: Decision) -> str:
 
 
 def bench_with_site() -> BenchState:
-    """A bench holding one site piece (id 1) and then one measurements piece (id 2), both by the person."""
+    """A bench holding one site piece (id 1) and then one facts piece (id 2), both by the person."""
     state = accepted(decide(EMPTY, Add(ALANA, "site", Text("page", "https://example.com/strap"), "small"), RULES)).state
     return accepted(decide(state, Add(ALANA, KIND, Text("facts", ""), "small"), RULES)).state

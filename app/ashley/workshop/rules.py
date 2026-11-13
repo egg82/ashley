@@ -11,8 +11,8 @@ and the bench's limits (`workshop.json`). Both files sit beside this module.
 - `max_chars` is the longest body a piece of the kind may have, at least 1.
 - `format` is how the body is written: `markdown`, `plain` (text shown as typed), `code` (source, which names its
   `language`; only a code kind has one), `automation` (Home Assistant's automation config as JSON,
-  `automation_config`), `wake` (a rule for one wake from the house as JSON, `wake_rule`), `measurements` (named values with unit and
-  source as JSON, `measurements`), `diagram` (Mermaid source, drawn by the client), `site` (one https URL) or
+  `automation_config`), `wake` (a rule for one wake from the house as JSON, `wake_rule`), `facts` (named values with unit and
+  source as JSON, `facts`), `diagram` (Mermaid source, drawn by the client), `site` (one https URL) or
   `video` (a JSON object of a url and a start; both in `embed`), `screen` (a piece of a device's screen drawn by the
   client from its own sources, whose body is empty) or `controls` (a screen's touch buttons as JSON,
   `screen_controls`) or `reader` (a page's text and where it came from as
@@ -41,7 +41,7 @@ LIMITS_FILE = Path(__file__).with_name("workshop.json")
 SCREEN_FILE = Path(__file__).with_name("screen.json")
 
 Family = Literal["stored", "live", "large", "screen"]
-BodyFormat = Literal["markdown", "plain", "code", "automation", "wake", "measurements", "diagram", "site", "video", "reader", "recipe", "image", "file", "clip", "audio", "screen", "controls", "job"]
+BodyFormat = Literal["markdown", "plain", "code", "automation", "wake", "facts", "diagram", "site", "video", "reader", "recipe", "image", "file", "clip", "audio", "screen", "controls", "job"]
 
 
 @dataclass(frozen=True)

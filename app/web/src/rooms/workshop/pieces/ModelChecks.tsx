@@ -1,6 +1,6 @@
-// A model run's checks, each judged by the app from the script's numbers and the source of the measurements it rests on:
+// A model run's checks, each judged by the app from the script's numbers and the source of the facts it rests on:
 // pass, fail, or unconfirmed (it would pass, but rests on a guess or a measurement the run did not have), which is
-// hatched as a guess is on the measurements table.
+// hatched as a guess is on the facts table.
 import type { ReportCheck, RunReport } from '../../../api/types';
 import { checkText, tally } from './modelFacts';
 

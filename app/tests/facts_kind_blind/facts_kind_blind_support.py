@@ -1,4 +1,4 @@
-"""Shared pieces of the measurements kind's blind contract tests: generators of well-formed bodies and of each way a
+"""Shared pieces of the facts kind's blind contract tests: generators of well-formed bodies and of each way a
 body is refused, and the real `decide` driven with the shipped rules."""
 
 import json
@@ -23,14 +23,14 @@ from live_support import FakeLive
 from respond_support import Fakes
 from ashley.workshop.commands import Add, Edit
 from ashley.workshop.decide import EMPTY, Accepted, BenchState, Decision, Refused, decide
-from ashley.workshop.measurements import MAX_REF, NAME, SOURCES, UNITS
+from ashley.workshop.facts import MAX_REF, NAME, SOURCES, UNITS
 from ashley.workshop.model import By, Text
 from ashley.workshop.rules import Rules, load
 from hypothesis import strategies as st
 
 RULES: Rules = load()
 ALANA = By(7)
-KIND = "measurements"
+KIND = "facts"
 MAX_CHARS = RULES.kinds[KIND].max_chars
 
 names = st.from_regex(NAME, fullmatch=True)

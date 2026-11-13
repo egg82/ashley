@@ -204,12 +204,12 @@ there, so the person is not left on an empty bench while her answer sits in chat
   steps keep the page's numbers and say for how many. Her read of the piece (`bench_view`) and `BenchPiece.recipe`
   carry the same code-rendered numbers, drawn by `RecipeView.tsx`. A site piece already on the bench needs no second
   search: its read keeps the page as `read_page` does and gives the number. Every source on the bench is read when the
-  turn's work reaches what it is for, and its amounts, steps and times carried into the plan, each number a measurements row with its source
+  turn's work reaches what it is for, and its amounts, steps and times carried into the plan, each number a facts row with its source
   (`datasheet`, ref naming the piece), under the bench guidance. Rejected: the model scaling amounts or parsing
   ingredients; recipe data on the site frame record, which is per address and cannot hold a headcount; a field on the
   reader piece, whose body is text for pointing at; a person-side add, since a recipe is a page she read.
 - **What is still open on a bench reaches every later turn.** The moment layer (`ashley.tools.bench_now.open_rows`)
-  lists each guessed row of the bench's household-written measurements pieces, shown or not, however far into its
+  lists each guessed row of the bench's household-written facts pieces, shown or not, however far into its
   piece, so a fresh bench turn starts from what is still to settle. A number shown to the person (a `Surfaced`) is
   not asked again while the work goes on around it; when the step at hand depends on it, she says once that it is open and what she assumed, and
   goes on with the guess shown unconfirmed. A guessed choice row is listed too, by its label and value. Rejected: a new

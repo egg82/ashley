@@ -198,7 +198,7 @@ REFUSALS = [("unknown_kind", add_body(kind="hologram")), ("bad_title", add_body(
             ("stale_base", {"type": "edit", "piece_id": 1, "base_version": 1, "title": "a", "body": ""}),
             ("nothing_to_undo", {"type": "undo", "seq": 99}), ("nothing_to_undo", {"type": "undo", "seq": 0}),
             ("changed_since", {"type": "undo", "seq": 1}), ("bad_wake", add_body(kind="wake", text="not a rule")),
-            ("bad_measurements", add_body(kind="measurements", text="not measurements")),
+            ("bad_facts", add_body(kind="facts", text="not facts")),
             ("bad_body", add_body(kind="job"))]
 
 
@@ -226,7 +226,7 @@ def test_every_reason_the_contract_names_is_reachable_through_a_route() -> None:
     points = {"bad_reader", "not_reader", "bad_passage"}   # bad_reader is test_workshop_reader_routes.py's; a point has no route
     files = {"bad_file"}   # test_bench_files_routes.py's
     screens = {"bad_controls", "already_shown", "required"}   # a screen's, test_screen_decide.py
-    hers = {"confirmed_measurement", "bad_citation"}   # her edits only, never a person's route: test_measurements.py, test_choice_rows.py
+    hers = {"confirmed_measurement", "bad_citation"}   # her edits only, never a person's route: test_facts.py, test_choice_rows.py
     recipes = {"bad_recipe"}   # test_workshop_recipe_routes.py's
     surfaced = {"bad_rows"}   # a Surfaced has no route of its own: test_workshop_surfaced.py
     assert ({why for why, _ in REFUSALS} | {"full", "not_runnable"} | installs | embeds | cues | points | files | screens

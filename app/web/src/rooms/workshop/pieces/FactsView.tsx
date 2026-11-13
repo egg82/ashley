@@ -1,4 +1,4 @@
-// A measurements piece read as a table: each value with its unit and where it came from. A `guessed` row is hatched, as
+// A facts piece read as a table: each value with its unit and where it came from. A `guessed` row is hatched, as
 // an unknown is elsewhere, so what still needs measuring stands out.
 // A choice row (`kind: "choice"`, what kind of thing something is) shows its label and its value in words.
 // A body that is not the shape is shown as the text it is. Edited as JSON in the ordinary editor.
@@ -42,10 +42,10 @@ function Name({ name }: { name: string }) {
   return <>{name.split('_').flatMap((part, i, all) => (i < all.length - 1 ? [part, '_', <wbr key={i} />] : [part]))}</>;
 }
 
-export function MeasurementsView({ body }: { body: string }) {
+export function FactsView({ body }: { body: string }) {
   const rows = rowsOf(body);
   if (!rows) return <div class="pbody plain"><p>{body}</p></div>;
-  if (!rows.length) return <div class="pbody"><span class="meta">No measurements yet.</span></div>;
+  if (!rows.length) return <div class="pbody"><span class="meta">No facts yet.</span></div>;
   return (
     <div class="pbody meas">
       <table>

@@ -11,7 +11,7 @@ import { MarkdownText } from '../../her/Markdown';
 import { AutomationView } from './AutomationView';
 import { DiagramView } from './DiagramView';
 import { JobView } from './JobView';
-import { MeasurementsView } from './MeasurementsView';
+import { FactsView } from './FactsView';
 import { ModelView } from './ModelView';
 import { WakeView } from './WakeView';
 import { SiteView, VideoView } from './FrameView';
@@ -87,7 +87,7 @@ function Written({ piece, kind }: { piece: BenchPiece; kind: PieceKind }) {
   if (format === 'code') return <div class="pbody code"><CodeBlock code={piece.body} language={languageNamed(kind.language)} /></div>;
   if (format === 'automation') return <AutomationView body={piece.body} />;
   if (format === 'wake') return <WakeView body={piece.body} />;
-  if (format === 'measurements') return <MeasurementsView body={piece.body} />;
+  if (format === 'facts') return <FactsView body={piece.body} />;
   if (format === 'recipe') return <RecipeView piece={piece} />;
   if (format === 'diagram') return <DiagramView body={piece.body} />;
   return <div class="pbody md"><MarkdownText text={piece.body} /></div>;

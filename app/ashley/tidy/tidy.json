@@ -1,5 +1,5 @@
 {
-  "kinds": ["note", "document", "code", "model", "measurements"],
+  "kinds": ["note", "document", "code", "model", "facts"],
   "max_piece_chars": 12000,
   "max_total_chars": 40000,
   "max_findings": 12,

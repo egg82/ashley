@@ -18,7 +18,7 @@ class WireReceipt(BaseModel):
 
 
 class WireFact(BaseModel):
-    """A row of a bench's measurements piece shown beside her reply, once: a choice, or a guessed number a check of the
+    """A row of a bench's facts piece shown beside her reply, once: a choice, or a guessed number a check of the
     turn's run rests on (its `value` with its unit). `label` and `value` as she set them, and `option_values`, each a tap
     that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`); empty when the row has none,
     as a number's."""

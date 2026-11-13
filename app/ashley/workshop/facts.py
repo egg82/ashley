@@ -1,4 +1,4 @@
-"""A measurements piece's body (kind `measurements`, format `measurements`, `decisions.md`, "Measurements are structured
+"""A facts piece's body (kind `facts`, format `facts`, `decisions.md`, "Measurements are structured
 data, each with its source"): one JSON object of exactly `items`, a list of rows, each a number or a choice.
 
 A number (a row with no `kind`) is an object with

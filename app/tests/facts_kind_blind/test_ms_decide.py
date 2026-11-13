@@ -1,19 +1,19 @@
-"""`decide` on a measurements piece: an Add or Edit whose body is not empty and not well formed is refused
-`bad_measurements`, after `too_long`; every other kind is untouched; the refusal changes nothing but `next_seq`."""
+"""`decide` on a facts piece: an Add or Edit whose body is not empty and not well formed is refused
+`bad_facts`, after `too_long`; every other kind is untouched; the refusal changes nothing but `next_seq`."""
 
 from typing import Any
 
 import pytest
 from ashley.workshop.commands import Add, Undo
 from ashley.workshop.decide import EMPTY, Refused, decide
-from ashley.workshop.measurements import well_formed
+from ashley.workshop.facts import well_formed
 from ashley.workshop.model import Text
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from measurements_blind_support import (ALANA, GOOD, KIND, MAX_CHARS, RULES, accepted, body_of, decide_add, decide_edit,
+from facts_kind_blind_support import (ALANA, GOOD, KIND, MAX_CHARS, RULES, accepted, body_of, decide_add, decide_edit,
                                         good_bodies, item_lists, refused_as, with_)
 
-BAD = "not measurements"
+BAD = "not facts"
 DISTINCT_BAD = ['{"items": [{"name": "a"}]}', body_of([with_(unit="cm")]), body_of([GOOD, GOOD]), "[]", "{}"]
 
 
@@ -21,9 +21,9 @@ def one_piece(body: str = "") -> Any:
     return accepted(decide_add(body)).state
 
 
-def test_the_kind_is_a_stored_measurements_format_in_the_shipped_rules() -> None:
+def test_the_kind_is_a_stored_facts_format_in_the_shipped_rules() -> None:
     kind = RULES.kinds[KIND]
-    assert (kind.family, kind.format) == ("stored", "measurements")
+    assert (kind.family, kind.format) == ("stored", "facts")
 
 
 # --- Add ----------------------------------------------------------------------------------------------------------
@@ -41,9 +41,9 @@ def test_an_add_with_an_empty_body_or_an_empty_list_is_accepted(body: str) -> No
 
 
 @pytest.mark.parametrize("body", [BAD, *DISTINCT_BAD])
-def test_an_add_with_a_bad_body_is_refused_bad_measurements_and_the_bench_is_unchanged_but_for_the_seq(body: str) -> None:
+def test_an_add_with_a_bad_body_is_refused_bad_facts_and_the_bench_is_unchanged_but_for_the_seq(body: str) -> None:
     out = decide_add(body)
-    assert refused_as(out) == "bad_measurements"
+    assert refused_as(out) == "bad_facts"
     assert isinstance(out, Refused)
     assert out.seq == EMPTY.next_seq
     assert out.state.pieces == EMPTY.pieces and out.state.next_seq == EMPTY.next_seq + 1
@@ -52,7 +52,7 @@ def test_an_add_with_a_bad_body_is_refused_bad_measurements_and_the_bench_is_unc
 def test_a_refusal_leaves_the_pieces_already_on_the_bench_alone() -> None:
     state = one_piece(body_of([GOOD]))
     out = decide(state, Add(ALANA, KIND, Text("u", BAD), "small"), RULES)
-    assert refused_as(out) == "bad_measurements"
+    assert refused_as(out) == "bad_facts"
     assert out.state.pieces == state.pieces
 
 
@@ -65,13 +65,13 @@ def test_an_empty_title_is_refused_before_the_body_is_judged() -> None:
     assert refused_as(decide_add(BAD, title="")) == "bad_title"
 
 
-def test_a_body_over_the_kinds_limit_is_too_long_not_bad_measurements() -> None:
+def test_a_body_over_the_kinds_limit_is_too_long_not_bad_facts() -> None:
     assert refused_as(decide_add("x" * (MAX_CHARS + 1))) == "too_long"
     assert refused_as(decide_add(BAD + " " * MAX_CHARS)) == "too_long"
 
 
-def test_a_body_that_is_bad_and_within_the_limit_is_bad_measurements_at_the_limit_itself() -> None:
-    assert refused_as(decide_add("x" * MAX_CHARS)) == "bad_measurements"
+def test_a_body_that_is_bad_and_within_the_limit_is_bad_facts_at_the_limit_itself() -> None:
+    assert refused_as(decide_add("x" * MAX_CHARS)) == "bad_facts"
 
 
 def test_a_well_formed_body_of_exactly_the_limit_is_accepted_and_one_more_character_is_too_long() -> None:
@@ -110,17 +110,17 @@ def test_an_edit_to_an_empty_body_is_accepted() -> None:
 def test_an_edit_to_a_bad_body_is_refused_and_the_piece_stays_as_it_was(body: str) -> None:
     state = one_piece(body_of([GOOD]))
     out = decide_edit(state, 1, 1, body)
-    assert refused_as(out) == "bad_measurements"
+    assert refused_as(out) == "bad_facts"
     assert out.state.pieces == state.pieces and out.state.next_seq == state.next_seq + 1
 
 
 def test_an_edit_may_repair_a_piece_whose_stored_body_is_not_well_formed_only_with_a_good_one() -> None:
     state = one_piece("")
     state = accepted(decide_edit(state, 1, 1, body_of([GOOD]))).state
-    assert refused_as(decide_edit(state, 1, 2, BAD)) == "bad_measurements"
+    assert refused_as(decide_edit(state, 1, 2, BAD)) == "bad_facts"
 
 
-def test_edit_refusals_come_in_their_order_around_bad_measurements() -> None:
+def test_edit_refusals_come_in_their_order_around_bad_facts() -> None:
     state = one_piece(body_of([GOOD]))
     assert refused_as(decide_edit(state, 1, 9, BAD)) == "stale_base"
     assert refused_as(decide_edit(state, 1, 1, BAD, title="")) == "bad_title"
@@ -146,7 +146,7 @@ def test_add_accepts_exactly_the_empty_and_well_formed_bodies(body: str) -> None
     if body == "" or well_formed(body):
         accepted(out)
     else:
-        assert refused_as(out) == "bad_measurements"
+        assert refused_as(out) == "bad_facts"
 
 
 @settings(max_examples=40)
@@ -157,10 +157,10 @@ def test_edit_agrees_with_add_about_the_same_body(first: str, second: str) -> No
     edited = decide_edit(state, 1, 1, second)
     assert type(added) is type(edited)
     if isinstance(added, Refused):
-        assert refused_as(edited) == added.reason == "bad_measurements"
+        assert refused_as(edited) == added.reason == "bad_facts"
 
 
 @settings(max_examples=40)
 @given(items=item_lists(min_size=1))
 def test_a_body_with_a_name_repeated_is_refused_by_decide(items: list[dict[str, Any]]) -> None:
-    assert refused_as(decide_add(body_of([*items, items[0]]))) == "bad_measurements"
+    assert refused_as(decide_add(body_of([*items, items[0]]))) == "bad_facts"

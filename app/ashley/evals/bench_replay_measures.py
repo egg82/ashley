@@ -8,7 +8,7 @@ An ask's window runs from its turn to the next ask's (the last runs to the end).
 - `model_runs`: her runs in the window.
 - `unasked_changes`: her accepted changes of a piece's content (add, edit, remove, archive, restore) on a piece whose
   kind is not in the scope (`scope_kinds`, the model by default), with `unasked_by_kind`.
-- `measurement_rewrites`: rows of a measurements piece she edited whose value, unit or tolerance changed while the row's
+- `measurement_rewrites`: rows of a facts piece she edited whose value, unit or tolerance changed while the row's
   source and ref stayed as they were (no new number or source recorded); `confirmed_rewrites`, those whose source was
   not `guessed`.
 - `overlaps_final`, `failed_checks_final`: the report of her last run in the window; None when it left none.
@@ -88,7 +88,7 @@ def bodies_at(commands: Sequence[Command], at: float) -> dict[int, str]:
 
 
 def items(body: str) -> dict[str, dict[str, Any]]:
-    """A measurements body's rows by name; none when it is not that shape."""
+    """A facts body's rows by name; none when it is not that shape."""
     try:
         raw = object_of(json.loads(body)) if body.strip() else None
     except ValueError:
@@ -171,7 +171,7 @@ class Window:
     def rewrites(self) -> tuple[int, int]:
         pairs = [rewrites(str(c.effect["before"]["body"]), str(c.effect["after"]["body"])) for c in self.mine
                  if c.effect is not None and c.effect.get("type") == "edited"
-                 and self.piece_kinds.get(int(c.effect["piece_id"])) == "measurements"]
+                 and self.piece_kinds.get(int(c.effect["piece_id"])) == "facts"]
         return sum(p[0] for p in pairs), sum(p[1] for p in pairs)
 
     def last_run(self) -> Finished | None:

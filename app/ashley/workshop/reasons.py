@@ -5,7 +5,7 @@ from typing import Literal
 Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece", "bad_place", "stale_base",
                  "nothing_to_undo", "changed_since", "not_runnable", "bad_automation", "bad_site", "bad_video",
                  "not_installable", "incomplete", "no_proposal", "needs_person", "bad_wake", "not_video", "bad_cue",
-                 "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_measurements", "bad_controls",
+                 "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_facts", "bad_controls",
                  "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body", "bad_citation", "bad_rows"]
 """Why a command was refused:
 - `unknown_kind`: an Add of a kind `kinds.json` does not have.
@@ -32,16 +32,16 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
   named.
 - `needs_person`: an Install, or an Undo of an install, made by her: only a person changes the house.
 - `bad_wake`: an Add or Edit of a wake rule piece whose body is not empty and not a wake rule (`workshop.wake_rule`).
-- `bad_measurements`: an Add or Edit of a measurements piece whose body is not empty and not a list of measurements
-  (`workshop.measurements`).
-- `confirmed_measurement`: an Edit by her of a measurements piece that changes what a confirmed row holds (a number's
-  value, unit or tolerance, a choice's value) while keeping where it came from (`workshop.measurements.rewrites_confirmed`):
+- `bad_facts`: an Add or Edit of a facts piece whose body is not empty and not a list of facts
+  (`workshop.facts`).
+- `confirmed_measurement`: an Edit by her of a facts piece that changes what a confirmed row holds (a number's
+  value, unit or tolerance, a choice's value) while keeping where it came from (`workshop.facts.rewrites_confirmed`):
   a confirmed row changes only with a new answer from the person or a new source, and the row says which.
-- `bad_citation`: an Add or Edit by her of a measurements piece with a choice row, new or changed, whose source cites a
+- `bad_citation`: an Add or Edit by her of a facts piece with a choice row, new or changed, whose source cites a
   piece that it does not name or that is not an image, file, reader, site or recipe piece of the bench
   (`workshop.decide.CITABLE`). Her bench tools refuse a cited turn that is not the person's on the bench's talk the same
   way, before the command is built.
-- `bad_rows`: a Surfaced of a piece that is not a measurements piece, or one a turn that had read outside words wrote,
+- `bad_rows`: a Surfaced of a piece that is not a facts piece, or one a turn that had read outside words wrote,
   or naming no rows, a name twice, or a row that is not a choice the piece holds now under that name and value.
 - `not_video`: a Cue of a piece whose kind's format is not `video`, `clip` or `audio`.
 - `bad_cue`: a Cue to seek without `seconds` or with `seconds` not in 0 to `embed.MAX_START`, or to play or pause with
@@ -63,6 +63,6 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
 REASONS: tuple[Reason, ...] = ("unknown_kind", "bad_title", "too_long", "full", "no_such_piece", "bad_place",
                                "stale_base", "nothing_to_undo", "changed_since", "not_runnable", "bad_automation",
                                "bad_site", "bad_video", "not_installable", "incomplete", "no_proposal", "needs_person",
-                               "bad_wake", "not_video", "bad_cue", "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_measurements",
+                               "bad_wake", "not_video", "bad_cue", "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_facts",
                                "bad_controls", "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body",
                                "bad_citation", "bad_rows")

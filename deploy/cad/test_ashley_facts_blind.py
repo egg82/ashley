@@ -32,7 +32,7 @@ from ashley_cad import check, measured, show
 
 def go(script: str, facts: dict[str, Any] | None = FACTS) -> tuple[int, str, dict[str, Any] | None, Path]:
     """Return code, stderr, the report (None when none was written) and the out directory of a run of `script`."""
-    done, out = run(HEAD + script, measurements=facts)
+    done, out = run(HEAD + script, facts=facts)
     report = out / "report.json"
     return done.returncode, done.stderr, json.loads(report.read_text()) if report.is_file() else None, out
 
@@ -70,7 +70,7 @@ show(Box(1, 1, 1))
         self.assertNotEqual(code, 0)
         self.assertIsNone(report)
 
-    def test_chosen_with_no_measurements_file_fails_the_run(self) -> None:
+    def test_chosen_with_no_facts_file_fails_the_run(self) -> None:
         code, _, _, _ = go('from ashley_cad import chosen\nchosen("lanyard_form")\nshow(Box(1, 1, 1))', facts=None)
         self.assertNotEqual(code, 0)
 
@@ -161,7 +161,7 @@ class ReferenceForms(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIsNone(report)
 
-    def test_a_reference_part_naming_a_form_with_no_measurements_file_fails_the_run(self) -> None:
+    def test_a_reference_part_naming_a_form_with_no_facts_file_fails_the_run(self) -> None:
         code, _, _, _ = go('show(("strap", Box(20, 4, 2), "reference", "lanyard_form"))', facts=None)
         self.assertNotEqual(code, 0)
 

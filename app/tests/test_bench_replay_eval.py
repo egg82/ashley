@@ -60,7 +60,7 @@ def ran(seq: int, at: float, version: int, person: bool = False) -> Command:
 def snapshot() -> Snapshot:
     rows = json.dumps({"items": [{"name": "w", "value": 2, "unit": "mm", "source": "guessed"}]})
     photo = json.dumps({"sha256": SHA, "size": len(PHOTO), "media_type": "image/png", "name": "p.png"})
-    commands = (added(1, T0 - 900, "measurements", "Sizes", rows), added(2, T0 - 800, "model", "Model", "show()"),
+    commands = (added(1, T0 - 900, "facts", "Sizes", rows), added(2, T0 - 800, "model", "Model", "show()"),
                 ran(3, T0 - 700, 1), ran(4, T0 + 20, 1), added(5, T0 + 50, "image", "p.png", photo, person=True),
                 ran(6, T0 + 150, 1, person=True))
     turns = (Said(1, 1, "person", T0 - 1000, False, None, "start"), Said(2, 1, "ashley", T0 - 990, False, 1, "Started."),

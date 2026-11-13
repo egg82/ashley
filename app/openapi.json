@@ -9060,7 +9060,7 @@
               "not_reader",
               "bad_passage",
               "bad_file",
-              "bad_measurements",
+              "bad_facts",
               "bad_controls",
               "bad_recipe",
               "already_shown",
@@ -11485,7 +11485,7 @@
                   "not_reader",
                   "bad_passage",
                   "bad_file",
-                  "bad_measurements",
+                  "bad_facts",
                   "bad_controls",
                   "bad_recipe",
                   "already_shown",
@@ -13350,7 +13350,7 @@
               "code",
               "automation",
               "wake",
-              "measurements",
+              "facts",
               "diagram",
               "site",
               "video",
@@ -14497,7 +14497,7 @@
           "verdict"
         ],
         "title": "ReportCheck",
-        "description": "A comparison the script made of a number it measured on the geometry: `actual op target` within `tolerance`, resting\non the measurements `rests_on`. `verdict` is computed by the app: `pass`, `fail`, or `unconfirmed` when it would pass\nbut a measurement it rests on is guessed or missing from the run; any other source confirms."
+        "description": "A comparison the script made of a number it measured on the geometry: `actual op target` within `tolerance`, resting\non the facts `rests_on`. `verdict` is computed by the app: `pass`, `fail`, or `unconfirmed` when it would pass\nbut a measurement it rests on is guessed or missing from the run; any other source confirms."
       },
       "ReportIsland": {
         "properties": {
@@ -14629,7 +14629,7 @@
           "bbox_max"
         ],
         "title": "ReportPart",
-        "description": "One part's `volume` (mm³) and the corners of its bounding box (mm, x y z). `role` is what the script said the part\nis for, one of the roles in the print settings (`reference` is the real object modelled for fit, which is never\nprinted), or `unknown` when it said nothing. `form` is the measurements choice row a `reference` part names as what\nkind of thing it stands in for, null on every other part."
+        "description": "One part's `volume` (mm³) and the corners of its bounding box (mm, x y z). `role` is what the script said the part\nis for, one of the roles in the print settings (`reference` is the real object modelled for fit, which is never\nprinted), or `unknown` when it said nothing. `form` is the facts choice row a `reference` part names as what\nkind of thing it stands in for, null on every other part."
       },
       "ReportPrint": {
         "properties": {
@@ -16264,7 +16264,7 @@
           "option_values"
         ],
         "title": "WireFact",
-        "description": "A row of a bench's measurements piece shown beside her reply, once: a choice, or a guessed number a check of the\nturn's run rests on (its `value` with its unit). `label` and `value` as she set them, and `option_values`, each a tap\nthat sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`); empty when the row has none,\nas a number's."
+        "description": "A row of a bench's facts piece shown beside her reply, once: a choice, or a guessed number a check of the\nturn's run rests on (its `value` with its unit). `label` and `value` as she set them, and `option_values`, each a tap\nthat sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`); empty when the row has none,\nas a number's."
       },
       "WireReceipt": {
         "properties": {

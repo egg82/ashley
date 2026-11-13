@@ -15,7 +15,7 @@
   "agent_max_tool_rounds": 40,
   "tool_result_chars": 12000,
   "max_runs_per_turn": 2,
-  "kind_extensions": {"code": "py", "model": "py", "measurements": "json", "document": "md", "note": "md"},
+  "kind_extensions": {"code": "py", "model": "py", "facts": "json", "document": "md", "note": "md"},
   "extensions": {
     "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "application/pdf": "pdf",
     "application/zip": "zip", "model/3mf": "3mf", "model/stl": "stl", "model/gltf-binary": "glb", "text/plain": "txt",

@@ -243,7 +243,7 @@ async def _graded(record: Record, grader: Grader) -> Record:
     for t in record.turns:
         if t.author == "ashley" and not t.follows and t.answers in asked:
             names = [n for pid, body in bodies_at(record.commands, t.at).items()
-                     if piece_kinds.get(pid) == "measurements" for n in items(body)]
+                     if piece_kinds.get(pid) == "facts" for n in items(body)]
             got = await grader(asked[t.answers].text, t.text, names)
             if got is not None:
                 verdicts[t.id] = got

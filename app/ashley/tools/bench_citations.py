@@ -1,12 +1,12 @@
-"""The turn a measurements choice row of hers cites, checked by her bench tools before her Add or Edit reaches the
+"""The turn a facts choice row of hers cites, checked by her bench tools before her Add or Edit reaches the
 Workshop: a row she adds or changes as `stated` or `accepted` names a person's turn on the talk this turn is in
-(`measurements.cited_turns`). The talk is the tool's, not the bench's, so `decide` cannot check it; it checks a cited
+(`facts.cited_turns`). The talk is the tool's, not the bench's, so `decide` cannot check it; it checks a cited
 piece itself."""
 
 from collections.abc import Awaitable, Callable
 
 from .. import services
-from ..workshop import measurements
+from ..workshop import facts
 from ..workshop.commands import Add, Edit
 from ..workshop.model import Owner
 from ..workshop.rules import Rules
@@ -31,12 +31,12 @@ class Citations:
         not a person's turn on this talk (none is, with no talk), and `unavailable` when the talk cannot be read. The
         bench is read only for a body holding such a row."""
         body = command.text.body
-        if not measurements.cited_turns("", body):
+        if not facts.cited_turns("", body):
             return
         before = await self._before(command)
         if before is None:
             return
-        cited = measurements.cited_turns(before, body)
+        cited = facts.cited_turns(before, body)
         if not cited:
             return
         said = await self._said()
@@ -44,16 +44,16 @@ class Citations:
             raise Refused("bad_citation", HINTS["bad_citation"])
 
     async def _before(self, command: Add | Edit) -> str | None:
-        """The body the command changes ("" for an Add); None when its piece is not a measurements piece."""
+        """The body the command changes ("" for an Add); None when its piece is not a facts piece."""
         if isinstance(command, Add):
-            return "" if self._is_measurements(command.kind) else None
+            return "" if self._is_facts(command.kind) else None
         view = await services.get(Workshop).read(self._owner, self._bench)
         found = next((p for p in view.pieces if p.id == command.piece_id), None)
-        return found.text.body if found is not None and self._is_measurements(found.kind) else None
+        return found.text.body if found is not None and self._is_facts(found.kind) else None
 
-    def _is_measurements(self, kind_name: str) -> bool:
+    def _is_facts(self, kind_name: str) -> bool:
         kind = self._rules.kinds.get(kind_name)
-        return kind is not None and kind.format == "measurements"
+        return kind is not None and kind.format == "facts"
 
     async def _said(self) -> frozenset[int]:
         if self._turns is None:

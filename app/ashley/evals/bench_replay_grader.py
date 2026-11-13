@@ -25,7 +25,7 @@ class Verdict(BaseModel):
     claims_done: bool = Field(description="The reply says the change the person asked for is now made, built or fixed.")
     asked_rows: list[str] = Field(description="The measurement row names, from the list given, whose value the reply "
                                               "asks the person to give or confirm. Empty when it asks for none.")
-    asked_other: int = Field(ge=0, description="How many other measurements, not in the list given, the reply asks "
+    asked_other: int = Field(ge=0, description="How many other facts, not in the list given, the reply asks "
                                                "the person to give or confirm.")
 
 

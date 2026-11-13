@@ -7,16 +7,16 @@ import json
 
 from ashley.workshop.codec import decode_command, decode_effect, encode_command, encode_effect
 from ashley.workshop.commands import Add, Command, Edit, Shown, ShownRow, Surfaced, Undo, type_of
-from ashley.workshop.measurements import Row, shown_value
+from ashley.workshop.facts import Row, shown_value
 from ashley.workshop.decide import Accepted, Decision, Refused, replay
 from ashley.workshop.model import HER, By, Piece, Text
 from ashley.workshop.rules import Kind, Rules
 from ashley.workshop.surfacing import Seen, unshown
 
-MEASUREMENTS = Kind("measurements", "stored", "Measurements", 4000, "measurements")
+FACTS = Kind("facts", "stored", "Facts", 4000, "facts")
 NOTE = Kind("note", "stored", "Note", 100)
-PAGE = Kind("page", "stored", "Page", 4000, "measurements", outside=True)
-RULES = Rules({"measurements": MEASUREMENTS, "note": NOTE, "page": PAGE}, max_pieces=5, title_max_chars=20,
+PAGE = Kind("page", "stored", "Page", 4000, "facts", outside=True)
+RULES = Rules({"facts": FACTS, "note": NOTE, "page": PAGE}, max_pieces=5, title_max_chars=20,
               recent_commands=10, undo_window=100)
 ALANA = By(7)
 
@@ -60,7 +60,7 @@ def names(rows: tuple[tuple[int, Row], ...]) -> list[tuple[int, str, str]]:
 
 
 def test_every_choice_row_is_unshown_until_a_surfaced_names_it_whatever_its_source() -> None:
-    add = Add(HER, "measurements", Text("m", body(choice("form", "flat strap"), NUMBER,
+    add = Add(HER, "facts", Text("m", body(choice("form", "flat strap"), NUMBER,
                                                   choice("oven", "gas", "stated", ("gas", "electric")))), "small")
     added = run(add)
     assert names(unshown(pieces_after(added), frozenset(), RULES)) == [(1, "form", "flat strap"), (1, "oven", "gas")]
@@ -72,7 +72,7 @@ def test_every_choice_row_is_unshown_until_a_surfaced_names_it_whatever_its_sour
 
 def test_a_guessed_number_is_unshown_only_when_a_check_rests_on_it_and_is_shown_once_by_value_and_unit() -> None:
     measured: dict[str, object] = {"name": "hole", "value": 6, "unit": "mm", "source": "measured"}
-    add = Add(HER, "measurements", Text("m", body(NUMBER, measured, choice("form", "flat strap"))), "small")
+    add = Add(HER, "facts", Text("m", body(NUMBER, measured, choice("form", "flat strap"))), "small")
     added = run(add)
     pieces = pieces_after(added)
     assert names(unshown(pieces, frozenset(), RULES)) == [(1, "form", "flat strap")]
@@ -89,16 +89,16 @@ def test_a_guessed_number_is_unshown_only_when_a_check_rests_on_it_and_is_shown_
 def test_a_guessed_number_is_taken_from_the_first_piece_that_holds_its_name_and_never_from_an_outside_one() -> None:
     other: dict[str, object] = {**NUMBER, "value": 99}
     got = run(Add(HER, "page", Text("p", body(other)), "small"),
-              Add(HER, "measurements", Text("m", body(NUMBER)), "small"),
-              Add(HER, "measurements", Text("n", body(other)), "small"))
+              Add(HER, "facts", Text("m", body(NUMBER)), "small"),
+              Add(HER, "facts", Text("n", body(other)), "small"))
     assert unshown(pieces_after(got), frozenset(), RULES, frozenset({"width"})) == ()
-    household = run(Add(HER, "measurements", Text("m", body(NUMBER)), "small"),
-                    Add(HER, "measurements", Text("n", body(other)), "small"))
+    household = run(Add(HER, "facts", Text("m", body(NUMBER)), "small"),
+                    Add(HER, "facts", Text("n", body(other)), "small"))
     assert names(unshown(pieces_after(household), frozenset(), RULES, frozenset({"width"}))) == [(1, "width", "12 mm")]
 
 
 def test_a_row_is_shown_again_only_when_its_value_or_name_changes() -> None:
-    first = Add(HER, "measurements", Text("m", body(choice("form", "flat strap"), oven("gas"))), "small")
+    first = Add(HER, "facts", Text("m", body(choice("form", "flat strap"), oven("gas"))), "small")
     told = Surfaced(HER, 1, (ShownRow("form", "flat strap"), ShownRow("oven", "gas")))
     retitled = Edit(HER, 1, 1, Text("measures", body(choice("form", "flat strap"), oven("gas"))))
     revalued = Edit(HER, 1, 2, Text("measures", body(choice("form", "round cord"), oven("gas", "stove"))))
@@ -114,7 +114,7 @@ def test_a_row_is_shown_again_only_when_its_value_or_name_changes() -> None:
 
 def test_a_piece_a_tainted_turn_wrote_or_of_an_outside_kind_is_never_shown_nor_surfaced() -> None:
     tainted = By(None, outside=True)
-    got = run(Add(HER, "measurements", Text("m", body(choice("form", "flat strap"))), "small"),
+    got = run(Add(HER, "facts", Text("m", body(choice("form", "flat strap"))), "small"),
               Edit(tainted, 1, 1, Text("m", body(choice("form", "round cord")))),
               Add(HER, "page", Text("p", body(choice("hob", "gas", options=("gas", "induction")))), "small"),
               Surfaced(HER, 1, (ShownRow("form", "round cord"),)),
@@ -124,7 +124,7 @@ def test_a_piece_a_tainted_turn_wrote_or_of_an_outside_kind_is_never_shown_nor_s
 
 
 def test_a_surfaced_naming_what_the_piece_does_not_hold_now_is_refused_bad_rows() -> None:
-    add = Add(HER, "measurements", Text("m", body(choice("form", "flat strap"), NUMBER)), "small")
+    add = Add(HER, "facts", Text("m", body(choice("form", "flat strap"), NUMBER)), "small")
     note = Add(HER, "note", Text("n", "x"), "small")
     for rows, piece in (((ShownRow("form", "round cord"),), 1), ((ShownRow("width", "12"),), 1), ((), 1),
                         ((ShownRow("form", "flat strap"), ShownRow("form", "flat strap")), 1),
@@ -136,7 +136,7 @@ def test_a_surfaced_naming_what_the_piece_does_not_hold_now_is_refused_bad_rows(
 
 
 def test_a_surfaced_changes_no_piece_is_never_undone_and_never_blocks_undoing_the_edit_before_it() -> None:
-    add = Add(ALANA, "measurements", Text("m", body(choice("form", "flat strap"))), "small")
+    add = Add(ALANA, "facts", Text("m", body(choice("form", "flat strap"))), "small")
     edit = Edit(ALANA, 1, 1, Text("m", body(choice("form", "round cord"))))
     got = run(add, edit, Surfaced(HER, 1, (ShownRow("form", "round cord"),)), Undo(ALANA, 3), Undo(ALANA, 2))
     assert got[2].state.pieces == got[1].state.pieces

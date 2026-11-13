@@ -1,10 +1,10 @@
-"""The shape of a measurements row, with choice rows beside number rows (design section 1): a row with no `kind` is a
+"""The shape of a facts row, with choice rows beside number rows (design section 1): a row with no `kind` is a
 number exactly as today; a choice row's required fields and limits; the sources a choice may and may not have."""
 
 from typing import Any
 
 import pytest
-from ashley.workshop.measurements import MAX_REF, well_formed
+from ashley.workshop.facts import MAX_REF, well_formed
 from facts_blind_support import CHOICE_SOURCES, NUMBER, REFUSED_SOURCES, body_of, choice, cited, ok
 
 OPTIONS = ["flat woven strap", "round cord"]

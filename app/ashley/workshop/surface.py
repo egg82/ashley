@@ -5,7 +5,7 @@ from itertools import groupby
 from .. import services
 from . import rules as workshop_rules
 from .commands import ShownRow, Surfaced
-from .measurements import Row, shown_value
+from .facts import Row, shown_value
 from .model import HER, Owner
 from .surfacing import unshown
 from .workshop import Workshop

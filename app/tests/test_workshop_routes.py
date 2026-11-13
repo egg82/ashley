@@ -112,7 +112,7 @@ def test_each_kind_says_how_its_body_is_written(wired: Fakes) -> None:
     assert {k.name: (k.format, k.language) for k in got.kinds} == {
         "document": ("markdown", None), "note": ("plain", None), "code": ("code", "text"),
         "model": ("code", "build123d"),
-        "automation": ("automation", None), "wake": ("wake", None), "diagram": ("diagram", None), "measurements": ("measurements", None), "site": ("site", None),
+        "automation": ("automation", None), "wake": ("wake", None), "diagram": ("diagram", None), "facts": ("facts", None), "site": ("site", None),
         "video": ("video", None), "reader": ("reader", None), "recipe": ("recipe", None), "image": ("image", None), "file": ("file", None),
         "clip": ("clip", None), "audio": ("audio", None), "job": ("job", None)}
 

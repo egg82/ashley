@@ -29,7 +29,7 @@ class RunArtifact(BaseModel):
 class ReportPart(BaseModel):
     """One part's `volume` (mm³) and the corners of its bounding box (mm, x y z). `role` is what the script said the part
     is for, one of the roles in the print settings (`reference` is the real object modelled for fit, which is never
-    printed), or `unknown` when it said nothing. `form` is the measurements choice row a `reference` part names as what
+    printed), or `unknown` when it said nothing. `form` is the facts choice row a `reference` part names as what
     kind of thing it stands in for, null on every other part."""
 
     name: str
@@ -42,7 +42,7 @@ class ReportPart(BaseModel):
 
 class ReportCheck(BaseModel):
     """A comparison the script made of a number it measured on the geometry: `actual op target` within `tolerance`, resting
-    on the measurements `rests_on`. `verdict` is computed by the app: `pass`, `fail`, or `unconfirmed` when it would pass
+    on the facts `rests_on`. `verdict` is computed by the app: `pass`, `fail`, or `unconfirmed` when it would pass
     but a measurement it rests on is guessed or missing from the run; any other source confirms."""
 
     name: str

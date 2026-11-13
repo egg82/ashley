@@ -8,7 +8,7 @@ from .. import logs
 from .. import services
 from ..conversations.model import Fact
 from ..runs.runs import Runs, RunsUnavailable
-from ..workshop.measurements import Choice, shown_label, shown_value
+from ..workshop.facts import Choice, shown_label, shown_value
 from ..workshop.model import Owner
 from ..workshop.model_report import open_guesses
 from ..workshop.surface import surface
