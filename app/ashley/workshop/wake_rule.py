@@ -3,8 +3,9 @@ Assistant wakes her; she decides"). One JSON object of exactly `event` (the even
 automation's wake action sends, `wake_action`), `brief` (her short brief for that turn, at most `MAX_BRIEF`
 characters) and `tools` (the names of the tools that turn may use, matched as `ashley.tools.excluding.is_excluded`
 matches; empty for none), and optionally `greets` (a bool, false when absent: whether the wake is a greeting, whose
-turn `Initiative` scores and rolls; any other wake's reply goes out on her `says` alone). An empty body is a draft and
-passes."""
+turn `Initiative` scores and rolls; any other wake's reply goes out on her `says` alone), `who` (a `person.*` entity
+id) and `what` (a slug): set, the rule answers only a wake whose own `who` or `what` (`ashley.senses.wakes.Wake`) is
+exactly that; absent, any. An empty body is a draft and passes."""
 
 import json
 import re
@@ -16,8 +17,9 @@ from .automation_config import object_of
 MAX_BRIEF = 1000
 EVENT = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _TOOL = re.compile(r"[A-Za-z0-9_.\-]{1,128}")
+_PERSON = re.compile(r"person\.[a-z0-9_]+")
 _FIELDS = frozenset(("event", "brief", "tools"))
-_GREETS = _FIELDS | {"greets"}
+_OPTIONAL = frozenset(("greets", "who", "what"))
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,18 @@ class WakeRule:
     brief: str
     tools: tuple[str, ...]
     greets: bool = False
+    who: str | None = None
+    what: str | None = None
+
+    @property
+    def specificity(self) -> int:
+        """How many of `who` and `what` it sets; of the rules answering one wake, only the most specific may run."""
+        return (self.who is not None) + (self.what is not None)
+
+    def answers(self, event: str, who: str | None, what: str | None) -> bool:
+        """Whether it answers a wake of `event` about `who` and `what`."""
+        return (self.event == event and (self.who is None or self.who == who)
+                and (self.what is None or self.what == what))
 
 
 def rule_of(body: str) -> WakeRule | None:
@@ -34,22 +48,31 @@ def rule_of(body: str) -> WakeRule | None:
         loaded = object_of(json.loads(body))
     except ValueError:
         return None
-    if loaded is None or frozenset(loaded) not in (_FIELDS, _GREETS):
+    if loaded is None or not _FIELDS <= frozenset(loaded) <= _FIELDS | _OPTIONAL:
         return None
-    greets = loaded.get("greets", False)
-    if not isinstance(greets, bool):
+    greets, (who_ok, who), (what_ok, what) = (loaded.get("greets", False), _match(loaded, "who", _PERSON),
+                                                _match(loaded, "what", EVENT))
+    if not isinstance(greets, bool) or not who_ok or not what_ok:
         return None
     event, brief, tools = loaded["event"], loaded["brief"], _names(loaded["tools"])
     if not isinstance(event, str) or not EVENT.fullmatch(event) or tools is None:
         return None
     if not isinstance(brief, str) or not brief.strip() or len(brief) > MAX_BRIEF:
         return None
-    return WakeRule(event, brief, tools, greets)
+    return WakeRule(event, brief, tools, greets, who, what)
 
 
 def well_formed(body: str) -> bool:
     """Whether `body` is empty or a rule of the shape above."""
     return not body.strip() or rule_of(body) is not None
+
+
+def _match(loaded: dict[str, Any], key: str, shape: re.Pattern[str]) -> tuple[bool, str | None]:
+    """Whether the match field `key` is absent or of `shape`, and its value (None when absent)."""
+    if key not in loaded:
+        return True, None
+    value: object = loaded[key]
+    return (True, value) if isinstance(value, str) and shape.fullmatch(value) else (False, None)
 
 
 def _names(value: object) -> tuple[str, ...] | None:

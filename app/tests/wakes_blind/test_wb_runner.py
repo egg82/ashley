@@ -3,9 +3,11 @@ only its tools; the other outcomes settle without a turn; a quiet reply queues n
 one turn; an unavailable model leaves the wake due, a refused one settles it failed; nothing of the wake reaches a log."""
 
 import asyncio
+import json
 from typing import Any
 
 import pytest
+from ashley import logs
 from ashley.channels import resume
 from ashley.initiative.initiative import NullInitiative
 from ashley.inference.inference import InferenceRefused, InferenceUnavailable
@@ -152,6 +154,29 @@ def test_two_rules_for_one_event_are_ambiguous_and_neither_runs(world: World) ->
 
     run(go())
     assert world.first.inference.prompts == []
+
+
+@pytest.mark.parametrize("who, runs", [("person.alana", "PLANTED-WHO-zq"), ("person.kim", "PLANTED-BRIEF-zq")])
+def test_a_rule_kept_for_the_wakes_person_runs_over_the_bare_rule(world: World, capsys: pytest.CaptureFixture[str],
+                                                                  who: str, runs: str) -> None:
+    logs.setup({"LOG_LEVEL": "info"})
+    world.first.inference.script = [DONE]
+    world.as_pod(world.first)
+    kept = json.dumps({"event": "arrived", "brief": "Only them, PLANTED-WHO-zq.", "tools": [], "who": who})
+
+    async def go() -> None:
+        async with stack(world) as s:
+            await s.rule()
+            await s.rule(body=kept)
+            id_ = await s.hand_in()
+            await sweep()
+            assert s.outcome(id_) == "turn"
+
+    run(go())
+    (prompt,) = world.first.inference.prompts
+    assert runs in seen_by_model(prompt)
+    out = capsys.readouterr().out
+    assert "event=wakes.rule" in out and "outcome=one" in out and "person.alana" not in out
 
 
 def test_a_wake_about_nobody_of_the_household_is_no_person(world: World) -> None:

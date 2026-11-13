@@ -1,8 +1,8 @@
 """The `wakes` singleton, under the lease: every `poll_s` it takes up to `batch` due wakes (`Wakes.due`), the longest
 due first, and settles each with what came of it. A reminder fires (`reminder.fired`) and, when it repeats, is settled
 with its next occurrence, which the settle stores only if it was the one to settle it; it never expires. A watch's wake (`watch_turn`) is told for the watches' `wake_max_age_s`, a day, then `expired`.
-A house wake past `max_age_s` since it arrived, `expired`; no rule or more than one for its
-event (`rule.rule_for`), `no_rule` or `ambiguous`; no person of the household for its `who`, `no_person`; else, for a rule
+A house wake past `max_age_s` since it arrived, `expired`; no rule for it, or more than one
+at the top (`rule.rule_for`), `no_rule` or `ambiguous`; no person of the household for its `who`, `no_person`; else, for a rule
 that greets (`WakeRule.greets`), the facts of its moment are gathered (`moment.gathered`) and `Initiative` plans from
 them, and her turn runs through the shared turn loop with that plan's instruction, if any (`wake_turn.inbound`), and it
 is `turn`, or `failed` when the model refused it. A
@@ -121,7 +121,7 @@ def _kind(wake: Wake | Reminder | WatchWake) -> str:
 async def _house(due: Due, wake: Wake) -> Outcome:
     if due.age_s > CONFIG.max_age_s:
         return "expired"
-    rule = await rule_for(wake.household_id, wake.event)
+    rule = await rule_for(due.id, wake)
     if isinstance(rule, str):
         return rule
     person = await _person(wake)
