@@ -80,7 +80,7 @@ def test_without_the_connections_key_the_envs_keys_are_in_force_and_nothing_is_s
 
 def test_an_unreachable_database_is_unavailable_not_the_envs_key() -> None:
     async def scenario() -> None:
-        async with connections_on("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1") as connections:
+        async with connections_on("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.1) as connections:
             with pytest.raises(KeysUnavailable):
                 await ConnectionProviderKeys(lambda: connections, KINDS, {"anthropic": "sk-env"}).in_force()
             assert await seed_from_env(connections, KEYED, {"anthropic": "sk-env"}) == {"anthropic": "unavailable"}

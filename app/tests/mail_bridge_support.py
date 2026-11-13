@@ -36,8 +36,8 @@ def with_proton_kind() -> None:
 
 
 @asynccontextmanager
-async def bridge_on(url: str, key: bytes = KEY) -> AsyncGenerator[PostgresProtonBridge]:
-    database = PoolDatabase(url)
+async def bridge_on(url: str, key: bytes = KEY, connect_timeout_s: float = 5.0) -> AsyncGenerator[PostgresProtonBridge]:
+    database = PoolDatabase(url, connect_timeout_s=connect_timeout_s)
     await database.open()
     try:
         yield PostgresProtonBridge(database, Sealer({VERSION: key}))
