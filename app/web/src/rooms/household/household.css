@@ -60,7 +60,7 @@ select.hh-slot option { font: 14px var(--f-body); color: var(--text); background
 @media (max-width: 900px) {
   .hh-grid { grid-template-columns: minmax(0, 1fr); }
   .hh-col { display: contents; }
-  .hh-o1 { order: 1; } .hh-o2 { order: 2; } .hh-o3 { order: 3; } .hh-o4 { order: 4; } .hh-o5 { order: 5; } .hh-o6 { order: 6; } .hh-o7 { order: 7; }
+  .hh-o1 { order: 1; } .hh-o2 { order: 2; } .hh-o3 { order: 3; } .hh-o4 { order: 4; } .hh-o5 { order: 5; } .hh-o6 { order: 6; } .hh-o7 { order: 7; } .hh-o8 { order: 8; }
   .hh-grid > * > * { min-width: 0; }
   .hh-said { font-size: 18px; }
 }

@@ -1,14 +1,10 @@
 """The migration that adds the admin flag, found by its name so a renumber changes nothing: on a deployment that already
-has people, every person of the first household becomes an admin, read back as People serves them, and no one else
+has people, every person of the first household becomes an admin, read back from the table, and no one else
 does; downgrading takes the flag away."""
-
-import asyncio
 
 import psycopg
 from alembic import command
 from ashley.db.migrate import alembic_config
-from ashley.db.pool import PoolDatabase
-from ashley.people.postgres import PostgresPeople
 from contract.conversations_support import scalar
 from test_proposals_migration import revision_named
 
@@ -25,16 +21,10 @@ def seed(url: str) -> dict[str, int]:
 
 
 def served(url: str, household: int) -> dict[int, bool]:
-    async def scenario() -> dict[int, bool]:
-        db = PoolDatabase(url)
-        await db.open()
-        try:
-            found = await PostgresPeople(db).household(household)
-        finally:
-            await db.close()
-        assert found is not None
-        return {p.id: p.admin for p in found.people}
-    return asyncio.run(scenario())
+    """Read from the table at the revision under test, so a later revision's column cannot break an older step."""
+    with psycopg.connect(url) as conn:
+        return {int(r[0]): bool(r[1]) for r in conn.execute(
+            "SELECT id, admin FROM people WHERE household_id = %s", (household,)).fetchall()}
 
 
 def test_every_person_of_the_first_household_becomes_an_admin_and_no_one_else(empty_database: str) -> None:

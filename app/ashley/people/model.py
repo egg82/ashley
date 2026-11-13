@@ -8,14 +8,27 @@ Clock = Literal["12h", "24h"]
 
 
 @dataclass(frozen=True)
+class QuietHours:
+    """A person's own quiet hours (`decisions.md`, "A person's quiet hours hold back what she says on her own"): the
+    window from hour `start` up to but not including hour `end` (0 to 23, never equal), in the IANA zone `timezone`.
+    It runs across midnight when `start` is the later hour."""
+
+    start: int
+    end: int
+    timezone: str
+
+
+@dataclass(frozen=True)
 class Person:
     """`admin` is whether they may change what the whole deployment shares now (`decisions.md`, "An admin changes what
-    the deployment shares"); False unless the read that built this person selected it."""
+    the deployment shares"); False unless the read that built this person selected it. `quiet` is their own quiet
+    hours, None when they set none or the read that built this person did not select them (sign-in's does not)."""
 
     id: int
     household_id: int
     name: str
     admin: bool = False
+    quiet: QuietHours | None = None
 
 
 @dataclass(frozen=True)

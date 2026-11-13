@@ -6,8 +6,11 @@ and the wiring reach `HouseholdWriter`, so nothing she does on her own sets them
 timezone, locale or location she cannot use is 422 `HouseholdRefused` and nothing is stored. A change reaches her from
 her next reply.
 
-One log line per write (the writer's `people.household.changed`: field names and a count, never a value) and one per
-refusal."""
+`GET /api/household/quiet` and `PUT /api/household/quiet` read and replace the signed-in person's own quiet hours (never
+another person's): a window that is not whole hours, or in a zone she cannot use, is 422 `QuietRefused`.
+
+One log line per write (the writer's `people.household.changed`: field names and a count, never a value; or
+`people.quiet.changed`) and one per refusal."""
 
 import logging
 from typing import Any, Literal
@@ -17,10 +20,10 @@ from fastapi.responses import JSONResponse
 
 from .. import logs, services
 from ..people import model
-from ..people.fields import PROFILE_MAX, is_locale, is_location, is_timezone
+from ..people.fields import PROFILE_MAX, is_locale, is_location, is_quiet_window, is_timezone
 from ..people.household_write import HouseholdWriter
 from ..people.people import People, PeopleUnavailable
-from .household_models import Household, HouseholdRefused, HouseholdRequest
+from .household_models import Household, HouseholdRefused, HouseholdRequest, QuietHours, QuietRefused, QuietWindow
 from .models import ErrorResponse
 from .person import Person
 
@@ -34,6 +37,12 @@ _WRITE: dict[int | str, dict[str, Any]] = {
     **_READ, 403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"},
     422: {"model": HouseholdRefused, "description": "a timezone, locale or location she cannot use; nothing was stored. "
           "A body outside the request's schema gets FastAPI's own validation error, which is not this schema"}}
+
+
+_QUIET_WRITE: dict[int | str, dict[str, Any]] = {
+    **_READ, 403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"},
+    422: {"model": QuietRefused, "description": "hours or a zone she cannot use; nothing was stored. A body outside "
+          "the request's schema gets FastAPI's own validation error, which is not this schema"}}
 
 
 def _error(status: int, code: Literal["not_found", "unavailable"], detail: str) -> JSONResponse:
@@ -82,3 +91,37 @@ async def write_household(signed_in: Person, body: HouseholdRequest) -> Househol
     except PeopleUnavailable:
         return _error(503, "unavailable", "the household is unavailable right now; try again shortly")
     return _error(404, "not_found", "there is no such household") if stored is None else _wire(stored)
+
+
+@router.get("/api/household/quiet", response_model=QuietHours, responses=_READ)
+async def read_quiet(signed_in: Person) -> QuietHours | JSONResponse:
+    """200 `QuietHours`; 401 `unauthorized`; 404 `not_found`; 503 `unavailable`."""
+    me = signed_in.person
+    try:
+        found = await services.get(People).household(me.household_id)
+    except PeopleUnavailable:
+        return _error(503, "unavailable", "the household is unavailable right now; try again shortly")
+    mine = None if found is None else next((p for p in found.people if p.id == me.id), None)
+    if mine is None:
+        return _error(404, "not_found", "there is no such person")
+    q = mine.quiet
+    return QuietHours(quiet=None if q is None else QuietWindow(start=q.start, end=q.end, timezone=q.timezone))
+
+
+@router.put("/api/household/quiet", response_model=QuietHours, responses=_QUIET_WRITE)
+async def write_quiet(signed_in: Person, body: QuietHours) -> QuietHours | JSONResponse:
+    """200 `QuietHours` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 `QuietRefused`; 503
+    `unavailable`."""
+    me = signed_in.person
+    w = body.quiet
+    if w is not None and not is_quiet_window(w.start, w.end, w.timezone):
+        why: Literal["hours", "timezone"] = "timezone" if not is_timezone(w.timezone) else "hours"
+        logs.info(log, "people.quiet.refused", household=me.household_id, person=me.id, reason=why)
+        return JSONResponse(status_code=422, content=QuietRefused(
+            invalid=why, detail=f"those are not {why} she can use").model_dump())
+    quiet = None if w is None else model.QuietHours(w.start, w.end, w.timezone)
+    try:
+        found = await services.get(HouseholdWriter).put_quiet(me.household_id, me.id, quiet)
+    except PeopleUnavailable:
+        return _error(503, "unavailable", "the household is unavailable right now; try again shortly")
+    return body if found else _error(404, "not_found", "there is no such person")

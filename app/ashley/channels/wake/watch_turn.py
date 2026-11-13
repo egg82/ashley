@@ -17,8 +17,10 @@ Logs `watch_wake.done` with the watch id, what the wake told, whether it ran on 
 import logging
 import time
 from dataclasses import replace
+from datetime import UTC, datetime
 
 from ... import logs, services
+from ...people.quiet import held_now
 from ...senses.wakes import Outcome, WatchWake
 from ...watches.config import CONFIG
 from ...watches.model import Watch
@@ -56,8 +58,10 @@ def note(watch: Watch, wake: WatchWake, detail: str = "") -> str:
             f"covering everything since {wake.changes.get('since')}.{ended}")
 
 
-def inbound(wake_id: int, watch: Watch, wake: WatchWake, on_bench: bool, detail: str = "") -> Inbound:
-    """The turn for `wake`: on its bench's talk when `on_bench`, else on the person's phone thread. Raises ValueError for
+def inbound(wake_id: int, watch: Watch, wake: WatchWake, on_bench: bool, detail: str = "",
+            quiet: bool = False) -> Inbound:
+    """The turn for `wake`: on its bench's talk when `on_bench`, else on the person's phone thread, where `quiet` (their
+    own quiet hours hold) keeps it from reaching them; a bench they have open is never held. Raises ValueError for
     a changed wake whose stored changes cannot be read."""
     phone_thread = Inbound(household_id=watch.household_id, thread=f"push:{watch.person_id}", text=said(watch, wake),
                            kind="chat", medium="text", audience="owner", speaker_id=watch.person_id, shared=False,
@@ -65,7 +69,7 @@ def inbound(wake_id: int, watch: Watch, wake: WatchWake, on_bench: bool, detail:
                            source=f"wake:{wake_id}", unprompted=True, author="household", note=note(watch, wake, detail),
                            tools_only=None if watch.armed_by == "handoff" else watch.tools,
                            reads_only=watch.armed_by != "handoff" and watch.tools is None,
-                           taint=_taint(watch), made_in=watch.made_in)
+                           taint=_taint(watch), made_in=watch.made_in, quiet=quiet and not on_bench)
     if not on_bench or watch.bench_id is None:
         return phone_thread
     return replace(phone_thread, thread=thread_of(watch.bench_id), kind="brainstorm", channel="web", remembers=True,
@@ -81,7 +85,7 @@ def _taint(watch: Watch) -> Taint | None:
 
 async def fired(wake_id: int, wake: WatchWake, age_s: float) -> Outcome:
     """What came of it: `turn`, `expired` past `wake_max_age_s`, `cancelled` when the watch is gone, `failed` when the
-    model refused it or its changes cannot be read. Raises WatchesUnavailable, WorkshopUnavailable and
+    model refused it or its changes cannot be read. Raises WatchesUnavailable, WorkshopUnavailable, PeopleUnavailable and
     RespondUnavailable, which leave it due."""
     if age_s > CONFIG.wake_max_age_s:
         return "expired"
@@ -91,7 +95,8 @@ async def fired(wake_id: int, wake: WatchWake, age_s: float) -> Outcome:
     started = time.perf_counter()
     on_bench = await _open(watch)
     try:
-        turn = inbound(wake_id, watch, wake, on_bench, await KINDS.get(watch.kind).detail(watch))
+        turn = inbound(wake_id, watch, wake, on_bench, await KINDS.get(watch.kind).detail(watch),
+                       await held_now(watch.household_id, watch.person_id, datetime.now(UTC)))
     except ValueError:
         logs.warning(log, "watch_wake.malformed", watch=watch.id)
         return "failed"

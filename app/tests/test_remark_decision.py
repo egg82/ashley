@@ -27,7 +27,7 @@ from inflight_blind.ifb_checkpoint_support import checkpoint
 ALWAYS = Rates(chance=1.0, per_day=2, typing_within_s=900.0, repeat_within_days=30)
 NEVER = replace(ALWAYS, chance=0.0)
 NIGHT = parse(weights(night={"weight": 0.0, "from_hour": 22, "to_hour": 7}))
-FREE = Chance("discord:1", hour=12, sent=0, since_typed_s=None, typing_known=True)
+FREE = Chance("discord:1", hour=12, sent=0, since_typed_s=None, typing_known=True, quiet=False)
 LINE = "Bold of you to call that a salad."
 PERSON = Person(5, 1, "Alana")
 SAID = Reply(spoken=LINE, text=LINE, says="reply")

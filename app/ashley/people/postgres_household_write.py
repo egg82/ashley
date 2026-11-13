@@ -7,8 +7,8 @@ from dataclasses import fields
 from .. import logs
 from ..db.database import Database
 from .household_write import HouseholdWriter
-from .model import Household, HouseholdEdit, Person
-from .postgres import translated
+from .model import Household, HouseholdEdit, QuietHours
+from .postgres import QUIET_COLUMNS, person_of, translated
 
 log = logging.getLogger("ashley.people")
 _FIELDS = tuple(f.name for f in fields(HouseholdEdit))
@@ -33,10 +33,23 @@ class PostgresHouseholdWriter(HouseholdWriter):
                 if row is None:
                     return None
                 cur = await conn.execute(
-                    "SELECT id, household_id, name FROM people WHERE household_id = %s ORDER BY id", (household_id,))
-                people = tuple(Person(*r) for r in await cur.fetchall())
+                    f"SELECT p.id, p.household_id, p.name, false, {QUIET_COLUMNS} FROM people p WHERE p.household_id = %s "
+                    "ORDER BY p.id", (household_id,))
+                people = tuple(person_of(r) for r in await cur.fetchall())
         changed = [f for i, f in enumerate(_FIELDS) if row[1 + 2 * i] != row[2 + 2 * i]]
         logs.info(log, "people.household.changed", household=household_id, person=person_id, fields=len(changed),
                   changed=",".join(changed))
         return Household(household_id, row[0], edit.timezone, edit.profile, people, edit.locale, edit.unit_system,
                          edit.clock, edit.latitude, edit.longitude)
+
+    async def put_quiet(self, household_id: int, person_id: int, quiet: QuietHours | None) -> bool:
+        window = (None, None, None) if quiet is None else (quiet.start, quiet.end, quiet.timezone)
+        with translated():
+            async with self._database.connection() as conn:
+                cur = await conn.execute(
+                    "UPDATE people SET quiet_from = %s, quiet_to = %s, quiet_timezone = %s "
+                    "WHERE id = %s AND household_id = %s", (*window, person_id, household_id))
+                found = cur.rowcount == 1
+        if found:
+            logs.info(log, "people.quiet.changed", household=household_id, person=person_id, set=quiet is not None)
+        return found

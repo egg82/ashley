@@ -12,6 +12,7 @@ from dataclasses import replace
 
 from ...initiative.moment import Moment, Outcome
 from ...people.model import Person
+from ...people.quiet import held
 from ...senses.wakes import Route, Wake
 from ...workshop.wake_rule import WakeRule
 from ..model import Device, Inbound
@@ -32,7 +33,8 @@ def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Mo
                    kind="chat", medium="text", audience="owner", speaker_id=person.id, shared=False, place=None,
                    channel="device", remembers=False, later=True, later_by="outbox", source=f"wake:{wake_id}",
                    unprompted=True, tools_only=rule.tools, author="household",
-                   note=note(rule, person, wake, outcome, at), taint=None, moment=moment)
+                   note=note(rule, person, wake, outcome, at), taint=None, moment=moment,
+                   quiet=held(person, wake.at))
     return phone if at is None else replace(moved(phone, *at), later_by="turn")
 
 

@@ -32,14 +32,13 @@ weight's sign is part of that data's contract, so the loader refuses a recent gr
   greetings and asides don't go same-y.
 - **Asides (unprompted wit) are the lowest importance**, capped per person per day in code, and never interrupt
   that person's focus: not while they are on a call, have just been prompting a Claude Code session themselves, or
-  it is late by their own quiet hours. A session merely running is not focus: a person can have sessions working almost
+  it is late by their own quiet hours (below). A session merely running is not focus: a person can have sessions working almost
   all the time, overnight and while away.
 - **An aside is allowed in code before she is asked** (`ashley.initiative.remark`, rates in
   `app/ashley/initiative/remark.json`). The first kind is a remark on a household member's message in a Discord channel
   she was not pinged in (`ashley.channels.discord.remark`). The message is rolled against `chance`, seeded by its id,
   before anything is read, so most messages cost nothing. One that rolls in is refused when a fact cannot be read, in
-  the household's night (`score.json`'s `night`, standing in for a person's own quiet hours, which nothing models
-  yet), when the person typed into a Claude Code session within `typing_within_s` (their herdr bridge's last typing,
+  the household's night (`score.json`'s `night`), within the person's own quiet hours (below), when the person typed into a Claude Code session within `typing_within_s` (their herdr bridge's last typing,
   `ashley.senses.focus.Focus`), or when she already made `per_day` remarks for them in the last 24 hours. Being on a
   call is not read yet. The count comes from `ashley.channels.remarks.Remarks`: a remark is claimed before her turn
   and settled with the fingerprint of the line that went out; one kept quiet does not count, one never settled does.
@@ -48,6 +47,18 @@ weight's sign is part of that data's contract, so the loader refuses a recent gr
   household within `repeat_within_days`, compared by fingerprint (case, punctuation and spacing ignored), never by
   asking a model. It never goes to a phone. Rejected: a model call per channel message to ask whether she has
   something to say, which costs a call for every message and keeps no rate.
+- **A person's quiet hours hold back what she says on her own.** A person sets them from the Household room on the web
+  (`PUT /api/household/quiet`, their own only; never a tool of hers): a daily window of whole hours in a zone they
+  name, which may cross midnight, stored on `people` (`ashley.people.model.QuietHours`). Initiative reads them as one
+  more fact beside the household's night, never a second gate. The fact is gathered before the turn from the person
+  and the time (`ashley.people.quiet.holds`; True when their zone cannot be read, so a turn for them stays quiet): a
+  remark's chance carries it (`quiet`, refused as `quiet` after the household's night), and any other turn nobody
+  asked for carries it as `Inbound.quiet`, which `Initiative.speaks` refuses, logged `initiative.decided` with
+  `outcome=quiet`. That covers a house wake's greeting or notice (read at the event's time), a watch's wake for the
+  person's phone, and a remark; a watch's wake on a bench the person has open is not held, nor is a reply to the
+  person, nor a reminder they asked for (`Inbound.promised`). The tending of the household's home channel is
+  addressed to no one, so it keeps to the household's night alone. Rejected: a check in each caller, which is a second
+  gate beside Initiative's decision; holding replies, which the person asked for.
 - **When she tends her home channel on Discord is decided the same way** (`ashley.initiative.tend`, rates in
   `app/ashley/initiative/tend.json`). Time is cut into slots; each server's slot is rolled against `chance`, seeded by
   the device and slot, before anything is read. One that rolls in is scored from facts measured from the channel's

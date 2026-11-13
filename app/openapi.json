@@ -3894,6 +3894,132 @@
         }
       }
     },
+    "/api/household/quiet": {
+      "get": {
+        "summary": "Read Quiet",
+        "description": "200 `QuietHours`; 401 `unauthorized`; 404 `not_found`; 503 `unavailable`.",
+        "operationId": "read_quiet",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuietHours"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the session's household no longer exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Write Quiet",
+        "description": "200 `QuietHours` as stored; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 `QuietRefused`; 503\n`unavailable`.",
+        "operationId": "write_quiet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuietHours"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuietHours"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the session's household no longer exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "hours or a zone she cannot use; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuietRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/people": {
       "get": {
         "summary": "List People",
@@ -13955,6 +14081,80 @@
         ],
         "title": "PushSubscriptionRequest",
         "description": "This browser's push subscription, as `PushSubscription.toJSON()` gives it; extra fields it may carry\n(`expirationTime`) are ignored."
+      },
+      "QuietHours": {
+        "properties": {
+          "quiet": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuietWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quiet"
+        ],
+        "title": "QuietHours",
+        "description": "The signed-in person's own quiet hours, `quiet` null when they have none. While the window holds, nothing she\nsays on her own initiative reaches them; a reply to what they say is never held. A request replaces them whole,\nnull clearing them."
+      },
+      "QuietRefused": {
+        "properties": {
+          "invalid": {
+            "type": "string",
+            "enum": [
+              "hours",
+              "timezone"
+            ],
+            "title": "Invalid"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invalid",
+          "detail"
+        ],
+        "title": "QuietRefused",
+        "description": "Why nothing was stored: `invalid` is `hours` (the same hour twice) or `timezone` (not an IANA zone name)."
+      },
+      "QuietWindow": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "End"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Timezone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "timezone"
+        ],
+        "title": "QuietWindow",
+        "description": "A daily window of whole hours in the zone `timezone` (an IANA name): from hour `start` up to, not including, hour\n`end`, each 0 to 23 and never the same. It runs across midnight when `start` is the later hour."
       },
       "ReadyResponse": {
         "properties": {
