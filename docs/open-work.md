@@ -75,9 +75,7 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
      `voice-forget`.
    - Fits into: Channels (the voice adapter) and Memory's room (`app/ashley/api/memory.py`).
 4. **The arrival greeting.** Its trigger is a wake (`decisions.md`, "Home Assistant wakes her; she decides"): an
-   arrival automation's wake action and a wake rule for it. Left: the initiative score in code with its weights as
-   data, replacing `WorthSaying` behind `Initiative`; greeting history as "already said" (her wake turns, a quiet one
-   stored as `unprompted.QUIET`); a seeded roll between full, short and silent; and where she says it (a room's
+   arrival automation's wake action and a wake rule for it, marked `greets`. Left: where she says it (a room's
    satellite or the hallway tablet rather than only the phone).
    - Fits into: **Initiative** (should she speak now, to whom, on which channels), over the wake adapter's turn.
 5. **Web app, what is left.** Its rooms are built: sign-in, chat, memory (the facts she holds and where each was learned; a line

@@ -108,7 +108,7 @@ mention of `decisions.md`: the title is an entry below, or a `###` heading or bo
 
 ## Senses, reminders and initiative
 
-- [Whether she speaks unprompted is decided in code](decisions/senses.md): code computes a score from measured facts and the model's structured fields, and she speaks when it clears a threshold.
+- [Whether she speaks unprompted is decided in code](decisions/senses.md): on a wake rule that greets, code scores the facts of the moment gathered before the turn, a roll seeded from the wake's id picks full, short or silent, and her `says` can still decline; any other wake goes out on `says` alone.
 - [Home Assistant wakes her; she decides](decisions/senses.md): HA detects, she decides; an automation's wake action carries structured data only.
 - [Reminders are wakes she sets for herself](decisions/senses.md): a reminder is a row of the `wakes` queue, kind `reminder`, taken up by the same singleton.
 - [Her proposals are one store](decisions/senses.md): a proposal is a pending OK for a typed payload, taken only from a later person turn of the conversation it was made in.
