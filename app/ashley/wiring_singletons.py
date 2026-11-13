@@ -118,9 +118,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     if settings.voice_clip_base_url:
         running.append(_satellites(settings))
     if settings.discord_bot_token:
-        bot = discord_bot.Bot(discord_client.connect(settings.discord_bot_token), PostgresSeen(services.get(Database)),
-                              discord_config.load(), later_poll_s=outbox.load().poll_s)
-        running.append(services.get(Lease).run(discord_bot.NAME, bot.run))
+        running.append(_discord(settings.discord_bot_token))
     identity = push_config.vapid(settings)
     if identity is not None:
         config = push_config.load()
@@ -128,6 +126,12 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
         drain = partial(push_later.drain, sender, config, outbox.load().poll_s, asyncio.sleep)
         running.append(services.get(Lease).run(push_later.NAME, drain))
     return running
+
+
+def _discord(token: str) -> Coroutine[Any, Any, None]:
+    bot = discord_bot.Bot(discord_client.connect(token), PostgresSeen(services.get(Database)),
+                          discord_config.load(), later_poll_s=outbox.load().poll_s)
+    return services.get(Lease).run(discord_bot.NAME, bot.run)
 
 
 async def _satellites(settings: Settings) -> None:
