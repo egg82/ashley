@@ -14,6 +14,7 @@ import './rooms/devices/devices.css';
 import './rooms/devices/plan.css';
 import './rooms/devices/controls.css';
 import './rooms/household/household.css';
+import './rooms/household/household-side.css';
 import './rooms/connections/connections.css';
 import './rooms/connections/reach/reach.css';
 import './rooms/spend/spend.css';

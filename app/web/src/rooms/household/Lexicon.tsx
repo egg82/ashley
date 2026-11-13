@@ -1,6 +1,8 @@
-// The household's pronunciation words: how the voice should say a word it gets wrong, any person of the household may edit.
-import { useState } from 'preact/hooks';
-import { lexiconSaid, lexiconState, limit, loadLexicon, removeWord, setWord, words } from './lexiconWords';
+// The household's pronunciation words as a card: each word and how she should say it. Any person of the household may edit them.
+import { useEffect } from 'preact/hooks';
+import { AddWord } from './AddWord';
+import { WordRow } from './WordRow';
+import { lexiconSaid, lexiconState, limit, loadLexicon, words } from './lexiconWords';
 
 const SAID: Record<NonNullable<typeof lexiconSaid.value>, string> = {
   not_a_word: 'The word must be one word, letters with at most apostrophes and hyphens.',
@@ -9,31 +11,6 @@ const SAID: Record<NonNullable<typeof lexiconSaid.value>, string> = {
   full: 'The household has the most words it can hold. Remove one first.',
   failed: "That didn't go through. Nothing changed.",
 };
-
-function Add() {
-  const [real, setReal] = useState('');
-  const [spoken, setSpoken] = useState('');
-  const submit = async (e: Event) => {
-    e.preventDefault();
-    if (await setWord(real.trim(), spoken.trim())) {
-      setReal('');
-      setSpoken('');
-    }
-  };
-  return (
-    <form class="cn-form lx-add" onSubmit={(e) => void submit(e)}>
-      <label>
-        <span class="meta">Word</span>
-        <input type="text" value={real} maxLength={64} autocomplete="off" onInput={(e) => setReal(e.currentTarget.value)} />
-      </label>
-      <label>
-        <span class="meta">Said as</span>
-        <input type="text" value={spoken} maxLength={64} autocomplete="off" onInput={(e) => setSpoken(e.currentTarget.value)} />
-      </label>
-      <button class="btn primary" type="submit" disabled={!real.trim() || !spoken.trim()}>Add</button>
-    </form>
-  );
-}
 
 function Said() {
   const s = lexiconSaid.value;
@@ -58,31 +35,27 @@ function Words() {
         </div>
       );
     case 'ready':
-      return words.value.length ? (
-        <>
-          {words.value.map((w) => (
-            <div key={w.real} class="acct-row">
-              <span><b>{w.real}</b> <span class="meta">said as</span> <b>{w.spoken}</b></span>
-              <button class="btn sm ghost" type="button" onClick={() => void removeWord(w.real)}>Remove</button>
-            </div>
-          ))}
-        </>
-      ) : (
-        <div class="devs-body"><p class="meta">No words yet. She says everything as it is spelled.</p></div>
-      );
+      return words.value.length
+        ? <>{words.value.map((w) => <WordRow key={w.real} word={w} />)}</>
+        : <div class="devs-body"><p class="meta">No words yet. She says everything as it is spelled.</p></div>;
   }
 }
 
 export function Lexicon() {
+  useEffect(() => () => void (lexiconSaid.value = null), []);
+  const ready = lexiconState.value === 'ready';
   return (
-    <div class="panel devs">
-      <div class="ph"><h3>How she says words</h3></div>
+    <section class="panel hh-lex" aria-labelledby="hh-lex-h">
+      <div class="ph">
+        <h3 id="hh-lex-h">Say it right</h3>
+        {ready && <span class="meta hh-lex-count">{words.value.length} of {limit.value}</span>}
+      </div>
       <Words />
       <div class="dc-body">
         <Said />
-        <Add />
-        {lexiconState.value === 'ready' && <p class="meta">Applies to her spoken replies, from the next one. Up to {limit.value} words.</p>}
+        {ready && <AddWord />}
+        {ready && <p class="meta">Applies to her spoken replies, from the next one.</p>}
       </div>
-    </div>
+    </section>
   );
 }

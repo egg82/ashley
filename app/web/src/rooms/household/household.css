@@ -1,19 +1,66 @@
-/* The household room: its settings, persona and pronunciation words, in devices.css's room frame (.set, .set-head, .dc-*)
-   and connections.css's cn-form. */
+/* The household room, in devices.css's room frame (.set, .set-head, .dc-*, .set-down) and connections.css's .cn-form. Two columns of
+   cards; on a phone the columns dissolve and each card takes its place in the order the .hh-oN classes give. */
 
-.lx-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
-@media (max-width: 900px) { .lx-add { grid-template-columns: 1fr; } }
+.set.hh { max-width: 1160px; }
+.hh-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.hh-col { display: grid; gap: 16px; min-width: 0; }
+.hh-down { max-width: none; }
 
-/* the household's own settings: cn-form's inputs, with its select and textarea styled to match */
-.hh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
-.hh-form select, .hh-form textarea { min-width: 0; border-radius: 10px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.9);
-  color: var(--text); font: inherit; }
-.hh-form select { height: 36px; padding: 0 8px; }
-.hh-form textarea { min-height: 120px; max-height: 50vh; padding: 9px 12px; line-height: 1.45; resize: vertical; }
-.hh-form select:focus, .hh-form textarea:focus { outline: none; border-color: var(--blue); }
-.hh-sample { margin: 0; overflow-wrap: anywhere; }
+/* the sentence */
+.hh-sentence { padding: 18px 20px 16px; display: grid; gap: 12px; }
+.hh-head { display: grid; gap: 4px; }
+.hh-name { font-size: 22px; overflow-wrap: anywhere; }
+.hh-said { margin: 0; font: 500 21px/2.1 var(--f-display); color: var(--text); }
+.hh-slot { font: inherit; color: var(--blue-hi); background: none; border: 0; border-bottom: 1px solid var(--blue-glow);
+  border-radius: 0; padding: 0 2px; margin: 0 2px; max-width: 100%; min-width: 3ch; field-sizing: content; }
+select.hh-slot { appearance: none; -webkit-appearance: none; padding-right: 2px; cursor: pointer; }
+select.hh-slot option { font: 14px var(--f-body); color: var(--text); background: var(--ink-2); }
+.hh-slot::placeholder { color: var(--text-3); }
+.hh-slot:hover { border-bottom-color: var(--blue); }
+.hh-slot:focus-visible { outline: none; border-bottom-color: var(--blue-hi); box-shadow: 0 2px 0 var(--blue-hi); }
+.hh-slot[aria-invalid] { border-bottom-color: var(--red); }
+.hh-gloss { margin: -4px 0 0; }
+.hh-refused { margin: 0; padding: 10px 12px; border-radius: var(--r-1); border: 1px solid rgba(255,93,108,.45); background: var(--ink-1); font-size: 13px; }
+
+/* the notebook: a ruled page, a margin line, a pen that fills */
+.hh-page { width: 100%; min-height: 220px; max-height: 60vh; resize: vertical; padding: 4px 4px 4px 16px; border: 0; border-left: 2px solid var(--blue-glow);
+  background: repeating-linear-gradient(transparent 0 25px, var(--line) 25px 26px) local; color: var(--text);
+  font: 14.5px/26px var(--f-body); border-radius: 0; field-sizing: content; }
+.hh-page:focus-visible { outline: none; border-left-color: var(--blue-hi); }
+.hh-pen { display: flex; align-items: center; gap: 12px; }
+.hh-track { flex: 1; height: 3px; border-radius: 2px; background: var(--ink-3); overflow: hidden; }
+.hh-track i { display: block; height: 100%; background: var(--blue); border-radius: 2px; transition: width var(--t-chip) var(--ease-out); }
+.hh-track.near i { background: var(--brass); }
+.meta.near { color: var(--brass-hi); }
+
+/* her manner */
+.hh-manner { display: grid; gap: 12px; }
+.hh-sec-head { display: grid; gap: 4px; padding: 0 2px; }
+.hh-sec-head h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.hh-card { padding: 14px 16px; display: grid; gap: 10px; border-left: 3px solid var(--blue-glow); }
+.hh-card header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.hh-card h3 { font-size: 15px; }
+.hh-prose { margin: 0; color: var(--text); overflow-wrap: anywhere; white-space: pre-wrap; }
+.hh-edit .hh-text { min-width: 0; padding: 9px 12px; border-radius: var(--r-2); border: 1px solid var(--line-hi); background: rgba(4,7,12,.9);
+  color: var(--text); font: inherit; line-height: 1.45; resize: vertical; }
+.hh-edit .hh-text:focus-visible { outline: none; border-color: var(--blue); }
 .hh-count { justify-self: end; }
-/* The persona panel's changelog, under each section's form. */
 .hh-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .hh-log li { display: flex; gap: 8px; align-items: center; justify-content: space-between; overflow-wrap: anywhere; }
-@media (max-width: 900px) { .hh-grid { grid-template-columns: 1fr; } }
+
+/* the bar that appears once something changed */
+.hh-savebar { position: sticky; bottom: 12px; z-index: 2; width: fit-content; max-width: 100%; margin: 20px auto 0; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 8px 14px; padding: 8px 8px 8px 16px; background: var(--ink-2); border: 1px solid var(--blue); border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: hh-rise var(--t-chip) var(--ease-out); }
+.hh-changed { font-size: 13px; }
+.hh-changed.bad { color: var(--red); }
+.hh-save-acts { display: flex; gap: 6px; margin-left: auto; }
+@keyframes hh-rise { from { opacity: 0; transform: translateY(10px); } }
+
+@media (max-width: 900px) {
+  .hh-grid { grid-template-columns: minmax(0, 1fr); }
+  .hh-col { display: contents; }
+  .hh-o1 { order: 1; } .hh-o2 { order: 2; } .hh-o3 { order: 3; } .hh-o4 { order: 4; } .hh-o5 { order: 5; } .hh-o6 { order: 6; } .hh-o7 { order: 7; }
+  .hh-grid > * > * { min-width: 0; }
+  .hh-said { font-size: 18px; }
+}

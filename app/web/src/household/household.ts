@@ -2,10 +2,11 @@
 // every page writes dates, times and numbers (`format.ts`).
 import { signal } from '@preact/signals';
 import { getHousehold, putHousehold } from '../api/household';
+import { ApiError } from '../api/client';
 import type { Household, HouseholdRefused, HouseholdRequest } from '../api/types';
 import { writing } from './format';
 
-export type HouseholdLoad = 'loading' | 'ready' | 'failed';
+export type HouseholdLoad = 'loading' | 'ready' | 'failed' | 'unavailable';
 
 export const household = signal<Household | null>(null);
 export const householdState = signal<HouseholdLoad>('loading');
@@ -23,8 +24,8 @@ export async function loadHousehold(): Promise<void> {
   try {
     hold(await getHousehold());
     householdState.value = 'ready';
-  } catch {
-    householdState.value = 'failed';
+  } catch (error) {
+    householdState.value = error instanceof ApiError && error.status === 503 ? 'unavailable' : 'failed';
   }
 }
 
