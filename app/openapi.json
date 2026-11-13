@@ -10250,6 +10250,41 @@
         "title": "KioskDevice",
         "description": "The device a kiosk browser is paired as: never a person. `place` is where it stands (`hallway`)."
       },
+      "KioskEvent": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "day": {
+            "type": "string",
+            "enum": [
+              "today",
+              "tomorrow"
+            ],
+            "title": "Day"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "day",
+          "time"
+        ],
+        "title": "KioskEvent",
+        "description": "One calendar event on the household's wall clock: `time` is `HH:MM`, null for an all-day event."
+      },
       "KioskGlance": {
         "properties": {
           "home": {
@@ -10302,6 +10337,20 @@
               }
             ],
             "title": "Clock"
+          },
+          "calendar": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/KioskEvent"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar"
           }
         },
         "type": "object",
@@ -10309,10 +10358,11 @@
           "home",
           "not_connected",
           "locale",
-          "clock"
+          "clock",
+          "calendar"
         ],
         "title": "KioskGlance",
-        "description": "What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who\nare home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's\nsources that have nothing behind them yet, which the page shows as not connected, never with sample data.\n`locale` (BCP 47) and `clock` are how the household writes dates and times, null when the household could not be\nread; the time itself is the tablet's own."
+        "description": "What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who\nare home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's\nsources that have nothing behind them yet, which the page shows as not connected, never with sample data.\n`locale` (BCP 47) and `clock` are how the household writes dates and times, null when the household could not be\nread; the time itself is the tablet's own. `calendar` is today's and tomorrow's events of the calendars the household\nlisted, in order, title and time only; empty when there are none, null when they could not be read or `calendar` is\nin `not_connected`."
       },
       "KioskLayout": {
         "properties": {

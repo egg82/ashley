@@ -3,6 +3,7 @@ the device rule (public requests refused), the two cookies never standing in for
 device, what is counted against its rate, the glance carrying household names only, and controls run through Tools."""
 
 from collections.abc import Generator
+from datetime import datetime
 from dataclasses import dataclass, field, replace
 from typing import Protocol
 
@@ -12,7 +13,8 @@ from ashley.api.kiosk import inbound_from
 from ashley.api.kiosk_device import KIOSK_COOKIE
 from ashley.api import live as live_route
 from ashley.api.live_models import LiveEvent, LiveResync, LiveState
-from ashley.api.models import ChatReply, ChatRequest, ErrorResponse, KioskControlDone, KioskDevice, KioskGlance
+from ashley.api.models import ChatReply, ChatRequest, ErrorResponse, KioskControlDone, KioskDevice
+from ashley.api.kiosk_glance_models import KioskGlance
 from ashley.api.person import SESSION_COOKIE
 from ashley.channels.devices import Devices, DevicesUnavailable
 from ashley.channels.kiosk.controls import Control
@@ -29,6 +31,7 @@ from ashley.live.screens import Screens
 from ashley.main import create_app
 from ashley.people.people import People
 from ashley.runs.runs import NullRuns, Runs
+from ashley.senses.calendar import Calendar, CalendarEvent, CalendarRead
 from ashley.senses.presence import Presence
 from ashley.settings import Settings
 from ashley.tools.everyday import Everyday
@@ -264,8 +267,22 @@ def test_the_glance_names_only_the_household_people_home(client: TestClient, wir
     wired.presence.answer = frozenset({ALANA.id, 99})
     body = client.get("/api/kiosk/glance").json()
     assert KioskGlance.model_validate(body) == KioskGlance(home=["Alana"], not_connected=["calendar", "reminders"],
-                                                           locale="en-US", clock="24h")
-    assert set(body) == {"home", "not_connected", "locale", "clock"}
+                                                           locale="en-US", clock="24h", calendar=None)
+    assert set(body) == {"home", "not_connected", "locale", "clock", "calendar"}
+
+
+def test_the_glance_carries_the_calendar_once_a_source_answers(client: TestClient, wired: Fakes) -> None:
+    class Today(Calendar):
+        async def events(self, household_id: int, start: datetime, end: datetime) -> CalendarRead:
+            return (CalendarEvent("Soccer", start.replace(hour=16, minute=30)),)
+
+    services.register(Calendar, Today())
+    try:
+        body = KioskGlance.model_validate(client.get("/api/kiosk/glance").json())
+    finally:
+        services.unregister(Calendar)
+    assert body.not_connected == ["reminders"]
+    assert body.calendar is not None and [(e.title, e.day, e.time) for e in body.calendar] == [("Soccer", "today", "16:30")]
 
 
 def test_the_glance_says_unknown_when_presence_cannot_tell(client: TestClient, wired: Fakes) -> None:

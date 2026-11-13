@@ -4,8 +4,8 @@ messages (`/api/kiosk/*`), from `api/models.py`, `openapi.json` and decisions.md
 from typing import Any
 
 import pytest
-from ashley.api.models import (ChatConversation, ChatReply, KioskControlDone, KioskControls, KioskDevice,
-                               KioskGlance)
+from ashley.api.kiosk_glance_models import KioskGlance
+from ashley.api.models import ChatConversation, ChatReply, KioskControlDone, KioskControls, KioskDevice
 from ashley.channels.model import Device, Outbound
 from ashley.channels.respond import RespondRefused, RespondUnavailable
 from ashley.conversations.conversations import ConversationsUnavailable

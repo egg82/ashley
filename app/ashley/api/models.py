@@ -223,19 +223,6 @@ class KioskDevice(BaseModel):
     place: str
 
 
-class KioskGlance(BaseModel):
-    """What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who
-    are home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's
-    sources that have nothing behind them yet, which the page shows as not connected, never with sample data.
-    `locale` (BCP 47) and `clock` are how the household writes dates and times, null when the household could not be
-    read; the time itself is the tablet's own."""
-
-    home: list[str] | None
-    not_connected: list[Literal["calendar", "reminders"]]
-    locale: str | None
-    clock: Literal["12h", "24h"] | None
-
-
 class KioskControl(BaseModel):
     """One touch control: `name` is its stable key, `label` what its button says. `on` is whether the light of a toggle
     is on now; null for any other control, and for a toggle whose light the house could not say."""

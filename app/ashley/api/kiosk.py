@@ -29,9 +29,10 @@ from . import chat
 from .chat_models import KioskMessage
 from .live import EventStream, stream_to
 from .kiosk_device import Kiosk, counted, device_for, pair, same_site_write
+from .kiosk_glance_models import KioskEvent, KioskGlance
 from .kiosk_layout_models import KioskLayout, KioskPiece
 from .models import (ChatConversation, ChatReply, ChatRequest, ErrorResponse, KioskControl, KioskControlDone,
-                     KioskControls, KioskDevice, KioskGlance, KioskPairRequest)
+                     KioskControls, KioskDevice, KioskPairRequest)
 from .live_models import LiveEvent
 
 router = APIRouter()
@@ -116,8 +117,11 @@ async def kiosk_live(device: Kiosk) -> Response:
 async def kiosk_glance(device: Kiosk) -> KioskGlance:
     """200 `KioskGlance`; 401 `unauthorized`; 503 `unavailable`."""
     seen = await glance(device.household_id)
-    return KioskGlance(home=None if seen.home is None else list(seen.home), not_connected=["calendar", "reminders"],
-                       locale=seen.locale, clock=seen.clock)
+    agenda = seen.calendar
+    return KioskGlance(home=None if seen.home is None else list(seen.home),
+                       not_connected=["reminders"] if agenda != "not_connected" else ["calendar", "reminders"],
+                       locale=seen.locale, clock=seen.clock,
+                       calendar=None if isinstance(agenda, str) else [KioskEvent(title=e.title, day=e.day, time=e.at) for e in agenda])
 
 
 @router.get("/api/kiosk/layout", response_model=KioskLayout, responses=_PAIRED)

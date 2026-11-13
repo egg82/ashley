@@ -3310,12 +3310,29 @@ export interface components {
             place: string;
         };
         /**
+         * KioskEvent
+         * @description One calendar event on the household's wall clock: `time` is `HH:MM`, null for an all-day event.
+         */
+        KioskEvent: {
+            /** Title */
+            title: string;
+            /**
+             * Day
+             * @enum {string}
+             */
+            day: "today" | "tomorrow";
+            /** Time */
+            time: string | null;
+        };
+        /**
          * KioskGlance
          * @description What the kiosk shows at a glance, shared things only. `home` is the first names of the household's people who
          *     are home: empty when everyone known is away, null when it cannot be known. `not_connected` names the glance's
          *     sources that have nothing behind them yet, which the page shows as not connected, never with sample data.
          *     `locale` (BCP 47) and `clock` are how the household writes dates and times, null when the household could not be
-         *     read; the time itself is the tablet's own.
+         *     read; the time itself is the tablet's own. `calendar` is today's and tomorrow's events of the calendars the household
+         *     listed, in order, title and time only; empty when there are none, null when they could not be read or `calendar` is
+         *     in `not_connected`.
          */
         KioskGlance: {
             /** Home */
@@ -3326,6 +3343,8 @@ export interface components {
             locale: string | null;
             /** Clock */
             clock: ("12h" | "24h") | null;
+            /** Calendar */
+            calendar: components["schemas"]["KioskEvent"][] | null;
         };
         /**
          * KioskLayout

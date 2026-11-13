@@ -9,7 +9,7 @@ from ..connections.model import CatalogueAction, CatalogueEntity, Catalogued, Op
 from ..connections.settings import ActionList, EntityList, EntityListPerAction, Setting
 from .homes import SCHEMES, HomeAssistantFailed, Homes, HomesUnavailable, Reason
 from .house import HouseUnavailable
-from .house_values import CONSEQUENTIAL, HOUSEHOLD_READS, READS, SERVICE_READS
+from .house_values import CONSEQUENTIAL, GLANCE_CALENDARS, HOUSEHOLD_READS, READS, SERVICE_READS
 
 
 _REFUSED: dict[Reason, Refusal] = {"refused": "key_refused", "unreachable": "unreachable",
@@ -46,7 +46,8 @@ SETTINGS = (
     Setting(HOUSEHOLD_READS, EntityListPerAction(("todo.get_items",), ("todo",)), "taint"),
     Setting(SERVICE_READS, ActionList(("script", "weather")), "taint"),
     Setting(READS, ActionList(("script",)), "read"),
-    Setting(CONSEQUENTIAL, EntityList(()), "tier"))
+    Setting(CONSEQUENTIAL, EntityList(()), "tier"),
+    Setting(GLANCE_CALENDARS, EntityList(("calendar",)), "plain"))
 
 HOME_ASSISTANT = ConnectionKind(
     name="home_assistant", title="Home Assistant", what="the house",
