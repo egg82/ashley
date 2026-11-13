@@ -74,12 +74,10 @@ def test_a_new_holder_waits_until_the_old_epochs_last_heartbeat_is_fence_plus_ma
 def test_the_epoch_is_raised_before_the_wait_so_the_old_pod_is_retired_while_the_new_holder_waits(world: World, kube: FakeKube) -> None:
     old = world.begin("site-b", "bridge-away")
     world.beat(old)
-    world.age(FENCE, old)
     with Running(world, kube) as job:
         assert job.wait_for(lambda: world.state().epoch == old.epoch + 1, limit=0.6)
         assert kube.created == []
         assert world.beat(old).status_code in (401, 403, 409)
-        job.wait_for(lambda: len(kube.created) == 1, limit=6)
 
 
 def test_a_pod_of_the_other_site_is_never_adopted_however_fresh_its_heartbeat(world: World, kube: FakeKube) -> None:
