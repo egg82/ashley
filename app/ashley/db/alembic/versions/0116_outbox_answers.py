@@ -3,8 +3,8 @@ held for the asker's next reply as an errand (`ashley.channels.postgres_outbox`)
 
 from alembic import op
 
-revision: str = "0117"
-down_revision: str | None = "0111"
+revision: str = "0116"
+down_revision: str | None = "0115"
 
 
 def upgrade() -> None:
