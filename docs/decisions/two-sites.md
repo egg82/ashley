@@ -203,3 +203,8 @@ can't see the other site. The lease and the database primary are decided by one 
   database. A singleton that writes must tolerate a failed write; it is never run on two sites at once.
 - **Rejected: deciding the active site from the database** (`pg_is_in_recovery()` on the local member). It answers
   per site, so two sites could each see themselves writable during a split; the leader key is one answer for both.
+- **The lease keeps time by the running event loop's clock** and waits only on asyncio timers, so its tests run it on a
+  loop whose clock jumps to the next timer (`app/tests/virtual_time.py`) against an in-memory etcd behind the same
+  `EtcdClient` seam (`app/tests/etcd_fake.py`), which one contract suite holds to the real etcd
+  (`test_contract_etcd_client.py`). Rejected: a clock object passed in, which would re-implement asyncio's sleeps and
+  timeouts in production code to serve the tests.
