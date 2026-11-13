@@ -9,7 +9,7 @@ are wall-clock times in the household's zone. Logs `tools.call` with the tool, o
 
 import time
 from collections.abc import Awaitable, Callable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .. import services
@@ -27,6 +27,7 @@ from ..senses.repeat import LOCAL_FORMAT
 from ..senses.wakes import Reminder, Route, Scheduled, Wakes, WakesUnavailable
 from . import bench_results, money_rule_args, reminder_shape as shape, reminder_specs as specs, tainted, watch_agreed
 from .bench_args import BadArguments, check_names
+from .errand_step import CONFIG as ERRAND
 from .tools import Catalogue, Tools, ToolsUnavailable
 
 
@@ -129,7 +130,7 @@ class ReminderTools(Tools):
         route, device = await self._route(args, "phone", None)
         reminder = Reminder(self._household_id, _person(household, args.get("for")), self._speaker_id,
                             _what(args.get("what")), due_at, repeat, None, route, tools, tainted.current(),
-                            tainted.made_in(), device)
+                            tainted.made_in(), device, _ends(args.get("errand_hours"), due_at, repeat))
         if shape.acts(tools, usable):
             return await self._proposed(call, started, reminder, None, zone)
         try:
@@ -291,6 +292,17 @@ def _local_at(raw: object) -> datetime:
     return local
 
 
+def _ends(raw: object, due_at: datetime, repeat: object) -> datetime | None:
+    """When an errand of `raw` hours from `due_at` ends; None for a reminder (`raw` left out)."""
+    if raw is None:
+        return None
+    if isinstance(raw, bool) or not isinstance(raw, int | float) or not 0 < raw <= ERRAND.max_hours:
+        raise BadArguments(f"errand_hours is a number of hours above 0 and at most {ERRAND.max_hours:g}")
+    if repeat is not None:
+        raise BadArguments("an errand never repeats; leave out repeat or errand_hours")
+    return due_at + timedelta(hours=raw)
+
+
 def _person(household: Household, raw: object) -> int:
     found = [p.id for p in household.people if p.name == raw]
     if len(found) != 1:
@@ -316,10 +328,12 @@ def _changed(args: Mapping[str, object], current: Scheduled, zone: ZoneInfo, usa
         local = _local_at(args["at"]) if "at" in args else r.due_at.astimezone(zone).replace(tzinfo=None)
         repeat = shape.repeat_of(args, local, r.repeat)
         due_at = shape.first_due(repeat, local, zone, datetime.now(UTC))
+    if r.ends_at is not None and (repeat is not None or due_at > r.ends_at):
+        raise BadArguments("an errand never repeats, and its next check falls before it ends")
     tools = shape.tools_of(args["tools"], usable) if "tools" in args else r.tools
     return Reminder(r.household_id, r.person_id, r.made_by, _what(args["what"]) if "what" in args else r.brief,
                     due_at, repeat, None, routed[0], tools, tainted.current() or r.taint,
-                    tainted.made_in() if tainted.current() else r.made_in, routed[1])
+                    tainted.made_in() if tainted.current() else r.made_in, routed[1], r.ends_at, r.plan)
 
 
 def _shown(s: Scheduled, names: Mapping[int, str], zone: ZoneInfo) -> dict[str, object]:
@@ -341,4 +355,6 @@ def _shown(s: Scheduled, names: Mapping[int, str], zone: ZoneInfo) -> dict[str, 
         shown["device"] = r.device_id
     if r.tools is not None:
         shown["tools"] = list(r.tools)
+    if r.ends_at is not None:
+        shown["errand_until"] = r.ends_at.astimezone(zone).strftime(LOCAL_FORMAT)
     return shown

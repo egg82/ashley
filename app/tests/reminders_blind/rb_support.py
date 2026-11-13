@@ -187,6 +187,9 @@ class KillableWakes(Wakes):
     async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
         return None
 
+    async def follow_up(self, household_id: int, wake_id: int, due_at: datetime, plan: str) -> int | None:
+        return await self.inner.follow_up(household_id, wake_id, due_at, plan)
+
     async def prune(self, older_than_s: float) -> int:
         return await self.inner.prune(older_than_s)
 

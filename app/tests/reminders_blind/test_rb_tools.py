@@ -59,6 +59,9 @@ class Memory(Wakes):
         self.cancelled.append(wake_id)
         return True
 
+    async def follow_up(self, household_id: int, wake_id: int, due_at: Any, plan: str) -> int | None:
+        raise AssertionError("not used")
+
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
         found = [s.id for s in await self.reminders(household_id, person_id)]
         if wake_id not in found:

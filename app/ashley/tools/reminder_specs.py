@@ -8,6 +8,7 @@ from ..senses.deposit_config import CONFIG
 from ..senses.deposit_rule import DIRECTIONS, MAX_NAME, PAYEE_MATCHES
 from . import reminder_conditions as conditions
 from ..senses.wakes import MAX_BRIEF
+from .errand_step import CONFIG as ERRAND
 from .reminder_shape import DELIVERY, DEVICE, PROPERTIES, TOOLS
 
 REMIND, LIST, CANCEL, ON_MONEY, ARM, CHANGE = ("remind", "reminders", "cancel_reminder", "remind_on_money",
@@ -37,6 +38,11 @@ def remind(names: Sequence[str], acting: bool = True) -> ToolSpec:
                             "delivery": DELIVERY,
                             "device": DEVICE,
                             **({"tools": TOOLS} if acting else {}),
+                            "errand_hours": {"type": "number", "exclusiveMinimum": 0, "maximum": ERRAND.max_hours,
+                                             "description": "make it an errand you carry out over time: from `at` "
+                                                            "you check on it, do what you can each time and "
+                                                            "set each next check yourself, for up to this many "
+                                                            "hours; it never repeats"},
                         },
                         "required": ["for", "at", "what"],
                     }, outside=False, tier="runs", label="Set a reminder")
@@ -141,7 +147,8 @@ CANCEL_SPEC = ToolSpec(CANCEL, "Cancel one of their reminders by its id, from re
 
 INSTRUCTIONS = ("When someone asks you to remind them, or another person of the household, of something at a time, "
                 "set it with remind; times are the household's local time. Put everything they will need then in "
-                "what, since you will see only that when it falls due.")
+                "what, since you will see only that when it falls due. For an ask you carry out over time and keep "
+                "checking on until it is done, set errand_hours: each check is a turn of yours that may set the next.")
 PRIVATE = (" You can list their reminders with reminders, change one with change_reminder (it keeps its id) and "
            "cancel one with cancel_reminder.")
 ACTING = (" A reminder can do something instead of only telling them: name the tools it may use in tools, and say "

@@ -25,6 +25,7 @@ from ..tools.bench_skills import BenchSkillTools
 from ..tools.bench_tidy import BenchTidyTools
 from ..tools.bench_tools import BenchTools
 from ..tools.composite import CompositeTools
+from ..tools.errand_step import ErrandStepTools
 from ..tools.everyday import HouseholdTools
 from ..tools.house_change import HouseChangeTools
 from ..tools.mail import MailTools
@@ -56,6 +57,8 @@ _MONEY = money_config()
 _CODE_HOST = codehost_config.load()
 _CLAUDE_CODE = claude_code_config()
 READABLE_CHARS = smallest_result_chars(load_limits())
+ERRAND = "errand"
+"""The key `check_again` goes under on a check of an errand, beside the turn's tools as narrowed, never narrowed itself."""
 
 
 def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arrival | None = None,
@@ -78,7 +81,8 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     `arrival` is told by `open_bench` and `move_page`. With `tools_only`, all of that narrowed to the tools it
     names; with `reads_only`, to those that change nothing, where the reply reaches the speaker alone and else to none.
     With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
-    by; the conversation she is in (`said`) is what they check a URL the person gave against."""
+    by; the conversation she is in (`said`) is what they check a URL the person gave against. With `errand` and a known
+    speaker, `check_again` (`errand`) beside all of that, not narrowed."""
     everyday = HouseholdTools(inbound.household_id)
 
     def usable() -> Tools:
@@ -92,7 +96,10 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     readers = ReaderTools(lambda names: Reading(Only(own, names)))
     if inbound.speaker_id is None:
         return own
-    return narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added, READERS: readers}))
+    turn = narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added, READERS: readers}))
+    if inbound.errand is None:
+        return turn
+    return CompositeTools({"turn": turn, ERRAND: ErrandStepTools(inbound.household_id, inbound.errand)})
 
 
 def narrowed(inbound: Inbound, offered: Tools) -> Tools:
