@@ -6,6 +6,7 @@ from contextlib import AsyncExitStack
 
 import pytest
 from ashley import logs
+from ashley.referee.etcd_gateway import EtcdGateway
 from ashley.referee.etcd_lease import EtcdLease
 from etcd import etcd_url
 from lease_support import (
@@ -50,7 +51,7 @@ def test_a_partitioned_holder_stops_its_body_before_etcd_frees_the_key(capsys: p
 
     async def scenario() -> None:
         async with AsyncExitStack() as stack:
-            lease_a = EtcdLease(url, here(), ttl=3, holder="a", transport=switch)
+            lease_a = EtcdLease(url, here(), ttl=3, holder="a", connect=EtcdGateway.connect(url, transport=switch))
             await stack.enter_async_context(campaign(lease_a, name, arena.body("a")))
             await wait_until(lambda: arena.starts)
             await stack.enter_async_context(campaign(EtcdLease(url, here(), ttl=3, holder="b"), name, arena.body("b")))
@@ -80,7 +81,7 @@ def test_a_partitioned_holder_leaves_its_body_time_to_clean_up_before_etcd_frees
             seen.append(holder_of(name))
 
     async def scenario() -> None:
-        async with campaign(EtcdLease(url, here(), ttl=3, holder="a", transport=switch), name, body):
+        async with campaign(EtcdLease(url, here(), ttl=3, holder="a", connect=EtcdGateway.connect(url, transport=switch)), name, body):
             await wait_until(lambda: holder_of(name) == "a")
             switch.down = True
             await wait_until(lambda: seen, timeout=6)
@@ -116,7 +117,7 @@ def test_etcd_unreachable_is_logged_once_per_streak_and_carries_no_address(
     capsys.readouterr()
 
     async def scenario() -> None:
-        async with campaign(EtcdLease(url, here(), ttl=2, holder="a", transport=switch), name, arena.body("a")):
+        async with campaign(EtcdLease(url, here(), ttl=2, holder="a", connect=EtcdGateway.connect(url, transport=switch)), name, arena.body("a")):
             await asyncio.sleep(2.5)
             assert arena.starts == []
             switch.down = False
@@ -142,7 +143,7 @@ def test_a_run_cancelled_just_after_etcd_granted_it_the_key_leaves_no_key_behind
     async def scenario() -> None:
         async with campaign(EtcdLease(url, here(), ttl=30, holder="a"), name, arena.body("a")) as a:
             await wait_until(lambda: arena.starts)
-            async with campaign(EtcdLease(url, here(), ttl=30, holder="b", transport=slow), name, arena.body("b")) as b:
+            async with campaign(EtcdLease(url, here(), ttl=30, holder="b", connect=EtcdGateway.connect(url, transport=slow)), name, arena.body("b")) as b:
                 await asyncio.sleep(0.5)
                 slow.slow = True
                 a.cancel()
