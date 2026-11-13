@@ -189,7 +189,7 @@ def test_the_install_is_recorded_before_its_first_write_and_each_write_follows_t
     async def scenario() -> None:
         house = house_with_old()
         async with crowd(db_url, house) as (_, c):
-            seen = Seen(house.client())
+            seen = Seen(house.house())
             services.register(Homes, AnyHousehold(seen))
             bench, piece = await bench_with_piece(c.alana)
             proposed = await services.get(Workshop).apply(c.alana, bench, propose(piece, 1, False, OLD))

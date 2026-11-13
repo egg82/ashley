@@ -10,9 +10,9 @@ from typing import Literal
 
 from .. import services
 from ..services import Service
-from .automations import Automations, NullAutomations
+from .automations import Automations
 from .client import HomeAssistant
-from .house import House
+from .house import House, NullHouse
 
 SCHEMES = frozenset({"http", "https"})
 """What a household's HA may be reached at: plain http too, since most are served on the household's own network
@@ -70,11 +70,11 @@ class NullHomes(Homes):
         raise HomeAssistantFailed("unreachable")
 
 
-async def automations_of(household_id: int) -> Automations:
-    """The household's automations; the Null Object, which offers nothing and raises, when it has no house or which
-    one cannot be read now."""
+async def house_of(household_id: int) -> House:
+    """The household's house; the Null Object, which offers nothing and raises, when it has no house or which one
+    cannot be read now."""
     try:
         home = await services.get(Homes).of(household_id)
     except HomesUnavailable:
-        return NullAutomations()
-    return NullAutomations() if home is None else home.automations
+        return NullHouse()
+    return NullHouse() if home is None else home.house

@@ -1,5 +1,5 @@
 """Carrying an accepted Install, or the Undo of one, out on the owner's household's house
-(`home_assistant.homes.automations_of`), after the command is logged. Each is recorded (`installs.Installs`) before
+(`home_assistant.homes.house_of`), after the command is logged. Each is recorded (`installs.Installs`) before
 its first write to Home Assistant and again when it ends, so a pod that stops part way leaves an accepted command
 with no record (nothing was written) or a record with no ending (it may have written some of it); neither is ever
 carried out again.
@@ -12,11 +12,13 @@ automation is turned on again only if the install found it on. An install that w
 
 import logging
 import time
+from collections.abc import Mapping
 from dataclasses import replace
+from typing import Any
 
 from .. import logs, services
-from ..home_assistant.automations import AutomationRejected, Automations, AutomationsUnavailable
-from ..home_assistant.homes import automations_of
+from ..home_assistant.homes import house_of
+from ..home_assistant.house import House, HouseRejected, HouseUnavailable
 from ..live.events import BenchChanged, Shown
 from ..live.live import Live
 from . import automation_config
@@ -93,9 +95,9 @@ async def _install(owner: Owner, bench_id: int, seq: int, effect: Installed) -> 
     if config is None:
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), CHANGED)
     try:
-        house = await automations_of(owner.household_id)
+        house = await house_of(owner.household_id)
         before = await _before(house, effect)
-    except AutomationsUnavailable:
+    except HouseUnavailable:
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), UNREACHABLE)
     if before.config is not None and not await _installed_before(owner, bench_id, effect.piece_id):
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), TAKEN)
@@ -111,19 +113,19 @@ async def _installed_before(owner: Owner, bench_id: int, piece_id: int) -> bool:
     return await services.get(Installs).wrote_before(owner.household_id, bench_id, piece_id)
 
 
-async def _before(house: Automations, effect: Installed) -> Before:
-    config = await house.config(effect.automation_id)
-    listed = await house.listed()
-    own = next((a for a in listed if a.automation_id == effect.automation_id), None)
-    old = next((a for a in listed if a.entity_id == effect.turn_off), None) if effect.turn_off else None
+async def _before(house: House, effect: Installed) -> Before:
+    config = await house.config("automation", effect.automation_id)
+    listed = await house.configs("automation")
+    own = next((a for a in listed if a.id == effect.automation_id), None)
+    old = next((a for a in listed if a.thing == effect.turn_off), None) if effect.turn_off else None
     return Before(config, None if config is None or own is None else own.enabled, None if old is None else old.enabled)
 
 
-async def _write(house: Automations, effect: Installed, config: dict[str, object],
+async def _write(house: House, effect: Installed, config: dict[str, object],
                  before: Before) -> tuple[Ending, str | None]:
     step = "write"
     try:
-        entity = await house.write(effect.automation_id, config)
+        entity = await _written(house, effect.automation_id, config)
         if entity is None:
             return "failed", NO_ENTITY
         step = "turn on" if effect.enabled else "turn off"
@@ -131,11 +133,17 @@ async def _write(house: Automations, effect: Installed, config: dict[str, object
         if effect.turn_off is not None and before.turn_off_was_on:
             step = "turn off the old automation"
             await house.set_enabled(effect.turn_off, False)
-    except AutomationRejected as e:
+    except HouseRejected as e:
         return "refused", e.message
-    except AutomationsUnavailable:
+    except HouseUnavailable:
         return "failed", PART_WAY.format(step=step)
     return "done", None
+
+
+async def _written(house: House, automation_id: str, config: Mapping[str, Any]) -> str | None:
+    """Write `config` under `automation_id`; the thing it shows as once the house shows it, None when not in time."""
+    await house.write_config("automation", automation_id, config)
+    return await house.shown_as("automation", automation_id)
 
 
 async def _uninstall(owner: Owner, bench_id: int, seq: int, effect: Uninstalled) -> Ending:
@@ -148,27 +156,27 @@ async def _uninstall(owner: Owner, bench_id: int, seq: int, effect: Uninstalled)
         await services.get(Installs).finish(bench_id, seq, "done", NOTHING)
         return "done"
     await services.get(Installs).start(new)
-    ending, note = await _take_back(await automations_of(owner.household_id), effect, installed)
+    ending, note = await _take_back(await house_of(owner.household_id), effect, installed)
     await services.get(Installs).finish(bench_id, seq, ending, note)
     return ending
 
 
-async def _take_back(house: Automations, effect: Uninstalled, installed: InstallRecord) -> tuple[Ending, str | None]:
+async def _take_back(house: House, effect: Uninstalled, installed: InstallRecord) -> tuple[Ending, str | None]:
     before = installed.started.before or Before(None, None, None)
     step = "delete"
     try:
         if before.config is None:
-            await house.delete(effect.automation_id)
+            await house.delete_config("automation", effect.automation_id)
         else:
             step = "write back"
-            entity = await house.write(effect.automation_id, before.config)
+            entity = await _written(house, effect.automation_id, before.config)
             if entity is not None and before.enabled is not None:
                 await house.set_enabled(entity, before.enabled)
         if installed.started.turn_off is not None and before.turn_off_was_on:
             step = "turn the old automation back on"
             await house.set_enabled(installed.started.turn_off, True)
-    except AutomationRejected as e:
+    except HouseRejected as e:
         return "refused", e.message
-    except AutomationsUnavailable:
+    except HouseUnavailable:
         return "failed", PART_WAY.format(step=step)
     return "done", None

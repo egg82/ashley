@@ -9,11 +9,10 @@ import httpx2
 import pytest
 from ashley import services
 from ashley.channels.respond import respond
-from ashley.home_assistant.automations import Automation, Automations
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.ha_house import HaHouse
 from ashley.home_assistant.homes import Homes
-from ashley.home_assistant.house import NullHouse, has_action
+from ashley.home_assistant.house import ActionInfo, HouseUnavailable, NullHouse, has_action
 from ashley.tools.bench_automation_specs import instructions
 from ashley.tools.bench_automations import BenchAutomationTools
 from automations_support import SETTINGS, FakeHouse
@@ -89,8 +88,9 @@ def test_the_guidance_differs_for_each_of_wired_not_wired_and_unknown() -> None:
     assert len(set(texts)) == 3
 
 
-class Counting(Automations):
-    """A wired house that answers `answer` and counts how often it is asked."""
+class Counting(NullHouse):
+    """A house that offers the wake action (`answer` True), offers another one only (False) or cannot be read (None),
+    and counts how often its actions are asked."""
 
     def __init__(self, answer: bool | None) -> None:
         self.answer, self.asked = answer, 0
@@ -98,25 +98,11 @@ class Counting(Automations):
     def offered(self) -> bool:
         return True
 
-    async def has_service(self, name: str) -> bool | None:
-        assert name == WAKE
+    async def actions(self) -> tuple[ActionInfo, ...]:
         self.asked += 1
-        return self.answer
-
-    async def listed(self) -> list[Automation]:
-        return []
-
-    async def config(self, automation_id: str) -> dict[str, Any] | None:
-        return None
-
-    async def write(self, automation_id: str, config: Any) -> str | None:
-        raise AssertionError("not used")
-
-    async def delete(self, automation_id: str) -> bool:
-        raise AssertionError("not used")
-
-    async def set_enabled(self, entity_id: str, enabled: bool) -> None:
-        raise AssertionError("not used")
+        if self.answer is None:
+            raise HouseUnavailable("down")
+        return (ActionInfo(WAKE if self.answer else "light.turn_on", "", {}, "none"),)
 
 
 @pytest.mark.parametrize("answer", [True, False, None])

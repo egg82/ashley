@@ -10,7 +10,7 @@ from itertools import count
 from typing import Any
 
 from ashley import services
-from ashley.home_assistant.automations import Automation, Automations
+from ashley.home_assistant.house import ConfigItem, ConfigKind, House, NullHouse
 from ashley.inference.model import ToolCall
 from ashley.tools.bench_automations import BenchAutomationTools
 from ashley.workshop.commands import Add, Edit, Install, Propose, Undo
@@ -37,11 +37,11 @@ def people(url: str) -> Crowd:
                  Owner(h2, person(url, h2, "Zed")))
 
 
-class Seen(Automations):
-    """Wraps the fake house: before each write (config write, delete, turn on or off) it notes whether the Installs
-    record of every install it was told about already existed and had not yet ended."""
+class Seen(NullHouse):
+    """Wraps the fake house's automations: before each write (config write, delete, turn on or off) it notes whether
+    the Installs record of every install it was told about already existed and had not yet ended."""
 
-    def __init__(self, inner: Automations) -> None:
+    def __init__(self, inner: House) -> None:
         self.inner = inner
         self.watch: list[tuple[int, int, int]] = []
         """(household_id, bench_id, seq) of installs to look for."""
@@ -58,23 +58,26 @@ class Seen(Automations):
     def offered(self) -> bool:
         return self.inner.offered()
 
-    async def listed(self) -> list[Automation]:
-        return await self.inner.listed()
+    async def configs(self, kind: ConfigKind) -> tuple[ConfigItem, ...]:
+        return await self.inner.configs(kind)
 
-    async def config(self, automation_id: str) -> dict[str, Any] | None:
-        return await self.inner.config(automation_id)
+    async def config(self, kind: ConfigKind, config_id: str) -> Mapping[str, Any] | None:
+        return await self.inner.config(kind, config_id)
 
-    async def write(self, automation_id: str, config: Mapping[str, Any]) -> str | None:
+    async def write_config(self, kind: ConfigKind, config_id: str | None, config: Mapping[str, Any]) -> str:
         await self._note("write")
-        return await self.inner.write(automation_id, config)
+        return await self.inner.write_config(kind, config_id, config)
 
-    async def delete(self, automation_id: str) -> bool:
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        return await self.inner.shown_as(kind, config_id)
+
+    async def delete_config(self, kind: ConfigKind, config_id: str) -> bool:
         await self._note("delete")
-        return await self.inner.delete(automation_id)
+        return await self.inner.delete_config(kind, config_id)
 
-    async def set_enabled(self, entity_id: str, enabled: bool) -> None:
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
         await self._note("set_enabled")
-        await self.inner.set_enabled(entity_id, enabled)
+        await self.inner.set_enabled(thing, enabled)
 
 
 @asynccontextmanager

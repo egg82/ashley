@@ -11,7 +11,7 @@ from ashley import services
 from ashley.channels.kiosk import controls
 from ashley.channels.kiosk.controls import Control
 from ashley.home_assistant.connected_homes import ConnectedHomes
-from ashley.home_assistant.homes import Home, Homes, automations_of
+from ashley.home_assistant.homes import Home, Homes, house_of
 from ashley.home_assistant.media_player import play_for
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.people.model import Account
@@ -217,20 +217,20 @@ def test_a_kiosk_control_in_a_household_with_no_house_fails_and_reaches_none(wor
 def test_the_bench_automations_are_the_turns_houses(world: World) -> None:
     for household, host, token in ((A, A_HOST, A_TOKEN), (B, B_HOST, B_TOKEN)):
         world.forget()
-        automations = run(automations_of(household))
-        assert run(_listed(automations)) is not None
+        house = run(house_of(household))
+        assert run(_listed(house)) is not None
         only(world, host, token)
 
 
-async def _listed(automations: Any) -> object:
+async def _listed(house: Any) -> object:
     try:
-        return await automations.listed()
+        return await house.configs("automation")
     except Exception as e:
         return e
 
 
 def test_the_bench_automations_of_a_household_with_no_house_are_not_offered_and_ask_no_house(world: World) -> None:
     world.forget()
-    automations = run(automations_of(NONE))
-    assert automations.offered() is False
+    house = run(house_of(NONE))
+    assert house.offered() is False
     assert world.houses.seen == []

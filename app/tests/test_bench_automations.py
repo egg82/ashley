@@ -154,7 +154,7 @@ def test_she_cannot_install_or_undo_an_install_only_the_person_can(db_url: str) 
 
 
 def _instructions(house: FakeHouse) -> str:
-    services.register(Homes, AnyHousehold(house.client()))
+    services.register(Homes, AnyHousehold(house.house()))
     got = asyncio.run(BenchAutomationTools(1, 2, 3).catalogue()).instructions
     assert got is not None
     return got
@@ -170,7 +170,7 @@ def test_her_automation_guidance_gives_the_exact_wake_action_and_never_sends_her
 
 def test_the_house_is_asked_for_its_services_once_however_often_the_turn_reads_the_catalogue() -> None:
     house = FakeHouse(wake=True)
-    services.register(Homes, AnyHousehold(house.client()))
+    services.register(Homes, AnyHousehold(house.house()))
     tools = BenchAutomationTools(1, 2, 3)
     asyncio.run(tools.catalogue())
     asyncio.run(tools.catalogue())

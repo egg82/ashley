@@ -1,5 +1,5 @@
 """Her Home Assistant automation tools on one bench, for one turn of its talk (`channels.turn_tools`), offered while
-the bench's household has a house (`Automations.offered`): read the house's automations, read one's config as a
+the bench's household has a house (`House.offered`): read the house's automations, read one's config as a
 piece's body, propose installing a piece (a Propose command by her, through `Workshop.apply`), and read where its
 install stands. Nothing here writes to the house: an install is the person's Install command, carried out by
 `workshop.install_piece`."""
@@ -9,8 +9,8 @@ from collections.abc import Mapping
 from datetime import tzinfo
 
 from .. import services
-from ..home_assistant.automations import Automation, Automations, AutomationsUnavailable
-from ..home_assistant.homes import automations_of
+from ..home_assistant.homes import house_of
+from ..home_assistant.house import ConfigItem, House, HouseUnavailable, has_action
 from ..inference.model import ToolCall, ToolResult
 from ..people.zone import zone_of
 from ..stamp import stamp
@@ -39,7 +39,7 @@ class BenchAutomationTools(Tools):
         turn these tools were built for."""
         if self._catalogue is None:
             house = await self._house()
-            self._catalogue = (Catalogue(SPECS, instructions(await house.has_service(wake_action.SERVICE)))
+            self._catalogue = (Catalogue(SPECS, instructions(await has_action(house, wake_action.SERVICE)))
                                if house.offered() else Catalogue((), None))
         return self._catalogue
 
@@ -68,15 +68,15 @@ class BenchAutomationTools(Tools):
         except BenchClosed:
             return bench_results.failed(call, started, "closed", "this bench is closed and takes no change",
                                         bench=self._bench)
-        except (WorkshopUnavailable, InstallsUnavailable, AutomationsUnavailable):
+        except (WorkshopUnavailable, InstallsUnavailable, HouseUnavailable):
             return bench_results.failed(call, started, "unavailable", "the house or the bench cannot be reached "
                                         "right now; nothing changed", bench=self._bench)
 
-    async def _house(self) -> Automations:
-        return await automations_of(self._owner.household_id)
+    async def _house(self) -> House:
+        return await house_of(self._owner.household_id)
 
     async def _list(self, call: ToolCall, started: float) -> ToolResult:
-        listed = await (await self._house()).listed()
+        listed = await (await self._house()).configs("automation")
         zone = await zone_of(self._owner.household_id)
         return bench_results.ok(call, started, {"automations": [_listed(a, zone) for a in listed]}, bench=self._bench,
                                 count=len(listed))
@@ -85,7 +85,7 @@ class BenchAutomationTools(Tools):
         automation_id = call.arguments.get("automation_id")
         if not isinstance(automation_id, str) or not automation_id:
             raise BadArguments("automation_id is a non-empty string")
-        config = await (await self._house()).config(automation_id)
+        config = await (await self._house()).config("automation", automation_id)
         if config is None:
             return bench_results.failed(call, started, "no_such_automation", NO_SUCH, bench=self._bench)
         alias = config.get("alias")
@@ -100,7 +100,7 @@ class BenchAutomationTools(Tools):
             raise BadArguments("base_version is a whole number and enabled true or false")
         if turn_off is not None and not isinstance(turn_off, str):
             raise BadArguments("turn_off is an entity id")
-        if turn_off is not None and turn_off not in {a.entity_id for a in await (await self._house()).listed()}:
+        if turn_off is not None and turn_off not in {a.thing for a in await (await self._house()).configs("automation")}:
             return bench_results.failed(call, started, "no_such_automation", NO_ENTITY, bench=self._bench, piece=piece)
         applied = await services.get(Workshop).apply(self._owner, self._bench,
                                                      Propose(HER, piece, version, enabled, turn_off))
@@ -125,11 +125,10 @@ class BenchAutomationTools(Tools):
         return bench_results.ok(call, started, body, bench=self._bench, piece=piece)
 
 
-def _listed(a: Automation, zone: tzinfo | None) -> Mapping[str, object]:
-    row: dict[str, object] = {"automation_id": a.automation_id, "entity_id": a.entity_id, "name": a.alias,
-                              "enabled": a.enabled}
+def _listed(a: ConfigItem, zone: tzinfo | None) -> Mapping[str, object]:
+    row: dict[str, object] = {"automation_id": a.id, "entity_id": a.thing, "name": a.name, "enabled": a.enabled}
     if zone is not None:
-        row["last_triggered"] = None if a.last_triggered is None else stamp(a.last_triggered, zone)
+        row["last_triggered"] = None if a.last_ran is None else stamp(a.last_ran, zone)
     return row
 
 

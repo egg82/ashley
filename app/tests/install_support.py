@@ -62,7 +62,7 @@ async def world(url: str, house: FakeHouse | None = None) -> AsyncGenerator[Worl
     made = World(house or FakeHouse(), Heard(), database)
     services.register(Workshop, PostgresWorkshop(database, RULES))
     services.register(Installs, PostgresInstalls(database))
-    services.register(Homes, AnyHousehold(made.house.client()))
+    services.register(Homes, AnyHousehold(made.house.house()))
     services.register(Live, made.heard)
     try:
         yield made
