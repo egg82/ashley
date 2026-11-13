@@ -4,7 +4,6 @@ when no such key exists and this site is the active one (`ActiveSite`); holding 
 import asyncio
 import logging
 import socket
-import time
 
 import httpx2
 
@@ -17,6 +16,12 @@ from .lease_log import Streak, log_outcome, outcome
 log = logging.getLogger("ashley.referee")
 
 PREFIX = "/ashley/singletons/"
+
+
+def _now() -> float:
+    """The running loop's clock, the one every sleep and timeout here keeps; a test runs the lease on a loop whose
+    clock it moves."""
+    return asyncio.get_running_loop().time()
 
 
 class EtcdLease(Lease):
@@ -60,7 +65,7 @@ class EtcdLease(Lease):
                     streak.once("lease.standby", name=name, member=self._site.member)
                     await asyncio.sleep(self._interval)
                     continue
-                sent = time.monotonic()
+                sent = _now()
                 grant = await etcd.grant(self._ttl)
                 if await self._claim(etcd, name, grant.lease_id):
                     return grant.lease_id, sent + grant.ttl - self._margin
@@ -104,13 +109,13 @@ class EtcdLease(Lease):
     async def _keep(self, etcd: EtcdGateway, lease_id: int, deadline: float, task: asyncio.Task[None]) -> str:
         """Refresh the lease until the body finishes or the lease is lost; which of those happened."""
         while True:
-            next_at = min(time.monotonic() + self._interval, deadline)
-            await asyncio.wait({task}, timeout=max(0.0, next_at - time.monotonic()))
+            next_at = min(_now() + self._interval, deadline)
+            await asyncio.wait({task}, timeout=max(0.0, next_at - _now()))
             if task.done():
                 return outcome(task)
-            if time.monotonic() >= deadline:
+            if _now() >= deadline:
                 return "deadline"
-            sent = time.monotonic()
+            sent = _now()
             try:
                 ttl = await asyncio.wait_for(etcd.keepalive(lease_id), max(0.0, deadline - sent))
             except (EtcdUnavailable, TimeoutError):
@@ -124,7 +129,7 @@ class EtcdLease(Lease):
     async def _still_active(self, etcd: EtcdGateway, deadline: float) -> bool:
         """False only when etcd answered and the site is not active; an unanswered read is the keepalive's business."""
         try:
-            leader = await asyncio.wait_for(etcd.get(self._site.key), max(0.0, deadline - time.monotonic()))
+            leader = await asyncio.wait_for(etcd.get(self._site.key), max(0.0, deadline - _now()))
         except (EtcdUnavailable, TimeoutError):
             return True
         return leader == self._site.member
