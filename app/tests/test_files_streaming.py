@@ -3,13 +3,13 @@ the object ever being read whole (`ObjectStore.get`), the S3 adapter asks the se
 200, 206 and 416 answers a player relies on are kept."""
 
 from collections.abc import AsyncIterator, Generator
-from types import SimpleNamespace
 
 import httpx2
 import pytest
 from files_support import FakeS3, sync
 from ashley import services
 from ashley.api import files
+from ashley.connections.deployment_secrets import DeploymentSecrets
 from ashley.files import links
 from ashley.files.memory import MemoryStore
 from ashley.files.mirror import MirroredStore
@@ -49,13 +49,14 @@ def served() -> Generator[tuple[TestClient, NeverWhole, str]]:
     store = NeverWhole()
     store.objects[OBJECT] = DATA
     services.register(ObjectStore, store)
+    services.register(DeploymentSecrets, DeploymentSecrets(link_key=KEY.decode()))
     app = FastAPI()
-    app.state.settings = SimpleNamespace(files_link_key=KEY.decode())
     app.include_router(files.router)
     url = links.mint(KEY, links.Grant(1, SHA, "video/mp4", False, 4_000_000_000)).url
     try:
         yield TestClient(app), store, url
     finally:
+        services.unregister(DeploymentSecrets)
         services.unregister(ObjectStore)
 
 
