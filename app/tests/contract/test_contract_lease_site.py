@@ -9,6 +9,7 @@ import httpx2
 import pytest
 from ashley import logs
 from ashley.referee.active_site import ActiveSite
+from ashley.referee.etcd_gateway import EtcdGateway
 from ashley.referee.etcd_lease import EtcdLease
 from etcd import etcd_url
 from lease_support import Arena, campaign, delete, events, holder_of, put, run, unique_name, wait_until
@@ -243,7 +244,8 @@ def test_the_site_check_and_the_claim_are_one_transaction() -> None:
     transport = LeaderMovesBeforeClaim(key)
 
     async def scenario() -> None:
-        lease = EtcdLease(url, ActiveSite("a", key), ttl=2, holder="a", transport=transport)
+        connect = EtcdGateway.connect(url, transport=transport)
+        lease = EtcdLease(url, ActiveSite("a", key), ttl=2, holder="a", connect=connect)
         async with campaign(lease, name, arena.body("a")):
             await wait_until(lambda: transport.moved)
             await asyncio.sleep(0.6)

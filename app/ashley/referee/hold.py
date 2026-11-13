@@ -5,7 +5,7 @@ expires on its own. Failover is never held: Patroni still promotes the standby w
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime, timedelta
 
-from .etcd_gateway import EtcdGateway, EtcdTls, EtcdUnavailable
+from .etcd_gateway import Connect, EtcdClient, EtcdGateway, EtcdTls, EtcdUnavailable
 
 HOLD_KEY = "/ashley/fail-back/hold"
 
@@ -18,11 +18,11 @@ class Hold(ABC):
 
 class EtcdHold(Hold):
     """The hold as `key` in etcd. Its value is the moment the hold expires (ISO 8601, UTC); the key goes with its
-    lease at that moment."""
+    lease at that moment. `connect` opens the etcd client, by default the JSON gateway at `url`."""
 
-    def __init__(self, url: str, tls: EtcdTls | None = None, key: str = HOLD_KEY, timeout: float = 5.0) -> None:
-        self._url = url
-        self._tls = tls
+    def __init__(self, url: str, tls: EtcdTls | None = None, key: str = HOLD_KEY, timeout: float = 5.0,
+                 connect: Connect | None = None) -> None:
+        self._connect = connect or EtcdGateway.connect(url, tls)
         self._key = key
         self._timeout = timeout
 
@@ -53,5 +53,5 @@ class EtcdHold(Hold):
         async with self._etcd() as etcd:
             return await etcd.delete(self._key)
 
-    def _etcd(self) -> EtcdGateway:
-        return EtcdGateway(self._url, self._timeout, self._tls)
+    def _etcd(self) -> EtcdClient:
+        return self._connect(self._timeout)

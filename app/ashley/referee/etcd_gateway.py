@@ -4,6 +4,8 @@ fields travel as strings and zero values are left out, so an absent `TTL` or `su
 
 import base64
 import ssl
+from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Self
 
@@ -50,17 +52,66 @@ def _b64(s: str) -> str:
     return base64.b64encode(s.encode()).decode()
 
 
-class EtcdGateway:
-    """One HTTP client to one etcd endpoint, closed with the context. Every call raises `EtcdUnavailable` on
-    failure and nothing else."""
+class EtcdClient(ABC):
+    """The etcd calls the lease and the hold make, as etcd answers them; used as an async context, closed on exit.
+    Every call raises `EtcdUnavailable` on failure and nothing else."""
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        return None
+
+    @abstractmethod
+    async def grant(self, ttl: int) -> Grant:
+        """A new lease of at least `ttl` seconds (etcd raises a shorter one to its minimum), and the TTL it got."""
+
+    @abstractmethod
+    async def keepalive(self, lease_id: int) -> int:
+        """The lease's TTL after refreshing it; 0 when it has expired or was revoked."""
+
+    @abstractmethod
+    async def claim(self, key: str, value: str, lease_id: int, guard: tuple[str, str] | None) -> bool:
+        """Put `key` under the lease if no key of that name exists and, when there is a `guard`, key `guard[0]` holds
+        exactly `guard[1]`; whether it did. A put under a lease that is gone raises (status 404)."""
+
+    @abstractmethod
+    async def put(self, key: str, value: str, lease_id: int) -> None:
+        """Set `key` to `value` under the lease, replacing whatever was there."""
+
+    @abstractmethod
+    async def delete(self, key: str) -> bool:
+        """Delete `key`; whether it existed."""
+
+    async def get(self, key: str) -> str | None:
+        """The value of `key`, None when it does not exist."""
+        return (await self.prefix(key, exact=True)).get(key)
+
+    @abstractmethod
+    async def prefix(self, prefix: str, exact: bool = False) -> dict[str, str]:
+        """Every key starting with `prefix` and its value, read in one revision; only `prefix` itself when `exact`."""
+
+    @abstractmethod
+    async def revoke(self, lease_id: int) -> None:
+        """Revoke the lease, deleting the keys under it. A lease already gone counts as revoked."""
+
+
+Connect = Callable[[float], EtcdClient]
+"""A new client whose calls each give up after the given seconds."""
+
+
+class EtcdGateway(EtcdClient):
+    """One HTTP client to one etcd endpoint over the JSON gateway."""
 
     def __init__(self, url: str, timeout: float, tls: EtcdTls | None = None,
                  transport: httpx2.AsyncBaseTransport | None = None) -> None:
         self._client = httpx2.AsyncClient(base_url=url, timeout=timeout, transport=transport,
                                           verify=tls.context() if tls else True)
 
-    async def __aenter__(self) -> Self:
-        return self
+    @classmethod
+    def connect(cls, url: str, tls: EtcdTls | None = None,
+                transport: httpx2.AsyncBaseTransport | None = None) -> Connect:
+        return lambda timeout: cls(url, timeout, tls, transport)
 
     async def __aexit__(self, *exc: object) -> None:
         await self._client.aclose()
@@ -83,13 +134,10 @@ class EtcdGateway:
         return Grant(lease_id=int(data["ID"]), ttl=int(data["TTL"]))
 
     async def keepalive(self, lease_id: int) -> int:
-        """The lease's TTL after refreshing it; 0 when it has expired or was revoked."""
         data = await self._post("/v3/lease/keepalive", {"ID": str(lease_id)})
         return int(data.get("result", {}).get("TTL", 0))
 
     async def claim(self, key: str, value: str, lease_id: int, guard: tuple[str, str] | None) -> bool:
-        """Put `key` under the lease if no key of that name exists and, when there is a `guard`, key `guard[0]` holds
-        exactly `guard[1]`; whether it did."""
         k = _b64(key)
         compare = [{"key": k, "result": "EQUAL", "target": "CREATE", "create_revision": "0"}]
         if guard is not None:
@@ -101,20 +149,13 @@ class EtcdGateway:
         return bool(data.get("succeeded", False))
 
     async def put(self, key: str, value: str, lease_id: int) -> None:
-        """Set `key` to `value` under the lease, replacing whatever was there."""
         await self._post("/v3/kv/put", {"key": _b64(key), "value": _b64(value), "lease": str(lease_id)})
 
     async def delete(self, key: str) -> bool:
-        """Delete `key`; whether it existed."""
         data = await self._post("/v3/kv/deleterange", {"key": _b64(key)})
         return int(data.get("deleted", 0)) > 0
 
-    async def get(self, key: str) -> str | None:
-        """The value of `key`, None when it does not exist."""
-        return (await self.prefix(key, exact=True)).get(key)
-
     async def prefix(self, prefix: str, exact: bool = False) -> dict[str, str]:
-        """Every key starting with `prefix` and its value, read in one revision; only `prefix` itself when `exact`."""
         body = {"key": _b64(prefix)}
         if not exact:
             end = prefix.encode()[:-1] + bytes([prefix.encode()[-1] + 1])
@@ -127,7 +168,6 @@ class EtcdGateway:
             raise EtcdUnavailable(type(e).__name__) from e
 
     async def revoke(self, lease_id: int) -> None:
-        """Revoke the lease, deleting the keys under it. A lease already gone counts as revoked."""
         try:
             await self._post("/v3/lease/revoke", {"ID": str(lease_id)})
         except EtcdUnavailable as e:
