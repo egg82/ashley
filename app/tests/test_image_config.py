@@ -3,18 +3,18 @@ start-up), every routed model has a price, a provider that cannot draw is reject
 parses strictly."""
 
 import json
-from datetime import date
 from decimal import Decimal
 from importlib import resources
 
 import httpx2
 import pytest
-from ashley.inference import image_quota, prices, routes
+from ashley.inference import image_quota, routes
 from ashley.inference.fastembed_embedder import FastEmbedder
 from ashley.inference.gemini_image import GeminiImageMaker
 from ashley.inference.model import Usage
 from ashley.inference.openai_image import OpenAIImageMaker
 from ashley.inference.routes import parse
+from catalogue_support import shipped
 
 
 def makers() -> dict[str, GeminiImageMaker | OpenAIImageMaker]:
@@ -22,13 +22,13 @@ def makers() -> dict[str, GeminiImageMaker | OpenAIImageMaker]:
     return {"gemini_image": GeminiImageMaker("gemini_image", client), "openai_image": OpenAIImageMaker("openai_image", client)}
 
 
-def test_the_shipped_image_routes_load_against_the_real_makers_and_are_priced() -> None:
+def test_the_shipped_image_routes_load_against_the_real_makers_and_the_first_is_priced() -> None:
     loaded = routes.load(makers())
     image = loaded.for_task("image")
     assert [r.provider for r in image] == ["gemini_image", "openai_image"]
-    book = prices.load()
-    for route in image:
-        assert book.cost_usd(route.provider, route.model, Usage(1000, 1000), date(2026, 11, 3)) is not None, route.model
+    book = shipped().priced()
+    priced = [book.cost_usd(r.provider, r.model, Usage(1000, 1000)) is not None for r in image]
+    assert priced == [True, False], "models.dev does not list gpt-image-2.5-flare: unpriced until a person sets it"
 
 
 def test_an_image_route_naming_a_provider_that_cannot_draw_is_rejected() -> None:
@@ -43,8 +43,8 @@ def _shipped() -> dict[str, object]:
 
 
 def test_the_cost_of_a_priced_image_call_is_the_token_prices() -> None:
-    cost = prices.load().cost_usd("openai_image", "gpt-image-2.5-flare", Usage(12, 196), date(2026, 11, 3))
-    assert cost == Decimal("0.00594")
+    cost = shipped().priced().cost_usd("gemini_image", "gemini-3.1-flash-lite-image", Usage(12, 196))
+    assert cost == Decimal("0.005883")
 
 
 def test_the_limit_ships_and_parses_strictly() -> None:

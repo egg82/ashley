@@ -21,6 +21,7 @@ from ashley.tools import look_up_config
 from ashley.tools.look_up import LookedUp, LookUpTools
 from ashley.tools.look_up_config import LookUpConfig, load
 from ashley.tools.tools import Tools, ToolsUnavailable
+from catalogue_support import shipped
 from conversations_support import events
 from look_up_contract_support import (CONFIG, MARK, PLACES, WEB, Brain, Sources, answer, ask, cfg, look_up, reply,
                                       results_of)
@@ -312,6 +313,6 @@ def test_the_task_is_named_and_has_the_routes_the_contract_gives() -> None:
 
 
 def test_both_models_have_a_price() -> None:
-    prices: Any = json.loads((Path(routes.__file__).parent / "prices.json").read_text())
-    assert "claude-haiku-5-5" in prices["anthropic"]["models"]
-    assert "gemini-3.5-flash-lite" in prices["gemini"]["models"]
+    book = shipped().priced()
+    assert book.pricing("anthropic", "claude-haiku-5-5").status == "priced"
+    assert book.pricing("gemini", "gemini-3.5-flash-lite").status == "priced"

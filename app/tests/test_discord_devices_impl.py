@@ -142,7 +142,7 @@ def test_the_discord_token_comes_from_the_environment() -> None:
     assert from_env({"DATABASE_URL": "x"}).discord_bot_token == ""
 
 
-@pytest.mark.parametrize(("token", "count"), [("", 9), ("t", 10)])
+@pytest.mark.parametrize(("token", "count"), [("", 10), ("t", 11)])
 def test_the_discord_singleton_runs_only_with_a_token(token: str, count: int) -> None:
     settings = Settings(database_url="x", build_version="t", etcd_url="http://127.0.0.1:1", site="willow",
                         discord_bot_token=token)

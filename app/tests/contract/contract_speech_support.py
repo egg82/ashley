@@ -14,7 +14,7 @@ from ashley.inference.spend import Call
 from ashley.inference.routes import Routes
 from ashley.inference.speech import AudioFormat, Heard, Speech
 from ashley.inference.speech_provider import Speaker, SpeechStream, Transcriber
-from inference_support import PRICES, TODAY, Clock, FakeLedger
+from inference_support import PRICES, Clock, FakeLedger
 
 MARK = "zqSPOKEN9031"
 FORMAT = AudioFormat(rate=16000, width=2, channels=1)
@@ -183,7 +183,7 @@ def speech_table(routes: Iterable[Route], cooldown_s: float = 300.0) -> Routes:
 def speech_router(routes: Iterable[Route], providers: Iterable[Wired], ledger: FakeLedger | None = None,
                   clock: Clock | None = None) -> RoutedInference:
     return RoutedInference(speech_table(routes), providers, ledger if ledger is not None else FakeLedger(), PRICES,
-                           clock if clock is not None else Clock(), lambda: TODAY)
+                           clock if clock is not None else Clock())
 
 
 async def drain(speech: Speech) -> bytes:

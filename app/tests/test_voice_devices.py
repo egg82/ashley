@@ -104,7 +104,7 @@ def test_a_clip_base_url_needs_the_satellites_key() -> None:
     assert (settings.voice_clip_base_url, settings.esphome_noise_psk) == ("https://ashley.test", "k")
 
 
-@pytest.mark.parametrize(("voice", "count"), [("", 9), ("https://ashley.test", 10)])
+@pytest.mark.parametrize(("voice", "count"), [("", 10), ("https://ashley.test", 11)])
 def test_the_satellites_singleton_runs_only_with_a_clip_base_url(voice: str, count: int) -> None:
     settings = Settings(database_url="x", build_version="t", etcd_url="http://127.0.0.1:1", site="willow",
                         voice_clip_base_url=voice, esphome_noise_psk="k" if voice else "")

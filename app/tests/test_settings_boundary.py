@@ -6,7 +6,9 @@ only by their person route and the wiring that registers them, so no tool, chann
 `SettingsWriter`, `HouseholdWriter`, `PersonaWriter` or `RouteChoiceWriter` (`decisions.md`, "A connection has settings
 its person sets", "A household may override her taste, never her contract", "A household chooses the model for its
 chat"). Who is an admin (`ashley.people.admins` and its Postgres writer) is written only by the people and sign-in routes
-and the wiring ("An admin changes what the deployment shares"). An import of any by another module fails here, whatever
+and the wiring ("An admin changes what the deployment shares"), and a model catalogue override
+(`ashley.inference.catalogue_override_write` and its Postgres writer) only by the catalogue's admin route and the wiring
+("An override stores only what a person changed"). An import of any by another module fails here, whatever
 package it is in."""
 
 import ast
@@ -25,6 +27,9 @@ GUARDED: dict[str, tuple[set[str], set[str]]] = {
                 {"ashley.api.persona", "ashley.wiring_skills", "ashley.skills.postgres_persona_write"}),
     "routes": ({"ashley.inference.route_choice_write", "ashley.inference.postgres_route_choice_write"},
                {"ashley.api.spend_routes", "ashley.wiring_inference", "ashley.inference.postgres_route_choice_write"}),
+    "catalogue": ({"ashley.inference.catalogue_override_write", "ashley.inference.postgres_catalogue_override_write"},
+                  {"ashley.api.model_catalogue", "ashley.wiring_inference",
+                   "ashley.inference.postgres_catalogue_override_write"}),
     "admins": ({"ashley.people.admins", "ashley.people.postgres_admins"},
                {"ashley.api.people", "ashley.api.signin", "ashley.wiring", "ashley.people.postgres_admins"}),
 }

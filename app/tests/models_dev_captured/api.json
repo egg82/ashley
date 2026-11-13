@@ -1,0 +1,803 @@
+{
+ "anthropic": {
+  "id": "anthropic",
+  "env": [
+   "ANTHROPIC_API_KEY"
+  ],
+  "npm": "@ai-sdk/anthropic",
+  "name": "Anthropic",
+  "doc": "https://docs.anthropic.com/en/docs/about-claude/models",
+  "models": {
+   "claude-opus-5-5": {
+    "id": "claude-opus-5-5",
+    "name": "Claude Opus 5.5",
+    "description": "Claude model for long-running agentic coding and knowledge work",
+    "family": "claude-opus",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": false,
+    "knowledge": "2026-06",
+    "release_date": "2026-09-22",
+    "last_updated": "2026-09-22",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1000000,
+     "output": 128000
+    },
+    "experimental": {
+     "modes": {
+      "fast": {
+       "cost": {
+        "input": 8,
+        "output": 40,
+        "cache_read": 0.4,
+        "cache_write": 10
+       },
+       "provider": {
+        "body": {
+         "speed": "fast"
+        },
+        "headers": {
+         "anthropic-beta": "fast-mode-2026-02-01"
+        }
+       }
+      }
+     }
+    },
+    "cost": {
+     "input": 4,
+     "output": 20,
+     "cache_read": 0.2,
+     "cache_write": 5
+    },
+    "canonical_model_id": "anthropic/claude-opus-5-5"
+   },
+   "claude-sonnet-5-5": {
+    "id": "claude-sonnet-5-5",
+    "name": "Claude Sonnet 5.5",
+    "description": "Fast Claude model for everyday coding, agents, and knowledge work",
+    "family": "claude-sonnet",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": false,
+    "knowledge": "2026-06",
+    "release_date": "2026-09-28",
+    "last_updated": "2026-09-28",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1000000,
+     "output": 128000
+    },
+    "cost": {
+     "input": 2,
+     "output": 10,
+     "cache_read": 0.1,
+     "cache_write": 2.5
+    },
+    "canonical_model_id": "anthropic/claude-sonnet-5-5"
+   },
+   "claude-haiku-5-5": {
+    "id": "claude-haiku-5-5",
+    "name": "Claude Haiku 5.5",
+    "description": "Fast Claude model for responsive assistance, classification, and lightweight agents",
+    "family": "claude-haiku",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": false,
+    "knowledge": "2026-06",
+    "release_date": "2026-10-07",
+    "last_updated": "2026-10-07",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1000000,
+     "output": 128000
+    },
+    "cost": {
+     "input": 0.1,
+     "output": 0.5,
+     "cache_read": 0.01,
+     "cache_write": 0.125,
+     "tiers": [
+      {
+       "input": 0.5,
+       "output": 2.5,
+       "cache_read": 0.05,
+       "cache_write": 0.625,
+       "tier": {
+        "type": "context",
+        "size": 100000
+       }
+      }
+     ]
+    },
+    "canonical_model_id": "anthropic/claude-haiku-5-5"
+   }
+  }
+ },
+ "openai": {
+  "id": "openai",
+  "env": [
+   "OPENAI_API_KEY"
+  ],
+  "npm": "@ai-sdk/openai",
+  "name": "OpenAI",
+  "doc": "https://platform.openai.com/docs/models",
+  "models": {
+   "gpt-6-luna": {
+    "id": "gpt-6-luna",
+    "name": "GPT-6 Luna",
+    "description": "OpenAI's most efficient model for focused, high-volume tasks",
+    "family": "gpt-luna",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "none",
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "knowledge": "2026-05-18",
+    "release_date": "2026-09-22",
+    "last_updated": "2026-09-22",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1050000,
+     "input": 922000,
+     "output": 128000
+    },
+    "experimental": {
+     "modes": {
+      "fast": {
+       "cost": {
+        "input": 0.2,
+        "output": 1,
+        "cache_read": 0.02,
+        "cache_write": 0.25
+       },
+       "provider": {
+        "body": {
+         "service_tier": "priority"
+        }
+       }
+      },
+      "pro": {
+       "provider": {
+        "body": {
+         "reasoning": {
+          "mode": "pro"
+         }
+        }
+       }
+      }
+     }
+    },
+    "cost": {
+     "input": 0.1,
+     "output": 0.5,
+     "cache_read": 0.01,
+     "cache_write": 0.125,
+     "tiers": [
+      {
+       "input": 0.2,
+       "output": 0.75,
+       "cache_read": 0.02,
+       "cache_write": 0.25,
+       "tier": {
+        "type": "context",
+        "size": 272000
+       }
+      }
+     ],
+     "context_over_200k": {
+      "input": 0.2,
+      "output": 0.75,
+      "cache_read": 0.02,
+      "cache_write": 0.25
+     }
+    },
+    "canonical_model_id": "openai/gpt-6-luna"
+   },
+   "gpt-6.1-sol": {
+    "id": "gpt-6.1-sol",
+    "name": "GPT-6.1 Sol",
+    "description": "Near-Astra performance for complex coding, computer use, and professional work at a lower cost.",
+    "family": "gpt-sol",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": false,
+    "knowledge": "2026-04-30",
+    "release_date": "2026-09-29",
+    "last_updated": "2026-09-29",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1050000,
+     "input": 922000,
+     "output": 128000
+    },
+    "experimental": {
+     "modes": {
+      "fast": {
+       "cost": {
+        "input": 4,
+        "output": 20,
+        "cache_read": 0.2,
+        "cache_write": 5
+       },
+       "provider": {
+        "body": {
+         "service_tier": "priority"
+        }
+       }
+      },
+      "pro": {
+       "provider": {
+        "body": {
+         "reasoning": {
+          "mode": "pro"
+         }
+        }
+       }
+      },
+      "ultrafast": {
+       "cost": {
+        "input": 12,
+        "output": 60,
+        "cache_read": 0.6,
+        "cache_write": 15
+       },
+       "provider": {
+        "body": {
+         "service_tier": "ultrafast"
+        }
+       }
+      }
+     }
+    },
+    "cost": {
+     "input": 2,
+     "output": 10,
+     "cache_read": 0.1,
+     "cache_write": 2.5,
+     "tiers": [
+      {
+       "input": 4,
+       "output": 15,
+       "cache_read": 0.2,
+       "cache_write": 5,
+       "tier": {
+        "type": "context",
+        "size": 272000
+       }
+      }
+     ],
+     "context_over_200k": {
+      "input": 4,
+      "output": 15,
+      "cache_read": 0.2,
+      "cache_write": 5
+     }
+    },
+    "canonical_model_id": "openai/gpt-6.1-sol"
+   },
+   "gpt-3.5-turbo": {
+    "id": "gpt-3.5-turbo",
+    "name": "GPT-3.5-turbo",
+    "description": "Compact GPT model for low-latency assistance and high-volume workloads",
+    "family": "gpt",
+    "attachment": false,
+    "reasoning": false,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": true,
+    "knowledge": "2021-09-01",
+    "release_date": "2023-03-01",
+    "last_updated": "2023-11-06",
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 16385,
+     "output": 4096
+    },
+    "status": "deprecated",
+    "cost": {
+     "input": 0.5,
+     "output": 1.5,
+     "cache_read": 0
+    }
+   },
+   "gpt-image-2": {
+    "id": "gpt-image-2",
+    "type": "image",
+    "name": "gpt-image-2",
+    "description": "Image model for prompt-driven generation, editing, and visual design workflows",
+    "family": "gpt-image",
+    "attachment": true,
+    "reasoning": false,
+    "tool_call": false,
+    "temperature": false,
+    "release_date": "2026-04-21",
+    "last_updated": "2026-04-21",
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "image"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 0,
+     "input": 0,
+     "output": 0
+    },
+    "cost": {
+     "input": 5,
+     "output": 30,
+     "cache_read": 1.25
+    },
+    "canonical_model_id": "openai/gpt-image-2"
+   }
+  }
+ },
+ "google": {
+  "id": "google",
+  "env": [
+   "GOOGLE_API_KEY",
+   "GOOGLE_GENERATIVE_AI_API_KEY",
+   "GEMINI_API_KEY"
+  ],
+  "npm": "@ai-sdk/google",
+  "name": "Google",
+  "doc": "https://ai.google.dev/gemini-api/docs/models",
+  "models": {
+   "gemini-4-argon": {
+    "id": "gemini-4-argon",
+    "name": "Gemini 4 Argon",
+    "description": "Google's flagship reasoning model for complex software engineering, deep math and science, and long-horizon autonomous agents",
+    "family": "gemini",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "knowledge": "2026-03",
+    "release_date": "2026-10-13",
+    "last_updated": "2026-10-13",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video",
+      "audio",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1048576,
+     "output": 32768
+    },
+    "cost": {
+     "input": 2,
+     "output": 10,
+     "cache_read": 0.1,
+     "input_audio": 2
+    },
+    "canonical_model_id": "google/gemini-4-argon"
+   },
+   "gemini-3.8-flash": {
+    "id": "gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "description": "Google's most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows",
+    "family": "gemini-flash",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "release_date": "2026-09-02",
+    "last_updated": "2026-09-02",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video",
+      "audio",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1048576,
+     "output": 65536
+    },
+    "cost": {
+     "input": 0.75,
+     "output": 3.75,
+     "cache_read": 0.075,
+     "input_audio": 0.75
+    },
+    "canonical_model_id": "google/gemini-3.8-flash"
+   },
+   "gemini-3.5-flash-lite": {
+    "id": "gemini-3.5-flash-lite",
+    "name": "Gemini 3.5 Flash Lite",
+    "description": "Fast Gemini model balancing multimodal reasoning, tool use, and cost",
+    "family": "gemini-flash-lite",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "minimal",
+       "low",
+       "medium",
+       "high"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "knowledge": "2026-03",
+    "release_date": "2026-07-21",
+    "last_updated": "2026-07-21",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video",
+      "audio",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1048576,
+     "output": 65536
+    },
+    "cost": {
+     "input": 0.3,
+     "output": 2.5,
+     "cache_read": 0.03
+    },
+    "canonical_model_id": "google/gemini-3.5-flash-lite"
+   },
+   "gemini-3.1-flash-lite-image": {
+    "id": "gemini-3.1-flash-lite-image",
+    "type": "image",
+    "name": "Nano Banana 2 Lite",
+    "description": "Fastest, most cost-efficient Gemini image model for high-volume 1K generation and editing",
+    "family": "gemini-flash-lite",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "minimal",
+       "high"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "structured_output": false,
+    "temperature": true,
+    "knowledge": "2025-01",
+    "release_date": "2026-06-30",
+    "last_updated": "2026-06-30",
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text",
+      "image"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 65536,
+     "output": 4096
+    },
+    "cost": {
+     "input": 0.25,
+     "output": 30
+    },
+    "canonical_model_id": "google/gemini-3.1-flash-lite-image"
+   },
+   "lyria-3-clip-preview": {
+    "id": "lyria-3-clip-preview",
+    "name": "Lyria 3 Clip Preview",
+    "description": "Music generation model for short 30-second clips, loops, and previews from text or image prompts",
+    "family": "lyria",
+    "attachment": true,
+    "reasoning": false,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": true,
+    "release_date": "2026-03-25",
+    "last_updated": "2026-03-25",
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text",
+      "audio"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1048576,
+     "output": 65536
+    },
+    "cost": {
+     "input": 0,
+     "output": 0
+    },
+    "canonical_model_id": "google/lyria-3-clip-preview"
+   }
+  }
+ },
+ "unorouter": {
+  "id": "unorouter",
+  "env": [
+   "UNOROUTER_API_KEY"
+  ],
+  "npm": "@ai-sdk/openai-compatible",
+  "api": "https://api.unorouter.com/v1",
+  "name": "UnoRouter",
+  "doc": "https://unorouter.com/models",
+  "models": {
+   "gpt-5.4:free": {
+    "id": "gpt-5.4:free",
+    "name": "GPT-5.4",
+    "description": "Agent-ready GPT for coding and computer-use workflows at a lower cost",
+    "family": "gpt",
+    "attachment": true,
+    "reasoning": true,
+    "reasoning_options": [],
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "knowledge": "2025-08-31",
+    "release_date": "2026-03-05",
+    "last_updated": "2026-03-05",
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "pdf"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 1050000,
+     "input": 922000,
+     "output": 128000
+    },
+    "status": "deprecated",
+    "cost": {
+     "input": 0,
+     "output": 0
+    },
+    "canonical_model_id": "openai/gpt-5.4"
+   }
+  }
+ },
+ "the-grid-ai": {
+  "id": "the-grid-ai",
+  "env": [
+   "THEGRID_API_KEY"
+  ],
+  "npm": "@ai-sdk/openai-compatible",
+  "api": "https://api.thegrid.ai/v1",
+  "name": "The Grid AI",
+  "doc": "https://thegrid.ai/docs",
+  "models": {
+   "text-standard": {
+    "id": "text-standard",
+    "name": "Text Standard",
+    "description": "Price-optimized models with low-latency, high-throughput and shorter maximum outputs. Any model that meets the contract spec can serve your request.",
+    "attachment": false,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "medium",
+       "high"
+      ]
+     }
+    ],
+    "tool_call": true,
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "structured_output": true,
+    "temperature": true,
+    "release_date": "2026-02-26",
+    "last_updated": "2026-10-06",
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "open_weights": false,
+    "limit": {
+     "context": 128000,
+     "input": 120000,
+     "output": 65536
+    }
+   }
+  }
+ }
+}

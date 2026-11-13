@@ -1,14 +1,15 @@
-"""What the shipped routes' models cost for a fixed usage, pinned before the price source changes: each row is the cost
-`prices.json` gave on the pin date, so a new source shows every model whose cost moved."""
+"""What the shipped routes' models cost for a fixed usage: each row is the cost the shipped price table gave on
+2026-11-13, now read from the catalogue over models.dev's list as captured that day. Two rows moved with the source:
+models.dev does not list `gpt-image-2.5-flare`, so it is unpriced until a person sets its prices, and Wyoming, which
+`providers.json` marks local, costs 0 where it had no price. A picture call reports no cache tokens
+(`gemini_image`), so its rows carry none: models.dev lists no cache price for the model."""
 
-from datetime import date
 from decimal import Decimal
 
 import pytest
-from ashley.inference import prices
 from ashley.inference.model import Usage
+from catalogue_support import shipped
 
-ON = date(2026, 11, 13)
 SMALL = Usage(1_000, 500, 200, 100)
 LONG = Usage(150_000, 2_000, 30_000, 300_000)
 SMALL_NO_WRITE = Usage(1_000, 500, 200, 0)
@@ -31,11 +32,12 @@ PINNED: list[tuple[str, str, Usage, str | None]] = [
     ("gemini", "gemini-3.8-flash", LONG_NO_WRITE, "0.19725"),
     ("gemini", "gemini-3.5-flash-lite", SMALL_NO_WRITE, "0.001556"),
     ("gemini", "gemini-3.5-flash-lite", LONG_NO_WRITE, "0.0809"),
-    ("gemini_image", "gemini-3.1-flash-lite-image", SMALL_NO_WRITE, "0.0153"),
-    ("gemini_image", "gemini-3.1-flash-lite-image", LONG_NO_WRITE, "0.13"),
-    ("openai_image", "gpt-image-2.5-flare", Usage(12, 196), "0.00594"),
+    ("gemini_image", "gemini-3.1-flash-lite-image", Usage(1_000, 500), "0.01525"),
+    ("gemini_image", "gemini-3.1-flash-lite-image", Usage(250_000, 2_000), "0.1225"),
+    ("openai_image", "gpt-image-2.5-flare", Usage(12, 196), None),
     ("fastembed", "thenlper/gte-base", Usage(0, 0, characters=40), "0"),
     ("sherpa", "nemo_en_titanet_small", Usage(0, 0, audio_ms=5000), "0"),
+    ("wyoming", "whisper", Usage(0, 0, audio_ms=5000), "0"),
     ("openai", "gpt-4o-mini-transcribe", Usage(0, 0, audio_ms=5000), None),
     ("elevenlabs", "eleven_flash_v2_5", Usage(0, 0, characters=50), None),
     ("local", "qwen3-32b", SMALL, None),
@@ -43,7 +45,7 @@ PINNED: list[tuple[str, str, Usage, str | None]] = [
 
 
 def cost(provider: str, model: str, usage: Usage) -> Decimal | None:
-    return prices.load().cost_usd(provider, model, usage, ON)
+    return shipped().priced().cost_usd(provider, model, usage)
 
 
 @pytest.mark.parametrize(("provider", "model", "usage", "expected"), PINNED,

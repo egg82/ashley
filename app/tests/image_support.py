@@ -3,7 +3,6 @@
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date
 from pathlib import Path
 from typing import Any, get_args
 
@@ -11,7 +10,7 @@ from ashley.inference.image import Aspect
 from ashley.inference.image_provider import ImageMaker, Made
 from ashley.inference.image_quota import ImageCap, ImageLimit
 from ashley.inference.model import Route, Task, Usage
-from ashley.inference.prices import Prices
+from catalogue_support import NONE
 from ashley.inference.provider import ProviderFailed, ProviderRefused
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import Routes
@@ -65,4 +64,4 @@ def router(*makers: ImageMaker, drawn: int = 0, limit: int = 2, capped: bool = T
     text: dict[Task, tuple[Route, ...]] = {t: (Route("none", "m", 1.0),) for t in get_args(Task)}
     routes = Routes(text, 300.0, image={"image": tuple(Route(m.name, f"{m.name}-model", 5.0) for m in makers)})
     cap = ImageCap(Counted(drawn), ImageLimit(limit, 86400)) if capped else None
-    return RoutedInference(routes, makers, ledger, Prices({}), today=lambda: date(2026, 11, 3), image_cap=cap), ledger
+    return RoutedInference(routes, makers, ledger, NONE, image_cap=cap), ledger

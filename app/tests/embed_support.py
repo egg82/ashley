@@ -4,14 +4,14 @@ a bag of concepts, so two texts are near exactly when the test says they share o
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
 from typing import get_args
 
 from ashley.inference.embed_provider import Embedder
 from ashley.inference.embedding import EmbedRole, Embedded, EmbedTask
 from ashley.inference.inference import InferenceUnavailable, NullInference
 from ashley.inference.model import Route, Task
-from ashley.inference.prices import Prices
+from ashley.inference.catalogue import ModelCatalogue
+from catalogue_support import NONE
 from ashley.inference.provider import ProviderFailed
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import Routes
@@ -72,9 +72,9 @@ class ScriptedEmbedder(Embedder):
         return [list(self.vector) for _ in texts]
 
 
-def embed_router(*providers: Embedder, prices: Prices = Prices({})) -> tuple[RoutedInference, MemoryLedger]:
+def embed_router(*providers: Embedder, prices: ModelCatalogue = NONE) -> tuple[RoutedInference, MemoryLedger]:
     text: dict[Task, tuple[Route, ...]] = {t: (Route("none", "m", 1.0),) for t in get_args(Task)}
     task: EmbedTask = "embed"
     routes = Routes(text, 300.0, embed={task: tuple(Route(p.name, f"{p.name}-model", 5.0) for p in providers)})
     ledger = MemoryLedger()
-    return RoutedInference(routes, providers, ledger, prices, today=lambda: date(2026, 10, 26)), ledger
+    return RoutedInference(routes, providers, ledger, prices), ledger

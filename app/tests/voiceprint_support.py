@@ -2,11 +2,11 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date
 from typing import get_args
 
 from ashley.inference.model import Route, Task
-from ashley.inference.prices import Prices
+from ashley.inference.catalogue import ModelCatalogue
+from catalogue_support import NONE
 from ashley.inference.provider import ProviderFailed
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import Routes
@@ -41,9 +41,9 @@ class ScriptedVoiceEmbedder(VoiceEmbedder):
 
 
 def voiceprint_router(*providers: VoiceEmbedder,
-                      prices: Prices = Prices({})) -> tuple[RoutedInference, MemoryLedger]:
+                      prices: ModelCatalogue = NONE) -> tuple[RoutedInference, MemoryLedger]:
     text: dict[Task, tuple[Route, ...]] = {t: (Route("none", "m", 1.0),) for t in get_args(Task)}
     task: VoiceprintTask = "voiceprint"
     routes = Routes(text, 300.0, voiceprint={task: tuple(Route(p.name, f"{p.name}-model", 5.0) for p in providers)})
     ledger = MemoryLedger()
-    return RoutedInference(routes, providers, ledger, prices, today=lambda: date(2026, 10, 27)), ledger
+    return RoutedInference(routes, providers, ledger, prices), ledger

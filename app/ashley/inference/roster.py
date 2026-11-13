@@ -4,12 +4,11 @@ resting, and the spend ledger with its one log line per call."""
 import logging
 import time
 from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping
-from datetime import UTC, date, datetime
 
 from .. import logs
+from .catalogue import ModelCatalogue
 from .keyed_providers import KeyedProviders
 from .model import Route, TaskName, Usage
-from .prices import Prices
 from .provider import ProviderFailed, Wired
 from .routes import Routes
 from .spend import Call, Outcome, SpendLedger
@@ -17,14 +16,9 @@ from .spend import Call, Outcome, SpendLedger
 log = logging.getLogger("ashley.inference")
 
 
-def utc_today() -> date:
-    return datetime.now(UTC).date()
-
-
 class Roster:
-    def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, prices: Prices,
-                 clock: Callable[[], float] = time.monotonic, today: Callable[[], date] = utc_today,
-                 keyed: KeyedProviders | None = None) -> None:
+    def __init__(self, routes: Routes, providers: Iterable[Wired], ledger: SpendLedger, catalogue: ModelCatalogue,
+                 clock: Callable[[], float] = time.monotonic, keyed: KeyedProviders | None = None) -> None:
         self._providers: dict[str, Wired] = {}
         for provider in providers:
             if provider.name in self._providers or (keyed is not None and provider.name in keyed.names()):
@@ -33,13 +27,14 @@ class Roster:
         self._keyed = keyed
         self._routes = routes
         self._ledger = ledger
-        self._prices = prices
+        self._catalogue = catalogue
         self.clock = clock
-        self._today = today
         self._resting_until: dict[str, float] = {}
 
     async def refresh(self) -> None:
-        """The keyed providers brought up to date (`KeyedProviders.refresh`); one whose build changed stops resting."""
+        """The catalogue and the keyed providers brought up to date (`ModelCatalogue.refresh`,
+        `KeyedProviders.refresh`); a keyed provider whose build changed stops resting."""
+        await self._catalogue.refresh()
         if self._keyed is not None:
             for name in await self._keyed.refresh():
                 self._resting_until.pop(name, None)
@@ -48,17 +43,19 @@ class Roster:
         found = self._providers.get(name)
         return found if found is not None or self._keyed is None else self._keyed.current().get(name)
 
-    def candidates[W: Wired](self, task: TaskName, kind: type[W],
-                             routes: Routes | None = None) -> Iterator[tuple[Route, W]]:
+    def candidates[W: Wired](self, task: TaskName, kind: type[W], routes: Routes | None = None,
+                             tools: bool = False) -> Iterator[tuple[Route, W]]:
         """The task's routes in order (from `routes`, the roster's own when None) whose provider is wired, can do
-        `kind`'s work and is not resting; each route passed over is logged `inference.route_skipped`. A provider that
-        rests during the walk is skipped when reached."""
+        `kind`'s work and is not resting, and, when the call offers `tools`, whose model the catalogue does not list
+        as making no tool calls; each route passed over is logged `inference.route_skipped`. A provider that rests
+        during the walk is skipped when reached."""
         for route in (self._routes if routes is None else routes).for_task(task):
             provider = self._provider(route.provider)
-            if isinstance(provider, kind) and self._clock_ok(route):
+            refused = tools and self._catalogue.priced().refuses_tools(route.provider, route.model)
+            if isinstance(provider, kind) and self._clock_ok(route) and not refused:
                 yield route, provider
                 continue
-            reason = "resting" if isinstance(provider, kind) else "unwired"
+            reason = ("unwired" if not isinstance(provider, kind) else "no_tool_calls" if refused else "resting")
             logs.info(log, "inference.route_skipped", task=task, provider=route.provider, model=route.model,
                       reason=reason)
 
@@ -91,7 +88,7 @@ class Roster:
                      reason: str | None = None) -> None:
         """Logs `inference.call` and enters it in the ledger. `reason` is a failed call's `ProviderFailed` message."""
         duration_ms = max(0, round((self.clock() - started) * 1000))
-        cost = None if usage is None else self._prices.cost_usd(route.provider, route.model, usage, self._today())
+        cost = None if usage is None else self._catalogue.priced().cost_usd(route.provider, route.model, usage)
         logs.info(log, "inference.call", task=task, provider=route.provider, model=route.model, outcome=outcome,
                   **_reason(reason), **fields, duration_ms=duration_ms)
         try:

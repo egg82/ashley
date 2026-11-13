@@ -2,14 +2,13 @@
 and not after `error`, the `inference.call` line without the texts, and `warm` refusing other tasks before it does
 anything. Written blind from the docstrings."""
 
-from datetime import date
 from typing import Any, get_args
 
 import pytest
 from ashley import logs
 from ashley.inference.inference import InferenceUnavailable
 from ashley.inference.model import Route, Task
-from ashley.inference.prices import Prices
+from catalogue_support import NONE
 from ashley.inference.provider import ProviderFailed
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import Routes
@@ -23,7 +22,7 @@ MARK = "zqPLANTED9921"
 def test_with_no_embed_route_wired_embed_is_unavailable_and_warm_returns_quietly() -> None:
     ledger = MemoryLedger()
     bare = RoutedInference(Routes({t: (Route("none", "m", 1.0),) for t in get_args(Task)}, 300.0),
-                           [ScriptedEmbedder("a")], ledger, Prices({}), today=lambda: date(2026, 10, 26))
+                           [ScriptedEmbedder("a")], ledger, NONE)
     with pytest.raises(InferenceUnavailable):
         run(bare.embed(["q"], "query"))
     assert run(bare.warm("embed")) is None

@@ -20,7 +20,7 @@ from ashley.db.migrate import migrate
 from ashley.db.pool import PoolDatabase
 from ashley.evals import __main__ as evals_main
 from ashley.evals import memory_write
-from ashley.inference import prices, routes
+from ashley.inference import routes
 from ashley.inference.inference import Inference
 from ashley.inference.postgres import PostgresSpendLedger, Spent
 from ashley.inference.router import RoutedInference
@@ -34,6 +34,7 @@ from ashley.memory import writer_prompt
 from ashley.memory.model import Add, Forget, Invalidate, NewFact, Noop, Op, Update
 from ashley.memory.writer_output import Written, WrittenOp
 from ashley.people.people import People
+from catalogue_support import shipped
 from writer_support import ExpectedProvider, ScriptedInference, op
 
 DATA = write.load()
@@ -180,7 +181,7 @@ def test_a_writer_answering_as_each_case_expects_passes_the_harness_and_the_spen
         await db.open()
         services.register(Database, db)
         services.register(Inference, RoutedInference(routes.load({"anthropic": provider}), [provider],
-                                                     PostgresSpendLedger(db), prices.load()))
+                                                     PostgresSpendLedger(db), shipped()))
         try:
             await PostgresSpendLedger(db).record(UNRELATED)
             return await memory_write.run(1, None)

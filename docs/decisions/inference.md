@@ -24,8 +24,31 @@ breaking her.
 - **The spend ledger records every call**, answered or not, by task, provider and model, with tokens and cost,
   and the conversation it served where it served one (an id with no foreign key, so the ledger holds nothing said or
   known about anyone and keeps a row after its conversation is gone).
-  Cost comes from `prices.json`, which names its source page and the date it was read; a model with no price
-  records no cost rather than a guess.
+  Cost comes from the model catalogue (below); a call it cannot price records no cost rather than a guess.
+- **Prices and capabilities come from models.dev, in three layers, the later winning** (`ashley.inference.catalogue`).
+  A snapshot of models.dev's `api.json` is fetched when the image is built (`app/ashley/inference/catalogue_snapshot.py`,
+  run by `app/Containerfile`), so a new deployment prices calls before it has fetched anything; the build fails if the
+  list cannot be fetched or read. The last good fetch is kept in Postgres, refreshed by the lease singleton
+  `model-catalogue` (`ashley.inference.catalogue_refresh`) every `refresh_s` in `catalogue.json`; once there is one it
+  replaces the snapshot whole, and a failed fetch keeps it and tries again after `retry_s`. A person's overrides,
+  deployment-wide and admin-only, are edited through `/api/catalogue` alone and store only the fields changed
+  (`decisions.md`, "An override stores only what a person changed"). Each pod reads the stored layers again on the
+  first call once the last read is 30 seconds old (`ashley.inference.stored_catalogue`).
+  - **Unknown is never $0.** A model with no price is `unpriced`; one models.dev lists at 0 for input and output is
+    `listed_zero` and also records no cost until an admin marks it `free`; a call using a part of the price the model
+    does not list (cache tokens, audio, characters) records no cost. Providers `providers.json` marks `local` cost 0.
+    Every price names its layer (`snapshot`, `fetch`, `override`).
+  - **A task that offers tools refuses a model listed without tool calls**: the router skips that route
+    (`inference.route_skipped`, reason `no_tool_calls`). A model the catalogue does not list is not refused.
+  - **Route provider names map to catalogue providers** in `catalogue.json` where they differ (`gemini` is Google's).
+    models.dev's prices are the current ones, and each call's cost is fixed in its ledger row when it is made, so the
+    shipped table's dated price periods went with it.
+  - **A price override is flat**: a person's price on any price field replaces upstream's prompt-length tiers.
+  - Rejected: committing the snapshot. The list is several megabytes and changes weekly; a build already fetches the
+    embedding model, so the image carries the list the same way.
+  - Rejected: keeping a shipped price table beside models.dev for the models it lacks. That is two homes for one
+    fact; a model models.dev does not list (`gpt-image-2.5-flare` when this was written) is unpriced until an admin
+    sets its prices.
 - **Tool use is a step, and the caller owns the loop.** `Inference.step` makes one call and returns either the reply
   or the tool calls the model asked for; the caller runs them and calls again with the results. So a conversation
   turn, a sub-agent and an orchestrator share one Inference, each loop carries its own limit as data, and a loop may
@@ -80,7 +103,7 @@ breaking her.
   for a 1K picture, while OpenAI's picture cost less. A route that fails falls to the next; a safety refusal (a
   Gemini `blockReason` or a safety `finishReason`, an OpenAI `moderation_blocked`) is final and is not offered to the
   other provider, as for text. When every route fails the error names each failure kind. Each call is a spend row (task
-  `image`, the provider's tokens, a cost from `prices.json`); Gemini's cost counts all the candidate's tokens at the image
+  `image`, the provider's tokens, a cost from the catalogue); Gemini's cost counts all the candidate's tokens at the image
   rate, so it reads a little above the listed price.
   - **The tool is `bench_make_image`** (`ashley.tools.bench_image.BenchImageTools`): the picture's bytes go through
     `workshop.bench_file.add_file` like an upload or `bench_add_file`'s output, so the piece is shown, looked at,
@@ -145,7 +168,7 @@ laid over the deployment's routes data and checked by the same `routes.overlay` 
 - **Only a person chooses.** The writer is its own service (`ashley.inference.route_choice_write`), imported only by
   `app/ashley/api/spend_routes.py` and the wiring (`tests/test_settings_boundary.py`); the router reads through
   `ashley.inference.route_choices.RouteChoiceReads`, which cannot write.
-- **Spend needs nothing new.** Each call's ledger row names the route that answered and is priced from `prices.json`,
+- **Spend needs nothing new.** Each call's ledger row names the route that answered and is priced from the catalogue,
   so a household that moves chat to a costlier model shows in the Usage room under that provider at its price; the row
   carries the conversation, so a household's share can be counted as the picture cap counts it.
 - Rejected: a `household_id` argument on `generate` and `step`. The turn loop hands its step to five helpers and

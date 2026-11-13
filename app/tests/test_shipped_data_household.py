@@ -28,6 +28,7 @@ PUBLIC_HOSTS = frozenset({
     "ai.google.dev",            # Google's Gemini API docs
     "aistudio.google.com",      # Google AI Studio, where a Gemini key is made
     "huggingface.co",           # Hugging Face model pages
+    "models.dev",               # the public model catalogue prices and capabilities are fetched from
     "github.com",               # a price source's public repository
     "elevenlabs.io",            # ElevenLabs' public site
     "api.printables.com",       # Printables' public API

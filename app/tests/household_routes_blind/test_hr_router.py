@@ -5,12 +5,11 @@ secrets or prompt text."""
 
 import asyncio
 from collections.abc import Iterable
-from datetime import date
 
 import pytest
 from ashley.inference.inference import InferenceRefused, InferenceUnavailable
 from ashley.inference.model import Message, Prompt, SystemPrompt, Task
-from ashley.inference.prices import Prices
+from catalogue_support import NONE
 from ashley.inference.route_choices import Choice
 from ashley.inference.router import RoutedInference
 from ashley.inference.routes import without_fallback
@@ -30,8 +29,8 @@ def prompt() -> Prompt:
 
 
 def router(w: World, providers: Iterable[Stub], ledger: MemoryLedger | None = None) -> RoutedInference:
-    return RoutedInference(w.layered.deployment(), providers, ledger or MemoryLedger(), Prices({}),
-                           clock=lambda: w.clock[0], today=lambda: date(2026, 12, 1), households=w.layered)
+    return RoutedInference(w.layered.deployment(), providers, ledger or MemoryLedger(), NONE,
+                           clock=lambda: w.clock[0], households=w.layered)
 
 
 def ask(r: RoutedInference, task: Task, conversation_id: int | None) -> str:

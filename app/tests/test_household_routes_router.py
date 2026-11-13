@@ -11,7 +11,7 @@ from ashley.inference.layered_routes import LayeredRoutes
 from ashley.inference.reply import Reply
 from ashley.inference.route_choices import Choice
 from ashley.inference.router import RoutedInference
-from contract.inference_support import PRICES, TODAY, USAGE_COST, Clock, FakeLedger, FakeProvider, fail, prompt, settle
+from contract.inference_support import PRICES, USAGE_COST, Clock, FakeLedger, FakeProvider, fail, prompt, settle
 from household_routes_support import Choices, data, events
 
 
@@ -21,7 +21,7 @@ def routed(providers: Iterable[FakeProvider], choices: Choices) -> tuple[RoutedI
     layered = LayeredRoutes(data(), {p.name: p for p in wired}, lambda: names, choices, routes.without_fallback,
                             Clock(), 30.0)
     ledger = FakeLedger()
-    return RoutedInference(layered.deployment(), wired, ledger, PRICES, Clock(), lambda: TODAY,
+    return RoutedInference(layered.deployment(), wired, ledger, PRICES, Clock(),
                            households=layered), ledger
 
 

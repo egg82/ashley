@@ -1,6 +1,6 @@
 """What the spend page knows about each provider besides the ledger: `providers.json` (its label, whether it costs
 money, why no balance can be read for it, and the page that says so) and `budgets.json` (the household's optional
-monthly budget per provider, in USD, shipped empty). Both are data beside `prices.json`."""
+monthly budget per provider, in USD, shipped empty). Both are data beside `routes.json`."""
 
 import json
 import math

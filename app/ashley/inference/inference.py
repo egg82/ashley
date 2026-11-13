@@ -92,7 +92,8 @@ class Inference(Service):
         Raises ValueError (before calling anything) for a task outside `Task`, or a prompt carrying `tools` (that is
         `step`); InferenceRefused; InferenceUnavailable when no route answered. Logs `inference.call` per call made
         (task, provider, model, outcome, tokens, duration_ms) and `inference.route_skipped` per route skipped (task,
-        provider, model, reason `unwired` or `resting`)."""
+        provider, model, reason `unwired`, `resting` or `no_tool_calls`). The cost is the model catalogue's
+        (`catalogue.ModelCatalogue`)."""
 
     @abstractmethod
     async def step(self, task: Task, prompt: Prompt, output: type[T], *,
@@ -105,7 +106,8 @@ class Inference(Service):
         `inference.call` per call made, with outcome `ok` for a call that returned tool calls. A route that answers
         with tool calls answers the step; the next step starts again from the first route, so one loop may be carried
         by more than one provider. Tool calls naming a tool not in `prompt.tools`, or repeating an id, fail that call
-        `invalid_output`. A prompt with no tools is allowed, and then always gets a reply. Tool names, arguments and
+        `invalid_output`. A prompt with no tools is allowed, and then always gets a reply. A prompt with tools skips each
+        route whose model the catalogue lists without tool calls (reason `no_tool_calls`). Tool names, arguments and
         results are never logged; `inference.call` adds `tool_calls`, the number asked for (0 for a reply)."""
 
     @abstractmethod
@@ -141,7 +143,8 @@ class Inference(Service):
         """One unit-length vector per text, in order, made as `role` (`EmbedRole`) by the first of the `embed` task's
         routes that answers; the vectors' `model` names the route. Routes, skips, resting and the spend ledger are
         `generate`'s, per call made (`conversation_id` as there): the usage is `characters`, the total length of
-        `texts`, and a model that runs locally has a price of 0 in `prices.json`. A call is one batch: every text is embedded together or none is.
+        `texts`, and a model that runs locally costs 0 (`providers.json`'s `local` kind). A call is one batch: every
+        text is embedded together or none is.
 
         Raises ValueError (before calling anything) for no texts or a blank text; InferenceUnavailable when no route
         answered, including when the task has no routes wired. Logs `inference.call` per call made with `texts`, `role`
@@ -153,7 +156,7 @@ class Inference(Service):
         """How the voice in one whole utterance (`pcm`, raw PCM in `format`) sounds, by the first of the `voiceprint`
         task's routes that answers; the print's `model` names the route and `audio_ms` the utterance's duration.
         Routes, skips, resting and the spend ledger are `generate`'s, per call made (`conversation_id` as there):
-        the usage is `audio_ms`, and a model that runs locally has a price of 0 in `prices.json`.
+        the usage is `audio_ms`, and a model that runs locally costs 0 (`providers.json`'s `local` kind).
 
         Raises ValueError (before calling anything) for empty `pcm` or a length that is not a whole number of
         frames; InferenceUnavailable when no route answered, including when the task has no routes wired. Logs
@@ -167,7 +170,7 @@ class Inference(Service):
         checked against its limit (`image_quota`), and a household at it, or a service with no limit wired, raises
         ImageCapped before any provider is called. Routes, skips, resting and the spend ledger are `generate`'s, per
         call made: the
-        usage is the provider's tokens, and the cost is `prices.json`'s for the model. A provider's safety stop raises
+        usage is the provider's tokens, and the cost is the catalogue's for the model. A provider's safety stop raises
         InferenceRefused at once, as for text: the prompt is not offered to another route. The prompt and the picture
         are never logged; `inference.call` carries `aspect` and, for a picture, `bytes`.
 

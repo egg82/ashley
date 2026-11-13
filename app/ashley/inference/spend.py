@@ -15,7 +15,7 @@ Outcome = Literal["ok", "refused"] | Failure
 @dataclass(frozen=True)
 class Call:
     """One model call as recorded. `usage` is None when the provider reported none; `cost_usd` is None when the model
-    has no price (`prices.cost_usd`) or `usage` is None, and is never a guess. `conversation_id` is the conversation the call served, None when it served none."""
+    has no price (`catalogue.PricedCatalogue.cost_usd`) or `usage` is None, and is never a guess. `conversation_id` is the conversation the call served, None when it served none."""
 
     task: TaskName
     provider: str

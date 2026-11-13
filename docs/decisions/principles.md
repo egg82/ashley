@@ -72,3 +72,14 @@ variables that fail the rule today are marked "to move" there.
 - **Rejected:** a gate that forbids any new env var. Infrastructure placement is legitimately env, and a ban would push
   deployment values into connections that have no seal key yet.
 - **Rejected:** a tier for "env-only, optional". It is what an outside service's address becomes when nobody decides.
+
+**An override stores only what a person changed.** Where a person's setting is laid over data that keeps changing
+upstream (the model catalogue's prices and capabilities over models.dev's list, `ashley.inference.catalogue_merge`),
+it is stored one field at a time, and only the fields the person changed: a field they did not touch follows upstream
+as upstream changes, and setting a field back to upstream's value deletes the override rather than storing a copy.
+Each stored field records who set it and when, and the page shows upstream's value beside theirs with a reset.
+
+- **Rejected:** storing the whole edited record. It freezes every field the person never looked at at the day they
+  saved, so a corrected upstream price never reaches them.
+- **Rejected:** an override equal to upstream's value kept as a pin. Nothing shows the difference between a pin and an
+  edit, and the person who wants a value held can set the field to it once upstream moves away.
