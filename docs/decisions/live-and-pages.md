@@ -26,9 +26,9 @@ and fans out to its own streams; nothing about a screen is kept beyond its open 
   the `idle` can die with the pod that ran the turn. A stream ends after `stream_s` and the page reconnects, which
   checks its session again. Heartbeats every `heartbeat_s` (20 s) keep Cloudflare from closing it: its proxy read
   timeout is 125 s.
-- **`speaking` is on the wire but nothing sends it yet.** A satellite plays the clip URL it is handed, and when it
-  starts and stops is not reported back; the clip route streams faster than real time, so its end is not the end of
-  playback.
+- **`speaking` is on the wire but nothing sends it yet.** No channel has a real playback signal: a satellite's wake sends it as an estimate (above), and no other channel does. A satellite plays the clip URL it is handed and
+  does not report when it starts or stops; the clip route streams faster than real time, so its end is not the end of
+  playback. No other channel sends `speaking`.
 - **Rejected: polling per room.** Every open screen would ask every few seconds whether anything happened, mostly to
   hear no, and a screen would learn of a kitchen question only at its next poll.
 - **Rejected: Redis pub/sub or an etcd watch.** Redis is a new stateful service on both sites with its own failover to
@@ -64,8 +64,7 @@ to another room, as going to the workbench and back to chat, rather than asking 
 ## Her reply follows the page
 
 A turn that takes the speaker's page to a bench is that bench's turn from the next model step on, and her reply is said
-there. Without that her reply duplicated the chat and the note, and a person moved to an empty bench while her answer
-sat in chat.
+there, so the person is not left on an empty bench while her answer sits in chat.
 
 - **The rest of the turn is the bench's.** `Inbound.moved_to` is the bench the turn has moved the page to
   (`ashley.tools.arrival.Arrival`, told by `open_bench` and `move_page` as they succeed). `ashley.channels.landing.Landing`
@@ -73,7 +72,7 @@ sat in chat.
   its automation tools, `bench_run`; the same owner and open-bench checks as `move_page`), appends the bench's guidance to
   the system prompt's `moment` (the cached `stable` part is untouched), and switches the turn to the `brainstorm` limits.
   `moved_to` is saved with the checkpoint the moment the call that moved the page returns, before its result is, so a
-  pod that resumes the turn at any point is already there; it guides the saved system prompt again before its first step.
+  pod that resumes the turn is already there; it guides the saved system prompt again before its first step.
 - **Where the reply goes.** With `Inbound.lands_on` set (the page is on a bench other than the thread's own), the bench's
   talk (`bench:<id>`, a `brainstorm` conversation) is given the person's ask as its first person turn, linked to the chat
   turn by `turns.carried_from` (unique, so a turn finished twice carries it once), then her reply answering it. The
@@ -83,7 +82,7 @@ sat in chat.
   the talk refuses the turn, the reply stays in chat (`respond.continue_failed`).
 - **The bench shows her working from the moment the page lands.** The ask is carried into the bench's talk before the
   first step after the move (`continued.carried`, from `_Turn.arrive`), so the open bench reads the person's line owed an
-  answer and her thinking dots under it, instead of an empty talk. A held line she says after the move is said in the
+  answer and her thinking dots under it, not an empty talk. A held line she says after the move is said in the
   bench's talk, answering the carried ask (`continued.held_on_bench`; `Work.say` renews the claim for a conversation
   other than the claim's); one said before the move stays in the thread the turn began on. Before a step she is
   announced as thinking again once half of `thinking_at_most_s` has passed (`Showing.still_working`), so a longer turn is not
@@ -104,8 +103,7 @@ sat in chat.
   would contradict; reusing `BenchChanged` with a flag, which makes every screen read the bench back for a moment and
   makes "the person's change" depend on a flag each reader must remember.
 - **A site or video piece is put up by a search result's number, or by a URL someone else supplied.** Her search shows
-  no URLs, so a URL she typed for a reference was one she composed from memory, and on a live bench she wrote
-  Wikipedia links "from how those sites usually set up their pages". `bench_add` and `bench_edit` of a site or video
+  no URLs, so a URL she typed for a reference was composed from memory. `bench_add` and `bench_edit` of a site or video
   piece take `result` (and, for a video, `start`) in place of a body, and the server writes the URL from the turn's
   `Results` (`ashley.tools.bench_reference`); the kind checks then run on that body as on any. An unknown number is
   refused `unknown_result`. A URL she gives as a body is accepted only if it appears, by exact string, in a person's turn
@@ -113,11 +111,11 @@ sat in chat.
   names the result path; a document's text is not checked and is not a source, or a link she wrote there would vouch for
   the next. `bench_replace` is refused on these kinds (their body is one URL, and a replace would skip the check); a change is a `bench_edit`. The numbers live in the turn's `Landing`, so a runner that resumes a turn has none, and her number is
   refused `unknown_result` until she looks it up again. Rejected: guidance alone (a prompt rule against writing URLs she
-  was not given was already there and she wrote them); accepting any URL and checking it fetches (a composed URL that
+  was not given did not stop her); accepting any URL and checking it fetches (a composed URL that
   resolves is still not one she was given, and the fetch is the request forgery `read_page` avoids); matching URLs in
   her prose with a regex (the bench's body is the field the check reads).
 - **A code or document piece can be a page's text, put up by the same result number.** look_up hands her at most
-  `answer_chars` of a page, so a 370-line script behind a link could not be put on the bench to read line by line.
+  `answer_chars` of a page, too little to put a long script on the bench.
   `bench_add` and `bench_edit` of a `code` or `document` piece take `result` in place of a body exactly as a reader
   piece does (the page must have been read this turn, `unread_page` otherwise), and the server writes the body:
   `Source: <url>`, then the page's text as `read_page` kept it, line ends made `\n`; a document has a blank line after
@@ -220,11 +218,10 @@ sat in chat.
   gets work whose checkpoint says nothing is built yet (`Checkpoint.left`), claimable at once, so any pod's sweep
   answers it from the start and the rest are handed to that turn. A turn that began in chat and landed on a bench is
   that bench's running turn once its ask is carried there (`Checkpoint.carried`): `InFlight.working` counts the carried
-  ask while the turn's work is unanswered in the talk, and the turn is handed the talk's messages after it. (A live
-  bench got two replies recommending the same film without it.)
+  ask while the turn's work is unanswered in the talk, and the turn is handed the talk's messages after it.
   - Rejected: closing the window by handing again just before the store; any check outside the store's transaction
     leaves a smaller window, and two pods make it real.
-  - Rejected: parallel turns on a bench (two turns contradicted each other live: one said the code looked sound, the
+  - Rejected: parallel turns on a bench (two turns contradicted each other: one said the code looked sound, the
     other that it had fixed real bugs). Chat keeps parallel turns.
 - **Other destinations.** Only a bench has a talk of its own. A move to chat, memory, devices or the workshop list leaves
   her reply in the thread the turn began on; a bench-talk turn that moves to its own bench stays there; moving to a bench
@@ -252,8 +249,7 @@ sat in chat.
 - **A bench talk has room to work.** The `brainstorm` entry of `turns.json` gives 24 tool rounds and a 300 s deadline,
   where Opus steps take 8 to 30 s and 8 rounds in 40 s ended turns before the work was done. After the held line she
   keeps working, each Command shown live as it lands, then a short reply. The turn is checkpointed and resumable as
-  any other (`Work in flight survives its pod`), the final reply stored as her turn and announced as a `LiveTurn`. A
-  message typed while she works starts its own turn on the thread, as in web chat today.
+  any other (`Work in flight survives its pod`), the final reply stored as her turn and announced as a `LiveTurn`.
 - **Chat closes on its own clock.** A chat conversation closes 30 minutes after its last turn (`policy.json`), and the
   chat room then reads empty until the next message; time spent on a bench does not keep it open. The continuation is
   in that closed conversation, listed under Earlier.
