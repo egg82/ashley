@@ -1,4 +1,6 @@
 {
   "timeout_s": 15,
-  "socket_max_bytes": 16777216
+  "socket_max_bytes": 16777216,
+  "entity_tries": 20,
+  "entity_wait_s": 0.25
 }

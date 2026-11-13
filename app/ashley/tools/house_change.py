@@ -192,7 +192,7 @@ async def _named(house: House, change: Change) -> str:
     config, record = config_kind(change.kind), record_kind(change.kind)
     names: dict[str, str] = {}
     if config is not None:
-        names = {i.id: i.name for i in await house.configs(config)}
+        names = {i.id: i.name for i in await house.configs(config) if i.id is not None}
     elif record is not None:
         names = {r.id: r.name for r in await house.records(record)}
     return f"{names[change.id]} ({change.id})" if change.id in names else change.id

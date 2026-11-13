@@ -60,6 +60,12 @@ class ReadOnlyHouse(House):
         self._kept(f"delete:{kind}")
         return True
 
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        return await self._inner.shown_as(kind, config_id)
+
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        self._kept("set_enabled")
+
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         self._kept(f"create:{kind}")
         return "new"

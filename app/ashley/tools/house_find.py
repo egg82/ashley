@@ -104,14 +104,14 @@ async def _configs(house: House, kind: ConfigKind, name: str | None, one: str | 
             return Answer(fit([{"kind": kind, "id": one, "found": False}], config.max_chars)[0], False,
                           {"kind": kind, "matched": 0, "form": 0})
         return _drilled({"kind": kind, "id": one, "config": got}, "config", path, config, kind)
-    items = tuple(i for i in await house.configs(kind) if name is None or words_match(name, [i.name, i.id]))
+    items = tuple(i for i in await house.configs(kind) if name is None or words_match(name, [i.name, i.id or ""]))
     text, form = fit([
         {"kind": kind, "total": len(items), "complete": True, "items": [_item(i) for i in items]},
         {"kind": kind, "total": len(items), "complete": False, "narrow_by": ["name"]}], config.max_chars)
     return Answer(text, False, {"kind": kind, "matched": len(items), "form": form})
 
 
-def _item(item: ConfigItem) -> dict[str, str]:
+def _item(item: ConfigItem) -> dict[str, str | None]:
     return {"id": item.id, "name": item.name}
 
 

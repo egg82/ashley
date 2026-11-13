@@ -92,6 +92,14 @@ class MemoryHouse(House):
         self.done.append(("delete", kind, config_id, (), {}))
         return found
 
+    async def shown_as(self, kind: ConfigKind, config_id: str) -> str | None:
+        self._up()
+        return f"{kind}.{config_id}" if config_id in self.configs_of.get(kind, {}) else None
+
+    async def set_enabled(self, thing: str, enabled: bool) -> None:
+        self._may()
+        self.done.append(("set_enabled", "automation", thing, (), {"enabled": enabled}))
+
     async def create_record(self, kind: RecordKind, fields: Mapping[str, Any]) -> str:
         self._may()
         made = f"{kind}_new"

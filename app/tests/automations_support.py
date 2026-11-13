@@ -12,9 +12,12 @@ from typing import Any
 import httpx2
 
 from ashley.home_assistant.client import HomeAssistant
+from ashley.home_assistant.ha_house import HaHouse
+from ashley.home_assistant.house_settings import HouseSettings
 from ashley.home_assistant.rest_automations import AutomationsConfig, RestAutomations
 
 CONFIG = AutomationsConfig(timeout_s=1, entity_tries=3, entity_wait_s=0)
+SETTINGS = HouseSettings(timeout_s=1, socket_max_bytes=1_000_000, entity_tries=3, entity_wait_s=0)
 
 
 @dataclass
@@ -52,6 +55,10 @@ class FakeHouse:
     def client(self) -> RestAutomations:
         http = httpx2.AsyncClient(base_url="http://ha.test:8123", transport=httpx2.MockTransport(self.handle))
         return RestAutomations(HomeAssistant(http), CONFIG, sleep=_no_sleep)
+
+    def house(self) -> HaHouse:
+        http = httpx2.AsyncClient(base_url="http://ha.test:8123", transport=httpx2.MockTransport(self.handle))
+        return HaHouse(HomeAssistant(http), SETTINGS)
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         if self.down_after is not None and len(self.requests) >= self.down_after:

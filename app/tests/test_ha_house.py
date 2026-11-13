@@ -14,7 +14,7 @@ from ashley.home_assistant.house import HouseRejected, HouseUnavailable, Window
 from ashley.home_assistant.house_settings import HouseSettings
 from house_stand_support import TOKEN, Stand, serving
 
-SETTINGS = HouseSettings(timeout_s=5.0, socket_max_bytes=1_000_000)
+SETTINGS = HouseSettings(timeout_s=5.0, socket_max_bytes=1_000_000, entity_tries=1, entity_wait_s=0.0)
 NOW = datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
 
 
