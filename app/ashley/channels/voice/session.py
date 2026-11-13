@@ -1,6 +1,6 @@
 """One satellite held connected: connect, take its wake-word runs, and reconnect with backoff when the session ends.
 
-Logs `voice.connected` (device, `reconnect` true after an earlier session) and `voice.disconnected` once per session,
+`connect` may raise OSError (`key_in_force.NoKey`) as a failed attempt. Logs `voice.connected` (device, `reconnect` true after an earlier session) and `voice.disconnected` once per session,
 and `voice.connect_failed` (device, the error's type) once per run of failed attempts."""
 
 import asyncio
@@ -17,7 +17,7 @@ from .run import Pipeline, Run
 
 log = logging.getLogger("ashley.channels.voice")
 
-Connect = Callable[[Satellite], Connection]
+Connect = Callable[[Satellite], Awaitable[Connection]]
 Sleep = Callable[[float], Awaitable[None]]
 
 
@@ -63,13 +63,13 @@ async def hold(satellite: Satellite, connect: Connect, pipeline: Pipeline, confi
     device = satellite.device.id
     delay, failing, sessions = config.reconnect_first_s, False, 0
     while True:
-        connection = connect(satellite)
         lost = asyncio.Event()
 
         async def on_lost() -> None:
             lost.set()
 
         try:
+            connection = await connect(satellite)
             await asyncio.wait_for(connection.connect(on_lost), config.connect_timeout_s)
         except (APIConnectionError, OSError, TimeoutError) as e:
             if not failing:

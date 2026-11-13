@@ -34,8 +34,9 @@ class Settings:
     once a row exists it wins, and with none and no row the provider is not wired. OpenAI
     transcription needs only OpenAI's key, ElevenLabs' speech only its key.
     `voice_clip_base_url` (`https://ashley.example.com`) is where satellites and room speakers fetch her spoken
-    replies; set, and with etcd, the satellite connections singleton runs. It needs `esphome_noise_psk`, the satellites'
-    ESPHome API encryption key, since their audio never crosses the network unencrypted (ValueError).
+    replies; set, and with etcd, the satellite connections singleton runs. `esphome_noise_psk` seeds the satellites'
+    ESPHome API encryption key at start (`ashley.channels.voice.key_seed`); once the household holds one it wins, and a
+    satellite with no key is not connected (`voice.connect_failed`), since its audio never crosses the network unencrypted.
     `discord_bot_token` seeds the Discord connection at start (`ashley.channels.discord.token_seed`); once a row exists
     it wins, and with none and no row the Discord singleton idles.
     `oidc_issuer`, `oidc_client_id` and `oidc_client_secret` wire sign-in through OIDC, all three or none
@@ -185,8 +186,6 @@ class Settings:
             raise ValueError("FAILBACK must be on or off")
         if bool(self.ha_url) != bool(self.ha_token):
             raise ValueError("HA_URL and HA_TOKEN must be set together")
-        if self.voice_clip_base_url and not self.esphome_noise_psk:
-            raise ValueError("VOICE_CLIP_BASE_URL needs ESPHOME_NOISE_PSK")
         oidc = (self.oidc_issuer, self.oidc_client_id, self.oidc_client_secret)
         if any(oidc) and not all(oidc):
             raise ValueError("OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET must be set together")

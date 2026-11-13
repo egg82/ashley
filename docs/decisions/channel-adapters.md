@@ -160,6 +160,9 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
 
 - **Speaker identification needs the audio**, and HA hands its conversation agent text. Owning the pipeline also
   gives streaming TTS, barge-in, and her own rule for when to keep listening.
+- **A satellite's Noise key is its household's connection** (`decisions/connections.md`, "Her satellites' key is a
+  connection"), read on each connect, so a key replaced in the room is used when each satellite next reconnects. A
+  satellite with no key is a failed connect (`voice.connect_failed`, `NoKey`), retried with the usual backoff.
 - **A satellite connection is a singleton**: the active site holds it under the etcd lease, or both sites answer.
   One singleton (`satellites`) holds every household's satellites.
 - **End of speech is a wait tuned as data**, not code: microVAD scores each 10 ms frame and the silence window,

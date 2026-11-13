@@ -3,7 +3,7 @@ change once; a wake on the device becomes a run, a new wake abandons the old, an
 follows `Devices.satellites` as it changes and closes everything when cancelled."""
 
 import asyncio
-from collections.abc import Generator
+from collections.abc import Awaitable, Callable, Generator
 from dataclasses import dataclass, field
 
 import pytest
@@ -20,6 +20,12 @@ from contract.conversations_support import events
 from voice_support import FRAME, FakeConnection, FakeSpeech, FakeTurnLoop, pipeline, settle
 
 CONFIG = config.load()
+
+
+def serving(connection: FakeConnection) -> Callable[[Satellite], Awaitable[FakeConnection]]:
+    async def connect(_: Satellite) -> FakeConnection:
+        return connection
+    return connect
 ECHO = Satellite(Device(5, 1, "office echo", "office", "present", "spoken", "command"), "10.0.0.9", None)
 
 
@@ -51,7 +57,7 @@ def test_failed_connects_back_off_doubling_and_log_once_until_one_succeeds(capsy
     sleeps = Sleeps()
 
     async def scenario() -> None:
-        task = asyncio.create_task(hold(ECHO, lambda _: connection, pipeline(FakeTurnLoop()), CONFIG, sleeps))
+        task = asyncio.create_task(hold(ECHO, serving(connection), pipeline(FakeTurnLoop()), CONFIG, sleeps))
         await settle()
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -71,7 +77,7 @@ def test_a_lost_session_reconnects_and_says_so(capsys: pytest.CaptureFixture[str
     sessions = [FakeConnection(), FakeConnection()]
     made: list[FakeConnection] = []
 
-    def connect(_: Satellite) -> FakeConnection:
+    async def connect(_: Satellite) -> FakeConnection:
         made.append(sessions[len(made)])
         return made[-1]
 
@@ -97,7 +103,7 @@ def test_a_wake_on_the_device_is_a_run_and_a_second_wake_abandons_the_first(
     connection = FakeConnection()
 
     async def scenario() -> None:
-        task = asyncio.create_task(hold(ECHO, lambda _: connection, pipeline(FakeTurnLoop()), CONFIG, Sleeps()))
+        task = asyncio.create_task(hold(ECHO, serving(connection), pipeline(FakeTurnLoop()), CONFIG, Sleeps()))
         await settle()
         assert connection.handlers is not None
         start, audio, stop = connection.handlers
@@ -155,7 +161,7 @@ def test_the_singleton_follows_the_satellites_as_they_change(capsys: pytest.Capt
                                                 [moved, other], []]))
     made: dict[str, list[FakeConnection]] = {}
 
-    def connect(satellite: Satellite) -> FakeConnection:
+    async def connect(satellite: Satellite) -> FakeConnection:
         made.setdefault(satellite.host, []).append(FakeConnection())
         return made[satellite.host][-1]
 

@@ -97,9 +97,7 @@ def test_the_null_devices_has_no_satellites_to_give() -> None:
         asyncio.run(services.get(Devices).satellites())
 
 
-def test_a_clip_base_url_needs_the_satellites_key() -> None:
-    with pytest.raises(ValueError, match="ESPHOME_NOISE_PSK"):
-        from_env({"DATABASE_URL": "x", "VOICE_CLIP_BASE_URL": "https://ashley.test"})
+def test_a_clip_base_url_and_the_key_seed_are_read_from_the_env() -> None:
     settings = from_env({"DATABASE_URL": "x", "VOICE_CLIP_BASE_URL": "https://ashley.test/", "ESPHOME_NOISE_PSK": "k"})
     assert (settings.voice_clip_base_url, settings.esphome_noise_psk) == ("https://ashley.test", "k")
 

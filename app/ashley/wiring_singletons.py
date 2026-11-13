@@ -19,7 +19,9 @@ from .channels.push import config as push_config, later as push_later
 from .channels.push.sender import WebPushSender
 from .channels.respond import respond
 from .channels.voice import config as voice_config, vad
+from .channels.model import Satellite
 from .channels.voice.connection import EsphomeConnection
+from .channels.voice.key_in_force import KeyInForce
 from .channels.voice.run import Pipeline
 from .channels.voice.satellites import NAME as SATELLITES, Satellites
 from .channels.wake import runner as wake_runner
@@ -146,8 +148,11 @@ async def _satellites(settings: Settings) -> None:
     config = voice_config.load()
     pipeline = Pipeline(settings.voice_clip_base_url, config.end_of_speech, respond, play_for, vad.micro_vad,
                         config.speaker, config.playback)
-    body = Satellites(lambda satellite: EsphomeConnection(satellite, settings.esphome_noise_psk), pipeline, config,
-                      later_poll_s=outbox.load().poll_s).run
+    key = KeyInForce(lambda: services.get(Connections), settings.esphome_noise_psk)
+
+    async def connect(satellite: Satellite) -> EsphomeConnection:
+        return EsphomeConnection(satellite, await key(satellite.device.household_id))
+    body = Satellites(connect, pipeline, config, later_poll_s=outbox.load().poll_s).run
     await services.get(Lease).run(SATELLITES, body)
 
 

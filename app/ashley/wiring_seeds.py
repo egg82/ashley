@@ -1,13 +1,15 @@
 """What each pod seeds at start from the env, best effort: Home Assistant (`ashley.home_assistant.seed`), the model
 provider keys and the local OpenAI-compatible server (`ashley.inference.key_seed`), the Wyoming and SearXNG addresses
-(`ashley.connections.address_seed`) and the Discord bot's token (`ashley.channels.discord.token_seed`) and the object store (`ashley.files.store_seed`), each as the
-first household's connection where it has none. Called by `ashley.wiring.warmups`."""
+(`ashley.connections.address_seed`), the Discord bot's token (`ashley.channels.discord.token_seed`), the object
+store (`ashley.files.store_seed`) and the satellites' key (`ashley.channels.voice.key_seed`), each as the first
+household's connection where it has none. Called by `ashley.wiring.warmups`."""
 
 from collections.abc import Coroutine
 from typing import Any
 
 from . import services
 from .channels.discord.token_seed import seed_token
+from .channels.voice.key_seed import seed_key
 from .connections.address_seed import seed_addresses
 from .connections.connections import Connections
 from .files.store_kind import Keys
@@ -36,6 +38,8 @@ def seeds(settings: Settings) -> list[Coroutine[Any, Any, None]]:
         running.append(_seed_discord(settings))
     if settings.files_endpoints:
         running.append(_seed_files(settings))
+    if settings.esphome_noise_psk:
+        running.append(_seed_satellite_key(settings))
     return running
 
 
@@ -63,3 +67,7 @@ async def _seed_discord(settings: Settings) -> None:
 async def _seed_files(settings: Settings) -> None:
     await seed_store(services.get(Connections), Keys(settings.files_endpoints, settings.files_bucket,
                                                      settings.files_access_key, settings.files_secret_key))
+
+
+async def _seed_satellite_key(settings: Settings) -> None:
+    await seed_key(services.get(Connections), settings.esphome_noise_psk)
