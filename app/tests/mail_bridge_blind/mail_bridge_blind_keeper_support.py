@@ -227,10 +227,16 @@ class FakeApp:
             return "\n".join(json.dumps(r.body) for r in self.requests)
 
 
-def free_port() -> int:
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return int(probe.getsockname()[1])
+def free_ports(n: int) -> list[int]:
+    """`n` distinct ports free now: every probe stays bound until all are drawn, so no two draws repeat."""
+    probes = [socket.socket() for _ in range(n)]
+    try:
+        for probe in probes:
+            probe.bind(("127.0.0.1", 0))
+        return [int(probe.getsockname()[1]) for probe in probes]
+    finally:
+        for probe in probes:
+            probe.close()
 
 
 class Keeper:
@@ -256,10 +262,11 @@ class Keeper:
         (tmp / "tls" / "tls.crt").write_text(pair[proton_tls.CERT_KEY])
         (tmp / "tls" / "tls.key").write_text(pair[proton_tls.KEY_KEY])
         self.out = tmp / "keeper.out"
+        control, imap, smtp = free_ports(3)
         settings = {"ASHLEY_URL": app.url, "BRIDGE_TOKEN": app.token, "BRIDGE_EPOCH": str(app.epoch),
                     "BRIDGE_HEARTBEAT_S": str(HEARTBEAT_S), "BRIDGE_FENCE_S": str(FENCE_S),
-                    "BRIDGE_CONTROL_PORT": str(free_port()), "BRIDGE_IMAP_PORT": str(free_port()),
-                    "BRIDGE_SMTP_PORT": str(free_port()), "BRIDGE_TLS_DIR": str(tmp / "tls"), **env}
+                    "BRIDGE_CONTROL_PORT": str(control), "BRIDGE_IMAP_PORT": str(imap),
+                    "BRIDGE_SMTP_PORT": str(smtp), "BRIDGE_TLS_DIR": str(tmp / "tls"), **env}
         base = {"PATH": os.environ.get("PATH", ""), "HOME": str(self.home), "LANG": "C.UTF-8"}
         with self.out.open("wb") as sink:
             self.proc = subprocess.Popen([sys.executable, "-I", str(program / "driver.py"), *(["refresh"] if refresh else [])],
