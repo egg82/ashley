@@ -156,7 +156,7 @@ def test_c14_the_text_outlives_the_voice(home: Home) -> None:
 
 def test_c15_spoken_with_no_database_is_conversations_unavailable() -> None:
     async def go() -> None:
-        db = PoolDatabase("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.3)
+        db = PoolDatabase("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.1)
         await db.open()
         try:
             conversations: Conversations = PostgresConversations(db, POLICY)

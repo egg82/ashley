@@ -64,7 +64,7 @@ def test_a_revoked_device_signs_in_nothing(db_url: str) -> None:
 
 def test_an_unreachable_database_raises_unavailable_without_the_token() -> None:
     async def scenario() -> None:
-        async with devices(unreachable_conninfo(), connect_timeout_s=0.5) as d:
+        async with devices(unreachable_conninfo(), connect_timeout_s=0.1) as d:
             with pytest.raises(DevicesUnavailable) as caught:
                 await d.by_token(TOKEN)
         assert TOKEN not in str(caught.value)
@@ -92,7 +92,7 @@ def test_neither_the_token_nor_its_hash_reaches_a_log_line(db_url: str, capsys: 
         async with devices(db_url) as d:
             assert await d.by_token(TOKEN) is not None
             assert await d.by_token(f"{TOKEN}-wrong") is None
-        async with devices(unreachable_conninfo(), connect_timeout_s=0.5) as d:
+        async with devices(unreachable_conninfo(), connect_timeout_s=0.1) as d:
             with pytest.raises(DevicesUnavailable):
                 await d.by_token(TOKEN)
 

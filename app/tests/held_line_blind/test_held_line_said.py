@@ -142,7 +142,7 @@ def test_said_with_a_person_turn_marked_follows_is_a_value_error(db_url: str) ->
 
 def test_said_on_an_unreachable_database_is_unavailable() -> None:
     async def go() -> None:
-        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.5)
+        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.1)
         await db.open()
         try:
             with pytest.raises(InFlightUnavailable):

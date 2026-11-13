@@ -207,7 +207,7 @@ def test_the_ledger_refuses_a_call_the_table_refuses_and_stores_nothing(db_url: 
 
 def test_record_raises_when_the_database_is_unreachable() -> None:
     async def scenario() -> None:
-        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.5)
+        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.1)
         await db.open()
         try:
             spend = PostgresSpendLedger(db)

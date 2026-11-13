@@ -341,7 +341,7 @@ def test_run_survives_an_unreachable_database_logs_it_once_and_resumes_after(
 def test_sweep_raises_unavailable_when_the_database_cannot_be_reached() -> None:
 
     async def go() -> None:
-        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.5)
+        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.1)
         await db.open()
         services.register(InFlight, PostgresInFlight(db, POLICY, 15.0))
         try:

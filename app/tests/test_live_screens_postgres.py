@@ -25,7 +25,7 @@ async def stores(url: str) -> AsyncGenerator[Screens]:
 
 def test_an_unreachable_database_raises_the_services_own_error(db_url: str) -> None:
     async def go() -> None:
-        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.5)
+        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.1)
         with pytest.raises(ScreensUnavailable):
             await PostgresScreens(db).looking(1, 60)
     run(go())

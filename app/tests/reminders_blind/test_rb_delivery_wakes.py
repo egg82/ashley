@@ -312,7 +312,7 @@ def test_an_unwired_process_raises_on_every_delivery_call() -> None:
 
 def test_an_unreachable_database_raises_wakes_unavailable_on_every_delivery_call() -> None:
     async def go() -> None:
-        db = PoolDatabase("postgresql://nobody:x@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.5)
+        db = PoolDatabase("postgresql://nobody:x@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.1)
         w = PostgresWakes(db)
         for call in (w.refire(1, 1.0), w.undelivered(1, 1.0, 1.0), w.claim(1, 1.0), w.delivered(1, True),
                      w.dismiss(1, 1, 1)):

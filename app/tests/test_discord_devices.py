@@ -164,7 +164,7 @@ def test_the_null_object_has_no_servers_to_give() -> None:
 
 def test_an_unreachable_database_raises_unavailable() -> None:
     async def scenario() -> None:
-        async with store(unreachable_conninfo(), connect_timeout_s=0.5) as devices:
+        async with store(unreachable_conninfo(), connect_timeout_s=0.1) as devices:
             with pytest.raises(DevicesUnavailable):
                 await devices.discord_servers()
 

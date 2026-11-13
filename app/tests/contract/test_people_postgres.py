@@ -74,7 +74,7 @@ def test_the_cli_refuses_without_writing(db_url: str, monkeypatch: pytest.Monkey
 
 def test_an_unreachable_database_is_unavailable() -> None:
     async def scenario() -> None:
-        db = PoolDatabase("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.5)
+        db = PoolDatabase("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.1)
         await db.open()
         try:
             with pytest.raises(PeopleUnavailable):

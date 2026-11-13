@@ -322,7 +322,7 @@ def test_a_lost_save_writes_nothing(db_url: str) -> None:
 def test_an_unreachable_database_is_unavailable(call: str) -> None:
 
     async def go() -> None:
-        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.5)
+        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.1)
         await db.open()
         try:
             inflight = PostgresInFlight(db, POLICY, 15.0)
