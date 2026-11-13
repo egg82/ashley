@@ -1993,6 +1993,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/claude/sessions/{session_id}/screen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Session Screen
+         * @description 200 `SessionScreen`, whatever the bridge answered; 401 `unauthorized`; 422 for an id that is not a session's.
+         *     `seen` is the `digest` of the screen the page shows, so an unchanged screen is not sent again. (The bridge's own
+         *     `revision` is herdr's count of changes to the agent, not to its screen, so it cannot say that.)
+         */
+        get: operations["session_screen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/files/{token}": {
         parameters: {
             query?: never;
@@ -2731,7 +2753,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows";
+            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session";
             /** Seq */
             seq: number;
             /** Detail */
@@ -3840,7 +3862,7 @@ export interface components {
              */
             type: "add" | "remove" | "move" | "edit" | "run" | "propose" | "install" | "archive" | "restore" | "undo" | "rename" | "cue" | "point" | "surfaced";
             /** Outcome */
-            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows");
+            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session");
             /** Piece Id */
             piece_id: number | null;
         };
@@ -4562,7 +4584,7 @@ export interface components {
              * Format
              * @enum {string}
              */
-            format: "markdown" | "plain" | "code" | "automation" | "wake" | "facts" | "diagram" | "site" | "video" | "reader" | "recipe" | "image" | "file" | "clip" | "audio" | "screen" | "controls" | "job";
+            format: "markdown" | "plain" | "code" | "automation" | "wake" | "facts" | "diagram" | "site" | "video" | "reader" | "recipe" | "image" | "file" | "clip" | "audio" | "screen" | "controls" | "job" | "session";
             /** Language */
             language: string | null;
         };
@@ -5310,6 +5332,36 @@ export interface components {
             screen: string;
             /** Visible */
             visible: boolean;
+        };
+        /**
+         * SessionScreen
+         * @description A session's screen as it is now. `state`: `live` (shown below), `gone` (the bridge lists no such session: it
+         *     ended or was closed), `not_connected` (the person has no herdr bridge), `unreachable` (the bridge, herdr or the
+         *     person's connections did not answer) or `refused` (the bridge turned the connection away: its token, person or
+         *     certificate). While `live`, `status` is the session's (`idle`, `working`, `blocked`, `done` or `unknown`),
+         *     `digest` names the screen's text (a hash, the same for the same text), and `text` is its last lines as unwrapped
+         *     text, null when `digest` is the one the page asked with (nothing changed); `truncated` says older lines were left
+         *     out. `again_ms`: how long the page waits before it asks again.
+         */
+        SessionScreen: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "live" | "gone" | "not_connected" | "unreachable" | "refused";
+            /** Status */
+            status?: ("idle" | "working" | "blocked" | "done" | "unknown") | null;
+            /** Digest */
+            digest?: string | null;
+            /** Text */
+            text?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Again Ms */
+            again_ms: number;
         };
         /**
          * SettingChange
@@ -11913,6 +11965,48 @@ export interface operations {
             };
             /** @description `unavailable`: the workshop could not be reached */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    session_screen: {
+        parameters: {
+            query?: {
+                seen?: string | null;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionScreen"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a session id that is not one gets FastAPI's own validation error, which is not this schema */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
