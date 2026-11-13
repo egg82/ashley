@@ -22,7 +22,8 @@ _RESPONSES: dict[int | str, dict[str, Any]] = {
 
 def _wire(listed: Listed) -> ListedDevice:
     d = listed.device
-    return ListedDevice(id=d.id, name=d.name, place=d.place, form=listed.form, audience=d.audience, medium=d.medium)
+    return ListedDevice(id=d.id, name=d.name, place=d.place, form=listed.form, audience=d.audience, medium=d.medium,
+                        takes_controls=listed.takes_controls)
 
 
 @router.get("/api/devices", response_model=DevicesResponse, responses=_RESPONSES)

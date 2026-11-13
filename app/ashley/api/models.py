@@ -88,7 +88,8 @@ class ListedDevice(BaseModel):
     """One of the household's devices. `form` is what it is wired to, not what it is called: a voice `satellite`, a
     household's `discord_server`, the household's Home Assistant (`household`, which hands in wakes), or `other` (the hallway
     tablet is one). `audience` is who hears or reads what it
-    says and `medium` how it reaches them. Never a token, host or server id."""
+    says and `medium` how it reaches them. `takes_controls` is whether it is a screen that shows touch controls, so the
+    controls editor belongs on it; clients never work it out from `form` or `medium`. Never a token, host or server id."""
 
     id: int
     name: str
@@ -96,6 +97,7 @@ class ListedDevice(BaseModel):
     form: Literal["satellite", "discord_server", "house", "other"]
     audience: Literal["owner", "household", "present"]
     medium: Literal["spoken", "text"]
+    takes_controls: bool
 
 
 class DevicesResponse(BaseModel):

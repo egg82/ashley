@@ -10404,6 +10404,10 @@
               "text"
             ],
             "title": "Medium"
+          },
+          "takes_controls": {
+            "type": "boolean",
+            "title": "Takes Controls"
           }
         },
         "type": "object",
@@ -10413,10 +10417,11 @@
           "place",
           "form",
           "audience",
-          "medium"
+          "medium",
+          "takes_controls"
         ],
         "title": "ListedDevice",
-        "description": "One of the household's devices. `form` is what it is wired to, not what it is called: a voice `satellite`, a\nhousehold's `discord_server`, the household's Home Assistant (`household`, which hands in wakes), or `other` (the hallway\ntablet is one). `audience` is who hears or reads what it\nsays and `medium` how it reaches them. Never a token, host or server id."
+        "description": "One of the household's devices. `form` is what it is wired to, not what it is called: a voice `satellite`, a\nhousehold's `discord_server`, the household's Home Assistant (`household`, which hands in wakes), or `other` (the hallway\ntablet is one). `audience` is who hears or reads what it\nsays and `medium` how it reaches them. `takes_controls` is whether it is a screen that shows touch controls, so the\ncontrols editor belongs on it; clients never work it out from `form` or `medium`. Never a token, host or server id."
       },
       "LiveBench": {
         "properties": {

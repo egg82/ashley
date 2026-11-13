@@ -45,6 +45,13 @@ class Listed:
     device: Device
     form: Form
 
+    @property
+    def takes_controls(self) -> bool:
+        """Whether the device is a screen that shows touch controls (the hallway tablet): one the household reads text on
+        that is not a satellite, a Discord server or the house. The one place the rule lives; the Devices room offers
+        the controls editor by this and nothing else."""
+        return self.form == "other" and self.device.medium == "text"
+
 
 @dataclass(frozen=True)
 class Satellite:

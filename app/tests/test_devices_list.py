@@ -124,12 +124,24 @@ def test_the_route_serves_the_households_devices_and_nothing_that_reaches_them(
         got = c.get("/api/devices")
     assert got.status_code == 200
     assert got.json() == {"devices": [{"id": sat, "name": "kitchen", "place": "kitchen", "form": "satellite",
-                                       "audience": "present", "medium": "spoken"}]}
+                                       "audience": "present", "medium": "spoken", "takes_controls": False}]}
     assert DevicesResponse.model_validate(got.json()).devices == [
-        ListedDevice(id=sat, name="kitchen", place="kitchen", form="satellite", audience="present", medium="spoken")]
+        ListedDevice(id=sat, name="kitchen", place="kitchen", form="satellite", audience="present", medium="spoken",
+                      takes_controls=False)]
     assert "sat.local" not in got.text and "sat.local" not in caplog.text
     assert any(r.getMessage() == "devices.listed" and getattr(r, "fields") == {"household": home, "count": 1}
                for r in caplog.records)
+
+
+def test_only_a_text_screen_of_form_other_takes_controls(client: tuple[TestClient, int], db_url: str) -> None:
+    c, home = client
+    tablet = device(db_url, home, "hall")
+    scalar(db_url, "UPDATE devices SET medium = 'text' WHERE id = %s RETURNING id", (tablet,))
+    spoken = device(db_url, home, "speaker")
+    texting = satellite(db_url, home, "texting")
+    scalar(db_url, "UPDATE devices SET medium = 'text' WHERE id = %s RETURNING id", (texting,))
+    got = {d["id"]: d["takes_controls"] for d in c.get("/api/devices").json()["devices"]}
+    assert got == {tablet: True, spoken: False, texting: False}
 
 
 def test_an_empty_household_is_an_empty_list(client: tuple[TestClient, int]) -> None:
