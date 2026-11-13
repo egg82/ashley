@@ -13,13 +13,16 @@ over by is shared with other apps: `kustomization/etcd/` there, whose README cov
 CI is GitHub Actions. `.github/workflows/ci.yml` runs on every pull request and every push to main: the suite on a
 `pgvector/pgvector:0.8.2-pg18` container (production's major version, with `pgvector`) and an etcd container, split
 into eight shards that each take every eighth test file in name order; the pyright gate; and the client checks
-(`types:check`, `typecheck`, `test`, `build`). Beside them it builds the app image (`app/Containerfile`) and the images
+(`types:check`, `typecheck`, `test`, `build`). The suite and pyright run inside the test image
+`ghcr.io/<owner>/ashley-ci:<hash>` (`app/ci/Containerfile`: the requirements and ffmpeg installed; the hash is
+`app/tools/ci_image_hash.py` with no flag), which the `test-image` job builds first when the tag is missing; Postgres,
+etcd and Dex join that container's network, so the suite reaches them on 127.0.0.1. Beside them it builds the app image (`app/Containerfile`) and the images
 other pods run, each tagged by a hash of what it bakes in (`app/tools/ci_image_hash.py` with `--look`, `--media`,
 `--cad` or `--bridge`) and built only when a registry lacks that tag:
 - the browser image `bench_look` runs its pods in (`deploy/look/Containerfile`: Playwright's image plus the matching
   `playwright` package);
-- the media image (`deploy/media/Containerfile`), which holds ffmpeg for the media pods; the `tests` job installs ffmpeg
-  too, since the media runner's tests run it for real;
+- the media image (`deploy/media/Containerfile`), which holds ffmpeg for the media pods (the test image holds it too, since
+  the media runner's tests run it for real);
 - the image build123d model runs use (`deploy/cad/Containerfile`: Python slim, build123d pinned, and the helper
   `deploy/cad/ashley_cad.py` with its print check `deploy/cad/ashley_print.py`). It holds build123d, which the `tests` job
   does not, so the helper's tests (`deploy/cad/test_ashley_*.py`, `unittest`) run in that image as the sandbox runs it
@@ -28,7 +31,7 @@ other pods run, each tagged by a hash of what it bakes in (`app/tools/ci_image_h
 - the Proton Mail Bridge image (`deploy/mail-bridge/Containerfile`), whose keeper test runs in the image against a real
   Bridge, read-only as the pod runs it.
 
-The cluster repo pins those images' digests. A pull request builds every image and pushes none. Images go to two
+The cluster repo pins those images' digests. A pull request builds every image and pushes none, except the test image, which its own tests need. Images go to two
 registries, `docker.io/<DOCKERHUB_USERNAME>/<image>` and `ghcr.io/<owner>/<image>`; the hosts and namespaces are the
 workflow's `DOCKERHUB_REPO` and `GHCR_REPO`, so nothing names a registry twice. linux/amd64 only.
 

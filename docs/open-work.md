@@ -46,9 +46,6 @@ and the arrival greeting (the web app's first cut is built). The rest build on t
     - **A fresh database per test costs 0.1–0.6 s** (`CREATE DATABASE … TEMPLATE`) on about two tests in five, about
       70 s of each shard's setup measured locally. A pool of databases made ahead per worker and reset between tests
       would remove it. Fits into: the test fixtures (`app/tests/conftest.py`).
-    - **A prebuilt test image.** Every shard spends 30–110 s on `pip install` before its first test. An image with the
-      requirements installed, tagged by their hash and built only when they change, as `app/tools/ci_image_hash.py`
-      already does for the other images. Fits into: CI's hashed images.
     - **The structural gates parse all of `app/`, tests included** (`python_tree` in `app/tests/conftest.py`): 4–8 s on
       every worker, about 215k of the lines it parses being tests. Parse only what each gate reads, or once per run
       rather than per worker. Fits into: the structural gates.
