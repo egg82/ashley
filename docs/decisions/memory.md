@@ -1,5 +1,7 @@
 # Memory
 
+Who may know a fact, where knowledge lives, how facts are written and recalled, and what a person can do with them.
+
 ## Every fact has an owner, a household and one of four visibilities
 
 People in a household share most things; some are private (therapy), some are known but rarely asked about
@@ -45,7 +47,7 @@ where she meets it on the way to using it, so nothing has to be carried in every
 
 - **Live state is never stored as knowledge.** A remembered "the porch light is on" is wrong by the next reply.
 - **A rule about one tool lives in that tool**, so it arrives only with the tool and leaves with it. The household
-  profile's tool hints (the thermostat setpoints sensor, how to phrase Locate Person) move into those scripts and
+  profile's tool hints (the thermostat setpoints sensor, how to phrase Locate Person) belong in those scripts and
   sensors in HA.
 - **The household profile is the interim home of world facts** until standing facts and recall carry them (open-work, "Retire the `households.profile` column").
 
@@ -66,8 +68,8 @@ is broken.
   in every rate and is marked in the report, so the gap shows. What a fact must leave out (a one-off ask said beside
   it) is an expectation's `omits`, judged as a statement the fact must not make; a "states" that says what is
   absent cannot pass, since the judge reads it as a particular. Rejected: Haiku for `memory_write`. On a long task
-  conversation with facts said in passing it missed them (a twelve-turn workbench brainstorm, 0 of 3 runs wrote all four
-  facts, at `effort` low; a production brainstorm of the same shape, 0 of 3 at low and 0 of 3 at high), where Sonnet
+  conversation with facts said in passing it missed them (on a twelve-turn workbench brainstorm 0 of 3 runs wrote all four
+  facts at `effort` low; on a production brainstorm of the same shape 0 of 3 at low and 0 of 3 at high), where Sonnet
   at `effort` low wrote them 3 of 3. The short write cases cannot show it, so
   `standing-facts-in-passing-in-a-long-brainstorm` does.
 - **A fact links to the turn it came from.** `facts.source_turn_id` is a turn of the source conversation (the
@@ -80,7 +82,7 @@ is broken.
   line, and the conversation reads carry none. Rejected: showing memory under chat lines (a receipt of the facts a
   line taught, an outcome of acting on memory, a marker that a fact was replaced). Facts are learned from every
   channel, merged, superseded and forgotten, and a chat line is the wrong thing to hang them on: it couples Memory to
-  the interface, which is visually cool and will cause problems later.
+  the interface, which would cause problems later.
 - **Looked at, not built: the whole conversation for the writer.** It sees only the turns after the watermark, so
   a reopened conversation loses its earlier exchange as context. Give it the whole conversation with the written
   turns marked if real cases show a fact misread for want of it.
@@ -103,7 +105,7 @@ is broken.
   `memory.write`), because the model's owner on such a fact flips with unrelated prompt edits: a one-sentence change
   to `writer.md` turned "remember the spare key is in the green watering can" into the teller's fact 4 times in 5. An
   `update` keeps the owner written, since a person may have made a household fact theirs. Rejected: a prose rule in
-  `writer.md` alone, which is what held the owner before and did not.
+  `writer.md` alone, which did not hold the owner.
 - **Read in two tiers:** the household's standing facts always in the prompt; everything else by search filtered on
   visibility first. A retriever finds what a message names, and "order sushi for dinner" never names the shellfish
   allergy, so the facts that change a good reply without being mentioned have to be there already.
