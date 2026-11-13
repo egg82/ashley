@@ -4,14 +4,13 @@ What a turn that has read words from outside may do without asking, and how a pe
 
 ## A turn that has read outside words asks before it does anything consequential the person did not ask for
 
-**Built**: the taint (`Inbound.taint`, `ToolSpec.outside` and `ToolResult.outside`, `Checkpoint.tainted` with `Steps.tainted`, the `outside` mark in `kinds.json`, the classification gate), holding and agreeing (`Outside`, `HeldCalls`, `carry_out`, the receipts on her turn), the tiers, the action judge, `outside_actions` and the evals. Mail (item 36) and a browser
-(item 38) let a stranger put words into her turn, and a turn's tool calls follow its words. So a turn that has read
+**The parts**: the taint (`Inbound.taint`, `ToolSpec.outside` and `ToolResult.outside`, `Checkpoint.tainted` with `Steps.tainted`, the `outside` mark in `kinds.json`, the classification gate), holding and agreeing (`Outside`, `HeldCalls`, `carry_out`, the receipts on her turn), the tiers, the action judge, `outside_actions` and the evals. Mail and a browser
+let a stranger put words into her turn, and a turn's tool calls follow its words. So a turn that has read
 text written outside the household, or that was started by something outside, is **tainted**. A tainted turn reads
 and speaks, and each change it would make goes by its **tier** (below): a low-stakes change runs, and a consequential
 one goes to the action judge, which runs it or holds it as a proposal for the person to agree to in a later turn of
 their own. A change that is held is held whatever `irreversible.json` says, which is about untainted turns. The agreed
-calls then run with the arguments that were stored, and the model does not write them again. Rakazo does the same: a run is
-tainted by the tool results it has read, and a new tool taints by default.
+calls then run with the arguments that were stored, and the model does not write them again. A new tool taints by default.
 
 - Fits into: Channels and Senses, with no new system. The taint is a field of the turn: of its `Inbound` when the
   turn starts tainted, and of its checkpoint once a read taints it. Holding a change is a Decorator over the turn's
@@ -204,11 +203,11 @@ marked as the app's. A woken turn that held a call goes out even when `worth_say
 nobody sees is lost without anyone knowing; one that stays quiet after a judged change sends its receipts alone to
 the speaker's phone, as a voice turn does.
 
-**Receipts are a snapshot, not a join.** `turns.receipts` (migration 0093) is written in the turn's transaction, because
+**Receipts are a snapshot, not a join.** `turns.receipts` is written in the turn's transaction, because
 proposals are deleted when taken or replaced, `outside_actions` is pruned at 90 days, and a judged change whose record
 could not be written (`Outside._unrecorded`) must still be shown. `outside_actions` stays the audit store and the source
 at closing; it keeps the headline a change was shown under (`label`). `outbox.receipts` carries them to a queued reply.
-A turn stored before this change keeps the blocks in its `text` and is read unchanged: stripping them would key behaviour
+A turn stored before receipts keeps the blocks in its `text` and is read unchanged: stripping them would key behaviour
 on words in `text`, and the recent-history window moves on.
 
 **On a paged channel code writes no words as her turn.** Where the person reads a page that learns of turns from Live
@@ -258,7 +257,7 @@ text alone moves her to change something.
 can be agreed in the morning), `max_calls`, `max_argument_chars`, and the text she and the person read (the held
 result, the refusals, the headline of a change whose tool has no label, the line that carries receipts into her history).
 
-**The migration** adds an index on `proposals (made_by, topic, id)` for the person-scoped lookup. No column is
+**The migration** is an index on `proposals (made_by, topic, id)` for the person-scoped lookup. No column is
 added, since the payload is JSON tagged by `kind`, as every proposal's payload is.
 
 **What survives a failover:** everything. The origin is stored in the checkpoint's `Inbound`, and a read's taint
@@ -323,9 +322,9 @@ They never contain arguments, summaries or results.
   injected change can do harm without being irreversible: a prompt to a Claude Code session, a reminder that acts,
   mail sent in the person's name.
 - **Rejected: refusing every change in a tainted turn.** A mail sort that labels a dozen messages is the point of
-  item 36. A refusal loses it.
-- **Rejected: holding every change in a tainted turn.** It was the rule at first. It made a sort's labelling, a light
-  and a reminder each cost a "yes", which is friction on changes whose worst case is small and visible.
+  mail; a refusal loses it.
+- **Rejected: holding every change in a tainted turn.** A sort's labelling, a light and a reminder would each cost a
+  "yes", friction on changes whose worst case is small and visible.
 - **Rejected: an always-ask floor under the judge.** It would guard only against the judge misreading the person's own
   words, which the owner accepts.
 - **Rejected: tier-b writes of free text with no taint field.** They would carry outside words into an untainted turn
@@ -344,9 +343,9 @@ They never contain arguments, summaries or results.
   nearly every house action into an ask. The accepted residual is attribute text such as a media title, written by
   whoever published the media.
 - **Rejected for this slice: agreeing with a button on the page.** No model would be involved in agreeing at all.
-  But the stored call would have to run outside any turn, and the tool sources are built per turn from its
-  `Inbound` (bench, audience, speaker). The person-turn path reuses the store, the gate and the confirm pattern that
-  every proposal already uses. Built since, as a person turn that is a command (`A tap agrees to what was held`).
+  But the stored call would have to run outside any turn, and the tool sources are built per turn from its `Inbound` (bench, audience, speaker). The person-turn path
+  reuses the store, the gate and the confirm pattern that every proposal already uses. Built since, as a person turn
+  that is a command (`A tap agrees to what was held`).
 
 ## A tap agrees to what was held
 
@@ -365,7 +364,7 @@ loses at `take_by_id` and is refused `gone`.
 
 **What became of each call is a record beside the person's turn, not a turn of hers.** The person's own turn is a fixed
 line from data (`outside.json`, `agreed_turn`), so history reads "Agreed." and the gate has a later turn id to compare.
-Once the calls are done, `Turn.agreed` (`ashley.receipts.AgreedOutcome`, `turns.agreed`, migration 0095, only on a
+Once the calls are done, `Turn.agreed` (`ashley.receipts.AgreedOutcome`, `turns.agreed`, only on a
 person's turn) holds each call's summary as the person was shown it and whether it `ran`, `failed` or was `not_run`,
 or that the run was `interrupted`; no turn of hers is stored, since code never writes words as her turn on a page. It
 never includes what a call returned: a result can be outside words, and a turn's record is carried into later turns, so
@@ -385,7 +384,7 @@ never repeated, and a proposal gone by then ends the work with no outcome.
 **What the page and the notification are told.** `ChatConversationTurn.agree` is the proposal's id, on her final answer to
 the turn it was held in, while that proposal is the person's own and unexpired (`agree.waiting`; null on every other
 turn and on a bench or kiosk read). A reply with held receipts is queued with `Outbound.receipts`
-(`outbox.receipts`, migration 0093; `outbox.agree` still written for one release), and its notification carries
+(`outbox.receipts`; the outbox row still carries the proposal id as `outbox.agree`), and its notification carries
 `Notification.agree`; the service worker offers an Agree action that POSTs it from the notification. A refused tap says why in place.
 
 **Logs:** `agree.refused` (person, reason), `agree.done` (conversation, turn, duration_ms), `agree.failed` (error class);
