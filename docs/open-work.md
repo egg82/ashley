@@ -87,9 +87,8 @@ The first version worth switching to adds one thing to what runs today: her own 
    item) are a second pass, not a precondition. Seen live on the Responses provider: `gpt-6-luna` at reasoning `none`
    answered the moment line instead of the tool result in 2 of 4 probes, because the moment layer is the last input
    after a tool round; whether the moment should precede the tool round is a question for this search. Item 8's prompt cuts land first, so the search runs on the trimmed
-   prompt; item 8 stays its own item (ablation of the one shared prompt, where this picks per task). Add CLI providers:
-   `claude -p` on the subscription (its OAuth token is in the deployment's secret store, but the image
-   has no `claude` binary yet) and `opencode`. Then routes that ask several models at once and keep the best answer,
+   prompt; item 8 stays its own item (ablation of the one shared prompt, where this picks per task). Add `opencode`
+   as a provider, and try `claude_cli` (`ashley.inference.claude_cli`) on `memory_judge`, then `memory_write`. Then routes that ask several models at once and keep the best answer,
    and an orchestrator that picks a model per step for agentic work. Planning on a bench already goes to a slower,
    more capable model than chat's (`brainstorm`, Opus).
    The speech tasks get the same pass once her voice pipeline is live, research first: read what people report about
@@ -104,10 +103,10 @@ The first version worth switching to adds one thing to what runs today: her own 
    tune model, params or prompt for the bench's kind where she falls short, measured as above.
    - Fits into: Inference (new providers are Strategies; a multi-model route is a new method beside `generate`).
 7. **Errands: an open-ended ask she carries out over time.** The one-shot errand is built (`decisions.md`, "What she
-   could not do for want of a source, she does once it answers, and says so next time"); the rest is not designed. "See what you can do to help me wake up in the morning":
+   could not do for want of a source, she does once it answers, and says so next time"); an open-ended errand is a reminder that sets its own next check (same entry, its
+   open-ended part). "See what you can do to help me wake up in the morning":
    she reads the phone's next alarm and sleep sensors, tries the lights or music near the alarm, keeps checking until the
-   person is up, and may write a script or HA automation instead. A plan and its next check live in Postgres; a
-   singleton under `Lease` runs due errands, so a failover mid-errand continues rather than restarts. She writes HA
+   person is up, and may write a script or HA automation instead. She writes HA
    automations and scripts; the person who asked sees each one before it is enabled,
    and the errand carries on while one waits (cf-os's Gatekeepers queue an action for approval the same way).
    The HA-based assistant she replaces deliberately cannot, so this is a Tools provider of her own.
@@ -117,13 +116,12 @@ The first version worth switching to adds one thing to what runs today: her own 
    research, a long tool call, anything). Its result comes back as a by-the-way ("I found something on
    that"): held on its errand, untold until her next reply to the asker carries it (as the designed slice
    does); Initiative may raise it unprompted, through the outbox. What lasts in it reaches Memory through the turn she
-   tells it in. The answer after "let me check" that outlives the outbox's `stale_s` is stored on the thread today and
-   logged `outbox.stale_dropped`; it is told at the next chance here.
+   tells it in.
    - **Standing errands: workers behind her, never beside her.** The aim is a team of bots on the backend, the way
      Rakazo has an inbox manager, a chief of staff and so on, but with her as the only face: nobody talks to a bot.
      A standing errand is an errand that never finishes: a method (a Skill document, one kind per job), what wakes it
-     (a repeating reminder's rule, a house wake, a watch from item 35), the tools its turn may use (as
-     `Reminder.tools` already names) and where what it finds goes (as `Reminder.route`). What it finds reaches a
+     (a repeating reminder's rule, a house wake, a watch: `decisions.md`, "Watches wake her when what a read returns
+     changes, until a condition or a time"), the tools its turn may use (as `Reminder.tools` already names) and where what it finds goes (as `Reminder.route`). What it finds reaches a
      person the same way an errand's result does: held until her next reply to them, or raised through Initiative.
      A reminder whose turn acts is already the smallest one, so this extends Reminders and Skills rather than adding
      a bot store. Rejected: bots messaging each other (Rakazo's `message_bot`, with a hop counter against loops),
@@ -131,15 +129,6 @@ The first version worth switching to adds one thing to what runs today: her own 
      work.
    - Fits into: Initiative (when to act) over the orchestrator loop (`Inference.step` with its own task), Senses for
      checks, Tools for actions. A new kind of thing: durable plans with due times.
-35. **Watches, what is left** (`decisions.md`, "Watches wake her when what a read returns changes, until a condition or
-    a time"). Built: the Claude Code session, mail inbox, bench job and polled read-only tool kinds, which she arms
-    herself mid-conversation with a structured `until` and an expiry. Left, in order:
-    - **A Home Assistant subscription**: a watch on a house entity subscribes through HA's WebSocket
-      (`subscribe_trigger`) instead of polling, held by the singleton, so she needs no automation installed to watch an
-      entity.
-    - **The kiosk's calendar glance** takes its calendar from a `tool` watch over `house_ask` `calendar.get_events`.
-    - Fits into: Watches (its kinds are Type Objects), Senses (the `wakes` queue), Tools (arming), and item 7's
-      standing errands, which watches wake.
 38. **A browser of her own.** For the services with no API, a Chromium she drives in a gVisor pod: a session of
     minutes with egress, unlike a code run's seconds with none. She acts on the page's accessibility tree with
     element references checked again against a fresh snapshot before each action (Rakazo's `browser_snapshot` and
@@ -150,12 +139,15 @@ The first version worth switching to adds one thing to what runs today: her own 
     window's title); her method stays a skill document she edits. Fits into: Code runs (a third pod kind beside
     code and media), Object store, Tools.
 P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A turn that has read outside words asks before it
-    does anything consequential the person did not ask for"). Left: (1) a move to trash or spam goes to the judge only when
-    every target carries the provider's own spam or promotions label, which the adapter reads; (2) a live
-    `python -m ashley.evals action-judge` run and the model-golf pick of the final route. Fits into: Mail (the adapter's labels), Channels (`Outside`), Inference.
-43. **A flaky pool test.** `app/tests/test_db_pool.py::test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_left`
-    once caught `other_connections=(1,)` in its "fresh" baseline on a busy CI runner: the baseline needs to wait out
-    the previous test's connection, or count only its own.
+    does anything consequential the person did not ask for"). Left: a live
+    `python -m ashley.evals action-judge` run and the model-golf pick of the final route. Fits into: Channels (`Outside`), Inference.
+43. **Flaky tests.** Each failed once on a busy CI runner and passed on rerun:
+    - `app/tests/test_db_pool.py::test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_left`
+      caught `other_connections=(1,)` in its "fresh" baseline: the baseline needs to wait out the previous test's
+      connection, or count only its own.
+    - The app-mode test in `app/tests/admin_role_blind/test_ar_ensure_one.py` took 3.15 s wall, over the per-test ceiling.
+    - `app/tests/test_watches_ha_entity.py::test_a_change_the_house_tells_wakes_her_at_once_through_the_subscription`
+      took 2.22 s and never woke once: it should wait on an injected event, not the clock.
 8. **Golf the system prompt.** Token counts per section are built: `python -m ashley.evals prompt-sizes` (stable sections, moment, each tool and
    source, reply schema; run it in the pod before each cut). Cut by ablation
    against the eval battery, keeping a cut only when nothing regresses (`model-golf`). Most of it is Home Assistant's:
@@ -199,9 +191,8 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       the doorbell rings, she says "someone's at the front door" and slides the door camera's live feed onto
       the display; a swipe sends it away, and it leaves on its own once the door is answered or quiet. It goes where
       people are: the tablet when someone is home, and the open web page of someone who is away but using it (at
-      work), the same line and feed. Presence already says who is home; what is missing is a record every pod on both
-      sites can read of whose screens are open and in the foreground, since Live's viewers live only in the pod each
-      screen reached (a row per screen with a short lease, the page reporting when it is visible).
+      work), the same line and feed. Which screens are open and in the foreground is
+      recorded (`ashley.live.screens.Screens.open_screens`); left: announcements and pictures sent to a visible screen.
       - Fits into: Channels (the kiosk adapter as an output, beside the satellites' `Announcer`), the outbox, Live,
         and Initiative over Senses for when a picture is worth showing unasked.
     - **She decides what the whole screen shows:** the kiosk is the first surface of item 20, in its glanceable skin;
@@ -209,8 +200,8 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     - **Ears:** the tablet's own microphone, through the page: tap to talk is built; next a wake word run in the page
       (openWakeWord in WASM), which streams nothing until it fires. Talking through HA Assist on the tablet is her
       own pipeline lost.
-    - **Glance sources:** calendar (HA's calendars, all shared) and a shared list of the household's, each through Senses
-      or Tools, with their visibility as data; until then the page says not connected. A person's reminders are never
+    - **Glance sources:** a shared list of the household's, through Senses or Tools, with its visibility as
+      data; until then the page says not connected. A person's reminders are never
       one (decisions, "Reminders are wakes she sets for herself").
     - Fits into: Channels (the kiosk adapter) and Live.
 11. **The workshop, what is left.** Benches where she and a person make something together, as Tony Stark's workbench
@@ -227,8 +218,8 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       and interruptions are that item's; its pieces stay this item's records, each shown through a component).
     - **Live kinds**: the first `live` entry in `kinds.json` (a camera, a print job), its body a source reference the
       client renders.
-    - **Large pieces' streaming**: files beyond `max_bytes` (25 MiB, read whole into memory, so a range is cut from it), which a longer video or 3D may need.
-      Fits into: Object store.
+    - Streaming uploads past `max_bytes` (hash names the key, so it needs a staging key); herdr bridge `max_file_bytes`
+      (25 MiB) and jobs `max_bytes_in` (50 MiB) are smaller than `max_bytes`. Fits into: Object store.
     - **Model inputs past `input_bytes`**: a model run's file pieces reach the pod in the job spec, at most 768 KiB in
       all (`runs.json`), so two ordinary STLs (about 600 KB each) cannot go to one run; the run is refused
       `bad_inputs`. The pod should get them from the object store with its script still offline (e.g. a fetching init
@@ -285,8 +276,6 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       found; building one is a JSON tree of primitives evaluated in
       a Worker, est. 1.5-2.5k lines of TypeScript. TinkerCAD is more than basic shapes (solids and holes, groups,
       transforms), so it is large. Fits into: Workshop.
-    - **Undo a whole turn**: Commands carry the turn that made them, and "undo that" undoes the turn's commands
-      together, each still refused `changed_since` (Kanwas tags undo entries with an operation id).
     - **What a bench is for, beyond making**: redesigning something that already exists (an app from her codebase VM,
       item 21, put back on a bench), and taking apart anything a person is stuck on, so the two of them go through it
       together: an OSS project, a Wikipedia page (graph theory, say).
@@ -303,26 +292,24 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     - Fits into: Senses and Channels.
 13. **MCP channel for Claude Code.** Sessions ask her things or tell her to remember them, as their user.
     - Fits into: Channels.
-14. **Asides.** Unprompted wit through Initiative: daily cap in code, never during focus, no repeated lines. A remark
-    in a Discord channel she was not pinged in is one of these.
+14. **Asides, remaining.** The Discord remark is built (`decisions.md`, "Whether she speaks unprompted is decided in
+    code"). Left: being on a call as focus; a person's own quiet hours; asides on other channels (voice, screens).
+    Fits into: Initiative.
 15. **Her home on Discord.** `#ashley` in the household's server is hers to keep as she likes, a place of her own to
     decorate: its topic, pins and what she posts there. Tools that change the channel are scoped to her home channel
     and offered only on her own initiative, never in a reply, so a mention elsewhere cannot rewrite her channel. The server's
     owner grants Manage Channel and Manage Messages on `#ashley` alone, as a channel permission override.
-    The same provider reads a channel: asked "what's up in this channel?", she sees only messages addressed to her, so
-    a tool returning the channel's recent messages, offered when the message came from a Discord channel, lets her
-    answer.
     How much she reads and when she speaks differ by channel:
 
     | | `#ashley` | Every other channel |
     |---|---|---|
-    | Reads | every person's message, as turns (memory takes note) | when pinged; the read-channel tool for context |
+    | Reads | every person's message, as turns (memory takes note) | when pinged; `discord_recent` reads the channel for context |
     | Speaks | per message, a structured field on her reply: `reply`, `react` (an emoji) or `none`, erring to reply when asked anything | when pinged; unprompted only as an aside (Asides) |
 
     The field is `Reply.says` (`ashley.inference.reply.Says`), shared by every channel; Discord adds `react`, voice takes `reply`, `offer` or `none`. Rejected: reading every channel and replying
     when she has something to say, which is a model call per message and a rate a stateless call cannot keep, and would
     have memory distil every channel.
-    - Fits into: Tools (a Discord tool provider beside Home Assistant's) and Initiative (when she tends it: a seeded
+    - Fits into: Tools (a Discord tool provider beside Home Assistant's, `planned:ashley.tools.discord_read`) and Initiative (when she tends it: a seeded
       roll and a score in code, never "now and then" in a prompt); her posts go through the outbox (`ashley.channels.outbox.Outbox`).
 16. **Bench camera** as a sense, on request first.
 17. **Split the API from the web client**, as sibling apps in the cluster repo do: the same
