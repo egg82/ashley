@@ -3,13 +3,16 @@ than `max_chars`. The levels are the house (its areas), an area (its domains) an
 their states). Each level has forms from most to least detail; the first that fits is the answer. A list in an answer
 always holds every child: a form that cannot show each in full shows each by name only (entities) or as a count, with
 `complete` false and `narrow_by` naming the arguments that split it, and the smallest form holds only totals. Nothing
-is ever dropped from a list to make it fit."""
+is ever dropped from a list to make it fit. An entity in a full list carries when its state last changed
+(`ashley.stamp.stamp` in the household's `zone`), left out when either is unknown."""
 
 import json
 from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from datetime import tzinfo
 
+from ..stamp import stamp
 from .house_entities import Entity
 from .house_query import Query, Selection, select
 from .house_state_config import HouseStateConfig
@@ -26,7 +29,7 @@ class Answer:
     outside: bool = False  # it shows attributes of a thing in an `outside_domains` domain
 
 
-def answer(entities: tuple[Entity, ...], query: Query, config: HouseStateConfig) -> Answer:
+def answer(entities: tuple[Entity, ...], query: Query, config: HouseStateConfig, zone: tzinfo | None = None) -> Answer:
     selection = select(entities, query)
     if not selection.entities:
         return Answer(_json(_nothing(entities, query, selection, config)), query.level, 0, False)
@@ -36,7 +39,7 @@ def answer(entities: tuple[Entity, ...], query: Query, config: HouseStateConfig)
     elif query.level == "area":
         forms, children = _area(chosen, config), len(_by(chosen, lambda e: e.domain))
     else:
-        forms, children = _entities(chosen, query), len(chosen)
+        forms, children = _entities(chosen, query, zone), len(chosen)
     for form in forms[:-1]:
         text = _json(form)
         if len(text) <= config.max_chars:
@@ -73,12 +76,12 @@ def _area(chosen: tuple[Entity, ...], config: HouseStateConfig) -> list[Body]:
     ]
 
 
-def _entities(chosen: tuple[Entity, ...], query: Query) -> list[Body]:
+def _entities(chosen: tuple[Entity, ...], query: Query, zone: tzinfo | None) -> list[Body]:
     ordered = sorted(chosen, key=lambda e: (_area_key(e), e.domain, e.names[0].casefold()))
     narrow = [a for a in ("area", "domain") if a not in query.given()] + ["name"]
     groups = list(_by(ordered, lambda e: (_area_key(e), e.domain, _device_class(e) or "")).values())
     return [
-        {"level": "entities", "matched": len(chosen), "complete": True, "entities": [_entity(e) for e in ordered]},
+        {"level": "entities", "matched": len(chosen), "complete": True, "entities": [_entity(e, zone) for e in ordered]},
         {"level": "entities", "matched": len(chosen), "complete": False, "narrow_by": narrow,
          "groups": [{**_group(ms), "names": [e.names[0] for e in ms]} for ms in groups]},
         {"level": "entities", "matched": len(chosen), "complete": False, "narrow_by": narrow,
@@ -110,8 +113,10 @@ def _nothing(entities: tuple[Entity, ...], query: Query, selection: Selection, c
     return body
 
 
-def _entity(e: Entity) -> Body:
+def _entity(e: Entity, zone: tzinfo | None) -> Body:
     body: Body = {"names": ", ".join(e.names), "domain": e.domain, "area": e.area, "state": e.state}
+    if zone is not None and e.changed is not None:
+        body["changed"] = stamp(e.changed, zone)
     if e.attributes:
         body["attributes"] = dict(e.attributes)
     return body
