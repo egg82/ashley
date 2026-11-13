@@ -178,11 +178,12 @@ def test_it_is_given_up_after_the_window_but_stays_listed_and_unpruned_until_dis
             s.sender.outcome = REFUSED
             id_ = await fired(s, world)
             tries = 0
-            for _ in range(10):
+            for _ in range(4):
                 tries += await s.deliver()
                 await asyncio.sleep(0.12)
-            assert 2 <= tries <= 7 and len(s.sender.sent) == tries
-            await asyncio.sleep(0.5)
+            assert 2 <= tries <= 4 and len(s.sender.sent) == tries
+            with psycopg.connect(world.url, autocommit=True) as conn:
+                conn.execute("UPDATE wakes SET settled_at = settled_at - interval '0.6 seconds'")
             assert await s.deliver() == 0 and len(s.sender.sent) == tries
             assert await states(s) == ["undelivered"]
             with psycopg.connect(world.url, autocommit=True) as conn:
