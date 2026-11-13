@@ -5,9 +5,9 @@ import { NODE_R, planOf } from './mapPlan.ts';
 
 const NOW = Date.parse('2026-11-13T08:00:00Z');
 const DAY = 864e5;
-const alex = { id: 1, household_id: 1, name: 'Sam', admin: true };
+const sam = { id: 1, household_id: 1, name: 'Sam', admin: true };
 const conn = (id: number, kind: string, over: Partial<HouseholdConnection> = {}): HouseholdConnection => ({
-  id, kind, label: '', base_url: '', added_by: alex, added_at: '', checked_at: new Date(NOW - 2 * DAY).toISOString(), personal: false, needs: null,
+  id, kind, label: '', base_url: '', added_by: sam, added_at: '', checked_at: new Date(NOW - 2 * DAY).toISOString(), personal: false, needs: null,
   scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
 });
 const kind = (name: string, holders: ('household' | 'person')[], most = 1): ConnectionKindInfo => ({
