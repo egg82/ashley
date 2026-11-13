@@ -184,16 +184,26 @@ def test_x09_a_finishing_agent_task_is_not_cancelled_while_it_writes_its_piece(
         made = payload(await w.hand_off(spec()))["jobs"][0]
         w.model.script = [finished("done")]
         real = runner_module.settle.shown
+        writing, written = asyncio.Event(), asyncio.Event()
 
-        async def slow(job_id: int, household_id: int, person_id: int) -> Job | None:
+        async def held(job_id: int, household_id: int, person_id: int) -> Job | None:
             got = await services.get(BenchJobs).get(household_id, person_id, job_id)
-            if got is not None and got.final:
-                await asyncio.sleep(1.0)
+            if got is not None and got.final and not writing.is_set():
+                writing.set()
+                await asyncio.wait_for(written.wait(), 5)
             return await real(job_id, household_id, person_id)
 
-        monkeypatch.setattr(runner_module.settle, "shown", slow)
-        await w.ticks(3)
-        await asyncio.sleep(1.5)
+        monkeypatch.setattr(runner_module.settle, "shown", held)
+        runner = w.runner()
+        await runner.tick()
+        await asyncio.wait_for(writing.wait(), 5)
+        await runner.tick()  # the job is final, so no longer active, while its task still writes the piece
+        await runner.tick()
+        written.set()
+        for _ in range(250):
+            if json_state((await w.pieces())[made["piece"]]) == "done":
+                break
+            await asyncio.sleep(0.02)
         assert json_state((await w.pieces())[made["piece"]]) == "done"
 
     scenario(db_url, body)
