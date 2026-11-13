@@ -14,7 +14,7 @@ Product-wide decisions: the words used, what she is for, who she serves, the sta
 
 Useful like a real assistant, fun and cool like Jarvis, but named Ashley (the name began as AHSLI, Automated Home
 System with Lifelike Intelligence).
-HA-based Ashley answers a wake word and forgets; the two gaps that matter most are **initiative** (she never
+The Home Assistant (HA) assistant answers a wake word and forgets; the two gaps that matter most are **initiative** (she never
 speaks first) and **conversation** (no flowing back-and-forth that starts at the right moment, on whichever medium
 suits it). Next come long-term memory, knowing who is talking, and replying on more than one channel. Reach beyond
 the house is wanted but comes later.
@@ -31,8 +31,8 @@ house itself through HA. A design that needs "only the owner" is asked again as 
 
 FastAPI, Pydantic, psycopg 3, Alembic and the `anthropic` SDK behind a TypeScript web app (per-person settings,
 chat, memory view) built with esbuild, its types generated from the backend's `openapi.json` by
-`openapi-typescript`, as in an earlier sibling app. A sibling app reuses proven pieces (spend and job tables, retention, web
-push) and the `agentic-engineering` gate templates land unported.
+`openapi-typescript`. It reuses a sibling app's proven pieces (spend and job tables, retention, web push) and the
+`agentic-engineering` gate templates as they are.
 
 - **The web app is Preact with signals, in TSX**, compiled by esbuild with no plugin. Components own their
   state and the few shared pieces (who is signed in, the open conversation) are signals with one owner each:
@@ -67,7 +67,7 @@ push) and the `agentic-engineering` gate templates land unported.
 
 `app/tests/test_env_tiers.py` lists every variable `from_env` reads with its tier and a reason. A new read fails until it
 is listed, and a listed name nothing reads fails too. A name ending `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must seed a registered connection kind, be a named root secret that cannot live in the database (with its reason), or be recorded debt. The gate cannot judge a tier; it makes the question get asked. The
-variables that fail the rule today are marked "to move" there and queued under open-work item 42.
+variables that fail the rule today are marked "to move" there.
 
 - **Rejected:** a gate that forbids any new env var. Infrastructure placement is legitimately env, and a ban would push
   deployment values into connections that have no seal key yet.
