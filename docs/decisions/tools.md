@@ -31,7 +31,7 @@ catalogue, and she says in one line that she cannot use it right now, while the 
 - **The look-up reads a page by result number, never by URL.** `read_page` takes a number that a `search_web` of this
   turn returned; the numbers run on across the turn's searches and look-ups, and the table from number to URL is the
   turn's one `ashley.tools.results.Results`, which `ashley.tools.pages.Pages` records into and the bench tools read
-  (see "A site or video piece is put up by a result's number"). At most two pages are read per look-up. A
+  (see "A site or video piece is put up by a search result's number"). At most two pages are read per look-up. A
   snippet often lacks the one fact asked for (a clinic's hours) while the page has it. Her context is unchanged: the
   page text reaches only the sub-agent, cut to `page_chars`.
 - **A YouTube video's page reads as the video, and its description's links become numbered results.** A watch page's
@@ -41,17 +41,17 @@ catalogue, and she says in one line that she cannot use it right now, while the 
   description from the page's `ytInitialPlayerResponse` (`ashley.tools.youtube`). Each https link in the description is
   recorded into the turn's `Results` (at most `Pages.MAX_LINKS`, once each) and shown as `<url> (result N)`, so
   `read_page` and the bench's reference tools follow it by number; the page authored the link and she never types a URL,
-  so the rejected URL parameter below stays rejected. The same change would number the links of any read page; only a
-  video's description does, since a page's own text rarely holds the links a question turns on. `page_bytes` is
-  unchanged: the player response sits inside the first megabyte of the two pages measured (at about 0.78 MB of 1.4 and
-  1.8 MB), and a page that cuts it off reads as any page.
+  so the rejected URL parameter below stays rejected. Only a video's description numbers its links, since a page's own
+  text rarely holds the links a question turns on. `page_bytes` needs no change: the player response sits inside the
+  first megabyte of the two pages measured (at about 0.78 MB of 1.4 and 1.8 MB), and a page that cuts it off reads as
+  any page.
 - **A bench site or video piece reads as its page.** `bench_read_piece` on a site piece, or a video piece that is not a
   direct file, also returns `page_text` (the page as `read_page` reads it, cut to the bench's `piece_chars`; for a YouTube
   video its details and description) or `page_unavailable`, through `ashley.tools.page_reader.PageReader`, the one reader
   `read_page` and the bench share, under the same `page_fetch` boundary. A video's description links are numbered into the
   turn's `Results`, so look_up reads such a result's page (she names its number) and `bench_add` of a code or document piece
-  by that number follows. Before this a video already on the bench could not be read: `read_page` takes only a result number
-  and the piece's own address is not one. The address is the piece's stored body, written by the server from a result or
+  by that number follows. `read_page` takes only a result number, and a piece's own address is not one. The address is
+  the piece's stored body, written by the server from a result or
   given by a person, never model-typed text, so the rule that she never reads by a URL she wrote holds. Rejected: a `url`
   parameter on `read_page` or a separate bench tool (the piece id already names the stored address).
 - **A YouTube video's captions are fetched by yt-dlp in a media pod of their own.** A plain GET of a caption track's
@@ -112,7 +112,7 @@ catalogue, and she says in one line that she cannot use it right now, while the 
     (`ashley.workshop.bench_file.add_file`). No URL is an argument of any of it.
   - **Outcomes** are distinct: `unknown_result`, `not_a_model_page`, `no_such_file`, `not_a_model`, `too_large`,
     `needs_login`, `unavailable`. `getDownloadLink` handed over STL, 3MF and STEP files to a visitor with no login; its
-    refusal (`ok` false) is `needs_login`, an outcome no model tried has produced.
+    refusal (`ok` false) is `needs_login`; no model tried has produced it.
   - **Rejected: Thingiverse and MakerWorld.** Both answer automated requests with a Cloudflare challenge. Thingiverse has an
     API key in the secret store (`ashley-thingiverse`) that a source over its API could use; none is built.
   - **Rejected: a URL argument for the file,** for the reason `read_page` takes none: the address comes from the API for a
@@ -189,20 +189,17 @@ close, nothing else. A session she handed work to going `blocked` or finishing i
   (`busy`, `blocked`, `unknown_state`) and nothing is sent; she says so. A timeout after sending is `unconfirmed`:
   she reads before she would say anything about it, and the turn's checkpoint already keeps a resumed turn from
   sending it again. Typing within `typed_quiet_s` will refuse too (`person_typing`) once the bridge reports it.
-- **The session sense is a Watches kind, over the sessions she handed work to.** `claude_start` and `claude_prompt`
-  arm a `claude_session` watch on the session (`Watches.arm`, `armed_by` `handoff`) from the status and
-  `state_change_seq` it was in, with the bench whose talk made the call, and say `watched` in their result so she tells
-  the person when it could not be armed. The `watches` singleton wakes her for a `blocked` or `done` stop, and for an
-  `idle` one that did not follow a `done` (the kind's `when`, "Watches wake her when what a read returns changes").
-  `idle` is a finish someone has already looked at (herdr's seen state), so `done` becoming `idle` is only the look and
-  wakes nothing. A finished session stays watched: Claude Code shows finished once its subagents return, while a Monitor
-  or background shell (any command past ten minutes in the foreground becomes one) can still wake it. Rejected:
-  forgetting a session at `done` until her next `claude_prompt`, which left a second finish unseen until the person
-  asked. Each later finish costs one turn of hers, which Initiative keeps
-  quiet when there is nothing to say. The state is Postgres's, never the process's, so the lease moving between sites
-  loses nothing and replays nothing; the turn's `source` is its wake's id. Nothing is replayed at first sight because
-  the baseline is the state the session was in when she handed it work. Behaviour keys on `status` and `seq`, never on
-  the screen. A hand-off watch ends when the session is gone from its bridge's list, or after `handoff_hours`.
+- **The session sense is a Watches kind, over the sessions she handed work to.** The mechanism, and the `claude_session`
+  kind, are "Watches wake her when what a read returns changes"'s. `claude_start` and `claude_prompt` arm it (`Watches.arm`, `armed_by` `handoff`)
+  from the status and `state_change_seq` the session was in, with the bench whose talk made the call, and say `watched`
+  in their result so she tells the person when it could not be armed. The `watches` singleton wakes her for a
+  `blocked` or `done` stop, and for an `idle` one that did not follow a `done` (the kind's `when`): `idle` is a finish someone has already looked at (herdr's seen state),
+  so `done` becoming `idle` wakes nothing. A finished session stays watched: Claude Code shows finished once its
+  subagents return, while a Monitor or background shell (any command past ten minutes in the foreground becomes one)
+  can still wake it. Rejected: forgetting a session at `done` until her next `claude_prompt`, which left a second
+  finish unseen until the person asked. Each later finish costs one turn of hers, which Initiative keeps quiet when
+  there is nothing to say. The wake's id is the turn's `source`, so nothing replays. Behaviour keys on `status` and `seq`, never on the screen. A hand-off watch ends when the
+  session is gone from its bridge's list, or after `handoff_hours`.
 - **The woken turn runs where the work was handed over, and she decides what comes of it.** Her unprompted turn is on
   the talk of the bench whose turn made the call, while that bench is open, else on the person's phone thread, with the
   person as the one it is with; the stored message is the household's turn naming the session's label and status, and
