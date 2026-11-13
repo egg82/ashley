@@ -78,13 +78,13 @@ def test_kind_is_a_slug(db_url: str) -> None:
     scenario(db_url, body)
 
 
-def test_target_is_one_to_200_characters(db_url: str) -> None:
+def test_target_is_one_to_500_characters(db_url: str) -> None:
     async def body(w: World) -> None:
-        put(w, target="x" * 200)
+        put(w, target="x" * 500)
         with pytest.raises(psycopg.errors.CheckViolation):
             put(w, target="")
         with pytest.raises(psycopg.errors.CheckViolation):
-            put(w, target="x" * 201)
+            put(w, target="x" * 501)
 
     scenario(db_url, body)
 

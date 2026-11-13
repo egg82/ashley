@@ -13,6 +13,7 @@ State = Literal["armed", "paused", "ended"]
 FailReason = Literal["unreachable", "not_connected", "refused", "bad_result", "too_many_items", "unknown_kind"]
 EndReason = Literal["until", "expired", "disarmed"]
 MAX_BRIEF = 500
+MAX_TARGET = 500
 
 
 @dataclass(frozen=True)

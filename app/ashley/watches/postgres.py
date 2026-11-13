@@ -12,7 +12,7 @@ from ..criteria import condition
 from ..db.database import Database, DatabaseUnavailable
 from . import rows
 from .config import CONFIG, WatchesConfig
-from .model import MAX_BRIEF, Arm, Armed, Baseline, Check, Counts, Failed, Later, Watch, Woke
+from .model import MAX_BRIEF, MAX_TARGET, Arm, Armed, Baseline, Check, Counts, Failed, Later, Watch, Woke
 from .watches import Watches, WatchesUnavailable
 
 _KIND = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
@@ -183,9 +183,9 @@ class PostgresWatches(Watches):
 
     def _checked(self, arm: Arm) -> None:
         c = self._config
-        if not (1 <= len(arm.target) <= 200 and 1 <= len(arm.label) <= 100 and 1 <= len(arm.track) <= 8
+        if not (1 <= len(arm.target) <= MAX_TARGET and 1 <= len(arm.label) <= 100 and 1 <= len(arm.track) <= 8
                 and arm.interval_s > 0 and _KIND.match(arm.kind) is not None and "\x00" not in arm.target + arm.label):
-            raise ValueError("a watch has a kind, a target of 1 to 200 characters, a label of 1 to 100, 1 to 8 "
+            raise ValueError(f"a watch has a kind, a target of 1 to {MAX_TARGET} characters, a label of 1 to 100, 1 to 8 "
                              "tracked fields and a positive interval")
         if arm.tools is not None and len(arm.tools) > 20:
             raise ValueError("a watch has at most 20 tools")
