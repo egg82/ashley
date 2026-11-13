@@ -53,7 +53,7 @@ def messages(system: SystemPrompt, entries: tuple[Entry, ...]) -> list[ChatCompl
         elif isinstance(entry, ToolCalls):
             out.append(_asked(entry))
         else:
-            out.extend({"role": "tool", "tool_call_id": r.call_id, "content": _result_text(r)} for r in entry.results)
+            out.extend({"role": "tool", "tool_call_id": r.call_id, "content": result_text(r)} for r in entry.results)
             shown = _pictures(entry.results)
             if shown is not None:
                 out.append(shown)
@@ -92,7 +92,7 @@ def _echoed(call: ToolCall) -> _EchoedCall:
                                     "function": {"name": call.name, "arguments": json.dumps(dict(call.arguments))}})
 
 
-def _result_text(result: ToolResult) -> str:
+def result_text(result: ToolResult) -> str:
     return json.dumps({"is_error": True, "content": result.content}) if result.is_error else result.content
 
 
