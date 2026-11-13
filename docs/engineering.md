@@ -106,7 +106,7 @@ timed by name against its own ceiling, since under xdist which test reaches it f
 today is `tests/time_gate_held.py`, which may only shrink. Each shard's log ends with the gate's margin, every test
 over half the ceiling by the gate's own measure; a test there is one to speed up before it fails a run. Time never
 comes from the wall in a test: a timeout, lease
-or retry takes an injected value, and a dependency that is down fails at once (`contract_support.down_database` is the
+or retry takes an injected value (the lease runs on `tests/virtual_time.py`'s jumping loop against `tests/etcd_fake.py`), and a dependency that is down fails at once (`contract_support.down_database` is the
 real pool over a closed port with 0.1 s timeouts). Each shard runs two xdist workers on its four vCPUs, leaving the
 rest to Postgres; hosted runners give each job its own machine, so `ci.yml` needs no lock between pipelines.
 A test does not start another Python where `pytester` can run the nested session in process: a child that imports
