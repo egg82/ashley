@@ -12,12 +12,11 @@ agreed to: `Inbound.tools_only`), when it carries them out and says what it did.
 below or a bill coming due fired carries it (`Reminder.landed`), which she states from its fields. A reminder a tainted turn made starts tainted `inherited`
 (`Reminder.taint`), since its brief was written under outside words. The wake's id is the turn's `source`, so an occurrence handed in twice is one turn."""
 
-from dataclasses import replace
-
 from ...people.model import Person
 from ...senses.deposit_rule import Landed, money
 from ...senses.wakes import Reminder
 from ..model import Device, Inbound
+from .on_device import moved
 
 
 def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, device: Device | None = None) -> Inbound:
@@ -30,10 +29,7 @@ def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, d
                     taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in)
     if device is None:
         return phone
-    room = reminder.route == "room"
-    return replace(phone, thread=f"device:{device.id}", medium="spoken" if room else "text", audience=device.audience,
-                   shared=True, place=device.place, channel="voice" if room else "web",
-                   device_id=None if room else device.id)
+    return moved(phone, reminder.route, device)
 
 
 def _judged(reminder: Reminder) -> bool:
