@@ -40,6 +40,7 @@ jobs:
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       shards: ${{ steps.diff.outputs.shards }}
+      test_image: ${{ steps.diff.outputs.test_image }}
     steps:
       # A pull request's checkout is its merge commit, whose first parent is the base branch's tip.
       - uses: actions/checkout@v4
@@ -57,14 +58,69 @@ jobs:
           echo "docs_only=$docs_only shards=$shards"
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
+          echo "test_image=$GHCR_REPO/ashley-ci:$(python3 app/tools/ci_image_hash.py)" >> "$GITHUB_OUTPUT"
+
+  # The image the Python jobs run in (app/ci/Containerfile: both requirement files and ffmpeg installed), tagged by
+  # a hash of those files (app/tools/ci_image_hash.py) and built only when GHCR lacks that tag. Only CI pulls it, so it
+  # lives in GHCR alone, and a pull request pushes it too: `tests` and `pyright` start only after this job, so a pull
+  # request that changes requirements runs in the image it changed. A fork's pull request has a read-only token and
+  # cannot push a missing tag.
+  test-image:
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Is this hash new?
+        id: want
+        env:
+          IMAGE: ${{ needs.changes.outputs.test_image }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "$IMAGE exists: nothing to build"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$IMAGE is missing: building"
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push
+        if: steps.want.outputs.build == 'true'
+        env:
+          IMAGE: ${{ needs.changes.outputs.test_image }}
+        run: |
+          docker build --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            -f app/ci/Containerfile -t "$IMAGE" app
+          docker push "$IMAGE"
 
   # The suite on the Postgres major production runs (18, with pgvector) and the etcd release the referee runs. Each
   # shard takes every SHARDS-th test file in name order, so the shards together run exactly the files pytest collects.
   # A docs-only pull request runs one job over every file, selecting the `reads_docs` tests, which need no services.
   tests:
-    needs: changes
+    needs: [changes, test-image]
+    if: always() && needs.changes.result == 'success' && (needs.test-image.result == 'success' || (needs.changes.outputs.docs_only == 'true' && needs.test-image.result == 'skipped'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.changes.outputs.test_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -86,33 +142,22 @@ jobs:
       - uses: actions/checkout@v4
 
       # Started by hand, not as `services:`, which cannot pass a command: Postgres takes throwaway-data settings, etcd
-      # listens beyond localhost, and Dex reads the config the checkout holds (its issuer names port 5556).
+      # listens beyond localhost, and Dex reads the config the checkout holds (its issuer names 127.0.0.1:5556). Each
+      # shares the job container's network namespace (the runner mounts the Docker socket into it), so all three are
+      # on 127.0.0.1 as the env above names them. Dex's config is copied in: a bind mount names a host path, and the
+      # checkout lives in the job container.
       - name: Start Postgres, etcd and Dex
         if: env.DOCS_ONLY != 'true'
         run: |
-          docker run -d --name postgres -p 5432:5432 \
+          net="container:${{ job.container.id }}"
+          docker run -d --name postgres --network "$net" \
             -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_INITDB_ARGS="--locale=C --encoding=UTF8" \
             pgvector/pgvector:0.8.2-pg18 -c fsync=off -c synchronous_commit=off -c full_page_writes=off
-          docker run -d --name etcd -p 2379:2379 quay.io/coreos/etcd:v3.7.3 \
+          docker run -d --name etcd --network "$net" quay.io/coreos/etcd:v3.7.3 \
             etcd --listen-client-urls http://0.0.0.0:2379 --advertise-client-urls http://127.0.0.1:2379
-          docker run -d --name dex -p 5556:5556 -v "$PWD/app/tests/dex/config.yaml:/etc/dex/config.yaml:ro" \
-            ghcr.io/dexidp/dex:v2.46.1 dex serve /etc/dex/config.yaml
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: app/requirements*.txt
-
-      # ffmpeg: the media runner's tests run it for real (tests/test_media_runner.py).
-      - name: Install ffmpeg
-        if: env.DOCS_ONLY != 'true'
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends ffmpeg
-
-      - name: Install dependencies
-        run: pip install -r app/requirements.txt -r app/requirements-dev.txt
+          docker create --name dex --network "$net" ghcr.io/dexidp/dex:v2.46.1 dex serve /etc/dex/config.yaml
+          docker cp app/tests/dex/config.yaml dex:/etc/dex/config.yaml
+          docker start dex
 
       - name: Wait for Postgres, etcd and Dex
         if: env.DOCS_ONLY != 'true'
@@ -145,18 +190,20 @@ jobs:
 
   # Pyright's error count against the held one in app/tools/held/pyright.json: it may only go down.
   pyright:
-    needs: changes
+    needs: [changes, test-image]
     if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.changes.outputs.test_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: app/requirements*.txt
-      - run: pip install -r app/requirements.txt -r app/requirements-dev.txt
       - working-directory: app
         run: python tools/pyright_gate.py
 
@@ -339,7 +386,7 @@ jobs:
   # which passes a job that was skipped because something it needed failed.
   ci-ok:
     if: always()
-    needs: [changes, tests, pyright, web, app-image, hashed-images]
+    needs: [changes, test-image, tests, pyright, web, app-image, hashed-images]
     runs-on: ubuntu-24.04
     steps:
       - env:
