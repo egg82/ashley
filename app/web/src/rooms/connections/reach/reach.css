@@ -68,8 +68,8 @@
 
 /* what needs a person */
 .rr-cards { display: grid; gap: 12px; }
-.rr-card { display: grid; gap: 8px; padding: 16px 18px; border: 1px solid var(--brass-dim); border-left: 3px solid var(--brass); border-radius: var(--r-3);
-  background: linear-gradient(90deg, color-mix(in srgb, var(--brass) 8%, var(--ink-2)), var(--ink-2) 60%); }
+.rr-card { display: grid; gap: 8px; padding: 16px 18px; border: 1px solid var(--warn-dim); border-left: 3px solid var(--warn); border-radius: var(--r-3);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--warn) 8%, var(--ink-2)), var(--ink-2) 60%); }
 .rr-card h2 { font-size: 16px; }
 .rr-card p { margin: 0; color: var(--text-2); }
 

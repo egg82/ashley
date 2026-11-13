@@ -30,8 +30,8 @@ select.hh-slot option { font: 14px var(--f-body); color: var(--text); background
 .hh-pen { display: flex; align-items: center; gap: 12px; }
 .hh-track { flex: 1; height: 3px; border-radius: 2px; background: var(--ink-3); overflow: hidden; }
 .hh-track i { display: block; height: 100%; background: var(--blue); border-radius: 2px; transition: width var(--t-chip) var(--ease-out); }
-.hh-track.near i { background: var(--brass); }
-.meta.near { color: var(--brass-hi); }
+.hh-track.near i { background: var(--warn); }
+.meta.near { color: var(--warn); }
 
 /* her manner */
 .hh-manner { display: grid; gap: 12px; }

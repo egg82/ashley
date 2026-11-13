@@ -31,7 +31,7 @@
 .hc-name b { font-weight: 500; overflow-wrap: anywhere; }
 
 .ced-save { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-2);
-  border: 1px solid var(--brass-dim); background: var(--ink-2); font-size: 13px; }
+  border: 1px solid var(--warn-dim); background: var(--ink-2); font-size: 13px; }
 .ced-save span { margin-right: auto; }
 .ced-save.up { animation: ced-rise var(--t-chip) var(--ease-out); }
 @keyframes ced-rise { from { transform: translateY(14px); opacity: 0; } }
