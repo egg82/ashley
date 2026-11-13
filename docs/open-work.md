@@ -429,10 +429,7 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       with component kinds as a Type Object in a data file and integrations being Senses and Tools. Itself a new
       system, **Surfaces** (what each surface shows now, and why), since nothing owns layout. Waits on Initiative
       (item 4).
-21. **She runs code.** Two sizes, two places.
-    - **Snippets**: `run_code` runs a script in a gVisor pod per run, recorded against the turn ("She runs a script in
-      a gVisor pod of its own"). Waiting: the app's Deployment in the cluster repo mounting the projected token and CA
-      (`SANDBOX_TOKEN_FILE`, `SANDBOX_CA_FILE`); until then she runs no code.
+21. **She works in codebases.** Snippets already run (`run_code`, "She runs a script in a gVisor pod of its own").
     - **Codebases**: a VM of her own running herdr, which she controls: she starts, prompts and closes its
       Claude Code sessions for background work and work needing more finesse (the owner's other apps), through item 12's
       bridge with her as the sessions' owner. The owner can step into any session at any time, but the VM is hers.
