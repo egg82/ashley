@@ -28,7 +28,7 @@ def test_a_proposal_id_is_set_exactly_when_something_is_held(done: tuple[Receipt
 @pytest.mark.parametrize("shape", SHAPES)
 def test_json_round_trips_and_names_done_held_and_proposal_id(shape: Receipts) -> None:
     out = shape.to_json()
-    assert set(out) == {"done", "held", "proposal_id"} and out["proposal_id"] == shape.proposal_id
+    assert set(out) == {"done", "held", "proposal_id", "facts"} and out["proposal_id"] == shape.proposal_id
     assert Receipts.from_json(out) == shape
 
 

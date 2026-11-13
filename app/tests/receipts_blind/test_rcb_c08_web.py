@@ -26,7 +26,7 @@ def test_c08_her_turn_serves_the_stored_snapshot_and_a_turn_without_serves_null(
 
 def test_c08_the_wire_names_done_held_and_the_proposal_and_each_receipt_its_three_parts(page: Site) -> None:
     got = page.turns()[1]["receipts"]
-    assert set(got) == {WIRE_RAN, "held", "proposal_id"} and got["proposal_id"] == RECEIPTS.proposal_id
+    assert set(got) == {WIRE_RAN, "held", "proposal_id", "facts"} and got["proposal_id"] == RECEIPTS.proposal_id
     assert all(set(r) == {"headline", "detail", "why"} for r in (*got[WIRE_RAN], *got["held"]))
     assert got[WIRE_RAN][0]["why"] == "RB-why-1" and got["held"][0]["why"] is None
 

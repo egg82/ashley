@@ -8,7 +8,8 @@ and the text she and the person read: the headline of a change whose tool has no
 (`done_label`, `held_label`), the line that
 carries receipts into her history (`history_*`), what a tap on Agree stores as the person's turn (`agreed_turn`), and
 the words her history gives each agreed call's outcome (`agreed_ran`, `agreed_failed`, `not_run`) in the line for an
-agreeing turn (`history_agreed`, `history_agreed_interrupted`)."""
+agreeing turn (`history_agreed`, `history_agreed_interrupted`), and the words for the choice rows shown beside her reply
+on a bench (`history_facts`)."""
 
 import json
 from collections.abc import Mapping
@@ -25,7 +26,7 @@ _TEXTS = ("held", "needs_private", "too_long", "too_many", "agreeing_tainted", "
           "unavailable",
           "carry_out_description", "unlabelled", "done_label", "held_label", "history_line", "history_done", "history_held", "unknown_recipient",
           "no_words", "why_held", "why_ran", "agreed_turn", "agreed_ran", "agreed_failed", "history_agreed",
-          "history_agreed_interrupted")
+          "history_agreed_interrupted", "history_facts")
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,7 @@ class OutsideConfig:
     agreed_failed: str
     history_agreed: str
     history_agreed_interrupted: str
+    history_facts: str
 
 
 def load() -> OutsideConfig:

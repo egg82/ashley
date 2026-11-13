@@ -10,7 +10,7 @@ found a bench tool of the same turn can name; a runner that resumes the turn sta
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
-from ..conversations.model import AgreedCall, Kind, Receipts
+from ..conversations.model import AgreedCall, Fact, Kind, Receipts
 from ..inference.model import SystemPrompt, Tier, ToolCall, ToolResult, ToolSpec
 from ..inference.reply import Reply
 from ..tools.action_judge import Vetting
@@ -19,7 +19,7 @@ from ..tools import outside_config
 from ..tools.outside import Outside
 from ..tools.results import Results, bound
 from ..tools.tools import Catalogue, Tools, ToolsUnavailable
-from . import escalation, judge_words, standing, turn_tools
+from . import bench_facts, escalation, judge_words, standing, turn_tools
 from .limits import Limits
 from .model import Inbound
 from .tool_loop import NO_STEPS, Arrived, Steps
@@ -61,6 +61,7 @@ class Landing(Tools):
         self._outside = Outside(_Current(self), standing.of(inbound), said, tainted=tainted or inbound.taint, config=config,
                                 words=words)
         self._receipts: Receipts | None = None
+        self._facts: tuple[Fact, ...] | None = None
         self._arrived: Arrived | None = None
         self._guided: int | None = None
         self._steps: Steps = NO_STEPS
@@ -122,11 +123,18 @@ class Landing(Tools):
 
     async def closing(self, reply: Reply) -> Reply:
         """`reply` as it is stored: her words untouched, and said (`says` `reply`) whatever she set when the turn held
-        calls, since a held change nobody sees is lost. What code shows beside it is built here (`receipts`)."""
+        calls, since a held change nobody sees is lost. What code shows beside it is built here (`receipts`): on a
+        bench, with a reply that is said, the choice rows the person has not been shown too (`bench_facts.shown`),
+        recorded shown the first time this is asked, so a turn closed again after a steer shows the same ones."""
         self._receipts = await self._outside.receipts()
-        if self._receipts is None or not self._receipts.held or reply.says != "none":
-            return reply
-        return reply.model_copy(update={"says": "reply"})
+        if self._receipts is not None and self._receipts.held and reply.says == "none":
+            reply = reply.model_copy(update={"says": "reply"})
+        if self._facts is None and reply.says != "none":
+            self._facts = await bench_facts.shown(self._inbound)
+        if self._facts:
+            self._receipts = (Receipts(facts=self._facts) if self._receipts is None
+                              else replace(self._receipts, facts=self._facts))
+        return reply
 
     async def call(self, call: ToolCall) -> ToolResult:
         """The call, run by the turn's tools as they are; if it moved the page, the turn is saved as the bench's before
