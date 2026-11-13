@@ -308,8 +308,24 @@ deposit into the household's Sure.
   the Sure transaction id, which the wakes table keeps unique per household. A retry, a second reader or a holder with
   no memory stores nothing twice. The lookback (days) stays under the wakes' keeping (a week), so a pruned reminder
   cannot let its deposit fire again.
-- **Logs** carry one line per poll (household, transactions read, matches, fired, duration) and one per fire; never an
-  amount, payee or account name.
+- **A balance falling below is the same rule, one field apart.** The rule carries `below_cents` ("tell me if checking
+  drops under $200"), which `remind_on_money` takes as `balance_below` in place of `direction`, and then has no
+  minimum, payee or conditions. While such a rule is armed the sense reads the household's accounts through the Ledger
+  (`ashley.ledger.model.Account`'s `cents`, Sure's `balance_cents`) each poll, under the same lease, and reads
+  transactions only while a transaction rule is armed. **One fall fires one reminder until the balance recovers:**
+  `balance_lows` holds, per armed rule, whether it is below now and how many falls it has seen; a fall marks it below
+  and stores the once reminder in the same statement, its event id `balance:<armed id>:<fall>`, so a retry, a second
+  reader or the next holder stores nothing while it stays below; a read at or above the threshold clears it, and the
+  next fall fires again (`ashley.senses.postgres_deposits.PostgresDeposits.below`). An account already below when the
+  rule is armed fires on the first read, since that is what the person asked to hear. `Landed` carries the balance
+  and `below_cents`, and her turn states both. An account the read does not list, or lists with no balance, changes
+  nothing. Rejected: a watch over the accounts, whose baseline moves only when it wakes her, so a recovery is never
+  recorded and a second fall compares against the first and stays quiet, and which always expires; a house wake with
+  a wake rule, which needs a person the wake is about (an account has none) and would put a threshold on a generic
+  wake rule or in a new household store; a margin above the threshold before it counts as recovered, until a balance
+  hovering at one is seen.
+- **Logs** carry one line per poll (household, transactions read, matches, fired, balance rules judged and fallen,
+  duration), one per fire and one per fall; never an amount, payee or account name.
 
 ## Rules she writes are composed from general predicates
 
