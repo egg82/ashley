@@ -90,7 +90,7 @@ def test_choice_rows_read_back_as_their_fields_and_a_row_without_kind_is_a_numbe
     got = measurements.items_of(body(form(source="stated", turn=927, ref="r"), WIDTH))
     assert got == (measurements.Choice("lanyard_form", "The lanyard", "flat woven strap", "stated",
                                        ("flat woven strap", "round cord"), 927, None, "r"),
-                   measurements.Measurement("strap_width", 20.0, "mm", "guessed", None, None, False, "lanyard_form"))
+                   measurements.Measurement("strap_width", 20.0, "mm", "guessed", None, None, "lanyard_form"))
     assert got is not None and [measurements.confirmed(r) for r in got] == [True, False]
 
 

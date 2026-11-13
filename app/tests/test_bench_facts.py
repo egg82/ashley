@@ -1,11 +1,13 @@
-"""The choice rows shown beside her reply on a bench (`Receipts.facts`), through `Landing.closing` over the real
-Workshop: each row once, again only after its value changes; none for a reply she keeps to herself (and those wait for
+"""The rows shown beside her reply on a bench (`Receipts.facts`), through `Landing.closing` over the real
+Workshop: each choice row once, again only after its value changes, and a guessed number an unconfirmed check of the
+turn's run rests on, once, by its value and unit; none for a reply she keeps to herself (and those wait for
 the next turn); the same ones when a steered turn closes again; none from a piece a tainted turn wrote; carried into
 her history as the app's line, on the wire with their options, and read back from receipts stored before them."""
 
 import json
 from collections.abc import Awaitable, Callable
 from dataclasses import replace
+from datetime import UTC, datetime
 
 from ashley import services
 from ashley.api.receipt_models import wire_receipts
@@ -17,6 +19,8 @@ from ashley.conversations.model import Fact, Receipt, Receipts
 from ashley.db.pool import PoolDatabase
 from ashley.inference.reply import Reply
 from ashley.live.live import Live
+from ashley.runs.model import BenchRun, Output, Run
+from ashley.runs.runs import NullRuns, Runs, RunsUnavailable
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.commands import Add, Edit
 from ashley.workshop.model import HER, By, Owner, Text
@@ -85,6 +89,55 @@ def test_each_choice_is_shown_beside_one_reply_and_again_only_once_it_changes(db
         third = Landing(on_bench(alana, bench), (1, 3), LIMITS)
         await third.closing(SAID)
         assert [f[4] for f in facts(third)] == ["round cord"]
+
+    bench_world(db_url, scenario)
+
+
+class _TurnRuns(NullRuns):
+    def __init__(self, runs: list[Run] | None) -> None:
+        self._runs = runs
+
+    async def bench_runs_of_turn(self, household_id: int, turn_id: int) -> list[Run]:
+        if self._runs is None:
+            raise RunsUnavailable()
+        return [r for r in self._runs if r.turn_id == turn_id]
+
+
+def _model_run(bench: int, piece: int, turn: int, rests_on: list[str]) -> Run:
+    report = {"unit": "mm", "parts": [], "triangles": 0, "checks": [
+        {"name": "fits", "actual": 2.0, "op": ">=", "target": 1.0, "tolerance": 0.0, "rests_on": rests_on}]}
+    output = Output("ran", 0, "", "", False, {"out/report.json": json.dumps(report)}, ())
+    files = {"measurements.json": json.dumps({"items": [{"name": "width", "value": 12, "unit": "mm", "source": "guessed"}]})}
+    now = datetime.now(UTC)
+    return Run(1, 1, 1, turn, "c", "build123d", "s", "", files, now, now, output, BenchRun(bench, 3, piece, 1))
+
+
+def test_a_guessed_number_a_check_of_the_turns_run_is_unconfirmed_on_is_shown_once(db_url: str) -> None:
+    async def scenario(alana: Owner, bench: int, shop: Workshop) -> None:
+        services.register(Runs, _TurnRuns([_model_run(bench, 2, 1, ["width"])]))
+        first = Landing(on_bench(alana, bench), (1, 1), LIMITS)
+        await first.closing(SAID)
+        assert [f[2:] for f in facts(first)] == [("form", "The lanyard", "flat strap", ("flat strap", "round cord")),
+                                                 ("width", "width", "12 mm", ())]
+        assert await first.closing(SAID) == SAID and len(facts(first)) == 2
+        again = Landing(on_bench(alana, bench), (1, 2), LIMITS)
+        services.register(Runs, _TurnRuns([_model_run(bench, 2, 2, ["width"])]))
+        await again.closing(SAID)
+        assert again.receipts is None
+
+    bench_world(db_url, scenario)
+
+
+def test_a_number_no_unconfirmed_check_rests_on_is_not_shown_and_unreadable_runs_leave_the_choices(db_url: str) -> None:
+    async def scenario(alana: Owner, bench: int, shop: Workshop) -> None:
+        services.register(Runs, _TurnRuns(None))
+        lost = Landing(on_bench(alana, bench), (1, 1), LIMITS)
+        await lost.closing(SAID)
+        assert [f[2] for f in facts(lost)] == ["form"]
+        services.register(Runs, _TurnRuns([_model_run(bench, 2, 2, [])]))
+        quiet = Landing(on_bench(alana, bench), (1, 2), LIMITS)
+        await quiet.closing(SAID)
+        assert quiet.receipts is None
 
     bench_world(db_url, scenario)
 

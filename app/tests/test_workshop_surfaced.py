@@ -1,12 +1,13 @@
 """A Surfaced from `decide`'s contract and the rows still to show (`surfacing.unshown`): a choice row is shown once for
-its name and value, again only when either changes; a piece a tainted turn wrote is never shown; a Surfaced changes no
+its name and value, again only when either changes, and a guessed number only when a check rests on it, by its value and
+unit; a piece a tainted turn wrote is never shown; a Surfaced changes no
 piece, is never undone, never stands in the way of undoing the change before it, and is kept by the codec."""
 
 import json
 
 from ashley.workshop.codec import decode_command, decode_effect, encode_command, encode_effect
 from ashley.workshop.commands import Add, Command, Edit, Shown, ShownRow, Surfaced, Undo, type_of
-from ashley.workshop.measurements import Choice
+from ashley.workshop.measurements import Row, shown_value
 from ashley.workshop.decide import Accepted, Decision, Refused, replay
 from ashley.workshop.model import HER, By, Piece, Text
 from ashley.workshop.rules import Kind, Rules
@@ -54,8 +55,8 @@ def seen_by(decisions: list[Decision]) -> Seen:
                      if isinstance(d, Accepted) and isinstance(d.effect, Shown) for r in d.effect.rows)
 
 
-def names(rows: tuple[tuple[int, Choice], ...]) -> list[tuple[int, str, str]]:
-    return [(p, r.name, r.value) for p, r in rows]
+def names(rows: tuple[tuple[int, Row], ...]) -> list[tuple[int, str, str]]:
+    return [(p, r.name, shown_value(r)) for p, r in rows]
 
 
 def test_every_choice_row_is_unshown_until_a_surfaced_names_it_whatever_its_source() -> None:
@@ -67,6 +68,33 @@ def test_every_choice_row_is_unshown_until_a_surfaced_names_it_whatever_its_sour
     assert isinstance(shown[1], Accepted) and shown[1].effect == Shown(1, (ShownRow("form", "flat strap"),
                                                                            ShownRow("oven", "gas")))
     assert unshown(pieces_after(shown), seen_by(shown), RULES) == ()
+
+
+def test_a_guessed_number_is_unshown_only_when_a_check_rests_on_it_and_is_shown_once_by_value_and_unit() -> None:
+    measured: dict[str, object] = {"name": "hole", "value": 6, "unit": "mm", "source": "measured"}
+    add = Add(HER, "measurements", Text("m", body(NUMBER, measured, choice("form", "flat strap"))), "small")
+    added = run(add)
+    pieces = pieces_after(added)
+    assert names(unshown(pieces, frozenset(), RULES)) == [(1, "form", "flat strap")]
+    assert names(unshown(pieces, frozenset(), RULES, frozenset({"width", "hole"}))) == [(1, "width", "12 mm"), (1, "form", "flat strap")]
+    told = run(add, Surfaced(HER, 1, (ShownRow("width", "12 mm"),)))
+    assert isinstance(told[1], Accepted)
+    assert names(unshown(pieces_after(told), seen_by(told), RULES, frozenset({"width"}))) == [(1, "form", "flat strap")]
+    changed = run(add, Surfaced(HER, 1, (ShownRow("width", "12 mm"),)),
+                  Edit(HER, 1, 1, Text("m", body({**NUMBER, "value": 13}, measured, choice("form", "flat strap")))))
+    assert names(unshown(pieces_after(changed), seen_by(changed), RULES, frozenset({"width"}))) == [
+        (1, "width", "13 mm"), (1, "form", "flat strap")]
+
+
+def test_a_guessed_number_is_taken_from_the_first_piece_that_holds_its_name_and_never_from_an_outside_one() -> None:
+    other: dict[str, object] = {**NUMBER, "value": 99}
+    got = run(Add(HER, "page", Text("p", body(other)), "small"),
+              Add(HER, "measurements", Text("m", body(NUMBER)), "small"),
+              Add(HER, "measurements", Text("n", body(other)), "small"))
+    assert unshown(pieces_after(got), frozenset(), RULES, frozenset({"width"})) == ()
+    household = run(Add(HER, "measurements", Text("m", body(NUMBER)), "small"),
+                    Add(HER, "measurements", Text("n", body(other)), "small"))
+    assert names(unshown(pieces_after(household), frozenset(), RULES, frozenset({"width"}))) == [(1, "width", "12 mm")]
 
 
 def test_a_row_is_shown_again_only_when_its_value_or_name_changes() -> None:

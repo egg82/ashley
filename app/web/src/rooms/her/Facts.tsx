@@ -1,6 +1,6 @@
-// The choices she set on a bench, shown beside her reply once each (`WireReceipts.choice_rows`): each with what it is about
+// The rows she set on a bench, shown beside her reply once each (`WireReceipts.choice_rows`): a choice with what it is about
 // and its options as buttons, hers pressed; a tap sets the row as the person's, and the bench reads back as for any
-// change of theirs.
+// change of theirs. A guessed number a check rests on has no options, so it is read here and answered in the talk.
 import { useId, useState } from 'preact/hooks';
 import type { WireReceipts } from '../../api/types';
 import { ApiError } from '../../api/client';

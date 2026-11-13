@@ -228,18 +228,16 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     flag. Rejected: a continuous render loop, which a still photograph and an idle page do not need.
 - **Measurements are structured data, each with its source** (kind `measurements`, format `measurements`,
   `ashley.workshop.measurements`). The body is JSON: `{"items": [{"name", "value", "unit", "source", "tolerance",
-  "ref", "asked"}]}`. `name` is an identifier unique within the piece. `value` is finite. `unit` is `mm`, `deg`,
+  "ref", "given"}]}`. `name` is an identifier unique within the piece. `value` is finite. `unit` is `mm`, `deg`,
   `count`, `g`, `ml` or `min`, with lengths always in millimetres, masses in grams, volumes in millilitres and durations
   in minutes (she converts what she is told). `source` is `measured` (the person measured, counted or stated it, or a
   file embodies it), `datasheet`, `accepted` (she asked and the person said to go with the value), `bound` (something
   soft or varying whose true size is the range `value` ± `tolerance`, so a bound row carries a tolerance above 0 and the
   part is built to work over the whole range) or `guessed`; every source but `guessed` is confirmed. `tolerance` is an
   optional ± of 0 or more in the unit. `ref` is optional text up to 200 characters (the datasheet's address, what was
-  measured with, the photo piece a form was seen in). `asked`, on a guessed row only, is true once the person has been
-  asked for it: each bench turn is a fresh call and a later conversation on the bench does not carry the earlier one's
-  question, so the row carries it, and she asks for a row marked asked no more. `given` optionally names a choice row
+  measured with, the photo piece a form was seen in). `given` optionally names a choice row
   of the same piece the number belongs to (a strap's width is given the strap's form). Anything else is refused
-  `bad_measurements`. The room shows a table with each value's source, a guess hatched and marked when asked, a choice
+  `bad_measurements`. The room shows a table with each value's source, a guess hatched, a choice
   by its label. Either side edits it like any piece, so a correction is logged and undoable. An edit of hers that changes
   what a confirmed row holds (a number's value, unit or tolerance; a choice's value) while keeping where it came from (a
   number's source and ref; a choice's source, turn and piece) is refused `confirmed_measurement`: a confirmed row
@@ -266,9 +264,12 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     `chosen()` only to the row's own `options`). Rejected for now: `piece` on numbers, so that a number of hers whose
     `ref` cites a photo could be refused as `measured`.
   - **Each choice she sets is shown to the person once, by code**, beside her reply and never in it, whatever its
-    source, so a wrong form she recorded as seen or stated is in front of the person too. As a bench turn closes with
-    a reply that is said, every choice row of the bench's measurements pieces that no `Surfaced` names by its current
-    name and value is recorded shown, one `Surfaced` of hers per piece (`ashley.workshop.surface.surface`), and goes
+    source, so a wrong form she recorded as seen or stated is in front of the person too. So is a guessed number that
+    an unconfirmed check of the turn's own run rests on (`model_report.open_guesses` of the turn's latest bench run of
+    each piece, `Runs.bench_runs_of_turn`): by its name read as words, its value and unit (`measurements.shown_value`),
+    with no options, so the card shows it and the person answers in the talk. As a bench turn closes with
+    a reply that is said, every such row of the bench's measurements pieces that no `Surfaced` names by its current
+    name and shown value is recorded shown, one `Surfaced` of hers per piece (`ashley.workshop.surface.surface`), and goes
     into `Receipts.facts` (bench, piece, name, label, value, options), stored with her turn like any receipt and
     carried into her history on the app's line. `Surfaced` is a non-piece Command read back from the log as `Point`
     is (`BenchView.surfaced`): it changes no piece, is never undone, and moves neither the bench's last change, the
@@ -280,9 +281,11 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     and logs nothing. Their own `Surfaced` of the new value follows, so it is not shown back to them. A piece of an
     outside kind or one a tainted turn wrote is never shown (`decide` refuses its Surfaced `bad_rows`): its labels
     and options are not household words, so it gets an ids-only line in the moment layer instead (piece id and its
-    count of unconfirmed rows, `ashley.tools.bench_now.now`). Rejected: her asking in words and marking the row
-    asked, which leaves the person's seeing the row to her words and an `asked` flag every edit of hers must carry
-    right; a Live-only notice, which a reload loses.
+    count of unconfirmed rows, `ashley.tools.bench_now.now`). A number a run does not rest on is not shown, so the card never lists every guess on the bench; the moment layer
+    lists each open number with `shown`, from the log, so a later turn knows what is in front of the person. Rejected:
+    her asking in words and marking the row asked, which leaves the person's seeing the row to her words and a flag
+    every edit of hers must carry right (the flag is gone, and a migration turned each stored one into a `Surfaced`); a
+    Live-only notice, which a reload loses.
 - **A diagram is Mermaid source in a stored piece** (kind `diagram`, format `diagram`, up to 20000 characters). The
   server keeps the text as written and checks nothing about it; the client draws it (`DiagramView.tsx`) with Mermaid,
   imported on first use, so a bench with no diagram never loads it, and bundled, because the look pod's browser has no

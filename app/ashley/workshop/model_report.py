@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from ..runs.model import Output
 from .automation_config import object_of
-from .measurements import confirmed, items_of
+from .measurements import Measurement, confirmed, items_of
 from .measurements_file import NAME as MEASUREMENTS
 
 REPORT = "out/report.json"
@@ -144,6 +144,15 @@ def report_of(output: Output, inputs: Mapping[str, str]) -> ModelReport | None:
     except ValueError:
         return None
     return None if raw is None else _report(raw, _confirmed(inputs))
+
+
+def open_guesses(output: Output, inputs: Mapping[str, str]) -> frozenset[str]:
+    """The names of the guessed numbers an unconfirmed check of the run's report rests on (`report_of`): none for a run
+    with no report. A name the run's measurements do not hold is not one."""
+    report = report_of(output, inputs)
+    rested = {n for c in report.checks if c.verdict == "unconfirmed" for n in c.rests_on} if report else set[str]()
+    guessed = {m.name for m in items_of(inputs.get(MEASUREMENTS, "")) or () if isinstance(m, Measurement) and not confirmed(m)}
+    return frozenset(rested & guessed)
 
 
 def _confirmed(inputs: Mapping[str, str]) -> frozenset[str]:

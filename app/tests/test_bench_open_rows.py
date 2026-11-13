@@ -1,11 +1,12 @@
 """What is still open on a bench reaches every later turn: the moment layer lists each guessed row of the bench's
-measurements pieces, asked or not, however far into its piece, and none from a piece written after outside words or of
+measurements pieces, shown or not, however far into its piece, and none from a piece written after outside words or of
 an outside kind; a bench with none says nothing extra. And a page `read_page` reads that publishes a recipe gives the
 recipe first."""
 
 import asyncio
 import json
 from collections.abc import Mapping
+from dataclasses import replace
 
 import httpx2
 
@@ -15,6 +16,7 @@ from ashley.tools.pages import Pages
 from ashley.tools.results import Results
 from ashley.tools.web_search import WebSearchTools
 from ashley.inference.model import ToolCall
+from ashley.workshop.commands import ShownRow
 from ashley.workshop.model import Bench, Piece, Place, Text
 from ashley.workshop.rules import Kind, Rules
 from ashley.workshop.workshop import BenchView
@@ -41,19 +43,20 @@ def piece(pid: int, kind: str, body: str, outside: bool = False) -> Piece:
 
 
 HEADCOUNT = {"name": "headcount", "value": 6, "unit": "count", "source": "measured"}
-TURKEY = {"name": "turkey_breast", "value": 2500, "unit": "g", "source": "guessed", "asked": True}
+TURKEY = {"name": "turkey_breast", "value": 2500, "unit": "g", "source": "guessed"}
 PIES = {"name": "pies", "value": 1, "unit": "count", "source": "guessed"}
 
 
-def test_every_guessed_row_is_listed_with_whether_it_was_asked() -> None:
+def test_every_guessed_row_is_listed_with_whether_it_was_shown() -> None:
     padded = rows(HEADCOUNT, *({"name": f"r{i}", "value": i, "unit": "g", "source": "datasheet"} for i in range(50)),
                   TURKEY, PIES)
-    shown = view(piece(1, "note", "plan"), piece(2, "measurements", padded))
+    shown = replace(view(piece(1, "note", "plan"), piece(2, "measurements", padded)),
+                    surfaced=frozenset({(2, ShownRow("turkey_breast", "2500 g"))}))
     assert open_rows(shown, RULES) == [
-        {"piece": 2, "name": "turkey_breast", "value": 2500, "unit": "g", "asked": True},
-        {"piece": 2, "name": "pies", "value": 1, "unit": "count", "asked": False}]
+        {"piece": 2, "name": "turkey_breast", "value": 2500, "unit": "g", "shown": True},
+        {"piece": 2, "name": "pies", "value": 1, "unit": "count", "shown": False}]
     text = now(shown, RULES, 40)
-    assert OPEN_HEAD in text and text.rstrip().endswith('"asked": false}')
+    assert OPEN_HEAD in text and text.rstrip().endswith('"shown": false}')
 
 
 def test_rows_written_after_outside_words_are_not_listed_and_none_says_nothing() -> None:

@@ -130,7 +130,7 @@ class Landing(Tools):
         if self._receipts is not None and self._receipts.held and reply.says == "none":
             reply = reply.model_copy(update={"says": "reply"})
         if self._facts is None and reply.says != "none":
-            self._facts = await bench_facts.shown(self._inbound)
+            self._facts = await bench_facts.shown(self._inbound, self._said[1])
         if self._facts:
             self._receipts = (Receipts(facts=self._facts) if self._receipts is None
                               else replace(self._receipts, facts=self._facts))

@@ -48,7 +48,7 @@ def specs(languages: tuple[Language, ...]) -> tuple[ToolSpec, ...]:
                  "network and no access to the house. Returns what it printed, its exit code and the text files it "
                  "left, which the piece's next run starts with. A model run (build123d) also returns the meshes it made "
                  "(artifacts) and its report, each check judged by the app: unconfirmed means a measurement it rests on "
-                 "is guessed or missing; one already marked asked is not asked for again. It is shown on the piece. A model run is given only the file pieces (STL, 3MF, STEP) "
+                 "is guessed or missing; the app shows the person each guessed number one rests on, beside your reply, once. It is shown on the piece. A model run is given only the file pieces (STL, 3MF, STEP) "
                  "named in inputs, which existing(piece_id) reads; name just the ones the script uses, because they "
                  "share a size limit. Left out, inputs is every such file on the bench; an empty list is none. A piece "
                  "named that cannot be given refuses the run: nothing ran.",

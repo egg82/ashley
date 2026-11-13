@@ -99,11 +99,13 @@ def test_with_no_verdict_the_graded_measures_are_unknown_and_the_records_stand()
     assert (first.build_s, first.model_runs) == (110.0, 2)
 
 
-def test_rows_flagged_asked_on_the_bench_decide_a_reask() -> None:
-    flagged = json.dumps({"items": [{"name": "b", "value": 10, "unit": "mm", "source": "guessed", "asked": True},
-                                    {"name": "a", "value": 5, "unit": "mm", "source": "guessed", "asked": False}]})
-    first = m.measure(record(before=flagged))[0]
-    assert (first.reask_basis, first.measurement_reasks) == ("asked_flag", 1)
+def test_rows_the_bench_surfaced_before_an_ask_decide_its_reask() -> None:
+    shown = Command(11, 300.0, False, False, {"type": "surfaced", "piece_id": 1, "rows": [{"name": "b", "value": "10 mm"}]},
+                    "accepted", {"type": "shown", "piece_id": 1, "rows": [{"name": "b", "value": "10 mm"}]})
+    base = record()
+    first, second = m.measure(replace(base, commands=(*base.commands, shown)))[:2]
+    assert (first.reask_basis, first.measurement_reasks) == ("shown", 0)
+    assert (second.reask_basis, second.measurement_reasks) == ("shown", 1)
 
 
 def test_a_photo_look_or_a_form_question_before_the_first_model_change() -> None:
@@ -171,7 +173,7 @@ def plant(monkeypatch: pytest.MonkeyPatch, where: str, value: object) -> None:
 
 
 class _Forgetful(m.Window):
-    def asked_flagged(self) -> set[str] | None:
+    def shown_rows(self) -> set[str] | None:
         return set()
 
 

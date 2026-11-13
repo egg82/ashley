@@ -52,6 +52,11 @@ class Runs(Service):
         0 for an implementation that keeps no record of them. Raises RunsUnavailable."""
         return 0
 
+    async def bench_runs_of_turn(self, household_id: int, turn_id: int) -> list[Run]:
+        """The runs made by a bench's Run command that are recorded against the household's person turn `turn_id`,
+        oldest first (by id); none for an implementation that keeps no record of them. Raises RunsUnavailable."""
+        return []
+
     @abstractmethod
     async def last_on_bench(self, household_id: int, bench_id: int) -> Mapping[int, Run]:
         """The latest run of each piece of bench `bench_id` that has one, by piece id, finished or not; empty for a
