@@ -17,7 +17,7 @@ from ashley.channels.model import Inbound, Outbound
 from ashley.channels.respond import respond
 from ashley.errands.config import CONFIG
 from ashley.errands.errands import Errands, ErrandsUnavailable
-from ashley.errands.model import Counts, Done, Errand, Reason, State
+from ashley.errands.model import Counts, Done, Errand, Held, Reason, State
 from ashley.inference.model import Message, Prompt
 from ashley.inference.reply import Reply
 from ashley.persona import persona
@@ -109,6 +109,9 @@ class FakeErrands(Errands):
             raise ErrandsUnavailable("down")
         self.told_calls.append(tuple(errand_ids))
         self.waiting = [d for d in self.waiting if d.id not in set(errand_ids)]
+
+    async def held(self, asker_id: int, limit: int) -> tuple[Held, ...]:
+        raise AssertionError("not read here")
 
     async def claim(self, answering: Collection[str], max_age_s: float) -> Errand | None:
         raise AssertionError("respond never claims")

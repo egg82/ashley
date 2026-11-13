@@ -55,6 +55,10 @@ class BenchJobs(Service):
         """Every job that is not final, oldest first. Raises JobsUnavailable."""
 
     @abstractmethod
+    async def unfinished_of(self, household_id: int, person_id: int) -> tuple[Job, ...]:
+        """The person's jobs that are not final, oldest first. Raises JobsUnavailable."""
+
+    @abstractmethod
     async def heartbeat(self, job_id: int, attempt: int) -> bool:
         """Refresh `claimed_at`; False when the job is no longer claimed at `attempt` (it was cancelled, swept or
         finished), which tells the worker to stop. Raises JobsUnavailable."""
@@ -154,6 +158,9 @@ class NullBenchJobs(BenchJobs):
         raise JobsUnavailable("bench jobs are not wired")
 
     async def unfinished(self) -> tuple[Job, ...]:
+        raise JobsUnavailable("bench jobs are not wired")
+
+    async def unfinished_of(self, household_id: int, person_id: int) -> tuple[Job, ...]:
         raise JobsUnavailable("bench jobs are not wired")
 
     async def heartbeat(self, job_id: int, attempt: int) -> bool:

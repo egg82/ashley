@@ -8,7 +8,7 @@ from abc import abstractmethod
 from collections.abc import Collection
 
 from ..services import Service
-from .model import Counts, Done, Errand, Reason, State
+from .model import Counts, Done, Errand, Held, Reason, State
 
 
 class ErrandsUnavailable(Exception):
@@ -66,6 +66,11 @@ class Errands(Service):
     async def told(self, errand_ids: Collection[int]) -> None:
         """Set `told_at` on each errand not already told. Raises ErrandsUnavailable."""
 
+    @abstractmethod
+    async def held(self, asker_id: int, limit: int) -> tuple[Held, ...]:
+        """The asker's errands that are `due`, `running`, or `done` and not yet told, newest first, at most `limit`;
+        a held answer (source `outbox`) is not an errand and is left out. Raises ErrandsUnavailable."""
+
 
 class NullErrands(Errands):
     """What an unwired process sees: every call raises, so nothing is owed or told by mistake."""
@@ -95,4 +100,7 @@ class NullErrands(Errands):
         raise ErrandsUnavailable("errands are not wired")
 
     async def told(self, errand_ids: Collection[int]) -> None:
+        raise ErrandsUnavailable("errands are not wired")
+
+    async def held(self, asker_id: int, limit: int) -> tuple[Held, ...]:
         raise ErrandsUnavailable("errands are not wired")

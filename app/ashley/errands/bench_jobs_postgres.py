@@ -103,6 +103,11 @@ class PostgresBenchJobs(BenchJobs):
         rows = await self._run(f"SELECT {_COLUMNS} FROM bench_jobs WHERE state NOT IN {_FINAL} ORDER BY created_at, id", ())
         return tuple(_job(r) for r in rows)
 
+    async def unfinished_of(self, household_id: int, person_id: int) -> tuple[Job, ...]:
+        rows = await self._run(f"SELECT {_COLUMNS} FROM bench_jobs WHERE household_id = %s AND person_id = %s "
+                               f"AND state NOT IN {_FINAL} ORDER BY created_at, id", (household_id, person_id))
+        return tuple(_job(r) for r in rows)
+
     async def heartbeat(self, job_id: int, attempt: int) -> bool:
         return await self._changed(f"UPDATE bench_jobs SET claimed_at = now() WHERE {_AT} AND {_LIVE} RETURNING 1",
                                    {"id": job_id, "attempt": attempt})

@@ -37,6 +37,19 @@ class Done:
 
 
 @dataclass(frozen=True)
+class Held:
+    """An errand of the asker's that is still open or whose result is not yet told: `state` is `due` or `running`
+    (waiting on its source, then being carried out) or `done`; `ask` is the start of the person turn that asked
+    (people's data, never logged), `at` when it was asked, or finished when `done`."""
+
+    id: int
+    source: str
+    state: Literal["due", "running", "done"]
+    ask: str
+    at: datetime
+
+
+@dataclass(frozen=True)
 class Counts:
     """What a sweep gave up on: `interrupted` running errands and `expired` due ones."""
 
