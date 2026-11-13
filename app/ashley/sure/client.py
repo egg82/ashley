@@ -56,14 +56,19 @@ class HttpSure(Sure):
         self._timeout_s = timeout_s
 
     async def get(self, base: str, api_key: str, path: str, params: Mapping[str, str | int]) -> object:
+        return await self._send("get", base, api_key, path, dict(params), None)
+
+    async def _send(self, method: Literal["get"], base: str, api_key: str, path: str,
+                    params: dict[str, str | int] | None, body: dict[str, object] | None) -> object:
         started = time.monotonic()
         try:
-            response = await self._http.get(base + path, params=dict(params), timeout=self._timeout_s,
-                                            headers={"X-Api-Key": api_key, "Accept": "application/json"})
+            response = await self._http.request(method.upper(), base + path, params=params, json=body,
+                                                timeout=self._timeout_s,
+                                                headers={"X-Api-Key": api_key, "Accept": "application/json"})
         except httpx2.HTTPError as e:
-            _logged(path, "none", started)
+            _logged(method, path, "none", started)
             raise SureFailed("unreachable") from e
-        _logged(path, response.status_code, started)
+        _logged(method, path, response.status_code, started)
         if response.status_code in (401, 403):
             raise SureFailed("refused")
         if response.status_code == 404:
@@ -76,5 +81,5 @@ class HttpSure(Sure):
             raise SureFailed("not_sure") from e
 
 
-def _logged(path: str, status: int | str, started: float) -> None:
-    logs.info(log, "sure.get", path=path, status=status, duration_ms=int((time.monotonic() - started) * 1000))
+def _logged(method: str, path: str, status: int | str, started: float) -> None:
+    logs.info(log, f"sure.{method}", path=path, status=status, duration_ms=int((time.monotonic() - started) * 1000))
