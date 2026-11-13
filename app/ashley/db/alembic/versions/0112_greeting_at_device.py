@@ -4,8 +4,8 @@ push), beside `route` and `route_device_id`."""
 
 from alembic import op
 
-revision: str = "0111"
-down_revision: str | None = "0110"
+revision: str = "0112"
+down_revision: str | None = "0111"
 
 
 def upgrade() -> None:
