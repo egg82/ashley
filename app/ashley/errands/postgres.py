@@ -1,14 +1,14 @@
 """Errands in Postgres, table `errands`."""
 
 from collections.abc import Collection
-from typing import Any, LiteralString
+from typing import Any, Literal, LiteralString
 
 import psycopg
 
 from ..db.database import Database, DatabaseUnavailable
 from ..hearing import MAY_HEAR
 from .errands import Errands, ErrandsUnavailable
-from .model import Counts, Done, Errand, Reason, State, Visibility
+from .model import Counts, Done, Errand, Held, Reason, State, Visibility
 
 _OWE = """
 INSERT INTO errands (household_id, asker_id, conversation_id, turn_id, source, visibility)
@@ -61,6 +61,12 @@ SELECT id, asker_id, source, result, visibility, finished_at
 FROM (SELECT *, asker_id AS owner_id FROM errands) e
 WHERE state = 'done' AND told_at IS NULL AND asker_id = %(speaker)s AND {MAY_HEAR}
 ORDER BY finished_at, id LIMIT %(limit)s"""
+
+_HELD = f"""
+SELECT e.id, e.source, e.state, left(t.text, 300), CASE WHEN e.state = 'done' THEN e.finished_at ELSE e.created_at END AS at
+FROM errands e JOIN turns t ON t.id = e.turn_id
+WHERE e.asker_id = %s AND e.source <> 'outbox' AND (e.state IN ('due', 'running') OR (e.state = 'done' AND e.told_at IS NULL))
+ORDER BY at DESC, e.id DESC LIMIT %s"""
 
 
 class PostgresErrands(Errands):
@@ -118,6 +124,10 @@ class PostgresErrands(Errands):
             await self._run("UPDATE errands SET told_at = now() WHERE id = ANY(%s) AND told_at IS NULL",
                             (list(errand_ids),))
 
+    async def held(self, asker_id: int, limit: int) -> tuple[Held, ...]:
+        rows = await self._run(_HELD, (asker_id, limit))
+        return tuple(Held(int(r[0]), str(r[1]), _open_state(r[2]), str(r[3]), r[4]) for r in rows)
+
     async def _run(self, query: LiteralString, params: tuple[Any, ...] | dict[str, Any]) -> list[tuple[Any, ...]]:
         try:
             async with self._database.connection() as conn:
@@ -129,6 +139,12 @@ class PostgresErrands(Errands):
 
 def _state(raw: Any) -> State:
     if raw not in ("due", "running", "done", "given_up"):
+        raise ErrandsUnavailable("unknown state")
+    return raw
+
+
+def _open_state(raw: Any) -> Literal["due", "running", "done"]:
+    if raw not in ("due", "running", "done"):
         raise ErrandsUnavailable("unknown state")
     return raw
 

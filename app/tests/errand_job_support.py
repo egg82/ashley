@@ -13,7 +13,7 @@ from ashley.conversations.model import NewTurn
 from ashley.errands.config import CONFIG, ErrandsConfig
 from ashley.errands.errands import Errands, ErrandsUnavailable
 from ashley.channels.errand.job import ErrandJob
-from ashley.errands.model import Counts, Done, Errand, Reason, State
+from ashley.errands.model import Counts, Done, Errand, Held, Reason, State
 from ashley.inference.inference import Inference
 from ashley.inference.model import Prompt, Task, ToolCalls
 from ashley.inference.reply import Reply
@@ -93,6 +93,9 @@ class FakeErrands(Errands):
 
     async def told(self, errand_ids: Collection[int]) -> None:
         raise AssertionError("the job does not tell")
+
+    async def held(self, asker_id: int, limit: int) -> tuple[Held, ...]:
+        raise AssertionError("the job does not list")
 
 
 class ScriptedInference(Inference):
