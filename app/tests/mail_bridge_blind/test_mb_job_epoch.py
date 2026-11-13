@@ -1,6 +1,7 @@
 """The singleton's decisions about epochs, adoption and the fence (design: "Exactly one Bridge, fenced by the epoch",
 points 1 and 5), driven with the real record and a fake Kubernetes. Times are real and short (`config()`: fence 1.0 s,
-margin 0.5 s); a test that waits is waiting out the fence."""
+margin 0.5 s); a test that waits is waiting out the fence. Most move the old pod's last sign of life back with
+`World.age`, so only the tail of that wait passes in real time."""
 
 import time
 
@@ -50,7 +51,7 @@ def test_a_same_site_pod_whose_heartbeat_is_older_than_fence_s_is_not_adopted_an
     pod = world.begin("site-a", "bridge-quiet")
     world.beat(pod)
     kube.add_pod("bridge-quiet")
-    time.sleep(FENCE + 0.15)
+    world.age(FENCE + 0.15, pod)
     with Running(world, kube) as job:
         assert job.wait_for(lambda: world.state().epoch == pod.epoch + 1)
     assert world.state().epoch == pod.epoch + 1
@@ -60,9 +61,9 @@ def test_a_same_site_pod_whose_heartbeat_is_older_than_fence_s_is_not_adopted_an
 def test_a_new_holder_waits_until_the_old_epochs_last_heartbeat_is_fence_plus_margin_old_before_it_makes_a_pod(world: World, kube: FakeKube) -> None:
     pod = world.begin("site-a", "bridge-old")
     world.beat(pod)
+    world.age(FENCE + 0.15, pod)
     beat_at = pod.last_beat
     kube.add_pod("bridge-old")
-    time.sleep(FENCE + 0.15)
     with Running(world, kube) as job:
         assert job.wait_for(lambda: len(kube.created) == 1, limit=6)
     made = kube.created_at()[0]
@@ -73,6 +74,7 @@ def test_a_new_holder_waits_until_the_old_epochs_last_heartbeat_is_fence_plus_ma
 def test_the_epoch_is_raised_before_the_wait_so_the_old_pod_is_retired_while_the_new_holder_waits(world: World, kube: FakeKube) -> None:
     old = world.begin("site-b", "bridge-away")
     world.beat(old)
+    world.age(FENCE, old)
     with Running(world, kube) as job:
         assert job.wait_for(lambda: world.state().epoch == old.epoch + 1, limit=0.6)
         assert kube.created == []
@@ -83,6 +85,7 @@ def test_the_epoch_is_raised_before_the_wait_so_the_old_pod_is_retired_while_the
 def test_a_pod_of_the_other_site_is_never_adopted_however_fresh_its_heartbeat(world: World, kube: FakeKube) -> None:
     other = world.begin("site-b", "bridge-away")
     world.beat(other)
+    world.age(FENCE + 0.2, other)
     kube.add_pod("bridge-away")
     with Running(world, kube) as job:
         assert job.wait_for(lambda: len(kube.created) == 1, limit=6)
@@ -94,8 +97,8 @@ def test_a_pod_of_the_other_site_is_never_adopted_however_fresh_its_heartbeat(wo
 def test_the_wait_is_counted_from_the_old_epochs_last_heartbeat_not_from_the_moment_the_holder_took_over(world: World, kube: FakeKube) -> None:
     old = world.begin("site-b", "bridge-away")
     world.beat(old)
+    world.age(1.2, old)
     beat_at = old.last_beat
-    time.sleep(0.7)
     with Running(world, kube) as job:
         assert job.wait_for(lambda: len(kube.created) == 1, limit=6)
     made = kube.created_at()[0]
@@ -129,6 +132,7 @@ def test_a_pod_that_ends_is_followed_by_a_new_epoch_and_pod_after_restart_s(worl
         first = world.state()
         ended = time.monotonic()
         kube.end_pod(first.pod, "deleted")
+        world.age(FENCE - 0.1)
         assert job.wait_for(lambda: len(kube.created) == 2, limit=6)
     made = kube.created_at()[1]
     assert made - ended >= FAST["restart_s"] - 0.1, f"restarted after {made - ended:.2f}s"
@@ -157,6 +161,8 @@ def test_a_holder_that_loses_the_lease_does_not_delete_its_pod(world: World, kub
 def test_a_failed_pod_create_is_survived_and_tried_again(world: World, kube: FakeKube) -> None:
     kube.fail_create.append(KubeError("http 500"))
     with Running(world, kube) as job:
+        assert job.wait_for(lambda: world.state().epoch == 2)
+        world.age(FENCE)
         assert job.wait_for(lambda: len(kube.created) >= 1, limit=8)
         job.survived()
 
