@@ -19,6 +19,7 @@ class Account(BaseModel):
     id: str
     name: str
     balance: str | None = None
+    balance_cents: int | None = None
     currency: str | None = None
     classification: str | None = None
     account_type: str | None = None

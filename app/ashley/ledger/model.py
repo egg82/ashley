@@ -20,14 +20,16 @@ Kind = Literal["income", "expense"]
 @dataclass(frozen=True)
 class Account:
     """An account: `id` as `TransactionQuery.account_id` takes it, `name`, `balance` as the backend shows it (sign and
-    currency included), `type` the backend's word for what sort of account it is, and `classification`
-    (`asset` or `liability`). A field the backend leaves out is None."""
+    currency included), `type` the backend's word for what sort of account it is, `classification`
+    (`asset` or `liability`), and `cents`, the balance in minor units, signed as the backend signs it. A field the
+    backend leaves out is None."""
 
     id: str
     name: str
     balance: str | None
     type: str | None
     classification: str | None
+    cents: int | None = None
 
 
 @dataclass(frozen=True)

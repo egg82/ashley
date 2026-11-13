@@ -31,7 +31,7 @@ class SureLedger(Ledger):
 
     async def accounts(self, household_id: int, limit: int) -> Page[Account]:
         got = await _read(household_id, "/api/v1/accounts", {"per_page": limit}, wire.Accounts)
-        rows = tuple(Account(a.id, a.name, a.balance, a.account_type, a.classification) for a in got.accounts)
+        rows = tuple(Account(a.id, a.name, a.balance, a.account_type, a.classification, a.balance_cents) for a in got.accounts)
         return Page(rows, _total(got.pagination))
 
     async def categories(self, household_id: int, limit: int) -> Page[Category]:
