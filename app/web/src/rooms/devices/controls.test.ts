@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { CatalogueEntityInfo, DeviceControl } from '../../api/types';
-import { actionFor, added, changed, complete, draftOf, MOST, moved, removed, pickName, showsControls } from './controlRows.ts';
+import { actionFor, added, changed, complete, dirty, draftOf, MOST, moved, pickName, removed, reordered } from './controlRows.ts';
 
 const stored: DeviceControl[] = [
   { name: 'a', label: 'A', action: 'light.turn_on', entity_id: 'light.a' },
@@ -44,11 +44,29 @@ test('a list is complete when every label fits and every light is picked', () =>
   assert.equal(complete(changed(draftOf(stored), 0, { entity_id: '' })), false);
 });
 
-test('only a text screen that is nothing else carries controls', () => {
-  const base = { id: 1, name: 'n', place: 'p', form: 'other', audience: 'present', medium: 'text' } as const;
-  assert.equal(showsControls(base), true);
-  assert.equal(showsControls({ ...base, form: 'satellite' }), false);
-  assert.equal(showsControls({ ...base, medium: 'spoken' }), false);
+test('a control added lands where it is dropped, and a scene is turned on', () => {
+  const rows = added(draftOf(stored), light, 1);
+  assert.deepEqual(rows.map((r) => r.entity_id), ['light.a', 'light.c', 'light.b']);
+  assert.equal(added(draftOf(stored), { ...light, entity_id: 'scene.n', domain: 'scene' })[2]!.action, 'scene.turn_on');
+});
+
+test('a reorder puts the row where it is dropped, counted before it left', () => {
+  const rows = draftOf([...stored, { name: 'c', label: 'C', action: 'light.toggle', entity_id: 'light.c' }]);
+  const names = (r: typeof rows) => r.map((x) => x.name).join('');
+  assert.equal(names(reordered(rows, 0, 3)), 'bca');
+  assert.equal(names(reordered(rows, 2, 0)), 'cab');
+  assert.equal(names(reordered(rows, 0, 1)), 'abc');
+  assert.equal(names(reordered(rows, 1, 9)), 'abc');
+});
+
+test('a draft is dirty when what is shown, its order or what a control does differs from what is stored', () => {
+  const rows = draftOf(stored);
+  assert.equal(dirty(rows, stored), false);
+  assert.equal(dirty(changed(rows, 0, { label: 'Z' }), stored), true);
+  assert.equal(dirty(changed(rows, 1, { action: 'light.toggle' }), stored), true);
+  assert.equal(dirty(moved(rows, 0, 1), stored), true);
+  assert.equal(dirty(removed(rows, 1), stored), true);
+  assert.equal(dirty(added(rows, light), stored), true);
 });
 
 test('a scene can only be turned on, and a light taking over from a scene toggles', () => {
