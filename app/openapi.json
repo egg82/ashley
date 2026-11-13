@@ -6330,6 +6330,134 @@
         }
       }
     },
+    "/api/benches/{bench_id}/pieces/{piece_id}/choices/{name}": {
+      "put": {
+        "summary": "Set Choice",
+        "description": "200 `ChoiceSet`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `CommandRefused`; 410 `closed`; 422\n`refused` for a value that is not one of the row's options, before anything is logged; 503 `unavailable`.",
+        "operationId": "set_choice",
+        "parameters": [
+          {
+            "name": "bench_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bench Id"
+            }
+          },
+          {
+            "name": "piece_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Piece Id"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChoiceSet"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the workshop could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: from another site, or not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no bench of this person's has that id, or no piece on its layout holds a choice row of that name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a path or body outside its model gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`refused`, with the reason (`stale_base` when the piece changed between the read and the edit: tap again); logged as the bench's next seq",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandRefused"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "`closed`: the bench is closed and takes no change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/benches/{bench_id}/jobs/{job_id}/cancel": {
       "post": {
         "summary": "Cancel Bench Job",
@@ -8409,6 +8537,43 @@
         "title": "ChatRunFile",
         "description": "A text file a run left in its working directory."
       },
+      "ChoiceRequest": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "ChoiceRequest",
+        "description": "The option tapped: one of the row's `options`."
+      },
+      "ChoiceSet": {
+        "properties": {
+          "seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq"
+        ],
+        "title": "ChoiceSet",
+        "description": "The row is set: `seq` is the Edit that set it, null when it already held `value` as the person's and nothing\nchanged."
+      },
       "ClearHighlightRequest": {
         "properties": {
           "type": {
@@ -8502,7 +8667,8 @@
               "required",
               "confirmed_measurement",
               "bad_body",
-              "bad_citation"
+              "bad_citation",
+              "bad_rows"
             ],
             "title": "Reason"
           },
@@ -10807,7 +10973,8 @@
               "undo",
               "rename",
               "cue",
-              "point"
+              "point",
+              "surfaced"
             ],
             "title": "Type"
           },
@@ -10851,7 +11018,8 @@
                   "required",
                   "confirmed_measurement",
                   "bad_body",
-                  "bad_citation"
+                  "bad_citation",
+                  "bad_rows"
                 ]
               }
             ],
@@ -15413,6 +15581,48 @@
         "title": "WireAgreedCall",
         "description": "One held call the person agreed to: `summary`, code's own words for it as the person was shown it, and whether it\n`ran`, `failed` or was `not_run` (not offered where it was agreed). Never what the call returned."
       },
+      "WireFact": {
+        "properties": {
+          "bench_id": {
+            "type": "integer",
+            "title": "Bench Id"
+          },
+          "piece_id": {
+            "type": "integer",
+            "title": "Piece Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bench_id",
+          "piece_id",
+          "name",
+          "label",
+          "value",
+          "options"
+        ],
+        "title": "WireFact",
+        "description": "A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,\nand `options`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);\nempty when the row has none."
+      },
       "WireReceipt": {
         "properties": {
           "headline": {
@@ -15477,16 +15687,24 @@
               }
             ],
             "title": "Proposal Id"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/WireFact"
+            },
+            "type": "array",
+            "title": "Facts"
           }
         },
         "type": "object",
         "required": [
           "ran",
           "held",
-          "proposal_id"
+          "proposal_id",
+          "facts"
         ],
         "title": "WireReceipts",
-        "description": "The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its\nsummary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is\nheld; whether it can still be agreed to is `ChatConversationTurn.agree`."
+        "description": "The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its\nsummary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is\nheld; whether it can still be agreed to is `ChatConversationTurn.agree`. `facts` the choice rows of a bench shown to\nthe person this turn, as they stood then."
       },
       "WorkKind": {
         "properties": {

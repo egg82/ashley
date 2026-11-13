@@ -1819,6 +1819,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/benches/{bench_id}/pieces/{piece_id}/choices/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Choice
+         * @description 200 `ChoiceSet`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `CommandRefused`; 410 `closed`; 422
+         *     `refused` for a value that is not one of the row's options, before anything is logged; 503 `unavailable`.
+         */
+        put: operations["set_choice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/benches/{bench_id}/jobs/{job_id}/cancel": {
         parameters: {
             query?: never;
@@ -2513,6 +2534,23 @@ export interface components {
             text: string;
         };
         /**
+         * ChoiceRequest
+         * @description The option tapped: one of the row's `options`.
+         */
+        ChoiceRequest: {
+            /** Value */
+            value: string;
+        };
+        /**
+         * ChoiceSet
+         * @description The row is set: `seq` is the Edit that set it, null when it already held `value` as the person's and nothing
+         *     changed.
+         */
+        ChoiceSet: {
+            /** Seq */
+            seq: number | null;
+        };
+        /**
          * ClearHighlightRequest
          * @description Take the highlight off reader piece `piece_id`, as it is at `base_version` (a `Point` with no passage). Refused
          *     `not_reader` for any other piece and `stale_base` when it has changed since.
@@ -2554,7 +2592,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_measurements" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation";
+            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_measurements" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows";
             /** Seq */
             seq: number;
             /** Detail */
@@ -3626,9 +3664,9 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "add" | "remove" | "move" | "edit" | "run" | "propose" | "install" | "archive" | "restore" | "undo" | "rename" | "cue" | "point";
+            type: "add" | "remove" | "move" | "edit" | "run" | "propose" | "install" | "archive" | "restore" | "undo" | "rename" | "cue" | "point" | "surfaced";
             /** Outcome */
-            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_measurements" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation");
+            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_measurements" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows");
             /** Piece Id */
             piece_id: number | null;
         };
@@ -5502,6 +5540,26 @@ export interface components {
             status: "ran" | "failed" | "not_run";
         };
         /**
+         * WireFact
+         * @description A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,
+         *     and `options`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);
+         *     empty when the row has none.
+         */
+        WireFact: {
+            /** Bench Id */
+            bench_id: number;
+            /** Piece Id */
+            piece_id: number;
+            /** Name */
+            name: string;
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+            /** Options */
+            options: string[];
+        };
+        /**
          * WireReceipt
          * @description One change: `headline` is the tool's plain label, `detail` code's own summary of the call (null where the reply
          *     was shared), `why` the reason it ran or waits, when there is one.
@@ -5518,7 +5576,8 @@ export interface components {
          * WireReceipts
          * @description The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its
          *     summary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is
-         *     held; whether it can still be agreed to is `ChatConversationTurn.agree`.
+         *     held; whether it can still be agreed to is `ChatConversationTurn.agree`. `facts` the choice rows of a bench shown to
+         *     the person this turn, as they stood then.
          */
         WireReceipts: {
             /** Ran */
@@ -5527,6 +5586,8 @@ export interface components {
             held: components["schemas"]["WireReceipt"][];
             /** Proposal Id */
             proposal_id: number | null;
+            /** Facts */
+            facts: components["schemas"]["WireFact"][];
         };
         /**
          * WorkKind
@@ -10921,6 +10982,97 @@ export interface operations {
                 };
             };
             /** @description `closed`: the bench is closed and runs nothing */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a path or body outside its model gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the workshop could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_choice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bench_id: number;
+                piece_id: number;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChoiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChoiceSet"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: from another site, or not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no bench of this person's has that id, or no piece on its layout holds a choice row of that name */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`, with the reason (`stale_base` when the piece changed between the read and the edit: tap again); logged as the bench's next seq */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandRefused"];
+                };
+            };
+            /** @description `closed`: the bench is closed and takes no change */
             410: {
                 headers: {
                     [name: string]: unknown;
