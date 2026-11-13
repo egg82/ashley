@@ -63,6 +63,17 @@ class PostgresDeposits(Deposits):
             (armed_id, Jsonb(landed_to_json(landed))))
         return made is not None
 
+    async def due(self, armed_id: int, recurring_id: str, day: date, landed: Landed) -> bool:
+        made = await self._one(
+            "INSERT INTO wakes (household_id, kind, event_id, event, at, due_at, person_id, made_by, brief, landed, "
+            "route, tools, taint, made_conversation_id, made_turn_id, route_device_id) "
+            "SELECT household_id, 'reminder', 'bill:' || id || ':' || %s || ':' || %s, 'reminder', now(), now(), "
+            "person_id, made_by, brief, %s, route, tools, taint, made_conversation_id, made_turn_id, route_device_id "
+            "FROM wakes WHERE id = %s AND trigger = 'event' AND settled_at IS NULL "
+            "ON CONFLICT (household_id, event_id) DO NOTHING RETURNING id",
+            (recurring_id, day.isoformat(), Jsonb(landed_to_json(landed)), armed_id))
+        return made is not None
+
     async def recovered(self, armed_id: int) -> None:
         await self._one("UPDATE balance_lows SET low = false WHERE armed_id = %s AND low", (armed_id,))
 

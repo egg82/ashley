@@ -3,7 +3,8 @@ read each household's Sure. An armed reminder is a `wakes` row of kind `reminder
 due, listed with the household's reminders, cancelled like any (`Wakes.cancel`). A match stores an ordinary once
 reminder beside it, which the `wakes` singleton fires and the push singleton delivers; the armed one stays armed, so
 every match fires (`decisions.md`, "A reminder can wait on a deposit"). A rule on a balance falling below fires once
-per fall: again only after the balance has recovered (`below`, `recovered`)."""
+per fall: again only after the balance has recovered (`below`, `recovered`). A rule on a bill fires once per bill and
+due date (`due`)."""
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -58,6 +59,13 @@ class Deposits(Service):
         DepositsUnavailable."""
 
     @abstractmethod
+    async def due(self, armed_id: int, recurring_id: str, day: date, landed: Landed) -> bool:
+        """The bill `recurring_id`, expected on `day`, is due for armed reminder `armed_id`: store the once reminder for
+        it, due now, carrying `landed`. True for the call that stored it; False, storing nothing, when this bill and
+        day fired it before (so a poll, a retry, a second reader or a new holder fires once) or the armed reminder is
+        settled or gone. The next due date of the same bill fires again. Raises DepositsUnavailable."""
+
+    @abstractmethod
     async def recovered(self, armed_id: int) -> None:
         """The balance armed reminder `armed_id` waits on is at or above its threshold, so its next fall fires again.
         Raises DepositsUnavailable."""
@@ -86,6 +94,9 @@ class NullDeposits(Deposits):
         raise DepositsUnavailable("deposits are not wired")
 
     async def below(self, armed_id: int, landed: Landed) -> bool:
+        raise DepositsUnavailable("deposits are not wired")
+
+    async def due(self, armed_id: int, recurring_id: str, day: date, landed: Landed) -> bool:
         raise DepositsUnavailable("deposits are not wired")
 
     async def recovered(self, armed_id: int) -> None:

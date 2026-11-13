@@ -1,0 +1,30 @@
+Planted by `tests/bill_due_mutants.py` against `tests/test_bill_due.py`, one at a time, suite green before each;
+"caught" is a failing run. 15 of 15 caught.
+
+bill_due.py
+ D1  drop the lower bound of the window                             a bill whose date has passed fires
+ D2  `<= due_days` -> `< due_days`                                  fires a day late
+ D3  ignore the rule's account                                      another account's bill fires
+ D4  count an ended bill                                            a bill Sure stopped expecting fires
+ D5  count income                                                   a payroll fires as a bill
+ D6  ignore the rule's payee                                        every bill of the account fires
+
+postgres_deposits.py
+ D7  event id without the due date                                  the next due date of a bill never fires
+ D8  event id unique per call                                       every poll fires again
+ D9  drop `settled_at IS NULL` from the armed row                   a cancelled rule fires
+ (the event id's recurring id is covered by the two bills due one day in `test_a_bill_sure_has_only_suggested...`)
+
+deposit_sense.py
+ D10 recurring payments read whether or not a bill rule is armed   an extra Sure call every poll
+ D15 a bill rule is also read as a transaction rule                 it reads transactions and fires on none
+
+deposit_rule.py
+ D11 `matches` ignores `due_days`                                   a bill rule fires on transactions
+
+reminder_turn.py
+ D12 the turn leaves out that the bill pays itself                  she is not told
+
+money_rule_args.py
+ D13 `bill_due_days` has no upper bound                             a lead past the wakes' keeping is armed
+ D14 direction and bill_due_days both accepted                      an ambiguous rule is armed
