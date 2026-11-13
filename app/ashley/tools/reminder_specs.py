@@ -4,6 +4,7 @@
 from collections.abc import Sequence
 
 from ..inference.model import ToolSpec
+from ..senses.deposit_config import CONFIG
 from ..senses.deposit_rule import DIRECTIONS, MAX_NAME, PAYEE_MATCHES
 from . import reminder_conditions as conditions
 from ..senses.wakes import MAX_BRIEF
@@ -78,20 +79,28 @@ def remind_on_money(names: Sequence[str]) -> ToolSpec:
                     "as well as what you wrote. It stays set and fires on every match until it is cancelled. "
                     "Or, with balance_below in place of direction, it waits on the account's balance falling below "
                     "that amount (no min_amount, payee or conditions): it fires once when the balance falls below, "
-                    "and again only after it has come back up; you are handed the balance and the threshold. Returns "
-                    "the rule in words.", {
+                    "and again only after it has come back up; you are handed the balance and the threshold. Or, with "
+                    "bill_due_days in place of direction, it waits on a bill of the account that Sure has found "
+                    "repeating (a payee narrows which): it fires once for each bill that many days before it is "
+                    "expected, or on the day when 0; you are handed the amount, the due date, the payee and whether "
+                    "it pays itself. Returns the rule in words.", {
                         "type": "object",
                         "properties": {
                             "for": {"type": "string", "enum": list(names),
                                     "description": "whom to remind: the speaker, or another person of the household"},
                             "direction": {"type": "string", "enum": list(DIRECTIONS),
                                           "description": "in for a deposit into the account, out for money leaving "
-                                                         "it (a payment, a bill, a purchase); give this or "
-                                                         "balance_below"},
+                                                         "it (a payment, a bill, a purchase); give this, "
+                                                         "balance_below or bill_due_days"},
                             "balance_below": {"type": "number",
                                               "description": "wait on the account's balance falling below this, in "
                                                              "its own currency, as 200 or 0 (overdrawn), instead of "
                                                              "on money moving; give this or direction"},
+                            "bill_due_days": {"type": "integer", "minimum": 0, "maximum": CONFIG.max_due_days,
+                                              "description": "wait on a bill coming due, this many days ahead of "
+                                                             "the day Sure expects it (0 for the day itself), "
+                                                             "instead of on money moving; give this, direction or "
+                                                             "balance_below"},
                             "account_id": {"type": "string", "maxLength": MAX_NAME,
                                            "description": "the account the money moves in, by the id money_accounts "
                                                           "or a transaction there gives"},

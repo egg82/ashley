@@ -324,8 +324,25 @@ deposit into the household's Sure.
   a wake rule, which needs a person the wake is about (an account has none) and would put a threshold on a generic
   wake rule or in a new household store; a margin above the threshold before it counts as recovered, until a balance
   hovering at one is seen.
-- **Logs** carry one line per poll (household, transactions read, matches, fired, balance rules judged and fallen,
-  duration), one per fire and one per fall; never an amount, payee or account name.
+- **A bill coming due is the same rule again, one field apart.** The rule carries `due_days` ("tell me three days before
+  a bill comes out of checking"), which `remind_on_money` takes as `bill_due_days` in place of `direction` (0 to
+  `max_due_days` in `deposits.json`), with an optional payee naming which bills and no minimum, balance or conditions.
+  While such a rule is armed the sense reads the Ledger's repeating payments (`ashley.ledger.model.Recurring`, Sure's
+  `recurring_transactions`; `ashley.senses.bill_due`) each poll, and fires for each expense of the rule's account whose
+  expected day is from today to `due_days` ahead. **One bill and due date fires once:** the once reminder's event id is
+  `bill:<armed id>:<recurring id>:<due date>`, which the wakes table keeps unique per household, so a poll, a retry, a
+  second reader or the next holder stores nothing twice, and the date Sure moves the bill to fires the next one
+  (`ashley.senses.postgres_deposits.PostgresDeposits.due`). No state of its own beyond the wakes: the window (the lead
+  plus its day) is shorter than the wakes' keeping (a week), so a pruned reminder cannot let its bill fire again, which
+  is why `max_due_days` is capped under it. **A bill Sure has only `suggested` counts**: Sure detects them by itself and
+  may never confirm one, and a reminder changes nothing, so the person's rule is what asks to hear of it; a bill Sure
+  has ended (status `inactive`), income, one with no expected date and a date already
+  passed do not. `Landed` carries the amount, the due date, the payee, the days ahead and whether it pays itself, and
+  her turn states them. A bill that the read lists with an amount that is not a number fails the whole read as
+  `deposits.unreadable` rather than firing on a guess. The read is one page (`per_page`). Rejected: a table of fired
+  bills, since the event id already is that record; a fixed lead in code, since how early is what the person asks for.
+- **Logs** carry one line per poll (household, transactions read, matches, fired, balance and bill rules judged and
+  fired, duration), one per fire, one per fall and one per bill; never an amount, payee or account name.
 
 ## Rules she writes are composed from general predicates
 

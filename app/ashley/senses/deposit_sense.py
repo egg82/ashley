@@ -10,10 +10,11 @@ holder from the day recorded.
 A rule on a balance (`DepositRule.below_cents`) is judged against the household's accounts, read once per poll and only
 while such a rule is armed: below its threshold it fires once (`Deposits.below`), at or above it the rule is ready to
 fire again (`Deposits.recovered`). An account the read does not list, or lists without a balance, changes nothing.
-Transactions are read only while a rule on them is armed.
+A rule on a bill (`DepositRule.due_days`) is judged against the ledger's repeating payments (`bill_due`), read once per
+poll and only while such a rule is armed. Transactions are read only while a rule on them is armed.
 
 Logs `deposits.poll` per household with the household id, transactions read, matches, fired, whether it was cut short,
-the directions read, the balance rules judged (`balances`) and how many of them fired (`fell`) and duration_ms, `deposits.fired` per stored reminder and `deposits.fell` per balance fall fired, each with the armed id, and `deposits.unreadable` with the
+the directions read, the balance rules judged (`balances`) and how many of them fired (`fell`), the bill rules judged (`bills`) and fired (`billed`) and duration_ms, `deposits.fired` per stored reminder, `deposits.fell` per balance fall and `deposits.billed` per bill fired, each with the armed id, and `deposits.unreadable` with the
 reason when a household's ledger could not be read. Never an amount, payee or account name."""
 
 import asyncio
@@ -28,6 +29,7 @@ from .. import logs, services
 from ..ledger.ledger import Ledger
 from ..ledger.model import Account, LedgerFailed, LedgerUnavailable, NotConnected
 from ..people.people import People, PeopleUnavailable
+from . import bill_due
 from .deposit_config import CONFIG
 from ..criteria.record import DIRECTIONS, Direction, Transaction
 from .deposit_rule import Landed, landed, matches
@@ -65,8 +67,9 @@ async def poll(now: datetime) -> None:
 
 async def _household(household_id: int, armed: list[Armed], now: datetime) -> None:
     started = time.perf_counter()
-    moving = [a for a in armed if a.rule.below_cents is None]
+    moving = [a for a in armed if a.rule.below_cents is None and a.rule.due_days is None]
     balances = [a for a in armed if a.rule.below_cents is not None]
+    bills = [a for a in armed if a.rule.due_days is not None]
     deposits = services.get(Deposits)
     try:
         zone = await _zone(household_id)
@@ -78,6 +81,7 @@ async def _household(household_id: int, armed: list[Armed], now: datetime) -> No
         if moving:
             read, through = await read_transactions(household_id, await _start(household_id, moving, since), directions)
         accounts = await _accounts(household_id) if balances else {}
+        repeating = await bill_due.read(household_id) if bills else []
     except (LedgerFailed, LedgerUnavailable, PeopleUnavailable, NotConnected) as e:
         logs.warning(log, "deposits.unreadable", household=household_id, reason=type(e).__name__ if not isinstance(
             e, LedgerFailed) else e.reason)
@@ -91,10 +95,12 @@ async def _household(household_id: int, armed: list[Armed], now: datetime) -> No
                     fired += 1
                     logs.info(log, "deposits.fired", household=household_id, armed=a.id)
     fell = await _judge_balances(household_id, balances, accounts, today)
+    billed = await bill_due.judge(household_id, bills, repeating, today)
     if moving:
         await deposits.advance(household_id, today if through is None else min(today, through))
     logs.info(log, "deposits.poll", household=household_id, read=len(read), matched=matched, fired=fired, cut=through is not None,
               directions="+".join(directions), balances=len(balances), fell=fell,
+              bills=len(bills), billed=billed,
               duration_ms=int((time.perf_counter() - started) * 1000))
 
 
