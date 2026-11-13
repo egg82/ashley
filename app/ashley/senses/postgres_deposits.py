@@ -49,7 +49,8 @@ class PostgresDeposits(Deposits):
 
     async def below(self, armed_id: int, landed: Landed) -> bool:
         made = await self._one(
-            "WITH fell AS (INSERT INTO balance_lows (armed_id, low, episode) SELECT id, true, 1 FROM wakes "
+            "WITH fell AS (INSERT INTO balance_lows (armed_id, household_id, low, episode) SELECT id, household_id, true, 1 "
+            "FROM wakes "
             "WHERE id = %s AND trigger = 'event' AND settled_at IS NULL "
             "ON CONFLICT (armed_id) DO UPDATE SET low = true, episode = balance_lows.episode + 1 "
             "WHERE NOT balance_lows.low RETURNING armed_id, episode) "
