@@ -1,7 +1,7 @@
 /* The devices room: the floor plan, the rows in words, and the selected device's panel. It sits in devices.css's room frame
    (.set, .set-head, .set-grid, .set-col, .dc-*, .set-down) and the shell's tokens, .panel, .btn, .label, .meta and .unk. */
 
-.set.dv { max-width: 1160px; }
+.set.dvs { max-width: 1160px; }
 .dv-count { margin-left: 4px; }
 .dv-grid { grid-template-columns: minmax(0, 1fr) 380px; }
 .dv-solo, .dv-empty { max-width: 460px; }
@@ -35,8 +35,8 @@
 .pk-glyph { position: relative; display: grid; place-items: center; width: 46px; height: 46px; flex: none;
   background: radial-gradient(circle at 35% 30%, var(--blue-hi), var(--blue) 55%, #1c55e0); box-shadow: 0 0 14px var(--blue-glow); }
 .pk-glyph.ring { border-radius: 50%; outline: 1.5px solid var(--line-hi); outline-offset: 6px; }
-.pk-glyph.dots { border-radius: var(--r-2); grid-auto-flow: column; gap: 3px; align-content: center; justify-content: center; }
-.pk-glyph.dots i { width: 4px; height: 4px; border-radius: 50%; background: rgba(4,7,12,.7); }
+.pk-glyph.typing { border-radius: var(--r-2); grid-auto-flow: column; gap: 3px; align-content: center; justify-content: center; }
+.pk-glyph.typing i { width: 4px; height: 4px; border-radius: 50%; background: rgba(4,7,12,.7); }
 .pk-glyph svg { width: 22px; height: 22px; fill: none; stroke: var(--ink-0); stroke-width: 2.2; stroke-linecap: round; }
 .pk-who { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
 .pk-mark { display: inline-flex; gap: 3px; align-items: center; }
