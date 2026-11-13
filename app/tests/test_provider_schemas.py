@@ -45,9 +45,9 @@ def test_every_provider_a_text_task_routes_to_is_gated() -> None:
     assert set(rules()) == set(WIRES)
 
 
-def test_every_response_format_the_app_asks_for_is_collected(python_tree: Mapping[Path, Parsed]) -> None:
-    assert len(used_formats(python_tree)) >= FORMAT_FLOOR
-    assert unlisted_formats(python_tree) == set()
+def test_every_response_format_the_app_asks_for_is_collected(package_tree: Mapping[Path, Parsed]) -> None:
+    assert len(used_formats(package_tree)) >= FORMAT_FLOOR
+    assert unlisted_formats(package_tree) == set()
 
 
 def test_every_rule_names_a_known_shape_and_a_source() -> None:

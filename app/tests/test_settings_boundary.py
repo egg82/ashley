@@ -55,9 +55,9 @@ def writers_imported_by(modules: dict[str, ast.Module], writers: set[str]) -> di
 
 
 @pytest.mark.parametrize("guarded", sorted(GUARDED))
-def test_only_the_person_route_and_the_wiring_import_a_writer(python_tree: dict[Path, Parsed], guarded: str) -> None:
+def test_only_the_person_route_and_the_wiring_import_a_writer(package_tree: dict[Path, Parsed], guarded: str) -> None:
     writers, may_import = GUARDED[guarded]
-    modules = {dotted(p): file.tree for p, file in package(python_tree).items()}
+    modules = {dotted(p): file.tree for p, file in package(package_tree).items()}
     found = writers_imported_by(modules, writers)
     assert found, "the gate saw no importer of the writer: it would pass on nothing"
     assert set(found) == may_import, f"importers of the {guarded} writer: {sorted(found)}, allowed {sorted(may_import)}"

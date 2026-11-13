@@ -19,9 +19,9 @@ Files = Mapping[Path, tuple[str, ast.Module]]
 """Each module's path, with its source and its parsed tree."""
 
 
-def package_files(python_tree: Mapping[Path, Parsed]) -> Files:
+def package_files(package_tree: Mapping[Path, Parsed]) -> Files:
     """The modules of `ashley` from the session's parsed tree."""
-    return {p: (parsed.source, parsed.tree) for p, parsed in python_tree.items() if ROOT in p.parents}
+    return {p: (parsed.source, parsed.tree) for p, parsed in package_tree.items() if ROOT in p.parents}
 
 
 def read(root: Path) -> Files:
@@ -68,14 +68,14 @@ def writers(reached: set[Path], files: Files) -> list[Path]:
     return sorted(p for p in reached if WRITE.search(files[p][0]))
 
 
-def test_nothing_her_tools_import_writes_the_settings(python_tree: Mapping[Path, Parsed]) -> None:
-    files = package_files(python_tree)
+def test_nothing_her_tools_import_writes_the_settings(package_tree: Mapping[Path, Parsed]) -> None:
+    files = package_files(package_tree)
     reached = closure(files, ROOT, "ashley", HERS)
     assert len(reached) > 50 and ROOT / "tools" / "house_act.py" in reached
     assert writers(reached, files) == []
 
 
-def test_the_scan_finds_a_planted_writer_and_a_real_one_exists(tmp_path: Path, python_tree: Mapping[Path, Parsed]) -> None:
+def test_the_scan_finds_a_planted_writer_and_a_real_one_exists(tmp_path: Path, package_tree: Mapping[Path, Parsed]) -> None:
     pkg = tmp_path / "ashley"
     (pkg / "tools").mkdir(parents=True)
     (pkg / "store").mkdir()
@@ -86,7 +86,7 @@ def test_the_scan_finds_a_planted_writer_and_a_real_one_exists(tmp_path: Path, p
     made = read(pkg)
     planted = closure(made, pkg, "ashley", ("tools",))
     assert writers(planted, made) == [pkg / "store" / "put.py"]
-    files = package_files(python_tree)
+    files = package_files(package_tree)
     everything = set(files)
     assert writers(everything, files), "no module on the tree writes the settings: the scan is blind"
     assert not any(p.relative_to(ROOT).parts[0] in HERS for p in writers(everything, files))

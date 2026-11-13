@@ -202,8 +202,8 @@ def cycles(graph: dict[str, set[str]]) -> list[set[str]]:
     return sorted(out, key=sorted)
 
 
-def test_the_gate_sees_the_package(python_tree: dict[Path, Parsed]):
-    assert len(units()) > 1 and edges(python_tree), (
+def test_the_gate_sees_the_package(package_tree: dict[Path, Parsed]):
+    assert len(units()) > 1 and edges(package_tree), (
         f"no import edges under {PKG}: gate sees nothing"
     )
 
@@ -215,9 +215,9 @@ def test_the_held_cycles_are_what_allowed_is():
     )
 
 
-def test_every_import_edge_is_allowed(python_tree: dict[Path, Parsed]):
+def test_every_import_edge_is_allowed(package_tree: dict[Path, Parsed]):
     new = sorted(
-        f"{a} -> {b}" for a, bs in edges(python_tree).items() for b in bs - ALLOWED.get(a, set())
+        f"{a} -> {b}" for a, bs in edges(package_tree).items() for b in bs - ALLOWED.get(a, set())
     )
     assert not new, (
         "imports not in ALLOWED "
@@ -225,31 +225,31 @@ def test_every_import_edge_is_allowed(python_tree: dict[Path, Parsed]):
     )
 
 
-def test_every_allowed_edge_is_used(python_tree: dict[Path, Parsed]):
-    found = edges(python_tree)
+def test_every_allowed_edge_is_used(package_tree: dict[Path, Parsed]):
+    found = edges(package_tree)
     stale = sorted(
         f"{a} -> {b}" for a, bs in ALLOWED.items() for b in bs - found.get(a, set())
     )
     assert not stale, "ALLOWED edges nothing uses (remove them):\n" + "\n".join(stale)
 
 
-def test_each_fenced_library_is_imported_only_by_its_adapter(python_tree: dict[Path, Parsed]):
-    found = importers(LIBRARIES, python_tree)
+def test_each_fenced_library_is_imported_only_by_its_adapter(package_tree: dict[Path, Parsed]):
+    found = importers(LIBRARIES, package_tree)
     assert all(found.values()), f"a fenced library nothing imports (remove it): {found}"
     assert found == LIBRARIES, f"fenced libraries imported outside their adapter: {found}"
 
 
-def test_the_bridge_imports_nothing_from_ashley(python_tree: dict[Path, Parsed]):
+def test_the_bridge_imports_nothing_from_ashley(deployed_tree: dict[Path, Parsed]):
     """`bridge/herdr` runs on a person's machine without the app, so no module there may import `ashley`."""
-    bridge = {p: file for p, file in python_tree.items() if BRIDGE in p.parents}
+    bridge = {p: file for p, file in deployed_tree.items() if BRIDGE in p.parents}
     assert len(bridge) > 5, "the gate sees none of the bridge: it would pass on nothing"
     bad = sorted(rel(p) for p, file in bridge.items() if PKG.name in libraries_of(file.tree))
     assert not bad, "bridge modules importing the app:\n" + "\n".join(bad)
 
 
-def test_the_keeper_imports_nothing_from_ashley(python_tree: dict[Path, Parsed]):
+def test_the_keeper_imports_nothing_from_ashley(deployed_tree: dict[Path, Parsed]):
     """`deploy/mail-bridge` runs in Bridge's pod without the app, so no module there may import `ashley`."""
-    keeper = {p: file for p, file in python_tree.items() if KEEPER in p.parents}
+    keeper = {p: file for p, file in deployed_tree.items() if KEEPER in p.parents}
     assert len(keeper) > 5, "the gate sees none of the keeper: it would pass on nothing"
     bad = sorted(rel(p) for p, file in keeper.items() if PKG.name in libraries_of(file.tree))
     assert not bad, "keeper modules importing the app:\n" + "\n".join(bad)

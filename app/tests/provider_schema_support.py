@@ -185,11 +185,11 @@ def violations(provider: str, sent: list[Sent]) -> list[str]:
     return found
 
 
-def used_formats(python_tree: Mapping[Path, Parsed]) -> set[str]:
+def used_formats(package_tree: Mapping[Path, Parsed]) -> set[str]:
     """Names of response formats passed to `Inference.step`/`generate` somewhere in the app (a capitalised name or the
     attribute of a module)."""
     used: set[str] = set()
-    for path, parsed in python_tree.items():
+    for path, parsed in package_tree.items():
         if APP not in path.parents or (".step(" not in parsed.source and ".generate(" not in parsed.source):
             continue
         for call in ast.walk(parsed.tree):
@@ -202,6 +202,6 @@ def used_formats(python_tree: Mapping[Path, Parsed]) -> set[str]:
     return used
 
 
-def unlisted_formats(python_tree: Mapping[Path, Parsed]) -> set[str]:
+def unlisted_formats(package_tree: Mapping[Path, Parsed]) -> set[str]:
     """Names `used_formats` finds that `RESPONSE_FORMATS` lacks."""
-    return used_formats(python_tree) - {f.__name__ for f in RESPONSE_FORMATS}
+    return used_formats(package_tree) - {f.__name__ for f in RESPONSE_FORMATS}

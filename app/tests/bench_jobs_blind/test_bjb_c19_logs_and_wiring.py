@@ -122,8 +122,8 @@ def test_c19_the_scan_can_fail() -> None:
     assert log_calls("logs.info(log, 'x', job=1)") == 1
 
 
-def test_c19_no_bench_job_module_passes_words_or_names_to_a_log_call(python_tree: dict[Path, Parsed]) -> None:
-    mine = targets(python_tree)
+def test_c19_no_bench_job_module_passes_words_or_names_to_a_log_call(package_tree: dict[Path, Parsed]) -> None:
+    mine = targets(package_tree)
     if not mine:
         pytest.skip("the bench-jobs modules are not built yet")
     assert sum(log_calls(v.source) for v in mine.values()) >= 1, "the scan found no log call in the bench-jobs modules"
@@ -139,20 +139,20 @@ def has_name(tree: dict[Path, Parsed], file: str, name: str) -> bool:
     return False
 
 
-def test_c14_the_runner_is_a_singleton_under_the_bench_jobs_lease(python_tree: dict[Path, Parsed]) -> None:
-    assert has_name(python_tree, "wiring_singletons.py", "BenchJobRunner")
-    source = next(v.source for p, v in python_tree.items() if p.name == "wiring_singletons.py" and p.is_relative_to(APP / "ashley"))
+def test_c14_the_runner_is_a_singleton_under_the_bench_jobs_lease(package_tree: dict[Path, Parsed]) -> None:
+    assert has_name(package_tree, "wiring_singletons.py", "BenchJobRunner")
+    source = next(v.source for p, v in package_tree.items() if p.name == "wiring_singletons.py" and p.is_relative_to(APP / "ashley"))
     strings = {n.value for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Constant) and isinstance(n.value, str)}
     names = {n.attr for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Attribute)}
     assert "bench_jobs" in strings or "NAME" in names or any("bench_job" in n for n in names)
 
 
-def test_c19_the_jobs_service_is_wired_by_the_app(python_tree: dict[Path, Parsed]) -> None:
+def test_c19_the_jobs_service_is_wired_by_the_app(package_tree: dict[Path, Parsed]) -> None:
     # AMBIGUITY: this repo wires a package's stores in its own register.py, which wiring.py calls.
-    wired = [p for p, v in python_tree.items() if p.is_relative_to(APP / "ashley") and "PostgresBenchJobs" in v.source
+    wired = [p for p, v in package_tree.items() if p.is_relative_to(APP / "ashley") and "PostgresBenchJobs" in v.source
              and (p.name.startswith("wiring") or p.name == "register.py")]
     assert wired, "no wiring module registers PostgresBenchJobs, so every entry point would run on the Null Object"
-    entry = next(v.source for p, v in python_tree.items() if p == APP / "ashley" / "wiring.py")
+    entry = next(v.source for p, v in package_tree.items() if p == APP / "ashley" / "wiring.py")
     assert any(f"{p.parent.name}.register import" in entry or p.name.startswith("wiring") for p in wired)
 
 

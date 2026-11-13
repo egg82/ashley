@@ -18,9 +18,9 @@ KEYWORD = {"ToolSpec": "outside", "Inbound": "taint"}
 Call = tuple[str, int, bool]  # (where, line, states its keyword)
 
 
-def package_trees(python_tree: Mapping[Path, Parsed]) -> Iterator[tuple[str, ast.Module]]:
+def package_trees(package_tree: Mapping[Path, Parsed]) -> Iterator[tuple[str, ast.Module]]:
     """Each module of `app/ashley` as its path within the package and its parsed tree."""
-    return ((str(p.relative_to(PACKAGE)), parsed.tree) for p, parsed in python_tree.items() if PACKAGE in p.parents)
+    return ((str(p.relative_to(PACKAGE)), parsed.tree) for p, parsed in package_tree.items() if PACKAGE in p.parents)
 
 
 def calls(tree: ast.Module, name: str, where: str = "") -> list[Call]:
@@ -54,10 +54,10 @@ def unstated(tree: ast.Module, name: str) -> list[int]:
 
 
 @pytest.fixture(scope="module")
-def package(python_tree: Mapping[Path, Parsed]) -> dict[str, list[Call]]:
+def package(package_tree: Mapping[Path, Parsed]) -> dict[str, list[Call]]:
     """Every classified call in `app/ashley`, by name. Built once for the module: the time gate does not time a fixture."""
     found: dict[str, list[Call]] = {name: [] for name in KEYWORD}
-    for where, tree in package_trees(python_tree):
+    for where, tree in package_trees(package_tree):
         for name in KEYWORD:
             found[name] += calls(tree, name, where)
     return found
@@ -73,8 +73,8 @@ def test_every_tool_spec_states_whether_its_results_can_carry_outside_words(pack
     check(package["ToolSpec"], "ToolSpec")
 
 
-def test_every_change_states_its_tier(python_tree: Mapping[Path, Parsed]) -> None:
-    found = [(where, line, stated) for where, tree in package_trees(python_tree) for line, stated in unrated(tree)]
+def test_every_change_states_its_tier(package_tree: Mapping[Path, Parsed]) -> None:
+    found = [(where, line, stated) for where, tree in package_trees(package_tree) for line, stated in unrated(tree)]
     assert len(found) >= TIER_FLOOR, f"read {len(found)} changes: the scan sees too little"
     wrong = [f"{where}:{line}" for where, line, stated in found if not stated]
     assert not wrong, f"a change's ToolSpec without tier=: {wrong}"

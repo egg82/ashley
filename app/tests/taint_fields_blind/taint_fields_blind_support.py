@@ -84,9 +84,9 @@ def result_of(call_id: str, name: str) -> ToolResult:
     return ToolResult(call_id, f'{{"ran": "{name}"}}')
 
 
-def package_files(python_tree: Mapping[Path, Parsed]) -> Iterator[tuple[Path, Parsed]]:
+def package_files(package_tree: Mapping[Path, Parsed]) -> Iterator[tuple[Path, Parsed]]:
     """The parsed modules of app/ashley, in path order."""
-    return ((p, parsed) for p, parsed in python_tree.items() if APP / "ashley" in p.parents)
+    return ((p, parsed) for p, parsed in package_tree.items() if APP / "ashley" in p.parents)
 
 
 def missing_keyword(tree: ast.Module, callee: str, keyword: str, positional: int | None = None) -> tuple[int, list[int]]:
@@ -103,12 +103,12 @@ def missing_keyword(tree: ast.Module, callee: str, keyword: str, positional: int
     return seen, bad
 
 
-def scan(python_tree: Mapping[Path, Parsed], callee: str, keyword: str,
+def scan(package_tree: Mapping[Path, Parsed], callee: str, keyword: str,
          positional: int | None = None) -> tuple[int, list[str]]:
     """The scan of app/ashley: how many `callee(` calls it read and which pass no `keyword`."""
     total = 0
     bad: list[str] = []
-    for path, parsed in package_files(python_tree):
+    for path, parsed in package_files(package_tree):
         if callee not in parsed.source:
             continue
         seen, lines = missing_keyword(parsed.tree, callee, keyword, positional)
@@ -125,7 +125,7 @@ def specs_in(value: Any) -> list[ToolSpec]:
     return [i for i in items if isinstance(i, ToolSpec)]
 
 
-def located_specs(python_tree: Mapping[Path, Parsed]) -> dict[str, bool | None]:
+def located_specs(package_tree: Mapping[Path, Parsed]) -> dict[str, bool | None]:
     """Tool name to its stated `outside` for the specs the scans can see; None when the value is the default."""
     found: dict[str, bool | None] = {}
     for info in pkgutil.iter_modules(tools_package.__path__):
@@ -134,7 +134,7 @@ def located_specs(python_tree: Mapping[Path, Parsed]) -> dict[str, bool | None]:
             found.update({s.name: s.outside for s in specs_in(value)})
     for spec in code_host.specs(("gitlab",), True):
         found[spec.name] = spec.outside
-    for path, parsed in package_files(python_tree):
+    for path, parsed in package_files(package_tree):
         if "ToolSpec" not in parsed.source:
             continue
         module_name = ".".join(path.relative_to(APP).with_suffix("").parts)

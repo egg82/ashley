@@ -55,22 +55,22 @@ def test_a_copy_of_a_spec_keeps_its_outside() -> None:
     assert replace(SPECS[0], description="x").outside is False
 
 
-def test_every_tool_the_spec_names_as_outside_taints(python_tree: Mapping[Path, Parsed]) -> None:
-    found = located_specs(python_tree)
+def test_every_tool_the_spec_names_as_outside_taints(package_tree: Mapping[Path, Parsed]) -> None:
+    found = located_specs(package_tree)
     seen = [n for n in OUTSIDE_TOOLS if n in found]
     assert seen, "the scan located none of them"
     assert [n for n in seen if found[n] is not True] == []
 
 
-def test_every_tool_the_spec_names_as_household_does_not_taint(python_tree: Mapping[Path, Parsed]) -> None:
-    found = located_specs(python_tree)
+def test_every_tool_the_spec_names_as_household_does_not_taint(package_tree: Mapping[Path, Parsed]) -> None:
+    found = located_specs(package_tree)
     seen = [n for n in HOUSEHOLD_TOOLS if n in found]
     assert seen, "the scan located none of them"
     assert [n for n in seen if found[n] is not False] == []
 
 
-def test_the_scans_locate_enough_of_the_named_tools_to_mean_something(python_tree: Mapping[Path, Parsed]) -> None:
-    found = located_specs(python_tree)
+def test_the_scans_locate_enough_of_the_named_tools_to_mean_something(package_tree: Mapping[Path, Parsed]) -> None:
+    found = located_specs(package_tree)
     assert len([n for n in (*OUTSIDE_TOOLS, *HOUSEHOLD_TOOLS) if n in found]) >= FLOOR
 
 
@@ -87,13 +87,13 @@ def test_the_scan_flags_an_inbound_that_does_not_state_taint() -> None:
     assert missing_keyword(ast.parse(source), "Inbound", "taint") == (3, [1])
 
 
-def test_every_toolspec_in_the_app_states_outside(python_tree: Mapping[Path, Parsed]) -> None:
-    total, bad = scan(python_tree, "ToolSpec", "outside", 5)
+def test_every_toolspec_in_the_app_states_outside(package_tree: Mapping[Path, Parsed]) -> None:
+    total, bad = scan(package_tree, "ToolSpec", "outside", 5)
     assert total >= 40, "the scan read too few call sites to mean anything"
     assert bad == []
 
 
-def test_every_inbound_in_the_app_states_taint(python_tree: Mapping[Path, Parsed]) -> None:
-    total, bad = scan(python_tree, "Inbound", "taint")
+def test_every_inbound_in_the_app_states_taint(package_tree: Mapping[Path, Parsed]) -> None:
+    total, bad = scan(package_tree, "Inbound", "taint")
     assert total >= 8, "the scan read too few call sites to mean anything"
     assert bad == []

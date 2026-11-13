@@ -34,10 +34,10 @@ def tier_c() -> tuple[ToolSpec, ...]:
     return tuple(s for s in every if not s.reads and not s.agrees and s.tier == "judged")
 
 
-def judged_sites(python_tree: Mapping[Path, Parsed]) -> int:
+def judged_sites(package_tree: Mapping[Path, Parsed]) -> int:
     """How many `ToolSpec(...)` calls in the package state `tier="judged"` and are changes."""
     found = 0
-    for path, parsed in python_tree.items():
+    for path, parsed in package_tree.items():
         if PACKAGE not in path.parents:
             continue
         for node in ast.walk(parsed.tree):
@@ -86,9 +86,9 @@ async def reach(tool: ToolSpec) -> None:
     await outside.call(ToolCall("c1", tool.name, arguments_of(tool)))
 
 
-def test_every_change_the_tiers_judge_is_covered_here(python_tree: Mapping[Path, Parsed]) -> None:
+def test_every_change_the_tiers_judge_is_covered_here(package_tree: Mapping[Path, Parsed]) -> None:
     names = [s.name for s in tier_c()]
-    assert len(names) == len(set(names)) == judged_sites(python_tree) >= 10, names
+    assert len(names) == len(set(names)) == judged_sites(package_tree) >= 10, names
 
 
 @pytest.mark.parametrize("tool", tier_c(), ids=lambda s: s.name)
