@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import type { ConnectionKindInfo, HouseholdConnection } from '../../../api/types';
 import { holderOf, hostOf, sentenceOf } from './sentence.ts';
 
-const alex = { id: 1, household_id: 1, name: 'Sam', admin: true };
+const sam = { id: 1, household_id: 1, name: 'Sam', admin: true };
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
-  id: 1, kind: 'sure', label: '', base_url: 'https://money.example/path', added_by: alex, added_at: '', checked_at: '', personal: false,
+  id: 1, kind: 'sure', label: '', base_url: 'https://money.example/path', added_by: sam, added_at: '', checked_at: '', personal: false,
   needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
 });
 const kind = (over: Partial<ConnectionKindInfo>): ConnectionKindInfo => ({
