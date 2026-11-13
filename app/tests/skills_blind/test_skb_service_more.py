@@ -162,7 +162,7 @@ def test_the_null_skills_raises_unavailable_from_every_call() -> None:
 
 def test_an_unreachable_database_is_unavailable_not_a_crash() -> None:
     async def scenario() -> None:
-        db = PoolDatabase("postgresql://postgres:pg@127.0.0.1:1/postgres", connect_timeout_s=0.5)
+        db = PoolDatabase("postgresql://postgres:pg@127.0.0.1:1/postgres", connect_timeout_s=0.1)
         await db.open()
         try:
             s = PostgresSkills(db, CONFIG, {})

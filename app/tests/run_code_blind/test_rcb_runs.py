@@ -143,7 +143,7 @@ def test_output_names_postgres_cannot_store_are_refused_and_the_run_stays_open(d
 
 def test_an_unreachable_database_is_runs_unavailable(db_url: str) -> None:
     async def scenario() -> None:
-        db = PoolDatabase("postgresql://postgres:pg@127.0.0.1:1/none", connect_timeout_s=0.5)
+        db = PoolDatabase("postgresql://postgres:pg@127.0.0.1:1/none", connect_timeout_s=0.1)
         runs = PostgresRuns(db)
         new = NewRun(1, 1, 1, "c", "python", "s")
         with pytest.raises(RunsUnavailable):

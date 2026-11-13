@@ -41,7 +41,7 @@ def test_a_watch_goes_with_its_person(db_url: str) -> None:
 
 def test_an_unreachable_database_raises_the_services_own_error() -> None:
     async def go() -> None:
-        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.5)
+        db = PoolDatabase(unreachable_conninfo(), connect_timeout_s=0.1)
         with pytest.raises(WatchesUnavailable):
             await PostgresWatches(db).live(1, 1)
     run(go())

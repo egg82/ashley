@@ -26,7 +26,7 @@ def conversations_unwired() -> Generator[None]:
 
 def test_every_call_raises_unavailable_when_the_database_is_unreachable() -> None:
     async def scenario() -> None:
-        async with service(unreachable_conninfo(), connect_timeout_s=0.5) as conv:
+        async with service(unreachable_conninfo(), connect_timeout_s=0.1) as conv:
             with pytest.raises(ConversationsUnavailable):
                 await conv.start(1, "chat", [])
             with pytest.raises(ConversationsUnavailable):

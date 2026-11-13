@@ -226,7 +226,7 @@ def test_settings_that_cannot_be_read_are_none_not_an_error(db_url: str) -> None
     home, _ = household(db_url)
 
     async def scenario(reader: PostgresSettingsReader, writer: PostgresSettingsWriter) -> None:
-        dead = PostgresSettingsReader(PoolDatabase("postgresql://postgres:t@127.0.0.1:1/none", connect_timeout_s=0.5))
+        dead = PostgresSettingsReader(PoolDatabase("postgresql://postgres:t@127.0.0.1:1/none", connect_timeout_s=0.1))
         assert await dead.of(home, "house") == {}
 
     run(db_url, scenario)

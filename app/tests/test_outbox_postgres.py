@@ -199,7 +199,7 @@ def test_two_takers_never_get_the_same_reply(db_url: str) -> None:
 
 def test_an_unreachable_database_is_outbox_unavailable() -> None:
     async def scenario() -> None:
-        database = PoolDatabase("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.3)
+        database = PoolDatabase("postgresql://nobody@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.1)
         await database.open()
         try:
             outbox = PostgresOutbox(database, STALE_S, policy.load())

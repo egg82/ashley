@@ -129,7 +129,7 @@ def test_an_unknown_conversation_has_no_runs(db_url: str) -> None:
 
 def test_an_unreachable_database_is_runs_unavailable(db_url: str) -> None:
     async def scenario() -> None:
-        runs = PostgresRuns(PoolDatabase("postgresql://postgres:pg@127.0.0.1:1/none", connect_timeout_s=0.5))
+        runs = PostgresRuns(PoolDatabase("postgresql://postgres:pg@127.0.0.1:1/none", connect_timeout_s=0.1))
         with pytest.raises(RunsUnavailable):
             await runs.in_conversation(1, 1)
 

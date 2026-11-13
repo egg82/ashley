@@ -251,7 +251,7 @@ def test_an_unwired_process_raises_on_every_call() -> None:
 
 def test_an_unreachable_database_raises_wakes_unavailable() -> None:
     async def go() -> None:
-        db = PoolDatabase("postgresql://nobody:x@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.5)
+        db = PoolDatabase("postgresql://nobody:x@127.0.0.1:1/none?connect_timeout=1", connect_timeout_s=0.1)
         w = PostgresWakes(db)
         for call in (w.receive(1, wake(1)), w.due(1), w.settle(1, "turn"), w.prune(1.0)):
             with pytest.raises(WakesUnavailable):

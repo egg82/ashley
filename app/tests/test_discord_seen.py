@@ -115,7 +115,7 @@ def test_a_database_that_cannot_be_written_raises_seen_unavailable(db_url: str) 
 
 def test_an_unreachable_database_raises_seen_unavailable() -> None:
     async def scenario() -> None:
-        async with seen_store(unreachable_conninfo(), connect_timeout_s=0.5) as seen:
+        async with seen_store(unreachable_conninfo(), connect_timeout_s=0.1) as seen:
             with pytest.raises(SeenUnavailable):
                 await seen.claim(1, 7)
 

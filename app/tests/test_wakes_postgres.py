@@ -85,7 +85,7 @@ def test_a_settled_wake_past_its_keeping_is_pruned_and_an_unsettled_one_never_is
 
 def test_an_unreachable_database_is_wakes_unavailable() -> None:
     async def scenario() -> None:
-        async with store(unreachable_conninfo(), connect_timeout_s=0.5) as wakes:
+        async with store(unreachable_conninfo(), connect_timeout_s=0.1) as wakes:
             for call in (wakes.receive(1, wake(1)), wakes.due(1), wakes.settle(1, "turn"), wakes.prune(1)):
                 with pytest.raises(WakesUnavailable):
                     await call

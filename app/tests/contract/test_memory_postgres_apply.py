@@ -139,7 +139,7 @@ def test_forget_deletes_the_target_and_every_fact_it_superseded(db_url: str) -> 
 
 def test_an_unreachable_database_is_memory_unavailable() -> None:
     async def scenario() -> None:
-        async with pool(unreachable_conninfo(), connect_timeout_s=0.25) as db:
+        async with pool(unreachable_conninfo(), connect_timeout_s=0.1) as db:
             memory = PostgresMemory(db)
             with pytest.raises(MemoryUnavailable):
                 await memory.recall(Asker(1, None, False, AT), "tea")

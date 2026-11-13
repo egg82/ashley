@@ -103,7 +103,7 @@ def test_accounts_are_one_households_on_one_system_ordered_by_id(db_url: str) ->
 
 def test_every_call_raises_unavailable_when_the_database_is_unreachable() -> None:
     async def scenario() -> None:
-        async with people(unreachable_conninfo(), connect_timeout_s=0.5) as p:
+        async with people(unreachable_conninfo(), connect_timeout_s=0.1) as p:
             with pytest.raises(PeopleUnavailable):
                 await p.household(1)
             with pytest.raises(PeopleUnavailable):

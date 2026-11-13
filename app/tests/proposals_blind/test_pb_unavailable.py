@@ -14,7 +14,7 @@ DEAD = "postgresql://postgres:pg@127.0.0.1:1/postgres"
 
 def test_every_call_raises_proposals_unavailable_when_the_database_is_down() -> None:
     async def go() -> None:
-        db = PoolDatabase(DEAD, connect_timeout_s=1.0)
+        db = PoolDatabase(DEAD, connect_timeout_s=0.1)
         kept = PostgresProposals(db)
         with pytest.raises(ProposalsUnavailable):
             await kept.propose(proposal(house_change(), 1, 1), TTL)
