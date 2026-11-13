@@ -37,20 +37,26 @@ Form = Literal["satellite", "discord_server", "house", "other"]
 (it has a server), the household's Home Assistant (set as the house, the one device that hands in wakes), else other.
 Never read from its name."""
 
+Capability = Literal["controls"]
+"""What a device can do, said when it is registered rather than worked out from what it is: `controls`, it is a screen
+that shows touch controls (the hallway tablet). Only a text device that is not a satellite, a Discord server or the
+house can have it."""
+
 
 @dataclass(frozen=True)
 class Listed:
-    """A device as a household's list shows it: the device and its `form`. Carries no token, host or server id."""
+    """A device as a household's list shows it: the device, its `form` and its `capabilities`. Carries no token, host
+    or server id."""
 
     device: Device
     form: Form
+    capabilities: frozenset[Capability] = frozenset()
 
     @property
     def takes_controls(self) -> bool:
-        """Whether the device is a screen that shows touch controls (the hallway tablet): one the household reads text on
-        that is not a satellite, a Discord server or the house. The one place the rule lives; the Devices room offers
-        the controls editor by this and nothing else."""
-        return self.form == "other" and self.device.medium == "text"
+        """Whether the device has the `controls` capability: the Devices room offers the controls editor by this and
+        nothing else."""
+        return "controls" in self.capabilities
 
 
 @dataclass(frozen=True)

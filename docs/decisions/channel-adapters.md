@@ -77,8 +77,12 @@ the hallway may see, and does what anyone there may do.
   Rejected: a Surfaces table and log of its own, a second decide/undo for the same arrangement; a jsonb layout on
   `devices`, which has no log or undo.
 - **The touch controls are the screen's `controls` piece**, its body the button list. `GET /api/devices` says
-  `takes_controls` for a device that takes them (`ashley.channels.model.Listed.takes_controls`); clients never infer it. A person edits it in the
-  Devices room and she edits it when asked, both as an Edit naming the version read, so one of two concurrent edits
+  `takes_controls` for a device that takes them (`ashley.channels.model.Listed.takes_controls`); clients never infer it.
+  A device says what it can do: `devices.capabilities` is a closed set (`ashley.channels.model.Capability`, today only
+  `controls`), set when the device is registered (`add --controls`) or by a person afterwards (`controls DEVICE_ID
+  [--off]`), because the server cannot tell a tablet from any other text device. A constraint keeps `controls` to a
+  text device that is not a satellite, a Discord server or the house. The Devices room does not edit the capability. A
+  person edits the buttons in the Devices room and she edits them when asked, both as an Edit naming the version read, so one of two concurrent edits
   is refused `stale_base` and redone on the other. Each light or scene must be in the house's catalogue, checked by
   the caller before the Command. A press still runs `house_do` by code. A light's action is turn on, turn off or toggle
   (`light.toggle`, the default for a new row). A toggle's button says whether its light is on: `GET /api/kiosk/controls`
