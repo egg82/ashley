@@ -12,12 +12,16 @@ her in any channel of that server. A server belongs to one unrevoked device; run
 Discord singleton reads the servers for each message, so a change applies at once.
 
 `house` makes a device the household's Home Assistant, the one device whose token may hand in wakes
-(`/api/wakes`). A satellite or a Discord server cannot be the house.
+(`/api/wakes`). A satellite, a Discord server or a device that takes controls cannot be the house.
 
 `voice-enrol` arms a satellite to enrol a person of its household from its next N wakes (default 6) within M
 minutes (default `enrol_minutes` in `voice.json`): each of those wakes stores its voiceprint for them and is answered
 as usual. Run it again to replace the enrolment. `voice-forget` deletes every voiceprint of a person, and any
 enrolment armed for them, and prints how many prints went.
+
+`add --controls` registers a text screen that shows touch controls (the hallway tablet), and `controls DEVICE_ID
+[--off]` says so of a device already added (`--off` takes it away): the server cannot tell a tablet from any other
+text device. A spoken device, a satellite, a Discord server and the house cannot take controls.
 
 `add --not-remembered` registers a device whose conversations are never written into memory (the eval harness, test
 devices); without it they are.
@@ -57,6 +61,7 @@ def parser() -> argparse.ArgumentParser:
     add.add_argument("--audience", required=True, choices=[a for a in get_args(Audience) if a != "owner"])
     add.add_argument("--medium", required=True, choices=get_args(Medium))
     add.add_argument("--kind", required=True, choices=get_args(Kind))
+    add.add_argument("--controls", action="store_true", help="a text screen that shows touch controls")
     add.add_argument("--not-remembered", action="store_true",
                      help="never write this device's conversations into memory (eval and test devices)")
     revoke = commands.add_parser("revoke", help="stop a device's token signing in")
@@ -69,6 +74,9 @@ def parser() -> argparse.ArgumentParser:
     discord.add_argument("device_id", type=int)
     discord.add_argument("guild_id", type=int, help="Discord's id for the server")
     discord.add_argument("home_channel_id", type=int, help="Discord's id for her home text channel in it")
+    controls = commands.add_parser("controls", help="say a text device takes touch controls, or no longer does")
+    controls.add_argument("device_id", type=int)
+    controls.add_argument("--off", action="store_true", help="take the capability away")
     house = commands.add_parser("house", help="make a device the household's Home Assistant, which hands in wakes")
     house.add_argument("device_id", type=int)
     enrol = commands.add_parser("voice-enrol", help="enrol a person's voice from a satellite's next wakes")
@@ -88,7 +96,8 @@ async def run(devices: PostgresDevices, voices: Voices, args: argparse.Namespace
             return await _voice(voices, args)
         if args.command == "add":
             device, token = await devices.add(args.household_id, args.name, args.place, args.audience, args.medium,
-                                              args.kind, not args.not_remembered)
+                                              args.kind, not args.not_remembered,
+                                              frozenset(["controls"]) if args.controls else frozenset())
             print(f"device {device.id}")
             print(f"token {token}")
             return 0
@@ -96,6 +105,8 @@ async def run(devices: PostgresDevices, voices: Voices, args: argparse.Namespace
             return await _satellite(devices, args)
         if args.command == "discord":
             return await _discord(devices, args)
+        if args.command == "controls":
+            return await _controls(devices, args)
         if args.command == "house":
             return await _house(devices, args)
         if await devices.revoke(args.device_id):
@@ -106,6 +117,10 @@ async def run(devices: PostgresDevices, voices: Voices, args: argparse.Namespace
     except UnknownHousehold:
         print(f"no household {args.household_id}", file=sys.stderr)
         return 1
+    except psycopg.errors.CheckViolation:
+        print("a device that takes controls is a text screen, not a satellite, a Discord server or the house",
+              file=sys.stderr)
+        return 2
     except (DatabaseUnavailable, VoicesUnavailable):
         print("no database connection", file=sys.stderr)
         return 1
@@ -130,10 +145,19 @@ async def _satellite(devices: PostgresDevices, args: argparse.Namespace) -> int:
     try:
         found = await devices.set_satellite(args.device_id, args.host, args.room_speaker)
     except psycopg.errors.CheckViolation:
-        print("--host must not be blank and --room-speaker must be a media_player entity id", file=sys.stderr)
+        print("--host must not be blank, --room-speaker must be a media_player entity id, and a device that takes "
+              "controls cannot be a satellite", file=sys.stderr)
         return 2
     if found:
         print(f"device {args.device_id} is a satellite")
+        return 0
+    print(f"no unrevoked device {args.device_id}", file=sys.stderr)
+    return 1
+
+
+async def _controls(devices: PostgresDevices, args: argparse.Namespace) -> int:
+    if await devices.set_controls(args.device_id, not args.off):
+        print(f"device {args.device_id} {'no longer takes' if args.off else 'takes'} controls")
         return 0
     print(f"no unrevoked device {args.device_id}", file=sys.stderr)
     return 1
@@ -143,7 +167,7 @@ async def _house(devices: PostgresDevices, args: argparse.Namespace) -> int:
     try:
         found = await devices.set_house(args.device_id)
     except psycopg.errors.CheckViolation:
-        print("a satellite or a Discord server cannot be the house", file=sys.stderr)
+        print("a satellite, a Discord server or a device that takes controls cannot be the house", file=sys.stderr)
         return 2
     if found:
         print(f"device {args.device_id} is the house")

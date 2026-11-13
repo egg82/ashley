@@ -27,7 +27,7 @@ from fastapi.testclient import TestClient
 
 PUBLIC = "https://ashley.test"
 READABLE = ("id", "household_id", "name", "place", "audience", "medium", "kind", "remembers", "revoked_at",
-            "esphome_host", "discord_guild_id", "house")
+            "esphome_host", "discord_guild_id", "house", "capabilities")
 
 
 def device(url: str, household_id: int, name: str, extra: str = "", values: str = "") -> int:
@@ -133,15 +133,16 @@ def test_the_route_serves_the_households_devices_and_nothing_that_reaches_them(
                for r in caplog.records)
 
 
-def test_only_a_text_screen_of_form_other_takes_controls(client: tuple[TestClient, int], db_url: str) -> None:
+def test_a_device_takes_controls_when_it_was_registered_with_them(client: tuple[TestClient, int], db_url: str) -> None:
     c, home = client
     tablet = device(db_url, home, "hall")
-    scalar(db_url, "UPDATE devices SET medium = 'text' WHERE id = %s RETURNING id", (tablet,))
+    scalar(db_url, "UPDATE devices SET medium = 'text', capabilities = ARRAY['controls'] WHERE id = %s RETURNING id",
+           (tablet,))
+    plain_text = device(db_url, home, "wall")
+    scalar(db_url, "UPDATE devices SET medium = 'text' WHERE id = %s RETURNING id", (plain_text,))
     spoken = device(db_url, home, "speaker")
-    texting = satellite(db_url, home, "texting")
-    scalar(db_url, "UPDATE devices SET medium = 'text' WHERE id = %s RETURNING id", (texting,))
     got = {d["id"]: d["takes_controls"] for d in c.get("/api/devices").json()["devices"]}
-    assert got == {tablet: True, spoken: False, texting: False}
+    assert got == {tablet: True, plain_text: False, spoken: False}
 
 
 def test_an_empty_household_is_an_empty_list(client: tuple[TestClient, int]) -> None:
