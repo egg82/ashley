@@ -15603,12 +15603,12 @@
             "type": "string",
             "title": "Value"
           },
-          "options": {
+          "option_values": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Options"
+            "title": "Option Values"
           }
         },
         "type": "object",
@@ -15618,10 +15618,10 @@
           "name",
           "label",
           "value",
-          "options"
+          "option_values"
         ],
         "title": "WireFact",
-        "description": "A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,\nand `options`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);\nempty when the row has none."
+        "description": "A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,\nand `option_values`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);\nempty when the row has none."
       },
       "WireReceipt": {
         "properties": {
@@ -15688,12 +15688,12 @@
             ],
             "title": "Proposal Id"
           },
-          "facts": {
+          "choice_rows": {
             "items": {
               "$ref": "#/components/schemas/WireFact"
             },
             "type": "array",
-            "title": "Facts"
+            "title": "Choice Rows"
           }
         },
         "type": "object",
@@ -15701,10 +15701,10 @@
           "ran",
           "held",
           "proposal_id",
-          "facts"
+          "choice_rows"
         ],
         "title": "WireReceipts",
-        "description": "The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its\nsummary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is\nheld; whether it can still be agreed to is `ChatConversationTurn.agree`. `facts` the choice rows of a bench shown to\nthe person this turn, as they stood then."
+        "description": "The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its\nsummary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is\nheld; whether it can still be agreed to is `ChatConversationTurn.agree`. `choice_rows` the choice rows of a bench shown to\nthe person this turn, as they stood then."
       },
       "WorkKind": {
         "properties": {

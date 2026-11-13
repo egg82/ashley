@@ -12,7 +12,7 @@ export interface FactRow {
 /** The rows of the card, in the order she set them, each picked as `tapped` says (by `piece_id:name`) or as she left
  * it; empty when the turn showed none. */
 export function factRows(receipts: WireReceipts | null | undefined, tapped: ReadonlyMap<string, string>): FactRow[] {
-  return (receipts?.facts ?? []).map((fact) => ({ fact, picked: tapped.get(keyOf(fact)) ?? fact.value, options: fact.options }));
+  return (receipts?.choice_rows ?? []).map((fact) => ({ fact, picked: tapped.get(keyOf(fact)) ?? fact.value, options: fact.option_values }));
 }
 
 export function keyOf(fact: Pick<WireFact, 'piece_id' | 'name'>): string {

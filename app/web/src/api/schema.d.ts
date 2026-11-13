@@ -5542,7 +5542,7 @@ export interface components {
         /**
          * WireFact
          * @description A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,
-         *     and `options`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);
+         *     and `option_values`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);
          *     empty when the row has none.
          */
         WireFact: {
@@ -5556,8 +5556,8 @@ export interface components {
             label: string;
             /** Value */
             value: string;
-            /** Options */
-            options: string[];
+            /** Option Values */
+            option_values: string[];
         };
         /**
          * WireReceipt
@@ -5576,7 +5576,7 @@ export interface components {
          * WireReceipts
          * @description The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its
          *     summary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is
-         *     held; whether it can still be agreed to is `ChatConversationTurn.agree`. `facts` the choice rows of a bench shown to
+         *     held; whether it can still be agreed to is `ChatConversationTurn.agree`. `choice_rows` the choice rows of a bench shown to
          *     the person this turn, as they stood then.
          */
         WireReceipts: {
@@ -5586,8 +5586,8 @@ export interface components {
             held: components["schemas"]["WireReceipt"][];
             /** Proposal Id */
             proposal_id: number | null;
-            /** Facts */
-            facts: components["schemas"]["WireFact"][];
+            /** Choice Rows */
+            choice_rows: components["schemas"]["WireFact"][];
         };
         /**
          * WorkKind

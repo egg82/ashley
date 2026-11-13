@@ -1,4 +1,4 @@
-// The choices she set on a bench, shown beside her reply once each (`WireReceipts.facts`): each with what it is about
+// The choices she set on a bench, shown beside her reply once each (`WireReceipts.choice_rows`): each with what it is about
 // and its options as buttons, hers pressed; a tap sets the row as the person's, and the bench reads back as for any
 // change of theirs.
 import { useId, useState } from 'preact/hooks';

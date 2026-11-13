@@ -19,7 +19,7 @@ class WireReceipt(BaseModel):
 
 class WireFact(BaseModel):
     """A choice row of a bench's measurements piece shown beside her reply, once: `label` and `value` as she set them,
-    and `options`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);
+    and `option_values`, each a tap that sets the row (`PUT /api/benches/{bench_id}/pieces/{piece_id}/choices/{name}`);
     empty when the row has none."""
 
     bench_id: int
@@ -27,30 +27,30 @@ class WireFact(BaseModel):
     name: str
     label: str
     value: str
-    options: list[str]
+    option_values: list[str]
 
 
 class WireReceipts(BaseModel):
     """The changes that ran without asking (`ran`) and the calls waiting for the person's OK (`held`, each with its
     summary in full: the person agrees to what code wrote). `proposal_id` is the held proposal, null when nothing is
-    held; whether it can still be agreed to is `ChatConversationTurn.agree`. `facts` the choice rows of a bench shown to
+    held; whether it can still be agreed to is `ChatConversationTurn.agree`. `choice_rows` the choice rows of a bench shown to
     the person this turn, as they stood then."""
 
     ran: list[WireReceipt]
     held: list[WireReceipt]
     proposal_id: int | None
-    facts: list[WireFact]
+    choice_rows: list[WireFact]
 
 
 def wire_receipts(receipts: Receipts | None) -> WireReceipts | None:
     return None if receipts is None else WireReceipts(
         ran=[_wire(r) for r in receipts.done], held=[_wire(r) for r in receipts.held], proposal_id=receipts.proposal_id,
-        facts=[_wire_fact(f) for f in receipts.facts])
+        choice_rows=[_wire_fact(f) for f in receipts.facts])
 
 
 def _wire_fact(fact: Fact) -> WireFact:
     return WireFact(bench_id=fact.bench_id, piece_id=fact.piece_id, name=fact.name, label=fact.label, value=fact.value,
-                    options=list(fact.options))
+                    option_values=list(fact.options))
 
 
 def _wire(receipt: Receipt) -> WireReceipt:

@@ -339,8 +339,8 @@ def json_receipts(receipts: Receipts | None) -> dict[str, Any] | None:
         return None
     return {WIRE_RAN: [_wire(r) for r in receipts.done], "held": [_wire(r) for r in receipts.held],
             "proposal_id": receipts.proposal_id,
-            "facts": [{"bench_id": f.bench_id, "piece_id": f.piece_id, "name": f.name, "label": f.label,
-                       "value": f.value, "options": list(f.options)} for f in receipts.facts]}
+            "choice_rows": [{"bench_id": f.bench_id, "piece_id": f.piece_id, "name": f.name, "label": f.label,
+                             "value": f.value, "option_values": list(f.options)} for f in receipts.facts]}
 
 
 def same_json(a: object, b: object) -> bool:
