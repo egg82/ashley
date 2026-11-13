@@ -9,6 +9,8 @@ import {
 } from './chat';
 import { Composer } from './Composer';
 import { ConvoRail } from './ConvoRail';
+import { watchWork } from './work';
+import { WorkFold } from './WorkList';
 import { Divider, Earlier } from './Earlier';
 import { chatEarlier, earlierReset } from './past';
 import { Thread } from './Thread';
@@ -27,7 +29,11 @@ export function HerRoom() {
   useEffect(() => {
     earlierReset();
     enterRoom();
-    return leaveRoom;
+    const stopWork = watchWork();
+    return () => {
+      stopWork();
+      leaveRoom();
+    };
   }, []);
   const state = loadState.value;
   const shown = lines.value;
@@ -50,6 +56,7 @@ export function HerRoom() {
           <span class="chat-dock" data-dock />
           <span class={`her-word${her === 'unreachable' ? ' unreachable' : ''}`}>{herWord.value}</span>
         </div>
+        <WorkFold />
         <div class="thread" ref={thread} aria-live="polite" onScroll={nearTop}>
           {state === 'loading' && <p class="chat-quiet meta">Reading…</p>}
           {(state === 'unreachable' || state === 'failed') && <Down failed={state === 'failed'} />}

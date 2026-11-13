@@ -87,6 +87,11 @@ export async function getReminders(): Promise<Ok<'/api/reminders'>> {
   return answer(await fetch('/api/reminders'), 200, 'GET /api/reminders');
 }
 
+/** The signed-in person's open errands and benches, those waiting on them first. */
+export async function getWork(): Promise<Ok<'/api/work'>> {
+  return answer(await fetch('/api/work'), 200, 'GET /api/work');
+}
+
 /** Cancels reminder `id`; a repeating one fires no more. 404 when it is not theirs or already fired. */
 export async function cancelReminder(id: number): Promise<Cancelled> {
   return answer(await fetch(`/api/reminders/${id}`, { method: 'DELETE' }), 200, 'DELETE /api/reminders/{id}');
