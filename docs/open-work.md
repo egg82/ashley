@@ -161,7 +161,12 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
 8. **Golf the system prompt.** Token counts per section are built: `python -m ashley.evals prompt-sizes` (stable sections, moment, each tool and
    source, reply schema; run it in the pod before each cut). Cut by ablation
    against the eval battery, keeping a cut only when nothing regresses (`model-golf`). Most of it is Home Assistant's:
-   its tool definitions (4,315 tokens before her own house tools replaced them; measure again) and the device list in her tool instructions (about 1,080 tokens, the entities exposed to Assist). Levers: offer tool groups by kind, channel and place rather than all of them; household facts retrieved per message from memory
+   its tool definitions (4,315 tokens before her own house tools replaced them) and the device list in her tool
+   instructions (about 1,080 tokens, the entities exposed to Assist). Measured in the pod on 2026-11-13, on Anthropic's
+   counter: a web `chat` request is 32,051 tokens (stable 8,529, of which the tools' instructions are 5,679 and the
+   persona 2,170; 46 tools; reply schema 2,065), the biggest groups reminders 4,446, mail 2,529, watches 2,120 and
+   screen 1,978; a voice `command` request is 13,704 (stable 5,737, 11 tools 5,084, reply schema 2,065), the four
+   house tools 571-676 each. Chat's first route is Gemini, so its own count differs. Levers: offer tool groups by kind, channel and place rather than all of them; household facts retrieved per message from memory
    (standing facts and recall) instead of the whole profile; format rules checked on `Reply` in code instead of carried as prose; and the
    persona's examples ablated one at a time (she repeats the presidents example nearly word for word). Latency too:
    the parity run had her at a median 2.8 s against HA's 1.9 s, two model steps for most house questions. The size
