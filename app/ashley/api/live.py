@@ -14,6 +14,7 @@ feed (`kiosk_live`)."""
 import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
+from uuid import UUID
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -44,28 +45,29 @@ class EventStream(StreamingResponse):
           "content": {"text/event-stream": {"schema": {"$ref": "#/components/schemas/LiveEvent"}}}},
     401: {"description": "`unauthorized`: no live session", "content": _JSON_ERROR},
     503: {"description": "`unavailable`: no live feed; look for changes by asking again", "content": _JSON_ERROR}})
-async def live(signed_in: Person) -> Response:
-    """200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`."""
+async def live(signed_in: Person, screen: UUID | None = None) -> Response:
+    """200 a stream of `LiveEvent`; 401 `unauthorized`; 503 `unavailable`. `screen` is the token the page made at load,
+    which names this screen when it reports its visibility (`POST /api/screens/visibility`)."""
     who = signed_in.person
-    return stream_to(Viewer(who.household_id, who.id), person=who.id)
+    return stream_to(Viewer(who.household_id, who.id), screen, person=who.id)
 
 
-def stream_to(viewer: Watcher, **opened: int) -> Response:
+def stream_to(viewer: Watcher, screen: UUID | None, **opened: int) -> Response:
     """The stream of what `viewer` may be shown, or 503 `unavailable` when no feed is wired; `opened` (the person or
-    device id) goes in the `live.opened` log."""
+    device id) goes in the `live.opened` log; `screen` names the screen in the open-screens record."""
     try:
         subscription = services.get(Live).subscribe(viewer)
     except LiveUnavailable:
         body = ErrorResponse(code="unavailable", detail="no live feed; ask again for changes")
         return JSONResponse(status_code=503, content=body.model_dump())
     logs.info(log, "live.opened", **opened)
-    return EventStream(_stream(subscription, viewer), headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return EventStream(_stream(subscription, viewer, None if screen is None else str(screen)), headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-async def _stream(subscription: Subscription, viewer: Watcher) -> AsyncIterator[bytes]:
+async def _stream(subscription: Subscription, viewer: Watcher, token: str | None) -> AsyncIterator[bytes]:
     ends = time.monotonic() + CONFIG.stream_s
-    screen = await _screen(lambda s: s.opened(viewer.household_id, viewer.person_id) if isinstance(viewer, Viewer)
-                           else s.device_opened(viewer.household_id, viewer.device_id))
+    screen = await _screen(lambda s: s.opened(viewer.household_id, viewer.person_id, token) if isinstance(viewer, Viewer)
+                           else s.device_opened(viewer.household_id, viewer.device_id, token))
     beat_at = time.monotonic()
     try:
         async with subscription:

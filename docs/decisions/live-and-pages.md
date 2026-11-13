@@ -29,6 +29,16 @@ and fans out to its own streams; nothing about a screen is kept beyond its open 
 - **`speaking` is an estimate, from a satellite's wake alone.** No channel has a real playback signal: a satellite's wake sends it as an estimate (above), and no other channel does. A satellite plays the clip URL it is handed and
   does not report when it starts or stops; the clip route streams faster than real time, so its end is not the end of
   playback. No other channel sends `speaking`.
+- **Which screens are open, and in the foreground, is a row per screen, in Postgres.** A stream records itself in
+  `live_screens` (the `Screens` service, a Null Object that raises) and refreshes the row at its heartbeat; a row not
+  refreshed within `present_s` counts as closed, and an opening prunes its household's rows older than a day, left by
+  pods that died. A page makes a random token at load, opens its feed under it (`?screen=`) and reports whether it is
+  in the foreground (the Page Visibility API) against it, on every change and every 30 s while the feed is up
+  (`POST /api/screens/visibility`; the kiosk's `POST /api/kiosk/screen`). `Screens.open_screens` lists a household's
+  screens with the last report, `visible` None until there is one, so any pod of either site can say which screens are
+  being looked at. This extends Screens, which Live's streams already feed, rather than adding a presence record:
+  Presence (who is home) and this (which screens are open) answer different questions and stay apart. A report names
+  the reporter's own screen only: the person or device comes from the session, never from the body.
 - **Rejected: polling per room.** Every open screen would ask every few seconds whether anything happened, mostly to
   hear no, and a screen would learn of a kitchen question only at its next poll.
 - **Rejected: Redis pub/sub or an etcd watch.** Redis is a new stateful service on both sites with its own failover to

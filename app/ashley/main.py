@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 
 from . import logs, services, settings as settings_module, wiring, wiring_singletons
 from .api import (accounts, admin_gate, bench_choices, bench_files, bench_jobs, bench_runs, bench_talk, benches, chat, connection_holders, connection_oauth, connection_settings, connections, device_controls, devices, files, health, history, household, kiosk, lexicon, look, mail_bridge, mail_bridge_login,
-                  kiosk_device, live, memory, messages, model_catalogue, outside_actions, people, person, persona, push, ready, reminders, signin, skills, spend, spend_routes, spoken,
+                  kiosk_device, live, memory, messages, model_catalogue, outside_actions, people, person, persona, push, ready, reminders, screens, signin, skills, spend, spend_routes, spoken,
                   validation, voice_clips, voice_turns, wakes)
 from .api.access import AccessLog
 from .api.contract import operation_id
@@ -75,6 +75,7 @@ def create_app(settings: settings_module.Settings | None = None, database: Datab
     app.include_router(history.router)
     app.include_router(live.router)
     app.include_router(push.router)
+    app.include_router(screens.router)
     app.include_router(kiosk.router)
     app.include_router(spoken.router)
     app.include_router(benches.router)

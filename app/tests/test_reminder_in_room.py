@@ -24,7 +24,7 @@ from ashley.channels.voice.connection import Announcer
 from ashley.channels.wake import reminder_device, runner, screen_delivery
 from ashley.channels.wake.config import CONFIG as WAKES
 from ashley.inference.model import ToolCall
-from ashley.live.screens import Screens
+from ashley.live.screens import OpenScreen, Screens
 from ashley.senses.wakes import Reminder, Route
 from ashley.tools.reminders import ReminderTools
 from house_devices_support import HouseDevices
@@ -47,11 +47,20 @@ class OpenScreens(Screens):
 
     shown: set[int] = field(default_factory=set[int])
 
-    async def opened(self, household_id: int, person_id: int) -> int:
+    async def opened(self, household_id: int, person_id: int, token: str | None = None) -> int:
         return 1
 
-    async def device_opened(self, household_id: int, device_id: int) -> int:
+    async def device_opened(self, household_id: int, device_id: int, token: str | None = None) -> int:
         return 1
+
+    async def person_visible(self, person_id: int, token: str, visible: bool) -> None:
+        return None
+
+    async def device_visible(self, device_id: int, token: str, visible: bool) -> None:
+        return None
+
+    async def open_screens(self, household_id: int, within_s: float) -> tuple[OpenScreen, ...]:
+        return ()
 
     async def beat(self, screen_id: int) -> None:
         return None
