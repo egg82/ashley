@@ -123,7 +123,8 @@ def test_the_run_gets_the_prompt_schema_and_token_and_nothing_of_this_process(
     assert seen["stdin"] == ("[person]\nSam: the bins go out on Thursdays\n\n[ashley]\nNoted.\n\n"
                              "[person]\nSam: and recycling every other week\n\n" + MOMENT_LABEL + "\nIt is Tuesday morning.")
     assert set(seen["env"]) - {"PWD", "SHLVL", "_", "LC_CTYPE"} == {"PATH", "HOME", "CLAUDE_CONFIG_DIR",
-                                                                   "CLAUDE_CODE_OAUTH_TOKEN"}
+                                                                   "CLAUDE_CODE_OAUTH_TOKEN",
+                                                                   "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"}
     assert seen["env"]["CLAUDE_CODE_OAUTH_TOKEN"] == "oauth-token-1"
     assert seen["env"]["HOME"] == seen["env"]["CLAUDE_CONFIG_DIR"] == seen["cwd"]
     assert not os.path.exists(seen["cwd"]), "the run's directory outlived it"

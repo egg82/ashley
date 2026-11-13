@@ -4,7 +4,7 @@ Each call runs the binary once, non-interactive: the history on stdin, the stabl
 reaches the process list or an argument limit), the reply schema as `--json-schema`, no built-in tools, no settings,
 MCP servers, skills or saved session. It runs in a directory of its own made for the call and removed after it, which
 is also its `HOME` and `CLAUDE_CONFIG_DIR`, so nothing outlives the call on the node. Its environment is only `PATH`,
-that directory and `CLAUDE_CODE_OAUTH_TOKEN`: none of this process's env (the database URL, `CONNECTIONS_KEY`, an API
+that directory, `CLAUDE_CODE_OAUTH_TOKEN` and the switch that stops its updater and telemetry: none of this process's env (the database URL, `CONNECTIONS_KEY`, an API
 key the CLI would prefer to the token) reaches it.
 
 Params: `effort` (`low`, `medium`, `high`, `xhigh`, `max`), optional. The output is the CLI's one JSON result
@@ -117,7 +117,7 @@ async def run(binary: str, token: str, args: list[str], system: str, stdin: str,
         with open(prompt_file, "w") as f:
             f.write(system)
         env = {"PATH": os.environ.get("PATH", ""), "HOME": home, "CLAUDE_CONFIG_DIR": home,
-               "CLAUDE_CODE_OAUTH_TOKEN": token}
+               "CLAUDE_CODE_OAUTH_TOKEN": token, "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"}
         try:
             process = await asyncio.create_subprocess_exec(
                 binary, *_FIXED, "--system-prompt-file", prompt_file, *args, cwd=home, env=env,
