@@ -1,43 +1,18 @@
 /* The connections room. It sits in devices.css's room frame (.set, .set-head, .dc-note, .dc-act, .set-down) and the
-   shell's tokens, .panel, .btn, .pill, .label and .unk. New here: the rows, the ⋯ menu, and the picker. The Yours tag is the
-   workshop's who-tag.you; a person's colour is --blue and the household's --p-house, as the people circles use them. */
+   shell's tokens, .panel, .btn, .pill, .label and .unk. What is here is the picker and its forms and a connection's settings
+   page; the room's own rows, summary and map are reach.css. A person's colour is --blue and the household's --p-house, as
+   the people circles use them. */
 
-.set.cn { max-width: 860px; }
 .set-head .cn-add { margin-left: auto; }
 .cn-body { display: grid; gap: 24px; }
-.cn-sec-head { display: flex; align-items: baseline; gap: 8px; margin: 0 2px 8px; }
-.cn-list { overflow: visible; }
-.cn-empty { margin: 0; padding: 18px 16px; }
 
-.cn-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 2px 14px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
-.cn-row:first-child { border-top: 0; border-radius: var(--r-3) var(--r-3) 0 0; }
-.cn-row:last-child { border-radius: 0 0 var(--r-3) var(--r-3); }
-.cn-row:only-child { border-radius: var(--r-3); }
-.cn-row:hover { background: rgba(77,163,255,.04); }
 .cn-mark { --hue: var(--p-house); display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-2); flex: none;
   background: color-mix(in srgb, var(--hue) 14%, var(--ink-2)); border: 1px solid color-mix(in srgb, var(--hue) 45%, var(--line));
   color: var(--hue); font: 700 15px/1 var(--f-display); }
 .cn-mark.mine { --hue: var(--blue); }
-.cn-main { min-width: 0; }
-.cn-main b { display: block; font-weight: 600; overflow-wrap: anywhere; }
-.cn-sub { overflow-wrap: anywhere; }
-.cn-url { color: var(--text-2); }
-.cn-when { text-align: right; }
-.cn-added { color: var(--text-3); }
-.cn-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--ok);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--ok) 60%, transparent); }
 
-.cn-dot.stale { background: var(--text-3); box-shadow: none; }
-.cn-scopes { color: var(--text-3); }
 .cn-needs { color: rgb(255,93,108); }
-.cn-sub .dc-act { margin-top: 4px; }
 
-.cn-menu { position: relative; }
-.cn-more { width: 30px; padding: 0; justify-content: center; font-size: 16px; line-height: 1; }
-.cn-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 5; min-width: 180px; display: grid; padding: 4px;
-  background: var(--ink-2); border: 1px solid var(--line-hi); border-radius: var(--r-2); box-shadow: 0 12px 30px rgba(0,0,0,.5); }
-.cn-pop button { border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: var(--r-1); font-size: 13px; color: var(--text); }
-.cn-pop button:hover { background: var(--ink-4); }
 
 /* the picker */
 .cn-dialog { width: min(560px, calc(100vw - 24px)); max-height: min(640px, calc(100vh - 48px)); padding: 0; margin: auto;
@@ -72,13 +47,6 @@
 .cn-form input { min-width: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.9); }
 .cn-form input:focus { outline: none; border-color: var(--blue); }
 
-@media (max-width: 900px) {
-  .set.cn { max-width: none; }
-  .cn-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
-  .cn-main { grid-column: 2; grid-row: 1; }
-  .cn-when { grid-column: 2; grid-row: 2; text-align: left; margin-top: 4px; }
-  .cn-menu { grid-column: 3; grid-row: 1 / span 2; align-self: start; }
-}
 
 .cn-holder { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 0; border: 0; }
 .cn-holder legend { padding: 0; margin-bottom: 4px; }
@@ -93,21 +61,6 @@
 .cn-savebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; position: sticky; bottom: 0; z-index: 1; margin-top: 8px; padding: 10px 12px; background: var(--ink-2); border-top: 1px solid var(--line-hi); border-radius: var(--r-2); }
 .cn-save-acts { display: flex; gap: 8px; margin-left: auto; }
 
-/* Proton's addresses, once each, one two-way switch per address */
-.cn-key { margin: 2px 0 0; font-size: 12px; color: var(--text-3); }
-.cn-key b { display: inline; color: var(--text-2); font-weight: 600; }
-.cn-addrs { display: grid; margin-top: 6px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--ink-1); }
-.cn-addr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 10px; border-top: 1px solid var(--line); }
-.cn-addr:first-child { border-top: 0; }
-.cn-addr-name { flex: 1 1 220px; min-width: 0; font: 12.5px/1.4 var(--f-mono); color: var(--text); overflow-wrap: anywhere; }
-.cn-who { display: inline-flex; margin: 0; padding: 2px; border: 1px solid var(--line-hi); border-radius: 11px; background: var(--ink-2); }
-.cn-who legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.cn-who label { position: relative; display: inline-flex; align-items: center; height: 20px; padding: 0 10px; border-radius: 9px; font-size: 11.5px; font-weight: 500; color: var(--text-3); cursor: pointer; }
-.cn-who input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.cn-who label:has(input:checked) { color: var(--blue-hi); background: rgba(77,163,255,.14); }
-.cn-who label.household:has(input:checked) { color: var(--text); background: color-mix(in srgb, var(--p-house) 20%, var(--ink-3)); }
-.cn-who label:has(input:focus-visible) { outline: 2px solid var(--blue-hi); outline-offset: 1px; }
-.cn-summary { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 
 /* Home Assistant's settings: why they exist, worked examples, rows of the house's things with one control each */
 .set-why { padding: 14px 16px; display: grid; gap: 8px; border-left: 3px solid var(--p-house); }

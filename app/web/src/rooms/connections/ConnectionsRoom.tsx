@@ -1,36 +1,34 @@
-// Connections, at bearing 250: the services she is linked to. Yours (your Discord account, your code hosts and sessions)
-// and The household's (its finances, its house). Discord sends the person back to `?link=<outcome>` and a service connected through its own
-// consent screen to `?connect=<outcome>`, each read once and dropped from the URL. Anything not connected yet is added from one picker.
+// Connections, at bearing 250: the services she reaches. The summary and a map of her reach, then what needs a person, then
+// each connection as a sentence grouped by what it gives her, then what could be added. Discord sends the person back to
+// `?link=<outcome>` and a service connected through its own consent screen to `?connect=<outcome>`, each read once and
+// dropped from the URL.
 import { useLocation } from 'preact-iso';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
+import { person } from '../../session/session';
 import { dockIn } from '../../shell/her/dock';
 import { settingsOf } from '../../shell/rooms';
-import { herWord } from '../../shell/her/state';
 import { loadAccounts, leaveRoom, loadState, outcomeOf, said } from './accounts';
-import { connectionsState, kinds, loadConnections } from './connections';
-import { Notice } from './Notice';
+import { connectionsState, held, kinds, loadConnections } from './connections';
 import { connectOutcomeOf } from './connectOutcome';
+import { Notice } from './Notice';
 import { returned } from './oauth';
 import { closePicker, openList, picking } from './picking';
 import { PickerHost } from './Picker';
 import { loadProtonAccounts, accounts as protonAccounts } from './proton';
-import { Household, Yours } from './Section';
+import { AttentionCards } from './reach/AttentionCards';
+import { CouldAdd } from './reach/CouldAdd';
+import { groupsOf } from './reach/groups.ts';
+import { Rail, type Jump } from './reach/Rail';
+import { ReachGroup } from './reach/ReachGroup';
+import { ReachMap } from './reach/ReachMap';
+import { standingOf } from './reach/standing.ts';
+import { removing } from './reach/state';
+import { hasTalk, TalkGroup } from './reach/TalkGroup';
+import { Down, Empty } from './reach/Unknown';
+import { needOf } from './reach/needs.ts';
 import { SettingsPage } from './settings/SettingsPage';
 
 const SYNC_POLL_MS = 10_000;
-
-function Down({ failed }: { failed: boolean }) {
-  return (
-    <div class="panel set-down" role="alert">
-      <span class="down-dock" data-dock />
-      <div class="set-down-says">
-        {!failed && <span class="her-word unreachable">{herWord.value}</span>}
-        <b>{failed ? "Your accounts didn't load." : "Can't reach her right now."}</b>
-        <button class="btn" type="button" onClick={() => void loadAccounts()}>Try again</button>
-      </div>
-    </div>
-  );
-}
 
 function useReturn(): void {
   const { query, route } = useLocation();
@@ -58,6 +56,38 @@ function useProtonAccounts(): void {
   }, [ready, syncing]);
 }
 
+/** The person whose hub the map draws: whoever holds the personal connections, else the signed-in person. */
+function personName(): string {
+  return held.value.find((c) => c.personal && c.added_by)?.added_by?.name ?? person.value?.name ?? 'You';
+}
+
+function Body() {
+  const connections = held.value;
+  const groups = groupsOf(connections);
+  const standing = standingOf(connections, kinds.value);
+  const needing = connections.some((c) => { const k = kinds.value.find((x) => x.name === c.kind); return k !== undefined && needOf(c, k) !== null; });
+  const jumps: Jump[] = [
+    ...(needing ? [{ id: 'needs-you', title: 'Needs you' }] : []),
+    ...groups.map((g) => ({ id: `g-${g.id}`, title: g.title })),
+    ...(hasTalk() ? [{ id: 'g-talk', title: 'Talking to her' }] : []),
+    { id: 'g-add', title: 'Could be added' },
+  ];
+  return (
+    <div class="rr-layout">
+      <Rail standing={standing} jumps={jumps} />
+      <div class="rr-main">
+        {!picking.value && <Notice kinds={kinds.value} />}
+        <ReachMap connections={connections} kinds={kinds.value} person={personName()} />
+        <AttentionCards connections={connections} kinds={kinds.value} />
+        {standing.total === 0 && <Empty />}
+        {groups.map((g) => <ReachGroup key={g.id} group={g} kinds={kinds.value} />)}
+        {hasTalk() && <TalkGroup />}
+        <CouldAdd />
+      </div>
+    </div>
+  );
+}
+
 export function ConnectionsRoom() {
   useReturn();
   useProtonAccounts();
@@ -69,31 +99,30 @@ export function ConnectionsRoom() {
       leaveRoom();
     };
   }, []);
-  const state = loadState.value;
+  const accountsState = loadState.value;
+  const state = connectionsState.value;
   const settingsId = settingsOf(useLocation().path);
   const here = useRef<HTMLDivElement>(null);
+  const failed = accountsState === 'unreachable' || accountsState === 'failed' || state === 'unreachable' || state === 'failed';
+  const unreachable = accountsState === 'unreachable' || state === 'unreachable';
+  const ready = !failed && state !== 'loading' && accountsState !== 'loading';
   // The room was docked into before its accounts arrived; each change of state lays out a new dock for her.
   useLayoutEffect(() => {
     const room = here.current?.closest('.room');
     if (room && !room.classList.contains('leaving')) dockIn(room, false);
-  }, [state]);
+  }, [accountsState, state]);
   if (settingsId !== null) return <div class="set cn" ref={here}><SettingsPage id={settingsId} /></div>;
   return (
-    <div class="set cn" ref={here}>
+    <div class={`set cn rr-room${removing.value !== null ? ' removing' : ''}`} ref={here}>
       <div class="set-head">
         <h1>Connections</h1>
-        {state !== 'unreachable' && state !== 'failed' && <span class="set-dock" data-dock />}
-        {state === 'ready' && <button class="btn primary cn-add" type="button" onClick={openList}>Add a service</button>}
+        {!failed && <span class="set-dock" data-dock />}
+        {ready && state === 'ready' && <button class="btn primary cn-add" type="button" onClick={openList}>Add a service</button>}
       </div>
-      {state === 'loading' && <p class="set-none meta">Reading your accounts…</p>}
-      {(state === 'unreachable' || state === 'failed') && <Down failed={state === 'failed'} />}
-      {state === 'ready' && (
-        <div class="cn-body">
-          {!picking.value && <Notice kinds={kinds.value} />}
-          <Yours />
-          <Household />
-        </div>
-      )}
+      {!ready && !failed && <p class="set-none meta">Reading your accounts…</p>}
+      {failed && <Down unreachable={unreachable} />}
+      {ready && state === 'off' && <p class="set-none"><span class="unk">services can’t be connected here</span></p>}
+      {ready && state === 'ready' && <Body />}
       <PickerHost />
     </div>
   );
