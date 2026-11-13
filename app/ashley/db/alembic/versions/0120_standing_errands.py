@@ -4,8 +4,8 @@ with no end carries one, and each next occurrence carries it on."""
 
 from alembic import op
 
-revision: str = "0121"
-down_revision: str | None = "0117"
+revision: str = "0120"
+down_revision: str | None = "0119"
 
 
 def upgrade() -> None:
