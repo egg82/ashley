@@ -1,4 +1,4 @@
-"""Web push's tunables, as data in `push.json` beside this module, and her VAPID identity from the settings.
+"""Web push's tunables, as data in `push.json` beside this module, and her VAPID identity.
 
 A notification's title is `title` and its body the reply's text cut to `body_chars`; one that carries only receipts
 (a spoken turn's, which the speaker's phone shows) has `done_title` or, when a call waits, `held_title`, and the
@@ -9,7 +9,6 @@ whose host is one of `hosts` or ends with one of `domains`."""
 
 import base64
 import json
-import logging
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
@@ -18,11 +17,10 @@ from urllib.parse import urlsplit
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from ... import logs
-from ...settings import Settings
+from ... import services
+from ...connections.deployment_secrets import DeploymentSecrets
 
 FILE = Path(__file__).with_name("push.json")
-log = logging.getLogger("ashley.channels.push")
 
 
 @dataclass(frozen=True)
@@ -78,28 +76,37 @@ class Vapid:
     subject: str
 
 
-def vapid(settings: Settings) -> Vapid | None:
-    """Her identity when all three settings are set and the keys are one P-256 pair; None otherwise, and push is off."""
-    found = Vapid(settings.vapid_public_key, settings.vapid_private_key, settings.vapid_subject)
-    if not all((found.public_key, found.private_key, found.subject)):
+def vapid(public_key: str, private_key: str, subject: str) -> Vapid | None:
+    """Her identity when all three are set and the keys are one P-256 pair; None otherwise, and push is off."""
+    if not subject or not is_pair(public_key, private_key):
         return None
+    return Vapid(public_key, private_key, subject)
+
+
+def identity(subject: str) -> Vapid | None:
+    """`vapid` over the deployment's pair in force (`ashley.connections.deployment_secrets`) and `subject`, the
+    `VAPID_SUBJECT` setting."""
+    return vapid(*services.get(DeploymentSecrets).vapid_keys(), subject)
+
+
+def is_pair(public_key: str, private_key: str) -> bool:
+    """Whether the two are set and are one P-256 key pair, in `Vapid`'s format."""
+    if not (public_key and private_key):
+        return False
     try:
-        private = _private(_unb64(found.private_key))
+        private = _private(_unb64(private_key))
         public = private.public_key().public_bytes(serialization.Encoding.X962,
                                                    serialization.PublicFormat.UncompressedPoint)
-        matches = public == _unb64(found.public_key)
     except (ValueError, TypeError):
-        return None
-    return found if matches else None
+        return False
+    return public == _unb64(public_key)
 
 
-def checked(settings: Settings) -> Vapid | None:
-    """`vapid`, logging `push.config_bad` when the settings name an identity that is not usable: some of the three
-    missing, or keys that are not one P-256 pair. Never the keys."""
-    found = vapid(settings)
-    if found is None and any((settings.vapid_public_key, settings.vapid_private_key, settings.vapid_subject)):
-        logs.warning(log, "push.config_bad", push="off")
-    return found
+def new_pair() -> tuple[str, str]:
+    """A fresh P-256 pair from the system's CSPRNG: (public, private), base64url, the private key raw."""
+    made = ec.generate_private_key(ec.SECP256R1())
+    public = made.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+    return _b64(public), _b64(made.private_numbers().private_value.to_bytes(32, "big"))
 
 
 def _private(raw: bytes) -> ec.EllipticCurvePrivateKey:
@@ -109,6 +116,10 @@ def _private(raw: bytes) -> ec.EllipticCurvePrivateKey:
     if not isinstance(key, ec.EllipticCurvePrivateKey) or not isinstance(key.curve, ec.SECP256R1):
         raise ValueError("not a P-256 key")
     return key
+
+
+def _b64(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
 
 
 def _unb64(text: str) -> bytes:

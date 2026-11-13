@@ -31,6 +31,7 @@ from .channels.voice.postgres_voices import PostgresVoices
 from .channels.voice.voices import Voices
 from .codehost.kinds import GITHUB, GITLAB
 from .connections.connections import Connections
+from .connections.deployment_secrets import DeploymentSecrets
 from .connections.kinds import ConnectionKind, ConnectionKinds
 from .connections.oauth import CALLBACK_PATH as OAUTH_CALLBACK, OAuthProviders
 from .connections.oauth_connections import OAuthConnections
@@ -105,6 +106,7 @@ from .runs.runs import Runs
 from .tidy.register import register as register_tidy
 from .settings import Settings
 from .wiring_inference import wire_inference
+from .wiring_secrets import register as register_secrets, settle as settle_secrets
 from .wiring_seeds import seeds
 from .wiring_bridge import wire_mail_bridge
 from .wiring_sandbox import wire_podman_sandbox, wire_sandbox
@@ -243,6 +245,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     loaded routes before the router is built; `database` replaces the pool over `settings.database_url`."""
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
     services.register(Database, database or PoolDatabase(settings.database_url))
+    register_secrets(settings)
     services.register(Conversations, PostgresConversations(services.get(Database), policy.load()))
     services.register(InFlight, PostgresInFlight(services.get(Database), policy.load(), resume.CONFIG.claim_s))
     services.register(People, PostgresPeople(services.get(Database), bool(settings.admin_group)))
@@ -286,8 +289,6 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     register_errands(services.get(Database))
     register_watches(services.get(Database))
     services.register(ToolReads, ChannelToolReads())
-    if push_config.checked(settings) is not None:
-        services.register(Subscriptions, PostgresSubscriptions(services.get(Database)))
     if settings.oidc_issuer:
         oidc_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
         closers.append(oidc_http.aclose)
@@ -373,10 +374,18 @@ def look_up_sources(web: WebSearch | None, places: Tools | None, models: Printab
 
 def warmups(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """What every pod runs once at start, for the app to start after `wire`, so the first reply after a deploy does not
-    pay for it: the embedding and speaker-embedding models' load, and the env's seeds of connections
-    (`ashley.wiring_seeds`). Each is best effort and never raises."""
+    pay for it: the embedding and speaker-embedding models' load, the env's seeds of connections
+    (`ashley.wiring_seeds`), and settling the deployment's own secrets (`ashley.wiring_secrets`), which wires browsers'
+    push subscriptions once settled when her VAPID identity is usable. Each is best effort and never raises."""
     inference = services.get(Inference)
     running: list[Coroutine[Any, Any, None]] = [inference.warm("embed"), inference.warm("voiceprint")]
     running.extend(seeds(settings))
+    running.extend((settle_secrets(settings), _subscriptions(settings.vapid_subject)))
     return running
+
+
+async def _subscriptions(subject: str) -> None:
+    await services.get(DeploymentSecrets).settled()
+    if push_config.identity(subject) is not None:
+        services.register(Subscriptions, PostgresSubscriptions(services.get(Database)))
 

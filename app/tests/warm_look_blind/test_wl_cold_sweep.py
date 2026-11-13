@@ -29,7 +29,7 @@ def cold(kube: FakeKube) -> KubernetesLooker:
     async def no_sleep(seconds: float) -> None:
         await asyncio.sleep(0)
 
-    return KubernetesLooker(kube, NS, RUNTIME, IMAGE, APP, b"k" * 40, CONFIG, no_sleep)
+    return KubernetesLooker(kube, NS, RUNTIME, IMAGE, APP, lambda: b"k" * 40, CONFIG, no_sleep)
 
 
 def test_a_look_pod_past_twice_the_deadline_is_swept_and_the_warm_pod_is_not() -> None:

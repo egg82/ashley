@@ -14,7 +14,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from .. import logs, services
-from ..channels.push.config import vapid
+from ..channels.push.config import identity
 from ..channels.push.subscriptions import Browser, Subscriptions, SubscriptionsUnavailable
 from .models import ErrorResponse, PushEndpointRequest, PushKeyResponse, PushStateResponse, PushSubscriptionRequest
 from .person import Person
@@ -40,7 +40,7 @@ def _unavailable() -> JSONResponse:
 @router.get("/api/push/key", response_model=PushKeyResponse, responses=_SIGNED_IN)
 async def get_push_key(request: Request, signed_in: Person) -> PushKeyResponse | JSONResponse:
     """200 `PushKeyResponse`; 401 `unauthorized`; 503 `unavailable` when push is not set up here."""
-    found = vapid(request.app.state.settings)
+    found = identity(request.app.state.settings.vapid_subject)
     return _unavailable() if found is None else PushKeyResponse(public_key=found.public_key)
 
 

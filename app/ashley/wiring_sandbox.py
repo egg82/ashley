@@ -9,6 +9,7 @@ from typing import Any
 import httpx2
 
 from . import logs, services
+from .connections.deployment_secrets import DeploymentSecrets
 from .looks import config as looks_config
 from .looks import links
 from .looks.browser import PageBrowser
@@ -29,6 +30,11 @@ from .runs.pod_log import PodLog
 from .runs.podman import PodmanSandbox
 from .runs.sandbox import Sandbox
 from .settings import Settings
+
+
+def _link_key() -> bytes:
+    """The deployment's link key in force (`DeploymentSecrets`)."""
+    return services.get(DeploymentSecrets).link_key().encode()
 
 
 def wire_sandbox(settings: Settings, closers: list[Callable[[], Coroutine[Any, Any, None]]],
@@ -66,7 +72,7 @@ def wire_looker(settings: Settings, api: KubeApi,
     config = looks_config.load()
     services.register(PageBrowser, KubernetesBrowser(api, settings.sandbox_namespace, settings.sandbox_runtime_class, settings.look_image, config))
     cold = KubernetesLooker(api, settings.sandbox_namespace, settings.sandbox_runtime_class, settings.look_image, settings.look_app_url,
-                            settings.files_link_key.encode(), config)
+                            _link_key, config)
     if not settings.look_warm_url:
         services.register(Looker, cold)
         return
@@ -84,4 +90,4 @@ def wire_media(settings: Settings, api: KubeApi, whisper: Callable[[], Awaitable
     config = media_config.load()
     pods = PodLog(api, settings.sandbox_namespace, MEDIA_LABEL, config.log_bytes, config.poll_s, logging.getLogger("ashley.runs"), "media")
     services.register(Media, KubernetesMedia(pods, settings.sandbox_runtime_class, settings.media_image, settings.media_app_url,
-                                             settings.files_link_key.encode(), whisper, config))
+                                             _link_key, whisper, config))

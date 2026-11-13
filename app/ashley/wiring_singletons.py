@@ -27,6 +27,7 @@ from .channels.voice.satellites import NAME as SATELLITES, Satellites
 from .channels.wake import runner as wake_runner
 from .conversations import policy
 from .connections.connections import Connections
+from .connections.deployment_secrets import DeploymentSecrets
 from .db.database import Database
 from .files import config as files_config, repair as files_repair, sweep as files_sweep
 from .files.intake import PREFIX as FILES_PREFIX
@@ -88,7 +89,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`: fail-back
     when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
     turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, fetching the model catalogue, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
-    Discord session on the token in force (`ashley.channels.discord.following`), and web push when her VAPID identity is (`push_config.vapid`)."""
+    Discord session on the token in force (`ashley.channels.discord.following`), and web push once the deployment's secrets are settled, when her VAPID identity is (`push_config.identity`)."""
     running: list[Coroutine[Any, Any, None]] = []
     if settings.etcd_url and settings.failback == "off":
         logs.info(log, "failback.off")
@@ -124,13 +125,20 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     if settings.voice_clip_base_url:
         running.append(_satellites(settings))
     running.append(_discord(settings.discord_bot_token))
-    identity = push_config.vapid(settings)
-    if identity is not None:
-        config = push_config.load()
-        sender = WebPushSender(identity, config.ttl_s, config.timeout_s)
-        drain = partial(push_later.drain, sender, config, outbox.load().poll_s, asyncio.sleep)
-        running.append(services.get(Lease).run(push_later.NAME, drain))
+    running.append(_push(settings.vapid_subject))
     return running
+
+
+async def _push(subject: str) -> None:
+    """Web push under its lease, once the deployment's secrets are settled, when her VAPID identity is usable."""
+    await services.get(DeploymentSecrets).settled()
+    identity = push_config.identity(subject)
+    if identity is None:
+        return
+    config = push_config.load()
+    sender = WebPushSender(identity, config.ttl_s, config.timeout_s)
+    drain = partial(push_later.drain, sender, config, outbox.load().poll_s, asyncio.sleep)
+    await services.get(Lease).run(push_later.NAME, drain)
 
 
 def _discord(env_token: str) -> Coroutine[Any, Any, None]:

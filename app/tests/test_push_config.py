@@ -6,7 +6,6 @@ import pytest
 import requests
 from ashley.channels.push import config as push_config, sender as sender_module
 from ashley.channels.push.sender import Notification, Sent, WebPushSender
-from ashley.settings import Settings
 from contract.conversations_support import run
 from push_support import browser, key_pair
 from pywebpush import WebPushException
@@ -14,14 +13,13 @@ from pywebpush import WebPushException
 CONFIG = push_config.load()
 
 
-def settings(public: str = "", private: str = "", subject: str = "mailto:admin@example.test") -> Settings:
-    return Settings(database_url="postgresql://x", build_version="t", vapid_public_key=public,
-                    vapid_private_key=private, vapid_subject=subject)
+def parts(public: str = "", private: str = "", subject: str = "mailto:admin@example.test") -> tuple[str, str, str]:
+    return public, private, subject
 
 
 def test_one_pair_with_a_subject_is_her_identity() -> None:
     public, private = key_pair()
-    found = push_config.vapid(settings(public, private))
+    found = push_config.vapid(*parts(public, private))
     assert found is not None and (found.public_key, found.private_key) == (public, private)
 
 
@@ -29,10 +27,10 @@ def test_one_pair_with_a_subject_is_her_identity() -> None:
 def test_anything_else_is_push_off(broken: str) -> None:
     public, private = key_pair()
     other, _ = key_pair()
-    given = {"missing_subject": settings(public, private, subject=""), "missing_public": settings("", private),
-             "other_pair": settings(other, private), "not_base64": settings(public, "!!not a key!!"),
-             "unset": settings(subject="")}[broken]
-    assert push_config.vapid(given) is None
+    given = {"missing_subject": parts(public, private, subject=""), "missing_public": parts("", private),
+             "other_pair": parts(other, private), "not_base64": parts(public, "!!not a key!!"),
+             "unset": parts(subject="")}[broken]
+    assert push_config.vapid(*given) is None
 
 
 @pytest.mark.parametrize(("endpoint", "ok"), [
@@ -76,7 +74,7 @@ def test_the_sender_maps_what_the_push_service_answered(monkeypatch: pytest.Monk
 
     monkeypatch.setattr(sender_module, "webpush", fake_webpush)
     public, private = key_pair()
-    identity = push_config.vapid(settings(public, private))
+    identity = push_config.vapid(*parts(public, private))
     assert identity is not None
     got: list[Sent] = []
 

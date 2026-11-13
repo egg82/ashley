@@ -17,6 +17,7 @@ from ..channels import pasted, unprompted
 from ..channels.agree import AgreeRefusal, AgreeRefused, AgreeUnavailable, agree, waiting
 from ..channels.model import Inbound
 from ..channels.respond import RespondRefused, RespondUnavailable, respond
+from ..connections.deployment_secrets import DeploymentSecrets
 from ..conversations.conversations import Conversations, ConversationsUnavailable
 from ..conversations.inflight import InFlight, InFlightUnavailable
 from ..conversations.model import Attachment, Turn
@@ -161,7 +162,7 @@ async def conversation_on(household_id: int, thread: str, request: Request,
     except (ConversationsUnavailable, RunsUnavailable, InFlightUnavailable):
         return _unavailable()
     shown = under_answers(found.turns, runs)
-    seen = chat_looks.under_answers(found.turns, looked, request.app.state.settings.files_link_key.encode())
+    seen = chat_looks.under_answers(found.turns, looked, services.get(DeploymentSecrets).link_key().encode())
     turns = [ChatConversationTurn(id=t.id, author=t.author, text=t.text, at=t.at, follows=t.follows,
                                   continued_on=t.continued_on, attachment=wire_attachment(t.attachment),
                                   runs=shown.get(t.id, []), looks=seen.get(t.id, []), working=t.id in working,

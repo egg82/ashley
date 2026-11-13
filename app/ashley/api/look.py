@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 
 from .. import logs, services
+from ..connections.deployment_secrets import DeploymentSecrets
 from ..files.store import ObjectStore, StoreUnavailable
 from ..looks import links
 from ..looks.keys import key_of as look_key
@@ -35,7 +36,7 @@ _ERRORS: dict[int | str, dict[str, Any]] = {404: {"model": ErrorResponse}, 503: 
 async def read_look(request: Request) -> LookPage | JSONResponse:
     """200 `LookPage`: the bench, or one piece of it, with the kinds; 404 `not_found` for a link that is forged, malformed or
     expired, or a bench or piece that is gone; 503 `unavailable`."""
-    key = request.app.state.settings.files_link_key.encode()
+    key = services.get(DeploymentSecrets).link_key().encode()
     grant = links.check(key, request.path_params["token"], time.time()) if key else None
     if grant is None:
         return _error(404, "not_found", "that link is not valid, or has expired")
@@ -66,7 +67,7 @@ async def get_picture(request: Request) -> Response:
     """200 the bytes of a picture she was given, shown in place, for whoever holds a picture link the conversation was
     handed (`ChatLook.url`); 404 `not_found` for a link that is forged, malformed or expired, or whose bytes are gone; 503
     `unavailable` when no store could be asked."""
-    key = request.app.state.settings.files_link_key.encode()
+    key = services.get(DeploymentSecrets).link_key().encode()
     picture = links.check_picture(key, request.path_params["token"], time.time()) if key else None
     if picture is None:
         return _error(404, "not_found", "that link is not valid, or has expired")

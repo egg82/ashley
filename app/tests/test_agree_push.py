@@ -19,7 +19,7 @@ from ashley.db.pool import PoolDatabase
 from contract.conversations_support import POLICY, db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import household, person, run
 from push_support import FakeSender, FakeSubscriptions, browser, subscriptions as subscriptions
-from test_push_config import key_pair, settings
+from test_push_config import key_pair, parts
 
 CONFIG = push_config.load()
 
@@ -50,7 +50,7 @@ def test_the_payload_a_browser_receives_names_the_proposal(monkeypatch: pytest.M
 
     monkeypatch.setattr(sender_module, "webpush", fake_webpush)
     public, private = key_pair()
-    identity = push_config.vapid(settings(public, private))
+    identity = push_config.vapid(*parts(public, private))
     assert identity is not None
     got: list[Sent] = []
 

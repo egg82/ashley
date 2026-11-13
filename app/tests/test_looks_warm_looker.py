@@ -52,7 +52,7 @@ def looker(tmp_path: Path, warm: Warm) -> tuple[WarmLooker, FakeKube]:
     fake = FakeKube(tmp_path / "token", Script(log=line(COLD_JPEG)))
     clock = Clock()
     api = fake.api()
-    cold = KubernetesLooker(api, "ashley-sandbox", "gvisor", IMAGE, APP, KEY, CONFIG, sleep=clock.sleep, clock=clock,
+    cold = KubernetesLooker(api, "ashley-sandbox", "gvisor", IMAGE, APP, lambda: KEY, CONFIG, sleep=clock.sleep, clock=clock,
                             wall=lambda: 1000.0)
     keeper = WarmPod(api, "ashley-sandbox", "gvisor", IMAGE, APP + links.PAGE, "", CONFIG)
     http = httpx2.AsyncClient(transport=httpx2.MockTransport(warm.handle))

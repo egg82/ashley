@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from .. import services
+from ..connections.deployment_secrets import DeploymentSecrets
 from ..people.units import metric_of
 from ..runs import config as runs_config
 from ..runs.model import Run
@@ -191,7 +192,7 @@ async def read_bench(signed_in: Person, bench_id: int, request: Request) -> Benc
     """200 `BenchDetail`, open or closed; 401 `unauthorized`; 404 `not_found`; 503 `unavailable`."""
     try:
         settings = request.app.state.settings
-        return await detail_of(owner_of(signed_in), bench_id, settings.files_link_key.encode(), settings.public_url)
+        return await detail_of(owner_of(signed_in), bench_id, services.get(DeploymentSecrets).link_key().encode(), settings.public_url)
     except BenchNotFound:
         return not_found()
     except (WorkshopUnavailable, RunsUnavailable, InstallsUnavailable):

@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 
 from .. import logs, services
+from ..connections.deployment_secrets import DeploymentSecrets
 from ..files import links, ranges
 from ..files.intake import key_of
 from ..files.store import ObjectStore, StoreUnavailable
@@ -33,9 +34,8 @@ async def get_file(request: Request) -> Response:
     """200 the bytes, or 206 the one range a `Range` header asked, 416 `refused` when it starts past the end; 404 `not_found` for a link that is forged, malformed, expired or whose bytes no store holds;
     503 `unavailable` when no store could be asked."""
     started = time.monotonic()
-    settings = request.app.state.settings
-    grant = links.check(settings.files_link_key.encode(), request.path_params["token"], time.time()) \
-        if settings.files_link_key else None
+    key = services.get(DeploymentSecrets).link_key().encode()
+    grant = links.check(key, request.path_params["token"], time.time()) if key else None
     if grant is None:
         return _error(404, "not_found", "that link is not valid, or has expired")
     try:
