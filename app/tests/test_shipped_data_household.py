@@ -24,6 +24,7 @@ SERVICE_KEYS = frozenset({"action", "excluded"})
 
 PUBLIC_HOSTS = frozenset({
     "platform.claude.com",      # Anthropic's API docs, linked from the price and provider tables
+    "support.claude.com",       # Anthropic's help centre, linked from the Claude Code provider row
     "developers.openai.com",    # OpenAI's API docs
     "ai.google.dev",            # Google's Gemini API docs
     "aistudio.google.com",      # Google AI Studio, where a Gemini key is made
