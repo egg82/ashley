@@ -295,7 +295,7 @@ async def _finish(turn: _Turn, held: tool_loop.Held, system: Mapping[str, System
             medium=inbound.medium, escalation=turn.landing.escalation))
         answer = await answering.stored(turn.work, answer, lambda r: _end(turn, r, True), turn.going(system, tools))
     except Exception as e:
-        ended = settled.Ended(inbound, turn.conversation_id, turn.said_id, turn.who.speaker, turn.showing)
+        ended = settled.Ended(turn.landing.inbound, turn.conversation_id, turn.said_id, turn.who.speaker, turn.showing)
         if await settled.settle(turn.work, e, failed_later(e, turn.started), ended, inflight_config.CONFIG.unavailable_retry_s):
             return
     else:
