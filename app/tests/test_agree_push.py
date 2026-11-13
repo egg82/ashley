@@ -1,5 +1,5 @@
 """A reply that shows a held proposal reaches the person's browsers with its id, so the notification offers Agree: the
-`Outbound.agree` a reply was queued with survives the outbox, rides to every browser in the payload, and a reply that
+`Receipts.proposal_id` a reply was queued with survives the outbox, rides to every browser in the payload, and a reply that
 shows no proposal carries none."""
 
 import json
@@ -13,6 +13,7 @@ from ashley.channels.push import sender as sender_module
 from ashley.channels.push.later import push, thread
 from ashley.channels.push.sender import Notification, Sent, WebPushSender
 from ashley.channels.push.subscriptions import Subscription
+from ashley.conversations.model import Receipt, Receipts
 from ashley.conversations.postgres import PostgresConversations
 from ashley.db.pool import PoolDatabase
 from contract.conversations_support import POLICY, db_url as db_url, migrated_template as migrated_template
@@ -23,8 +24,13 @@ from test_push_config import key_pair, settings
 CONFIG = push_config.load()
 
 
+def receipts(agree: int | None) -> Receipts:
+    return Receipts((Receipt("Switched it on"),)) if agree is None else Receipts((), (Receipt("Switched it on"),), agree)
+
+
 def queued(agree: int | None) -> Later:
-    return Later(1, 1, thread(1), Outbound(5, "text", "Waiting for your OK, not done yet:\n- switch", agree=agree), 100)
+    return Later(1, 1, thread(1), Outbound(5, "text", "Waiting for your OK, not done yet:\n- switch",
+                                           receipts=receipts(agree)), 100)
 
 
 @pytest.mark.parametrize("agree", [41, None])
@@ -66,10 +72,10 @@ def test_the_outbox_keeps_the_proposal_with_the_reply(db_url: str) -> None:
             conversation = await PostgresConversations(db, POLICY).for_thread(
                 home, f"person:{who}:web", "chat", [who], remembered=True, channel="web", place=None)
             box: Outbox = PostgresOutbox(db, 600.0, POLICY)
-            await box.add(home, thread(who), Outbound(conversation.id, "text", "a", agree=41))
+            await box.add(home, thread(who), Outbound(conversation.id, "text", "a", receipts=receipts(41)))
             await box.add(home, thread(who), Outbound(conversation.id, "text", "b"))
             got = await box.take("push:")
-            assert [(later.outbound.body, later.outbound.agree) for later in got] == [("a", 41), ("b", None)]
+            assert [(later.outbound.body, later.outbound.receipts) for later in got] == [("a", receipts(41)), ("b", None)]
         finally:
             await db.close()
     run(go())

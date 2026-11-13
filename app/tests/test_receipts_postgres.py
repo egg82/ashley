@@ -76,12 +76,12 @@ def test_a_queued_reply_carries_its_receipts_and_the_agree_it_still_writes(db_ur
         await database.open()
         try:
             box = PostgresOutbox(database, 600.0, POLICY)
-            await box.add(home, f"push:{who}", Outbound(started.id, "text", "Okay.", agree=9, receipts=RECEIPTS))
+            await box.add(home, f"push:{who}", Outbound(started.id, "text", "Okay.", receipts=RECEIPTS))
             await box.add(home, f"push:{who}", Outbound(started.id, "text", "Plain."))
             first, second = await box.take("push:")
         finally:
             await database.close()
-        assert first.outbound == Outbound(started.id, "text", "Okay.", agree=9, receipts=RECEIPTS)
+        assert first.outbound == Outbound(started.id, "text", "Okay.", receipts=RECEIPTS)
         assert second.outbound == Outbound(started.id, "text", "Plain.") and second.outbound.receipts is None
 
     run(scenario())

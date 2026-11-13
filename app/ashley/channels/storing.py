@@ -55,8 +55,7 @@ def receipt_push(receipts: Receipts | None, inbound: Inbound, phone: int | None,
         logs.info(log, "receipts.unshown", conversation=conversation_id, medium=inbound.medium, done=len(receipts.done),
                   held=len(receipts.held))
         return None
-    return Pushed(inbound.household_id, thread(phone), Outbound(conversation_id, "text", "", agree=receipts.proposal_id,
-                                                               receipts=receipts))
+    return Pushed(inbound.household_id, thread(phone), Outbound(conversation_id, "text", "", receipts=receipts))
 
 
 async def pushed(reply: Reply, inbound: Inbound, conversation_id: int,
@@ -67,5 +66,4 @@ async def pushed(reply: Reply, inbound: Inbound, conversation_id: int,
         return ()
     body = await render(reply, inbound.medium, inbound.household_id)
     return (Pushed(inbound.household_id, inbound.thread, Outbound(
-        conversation_id, inbound.medium, body, agree=None if receipts is None else receipts.proposal_id,
-        receipts=receipts)),)
+        conversation_id, inbound.medium, body, receipts=receipts)),)

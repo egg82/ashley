@@ -73,16 +73,16 @@ def run_one[T](work: Coroutine[Any, Any, T]) -> T:
     return got[0]
 
 
-def reply_with(receipts: Receipts | None, agree: int | None = None) -> Callable[[Inbound], Awaitable[Outbound]]:
+def reply_with(receipts: Receipts | None) -> Callable[[Inbound], Awaitable[Outbound]]:
     async def respond(inbound: Inbound) -> Outbound:
-        return Outbound(5, "text", OK_TEXT, receipts=receipts, agree=agree)
+        return Outbound(5, "text", OK_TEXT, receipts=receipts)
 
     return respond
 
 
 @pytest.mark.parametrize("sent", [RECEIPTS, None])
 def test_c08_a_web_reply_carries_the_receipts_it_was_given_or_null(monkeypatch: pytest.MonkeyPatch, sent: Receipts | None) -> None:
-    monkeypatch.setattr("ashley.api.chat.respond", reply_with(sent, 7 if sent is not None else None))
+    monkeypatch.setattr("ashley.api.chat.respond", reply_with(sent))
     for page in open_app(conversation(turn(1, "person", "hi"))):
         body = page.client.post("/api/chat/messages", json={"text": "hi"}).json()
         assert body["body"] == OK_TEXT and "receipts" in body

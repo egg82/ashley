@@ -53,27 +53,27 @@ class PostgresOutbox(Outbox):
             async with self._database.connection() as conn:
                 cur = await conn.execute(
                     "DELETE FROM outbox WHERE starts_with(thread, %s) RETURNING id, household_id, thread, "
-                    "conversation_id, medium, body, agree, receipts, (extract(epoch FROM clock_timestamp() - created_at) * 1000)::bigint",
+                    "conversation_id, medium, body, receipts, (extract(epoch FROM clock_timestamp() - created_at) * 1000)::bigint",
                     (prefix,),
                 )
                 rows = await cur.fetchall()
         except (DatabaseUnavailable, psycopg.Error) as e:
             raise OutboxUnavailable("database unreachable") from e
-        fresh = [r for r in rows if r[8] <= self._stale_s * 1000]
+        fresh = [r for r in rows if r[7] <= self._stale_s * 1000]
         for r in rows:
-            if r[8] > self._stale_s * 1000:
-                logs.warning(log, "outbox.stale_dropped", id=r[0], conversation=r[3], age_ms=r[8])
-        return [Later(r[0], r[1], r[2], Outbound(r[3], r[4], r[5], agree=r[6],
-                                                 receipts=None if r[7] is None else Receipts.from_json(r[7])), r[8])
+            if r[7] > self._stale_s * 1000:
+                logs.warning(log, "outbox.stale_dropped", id=r[0], conversation=r[3], age_ms=r[7])
+        return [Later(r[0], r[1], r[2], Outbound(r[3], r[4], r[5],
+                                                 receipts=None if r[6] is None else Receipts.from_json(r[6])), r[7])
                 for r in sorted(fresh, key=lambda r: r[0])]
 
 
 async def _queued(conn: Connection, pushed: Pushed) -> int:
     outbound = pushed.outbound
     cur = await conn.execute(
-        "INSERT INTO outbox (household_id, thread, conversation_id, medium, body, agree, receipts) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
-        (pushed.household_id, pushed.thread, outbound.conversation_id, outbound.medium, outbound.body, outbound.agree,
+        "INSERT INTO outbox (household_id, thread, conversation_id, medium, body, receipts) "
+        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (pushed.household_id, pushed.thread, outbound.conversation_id, outbound.medium, outbound.body,
          None if outbound.receipts is None else Jsonb(outbound.receipts.to_json())),
     )
     row = await cur.fetchone()

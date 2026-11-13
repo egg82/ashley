@@ -42,12 +42,9 @@ def reply(worth: bool) -> Reply:
 def test_a_quiet_woken_turn_sends_its_receipts_alone_to_the_phone() -> None:
     turn, queued = stored(reply(False), woken(), ALANA, 1, 31, 5, (), DONE)
     assert turn.text == QUIET and turn.receipts == DONE
-    assert queued == (Pushed(7, "push:1", Outbound(31, "text", "", agree=None, receipts=DONE)),)
+    assert queued == (Pushed(7, "push:1", Outbound(31, "text", "", receipts=DONE)),)
 
 
-def test_a_quiet_woken_turn_carries_the_agree_action_of_what_it_holds() -> None:
-    _, queued = stored(reply(False), woken(), ALANA, 1, 31, 5, (), HELD)
-    assert queued == (Pushed(7, "push:1", Outbound(31, "text", "", agree=9, receipts=HELD)),)
 
 
 def test_a_woken_turn_that_speaks_queues_no_receipt_only_push() -> None:
