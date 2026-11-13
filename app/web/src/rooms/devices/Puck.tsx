@@ -7,7 +7,7 @@ function Glyph({ d }: { d: ListedDevice }) {
   return d.medium === 'spoken' ? (
     <span class="pk-glyph ring" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 10v4M9 7v10M13 4v16M17 7v10M21 10v4" /></svg></span>
   ) : (
-    <span class="pk-glyph dots" aria-hidden="true"><i /><i /><i /></span>
+    <span class="pk-glyph typing" aria-hidden="true"><i /><i /><i /></span>
   );
 }
 

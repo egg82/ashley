@@ -34,16 +34,16 @@ export function ControlsEditor({ d, onClose }: { d: ListedDevice; onClose: () =>
       {head}
       <Tablet rows={c.rows} place={d.place.trim()} name={d.name} picked={pick} lights={shown} onPick={setPicked} onRows={c.edit} />
       {pick !== null && <CardEditor rows={c.rows} at={pick} onRows={c.edit} onDone={() => setPicked(null)} />}
-      <section class="ced-house">
-        <span class="label">House controls</span>
-        <HouseControls rows={c.rows} onRows={c.edit} />
-      </section>
       {c.said && <div class={`dc-note ${c.said.tone}`} role="status"><span>{c.said.text}</span></div>}
       <div class={`ced-save${c.changed ? ' up' : ''}`} hidden={!c.changed && !c.busy}>
         <span>Controls changed, not saved</span>
         <button class="btn sm ghost" type="button" disabled={c.busy} onClick={() => { c.discard(); setPicked(null); }}>Discard</button>
         <button class="btn primary sm" type="button" disabled={c.busy || !complete(c.rows)} onClick={() => void c.save()}>Save</button>
       </div>
+      <section class="ced-house">
+        <span class="label">House controls</span>
+        <HouseControls rows={c.rows} onRows={c.edit} />
+      </section>
       <button class="btn sm ghost ced-back" type="button" disabled={c.changed} onClick={onClose}>Done</button>
     </div>
   );

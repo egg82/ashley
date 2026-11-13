@@ -75,7 +75,7 @@ export function DevicesRoom() {
   const down = state === 'unreachable' || state === 'failed';
   const plan = planOf(devices.value);
   return (
-    <div class="set dv" ref={here}>
+    <div class="set dvs" ref={here}>
       <div class="set-head">
         <h1>Devices</h1>
         {state === 'ready' && devices.value.length > 0 && <Count n={devices.value.length} places={placeCount(plan)} />}
