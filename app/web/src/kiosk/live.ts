@@ -5,8 +5,10 @@
 import type { TurnFailedWhy } from '../session/live';
 import { computed, signal } from '@preact/signals';
 import { kioskLiveFeed } from '../api/client';
+import { reportKioskVisibility } from '../api/screens';
 import type { MarkState } from '../components/AshleyMark';
 import { createFeed } from '../session/feed';
+import { createReporting, screenToken } from '../session/screen';
 
 type Doing = 'listening' | 'thinking' | 'speaking';
 
@@ -31,7 +33,7 @@ function forget(): void {
   turns.value = new Map();
 }
 
-const feed = createFeed(kioskLiveFeed, {
+const feed = createFeed(() => kioskLiveFeed(screenToken), {
   heard(event) {
     if (event.type === 'state') hear(event.turn, event.state, event.at_most_s * 1000);
     else if (event.type === 'failed') turnFailed(event.why);
@@ -44,6 +46,8 @@ const feed = createFeed(kioskLiveFeed, {
   },
   lost: forget,
 });
+
+const reporting = createReporting(feed.up, (visible) => reportKioskVisibility(screenToken, visible));
 
 /** Whether the feed is open. */
 export const liveUp = feed.up;
@@ -68,7 +72,9 @@ export function startLive(onTurn: () => void, onResync: () => void,
   turnFailed = onFailed;
   readAll = onResync;
   feed.open();
+  reporting.start();
   return () => {
+    reporting.stop();
     feed.close();
     forget();
   };
