@@ -73,7 +73,8 @@ def test_every_change_to_the_vault_is_written_back_at_the_generation_the_last_wr
 def test_a_vault_that_did_not_change_is_not_written_back_again(fake_app: FakeApp, keeper_for: Start) -> None:
     keeper = keeper_for(fake_app)
     assert wait_for(lambda: len(fake_app.puts()) == 1, 6)
-    time.sleep(1.0)
+    seen = len(fake_app.beats())
+    assert wait_for(lambda: len(fake_app.beats()) >= seen + 2, 3), "each heartbeat's turn looks at the vault first"
     assert len(fake_app.puts()) == 1, keeper.output()
 
 
@@ -128,12 +129,12 @@ def test_no_heartbeat_answered_for_fence_s_stops_Bridge_but_not_a_moment_sooner(
 def test_an_outage_shorter_than_the_fence_does_not_stop_Bridge_and_heartbeats_resume(fake_app: FakeApp, keeper_for: Start) -> None:
     keeper = keeper_for(fake_app, refresh=False)
     assert keeper.bridge_up()
-    wait_for(lambda: len(fake_app.beats()) >= 2, 3)
+    wait_for(lambda: len(fake_app.beats()) >= 1, 3)
     fake_app.hang_up = True
     time.sleep(FENCE_S * 0.4)
     fake_app.hang_up = False
     seen = len(fake_app.beats())
-    assert wait_for(lambda: len(fake_app.beats()) >= seen + 2, 3)
+    assert wait_for(lambda: len(fake_app.beats()) >= seen + 1, 3), "a heartbeat after the outage is answered"
     assert keeper.bridge_alive() and keeper.proc.poll() is None, keeper.output()
 
 

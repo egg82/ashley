@@ -181,7 +181,7 @@ class FakeApp:
             do_GET = do_POST = do_PUT = _go
 
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        threading.Thread(target=self.server.serve_forever, args=(0.02,), daemon=True).start()
         return self
 
     def answer(self, method: str, path: str, body: dict[str, Any], auth: str) -> tuple[int, dict[str, Any]]:
@@ -349,7 +349,7 @@ class FakeKeeperHttp:
         context.load_cert_chain(tmp / "keeper.crt", tmp / "keeper.key")
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.server.socket = context.wrap_socket(self.server.socket, server_side=True)
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        threading.Thread(target=self.server.serve_forever, args=(0.02,), daemon=True).start()
 
     @property
     def url(self) -> str:
