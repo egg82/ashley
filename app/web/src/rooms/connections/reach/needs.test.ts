@@ -8,7 +8,7 @@ const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   personal: true, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
 });
 const kind = (over: Partial<ConnectionKindInfo>): ConnectionKindInfo => ({
-  name: 'gitlab', title: 'GitLab', what: '', blurb: '', connected: '', removed: '', holders: ['person'], most: 1, takes_address: true,
+  name: 'gitlab', title: 'GitLab', what: '', blurb: '', connected: '', removed: '', holders: ['person'], most: 1, picks_catalogue_provider: false, takes_address: true,
   address_placeholder: '', secret_field: 'token', secret_label: '', secret_noun: 'token', connect: 'pasted', set_up: true, has_settings: false, ...over,
 });
 
