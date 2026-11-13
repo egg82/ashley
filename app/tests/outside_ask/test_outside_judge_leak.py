@@ -13,7 +13,8 @@ from action_judge_support import Capturing, unwire, wire
 from ashley import services
 from ashley.inference.model import ToolCall, ToolSpec
 from ashley.senses.proposals import Proposals
-from ashley.tools import (bench_automation_specs, bench_media, bench_skill_specs, claude_code, claude_code_config, house_act,
+from ashley.tools import (bench_automation_specs, bench_media, bench_skill_specs, claude_code, claude_code_config,
+                          discord_home_tools, house_act,
                           house_change, mail_change_specs, money_config, money_specs, reminder_specs, screen_specs)
 from ashley.tools.action_judge import ActionJudge, View
 from ashley.tools.outside import Outside
@@ -30,7 +31,7 @@ def tier_c() -> tuple[ToolSpec, ...]:
     every = (*claude_code.specs(claude_code_config.load()), *bench_skill_specs.specs(), *bench_automation_specs.SPECS,
              house_change.CHANGE_SPEC, reminder_specs.change_reminder(), reminder_specs.CANCEL_SPEC,
              bench_media.TRANSCRIBE_SPEC, *mail_change_specs.specs(False), house_act.DO_SPEC,
-             *screen_specs.specs(load_screen()), *money_specs.specs(money_config.load()))
+             *screen_specs.specs(load_screen()), *money_specs.specs(money_config.load()), *discord_home_tools.specs())
     return tuple(s for s in every if not s.reads and not s.agrees and s.tier == "judged")
 
 

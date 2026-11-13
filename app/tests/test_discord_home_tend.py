@@ -240,9 +240,15 @@ async def _never(inbound: Inbound) -> Outbound:
 def test_a_turn_that_cannot_be_made_is_logged_and_never_raises(capsys: pytest.CaptureFixture[str]) -> None:
     logs.setup()
 
+    allowing()
+    services.register(Devices, FakeDevices([SERVER]))
+
     async def down(inbound: Inbound) -> Outbound:
         raise RespondUnavailable("down")
-    asyncio.run(home._turn(down, home.inbound(SERVER, "7:1")))   # pyright: ignore[reportPrivateUsage] - the turn's own failure path
+    started = Started()
+    asyncio.run(home.check(ME, started, down, NOW, set(), rates()))
+    assert len(started.turns) == 1
+    started.run()
     assert "reason=tend_turn" in capsys.readouterr().out
 
 
@@ -260,7 +266,9 @@ def test_the_discord_session_tends_while_it_is_open(capsys: pytest.CaptureFixtur
 
     async def scenario() -> None:
         loop = asyncio.get_running_loop()
-        clock = lambda: NOW + timedelta(seconds=loop.time())   # noqa: E731 - the session's clock is the loop's
+
+        def clock() -> datetime:
+            return NOW + timedelta(seconds=loop.time())
         session = asyncio.create_task(Bot(FakeConnect(discord), FakeSeen(lambda: NOW), load_config(), respond,
                                           clock).run())
         await asyncio.sleep(RATES.check_every_s + 1)
