@@ -13,6 +13,7 @@ import './rooms/memory/memory.css';
 import './rooms/devices/devices.css';
 import './rooms/household/household.css';
 import './rooms/connections/connections.css';
+import './rooms/connections/reach/reach.css';
 import './rooms/spend/spend.css';
 import './rooms/her/chat.css';
 import './rooms/workshop/workshop.css';

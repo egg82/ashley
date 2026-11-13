@@ -1,8 +1,6 @@
 // Who a resource of a connection (a mailbox) is for: its owner alone, or the household.
 export type Who = 'me' | 'household';
 
-export const WHO: Record<Who, string> = { me: 'Just me', household: 'Household' };
-
 export function whoOf(shared: boolean): Who {
   return shared ? 'household' : 'me';
 }

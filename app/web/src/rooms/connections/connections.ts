@@ -15,8 +15,8 @@ import { movedRefusal } from './moved';
 export type ConnectionKind = string;
 /** Who holds a connection: the household, or the signed-in person alone. */
 export type Holder = ConnectionKindInfo['holders'][number];
-/** `off`: connections are not set up here (the server holds no key to seal them). */
-export type ConnectionsLoad = 'loading' | 'ready' | 'off' | 'failed';
+/** `off`: connections are not set up here (the server holds no key to seal them); `unreachable`: a 503 or no answer at all. */
+export type ConnectionsLoad = 'loading' | 'ready' | 'off' | 'unreachable' | 'failed';
 export type ConnectionsSaid =
   | ConnectionRefused['reason']
   | 'connected'
@@ -71,8 +71,8 @@ export async function loadConnections(): Promise<void> {
     kinds.value = answer.offered;
     held.value = answer.connections;
     connectionsState.value = answer.can_connect ? 'ready' : 'off';
-  } catch {
-    connectionsState.value = 'failed';
+  } catch (error) {
+    connectionsState.value = !(error instanceof ApiError) || error.status === 503 ? 'unreachable' : 'failed';
   }
 }
 
