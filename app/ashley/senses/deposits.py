@@ -2,7 +2,8 @@
 read each household's Sure. An armed reminder is a `wakes` row of kind `reminder` and trigger `event`: unsettled, never
 due, listed with the household's reminders, cancelled like any (`Wakes.cancel`). A match stores an ordinary once
 reminder beside it, which the `wakes` singleton fires and the push singleton delivers; the armed one stays armed, so
-every match fires (`decisions.md`, "A reminder can wait on a deposit")."""
+every match fires (`decisions.md`, "A reminder can wait on a deposit"). A rule on a balance falling below fires once
+per fall: again only after the balance has recovered (`below`, `recovered`)."""
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -49,6 +50,19 @@ class Deposits(Service):
         gone. Raises DepositsUnavailable."""
 
     @abstractmethod
+    async def below(self, armed_id: int, landed: Landed) -> bool:
+        """The balance armed reminder `armed_id` waits on is below its threshold: unless it was already below, mark it
+        below and, in the same statement, store the once reminder for this fall, due now, carrying `landed`. True for
+        the call that stored it; False, changing nothing, while it is still below from an earlier fall (so a retry, a
+        second reader or a new holder fires once per fall), or when the armed reminder is settled or gone. Raises
+        DepositsUnavailable."""
+
+    @abstractmethod
+    async def recovered(self, armed_id: int) -> None:
+        """The balance armed reminder `armed_id` waits on is at or above its threshold, so its next fall fires again.
+        Raises DepositsUnavailable."""
+
+    @abstractmethod
     async def read_through(self, household_id: int) -> date | None:
         """The day the sense last finished reading the household's Sure on, None before it has. Raises
         DepositsUnavailable."""
@@ -69,6 +83,12 @@ class NullDeposits(Deposits):
         raise DepositsUnavailable("deposits are not wired")
 
     async def fire(self, armed_id: int, transaction_id: str, landed: Landed | None = None) -> bool:
+        raise DepositsUnavailable("deposits are not wired")
+
+    async def below(self, armed_id: int, landed: Landed) -> bool:
+        raise DepositsUnavailable("deposits are not wired")
+
+    async def recovered(self, armed_id: int) -> None:
         raise DepositsUnavailable("deposits are not wired")
 
     async def read_through(self, household_id: int) -> date | None:

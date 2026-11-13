@@ -1,4 +1,5 @@
-"""Deposits in Postgres: armed reminders are rows of `wakes` (trigger `event`), the cursor is `deposit_reads`."""
+"""Deposits in Postgres: armed reminders are rows of `wakes` (trigger `event`), the cursor is `deposit_reads`, and
+whether a balance rule's account is below now is `balance_lows`."""
 
 from datetime import date
 from typing import Any, LiteralString
@@ -45,6 +46,24 @@ class PostgresDeposits(Deposits):
             "ON CONFLICT (household_id, event_id) DO NOTHING RETURNING id",
             (transaction_id, None if landed is None else Jsonb(landed_to_json(landed)), armed_id))
         return made is not None
+
+    async def below(self, armed_id: int, landed: Landed) -> bool:
+        made = await self._one(
+            "WITH fell AS (INSERT INTO balance_lows (armed_id, low, episode) SELECT id, true, 1 FROM wakes "
+            "WHERE id = %s AND trigger = 'event' AND settled_at IS NULL "
+            "ON CONFLICT (armed_id) DO UPDATE SET low = true, episode = balance_lows.episode + 1 "
+            "WHERE NOT balance_lows.low RETURNING armed_id, episode) "
+            "INSERT INTO wakes (household_id, kind, event_id, event, at, due_at, person_id, made_by, brief, landed, "
+            "route, tools, taint, made_conversation_id, made_turn_id, route_device_id) "
+            "SELECT household_id, 'reminder', 'balance:' || id || ':' || fell.episode, 'reminder', now(), now(), "
+            "person_id, made_by, brief, %s, route, tools, taint, made_conversation_id, made_turn_id, route_device_id "
+            "FROM wakes JOIN fell ON fell.armed_id = wakes.id "
+            "ON CONFLICT (household_id, event_id) DO NOTHING RETURNING id",
+            (armed_id, Jsonb(landed_to_json(landed))))
+        return made is not None
+
+    async def recovered(self, armed_id: int) -> None:
+        await self._one("UPDATE balance_lows SET low = false WHERE armed_id = %s AND low", (armed_id,))
 
     async def read_through(self, household_id: int) -> date | None:
         got = await self._one("SELECT read_through FROM deposit_reads WHERE household_id = %s", (household_id,))

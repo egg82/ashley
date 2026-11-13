@@ -10,10 +10,21 @@ from .bench_args import BadArguments
 
 
 def rule_of(args: Mapping[str, object]) -> DepositRule:
+    """On a balance falling below `balance_below`, or on money moving `direction`: exactly one of the two."""
+    below = args.get("balance_below")
+    if below is None:
+        return DepositRule(_text(args, "account_id"), _text(args, "account"), _cents(args.get("min_amount")),
+                           _payee(args.get("payee")), _match(args.get("payee_match")),
+                           _direction(args.get("direction")), conditions.parse(args.get("conditions")),
+                           args.get("judge") is True)
+    if args.get("direction") is not None:
+        raise BadArguments("give direction for money moving or balance_below for a balance, not both")
+    if isinstance(below, bool) or not isinstance(below, int | float):
+        raise BadArguments("balance_below is an amount")
     return DepositRule(_text(args, "account_id"), _text(args, "account"), _cents(args.get("min_amount")),
-                       _payee(args.get("payee")), _match(args.get("payee_match")),
-                       _direction(args.get("direction")), conditions.parse(args.get("conditions")),
-                       args.get("judge") is True)
+                       _payee(args.get("payee")), clauses=conditions.parse(args.get("conditions")),
+                       judge=args.get("judge") is True,
+                       below_cents=int((Decimal(str(below)) * 100).to_integral_value()))
 
 
 def _text(args: Mapping[str, object], key: str) -> str:
@@ -52,4 +63,4 @@ def _direction(raw: object) -> Direction:
         return "in"
     if raw == "out":
         return "out"
-    raise BadArguments("direction is in or out")
+    raise BadArguments("direction is in or out, or give balance_below instead")

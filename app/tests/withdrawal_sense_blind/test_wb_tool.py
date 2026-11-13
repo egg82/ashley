@@ -55,13 +55,13 @@ def test_a_missing_or_unknown_direction_is_refused_and_arms_nothing(db_url: str,
     run(go())
 
 
-def test_the_spec_requires_a_direction_of_in_or_out(db_url: str) -> None:
+def test_the_spec_offers_a_direction_of_in_or_out_or_a_balance(db_url: str) -> None:
     async def go() -> None:
         async with house(db_url) as h:
             catalogue = await AnsweringTools(h.home, h.alana, private=True).catalogue()
             (spec,) = [s for s in catalogue.specs if s.name == specs.ON_MONEY]
             params: Mapping[str, Any] = spec.parameters
-            assert "direction" in params["required"]
+            assert {"direction", "balance_below"} <= set(params["properties"])
             assert sorted(params["properties"]["direction"]["enum"]) == ["in", "out"]
             assert catalogue.instructions is not None and specs.ON_MONEY_INSTRUCTIONS in catalogue.instructions
 

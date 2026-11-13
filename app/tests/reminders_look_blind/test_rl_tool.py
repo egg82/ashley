@@ -26,7 +26,7 @@ def test_the_schema_offers_a_payee_and_a_minimum_and_requires_neither() -> None:
     schema = json.loads(json.dumps(spec_of().parameters))
     assert {"payee", "min_amount"} <= set(schema["properties"])
     assert "payee" not in schema["required"] and "min_amount" not in schema["required"]
-    assert schema["properties"]["direction"]["enum"] == ["in", "out"] and "direction" in schema["required"]
+    assert schema["properties"]["direction"]["enum"] == ["in", "out"] and "balance_below" in schema["properties"]
 
 
 def test_the_schema_has_no_union_a_provider_adapter_may_refuse() -> None:
