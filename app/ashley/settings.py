@@ -29,8 +29,6 @@ class Settings:
     connection at start (`ashley.inference.key_seed`); once a row exists it wins. `local_llm_url` (with
     `local_llm_api_key`, which a local server may not need) wires a local provider when set.
     `routes_file` is a path to the operator's overlay of the shipped routes (`ashley.inference.routes.overlay`).
-    `ha_url` (`http://homeassistant.local:8123`) and `ha_token` (a long-lived access token) wire Home Assistant's tools and
-    presence; both or neither, since one without the other can reach nothing (ValueError).
     `wyoming_stt_url` (`tcp://host:port`) seeds the Wyoming speech-to-text connection at start (`ashley.connections.address_seed`);
     once a row exists it wins, and with none and no row the provider is not wired. OpenAI
     transcription needs only OpenAI's key, ElevenLabs' speech only its key.
@@ -120,8 +118,6 @@ class Settings:
     local_llm_url: str = ""
     local_llm_api_key: str = ""
     routes_file: str = ""
-    ha_url: str = ""
-    ha_token: str = ""
     wyoming_stt_url: str = ""
     elevenlabs_api_key: str = ""
     claude_code_oauth_token: str = ""
@@ -188,8 +184,6 @@ class Settings:
     def __post_init__(self) -> None:
         if self.failback not in ("on", "off"):
             raise ValueError("FAILBACK must be on or off")
-        if bool(self.ha_url) != bool(self.ha_token):
-            raise ValueError("HA_URL and HA_TOKEN must be set together")
         oidc = (self.oidc_issuer, self.oidc_client_id, self.oidc_client_secret)
         if any(oidc) and not all(oidc):
             raise ValueError("OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET must be set together")
@@ -253,7 +247,6 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     anthropic_api_key=env.get("ANTHROPIC_API_KEY", ""), openai_api_key=env.get("OPENAI_API_KEY", ""),
                     gemini_api_key=env.get("GEMINI_API_KEY", ""), local_llm_url=env.get("LOCAL_LLM_URL", ""),
                     local_llm_api_key=env.get("LOCAL_LLM_API_KEY", ""), routes_file=env.get("ROUTES_FILE", "").strip(),
-                    ha_url=env.get("HA_URL", ""), ha_token=env.get("HA_TOKEN", ""),
                     wyoming_stt_url=env.get("WYOMING_STT_URL", ""),
                     elevenlabs_api_key=env.get("ELEVENLABS_API_KEY", ""),
                     claude_code_oauth_token=env.get("CLAUDE_CODE_OAUTH_TOKEN", ""),

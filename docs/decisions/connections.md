@@ -48,13 +48,6 @@ same family's accounts; one HA is the one house), so a key per person would add 
   hallway tablet's controls and a bench's automations. A household with none has no house tools, presence unknown and
   room speakers that fall back to the satellite. Each call reads the connection, so a replacement on either site is
   seen on the next one; while the connections cannot be read, the last client seen goes on answering.
-- **The house wired for the whole process before is household 1's connection**: at start, with `HA_URL` and `HA_TOKEN`
-  set, each pod seals them as household 1's `home_assistant` row where it has none (`ashley.home_assistant.seed`), so
-  an existing deployment's house keeps answering after the deploy with no person step. Never over a row a person added. Until a row
-  of household 1's has been seen (or with no `CONNECTIONS_KEY`), the env's HA answers for it, and a read tries the seed
-  again at most once a minute, so a seed that failed at start (the database away during a rollout, a pod ahead of the
-  migration) heals without a restart. Until the env is removed (`open-work.md`), a person who removes household 1's
-  HA in the room sees it come back at the next pod start.
 - **The kinds are the adapters' to declare** (`ashley.connections.kinds.ConnectionKind`, registered in
   `ashley.wiring.CONNECTION_KINDS`): a name, who may hold it (`holders`), the address rule (schemes, or one fixed address),
   the field that carries the secret, the check, the refusal texts, the panel's words and `most`. The routes are
@@ -160,7 +153,7 @@ subscription, the read the Usage room already makes), and the router opens the p
 - **The keys are the deployment's, held by its first household.** Inference is one service for every household and
   a call reaches a household only through the conversation it serves, and many calls serve none (memory writes,
   judges), so its keys cannot be per household. A kind marked `deployment` (`ConnectionKind.deployment`) is offered to
-  `FIRST_HOUSEHOLD` alone, the household the env describes, as the Home Assistant seed already treats it; any other
+  `FIRST_HOUSEHOLD` alone, the household the env describes; any other
   household is not offered the provider kinds, and adding one is 404 as for a kind nothing registered. Only an admin
   of the first household may add, replace or remove a key ("An admin changes what the deployment shares"); any other
   person of it sees the keys listed and is offered none of the provider kinds, and a change is 403 `admin_only`.
@@ -169,8 +162,8 @@ subscription, the read the Usage room already makes), and the router opens the p
   rotated in the room is used and a changed env key is ignored while the row stands; removing the row brings the
   env's key back, and the next pod start seeds it again. To stop a provider whose key is in the env, remove it from
   the env too. Without `CONNECTIONS_KEY` the env's keys are used as before.
-- **The env's keys seed the first rows** at each pod's start (`ashley.inference.key_seed`, beside the Home Assistant
-  seed in `wiring.warmups`), never over a row. Every pod on both sites seeds at once, and that is safe with no lease:
+- **The env's keys seed the first rows** at each pod's start (`ashley.inference.key_seed`, in
+  `wiring.warmups`), never over a row. Every pod on both sites seeds at once, and that is safe with no lease:
   `Connections.seed` is one `INSERT ... WHERE NOT EXISTS ... ON CONFLICT DO NOTHING` against the unique index on
   household, kind, owner and label, so one pod writes the row and the rest see `kept`. A seed that fails (the database
   away during a rollout) changes nothing a call sees, since the env's key is in force while there is no row.

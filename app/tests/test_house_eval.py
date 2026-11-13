@@ -9,10 +9,11 @@ import httpx2
 import pytest
 from ashley import services
 from ashley.channels.respond import LIMITS
-from ashley.evals import house, house_report
+from ashley.evals import house, house_live, house_report
 from ashley.evals.house import Billed, Seat
 from ashley.evals.house_guard import Attempt, GuardedTools
 from ashley.evals.house_readonly import ReadOnlyHomes, ReadOnlyHouse
+from ashley.connections.model import Connection
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes
 from ashley.inference.inference import Inference
@@ -22,6 +23,7 @@ from ashley.tools import house_state
 from ashley.tools.tools import Tools
 from pydantic import BaseModel
 from house_double_support import MemoryHouse, state
+from money_support import HeldConnections
 from respond_support import ALANA, HOME, Fakes, FakeTools, calls, wired as wired
 
 SEAT = Seat(HOME.id, ALANA.id)
@@ -193,3 +195,36 @@ def test_the_seed_cases_cover_what_was_asked() -> None:
     assert {c["channel"] for c in cases} == {"chat", "voice"}
     assert all(c["tools"] and c["target"] for c in by["action"])
     assert len({c["id"] for c in cases}) == len(cases)
+
+
+class Replacing(HeldConnections):
+    async def replace(self, connection_id: int, household_id: int, person_id: int, base_url: str,
+                      secret: str) -> Connection | None:
+        self.connect(household_id, base_url, secret, "home_assistant")
+        return self.held[(household_id, "home_assistant")].connection
+
+
+def _house_of(held: HeldConnections) -> tuple[str, str]:
+    opened = held.held[(SEAT.household_id, "home_assistant")]
+    return opened.connection.base_url, opened.secret
+
+
+def test_the_eval_household_gets_the_named_house_as_its_connection() -> None:
+    held = Replacing()
+    asyncio.run(house_live.connect_house(held, SEAT, "http://ha.eval.test:8123/", "tok"))
+    assert _house_of(held) == ("http://ha.eval.test:8123", "tok")
+
+
+def test_a_connection_the_household_already_holds_is_replaced_by_the_named_house() -> None:
+    held = Replacing()
+    held.connect(SEAT.household_id, "http://old.test:8123", "old", "home_assistant")
+    asyncio.run(house_live.connect_house(held, SEAT, "http://ha.eval.test:8123", "tok"))
+    assert _house_of(held) == ("http://ha.eval.test:8123", "tok")
+
+
+@pytest.mark.parametrize(("url", "token"), [("", "tok"), ("ftp://ha.test", "tok"), ("http://ha.test:8123", "")])
+def test_no_address_or_token_is_a_refusal_and_writes_nothing(url: str, token: str) -> None:
+    held = Replacing()
+    with pytest.raises(ValueError, match="EVAL_HA_URL"):
+        asyncio.run(house_live.connect_house(held, SEAT, url, token))
+    assert held.held == {}

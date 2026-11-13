@@ -23,7 +23,7 @@ ASSUMPTIONS
      lifespan registers the settings service on the real database. A setting a person saves applies to the tools built
      for the next turn.
  G8  The settings migration is later than `drop_watch_grant`; it seeds the home_assistant connection of household 1
-     (`seed.FALLBACK_HOUSEHOLD`) from the values shipped on main, and any other household's starts empty.
+     (household 1) from the values shipped on main, and any other household's starts empty.
  G2 was wrong on the wire's names (`revision`, entries, `settings`, `changes`, `edited_by`, `entity_id`, repeated
      `domains`): `WireTranslator` below translates; no assertion changed.
  G10 The double answered a `todo.get_items` for every list whatever was asked, so a read of one listed list looked

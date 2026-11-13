@@ -15,7 +15,6 @@ from ashley.home_assistant.house import ConfigItem, ConfigKind, House, HouseUnav
 from house_double_support import MemoryHouse, state
 
 EPOCH = datetime(2026, 10, 31, tzinfo=UTC)
-ENV = ("http://env-ha.test:8123", "env-token")
 A_URL, A_TOKEN = "http://a-house.test:8123", "token-of-a"
 B_URL, B_TOKEN = "http://b-house.test:8123", "token-of-b"
 
@@ -75,7 +74,6 @@ class HeldConnections(Connections):
     held: dict[tuple[int, str], Opened] = field(default_factory=dict[tuple[int, str], Opened])
     down: bool = False
     reads: int = 0
-    seed_fails: bool = False
     seeds: list[tuple[int, str]] = field(default_factory=list[tuple[int, str]])
 
     def can_open(self) -> bool:
@@ -116,8 +114,6 @@ class HeldConnections(Connections):
     async def seed(self, household_id: int, kind: Kind, base_url: str, secret: str) -> Connection | None:
         self.seeds.append((household_id, kind))
         self._up()
-        if self.seed_fails:
-            raise ConnectionsUnavailable("refused")
         if (household_id, kind) in self.held:
             return None
         self.connect(household_id, base_url, secret, kind)
@@ -131,14 +127,6 @@ class HeldConnections(Connections):
 
     async def answered(self, connection_id: int) -> None:
         self._up()
-
-
-class Clock:
-    def __init__(self) -> None:
-        self.now = 1000.0
-
-    def __call__(self) -> float:
-        return self.now
 
 
 class HostHouse(MemoryHouse):

@@ -23,8 +23,8 @@ the reverse. Measures and never gates. Needs DATABASE_URL, for the spend ledger,
 
 `python -m ashley.evals house [--runs N] [--case ID] [--json PATH]`: how she uses the house's tools, through her real turn
 loop with the live model and Home Assistant, every call that is not a read refused before it reaches the house. Needs a
-scratch DATABASE_URL (it adds a household and conversations), HA_URL and HA_TOKEN (that household's house for the run)
-and the model keys.
+scratch DATABASE_URL (it adds a household and conversations), CONNECTIONS_KEY, EVAL_HA_URL and EVAL_HA_TOKEN (sealed as that
+household's `home_assistant` connection, replacing the one it holds) and the model keys.
 
 `python -m ashley.evals bench-act [--runs N] [--case ID] [--scripted] [--clock work|age] [--windows N] [--hold S] [--no-now]`:
 what she does on a bench, through her real turn loop with a captured bench, her real bench and move_page tools, and a fake
@@ -55,15 +55,14 @@ of a scratch DATABASE_URL (it adds a household), ended after each run. Needs the
 import argparse
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
 from .. import logs, services, wiring
-from ..connections.connections import NullConnections
+from ..connections.connections import Connections
 from ..connections.kinds import FIRST_HOUSEHOLD
 from ..db.database import Database
-from ..home_assistant.connected_homes import ConnectedHomes
-from ..home_assistant.homes import Homes
 from ..inference.inference import InferenceError
 from ..inference.routes import PinError, Routes, only
 from ..settings import Settings, from_env
@@ -173,12 +172,9 @@ async def _house(settings: Settings, args: argparse.Namespace) -> str:
     database = services.get(Database)
     await database.open()
     seat = house_live.seat(settings.database_url)
-    if settings.ha_url:
-        homes = ConnectedHomes(NullConnections(), env=(settings.ha_url, settings.ha_token),
-                               fallback_household=seat.household_id)
-        services.register(Homes, homes)
-        closers.append(homes.close)
     try:
+        await house_live.connect_house(services.get(Connections), seat, os.environ.get("EVAL_HA_URL", ""),
+                                       os.environ.get("EVAL_HA_TOKEN", ""))
         await asyncio.gather(*wiring.warmups(settings))
         results = await house.run(args.runs, args.case, seat, house_live.ledger(database))
     finally:
