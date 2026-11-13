@@ -254,19 +254,10 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     - **Choices beside measurements, what is left**: a measurements row may be a choice (what kind of thing something
       is, `decisions.md`, "Measurements are structured data"), a `reference` part names its form, and a fit against it
       rests on that row. Left, each shipping alone:
-      1. **Each choice she sets is shown to the person once, by code**, beside her reply and never in it, whatever its
-         source (a wrong form she set can be recorded as the person's): `Receipts.facts`, a non-piece Command
-         `Surfaced(piece_id, rows)` read back from the log as `Point` is (a row is shown when some `Surfaced` names its
-         current name and value), and a card line with the row's options as buttons, a tap being the person's Edit
-         (`PUT /api/benches/{id}/pieces/{piece_id}/choices/{name}`, 422 off the options). `open_rows` skips a piece a
-         tainted turn wrote, so such a bench's open list is empty: an outside piece gets an ids-only line in the moment
-         layer (piece id, count of unconfirmed rows). The choice prose goes: "ask once, set asked" for choices leaves
-         `3d.md` and `bench_specs`, and `bench_lead`'s "state each in a line" becomes "record each choice as a choice
-         row, guessed, with its options".
-      2. **Guessed numbers on the same path**: a guessed number a check of this turn's run is unconfirmed on is shown
-         the same way; a migration turns each stored `asked: true` into a `Surfaced`, and the `asked` field and its
-         prose go.
-      3. **The kind renamed `facts`**: a data migration of the piece kind, and `measurements.json` becomes `facts.json`
+      1. **Guessed numbers on the same path**: a guessed number a check of this turn's run is unconfirmed on is shown
+         as a choice row is (`Surfaced`, `Receipts.facts` and the card's buttons); a migration turns each stored
+         `asked: true` into a `Surfaced`, and the `asked` field and its prose go.
+      2. **The kind renamed `facts`**: a data migration of the piece kind, and `measurements.json` becomes `facts.json`
          in the CAD helper; behaviour byte-identical.
       The replay measures with them: `form_declared` (her first model run's report names a form on every reference
       part), `facts_surfaced` (`Surfaced` rows per ask, by row kind), and `form_before_model` also true on a `Surfaced`
