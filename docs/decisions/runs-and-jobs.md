@@ -220,8 +220,8 @@ source; the same ask while it answers, a bare statement, and an ask that only ma
 
 - **Rejected: retaking an interrupted errand.** A run cut off mid-tool-call (by a failover, or by a deploy, which also
   moves the lease) may already have acted. A toggle done twice undoes itself, and a list gets two of everything. A gap
-  is the lesser harm, as with the outbox, and runs last seconds, so it is rare. An open-ended errand with a stored plan
-  continues after a failover (open-work, "Errands"); this one-shot ask has no plan to continue from.
+  is the lesser harm, as with the outbox, and runs last seconds, so it is rare. An open-ended errand continues after
+  a failover (below); this one-shot ask has no plan to continue from.
 - **Rejected: noticing the owed ask from her words** ("I can't reach the house"). Behaviour keys on fields.
 - **Rejected: the result as a fact of the asker's with a `told` field.** Memory holds what stays true, and "I put
   milk on the list" is an event, not a truth; it would sit in the Memory room beside lasting facts. What lasts
@@ -233,3 +233,59 @@ source; the same ask while it answers, a bare statement, and an ask that only ma
 - **Rejected: waiting on HA's own reconnect** (Senses) rather than reading the catalogue each tick. The catalogue is
   the one answer to "does this source answer" for every source, and a tick costs one catalogue read, only when
   anything is due.
+
+**An open-ended errand is a reminder that sets its own next check.** "See what you can do to help me wake up" is
+carried out over time: she looks, tries something, and looks again until it is done or its time is up. Each look is a
+**check**, one occurrence of a reminder (`ashley.senses.wakes.Reminder`) whose `ends_at` makes it an errand. Fits into:
+Senses, the `wakes` queue ("Reminders are wakes she sets for herself": there is no second scheduler). A check is
+already what a reminder that names its tools does: a turn at a time, taken up by the `wakes` singleton under `Lease`,
+its wake id the turn's `source`, its tools agreed through `Proposals`. What an errand adds is that the turn, not a
+`Repeat`, says when the next one falls, and that a plan is carried from one check to the next.
+
+- **She sets the next check with a tool, by field.** A check's turn is offered `check_again` (`minutes`, at least
+  `min_gap_minutes`, and `plan`, what she has done and seen, up to 500 characters), from
+  `ashley.tools.errand_step`, beside its tools as narrowed and never narrowed itself (`Inbound.errand`). It calls
+  `ashley.senses.wakes.Wakes.follow_up`, which stores the next occurrence at once, carrying the ask, tools, route,
+  end and the new `plan`, keyed by the occurrence it follows (`follows`, unique): calling it again moves that next
+  check instead of adding one. So the next check exists from the moment she decides it, whichever pod finishes the
+  turn: a check whose runner was killed is handed in again, settled by the next sweep while its work is the
+  resumer's, and the resumed turn still stores its next check on the settled occurrence. A cancelled occurrence, a
+  next check that has fired, and a time past `ends_at` are refused, and she is told it has ended.
+- **It always ends.** Not calling `check_again` ends the errand with that check, and no check falls after `ends_at`,
+  which `remind` sets from `errand_hours` (at most `max_hours` after its first check, `app/ashley/tools/errand.json`).
+  An errand never repeats by rule.
+- **A check speaks only when there is something to tell.** Its turn is not `promised`: Initiative decides from her
+  `says`, so a check with nothing new stays quiet (the push records `kept_quiet`), and the one where it is done, or
+  cannot be, goes out by its route like any reminder.
+- **The check reads the ask, its plan and its end.** The stored message is the ask, what she noted at the check before
+  (`Reminder.plan`, "first check" when none) and the errand's end in the household's zone; never a model's earlier
+  tool results, which are stale by the next check. An errand is listed and cancelled as a reminder is, with its end
+  shown (`errand_until`).
+- **The tables:** `wakes` gains `ends_at`, `plan` (1 to 500 characters) and `follows` (references `wakes`, set null
+  when that occurrence is pruned, unique where set). A check requires every one of them null, or `ends_at` set on a
+  `time` reminder with no repeat.
+- **Logs:** `tools.call` for `check_again` with its outcome and the next check's wake id; `wakes.settled` per check.
+  Never the ask or the plan.
+- **Measured by** `app/tests/test_errand_store.py` (the store's contract) and
+  `app/tests/errand_checks/test_errand_checks_run.py`: a check sets the next with its plan and the next sees it, one
+  that sets none ends it, one past the end is refused, a check killed on one pod is finished on another that still
+  sets the next, and of two sites under `PostgresLease` only the holder runs checks, the next taken by whichever
+  holds the lease then.
+- **Not built yet:** the slow ask answered later ("look into X") held on the errand and told at her next reply, the
+  stale "let me check" told at the next chance, standing errands, and her own automations awaiting the person's OK
+  while the errand carries on (open-work, "Errands").
+- **Rejected: a store of its own** (a plan table with due times and its own leased job). It would be a second
+  scheduler beside the `wakes` queue, copying its claim, resume-by-`source`, refire and delivery, and a second list
+  for the person beside their reminders.
+- **Rejected: a Watch.** A watch's check has no model in it by design ("Watches wake her when what a read returns
+  changes, until a condition or a time"); an errand's check is her turn with tools. An errand that waits on something
+  the house reports can arm a watch from its check.
+- **Rejected: extending the one-shot errand's table.** Its run is `tool_loop.answer` outside the turn loop, and an
+  interrupted run is given up rather than retaken, since it is not checkpointed; a check needs the turn loop's
+  checkpoint and resume, which the reminder turn already has.
+- **Rejected: storing the next check when the occurrence settles** (as a repeating reminder's next is). A runner that
+  hands a killed check in again settles it before the resumed turn decides, and the errand would end silently.
+- **Rejected: rescheduling one row in place.** One occurrence is one row and one turn; a moved row would give every
+  check the same `source`, which the turn loop takes for the same turn.
+- **Rejected: a `Reply` field for the next check.** Every turn's reply schema would carry it; a tool offered only on a
+  check costs nothing elsewhere.
