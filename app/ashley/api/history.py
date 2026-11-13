@@ -109,8 +109,8 @@ async def past(signed_in: Person, conversation_id: Annotated[int, Path(ge=1)]) -
 
 
 def _heard_by(turn: Turn, who: PersonRecord) -> bool:
-    """A turn said to the household, or privately to `who`: what a participant may read back of a shared conversation."""
-    return turn.heard == "shared" or turn.owner_id == who.id
+    """Every turn of a conversation `who` took part in, except one said privately to another person (its owner)."""
+    return turn.heard != "private" or turn.owner_id is None or turn.owner_id == who.id
 
 
 def _wire(found: Conversation, household: Household | None, who: PersonRecord) -> PastConversation:
