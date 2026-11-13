@@ -147,8 +147,8 @@ def test_the_discord_singleton_runs_with_no_env_token_since_the_connection_may_h
     running = singletons(settings)
     for coroutine in running:
         coroutine.close()
-    assert len(running) == 11
+    assert len(running) == 12
     bare = singletons(Settings(database_url="x", build_version="t"))
     for coroutine in bare:
         coroutine.close()
-    assert len(bare) == 10, "without etcd, every singleton but fail-back"
+    assert len(bare) == 11, "without etcd, every singleton but fail-back"
