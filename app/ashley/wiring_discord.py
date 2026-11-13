@@ -1,5 +1,5 @@
-"""Discord's clients wired: the sign-in provider when `DISCORD_OAUTH_CLIENT_ID` is set, and the channel posts client
-that reads the bot token in force on each call."""
+"""Discord's clients wired: the sign-in provider when `DISCORD_OAUTH_CLIENT_ID` is set, and the channel posts and home
+channel clients, which read the bot token in force on each call."""
 
 from collections.abc import Callable, Coroutine
 from typing import Any
@@ -12,6 +12,8 @@ from .connections.connections import Connections
 from .settings import Settings
 from .signin.discord import CALLBACK_PATH as DISCORD_CALLBACK, DiscordOAuth
 from .signin.discord_http import App as DiscordApp, HttpDiscordOAuth
+from .tools.discord_home import HomeChannel
+from .tools.discord_home_http import HttpHomeChannel
 from .tools.discord_posts import ChannelPosts
 from .tools.discord_posts_http import HttpChannelPosts
 
@@ -25,5 +27,6 @@ def wire_discord(settings: Settings, closers: list[Callable[[], Coroutine[Any, A
             settings.public_url + DISCORD_CALLBACK), discord_http))
     posts_http = httpx2.AsyncClient(timeout=10.0, follow_redirects=False)
     closers.append(posts_http.aclose)
-    services.register(ChannelPosts, HttpChannelPosts(
-        TokenInForce(lambda: services.get(Connections), settings.discord_bot_token), posts_http))
+    token = TokenInForce(lambda: services.get(Connections), settings.discord_bot_token)
+    services.register(ChannelPosts, HttpChannelPosts(token, posts_http))
+    services.register(HomeChannel, HttpHomeChannel(token, posts_http))

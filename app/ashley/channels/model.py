@@ -142,7 +142,10 @@ class Inbound:
     `discord_channel` is the id of the server channel the message came from, set only by the Discord adapter on a server
     message (never a DM), and offers her a read of that channel (`tools.discord_read`). `remark` is the facts of a
     remark nobody asked for that `Initiative` allowed before the turn (`channels.discord.remark`), set with
-    `unprompted`: whether it goes out is `Initiative.remark_speaks`, and it never goes to a phone."""
+    `unprompted`: whether it goes out is `Initiative.remark_speaks`, and it never goes to a phone. `home_channel` is the
+    household's home channel on its Discord server (`DiscordServer.home_channel_id`), set only on her turn of tending
+    it (`channels.discord.home`): on a turn that is also `unprompted` and the household's, it offers her the tools that
+    change that channel (`tools.discord_home_tools`), and on no other turn."""
 
     household_id: int
     thread: str
@@ -183,6 +186,7 @@ class Inbound:
     errand: int | None = None
     discord_channel: int | None = None
     remark: Chance | None = None
+    home_channel: int | None = None
 
     @property
     def lands_on(self) -> int | None:
@@ -196,6 +200,12 @@ class Inbound:
         chat, a bench's talk, the kiosk), so a turn that fails is shown there by the page and code writes no words for it.
         A reply meant to be heard (`medium` spoken) is always a line said."""
         return self.later_by == "turn" and self.medium == "text"
+
+    @property
+    def tends_home(self) -> int | None:
+        """The home channel this turn may change: `home_channel` on a turn of her own initiative (`unprompted`, by the
+        household), never on a reply to anyone."""
+        return self.home_channel if self.unprompted and self.author == "household" else None
 
     @property
     def holds(self) -> bool:

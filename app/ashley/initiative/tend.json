@@ -1,0 +1,10 @@
+{
+  "check_every_s": 300,
+  "slot_s": 14400,
+  "chance": 0.3,
+  "min_gap_h": 20,
+  "read_count": 100,
+  "threshold": 0.5,
+  "quiet": {"weight": 0.6, "full_at_h": 72},
+  "activity": {"weight": 0.4, "full_at": 10}
+}
