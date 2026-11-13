@@ -5,9 +5,24 @@ What wakes her, the reminders and proposals she keeps, the rules she composes, a
 ## Whether she speaks unprompted is decided in code
 
 A model call is stateless, so a prompt told to speak "when it makes sense" either always speaks or never does.
-Code computes a score from measured facts (time away, hour, who else is home, when she last spoke, whether
-anything is worth saying) and the model's structured `says` and importance fields; she speaks when it
-clears a threshold. Weights and thresholds are data, tuned from real use.
+Code computes a score from measured facts, and her reply's structured `says` decides whether she has anything to
+say. Weights, the threshold and the odds are data (`app/ashley/initiative/score.json`), tuned from real use; each
+weight's sign is part of that data's contract, so the loader refuses a recent greeting that would raise the score.
+
+- **The facts are gathered before the turn, and the plan is made before she is asked.** A house wake's turn carries
+  its moment (`ashley.initiative.moment.Moment`): the event's hour in the household's zone, how many others are home,
+  how long since the person last spoke to her, since her last turn on the same event about them, and since her last
+  wake turn about them that went out, each measured back from when the event happened and None when unknown, which
+  scores as nothing. Under the threshold the plan is silent; above it a roll seeded from the wake's id picks full,
+  short or silent from the odds of the score's band, so a replay decides the same. The outcome reaches her as that
+  call's instruction in the wake's note, never as a frequency word. Her reply goes out when the plan is not silent and
+  `says` is not `none`; a turn with no moment (a watch, a bench's reaction) goes out on `says` alone.
+  Rejected: the facts read inside `Initiative`, which would make the decision impure and let the first runner and the
+  resumer disagree; the moment rides on the turn's `Inbound`, checkpointed with it.
+- **A quiet greeting is still a greeting.** Her turn kept quiet (`unprompted.QUIET`) counts as greeted for the same
+  event, so a wake fired twice in a minute does not greet the second time; it does not count as having spoken.
+  Time away is measured as time since she last heard from the person: Home Assistant's state gives only the current
+  state's start, not when they left.
 
 - **She never repeats herself:** what she recently said unprompted goes into the prompt as already said, so
   greetings and asides don't go same-y.
@@ -53,8 +68,8 @@ person, and to ask only what the house cannot tell her.
   person's turn") and its answer is queued in the outbox with her stored turn, from whichever runner finishes it, checkpointed as every turn
   that takes later replies is. It runs on the phone thread of the person the wake is about, with that person as the
   one it is with, so her memory and the hearing rule are theirs, and its message is the household's turn (below), never theirs.
-- **Whether it goes out is Initiative's**, from her reply's `says`, a structured field (decisions, "Whether
-  she speaks unprompted is decided in code"). A reply kept quiet is stored as her staying quiet, never as words she did
+- **Whether it goes out is Initiative's**, from the wake's moment and her reply's `says`, a structured field
+  (decisions, "Whether she speaks unprompted is decided in code"). A reply kept quiet is stored as her staying quiet, never as words she did
   not say, so no later turn carries them. Rejected: an empty reply meaning quiet, which keys behaviour on text.
 - **A household is a speaker in its own right.** A turn's author is `person`, `ashley` or `household`: the household
   speaking as itself, shown by its name (`households.name`), not as any one of its people. A wake is the first

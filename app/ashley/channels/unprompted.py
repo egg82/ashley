@@ -52,6 +52,6 @@ def decided(reply: Reply, inbound: Inbound, conversation_id: int) -> bool:
         logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out)
         return out
     plan = services.get(Initiative).planned(inbound.moment)
-    logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out, score=round(plan.score, 3),
-              outcome=plan.outcome, roll=None if plan.roll is None else round(plan.roll, 4))
+    logs.info(log, "initiative.decided", conversation=conversation_id, speaks=out, score=plan.score,
+              outcome=plan.outcome, roll=plan.roll)
     return out
