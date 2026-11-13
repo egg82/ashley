@@ -338,6 +338,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/outside-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Outside Actions
+         * @description 200 `OutsideActionsResponse`; 401 `unauthorized`; 503 `unavailable`; 422 for a `limit` outside 1 to 200.
+         */
+        get: operations["list_outside_actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reminders": {
         parameters: {
             query?: never;
@@ -4057,6 +4077,43 @@ export interface components {
             authorize_url: string;
         };
         /**
+         * OutsideAction
+         * @description A change she made for the signed-in person with no OK, in a turn that had read words written outside the
+         *     household. `label` is the plain headline the person was shown for it, None for one made before headlines were kept;
+         *     `summary` is code's plain-words account of the change, never her words. `tier`: `runs`, a kind of change that always
+         *     runs on its own; `judged`, one the action judge let run. `explanation` is the judge's reason in words, None for
+         *     `runs` and for a judged one that kept none.
+         */
+        OutsideAction: {
+            /** Id */
+            id: number;
+            /** Label */
+            label: string | null;
+            /** Summary */
+            summary: string;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "runs" | "judged";
+            /** Explanation */
+            explanation: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+        };
+        /**
+         * OutsideActionsResponse
+         * @description The signed-in person's most recent outside actions, as `outside_actions`, newest first, at most `limit` of them. Rows are kept 90 days.
+         *     Only theirs: another person's, or another household's, are never listed.
+         */
+        OutsideActionsResponse: {
+            /** Outside Actions */
+            outside_actions: components["schemas"]["OutsideAction"][];
+        };
+        /**
          * PastConversation
          * @description An earlier conversation with its turns, oldest first.
          */
@@ -6441,6 +6498,53 @@ export interface operations {
                 };
             };
             /** @description `unavailable`: memory or the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_outside_actions: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutsideActionsResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `limit` outside 1 to 200 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the database could not be reached */
             503: {
                 headers: {
                     [name: string]: unknown;

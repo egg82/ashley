@@ -170,6 +170,11 @@ change is seen by the person without anyone reading a log, whether or not her re
 recorded but not shown: they run by a fixed tier, so there is no sorting to get wrong, and the change is visible where
 it was made. What is shown is `Turn.receipts`, never her words ("What the person sees", below).
 
+The Memory room's "On her own" tab lists the signed-in person's own rows, tier b and c alike, newest first
+(`GET /api/outside-actions`, `ashley.api.outside_actions`). Only theirs: a summary is shown on the page only where the
+person was alone, so another member of the household is never served it. Rejected: a household-wide list, for that
+reason; a room of its own, since the page answers "what does she know and do for me" beside facts and reminders.
+
 A change is held only where agreement can follow: the speaker is known and the reply reaches them alone
 (`ashley.channels.audience.owner_alone`, read by `ashley.channels.standing` since tools import no channels). Elsewhere, a shared room, the tablet or a server channel, the change is
 refused with a result saying it needs the person's OK in a private conversation, as `house_change` refuses

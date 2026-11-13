@@ -36,6 +36,14 @@ class DoneAction:
     label: str
 
 
+@dataclass(frozen=True)
+class Recorded:
+    """A stored `action` and its row `id`, which only grows."""
+
+    id: int
+    action: DoneAction
+
+
 class OutsideRecord(Service):
     @classmethod
     def null(cls) -> "OutsideRecord":
@@ -48,6 +56,11 @@ class OutsideRecord(Service):
     @abstractmethod
     async def of_turn(self, conversation_id: int, turn_id: int) -> tuple[DoneAction, ...]:
         """The turn's actions, oldest first. Raises OutsideRecordUnavailable."""
+
+    @abstractmethod
+    async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
+        """At most `limit` of the actions made for `person_id` of `household_id`, newest first. Never another person's
+        or household's. Raises OutsideRecordUnavailable."""
 
     @abstractmethod
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:
@@ -67,6 +80,9 @@ class NullOutsideRecord(OutsideRecord):
         raise OutsideRecordUnavailable("the outside record is not wired")
 
     async def of_turn(self, conversation_id: int, turn_id: int) -> tuple[DoneAction, ...]:
+        raise OutsideRecordUnavailable("the outside record is not wired")
+
+    async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
         raise OutsideRecordUnavailable("the outside record is not wired")
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:

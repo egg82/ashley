@@ -8,7 +8,7 @@ from typing import Any, LiteralString
 import psycopg
 
 from ..db.database import Database, DatabaseUnavailable
-from .outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable
+from .outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded
 
 
 class PostgresOutsideRecord(OutsideRecord):
@@ -31,6 +31,16 @@ class PostgresOutsideRecord(OutsideRecord):
             "FROM outside_actions WHERE conversation_id = %s AND turn_id = %s ORDER BY id", (conversation_id, turn_id))
         return tuple(DoneAction(int(r[0]), int(r[1]), int(r[2]), int(r[3]), str(r[4]), str(r[5]), str(r[6]),
                                 None if r[7] is None else str(r[7]), None if r[8] is None else str(r[8]), r[9], str(r[10]))
+                     for r in rows)
+
+    async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
+        rows = await self._rows(
+            "SELECT id, household_id, person_id, conversation_id, turn_id, tool, summary, tier, reason, explanation, at, label "
+            "FROM outside_actions WHERE household_id = %s AND person_id = %s ORDER BY at DESC, id DESC LIMIT %s",
+            (household_id, person_id, limit))
+        return tuple(Recorded(int(r[0]), DoneAction(int(r[1]), int(r[2]), int(r[3]), int(r[4]), str(r[5]), str(r[6]),
+                                                    str(r[7]), None if r[8] is None else str(r[8]),
+                                                    None if r[9] is None else str(r[9]), r[10], str(r[11])))
                      for r in rows)
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:
