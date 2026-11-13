@@ -1,5 +1,5 @@
 """A provider is one way to reach a model (Strategy): the Anthropic API, an OpenAI-compatible API (ChatGPT, Gemini,
-a local server), later a CLI. Each wired instance has its own name, so two OpenAI-compatible endpoints are two
+a local server), the Claude CLI. Each wired instance has its own name, so two OpenAI-compatible endpoints are two
 providers. Only `RoutedInference` calls them; everyone else asks `Inference`."""
 
 from abc import ABC, abstractmethod

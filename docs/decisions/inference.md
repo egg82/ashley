@@ -127,8 +127,20 @@ breaking her.
   admin keys the app does not hold, and Gemini's prepaid balance is readable only in AI Studio. Those read "unknown"
   with the reason. A household may set a monthly budget per paid provider in `budgets.json` (shipped empty), which
   shows "budget less this month's spend", labelled an estimate. A failed read renders "couldn't read", never 0.
-- **Later, on the same data:** CLI providers (`claude -p` on the subscription, `opencode`), and routes that ask
-  several models at once and compare them.
+- **The Claude subscription is a provider through its CLI, for tasks that offer no tools**
+  (`ashley.inference.claude_cli.ClaudeCliProvider`, route name `claude_cli`). Each call runs `claude -p` once from the
+  binary pinned in `app/Containerfile`: `--output-format json`, the reply schema as `--json-schema`, no built-in
+  tools, settings, MCP servers or saved session, the stable prompt from a file and the history with the moment on
+  stdin, in a directory made for the call and removed after it, with an env of `PATH`, that directory and the token
+  alone. The CLI runs its own loop, so a tool call cannot be handed back to the caller: a provider says whether it
+  `takes_tools`, and one that does not may be routed only for a task in `ashley.inference.model.TOOLLESS` (the memory
+  write, the judges, the tidy pass), checked when the routes load; `Inference.step` refuses tools for those tasks, so
+  the set cannot drift from the callers. Usage is the CLI's `modelUsage` summed over every model the call used; the
+  calls stay unpriced, since a subscription bills no price per token and the CLI's `total_cost_usd` is the API's list
+  price, not what was paid.
+  - Rejected: dropping the tools and letting the model answer without them, which is a different call than the one
+    the route asked for; and pricing the calls at the API's list price, a cost nobody pays.
+- **Later, on the same data:** `opencode` as a provider, and routes that ask several models at once and compare them.
 - **Rejected:** a gateway such as LiteLLM, which adds a service to run on both sites for what two SDKs and a
   list already do; falling through to the next route on a refusal; and one prompt for every provider.
 
