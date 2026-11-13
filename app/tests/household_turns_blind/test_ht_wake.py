@@ -9,7 +9,7 @@ from ashley.inference.reply import Reply
 from contract.conversations_support import run, scalar
 from ht_support import BRIEF, HOME, NAME, last_message, turn, world
 
-SAYS = Reply(spoken="Welcome home.", text="Welcome home, Alana.", worth_saying=True)
+SAYS = Reply(spoken="Welcome home.", text="Welcome home, Alana.", says="reply")
 
 
 def test_the_stored_wake_turn_is_the_households_with_only_the_event_fields(db_url: str) -> None:
@@ -23,7 +23,7 @@ def test_the_stored_wake_turn_is_the_households_with_only_the_event_fields(db_ur
             assert said == ("household", None, f"wake:{wake_id}", "alana_arrived · Alana · front_door")
             assert hers[0] == "ashley"
             for stored in (t[3] for t in w.turns()):
-                assert BRIEF not in stored and "worth_saying" not in stored and "happened at" not in stored
+                assert BRIEF not in stored and "`says`" not in stored and "happened at" not in stored
             assert scalar(db_url, "SELECT count(*) FROM turns WHERE author = 'person'") == 0
     run(go())
 

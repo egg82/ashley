@@ -71,7 +71,7 @@ a bench's Install, logged and then recorded before it writes to the house, never
   (`respond.failed reason=unstorable`, with `cause`, the refusing error's class, and for a refused turn `check`, its
   fixed phrase: never text), and the turn is never resumed.
 - **A reply with nothing to deliver is never stored empty.** A step whose reply has no text for the medium
-  (`unsaid.empty`; `Reply.worth_saying` false is exempt) is asked again once as a wrap-up (tool choice `none`, with the
+  (`unsaid.empty`; `Reply.says` none is exempt) is asked again once as a wrap-up (tool choice `none`, with the
   person note from `unsaid.json` that every closing step after a lookup carries: no more lookups, say what she found
   and still needs), and an empty wrap-up is replaced by the line in `unsaid.json`, so the turn answers, held line or
   not (`respond.reply_empty`, ids and a count). Otherwise the conversation refuses the empty turn and the person is

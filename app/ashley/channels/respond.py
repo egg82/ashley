@@ -228,7 +228,7 @@ async def _answered(turn: "_Turn", system: Mapping[str, SystemPrompt], messages:
     got = await answering.stored(turn.work, got, lambda r: _end(turn, r, inbound.unprompted), turn.going(system, tools))
     _done(turn, got, later=False)
     return Outbound(conversation_id, inbound.medium, await render(got.reply, inbound.medium, inbound.household_id),
-                    quiet=not unprompted.speaks(got.reply, inbound), receipts=turn.landing.receipts)
+                    says=unprompted.says(got.reply, inbound), receipts=turn.landing.receipts)
 
 
 @dataclass(frozen=True)

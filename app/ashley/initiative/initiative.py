@@ -3,7 +3,7 @@
 (`ashley.channels.model.Inbound.unprompted`, a wake from the house today), and never of a reply to a person.
 
 The decision keys on structured fields of her reply, never on its words. The first policy, `WorthSaying`, is her
-`Reply.worth_saying` alone; the scored policy of open-work's arrival greeting (time away, hour, who is home, when she
+`Reply.says` alone; the scored policy of open-work's arrival greeting (time away, hour, who is home, when she
 last spoke, weights as data) replaces it behind this interface."""
 
 from abc import abstractmethod
@@ -33,4 +33,4 @@ class WorthSaying(Initiative):
     """She speaks when her reply says it is worth saying."""
 
     def speaks(self, reply: Reply) -> bool:
-        return reply.worth_saying
+        return reply.says != "none"

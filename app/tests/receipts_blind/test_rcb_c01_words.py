@@ -57,7 +57,7 @@ def test_c01_nothing_code_wrote_is_in_her_turn_or_the_delivered_body(world: Worl
 def test_c01_closing_returns_her_reply_as_the_model_wrote_it(medium: str) -> None:
     async def go() -> None:
         landing, _ = await held_landing(replace(WEB, medium="spoken" if medium == "spoken" else "text"))
-        reply = Reply(spoken="Spoken, as written.", text="Text, as written.", worth_saying=False)
+        reply = Reply(spoken="Spoken, as written.", text="Text, as written.", says="none")
         closed = await landing.closing(reply)
         assert (closed.text, closed.spoken) == (reply.text, reply.spoken)
         assert landing.receipts is not None and landing.receipts.held

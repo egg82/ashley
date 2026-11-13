@@ -1,4 +1,4 @@
-"""A fired reminder she judges: its turn is not promised and her `worth_saying` decides whether the phone is told; one she
+"""A fired reminder she judges: its turn is not promised and her `says` decides whether the phone is told; one she
 does not judge is promised and goes out whatever she answers. The turn carries what the transaction was."""
 
 from datetime import UTC, date, datetime, timedelta
@@ -22,8 +22,8 @@ from ashley.senses.postgres_deposits import PostgresDeposits
 from money_support import CHECKING
 
 DONE = Reply(spoken="Time to move it.", text="Time to move it.")
-QUIET = Reply(spoken="Nothing to say.", text="Nothing to say.", worth_saying=False)
-LOUD = Reply(spoken="Move it.", text="Move it.", worth_saying=True)
+QUIET = Reply(spoken="Nothing to say.", text="Nothing to say.", says="none")
+LOUD = Reply(spoken="Move it.", text="Move it.", says="reply")
 ALANA = Person(3, 1, "Alana")
 DAY = date(2026, 11, 3)
 HISTORY = History(4, 100_000, 123_400, 30, date(2026, 10, 4))
@@ -73,8 +73,8 @@ def test_her_turn_is_handed_the_figures_the_reason_and_the_payers_history() -> N
 
 
 def test_only_a_judged_turn_tells_her_she_may_stay_quiet() -> None:
-    assert "worth_saying" in said(fires(ALANA, True), ALANA, ALANA)
-    assert "worth_saying" not in said(fires(ALANA, False), ALANA, ALANA)
+    assert "`says`" in said(fires(ALANA, True), ALANA, ALANA)
+    assert "`says`" not in said(fires(ALANA, False), ALANA, ALANA)
 
 
 def test_a_withdrawal_is_told_as_one() -> None:

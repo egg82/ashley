@@ -199,7 +199,7 @@ with the Agree card, because the person agrees to what code wrote, not to her de
 could have steered. The web and the kiosk show it as quiet UI; Discord as one separate small-text message; voice speaks
 none of it and sends it to the speaker's phone when it can, as a notification of its own; her push notification stays
 one, her words with the Agree action, and a tap through shows the receipts on the page. Her history carries it as a line
-marked as the app's. A woken turn that held a call goes out even when `worth_saying` is false, because a held change
+marked as the app's. A woken turn that held a call goes out even when `says` is none, because a held change
 nobody sees is lost without anyone knowing; one that stays quiet after a judged change sends its receipts alone to
 the speaker's phone, as a voice turn does.
 

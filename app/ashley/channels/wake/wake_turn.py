@@ -27,4 +27,4 @@ def note(rule: WakeRule, person: Person, wake: Wake) -> str:
     """What only she reads, with the turn: when it happened, her rule's brief, and what her reply may do."""
     return (f"The event happened at {wake.at.isoformat(timespec='minutes')}.\n"
             f"Your brief for this wake: {rule.brief}\n"
-            f"Whatever you write goes to {person.name}'s phone only if you set worth_saying true.")
+            f"Whatever you write goes to {person.name}'s phone only if you set `says` to reply.")

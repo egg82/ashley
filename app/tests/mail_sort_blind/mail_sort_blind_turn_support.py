@@ -29,7 +29,7 @@ from ashley.connections.model import Connection, Resource, ResourceKind
 from ashley.connections.resources import ConnectionResources, Usable, Use
 from ashley.criteria.record import Change
 from ashley.inference.model import ToolCall, ToolResult
-from ashley.inference.reply import Reply
+from ashley.inference.reply import Reply, Says
 from ashley.mail.mailbox import Mailbox
 from ashley.mail.model import Account, Draft, Label, MailChange, Message, MailQuery, Page, Header, Target
 from ashley.senses.outside_record import OutsideRecord
@@ -200,9 +200,9 @@ class Turn:
     async def names(self) -> set[str]:
         return {s.name for s in (await self.landing.catalogue()).specs}
 
-    async def ends(self, text: str = "Sorted.", worth_saying: bool = False) -> Reply:
+    async def ends(self, text: str = "Sorted.", says: Says = "none") -> Reply:
         """Her reply as the turn stores it."""
-        return await self.landing.closing(Reply(spoken=text, text=text, worth_saying=worth_saying))
+        return await self.landing.closing(Reply(spoken=text, text=text, says=says))
 
     def ran(self) -> list[tuple[int, tuple[str, ...], tuple[str, ...]]]:
         """Each change that reached the port: connection id, the ids it named, the labels it added."""

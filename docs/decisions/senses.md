@@ -6,7 +6,7 @@ What wakes her, the reminders and proposals she keeps, the rules she composes, a
 
 A model call is stateless, so a prompt told to speak "when it makes sense" either always speaks or never does.
 Code computes a score from measured facts (time away, hour, who else is home, when she last spoke, whether
-anything is worth saying) and the model's structured `worth_saying` and importance fields; she speaks when it
+anything is worth saying) and the model's structured `says` and importance fields; she speaks when it
 clears a threshold. Weights and thresholds are data, tuned from real use.
 
 - **She never repeats herself:** what she recently said unprompted goes into the prompt as already said, so
@@ -53,7 +53,7 @@ person, and to ask only what the house cannot tell her.
   person's turn") and its answer is queued in the outbox with her stored turn, from whichever runner finishes it, checkpointed as every turn
   that takes later replies is. It runs on the phone thread of the person the wake is about, with that person as the
   one it is with, so her memory and the hearing rule are theirs, and its message is the household's turn (below), never theirs.
-- **Whether it goes out is Initiative's**, from her reply's `worth_saying`, a structured field (decisions, "Whether
+- **Whether it goes out is Initiative's**, from her reply's `says`, a structured field (decisions, "Whether
   she speaks unprompted is decided in code"). A reply kept quiet is stored as her staying quiet, never as words she did
   not say, so no later turn carries them. Rejected: an empty reply meaning quiet, which keys behaviour on text.
 - **A household is a speaker in its own right.** A turn's author is `person`, `ashley` or `household`: the household
@@ -99,7 +99,7 @@ same `wakes` singleton under the lease and run through the same turn loop. There
   every missed one in turn. A reminder never expires: a late "pay the card bill" is still wanted. Rejected: firing
   each missed occurrence (three pushes of one monthly chore at once), and expiring them as a house wake expires.
 - **It goes out because they asked.** The fired turn is `promised`: it goes out whatever Initiative would say, and her
-  reply only words it. Rejected: leaving it to `worth_saying`, which could keep a reminder quiet.
+  reply only words it. Rejected: leaving it to `says`, which could keep a reminder quiet.
 - **It reaches the person alone.** The turn runs on their phone thread (`push:<person id>`), with them as the one it is
   with, on a channel only they read (`ashley.channels.audience.owner_alone`), never a satellite, the hallway tablet or
   Discord. A reminder is never a glance source on a shared screen.
@@ -299,10 +299,10 @@ she wires them").
   into: Senses (the deposit sense and `DepositRule`), extended; no existing rule representation exists to share (a wake
   piece matches an event slug alone, an automation's conditions are Home Assistant's own).
 - **She may hand the match to her own judgement.** A rule with `judge` stores the match with the payer's history and its
-  fired turn is not `promised`: her structured `worth_saying` decides whether it is sent, as for a wake (decisions,
+  fired turn is not `promised`: her structured `says` decides whether it is sent, as for a wake (decisions,
   "Whether she speaks unprompted is decided in code"); a kept-quiet answer is recorded done with nothing pushed
   (`push.reminder` outcome `kept_quiet`). Code keys on that field, never on her words. Rejected: a second structured
-  field (`tell`) beside `worth_saying`, which already means this.
+  field (`tell`) beside `says`, which already means this.
 - **The sense reads a neutral record.** It reads the Ledger (`ashley.senses.ledger_transactions`) and derives
   `Transaction` records from its entries; the sense and every predicate see nothing Sure-shaped, so Actual Budget would be
   another Ledger adapter. A rule that reads history makes the sense read `days` further back (and `judged_days` for a judged fire).

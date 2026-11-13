@@ -7,6 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..text import Cleaned
 
+Says = Literal["reply", "none"]
+"""Whether her reply is said (`reply`) or not said at all (`none`). Code honours `none` only where the turn offers it
+(`ashley.channels.unprompted.says`)."""
+
 
 def _all_required(schema: dict[str, Any]) -> None:
     """The schema a model is sent names every field required and carries no defaults, so it states each one; defaults
@@ -80,7 +84,7 @@ class Reply(BaseModel):
                                   "you tell them next time. Null for anything else: an ask the unreachable source "
                                   "does not bear on, one that only makes sense right now, a plain statement, "
                                   "or when every source answered.")
-    worth_saying: bool = Field(
-        default=True, description="False only on a turn you were woken for (a wake from the house, or the person "
-                                  "pausing on a bench; the message says which) when nothing in it is worth saying to "
-                                  "them now; then nothing you write is sent. True on every other turn.")
+    says: Says = Field(
+        default="reply", description="none only on a turn you were woken for (a wake from the house, or the person "
+                                     "pausing on a bench; the message says which) when nothing in it is worth saying "
+                                     "to them now; then nothing you write is sent. reply on every other turn.")

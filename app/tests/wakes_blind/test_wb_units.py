@@ -219,8 +219,8 @@ def test_only_matches_an_entry_after_a_domain_prefix_and_not_a_suffix_of_a_word(
 
 # ---- Initiative and the unprompted reply
 
-WORTH = Reply(spoken="Hi.", text="Hi.", worth_saying=True)
-NOT_WORTH = Reply(spoken="Hi.", text="Hi.", worth_saying=False)
+WORTH = Reply(spoken="Hi.", text="Hi.", says="reply")
+NOT_WORTH = Reply(spoken="Hi.", text="Hi.", says="none")
 
 
 def test_worth_saying_is_the_replys_own_field_and_pure() -> None:
@@ -229,12 +229,12 @@ def test_worth_saying_is_the_replys_own_field_and_pure() -> None:
 
 
 def test_a_reply_defaults_to_worth_saying() -> None:
-    assert Reply(spoken="a", text="a").worth_saying is True
+    assert Reply(spoken="a", text="a").says == "reply"
 
 
 def test_the_words_never_decide_it() -> None:
-    quiet = Reply(spoken="I have nothing to say.", text="", worth_saying=True)
-    loud = Reply(spoken="", text="", worth_saying=False)
+    quiet = Reply(spoken="I have nothing to say.", text="", says="reply")
+    loud = Reply(spoken="", text="", says="none")
     assert WorthSaying().speaks(quiet) is True and WorthSaying().speaks(loud) is False
 
 

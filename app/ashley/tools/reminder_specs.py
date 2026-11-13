@@ -97,7 +97,7 @@ def remind_on_money(names: Sequence[str]) -> ToolSpec:
                             "judge": {"type": "boolean",
                                       "description": "true to decide yourself, when it lands, whether it is what they "
                                                      "meant: you are given the payer's history and may stay quiet "
-                                                     "(worth_saying false) on a match that is not"},
+                                                     "(`says` none) on a match that is not"},
                             "payee_match": {"type": "string", "enum": list(PAYEE_MATCHES),
                                             "description": "contains if the payee's name only has to include it "
                                                            "(the default), exact if it is the whole name"},

@@ -1,5 +1,5 @@
 """The turn a watch wake starts (`watch_turn`, which generalises `herdr_turn`): unprompted, so Initiative decides from
-`worth_saying`; on the talk of the bench that armed the watch while it is open, else the person's phone thread; the
+`says`; on the talk of the bench that armed the watch while it is open, else the person's phone thread; the
 stored message the household's, from fields alone; her brief only the turn's note (the kind's note for the change, the
 series and since, whether the watch ended); tools by `Reminder.tools`' rule, except that a hand-off watch keeps the
 thread's."""

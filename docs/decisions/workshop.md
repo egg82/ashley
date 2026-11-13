@@ -303,10 +303,10 @@ store a debounce the command log already is; a timer per bench in a pod, which a
   `author` `household`; what she is told to do reaches her only as the turn's `note`.
 - **A reaction holds like a person's turn**, from the explicit `Inbound.watched` its adapter sets, since the person is on
   the bench's page by construction and watched the work start. Her aside goes out as a held line past `hold_after_s`
-  and stays her turn on the talk; the answer is stored after it and, with `worth_saying` false, as her staying quiet,
+  and stays her turn on the talk; the answer is stored after it and, with `says` none, as her staying quiet,
   which hides only that turn and the household turn it answers, never the aside. It is stored (`later_by` `turn`), so
   nothing is queued. Other wakes keep never holding.
-- **Reply or none is `Reply.worth_saying`**, decided by Initiative, never read from her text. None stores her staying
+- **Reply or none is `Reply.says`**, decided by Initiative, never read from her text. None stores her staying
   quiet, and a page leaves that turn and the household turn it answers out (`ashley.conversations.quiet.shown`), and the
   list of conversations counts only what a page shows, so a conversation holding nothing else is not listed and
   nothing appears in the talk. A reply is an ordinary turn on the bench's talk.

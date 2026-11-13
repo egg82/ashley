@@ -1,6 +1,6 @@
 """She reacts to a person's changes on a bench, over a real database: after their commands go quiet for the pause she
 gets one turn on the bench's thread, handed the commands after the last she has seen (ids and kinds), once. Her
-`worth_saying` decides whether anything is posted, a bench's reactions are rate capped, her own commands never wake
+`says` decides whether anything is posted, a bench's reactions are rate capped, her own commands never wake
 her, and a reaction killed part way is finished by the resumer as the same turn."""
 
 import asyncio

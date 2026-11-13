@@ -35,7 +35,7 @@ def woken(thread: str = "household:7") -> Inbound:
 
 
 def reply(worth: bool) -> Reply:
-    return Reply(spoken="ok", text="Handled it.", worth_saying=worth)
+    return Reply(spoken="ok", text="Handled it.", says="reply" if worth else "none")
 
 
 def test_a_quiet_woken_turn_sends_its_receipts_alone_to_the_phone() -> None:

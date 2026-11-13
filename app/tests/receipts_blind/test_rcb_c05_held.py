@@ -68,8 +68,8 @@ def test_c05_a_turn_that_did_and_held_nothing_has_none() -> None:
 def test_c05_a_held_turn_is_worth_saying_whatever_she_set_and_a_done_only_one_is_not_made_so() -> None:
     async def go() -> None:
         landing, number = await held_landing(WEB)
-        closed = await landing.closing(Reply(spoken="s", text="I looked.", worth_saying=False))
-        assert closed.worth_saying and landing.held == 2 and landing.agree == number
+        closed = await landing.closing(Reply(spoken="s", text="I looked.", says="none"))
+        assert closed.says == "reply" and landing.held == 2 and landing.agree == number
         assert landing.receipts is not None and landing.receipts.proposal_id == number
         assert [r.detail for r in landing.receipts.held] == ['lamp (room: "porch")', "garage (door: 2)"]
 
@@ -80,7 +80,7 @@ def test_c05_a_turn_that_held_nothing_closes_as_she_said_it_with_no_receipts() -
     async def go() -> None:
         services.register(Proposals, Numbered())
         landing = Landing(replace(WEB, taint="watch"), (40, 100), LIMITS)
-        reply = Reply(spoken="s", text="hello", worth_saying=False)
+        reply = Reply(spoken="s", text="hello", says="none")
         assert await landing.closing(reply) == reply and landing.receipts is None and landing.held == 0
 
     run(go())

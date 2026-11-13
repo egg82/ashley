@@ -113,8 +113,8 @@ def test_a_judged_fire_is_not_promised_and_a_plain_one_is() -> None:
     plain = Reminder(1, 1, 1, "b", NOW, None, landed=Landed(100, date(2026, 11, 3), "C", "P"))
     assert not reminder_turn.inbound(1, judged, alana, alana).promised
     assert reminder_turn.inbound(1, plain, alana, alana).promised
-    assert "worth_saying" in reminder_turn.said(judged, alana, alana)
-    assert "worth_saying" not in reminder_turn.said(plain, alana, alana)
+    assert "`says`" in reminder_turn.said(judged, alana, alana)
+    assert "`says`" not in reminder_turn.said(plain, alana, alana)
 
 
 def test_a_judged_reminder_she_keeps_quiet_is_recorded_done_and_nothing_is_pushed(

@@ -1,6 +1,6 @@
 """A reminder firing, over a real database: the `wakes` singleton's sweep takes a reminder once its time has come and
 runs her turn on it through the shared turn loop, with only tools that read, on the phone thread of the person it is for, and what
-she says is stored to go out whatever `worth_saying` says, since the person asked for it (its push:
+she says is stored to go out whatever her `says` holds, since the person asked for it (its push:
 test_reminder_delivery). A one-off fires once; a repeating one
 fires each occurrence once, across two runners at once and a runner killed mid-turn, its next occurrence in the
 household's wall-clock time; occurrences missed in an outage fire once; a cancelled one never fires again; and no log
@@ -42,7 +42,7 @@ from wake_support import Model, Nobody, Switchboard
 
 DENVER = ZoneInfo("America/Denver")
 BRIEF = "Pay off the NGFCU Visa now that pay landed: $1,234.56. Then switch Proton to it."
-SAYS = Reply(spoken="Your reminder.", text="Pay day: time to clear the Visa.", worth_saying=False)
+SAYS = Reply(spoken="Your reminder.", text="Pay day: time to clear the Visa.", says="none")
 
 
 @dataclass

@@ -16,7 +16,7 @@ from outside_record_support import MemoryRecord
 from receipts_blind_support import LAMP_LABEL, World, change, database, play
 from receipts_blind_unit_support import CONVERSATION, HOUSEHOLD, LIMITS, SPEAKER, TURN, WEB, Numbered
 
-QUIET_REPLY = Reply(spoken="Handled.", text="Handled.", worth_saying=False)
+QUIET_REPLY = Reply(spoken="Handled.", text="Handled.", says="none")
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +36,7 @@ def test_a_turn_that_only_did_something_is_not_made_worth_saying(world: World) -
                                           "asked_directly", "You asked.", datetime.now(UTC), LAMP_LABEL))
             landing = Landing(replace(WEB, taint="watch"), (CONVERSATION, TURN), LIMITS)
             closed = await landing.closing(QUIET_REPLY)
-            assert not closed.worth_saying and closed.text == QUIET_REPLY.text
+            assert closed.says == "none" and closed.text == QUIET_REPLY.text
             assert landing.receipts is not None and [r.headline for r in landing.receipts.done] == [LAMP_LABEL]
         finally:
             services.unregister(OutsideRecord)
@@ -53,7 +53,7 @@ def test_a_woken_turn_that_holds_a_call_goes_out_though_she_set_worth_saying_fal
     async def go() -> None:
         async with database(world):
             played = await play(world, woken, [change(), QUIET_REPLY])
-            assert not played.out.quiet and played.answer.text == "Handled."
+            assert played.out.says == "reply" and played.answer.text == "Handled."
             assert played.answer.receipts is not None and played.answer.receipts.held
 
     run(go())

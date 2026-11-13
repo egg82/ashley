@@ -31,8 +31,8 @@ HAND_OFF = Message("person", _DATA["hand_off"])
 
 
 def empty(reply: Reply, medium: Medium) -> bool:
-    """Whether `reply` has nothing for `medium` to deliver, though it was meant to be said (`Reply.worth_saying`)."""
-    return reply.worth_saying and not delivered(reply, medium).strip()
+    """Whether `reply` has nothing for `medium` to deliver, though it was meant to be said (`Reply.says`)."""
+    return reply.says != "none" and not delivered(reply, medium).strip()
 
 
 class Said(Reply):

@@ -92,4 +92,4 @@ def test_a_household_line_has_the_household_author_and_its_name_as_speaker(clien
 def test_no_brief_text_is_on_the_wire(client: tuple[TestClient, int, int]) -> None:
     http, cid, _ = client
     raw = http.get(f"/api/chat/conversations/{cid}").text
-    assert BRIEF not in raw and "worth_saying" not in raw
+    assert BRIEF not in raw and "`says`" not in raw

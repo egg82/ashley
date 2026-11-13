@@ -19,17 +19,17 @@ NAME = "claude_session"
 DONE_NOTE = ("A Claude Code session has stopped and is waiting for input. That is not always the "
              "end of its work: it also stops while its own subagents or background commands are still running, and "
              "goes on when they report. The message names it; none of what is on its screen is in it. Read the end of "
-             "it with claude_read. If it is still waiting on work of its own, nothing has finished: set worth_saying "
-             "false, and you are woken again when it next stops. Otherwise decide what to do: tell the person what it "
-             "did and where the result is, or act with your tools. With worth_saying false nothing is posted or "
+             "it with claude_read. If it is still waiting on work of its own, nothing has finished: set `says` "
+             "to none, and you are woken again when it next stops. Otherwise decide what to do: tell the person what it "
+             "did and where the result is, or act with your tools. With `says` none nothing is posted or "
              "pushed to anyone, and what you did with your tools stands. If you cannot read it, say that it stopped, "
              "not that it finished, or stay silent.")
 BLOCKED_NOTE = ("A Claude Code session is blocked on a dialog only the person can answer, and you "
                 "cannot answer it. Read the end of its screen with claude_read to see what it asks, then decide whether "
-                "to tell them what it is waiting for so they can answer it where it runs. With worth_saying false "
+                "to tell them what it is waiting for so they can answer it where it runs. With `says` none "
                 "nothing is posted or pushed to anyone.")
 CLOSED_NOTE = ("A Claude Code session you watch has closed. Say so if the person would want to know; with "
-                "worth_saying false nothing is posted or pushed to anyone.")
+                "`says` none nothing is posted or pushed to anyone.")
 _REASONS: dict[Reason, FailReason] = {"herdr_unavailable": "unreachable", "unconfirmed": "unreachable",
                                       "bad_token": "refused", "wrong_person": "refused", "pin_mismatch": "refused"}
 

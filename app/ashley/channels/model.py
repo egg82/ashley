@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ..conversations.model import Attachment, Channel, Kind, Receipts
+from ..inference.reply import Says
 from ..workshop.model import thread_of
 
 Medium = Literal["spoken", "text"]
@@ -188,8 +189,9 @@ class Inbound:
 @dataclass(frozen=True)
 class Outbound:
     """Her reply for the channel to deliver: `body` rendered for `medium` (`render.render`). `follows` is true when it
-    only says she will check, and the answer will come through the `Outbox` for the thread. `quiet` is true when the turn
-    was on her own initiative and she kept it to herself (`unprompted.QUIET` is what was stored). `agree` is the id of the
+    only says she will check, and the answer will come through the `Outbox` for the thread. `says` is her
+    reply's `Reply.says` as code honoured it (`unprompted.says`): `none` when she kept it to herself
+    (`unprompted.QUIET` is what was stored). `agree` is the id of the
     held proposal `receipts` shows, so a channel that can offer one tap offers it (the web push notification's Agree
     action); it is set from `receipts` for one release and then dropped. `receipts` is what code shows beside the
     reply (`conversations.model.Receipts`), never part of `body`; None when there is none."""
@@ -198,7 +200,7 @@ class Outbound:
     medium: Medium
     body: str
     follows: bool = False
-    quiet: bool = False
+    says: Says = "reply"
     agree: int | None = None
     receipts: Receipts | None = None
 

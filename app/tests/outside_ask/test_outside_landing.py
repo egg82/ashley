@@ -39,9 +39,9 @@ def test_a_turn_that_held_keeps_her_words_and_receipts_beside_them_and_is_worth_
         now = datetime.now(UTC)
         calls = HeldCalls((HeldCall("lamp", {"room": "porch"}, 'lamp (room: "porch")'),))
         await memory.propose(Proposal(HOUSEHOLD, SPEAKER, 40, 100, now, calls), 60)
-        reply = Reply(spoken="s", text="I looked.", worth_saying=False)
+        reply = Reply(spoken="s", text="I looked.", says="none")
         closed = await landing.closing(reply)
-        assert closed.text == "I looked." and closed.spoken == "s" and closed.worth_saying and landing.held == 1
+        assert closed.text == "I looked." and closed.spoken == "s" and closed.says == "reply" and landing.held == 1
         assert landing.receipts is not None and [h.detail for h in landing.receipts.held] == ['lamp (room: "porch")']
         assert landing.agree == landing.receipts.proposal_id == 1
 
@@ -52,7 +52,7 @@ def test_a_turn_that_held_nothing_is_stored_as_she_said_it() -> None:
     async def go() -> None:
         services.register(Proposals, Memory())
         landing = Landing(WEB, (40, 100), LIMITS)
-        reply = Reply(spoken="s", text="hello", worth_saying=False)
+        reply = Reply(spoken="s", text="hello", says="none")
         assert await landing.closing(reply) == reply and landing.held == 0
 
     run(go())
