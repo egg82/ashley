@@ -4,8 +4,8 @@ a Discord server or the house."""
 
 from alembic import op
 
-revision: str = "0106"
-down_revision: str | None = "0105"
+revision: str = "0107"
+down_revision: str | None = "0106"
 
 
 def upgrade() -> None:
