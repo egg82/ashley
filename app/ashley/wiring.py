@@ -87,6 +87,8 @@ from .people.postgres_accounts import PostgresAccounts
 from .people.postgres_admins import PostgresAdmins
 from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
+from .senses.calendar import Calendar
+from .senses.homes_calendar import HomesCalendar
 from .senses.homes_presence import HomesPresence
 from .live.postgres_screens import PostgresScreens
 from .live.screens import Screens
@@ -316,6 +318,7 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     closers.append(homes.close)
     services.register(Homes, homes)
     services.register(Presence, HomesPresence(services.get(People)))
+    services.register(Calendar, HomesCalendar())
     shared, over_house, without_house = tools(closers, settings.searxng_url)
     services.register(Tools, shared)
     services.register(ActionJudge, ModelActionJudge())

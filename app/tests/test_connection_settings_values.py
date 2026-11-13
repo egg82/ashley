@@ -31,9 +31,10 @@ def bad(values: Mapping[str, Any]) -> tuple[str, str]:
     return refused.value.key, refused.value.reason
 
 
-def test_home_assistant_declares_three_trust_settings_and_one_that_judges() -> None:
+def test_home_assistant_declares_three_trust_settings_one_that_judges_and_one_preference() -> None:
     assert {s.key: s.decides for s in SETTINGS} == {
-        "household_reads": "taint", "service_reads": "taint", "reads": "read", "consequential_entities": "tier"}
+        "household_reads": "taint", "service_reads": "taint", "reads": "read", "consequential_entities": "tier",
+        "glance_calendars": "plain"}
     assert isinstance(next(s for s in SETTINGS if s.key == "household_reads").field, EntityListPerAction)
 
 
@@ -69,8 +70,8 @@ def test_exactly_the_largest_list_is_allowed() -> None:
 
 def test_the_settings_are_read_as_the_tools_take_them_and_a_malformed_value_is_empty() -> None:
     got = house_values.of({"household_reads": {"todo.get_items": ["todo.a"]}, "service_reads": ["weather.x"], "reads": ["script.a"],
-                           "consequential_entities": ["switch.relay"]})
-    assert got == HouseValues({"todo.get_items": ("todo.a",)}, ("weather.x",), ("script.a",), ("switch.relay",))
+                           "consequential_entities": ["switch.relay"], "glance_calendars": ["calendar.a"]})
+    assert got == HouseValues({"todo.get_items": ("todo.a",)}, ("weather.x",), ("script.a",), ("switch.relay",), ("calendar.a",))
     assert house_values.of({"household_reads": ["todo.a"], "reads": {"x": ["y.z"]}}) == HouseValues()
     assert house_values.of({}) == HouseValues()
 

@@ -42,10 +42,10 @@ def test_a_connection_never_set_answers_the_kind_s_schema_and_revision_zero(clie
     body = got.json()
     assert (body["connection_id"], body["kind"], body["revision"], body["values"]) == (cid, "home_assistant", 0, [])
     assert body["updated_at"] is None and body["updated_by"] is None
-    assert [s["key"] for s in body["settings"]] == ["household_reads", "service_reads", "reads", "consequential_entities"]
+    assert [s["key"] for s in body["settings"]] == ["household_reads", "service_reads", "reads", "consequential_entities", "glance_calendars"]
     first = body["settings"][0]
     assert first["field"] == {"type": "entity_per_action", "for_actions": ["todo.get_items"], "domains": ["todo"]}
-    assert first["decides"] == "taint" and {s["decides"] for s in body["settings"]} == {"taint", "tier", "read"}
+    assert first["decides"] == "taint" and {s["decides"] for s in body["settings"]} == {"taint", "tier", "read", "plain"}
 
 
 def test_a_write_is_stored_whole_and_answered_with_who_wrote_it(client: TestClient, home: People) -> None:
