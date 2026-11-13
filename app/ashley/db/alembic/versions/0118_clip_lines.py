@@ -3,7 +3,7 @@ satellite or room speaker has none, since its body is respelled for the voice an
 
 from alembic import op
 
-revision: str = "0120"
+revision: str = "0118"
 down_revision: str | None = "0117"
 
 
