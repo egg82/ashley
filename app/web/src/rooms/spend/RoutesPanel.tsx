@@ -1,8 +1,8 @@
-// Which model answers this household: for each chat-facing task, the deployment's routes or a model the household
-// chose from them, tried first. The safety judge is shown, never chosen here.
+// Who answers: for each task, a sentence ("Chat is answered by [model]") with the fallbacks in a quiet line under it. A
+// household chooses among the models the deployment offers; the safety judge is shown with why it is fixed.
 import { useEffect } from 'preact/hooks';
 import type { TaskRoutes } from '../../api/types';
-import { chosenAt, routeName, taskName, unoffered } from './routeChoice';
+import { chainOf, choicesOf, routeName, selectedOf, taskName, unoffered } from './routeChoice';
 import { chooseRoute, loadSpendRoutes, spendRoutes, spendRoutesFailed, spendRoutesSaid, spendRoutesSaving } from './spendRoutes';
 
 const SAID: Record<NonNullable<typeof spendRoutesSaid.value>, [string, 'ok' | 'bad']> = {
@@ -25,39 +25,39 @@ function Said() {
   );
 }
 
+function Fallbacks({ t }: { t: TaskRoutes }) {
+  const rest = chainOf(t).slice(1);
+  if (rest.length === 0) return null;
+  return <span class="meta sp-then">If that fails she tries {rest.map((r) => r.model).join(', then ')}.</span>;
+}
+
 function Choice({ t }: { t: TaskRoutes }) {
-  const at = chosenAt(t);
-  const first = t.routes[0];
-  const pick = (value: string) => {
-    const i = Number(value);
-    void chooseRoute(t.task, i < 0 ? null : t.options[i]!);
-  };
+  const id = `sp-route-${t.task}`;
   return (
-    <div class="sp-route" role="row">
-      <label class="sp-route-name" role="cell" for={`sp-route-${t.task}`}><b>{taskName(t.task)}</b></label>
-      <div class="sp-route-pick" role="cell">
-        <select id={`sp-route-${t.task}`} value={String(at)} disabled={spendRoutesSaving.value}
-          onChange={(e) => pick(e.currentTarget.value)}>
-          <option value="-1">{first ? `As deployed: ${routeName(first)}` : 'As deployed'}</option>
-          {t.options.map((o, i) => <option key={routeName(o)} value={String(i)}>{routeName(o)}</option>)}
+    <div class="sp-says">
+      <p>
+        <label for={id}>{taskName(t.task)}</label> is answered by{' '}
+        <select id={id} value={selectedOf(t)} disabled={spendRoutesSaving.value}
+          onChange={(e) => {
+            const i = Number(e.currentTarget.value);
+            void chooseRoute(t.task, i < 0 ? null : t.options[i]!);
+          }}>
+          {choicesOf(t).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
-        {unoffered(t) && t.chosen && (
-          <span class="unk">{routeName(t.chosen)} is no longer offered; replies use the deployment's models</span>
-        )}
-        {at >= 0 && <span class="meta">If it can't answer: {t.routes.map(routeName).join(', then ')}</span>}
-      </div>
+      </p>
+      {unoffered(t) && t.chosen && <span class="sp-warn">{routeName(t.chosen)} is no longer offered; replies use her default.</span>}
+      <Fallbacks t={t} />
     </div>
   );
 }
 
-function Judge({ t }: { t: TaskRoutes }) {
+function Fixed({ t }: { t: TaskRoutes }) {
+  const first = t.routes[0];
   return (
-    <div class="sp-route" role="row">
-      <div class="sp-route-name" role="cell"><b>{taskName(t.task)}</b></div>
-      <div class="sp-route-pick" role="cell">
-        <span>{t.routes.map(routeName).join(', then ')}</span>
-        <span class="meta">It decides whether a change she was not asked for goes ahead, so only whoever runs this deployment moves it.</span>
-      </div>
+    <div class="sp-says">
+      <p>{taskName(t.task)} is answered by <code>{first ? first.model : 'no model'}</code></p>
+      <Fallbacks t={t} />
+      <span class="meta sp-then">Fixed. It decides whether a change she wasn't asked for goes ahead, so only whoever runs this deployment moves it.</span>
     </div>
   );
 }
@@ -69,22 +69,20 @@ export function RoutesPanel() {
   }, []);
   const r = spendRoutes.value;
   return (
-    <section class="panel sp-routes" aria-label="Which model answers">
-      <h2 class="label">Which model answers</h2>
+    <section class="sp-who" aria-label="Who answers">
+      <h2 class="label">Who answers</h2>
       {!r && spendRoutesFailed.value && (
-        <div class="sp-route-down">
-          <span class="unk">couldn't read the model choices</span>
-          <button class="btn sm ghost" type="button" onClick={() => void loadSpendRoutes()}>Try again</button>
+        <div class="sp-down" role="alert">
+          <b>Couldn't read her model choices.</b>
+          <span class="meta">Nothing has changed. Try again.</span>
+          <button class="btn sm" type="button" onClick={() => void loadSpendRoutes()}>Try again</button>
         </div>
       )}
       {!r && !spendRoutesFailed.value && <span class="meta">Reading the model choices…</span>}
-      {r && (
-        <div role="table" aria-label="Model per task">
-          {r.choices.map((t) => (t.household ? <Choice key={t.task} t={t} /> : <Judge key={t.task} t={t} />))}
-        </div>
-      )}
+      {r && r.choices.length === 0 && <p class="meta">No models are offered yet. Once she is connected to one, you choose here which answers chat.</p>}
+      {r?.choices.map((t) => (t.household ? <Choice key={t.task} t={t} /> : <Fixed key={t.task} t={t} />))}
       <Said />
-      {r && <p class="meta sp-foot">A chosen model is tried first and the deployment's follow it. Its calls show above under its provider, at its own price.</p>}
+      {r && r.choices.length > 0 && <p class="meta sp-foot">A model you choose is tried first. What it costs shows in the ledger under its provider, at its own price.</p>}
     </section>
   );
 }
