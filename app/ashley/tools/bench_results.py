@@ -42,7 +42,8 @@ HINTS: dict[Reason, str] = {
                 "false; true when the wake is a greeting, so code decides whether and how fully to say it; absent or "
                 "false, what you write goes out when you say it is worth saying), who (a person.* entity id) and what "
                 "(a slug): set, the rule answers only a wake whose who or what is exactly that; when several rules "
-                "answer one wake, the one setting the most of who and what runs, and a tie runs none)",
+                "answer one wake, the one setting the most of who and what runs, and a tie runs none; speaker, a "
+                "media_player.* entity id from the house, says the turn aloud there instead of on the phone)",
     "bad_facts": 'a facts piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "given"}]}: '
                         "name an identifier unique in the piece, value a finite number, unit mm (every length in millimetres), deg, "
                         "count, g (grams), ml (millilitres) or min (minutes), source measured, datasheet, accepted, bound or guessed, "

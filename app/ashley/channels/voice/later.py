@@ -1,7 +1,8 @@
 """Replies the `Outbox` holds for satellites, said by the satellites singleton: each taken reply for a thread
 `device:<id>` becomes a clip, played on the satellite's room speaker when it names one and Home Assistant accepts, else
 on the satellite's own media player as an announcement. A reply for a screen device (the kiosk) is announced on the
-screens someone is looking at (`ashley.channels.kiosk.announce`). A reply for a satellite not connected now is dropped.
+screens someone is looking at (`ashley.channels.kiosk.announce`). Replies for a wake rule's named speaker (thread
+`device:speaker:…`, under the same take) are said by `speakers`. A reply for a satellite not connected now is dropped.
 
 Logs `voice.later` per reply taken: device (None when the thread names no satellite), outcome (`room_speaker`,
 `announced`, `no_media_player`, `not_connected`, `clips_unavailable`, or for a screen device `announce.announce`'s),
@@ -13,7 +14,8 @@ import logging
 from ... import logs, services
 from ..kiosk import announce
 from ..outbox import Later, Outbox, OutboxUnavailable
-from . import reminders
+from ..wake.speaker import PREFIX as SPEAKER_PREFIX
+from . import reminders, speakers
 from .run import Pipeline
 from .saying import said
 from .session import Links, Sleep
@@ -44,6 +46,9 @@ async def drain(links: Links, pipeline: Pipeline, poll_s: float, sleep: Sleep) -
 
 
 async def say(later: Later, links: Links, pipeline: Pipeline) -> None:
+    if later.thread.startswith(SPEAKER_PREFIX):
+        await speakers.say(later, pipeline)
+        return
     device = _device(later.thread)
     link = links.get(device) if device is not None else None
     if link is None and device is not None and await announce.is_screen(later.household_id, device):

@@ -5,7 +5,8 @@ A house wake past `max_age_s` since it arrived, `expired`; no rule for it, or mo
 at the top (`rule.rule_for`), `no_rule` or `ambiguous`; no person of the household for its `who`, `no_person`; else, for a rule
 that greets (`WakeRule.greets`), the facts of its moment are gathered (`moment.gathered`) and `Initiative` plans from
 them, which may place the greeting at a satellite or screen of the place the wake names (recorded on the wake, so the
-singletons that deliver reminders deliver it), and her turn runs through the shared turn loop with
+singletons that deliver reminders deliver it), or, when the rule names a speaker the household's house lists
+(`speaker.listed`), at that speaker instead of any placement, and her turn runs through the shared turn loop with
 that plan's instruction, if any (`wake_turn.inbound`), and it is `turn`, or `failed` when the model refused it. A
 wake whose rule or person cannot be read now (the workshop or People out of reach), or whose turn could not run now
 (`RespondUnavailable`, as during a failover), is left due for the next sweep, until `max_age_s`; handing it in again
@@ -34,13 +35,15 @@ from ...initiative.moment import Plan
 from ...people.model import Person
 from ...people.people import People, PeopleUnavailable
 from ...senses.home_assistant_presence import SYSTEM
+from ...senses.house_lists import HouseUnreadable
 from ...senses.wakes import Due, Outcome, Reminder, Route, Wake, Wakes, WakesUnavailable, WatchWake
 from ...watches.watches import WatchesUnavailable
+from ...workshop.wake_rule import WakeRule
 from ...workshop.workshop import WorkshopUnavailable
 from ..devices import DevicesUnavailable
 from ..model import Device
 from ..respond import RespondRefused, RespondUnavailable, respond
-from . import reminder, reminder_device, wake_turn, watch_turn
+from . import reminder, reminder_device, speaker, wake_turn, watch_turn
 from .bench_reacts import BenchReacts
 from .config import CONFIG
 from .moment import gathered
@@ -86,7 +89,8 @@ async def _taken(due: Due) -> None:
     started = time.perf_counter()
     try:
         outcome, next_due = await _outcome(due)
-    except (WorkshopUnavailable, PeopleUnavailable, DevicesUnavailable, RespondUnavailable, WatchesUnavailable) as e:
+    except (WorkshopUnavailable, PeopleUnavailable, DevicesUnavailable, RespondUnavailable, WatchesUnavailable,
+            HouseUnreadable) as e:
         logs.warning(log, "wakes.deferred", wake=due.id, reason=type(e).__name__)
         return
     if await _fires_again(due, outcome):
@@ -133,12 +137,22 @@ async def _house(due: Due, wake: Wake) -> Outcome:
         return "no_person"
     moment = await gathered(due.id, wake, person) if rule.greets else None
     plan = None if moment is None else services.get(Initiative).planned(moment)
-    at = await _placed(due.id, wake, person, plan)
+    named = await _named(due.id, wake, rule)
+    at = None if named else await _placed(due.id, wake, person, plan)
     try:
-        await respond(wake_turn.inbound(due.id, wake, rule, person, moment, None if plan is None else plan.outcome, at))
+        await respond(wake_turn.inbound(due.id, wake, rule, person, moment, None if plan is None else plan.outcome, at,
+                                        named))
     except RespondRefused:
         return "failed"
     return "turn"
+
+
+async def _named(wake_id: int, wake: Wake, rule: WakeRule) -> str | None:
+    """The speaker `rule` names when the household's house lists it as a media player; None for the phone.
+    Raises HouseUnreadable."""
+    if rule.speaker is None or not await speaker.listed(wake_id, wake.household_id, rule.speaker):
+        return None
+    return rule.speaker
 
 
 async def _placed(wake_id: int, wake: Wake, person: Person, plan: Plan | None) -> tuple[Route, Device] | None:

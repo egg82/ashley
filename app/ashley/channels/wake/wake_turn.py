@@ -6,7 +6,8 @@ wake's id is the turn's `source`, so a wake handed in twice is one turn. A greet
 moment (`Inbound.moment`), and the note tells her what `Initiative` planned of them for this call: say it in full, keep
 it to one line, or say nothing. Any other rule's turn carries neither. A greeting Initiative placed at a satellite or
 screen runs on that device's thread instead (`on_device.moved`), and its answer is stored for the device's delivery
-(`device_delivery`) rather than queued in the outbox."""
+(`device_delivery`) rather than queued in the outbox. A rule that names a speaker runs on the speaker's thread instead
+(`speaker.moved`), which wins over a placement, and its answer is queued in the outbox as the phone's is."""
 
 from dataclasses import replace
 
@@ -16,6 +17,7 @@ from ...people.quiet import held
 from ...senses.wakes import Route, Wake
 from ...workshop.wake_rule import WakeRule
 from ..model import Device, Inbound
+from . import speaker as speakers
 from .on_device import moved
 
 _THIS_TIME: dict[Outcome, str] = {
@@ -27,14 +29,18 @@ _THIS_TIME: dict[Outcome, str] = {
 
 
 def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Moment | None = None,
-            outcome: Outcome | None = None, at: tuple[Route, Device] | None = None) -> Inbound:
-    """The turn; `at` is the route and device a greeting is placed at, None for the phone."""
+            outcome: Outcome | None = None, at: tuple[Route, Device] | None = None,
+            speaker: str | None = None) -> Inbound:
+    """The turn; `at` is the route and device a greeting is placed at, `speaker` the media player its rule names and
+    the household's house lists; both None for the phone. A speaker is never given with `at`."""
     phone = Inbound(household_id=wake.household_id, thread=f"push:{person.id}", text=said(person, wake),
                    kind="chat", medium="text", audience="owner", speaker_id=person.id, shared=False, place=None,
                    channel="device", remembers=False, later=True, later_by="outbox", source=f"wake:{wake_id}",
                    unprompted=True, tools_only=rule.tools, author="household",
-                   note=note(rule, person, wake, outcome, at), taint=None, moment=moment,
+                   note=note(rule, person, wake, outcome, at, speaker), taint=None, moment=moment,
                    quiet=held(person, wake.at))
+    if speaker is not None:
+        return speakers.moved(phone, person.id, speaker)
     return phone if at is None else replace(moved(phone, *at), later_by="turn")
 
 
@@ -44,15 +50,18 @@ def said(person: Person, wake: Wake) -> str:
 
 
 def note(rule: WakeRule, person: Person, wake: Wake, outcome: Outcome | None = None,
-         at: tuple[Route, Device] | None = None) -> str:
+         at: tuple[Route, Device] | None = None, speaker: str | None = None) -> str:
     """What only she reads, with the turn: when it happened, her rule's brief, what her reply may do, and the
     instruction for this call that `outcome` gives, when there is one."""
     return (f"The event happened at {wake.at.isoformat(timespec='minutes')}.\n"
             f"Your brief for this wake: {rule.brief}\n"
-            + _goes(person, at) + ("" if outcome is None else f"\n{_THIS_TIME[outcome]}"))
+            + _goes(person, at, speaker) + ("" if outcome is None else f"\n{_THIS_TIME[outcome]}"))
 
 
-def _goes(person: Person, at: tuple[Route, Device] | None) -> str:
+def _goes(person: Person, at: tuple[Route, Device] | None, speaker: str | None = None) -> str:
+    if speaker is not None:
+        return ("Whatever you write is said aloud on a speaker, only if you set `says` to reply, where whoever is "
+                "near may hear it: say nothing private.")
     if at is None:
         return f"Whatever you write goes to {person.name}'s phone only if you set `says` to reply."
     route, device = at
