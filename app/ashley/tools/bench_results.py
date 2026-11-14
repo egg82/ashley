@@ -43,7 +43,8 @@ HINTS: dict[Reason, str] = {
                 "false, what you write goes out when you say it is worth saying), who (a person.* entity id) and what "
                 "(a slug): set, the rule answers only a wake whose who or what is exactly that; when several rules "
                 "answer one wake, the one setting the most of who and what runs, and a tie runs none; speaker, a "
-                "media_player.* entity id from the house, says the turn aloud there instead of on the phone)",
+                "media_player.* entity id from the house, says the turn aloud there instead of on the phone; device, "
+                "the id of one of the household's paired kiosks, announces it on that screen instead, never with speaker)",
     "bad_facts": 'a facts piece\'s body is {"items": [{"name", "value", "unit", "source", "tolerance", "ref", "given"}]}: '
                         "name an identifier unique in the piece, value a finite number, unit mm (every length in millimetres), deg, "
                         "count, g (grams), ml (millilitres) or min (minutes), source measured, datasheet, accepted, bound or guessed, "
