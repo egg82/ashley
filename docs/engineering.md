@@ -165,8 +165,12 @@ alone, never her rules.
 - **Small files, each doing one thing**, grouped in subdirectories. Functions stay under 80 lines.
 - **Comments only where an implementer needs them:** API surfaces carry their contract; implementation carries
   only "this looks optimizable but isn't, because...". History goes in the commit and the decision files.
-- **The orchestrator edits the shared single-file docs** (`systems.md`, the decisions index, `open-work.md`,
+- **The orchestrator edits the shared single-file docs** (`systems.md`, the decisions index,
   `CLAUDE.md`, this file) from the doc deltas its writers report; a writer edits the decision file for its own system.
+- **The queue is the repo's issues**, ordered on [the Ashley: Work board](https://github.com/users/egg82/projects/3)
+  by its Status (Ready, In progress, Blocked, Done). Take the top Ready issue, set it In progress, and open a pull
+  request whose description says `Closes #n`. A blocked issue ends with a **Blocked on:** line. Cite an issue by number,
+  never by its place on the board.
 - **A refactor goes in byte-identical first**; a fix found on the way is its own commit, with its own test.
 - **Tests come from a different agent than the code**, written blind from the interface and its contract.
 - **A pull request that touches her tools, persona or routes reports `python -m ashley.evals house` before and after** (`--json` to diff the two); it measures and never gates, and no write reaches the house.

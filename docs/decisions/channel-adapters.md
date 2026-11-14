@@ -235,7 +235,7 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
 - **Looked at, and fine: the reply call's shape.** Measured in the pod on the real command prompt (Haiku, 10.5k tokens
   cached): first token about 0.7 s and the whole short reply about 1.0 s. Leaving out the tools saved about 70 ms,
   inside the noise, so neither a tool-using sub-agent nor tools offered on demand is a latency fix: each adds a model
-  round (about 1 s) when a tool is needed. Both stay token levers (open-work, "Golf the system prompt"). Dropping the JSON schema changed nothing, nor did a
+  round (about 1 s) when a tool is needed. Both stay token levers ([#145](https://github.com/egg82/ashley/issues/145)). Dropping the JSON schema changed nothing, nor did a
   spoken-only schema (half the output tokens, no faster). `effort: low` stays: without it a reply ran to 300 tokens and 2.4 s.
 - **Rejected: HA's Assist pipeline pointed at her.** Text-only input rules out voice identification, and
   continuing a conversation hinges on HA's heuristics (a reply ending in "?").

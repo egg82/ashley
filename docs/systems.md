@@ -2,7 +2,7 @@
 
 The inventory an agent checks before building something new (`CLAUDE.md`, the fit pass): what kind of thing is
 this, and which row below already answers that question? Extend or combine that system; add a row only when none
-fits, and say why in the open-work item's "Fits into:" line.
+fits, and say why in its issue's "Fits into:" line.
 
 Each cell is about one sentence plus its backticked paths and symbols, which `app/tests/test_doc_citations.py`
 resolves by real import. Depth lives in the system's decisions file, linked under its name. The orchestrator edits

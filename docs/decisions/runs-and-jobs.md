@@ -295,7 +295,7 @@ its wake id the turn's `source`, its tools agreed through `Proposals`. What an e
   holds the lease then.
 - **Not built yet:** the slow ask answered later ("look into X") held on the errand and told at her next reply, the
   stale "let me check" told at the next chance, and her own automations awaiting the person's OK while the errand
-  carries on (open-work, "Errands").
+  carries on ([#141](https://github.com/egg82/ashley/issues/141)).
 - **Rejected: a store of its own** (a plan table with due times and its own leased job). It would be a second
   scheduler beside the `wakes` queue, copying its claim, resume-by-`source`, refire and delivery, and a second list
   for the person beside their reminders.

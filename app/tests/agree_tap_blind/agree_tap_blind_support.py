@@ -1,4 +1,4 @@
-"""Support for the blind tests of "Agree by tap" (open-work item P4; `~/scratch/ashley/readers-design/design.txt`, P4 and
+"""Support for the blind tests of "Agree by tap" (`~/scratch/ashley/readers-design/design.txt`, P4 and
 the owner decisions): the real app on a real database, a signed-in person's cookie, the real proposals store and in-flight
 store, a recording `Tools` behind the locator and an `Inference` that counts every call it is given.
 

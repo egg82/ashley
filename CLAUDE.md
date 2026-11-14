@@ -1,14 +1,14 @@
 # CLAUDE.md
 
 Read `README.md`, then the decisions index `docs/decisions.md` and the files in `docs/decisions/` for the systems
-a change touches, before designing anything. The queue is `docs/open-work.md`.
+a change touches, before designing anything. The queue is the repo's issues, in priority order on [the Ashley: Work board](https://github.com/users/egg82/projects/3).
 How code is built and shipped: `docs/engineering.md`. The inventory of systems: `docs/systems.md`.
 **Load the `agentic-engineering` skill before changing anything here**, and name it in every writer's brief.
 
 **An ask that adds a new kind of thing (a system, new data, a new schedule) starts with a fit pass, not a design:**
 what is it an instance of, which system in `docs/systems.md` already does that kind of thing, and which known
 pattern solves it (GoF, Nystrom's *Game Programming Patterns*)? Extend that system or combine the two; build a new
-one only when none fits, and say why. Its open-work item carries a "Fits into:" line. Tweaks need no fit pass.
+one only when none fits, and say why. Its issue carries a "Fits into:" line. Tweaks need no fit pass.
 
 **Never raise a held count to get a change through; split, reduce or report instead.** The gates and their
 ledgers are in `docs/engineering.md`.

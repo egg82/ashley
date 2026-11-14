@@ -4,7 +4,7 @@ Benches, the Commands that change them, her reaction to a person's change, and t
 
 ## The workshop: benches of pieces, changed only by Commands
 
-A bench is where she and a person make something together (open-work, "The workshop"). It belongs to its household and
+A bench is where she and a person make something together ([#147](https://github.com/egg82/ashley/issues/147)). It belongs to its household and
 the person who opened it (audience `owner`). Closing it puts the project away: it is kept as it was, takes no command,
 and is listed among the person's closed benches (`GET /api/benches/closed`, most recently closed first), from where it
 is reopened (`POST /api/benches/{id}/reopen`) as it was. Close and reopen are bench-level operations beside the
@@ -23,7 +23,7 @@ Assistant**, when it is simple enough to be reliable there (she reads and writes
 runner**, when it needs more than HA can express, with HA for its triggers and its actions; or **an app of its own
 in the cluster**, built through her herdr VM, when it is bigger than a rule. All three stay open to her, and she
 chooses after planning it with the person on the bench. Home Assistant is built end to end (below); the rule runner and
-the app path are open-work item 23.
+the app path are [#156](https://github.com/egg82/ashley/issues/156).
 
 - **A piece is work product with a kind**, and kinds are data (Type Object, `app/ashley/workshop/kinds.json`): a label,
   the longest body, a family, and a body format. `stored`: the body is the content, in Postgres (`document`, `note`).
@@ -96,7 +96,7 @@ the app path are open-work item 23.
   has `small`, `medium`, `large` or `full`, a share of the row the client maps to its grid. A move names the new order
   and size and the others shift, so every screen computes the same arrangement and animates from the old one by piece
   id. Rejected: grid cells, which make every move a collision problem across screen widths that order-plus-size
-  leaves to the client. The place is its own small value so that Surfaces (open-work item 20) can own layout later. A
+  leaves to the client. The place is its own small value so that Surfaces ([#154](https://github.com/egg82/ashley/issues/154)) can own layout later. A
   device's screen is laid out with the same Place.
 - **One transaction per command.** It locks the bench's row, decides against the stored pieces (and, for an undo, the
   stored effect it names), writes the log row and the changed pieces, so commands racing on one bench from any pod of

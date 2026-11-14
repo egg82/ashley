@@ -1,4 +1,4 @@
-"""Helpers for the blind tests of pasted-block taint (open-work P5; `~/scratch/ashley/readers-design/design.txt`, 3.1 WORDS,
+"""Helpers for the blind tests of pasted-block taint (`~/scratch/ashley/readers-design/design.txt`, 3.1 WORDS,
 4.2 item 3, P5 and the owner decisions), written from the contract and the code it extends, never the builder's branch.
 
 Contract under test: a message whose pasted or forwarded block is over a threshold starts its turn with the origin taint
