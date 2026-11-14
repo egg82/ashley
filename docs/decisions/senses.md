@@ -142,6 +142,7 @@ person, and to ask only what the house cannot tell her.
   (a migration and a second delivery state for what the outbox already carries); playing from the runner (it does not
   hold the clips store or the player, and a pod on the standby site would play too); choosing the speaker by the
   person's last known room.
+- **A rule may name a paired kiosk instead, and the turn is announced there.** `device` on the wake piece is a device id, refused together with `speaker` at the piece's check rather than resolved by precedence; the runner reads the household's devices when the wake runs, and a device that is still a screen of the rule's household (`reminder_device.named`) runs the turn on its thread `device:<id>`, queued in the outbox for `ashley.channels.kiosk.announce`, while any other (removed, unpaired, another household's) leaves it on the phone, logged `wakes.device` as `unknown`. Like a speaker it wins over Initiative's placement. Rejected: a second delivery path to the kiosk beside `announce`.
 - **A household is a speaker in its own right.** A turn's author is `person`, `ashley` or `household`: the household
   speaking as itself, shown by its name (`households.name`), not as any one of its people. A wake is the first
   such turn (an event the house reported, stored as its fields alone: event, person, what; the page shows it as

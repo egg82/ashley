@@ -7,7 +7,9 @@ turn `Initiative` scores and rolls; any other wake's reply goes out on her `says
 id) and `what` (a slug): set, the rule answers only a wake whose own `who` or `what` (`ashley.senses.wakes.Wake`) is
 exactly that; absent, any. `speaker` (a `media_player.*` entity id) names the household's Home Assistant media player
 the turn is said on instead of the phone; whether it is one of the household's is read when a wake runs
-(`ashley.channels.wake.speaker`), since this check is pure. An empty body is a draft and passes."""
+(`ashley.channels.wake.speaker`), since this check is pure. `device` (a device id) names the household's paired kiosk
+the turn is announced on instead (`ashley.channels.wake.reminder_device`), likewise read when a wake runs; a rule
+naming both a speaker and a device is no rule. An empty body is a draft and passes."""
 
 import json
 import re
@@ -22,7 +24,7 @@ _TOOL = re.compile(r"[A-Za-z0-9_.\-]{1,128}")
 _PERSON = re.compile(r"person\.[a-z0-9_]+")
 _SPEAKER = re.compile(r"media_player\.[a-z0-9_]+")
 _FIELDS = frozenset(("event", "brief", "tools"))
-_OPTIONAL = frozenset(("greets", "who", "what", "speaker"))
+_OPTIONAL = frozenset(("greets", "who", "what", "speaker", "device"))
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,7 @@ class WakeRule:
     who: str | None = None
     what: str | None = None
     speaker: str | None = None
+    device: int | None = None
 
     @property
     def specificity(self) -> int:
@@ -57,14 +60,17 @@ def rule_of(body: str) -> WakeRule | None:
     greets, (who_ok, who), (what_ok, what) = (loaded.get("greets", False), _match(loaded, "who", _PERSON),
                                                 _match(loaded, "what", EVENT))
     speaker_ok, speaker = _match(loaded, "speaker", _SPEAKER)
+    device = loaded.get("device")
     if not isinstance(greets, bool) or not who_ok or not what_ok or not speaker_ok:
+        return None
+    if "device" in loaded and (type(device) is not int or device < 1 or speaker is not None):
         return None
     event, brief, tools = loaded["event"], loaded["brief"], _names(loaded["tools"])
     if not isinstance(event, str) or not EVENT.fullmatch(event) or tools is None:
         return None
     if not isinstance(brief, str) or not brief.strip() or len(brief) > MAX_BRIEF:
         return None
-    return WakeRule(event, brief, tools, greets, who, what, speaker)
+    return WakeRule(event, brief, tools, greets, who, what, speaker, device)
 
 
 def well_formed(body: str) -> bool:
