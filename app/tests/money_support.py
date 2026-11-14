@@ -1,6 +1,7 @@
 """A fake Sure behind `httpx2.MockTransport`, answering `/api/v1/{accounts,transactions,recurring_transactions,categories,balance_sheet}` in
 the shapes Sure's jbuilder views write (we-promise/sure 117bea5d, `app/views/api/v1/*`), one category at
-`/api/v1/categories/:id`, and `PUT /api/v1/transactions/:id` as `Api::V1::TransactionsController#update` answers it
+`/api/v1/categories/:id`, one transaction at `GET /api/v1/transactions/:id` (`#show`, which renders the same
+`show.json.jbuilder` as `#update`, so a row of the list's shape), and `PUT /api/v1/transactions/:id` as `Api::V1::TransactionsController#update` answers it
 (131e786: 404 `not_found` for an id not the household's, 422 for a split's part, 403 `insufficient_scope` for a key that
 may only read), and an in-memory Connections holding one household's Sure. Every request is recorded with its path,
 query and key, and every PUT with its body, so a test can see what was asked and with what."""
@@ -110,6 +111,8 @@ class FakeSure:
             return self._put(request)
         if request.url.path.startswith("/api/v1/categories/"):
             return self._category(request.url.path.rsplit("/", 1)[1])
+        if request.url.path.startswith("/api/v1/transactions/"):
+            return self._transaction(request.url.path.removeprefix("/api/v1/transactions/"))
         body = self.answers.get(request.url.path)
         if body is None:
             return httpx2.Response(404, json={"error": "not_found"})
@@ -123,6 +126,12 @@ class FakeSure:
         found = next((c for c in self._rows("/api/v1/categories", "categories") if c["id"] == id_), None)
         if found is None:
             return httpx2.Response(404, json={"error": "not_found", "message": "Category not found"})
+        return httpx2.Response(200, json=found)
+
+    def _transaction(self, id_: str) -> httpx2.Response:
+        found = next((t for t in self._rows("/api/v1/transactions", "transactions") if t["id"] == id_), None)
+        if found is None:
+            return httpx2.Response(404, json={"error": "not_found", "message": "Transaction not found"})
         return httpx2.Response(200, json=found)
 
     def _put(self, request: httpx2.Request) -> httpx2.Response:
