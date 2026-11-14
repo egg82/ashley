@@ -141,3 +141,14 @@ def test_the_shipped_config_parses_and_a_bad_one_is_refused() -> None:
             house_state_config.parse(bad)
 
 
+
+
+def test_what_a_speaker_is_playing_is_outside_words_and_its_summary_and_a_lamp_are_not() -> None:
+    playing = [*HOUSE, device("Den Speaker", "media_player", "playing", "Den", media_title="A Track",
+                              media_artist="A Band", volume_level=0.4)]
+    tool = tools(playing, CONFIG)[0]
+    now_playing = ask(tool, domain="media_player")
+    assert not now_playing.is_error and "A Track" in now_playing.content
+    assert now_playing.outside is True, "a track's title is written by whoever published it"
+    assert ask(tool, area="Den").outside is False, "an area's domains show no attributes"
+    assert ask(tool, area="Kitchen", domain="light").outside is False
