@@ -4,6 +4,8 @@
    the people circles use them. */
 
 .set-head .cn-add { margin-left: auto; }
+.set-head .cn-catalogue { margin-left: auto; text-decoration: none; display: inline-flex; align-items: center; }
+.set-head .cn-catalogue + .cn-add { margin-left: 0; }
 .cn-body { display: grid; gap: 24px; }
 
 .cn-mark { --hue: var(--p-house); display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-2); flex: none;

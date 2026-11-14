@@ -67,6 +67,13 @@ export function settingsOf(path: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/** The model catalogue page, which the connections room holds for an admin. */
+export const CATALOGUE_PATH = '/connections/catalogue';
+
+export function isCataloguePath(path: string): boolean {
+  return path === CATALOGUE_PATH || path === `${CATALOGUE_PATH}/`;
+}
+
 /** The path of room `id`, or of bench `bench` in the workshop. */
 export function pathTo(id: NavRoomId, bench: number | null): string {
   return bench === null ? NAV.find((r) => r.id === id)!.path : `/workshop/${bench}`;
