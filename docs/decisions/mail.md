@@ -16,7 +16,7 @@ on "A turn that has read outside words asks before it does anything consequentia
   secret can come from OAuth. Proton is a kind whose connecting runs through Bridge.
 - **Mail**, the new system: a port, `ashley.mail.mailbox.Mailbox`, over neutral records, with an adapter per
   provider. It meets the four tests in `docs/systems.md` as the Ledger does: many callers (her mail tools, the inbox
-  watch kind, the sorting errand, and later her readers, open-work "Readers she sends out"); one question ("what is in
+  watch kind, the sorting errand, and her readers); one question ("what is in
   this mailbox, and change it as asked"); a second implementation from the start; and it owns policy (what a
   mailbox's id means, what a cut says, whether an account is still syncing). Rejected: mail tools over the
   Connections port alone, as the code host tools are. A code host is read only, by one tool source; mail is written
@@ -24,7 +24,7 @@ on "A turn that has read outside words asks before it does anything consequentia
   part of Mail, not a system of its own: it has one caller and one implementation.
 - **Tools**: a source, `ashley.tools.mail.MailTools`, added per turn by `ashley.channels.turn_tools.for_turn`.
 - **Watches**: a new kind, `mail_inbox`, whose `outside` is true, so its woken turn starts tainted.
-- **Errands**: the sort is a standing errand in the sense open-work's "Errands" gives it (a method, what wakes it, the tools its
+- **Errands**: the sort is a standing errand in the sense [#141](https://github.com/egg82/ashley/issues/141) gives it (a method, what wakes it, the tools its
   turn may use, where what it finds goes), built as a watch that does not expire while its mailbox answers. No bot
   store, no second queue.
 
@@ -503,5 +503,5 @@ Each part is one merge request with its own blind suite, and ships alone. Mail's
   delete; read state is `\Seen`. Every target is read first and checked against what the person was shown
   (`ashley.mail.targets.shown`) before any is changed; IMAP has no batch, so a failure part way leaves the earlier ones changed.
 
-Later consumers, not designed here: her readers (open-work, "Readers she sends out") use the read tools as they are;
+Later consumers, not designed here: her readers use the read tools as they are;
 the calendar is a second port on the `google` kind.

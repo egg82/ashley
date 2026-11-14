@@ -7,7 +7,7 @@ list stays what the code is. The names are found by parsing `settings.py` (`env.
 Tiers: `deployment` (the process needs it before it can reach its database, or it names this deployment), `overlay`
 (the path of an operator file laid over a shipped data file), `seed` (an env value that seeds a connection row or a deployment
 secret's row, after which the row wins). A name whose identifier ends `_KEY`, `_TOKEN`, `_SECRET` or `_PASSWORD` must be a `seed`
-naming a registered connection kind or a deployment secret, a `ROOT_SECRETS` entry with its reason, or `TO_MOVE` debt recorded in `docs/open-work.md` item 42."""
+naming a registered connection kind or a deployment secret, a `ROOT_SECRETS` entry with its reason, or `TO_MOVE` debt naming the issue that queues its move."""
 
 import ast
 from pathlib import Path
@@ -116,12 +116,11 @@ ROOT_SECRETS: dict[str, str] = {
 """Secrets that cannot live in the database. Each needs its reason; a credential an outside service holds for a
 person or a household is a connection, never an entry here."""
 
-TO_MOVE: set[str] = set()
-"""Names that fail the rule today: debt, not approval. Each must be named in backticks in `docs/open-work.md`, and
-an entry is removed when its value moves."""
+TO_MOVE: dict[str, int] = {}
+"""Names that fail the rule today, each mapped to the number of the GitHub issue that queues its move: debt, not
+approval. An entry is removed when its value moves."""
 
 SECRET_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET", "_PASSWORD")
-OPEN_WORK = ROOT.parent / "docs" / "open-work.md"
 
 
 def env_names(tree: ast.AST) -> set[str]:
@@ -179,7 +178,7 @@ def secret_problems(env: dict[str, tuple[str, str]], seeds: dict[str, str], root
     for name, (tier, _) in sorted(env.items()):
         if name in to_move:
             if name not in recorded:
-                out.append(f"{name} is TO_MOVE but docs/open-work.md names no `{name}`: record the debt there or move it")
+                out.append(f"{name} is TO_MOVE with no issue: open one that queues the move and name its number")
             if tier == "seed" or name in seeds or name in roots:
                 out.append(f"{name} is TO_MOVE and also seeded or a root secret: drop the TO_MOVE entry")
         elif name in seeds:
@@ -200,13 +199,13 @@ def registered_kinds() -> set[str]:
     return {k.name for k in CONNECTION_KINDS} | {k.kind.name for k in KEYED}
 
 
-def recorded_in_open_work() -> set[str]:
-    return {t for t in TO_MOVE if f"`{t}`" in OPEN_WORK.read_text()}
+def recorded() -> set[str]:
+    return {name for name, issue in TO_MOVE.items() if issue > 0}
 
 
 def test_credentials_are_seeds_roots_or_recorded_debt() -> None:
-    problems = secret_problems(ENV, {**SEEDS, **SECRET_SEEDS}, ROOT_SECRETS, TO_MOVE, registered_kinds() | {LINK_KEY, VAPID},
-                               recorded_in_open_work())
+    problems = secret_problems(ENV, {**SEEDS, **SECRET_SEEDS}, ROOT_SECRETS, set(TO_MOVE), registered_kinds() | {LINK_KEY, VAPID},
+                               recorded())
     assert not problems, "\n".join(problems)
     assert sum(is_secret(n) for n in ENV) >= 10
 

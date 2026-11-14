@@ -143,7 +143,7 @@ docs/       design and engineering docs, listed below
 - [`docs/decisions.md`](docs/decisions.md): the index of the design decisions, which live in `docs/decisions/`, one
   file per system, with what was rejected and why.
 - [`docs/engineering.md`](docs/engineering.md): building, testing and shipping, and the gates CI enforces.
-- [`docs/open-work.md`](docs/open-work.md): what is planned and not built yet.
+- [the Ashley: Work board](https://github.com/users/egg82/projects/3): what is planned and not built yet, as the repo's issues in priority order.
 
 ## Contributing
 

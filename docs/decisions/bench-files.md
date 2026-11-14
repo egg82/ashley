@@ -167,13 +167,13 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
   - Rejected: whisper inside the app pod, which puts ffmpeg and minutes of CPU in the process that serves people.
     Rejected: one row per frame in `bench_looks`, which wants a migration and a changed key for a picture the model
     sees once. Rejected: a `transcript` kind, which would be the reader again. Rejected for now: streaming beyond
-    `max_bytes` (open-work, item 11); a range is served from the bytes read whole, so a 25 MiB video is the ceiling.
+    `max_bytes` ([#147](https://github.com/egg82/ashley/issues/147)); a range is served from the bytes read whole, so a 25 MiB video is the ceiling.
 - **A repo reaches a bench as a snapshot** (a zip, or one file) from the person's own code host connection ("A
-  household connects its own services"). Anything beyond a snapshot is item 21's Codebases VM.
+  household connects its own services"). Anything beyond a snapshot is [#155](https://github.com/egg82/ashley/issues/155)'s Codebases VM.
 - **3D is her work, seen by the person**: she models in code (kind `model`, format `code`, language `build123d`), the
   piece shows its latest run in 3D, STL, 3MF and GLB leave through downloads, and she photographs the view with
   `bench_look` so the person can point out issues. Rejected for now: a
-  cooperative editor where the person edits the same model; no embeddable open-source one exists (open-work, item 11).
+  cooperative editor where the person edits the same model; no embeddable open-source one exists ([#147](https://github.com/egg82/ashley/issues/147)).
   - **A model run's meshes come back in the run's line and are kept as objects.** A profile whose `artifact_bytes` is
     above 0 (build123d: 16 MiB, in a log of 8 MiB) lets the runner carry the files ending `.glb`, `.stl` or `.3mf`
     as base64 of deflated bytes, in name order while their sizes fit the budget and the line fits the log; the rest are

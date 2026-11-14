@@ -55,8 +55,7 @@ photo from the phone, and both land in the same exchange.
   - Rejected: relative ages (`3 days ago`). They change with every message, would have broken a cached `stable`
     for standing facts, and she can subtract.
   - Not stamped, because they already carry an absolute local time or none that matters: reminders (`at`, the due
-    time, local), Sure transactions (`date`), a bench's `bench_shelf` pieces. Not stamped, queued in `open-work.md`:
-    a Home Assistant entity's state carries no `last_changed`.
+    time, local), Sure transactions (`date`), a bench's `bench_shelf` pieces.
 - **Every carried turn passes the rule facts pass** (`ashley.hearing.MAY_HEAR`, in the same SQL shape). Each turn
   records who could hear it where it was said: private to the speaker on an owner-only channel, or when her reply went
   to their phone; shared on anything the household could hear. So a turn said where only its owner heard reaches

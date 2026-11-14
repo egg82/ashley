@@ -49,7 +49,7 @@ where she meets it on the way to using it, so nothing has to be carried in every
 - **A rule about one tool lives in that tool**, so it arrives only with the tool and leaves with it. The household
   profile's tool hints (the thermostat setpoints sensor, how to phrase Locate Person) belong in those scripts and
   sensors in HA.
-- **The household profile is the interim home of world facts** until standing facts and recall carry them (open-work, "Retire the `households.profile` column").
+- **The household profile is the interim home of world facts** until standing facts and recall carry them ([#153](https://github.com/egg82/ashley/issues/153)).
 
 ## Memory is atomic facts in Postgres that are superseded, never edited
 
