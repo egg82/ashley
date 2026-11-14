@@ -270,6 +270,29 @@ def test_attach_stdin_sends_stdin_frames_then_the_close_signal_and_reads_the_sta
     assert protocols[0] == "v5.channel.k8s.io" and seen[1:] == [b"\x00ab", b"\x00cd", bytes([255, 0])]
 
 
+@pytest.mark.xfail(strict=True, reason="an empty status frame before the status is read as a failure")
+def test_attach_stdin_accepts_the_empty_status_frame_the_api_server_sends_before_success(tmp_path: Path) -> None:
+    async def socket(ws: WebSocket) -> None:
+        await ws.accept(subprotocol="v5.channel.k8s.io")
+        while (frame := await ws.receive())["type"] != "websocket.disconnect":
+            if frame["bytes"] == bytes([255, 0]):
+                await ws.send_bytes(b"\x03")
+                await ws.send_bytes(b'\x03{"metadata":{},"status":"Success"}')
+                await ws.close()
+                return
+
+    async def chunks() -> AsyncIterable[bytes]:
+        yield b"ab"
+
+    async def scenario() -> None:
+        (tmp_path / "t").write_text("tok")
+        app = Starlette(routes=[WebSocketRoute("/api/v1/namespaces/ns/pods/p/attach", socket)])
+        async with httpx2.AsyncClient(base_url="http://kube.test", transport=ASGIWebSocketTransport(app)) as http:
+            await KubeApi(http, str(tmp_path / "t")).attach_stdin("ns", "p", "unpack", chunks(), 5)
+
+    asyncio.run(scenario())
+
+
 def test_attach_stdin_raises_when_the_container_reports_a_failure_or_the_source_fails(tmp_path: Path) -> None:
     async def socket(ws: WebSocket) -> None:
         await ws.accept(subprotocol="v5.channel.k8s.io")
