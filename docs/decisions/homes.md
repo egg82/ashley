@@ -80,6 +80,15 @@ the entity's own name, and plain strings drop it from Assist.
   new words, up to 11 steps in one turn.
 - **Rejected: vector search or tool search over HA's tools.** The definitions cost little (about 70 ms of first
   token); the results were the cost.
+- **Music on the house's speakers is the house primitives, not a music port.** Play, pause, skip and volume are
+  `media_player` actions through `house_do` (`tiers.json` runs the `media_player` domain without a judge), and what a
+  speaker is playing is its attributes in `house_state` (`media_title`, `media_artist`, `volume_level`), whose result
+  is outside words since a track's title is whoever published it (`house_state.json`'s `outside_domains`). A port with
+  a plain `media_player` adapter would be a second `house_do`. Search and play from a service needs a source the house
+  holds: Music Assistant (`music_assistant.search` returns data, so `house_ask` reads it as outside; `play_media` is a
+  `house_do`), or a service's own connection behind a port once a service it lacks is wanted. The deployment's house,
+  read in November 2026, ran no Music Assistant and no music service; its speakers were Cast, most with no area, so
+  "in the kitchen" resolves only once a person gives them areas in Home Assistant.
 
 ## Home Assistant is a tool, not the host
 
