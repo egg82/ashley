@@ -50,3 +50,34 @@ def test_it_starts_with_no_environment_and_loads_no_database_code(tmp_path: Path
     loaded = json.loads(run.stdout.strip().splitlines()[-1])
     assert loaded == ["ashley", "ashley.logs", "ashley.web", "ashley.web.serve", "ashley.web.server_paths",
                       "ashley.web.static"]
+
+
+def request_lines(capsys: pytest.CaptureFixture[str]) -> list[str]:
+    return [ln for ln in capsys.readouterr().out.splitlines() if "event=web.request" in ln]
+
+
+@pytest.mark.xfail(strict=True, reason="the web Deployment logs only its start")
+def test_it_logs_one_line_per_request_without_the_query_or_the_caller(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    c = TestClient(create_web(built_client(tmp_path)))
+    capsys.readouterr()
+    c.get("/memory?token=s3cret", headers={"cookie": "sid=abc", "x-forwarded-for": "203.0.113.9"})
+    c.get("/assets/main.js")
+    c.get("/api/ready")
+    lines = request_lines(capsys)
+    assert len(lines) == 3
+    assert "method=GET path=/memory status=200 bytes=19 duration_ms=" in lines[0]
+    assert "path=/assets/main.js status=200 bytes=21" in lines[1]
+    assert "path=/api/ready status=404" in lines[2]
+    for secret in ("s3cret", "sid=abc", "203.0.113.9", "testclient"):
+        assert all(secret not in ln for ln in lines)
+
+
+@pytest.mark.xfail(strict=True, reason="the web Deployment logs only its start")
+def test_it_does_not_log_health_probes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    c = TestClient(create_web(built_client(tmp_path)))
+    capsys.readouterr()
+    c.get("/", headers={"user-agent": "kube-probe/1.31"})
+    c.get("/api/health")
+    c.get("/memory", headers={"user-agent": "Mozilla/5.0"})
+    lines = request_lines(capsys)
+    assert len(lines) == 1 and "path=/memory" in lines[0]
