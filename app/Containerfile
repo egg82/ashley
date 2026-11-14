@@ -62,4 +62,5 @@ ENV BUILD_VERSION=$BUILD_VERSION
 
 USER 1000:1000
 EXPOSE 8080
+# The `web` Deployment runs the same image as `uvicorn ashley.web.serve:create_web --factory`: the page's files alone.
 CMD ["uvicorn", "ashley.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8080"]
