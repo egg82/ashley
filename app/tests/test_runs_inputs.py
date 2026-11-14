@@ -149,7 +149,8 @@ def test_the_tar_streams_each_file_in_name_order_and_the_unpacker_accepts_it(sto
     assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == DATA
 
 
-def test_the_tar_reads_one_file_at_a_time_and_in_small_chunks(store: MemoryStore) -> None:
+def test_the_tar_reads_one_file_at_a_time_and_in_small_chunks(store: MemoryStore,
+                                                              monkeypatch: pytest.MonkeyPatch) -> None:
     async def scenario() -> None:
         reads: list[str] = []
         real = store.get
@@ -158,7 +159,7 @@ def test_the_tar_reads_one_file_at_a_time_and_in_small_chunks(store: MemoryStore
             reads.append(key)
             return await real(key)
 
-        store.get = counting  # type: ignore[method-assign]
+        monkeypatch.setattr(store, "get", counting)
         chunks = inputs.tar(JOB.inputs)
         await anext(chunks)
         assert len(reads) == 1
