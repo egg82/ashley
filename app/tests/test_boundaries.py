@@ -43,6 +43,7 @@ ALLOWED: dict[str, set[str]] = {
     "receipts": set[str](),
     "stamp": set[str](),
     "text": {"logs"},
+    "web": {"logs"},
     "evals": {"channels", "connections", "criteria", "db", "herdr", "home_assistant", "inference", "logs", "memory",
               "people", "persona", "services", "settings", "tools", "watches", "wiring"},
     "memory": {"conversations", "db", "hearing", "inference", "logs", "people", "services", "text"},

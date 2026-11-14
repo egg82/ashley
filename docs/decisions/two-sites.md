@@ -10,6 +10,12 @@ uplink diverge or split-brain.
 
 - **Rejected: active/active with two writable stores.** Divergent memories, doubled singletons, and the
   anycast-app drift the cluster repo already warns about, applied to her memory.
+- **The page's files are served apart from the app**, so the page loads while the app or the database is down and
+  each scales on its own. The same image runs a second Deployment, `web`, with `ashley.web.serve.create_web`: the
+  built client and nothing else, no database, settings or environment. Both ingress paths send the app's paths
+  (`ashley.web.server_paths`, which `app/tests/test_server_paths.py` holds every route to) to `app` and everything else
+  to `web`; `web` answers a server path with 404 rather than the page. The app still mounts the client too, so either
+  routing serves the page.
 
 ## Work in flight survives its pod
 

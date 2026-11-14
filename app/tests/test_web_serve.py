@@ -1,0 +1,52 @@
+"""`ashley.web.serve`, the page's files alone for the `web` Deployment: the build's files, `index.html` for any other
+page path, 404 for every server path, and no database, settings or environment behind it."""
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+from ashley.web.serve import NoBuild, create_web
+from fastapi.testclient import TestClient
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def built_client(tmp_path: Path) -> Path:
+    (tmp_path / "index.html").write_text("<html>client</html>")
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "main.js").write_text("console.log('module')")
+    return tmp_path
+
+
+def test_it_serves_the_files_and_the_page_for_any_page_path(tmp_path: Path) -> None:
+    c = TestClient(create_web(built_client(tmp_path)))
+    for path in ("/", "/memory", "/rooms/workshop/bench/7"):
+        r = c.get(path)
+        assert (r.status_code, r.text) == (200, "<html>client</html>"), path
+    assert c.get("/assets/main.js").text == "console.log('module')"
+
+
+@pytest.mark.parametrize("path", ["/api", "/api/health", "/api/ready", "/api/auth/callback", "/privacy", "/terms"])
+def test_it_serves_no_server_path(tmp_path: Path, path: str) -> None:
+    assert TestClient(create_web(built_client(tmp_path))).get(path).status_code == 404
+
+
+def test_it_refuses_to_start_without_a_build(tmp_path: Path) -> None:
+    with pytest.raises(NoBuild):
+        create_web(tmp_path)
+
+
+def test_it_starts_with_no_environment_and_loads_no_database_code(tmp_path: Path) -> None:
+    build = built_client(tmp_path)
+    probe = ("import json, sys; from ashley.web.serve import create_web; "
+             f"create_web(__import__('pathlib').Path({str(build)!r})); "
+             "print(json.dumps(sorted(m for m in sys.modules if m.startswith('ashley'))))")
+    run = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, timeout=20, cwd=ROOT,
+                         env={"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT)})
+    assert run.returncode == 0, run.stderr
+    loaded = json.loads(run.stdout.strip().splitlines()[-1])
+    assert loaded == ["ashley", "ashley.logs", "ashley.web", "ashley.web.serve", "ashley.web.server_paths",
+                      "ashley.web.static"]
