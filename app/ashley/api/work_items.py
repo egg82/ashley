@@ -1,6 +1,6 @@
 """The signed-in person's open work as `WorkItem`s, each read from the system that owns the record: one-shot errands
-(`ashley.errands.errands.Errands.held`), open-ended errands (`ashley.senses.wakes.Wakes.reminders`, those with an
-`ends_at`) and open benches with their jobs (`ashley.workshop.workshop.Workshop`, `ashley.errands.bench_jobs.BenchJobs`).
+(`ashley.errands.errands.Errands.held`), open-ended errands and standing errands (`ashley.senses.wakes.Wakes.reminders`, those with an
+`ends_at` and those with a `method`) and open benches with their jobs (`ashley.workshop.workshop.Workshop`, `ashley.errands.bench_jobs.BenchJobs`).
 A state is derived from those records' own fields, never from text."""
 
 import asyncio
@@ -37,6 +37,13 @@ def open_errand_item(s: Scheduled, zone: ZoneInfo) -> WorkItem | None:
         return None
     return WorkItem(kind="open_errand", id=s.id, title=r.brief, state=_CHECK_STATE[s.state], at=r.due_at,
                     until_local=r.ends_at.astimezone(zone).strftime(LOCAL_FORMAT))
+
+
+def standing_errand_item(s: Scheduled) -> WorkItem | None:
+    r = s.reminder
+    if r.method is None:
+        return None
+    return WorkItem(kind="standing_errand", id=s.id, title=r.brief, state=_CHECK_STATE[s.state], at=r.due_at)
 
 
 def bench_item(bench: Bench, jobs: list[JobState], approving: bool) -> WorkItem:
@@ -80,5 +87,6 @@ async def open_work(owner: Owner) -> list[WorkItem]:
         on_bench[j.bench_id].append(j.state)
     items = [errand_item(h) for h in held]
     items += [i for i in (open_errand_item(s, zone) for s in scheduled) if i is not None]
+    items += [i for i in (standing_errand_item(s) for s in scheduled) if i is not None]
     items += [bench_item(b, on_bench[b.id], a) for b, a in zip(benches, approving)]
     return order(items)
