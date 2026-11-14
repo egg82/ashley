@@ -129,16 +129,16 @@ def test_the_turn_that_held_it_cannot_agree_to_it(sure: FakeSure) -> None:
     run(go())
 
 
-@pytest.mark.parametrize("arguments", [
-    {"transaction_ids": [T1, "c1b2c3d4-0000-4000-8000-0000000000ff"], "category_id": GROCERIES},
-    {"transaction_ids": [T1], "category_id": "9d1e2f3a-4b5c-4d6e-8f70-0000000000ff"},
-    {"transaction_ids": [T1], "category_id": "groceries"},
+@pytest.mark.parametrize(("arguments", "told"), [
+    ({"transaction_ids": [T1, "c1b2c3d4-0000-4000-8000-0000000000ff"], "category_id": GROCERIES}, "money_transactions"),
+    ({"transaction_ids": [T1], "category_id": "9d1e2f3a-4b5c-4d6e-8f70-0000000000ff"}, "money_categories lists"),
+    ({"transaction_ids": [T1], "category_id": "groceries"}, "an id as money_categories gives it"),
 ])
-def test_a_change_that_cannot_be_shown_is_not_held(sure: FakeSure, arguments: dict[str, object]) -> None:
+def test_a_change_that_cannot_be_shown_is_not_held(sure: FakeSure, arguments: dict[str, object], told: str) -> None:
     async def go() -> None:
         first = turn(TURN)
         got = await first.call(ToolCall("c2", CATEGORISE, arguments))
-        assert got.is_error and first.held == 0
+        assert got.is_error and told in got.content and first.held == 0
         assert await services.get(Proposals).pending(STANDING.speaker_id, CONVERSATION, OUTSIDE) is None
         assert sure.written == []
 
