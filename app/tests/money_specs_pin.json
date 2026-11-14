@@ -94,7 +94,29 @@
     ]
    },
    "reads": false
+  },
+  {
+   "name": "money_note",
+   "description": "Put a note on one transaction in Sure, in place of the note it has.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "transaction_id": {
+      "type": "string",
+      "description": "the transaction, by the id money_transactions gives"
+     },
+     "note": {
+      "type": "string",
+      "description": "the note, at most 500 characters"
+     }
+    },
+    "required": [
+     "transaction_id",
+     "note"
+    ]
+   },
+   "reads": false
   }
  ],
- "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short. The one change you can make there is a transaction's category, with money_categorise, by the ids money_transactions and money_categories give, and only when the person asks for it. It never happens straight away: it is shown to the person and waits for their OK, so say that it is waiting, not that it is done."
+ "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short. The changes you can make there are a transaction's category, with money_categorise, and a note on a transaction, with money_note, by the ids money_transactions and money_categories give, and only when the person asks for it. A note replaces the one the transaction has. A change never happens straight away: it is shown to the person and waits for their OK, so say that it is waiting, not that it is done."
 }

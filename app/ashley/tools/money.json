@@ -5,5 +5,6 @@
   "transactions_default": 25,
   "transactions_max": 100,
   "search_chars": 100,
-  "categorise_max": 20
+  "categorise_max": 20,
+  "note_chars": 500
 }

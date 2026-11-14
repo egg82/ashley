@@ -116,7 +116,7 @@ that is not a read.
 - **`asks`**: held for the person's OK in every turn, tainted or not, with no judge asked, and shown by the line its
   source writes (`ashley.tools.tools.Tools.shown`; the generic argument summary when it writes none). For a change to
   records the household relies on that no reading of the person's words should make on its own: `money_categorise`
-  (`connections.md`, "Her money is read through a neutral ledger"). An untainted turn offered an `asks` tool shows
+  and `money_note` (`connections.md`, "Her money is read through a neutral ledger"). An untainted turn offered an `asks` tool shows
   receipts as a tainted one does.
 - **`agrees` tools** stay refused in a tainted turn, so a delete still needs a later untainted `house_confirm`, and a
   reminder or watch with `tools` still needs `arm_reminder`.

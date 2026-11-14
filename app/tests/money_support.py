@@ -135,7 +135,8 @@ class FakeSure:
         return httpx2.Response(200, json=found)
 
     def _put(self, request: httpx2.Request) -> httpx2.Response:
-        """Sure's update: the transaction's category set to the body's `category_id`, the transaction answered."""
+        """Sure's update: the transaction's category set to the body's `category_id` and its notes to `notes`, whichever
+        it holds, the transaction answered."""
         if self.reads_only:
             return httpx2.Response(403, json={"error": "insufficient_scope",
                                               "message": "This action requires the 'write' scope"})
@@ -148,9 +149,12 @@ class FakeSure:
         if id_ in self.split_parts:
             return httpx2.Response(422, json={"error": "validation_failed", "message": "Split child transactions "
                                               "cannot be edited directly. Use the split editor."})
-        category_id = body["transaction"]["category_id"]
-        category = next(c for c in self._rows("/api/v1/categories", "categories") if c["id"] == category_id)
-        found["category"] = {k: category[k] for k in ("id", "name", "color", "icon")}
+        change = body["transaction"]
+        if "notes" in change:
+            found["notes"] = change["notes"]
+        if "category_id" in change:
+            category = next(c for c in self._rows("/api/v1/categories", "categories") if c["id"] == change["category_id"])
+            found["category"] = {k: category[k] for k in ("id", "name", "color", "icon")}
         return httpx2.Response(200, json=found)
 
     def client(self) -> HttpSure:

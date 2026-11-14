@@ -1,7 +1,9 @@
 """Sure as the household's Ledger (`ashley.ledger.ledger`): its accounts, categories, balance sheet and transactions,
-and one transaction or category by id (`GET /api/v1/transactions/:id`, `GET /api/v1/categories/:id`), read through the household's Sure connection and turned from `wire`'s shapes into the ledger's neutral records, and a
-transaction's category set through it. Every answered call moves the connection's `checked_at`. Nothing outside this
-module and `wire` knows Sure's field names. A categorisation logs `sure.categorised` with the connection id and counts."""
+and one transaction or category by id (`GET /api/v1/transactions/:id`, `GET /api/v1/categories/:id`), read through the
+household's Sure connection and turned from `wire`'s shapes into the ledger's neutral records, and a transaction's
+category and its note set through it. Every answered call moves the connection's `checked_at`. Nothing outside this
+module and `wire` knows Sure's field names. A categorisation logs `sure.categorised` with the connection id and
+counts, a note `sure.noted` with the connection id and the outcome."""
 
 import logging
 from collections.abc import Mapping, Sequence
@@ -15,7 +17,7 @@ from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.model import Opened
 from ..ledger.ledger import Ledger
 from ..ledger.model import (Account, Categorised, Category, Entry, LedgerFailed, LedgerUnavailable, NetWorth, NotConnected,
-                            Page, Reason, Recurring, TransactionQuery, UnknownCategory)
+                            Noted, Page, Reason, Recurring, TransactionQuery, UnknownCategory)
 from . import wire
 from .client import Reason as SureReason, Sure, SureFailed
 
@@ -78,11 +80,24 @@ class SureLedger(Ledger):
                     raise UnknownCategory from e
                 raise
             for transaction_id in transaction_ids:
-                done[transaction_id] = await _set(sure, base, key, transaction_id, category_id)
+                done[transaction_id] = await _set(sure, base, key, transaction_id, {"category_id": category_id})
         except SureFailed as e:
             raise LedgerFailed(_REASON[e.reason]) from e
         finally:
             _counted(opened.connection.id, done)
+        await answered.record(opened.connection.id)
+        return done
+
+    async def note(self, household_id: int, transaction_id: str, note: str) -> Noted:
+        opened = await _opened(household_id)
+        if opened is None:
+            raise NotConnected
+        try:
+            done = await _set(services.get(Sure), opened.connection.base_url, opened.secret, transaction_id,
+                              {"notes": note})
+        except SureFailed as e:
+            raise LedgerFailed(_REASON[e.reason]) from e
+        logs.info(log, "sure.noted", connection=opened.connection.id, outcome=done)
         await answered.record(opened.connection.id)
         return done
 
@@ -104,7 +119,7 @@ def entry_from(t: wire.Transaction) -> Entry:
         classification=t.classification, account_id=account.id if account else None,
         account=account.name if account else None, category=category.name if category else None,
         merchant=merchant.name if merchant else None, transfer=t.transfer is not None, excluded=t.excluded,
-        split=t.split_parent)
+        split=t.split_parent, noted=bool(t.notes))
 
 
 def _recurring_from(r: wire.RecurringTransaction) -> Recurring:
@@ -115,11 +130,11 @@ def _recurring_from(r: wire.RecurringTransaction) -> Recurring:
         ended=r.status not in _EXPECTED)
 
 
-async def _set(sure: Sure, base: str, key: str, transaction_id: str, category_id: str) -> Categorised:
-    """One transaction set to the category, or what Sure said of that transaction alone. Raises SureFailed otherwise."""
+async def _set(sure: Sure, base: str, key: str, transaction_id: str, change: Mapping[str, str]) -> Noted:
+    """One transaction updated with `change`, or what Sure said of that transaction alone. Raises SureFailed otherwise."""
     try:
         body = await sure.put(base, key, f"/api/v1/transactions/{_segment(transaction_id)}",
-                              {"transaction": {"category_id": category_id}})
+                              {"transaction": change})
     except SureFailed as e:
         if e.reason in _ONE:
             return _ONE[e.reason]

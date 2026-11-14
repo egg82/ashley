@@ -1,6 +1,6 @@
-"""The money tools as the model sees them, and their arguments checked into a ledger query or a categorisation. All but
-`money_categorise` only read (`ToolSpec.reads`); it changes the household's records, so it is an `asks` change, held
-for the person's OK in every turn (`ashley.tools.outside`)."""
+"""The money tools as the model sees them, and their arguments checked into a ledger query, a categorisation or a note.
+All but `money_categorise` and `money_note` only read (`ToolSpec.reads`); those change the household's records, so each
+is an `asks` change, held for the person's OK in every turn (`ashley.tools.outside`)."""
 
 import re
 from dataclasses import dataclass
@@ -16,8 +16,10 @@ TRANSACTIONS = "money_transactions"
 CATEGORIES = "money_categories"
 NET_WORTH = "money_net_worth"
 CATEGORISE = "money_categorise"
+NOTE = "money_note"
 READS = (ACCOUNTS, TRANSACTIONS, CATEGORIES, NET_WORTH)
-NAMES = (*READS, CATEGORISE)
+CHANGES = (CATEGORISE, NOTE)
+NAMES = (*READS, *CHANGES)
 
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 _NO_ARGS: dict[str, object] = {"type": "object", "properties": {}}
@@ -25,9 +27,10 @@ _NO_ARGS: dict[str, object] = {"type": "object", "properties": {}}
 INSTRUCTIONS = ("The money tools read the household's finances in Sure, the app they keep them in: accounts with "
                 "their balances, transactions, categories and net worth. Amounts are as Sure shows them, sign and "
                 "currency included. Filter transactions by the ids money_accounts and money_categories give, and say "
-                "so when an answer was cut short. The one change you can make there is a transaction's category, with "
-                "money_categorise, by the ids money_transactions and money_categories give, and only when the person "
-                "asks for it. It never happens straight away: it is shown to the person and waits for their OK, so "
+                "so when an answer was cut short. The changes you can make there are a transaction's category, with "
+                "money_categorise, and a note on a transaction, with money_note, by the ids money_transactions and "
+                "money_categories give, and only when the person asks for it. A note replaces the one the transaction "
+                "has. A change never happens straight away: it is shown to the person and waits for their OK, so "
                 "say that it is waiting, not that it is done.")
 
 
@@ -58,6 +61,12 @@ def specs(config: MoneyConfig) -> tuple[ToolSpec, ...]:
                 "category_id": {"type": "string", "description": "the category, by the id money_categories gives"}},
             "required": ["transaction_ids", "category_id"]},
                  reads=False, outside=False, tier="asks", label="Categorised transactions in Sure"),
+        ToolSpec(NOTE, "Put a note on one transaction in Sure, in place of the note it has.", {
+            "type": "object", "properties": {
+                "transaction_id": {"type": "string", "description": "the transaction, by the id money_transactions gives"},
+                "note": {"type": "string", "description": f"the note, at most {config.note_chars} characters"}},
+            "required": ["transaction_id", "note"]},
+                 reads=False, outside=False, tier="asks", label="Noted a transaction in Sure"),
     )
 
 
@@ -87,6 +96,24 @@ def categorisation(arguments: dict[str, object], config: MoneyConfig) -> Categor
         if found not in named:
             named.append(found)
     return Categorisation(category, tuple(named))
+
+
+@dataclass(frozen=True)
+class Annotation:
+    """`money_note`'s arguments, checked: the transaction and the note, trimmed."""
+
+    transaction_id: str
+    note: str
+
+
+def annotation(arguments: dict[str, object], config: MoneyConfig) -> Annotation | str:
+    """The note `money_note`'s arguments ask for, or the reason they are wrong, which names no value."""
+    transaction, note = arguments.get("transaction_id"), arguments.get("note")
+    if not isinstance(transaction, str) or not _UUID.match(transaction):
+        return "transaction_id is an id as money_transactions gives it"
+    if not isinstance(note, str) or not note.strip() or len(note.strip()) > config.note_chars:
+        return f"note is some words, at most {config.note_chars} characters"
+    return Annotation(transaction, note.strip())
 
 
 def transaction_query(arguments: dict[str, object], config: MoneyConfig) -> TransactionQuery | str:

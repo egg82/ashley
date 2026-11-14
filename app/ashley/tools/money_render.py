@@ -75,6 +75,15 @@ def recategorising(category: Category, entries: Sequence[Entry]) -> str:
     return f"Move {len(entries)} transaction{'' if len(entries) == 1 else 's'} to {to}: {'; '.join(each)}"
 
 
+def noting(entry: Entry, note: str) -> str:
+    """The line the person agrees to before `note` goes on `entry`: the transaction by its date, amount and account, whether
+    it replaces a note it has (never that note, nor the transaction's name or merchant), and the note, which is what
+    she will write."""
+    replacing = ", replacing its note" if entry.noted else ""
+    return (f"Note on {entry.date}, {entry.amount or 'no amount'}{f' in {entry.account}' if entry.account else ''}"
+            f"{replacing}: \"{note}\"")
+
+
 def net_worth(worth: NetWorth) -> dict[str, object]:
     out: dict[str, object] = {"net_worth": worth.net_worth, "assets": worth.assets, "liabilities": worth.liabilities}
     if worth.currency is not None:

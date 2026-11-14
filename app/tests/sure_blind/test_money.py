@@ -50,11 +50,11 @@ def test_a_household_with_no_connection_is_offered_nothing_and_cannot_call(held:
     assert result.is_error and sure.seen == []
 
 
-def test_a_connected_household_is_offered_the_four_read_tools_and_categorise(held: HeldConnections,
+def test_a_connected_household_is_offered_the_four_read_tools_and_the_two_changes(held: HeldConnections,
                                                                             sure: FakeSure) -> None:
     specs = asyncio.run(MoneyTools(10, CONFIG).catalogue()).specs
-    assert sorted(s.name for s in specs) == sorted([*NAMES, "money_categorise"])
-    assert [s.name for s in specs if not s.reads] == ["money_categorise"]
+    assert sorted(s.name for s in specs) == sorted([*NAMES, "money_categorise", "money_note"])
+    assert [s.name for s in specs if not s.reads] == ["money_categorise", "money_note"]
 
 
 @pytest.mark.parametrize("name", NAMES)

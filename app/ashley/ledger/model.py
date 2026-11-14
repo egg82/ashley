@@ -13,6 +13,10 @@ Categorised = Literal["set", "not_found", "rejected"]
 """What became of one transaction `Ledger.categorise` was asked to change: `set`, it is in the category now; `not_found`,
 the household has no such transaction; `rejected`, the backend would not change it (the part of a split, in Sure)."""
 
+Noted = Literal["set", "not_found", "rejected"]
+"""What became of the transaction `Ledger.note` was asked to change: `set`, it carries the note now; `not_found`, the
+household has no such transaction; `rejected`, the backend would not change it (the part of a split, in Sure)."""
+
 Kind = Literal["income", "expense"]
 """Which way money moved: `income` came in, `expense` went out."""
 
@@ -78,7 +82,8 @@ class Entry:
     `cents` the size of the amount in minor units, unsigned; `classification` the backend's word for which way it moved
     (`income` or `expense` when it says so); `account_id` and the names of its `account`, `category` and `merchant`.
     `transfer` is true for money moved between the household's own accounts, `excluded` for a transaction the
-    backend leaves out of its reports, `split` for the parent of a split. A field the backend leaves out is None."""
+    backend leaves out of its reports, `split` for the parent of a split, `noted` for one that carries a note (the
+    note itself is not read). A field the backend leaves out is None."""
 
     id: str | None
     date: str
@@ -93,6 +98,7 @@ class Entry:
     transfer: bool
     excluded: bool
     split: bool
+    noted: bool = False
 
 
 @dataclass(frozen=True)

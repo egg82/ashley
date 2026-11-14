@@ -194,3 +194,22 @@ def test_a_tap_agrees_and_a_proposal_never_agreed_or_expired_writes_nothing(db_u
             assert [a.status for a in outcome] == ["ran"] and fake.written == put([T1, T2])
 
     run(go())
+
+
+NOTE_ASK = ToolCall("c4", "money_note", {"transaction_id": T1, "note": "split with Sam"})
+
+
+def test_a_note_is_held_shown_and_reaches_sure_only_when_agreed(sure: FakeSure) -> None:
+    async def go() -> None:
+        first = turn(TURN)
+        await first.catalogue()
+        got = await first.call(NOTE_ASK)
+        assert not got.is_error and "held" in got.content and first.held == 1 and sure.written == []
+        receipts = await first.receipts()
+        assert receipts is not None and len(receipts.held) == 1
+        assert receipts.held[0].detail == 'Note on 2026-10-30, $1.00 in Checking: "split with Sam"'
+        done = await turn(TURN + 1).call(ToolCall("c5", CARRY_OUT, {}))
+        assert not done.is_error
+        assert sure.written == [(f"/api/v1/transactions/{T1}", {"transaction": {"notes": "split with Sam"}})]
+
+    run(go())

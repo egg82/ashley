@@ -14,7 +14,7 @@ from ashley.inference.model import ToolCall, ToolResult
 from ashley.sure.client import Sure
 from ashley.tools import money_config
 from ashley.tools.money import MoneyTools
-from ashley.tools.money_specs import ACCOUNTS, CATEGORIES, CATEGORISE, NAMES, NET_WORTH, READS, TRANSACTIONS
+from ashley.tools.money_specs import ACCOUNTS, CATEGORIES, CATEGORISE, NAMES, NET_WORTH, NOTE, READS, TRANSACTIONS
 from ashley.tools.tools import ToolsUnavailable
 from money_support import CHECKING, GROCERIES, KEY, FakeSure, HeldConnections, params_of
 
@@ -57,10 +57,10 @@ def test_a_household_without_sure_is_offered_nothing(held: HeldConnections, sure
     assert sure.seen == []
 
 
-def test_a_household_with_sure_is_offered_four_reads_and_one_change(held: HeldConnections, sure: FakeSure) -> None:
+def test_a_household_with_sure_is_offered_four_reads_and_two_changes(held: HeldConnections, sure: FakeSure) -> None:
     catalogue = asyncio.run(MoneyTools(HOME, CONFIG).catalogue())
     assert [s.name for s in catalogue.specs] == list(NAMES)
-    assert [s.name for s in catalogue.specs if not s.reads] == [CATEGORISE]
+    assert [s.name for s in catalogue.specs if not s.reads] == [CATEGORISE, NOTE]
     assert catalogue.instructions
 
 
