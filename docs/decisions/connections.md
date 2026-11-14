@@ -124,15 +124,25 @@ second kind exists; the adapter finds it, so a caller passes a household id.
   category that is not the household's). Sure's adapter checks the category (`GET /api/v1/categories/:id`) and puts
   each transaction (`PUT /api/v1/transactions/:id` with only `category_id`, which Sure then locks against its rules and
   syncs); Sure has no bulk update in its API. Its key must have Sure's write scope; a read-only key is `refused`.
-- **Categorising goes through the gate every change uses, with no gate of its own.** `money_categorise` is a change
-  (`reads` false), offered only where the money tools are, so only for a named person of the household with the reply
-  reaching them alone, which is what `ConnectionResources.permits` asks to change a household connection's resource; a
-  reads-only turn is not offered it. Its tier is `judged` (`decisions.md`, "A turn that has read outside words asks
-  before it does anything consequential the person did not ask for"): it changes records the household's budgets and
-  reports rest on, and a turn that read the transactions has read payee text written outside, so a categorisation the
-  person's own words do not ask for is held for their OK and agreed with `carry_out` or the Agree tap. Rejected:
-  `runs`, as mail labels are, since a stranger's memo could recategorise the books in bulk; a confirm tool of its own,
-  which would duplicate the held proposal.
+- **A change to the household's money is shown and agreed before it reaches the ledger, never made by her alone.**
+  `money_categorise` is a change (`reads` false), offered only where the money tools are, so only for a named person
+  of the household with the reply reaching them alone, which is what `ConnectionResources.permits` asks to change a
+  household connection's resource; a reads-only turn is not offered it. Its tier is `asks` (`decisions.md`, "A turn
+  that has read outside words asks before it does anything consequential the person did not ask for"): every call,
+  tainted turn or not, is held in the person's held proposal without asking the action judge, and reaches Sure only
+  through `carry_out` in their later turn or the Agree tap. It changes records the household's budgets and reports
+  rest on. Fits into: Proposals and Outside, the Command that waits for a person's OK and the one way held calls run;
+  the next money changes (a note, a budget line) are further `asks` tools, with no store or confirm tool of their own.
+- **What the person agrees to is written by code from the ledger as it stands** (`Tools.shown`, for this tool
+  `MoneyTools.shown` over `Ledger.category` and `Ledger.entry`, Sure's `GET /api/v1/categories/:id` and
+  `GET /api/v1/transactions/:id`): each transaction's date, amount and account, the category it leaves, and the
+  category it goes to. Never its name, merchant or notes: those are written outside the household, and the line is
+  carried into her later turns (`Turn.agreed`, her history's receipt lines). A change that cannot be shown (a
+  transaction or category not the household's, Sure unreadable) is not held, and she is told why.
+- Rejected: `judged`, which let a judge run a categorisation the person's words seemed to ask for, so it reached Sure
+  unseen; `runs`, as mail labels are, since a stranger's memo could recategorise the books in bulk; a confirm tool or
+  payload kind of its own, which would duplicate the held proposal and the Agree tap; the generic argument summary,
+  which shows only ids.
 - **`Entry` is not `criteria.record.Transaction`.** A tool shows a row the criteria cannot judge (no id, no amount, an
   undated one), so the ledger's record keeps every field optional the way the backend does, and the sense derives the
   judged record from it (`ashley.senses.ledger_transactions.deposit_from`). Rejected: one record for both, which would
