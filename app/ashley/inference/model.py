@@ -67,8 +67,9 @@ class Message:
     text: str
 
 
-Tier = Literal["runs", "judged"]
-"""What a tainted turn does with a change: it runs, or the action judge decides (`ashley.tools.outside`)."""
+Tier = Literal["runs", "judged", "asks"]
+"""What a turn does with a change (`ashley.tools.outside`): a tainted turn runs a `runs` one and has the action judge decide
+a `judged` one; an `asks` one is held for the person's OK in every turn, tainted or not, and no judge is asked."""
 
 
 @dataclass(frozen=True)
@@ -80,8 +81,8 @@ class ToolSpec:
     page, a payload, a repository), and is true unless the spec says false, so a tool nobody classified taints the turn
     that reads it (`ashley.channels.taint`). `agrees` marks a tool that takes a person's agreement to something held
     (`house_confirm`, `arm_reminder`, `carry_out`): a tainted turn is refused it (`ashley.tools.outside`). Providers are
-    not sent any of the three. `tier` says what a tainted turn does with a call to a change: `runs` runs it, `judged`
-    asks the action judge, and a name nobody classified is judged. `Tools.tier` refines it per call. `label` is a short
+    not sent any of the three. `tier` says what a turn does with a call to a change (`Tier`), and a name nobody
+    classified is judged. `Tools.tier` refines it per call. `label` is a short
     plain past-tense phrase for a change the tool makes ("Moved an email to a folder"), shown to the person beside her
     reply (`conversations.model.Receipt`); None for a tool with none. Not sent to providers."""
 

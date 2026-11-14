@@ -99,7 +99,7 @@ def test_a_key_that_may_only_read_says_so(sure: FakeSure) -> None:
 def test_it_is_the_one_change_and_a_reads_only_turn_is_not_offered_it(sure: FakeSure) -> None:
     offered = asyncio.run(MoneyTools(HOME, CONFIG).catalogue()).specs
     changes = [s for s in offered if not s.reads]
-    assert [(s.name, s.outside, s.tier) for s in changes] == [(CATEGORISE, False, "judged")]
+    assert [(s.name, s.outside, s.tier) for s in changes] == [(CATEGORISE, False, "asks")]
     reading = asyncio.run(Reading(MoneyTools(HOME, CONFIG)).catalogue()).specs
     assert CATEGORISE not in [s.name for s in reading] and TRANSACTIONS in [s.name for s in reading]
 

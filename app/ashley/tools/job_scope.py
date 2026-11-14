@@ -72,3 +72,6 @@ class JobScope(Tools):
 
     async def vetted(self, call: ToolCall, words: Sequence[str]) -> Vetting | None:
         return await self._inner.vetted(call, words)
+
+    async def shown(self, call: ToolCall) -> str | None:
+        return await self._inner.shown(call)

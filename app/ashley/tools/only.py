@@ -41,3 +41,6 @@ class Only(Tools):
 
     async def vetted(self, call: ToolCall, words: Sequence[str]) -> Vetting | None:
         return await self._source.vetted(call, words)
+
+    async def shown(self, call: ToolCall) -> str | None:
+        return await self._source.shown(call)

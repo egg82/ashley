@@ -44,6 +44,9 @@ class _Current(Tools):
     async def vetted(self, call: ToolCall, words: Sequence[str]) -> Vetting | None:
         return await self._landing.inner.vetted(call, words)
 
+    async def shown(self, call: ToolCall) -> str | None:
+        return await self._landing.inner.shown(call)
+
 
 class Landing(Tools):
     def __init__(self, inbound: Inbound, said: tuple[int, int], limits: Mapping[Kind, Limits],

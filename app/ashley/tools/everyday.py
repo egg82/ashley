@@ -93,3 +93,9 @@ class HouseholdTools(Tools):
             return await (await self._resolved()).vetted(call, words)
         except ToolsUnavailable:
             return None
+
+    async def shown(self, call: ToolCall) -> str | None:
+        try:
+            return await (await self._resolved()).shown(call)
+        except ToolsUnavailable:
+            return None

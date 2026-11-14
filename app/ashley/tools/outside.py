@@ -2,7 +2,8 @@
 before it does anything consequential the person did not ask for"). Reads run. Once the turn is tainted, by its origin or
 by a read whose result can carry text written outside the household, a call that is not a read goes by its tier
 (`Tools.tier`, else `ToolSpec.tier`): `runs` runs and is recorded, `judged` asks the `ActionJudge`, and an `ask` (or a call
-that cannot be recorded) is held in the person's `OUTSIDE` proposal and not run. A tool that takes a person's agreement
+that cannot be recorded) is held in the person's `OUTSIDE` proposal and not run. An `asks` change is held so in every
+turn, tainted or not, shown by the line its source writes (`Tools.shown`). A tool that takes a person's agreement
 (`ToolSpec.agrees`) is refused. A person's later, untainted turn agrees with `carry_out`, which runs the stored calls
 through the source with the arguments that were stored.
 
@@ -28,7 +29,7 @@ from . import outside_config, outside_judging, outside_summary, tainted
 from .action_judge import Verdict
 from .outside_config import OutsideConfig
 from .outside_judging import Judged, Words
-from .tools import Catalogue, Tools, ToolsUnavailable
+from .tools import Catalogue, Tools, ToolsUnavailable, Unshown
 
 log = logging.getLogger("ashley.tools")
 CARRY_OUT = "carry_out"
@@ -150,6 +151,8 @@ class Outside(Tools):
                 if isinstance(cleared, ToolResult):
                     return cleared
                 sorted_ = cleared
+        elif spec is not None and not spec.reads and spec.tier == "asks":
+            return await self._hold(call)
         with tainted.bound(self._tainted, self._turn):
             got = await self._source.call(call)
         if sorted_ is not None and not got.is_error:
@@ -160,9 +163,9 @@ class Outside(Tools):
     async def receipts(self) -> Receipts | None:
         """What code shows beside her reply (`conversations.model.Receipts`): the changes the action judge let run this
         turn, from the record and from memory for one that could not be recorded, then each call held in the turn's
-        proposal in full. A `runs`-tier change is recorded but not shown. None when the turn is not tainted or did and
-        held nothing. Counts `held` and keeps the proposal's id (`agree`)."""
-        if self._tainted is None:
+        proposal in full. A `runs`-tier change is recorded but not shown. None when the turn is neither tainted nor
+        offered an `asks` change, or showed and held nothing. Counts `held` and keeps the proposal's id (`agree`)."""
+        if self._tainted is None and not any(s.tier == "asks" for s in (self._specs or {}).values()):
             return None
         found = await self._held_proposal()
         calls = () if found is None else found.payload.calls
@@ -246,7 +249,7 @@ class Outside(Tools):
         cannot be recorded (no known speaker or turn) is not cleared."""
         tier: Tier = await self._source.tier(call) or (spec.tier if spec is not None else "judged")
         logs.info(log, "outside.tier", conversation=self._conversation(), turn=self._turn_id(), tool=call.name, tier=tier)
-        if self._standing is None or self._turn is None:
+        if self._standing is None or self._turn is None or tier == "asks":
             return await self._hold(call)
         if tier == "runs":
             return _Cleared(tier)
@@ -307,8 +310,11 @@ class Outside(Tools):
             if len(held) >= self._config.max_calls:
                 return self._refused(call, "too_many", self._config.too_many)
             label = await self._headline(call.name)
-            calls = (*held, HeldCall(call.name, arguments, outside_summary.summary(label, arguments), why,
-                                           label))
+            try:
+                shown = await self._source.shown(call) or outside_summary.summary(label, arguments)
+            except Unshown as e:
+                return self._refused(call, "unshown", str(e))
+            calls = (*held, HeldCall(call.name, arguments, shown, why, label))
             proposal = Proposal(st.household_id, st.speaker_id, turn[0], turn[1], datetime.now(UTC), HeldCalls(calls))
             stored = await services.get(Proposals).propose(proposal, self._config.proposal_ttl_s)
         except ProposalsUnavailable:
