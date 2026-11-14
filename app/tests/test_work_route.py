@@ -1,9 +1,10 @@
-"""`GET /api/work` through the real app and a real database: a person's open errands (one-shot and open-ended) and
+"""`GET /api/work` through the real app and a real database: a person's open errands (one-shot, open-ended and standing) and
 open benches with the state each record's own fields give, those waiting on them first; another person's and a
 settled errand's are absent; and no log line carries what an item says."""
 
 import asyncio
 import hashlib
+import json
 import logging
 import secrets
 from collections.abc import Generator
@@ -83,6 +84,15 @@ def open_errand(w: World, who: int, state_delivery: str | None = None) -> int:
                                               state_delivery)))
 
 
+def standing_errand(w: World, who: int, cancelled: bool = False) -> int:
+    due = datetime.now(UTC) + timedelta(days=1)
+    rule = json.dumps({"freq": "daily", "every": 1, "anchor": "2026-11-13T09:00"})
+    return int(scalar(w.url, "INSERT INTO wakes (household_id, kind, event_id, event, at, due_at, person_id, made_by, brief, "
+                             "repeat, method, settled_at, outcome) VALUES (%s, 'reminder', %s, 'reminder', %s, %s, %s, %s, %s, "
+                             "%s::jsonb, 'research', CASE WHEN %s THEN now() END, CASE WHEN %s THEN 'cancelled' END) RETURNING id",
+                      (w.home, secrets.token_hex(8), due, due, who, who, BRIEF, rule, cancelled, cancelled)))
+
+
 def bench(w: World, who: int, title: str = "Gate") -> int:
     return int(scalar(w.url, "INSERT INTO benches (household_id, owner_id, title) VALUES (%s, %s, %s) RETURNING id",
                       (w.home, who, title)))
@@ -134,6 +144,14 @@ def test_what_is_over_or_not_theirs_is_not_listed(world: World, client: TestClie
     scalar(world.url, "INSERT INTO benches (household_id, owner_id, title, closed_at) VALUES (%s, %s, 'Closed', now()) RETURNING id",
            (world.home, world.alana))
     assert got(client).entries == []
+
+
+def test_a_standing_errand_is_listed_as_its_own_kind_and_a_cancelled_one_is_not(world: World, client: TestClient) -> None:
+    standing = standing_errand(world, world.alana)
+    standing_errand(world, world.alana, cancelled=True)
+    standing_errand(world, world.sam)
+    entries = got(client).entries
+    assert [(i.kind, i.id, i.state, i.title, i.until_local) for i in entries] == [("standing_errand", standing, "running", BRIEF, None)]
 
 
 def test_an_undelivered_check_waits_on_the_person_and_a_failed_one_has_stopped(world: World, client: TestClient) -> None:

@@ -8,6 +8,7 @@ const item = (kind: WorkItem['kind'], state: WorkItem['state'], id = 7): WorkIte
 test('a bench links into the workshop room and an open-ended errand to her reminders; a one-shot errand has no link', () => {
   assert.equal(where(item('bench', 'open', 12)), '/workshop/12');
   assert.equal(where(item('open_errand', 'running')), '/memory?tab=reminders');
+  assert.equal(where(item('standing_errand', 'running')), '/memory?tab=reminders');
   assert.equal(where(item('errand', 'running')), null);
 });
 
@@ -16,7 +17,8 @@ test('every state and kind the server can send has a word, and the words differ'
   assert.deepEqual(states.sort(), ['done', 'open', 'running', 'stopped', 'waiting_on_you']);
   assert.equal(new Set(Object.values(STATE_WORD)).size, states.length);
   assert.equal(STATE_WORD.waiting_on_you, 'Waiting on you');
-  assert.equal(new Set(Object.values(KIND_WORD)).size, 3);
+  assert.deepEqual(Object.keys(KIND_WORD).sort(), ['bench', 'errand', 'open_errand', 'standing_errand']);
+  assert.equal(new Set(Object.values(KIND_WORD)).size, 4);
 });
 
 test('only items waiting on the person count as waiting', () => {
