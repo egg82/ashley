@@ -147,13 +147,13 @@ class KubeApi:
 
 async def _until_closed(ws: Any) -> None:
     """Read the attach's frames until the server closes it, raising KubeError for a status on the error channel that is
-    not a success."""
+    not a success. An empty status frame carries no status: the API server sends one before the real status."""
     while True:
         try:
             frame: bytes = await ws.receive_bytes()
         except WebSocketDisconnect:
             return
-        if frame[:1] == bytes([STATUS_CHANNEL]) and b'"Success"' not in frame:
+        if frame[:1] == bytes([STATUS_CHANNEL]) and frame[1:].strip() and b'"Success"' not in frame:
             raise KubeError("attach reported a failure")
 
 
