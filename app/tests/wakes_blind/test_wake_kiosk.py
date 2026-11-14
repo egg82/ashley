@@ -26,7 +26,6 @@ def body(**extra: object) -> str:
     return json.dumps({**BASE, **extra})
 
 
-@pytest.mark.xfail(strict=True, reason="a rule cannot name a kiosk yet")
 def test_a_rule_may_name_a_device_by_its_id() -> None:
     rule = rule_of(body(device=12))
     assert isinstance(rule, WakeRule) and rule.device == 12
@@ -39,7 +38,6 @@ def test_a_device_that_is_not_a_positive_id_makes_no_rule(given: object) -> None
     assert rule_of(body(device=given)) is None
 
 
-@pytest.mark.xfail(strict=True, reason="a rule cannot name a kiosk yet")
 def test_a_rule_naming_a_speaker_and_a_device_makes_no_rule() -> None:
     assert rule_of(body(speaker=KITCHEN)) is not None and rule_of(body(device=12)) is not None
     assert rule_of(body(speaker=KITCHEN, device=12)) is None
@@ -58,7 +56,6 @@ def queued(world: World) -> list[str]:
     return list(scalar(world.url, "SELECT coalesce(json_agg(thread ORDER BY id), '[]') FROM outbox"))
 
 
-@pytest.mark.xfail(strict=True, reason="a rule cannot name a kiosk yet")
 def test_a_wake_whose_rule_names_a_kiosk_runs_on_its_thread_for_announce(world: World) -> None:
     world.first.inference.script = [DONE]
     world.as_pod(world.first)
@@ -79,7 +76,6 @@ def test_a_wake_whose_rule_names_a_kiosk_runs_on_its_thread_for_announce(world: 
     run(go())
 
 
-@pytest.mark.xfail(strict=True, reason="a rule cannot name a kiosk yet")
 @pytest.mark.parametrize("which", ["gone", "house_device", "other_household"])
 def test_a_device_that_is_not_a_kiosk_of_the_household_leaves_the_turn_on_the_phone(world: World, which: str) -> None:
     world.first.inference.script = [DONE]

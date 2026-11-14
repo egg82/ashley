@@ -7,7 +7,8 @@ moment (`Inbound.moment`), and the note tells her what `Initiative` planned of t
 it to one line, or say nothing. Any other rule's turn carries neither. A greeting Initiative placed at a satellite or
 screen runs on that device's thread instead (`on_device.moved`), and its answer is stored for the device's delivery
 (`device_delivery`) rather than queued in the outbox. A rule that names a speaker runs on the speaker's thread instead
-(`speaker.moved`), which wins over a placement, and its answer is queued in the outbox as the phone's is."""
+(`speaker.moved`), which wins over a placement, and its answer is queued in the outbox as the phone's is. A rule that
+names a paired kiosk runs on the kiosk's thread (`on_device.moved`), its answer queued in the outbox for `announce`."""
 
 from dataclasses import replace
 
@@ -30,9 +31,10 @@ _THIS_TIME: dict[Outcome, str] = {
 
 def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Moment | None = None,
             outcome: Outcome | None = None, at: tuple[Route, Device] | None = None,
-            speaker: str | None = None) -> Inbound:
+            speaker: str | None = None, announced: bool = False) -> Inbound:
     """The turn; `at` is the route and device a greeting is placed at, `speaker` the media player its rule names and
-    the household's house lists; both None for the phone. A speaker is never given with `at`."""
+    the household's house lists; both None for the phone. A speaker is never given with `at`. `announced`: `at` is the
+    kiosk a rule names, so the answer is queued in the outbox for `announce` rather than stored for a page."""
     phone = Inbound(household_id=wake.household_id, thread=f"push:{person.id}", text=said(person, wake),
                    kind="chat", medium="text", audience="owner", speaker_id=person.id, shared=False, place=None,
                    channel="device", remembers=False, later=True, later_by="outbox", source=f"wake:{wake_id}",
@@ -41,7 +43,7 @@ def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Mo
                    quiet=held(person, wake.at))
     if speaker is not None:
         return speakers.moved(phone, person.id, speaker)
-    return phone if at is None else replace(moved(phone, *at), later_by="turn")
+    return phone if at is None else replace(moved(phone, *at), later_by="outbox" if announced else "turn")
 
 
 def said(person: Person, wake: Wake) -> str:
