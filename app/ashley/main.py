@@ -18,7 +18,7 @@ from .web import legal
 from .web.static import mount_client
 
 
-_ROUTED = (health, ready, messages, wakes, voice_clips, voice_turns, signin, memory, outside_actions, reminders,
+ROUTED = (health, ready, messages, wakes, voice_clips, voice_turns, signin, memory, outside_actions, reminders,
            accounts, connections, connection_oauth, connection_holders, connection_settings, mail_bridge,
            mail_bridge_login, devices, device_controls, spend, spend_routes, model_catalogue, lexicon, household,
            people, persona, chat, history, live, push, screens, kiosk, spoken, benches, bench_talk, bench_runs,
@@ -53,7 +53,7 @@ def create_app(settings: settings_module.Settings | None = None, database: Datab
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(AccessLog)
-    for module in _ROUTED:
+    for module in ROUTED:
         app.include_router(module.router)
     app.add_exception_handler(messages.Unauthorized, messages.unauthorized)
     app.add_exception_handler(messages.Unavailable, messages.unavailable)
