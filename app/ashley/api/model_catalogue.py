@@ -16,7 +16,8 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from .. import logs, services
-from ..connections.kinds import FIRST_HOUSEHOLD
+from ..connections.connections import Connections, ConnectionsUnavailable
+from ..connections.kinds import FIRST_HOUSEHOLD, ConnectionKinds
 from ..inference import catalogue_config
 from ..inference.catalogue import ModelCatalogue, ModelCatalogueUnavailable
 from ..inference.catalogue_merge import Listing, delta, pricing
@@ -93,6 +94,18 @@ def _model(listing: Listing) -> ModelCatalogueModel:
         price=ModelCataloguePrice(status=priced.status, source_layer=source))
 
 
+async def _connected() -> frozenset[str] | None:
+    """The catalogue providers the first household's model-provider connections are priced as (a keyed kind as its
+    route name is listed, an OpenAI-compatible one as it names); None when the connections cannot be read."""
+    try:
+        held = await services.get(Connections).of_household(FIRST_HOUSEHOLD)
+    except ConnectionsUnavailable:
+        return None
+    kinds = {k.name for k in services.get(ConnectionKinds).of_port("inference")}
+    config = catalogue_config.load()
+    return frozenset(c.catalogue_provider or config.listed_as(c.kind) for c in held if c.kind in kinds)
+
+
 @router.get("/api/catalogue", response_model=ModelCatalogueResponse, responses=_READ)
 async def read_catalogue(signed_in: Person) -> ModelCatalogueResponse | JSONResponse:
     """200 `ModelCatalogueResponse`; 401 `unauthorized`; 403 `admin_only`; 503 `unavailable`."""
@@ -107,8 +120,10 @@ async def read_catalogue(signed_in: Person) -> ModelCatalogueResponse | JSONResp
         count = counts.setdefault(pid, [0, 0])
         count[0] += 1
         count[1] += bool(listing.overrides)
+    connected = await _connected()
     providers = [ModelCatalogueProvider(provider=pid, name=p.name, api=p.api, model_count=counts.get(pid, [0, 0])[0],
-                                        overridden_count=counts.get(pid, [0, 0])[1])
+                                        overridden_count=counts.get(pid, [0, 0])[1],
+                                        has_connection=None if connected is None else pid in connected)
                  for pid, p in sorted(state.merged.providers.items())]
     return ModelCatalogueResponse(snapshot_taken_at=state.snapshot_at, fetched_at=state.fetched_at,
                                   refresh_s=round(catalogue_config.load().refresh_s), catalogue_providers=providers)

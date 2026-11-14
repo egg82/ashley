@@ -4019,7 +4019,9 @@ export interface components {
         /**
          * ModelCatalogueProvider
          * @description A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models
-         *     it lists and how many of those carry an override.
+         *     it lists and how many of those carry an override. `has_connection`: whether the deployment holds a model-provider
+         *     connection priced as it (the first household's, not a key only the env holds); null when the connections could not
+         *     be read.
          */
         ModelCatalogueProvider: {
             /** Provider */
@@ -4032,6 +4034,8 @@ export interface components {
             model_count: number;
             /** Overridden Count */
             overridden_count: number;
+            /** Has Connection */
+            has_connection: boolean | null;
         };
         /**
          * ModelCatalogueRefused
