@@ -111,8 +111,13 @@ that is not a read.
 - **`judged` (c)**: the harm is real: it sends household data out, cannot be undone, opens the house, hides or deletes
   things, changes what she or the house does later, or spends. `mail_send`, a mail move to archive, spam or trash, locks,
   alarms, garage, gate and door covers, sirens, cameras, automations, scripts, `button.press`, `notify.*`, `homeassistant.*`,
-  `house_change`, `bench_propose_install`, the Claude Code tools, `skill_edit`, `skill_rollback`, `money_categorise`, `change_reminder`,
+  `house_change`, `bench_propose_install`, the Claude Code tools, `skill_edit`, `skill_rollback`, `change_reminder`,
   `cancel_reminder`, and `default`: any tool or action not listed.
+- **`asks`**: held for the person's OK in every turn, tainted or not, with no judge asked, and shown by the line its
+  source writes (`ashley.tools.tools.Tools.shown`; the generic argument summary when it writes none). For a change to
+  records the household relies on that no reading of the person's words should make on its own: `money_categorise`
+  (`connections.md`, "Her money is read through a neutral ledger"). An untainted turn offered an `asks` tool shows
+  receipts as a tainted one does.
 - **`agrees` tools** stay refused in a tainted turn, so a delete still needs a later untainted `house_confirm`, and a
   reminder or watch with `tools` still needs `arm_reminder`.
 
