@@ -17,6 +17,7 @@ import './rooms/household/household.css';
 import './rooms/household/household-side.css';
 import './rooms/connections/connections.css';
 import './rooms/connections/reach/reach.css';
+import './rooms/connections/catalogue/catalogue.css';
 import './rooms/spend/spend.css';
 import './rooms/her/chat.css';
 import './rooms/workshop/workshop.css';

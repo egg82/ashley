@@ -6,7 +6,7 @@ import { pick, pickable, type Pickable } from './providerChoice.ts';
 const PATTERN = '[a-z0-9][a-z0-9_-]{0,39}';
 
 function listed(provider: string, name: string, api: string | null): ModelCatalogueProvider {
-  return { provider, name, api, model_count: 3, overridden_count: 0 };
+  return { provider, name, api, model_count: 3, overridden_count: 0, has_connection: null };
 }
 
 const providers = [

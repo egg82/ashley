@@ -140,3 +140,6 @@ export type InstallProposal = components['schemas']['InstallProposal'];
 export type InstallState = components['schemas']['InstallState'];
 export type ModelCatalogueResponse = components['schemas']['ModelCatalogueResponse'];
 export type ModelCatalogueProvider = components['schemas']['ModelCatalogueProvider'];
+export type ModelCatalogueModelsResponse = components['schemas']['ModelCatalogueModelsResponse'];
+export type ModelCatalogueModel = components['schemas']['ModelCatalogueModel'];
+export type ModelCatalogueFields = components['schemas']['ModelCatalogueFields'];
