@@ -95,7 +95,7 @@ def job(w: World, bench_id: int, state: str | None = None) -> None:
             if state is not None:
                 claimed = await jobs.claim("agent", 60)
                 assert claimed is not None and claimed.id == made
-                assert await jobs.state(made, claimed.attempts, "blocked")  # type: ignore[arg-type]
+                assert await jobs.state(made, claimed.attempts, "blocked")
 
     asyncio.run(go())
 
