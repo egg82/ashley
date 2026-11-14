@@ -68,4 +68,4 @@ REASONS: tuple[Reason, ...] = ("unknown_kind", "bad_title", "too_long", "full", 
                                "bad_site", "bad_video", "not_installable", "incomplete", "no_proposal", "needs_person",
                                "bad_wake", "not_video", "bad_cue", "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_facts",
                                "bad_controls", "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body",
-                               "bad_citation", "bad_rows")
+                               "bad_citation", "bad_rows", "bad_session")

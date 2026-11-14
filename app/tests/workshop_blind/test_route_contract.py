@@ -199,7 +199,7 @@ REFUSALS = [("unknown_kind", add_body(kind="hologram")), ("bad_title", add_body(
             ("nothing_to_undo", {"type": "undo", "seq": 99}), ("nothing_to_undo", {"type": "undo", "seq": 0}),
             ("changed_since", {"type": "undo", "seq": 1}), ("bad_wake", add_body(kind="wake", text="not a rule")),
             ("bad_facts", add_body(kind="facts", text="not facts")),
-            ("bad_body", add_body(kind="job"))]
+            ("bad_body", add_body(kind="job")), ("bad_session", add_body(kind="session", text="not a session"))]
 
 
 @pytest.mark.parametrize(("why", "body"), REFUSALS)
