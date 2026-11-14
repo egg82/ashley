@@ -37,6 +37,7 @@ class Transaction(BaseModel):
     classification: str | None = None
     excluded: bool = False
     split_parent: bool = False
+    notes: str | None = None
     account: Named | None = None
     category: Named | None = None
     merchant: Named | None = None

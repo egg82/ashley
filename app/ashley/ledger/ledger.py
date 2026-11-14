@@ -1,14 +1,14 @@
 """The Ledger service (`ashley.services`): a household's accounts, balances and transactions as neutral records
 (`model`), read from whichever app the household keeps them in. The one change it makes is a transaction's category
-(`categorise`); its callers offer it only as a change held for the person's OK, shown first from `category` and
-`entry` (`ashley.tools.money`). Callers import this module
-and `model`; the adapter (for Sure, `ashley.sure.ledger`) lives with its backend."""
+(`categorise`) and the note on one (`note`); its callers offer each only as a change held for the person's OK, shown
+first from `category` and `entry` (`ashley.tools.money`). Callers import this module and `model`; the adapter (for Sure, `ashley.sure.ledger`) lives with its backend."""
 
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
 
 from ..services import Service
-from .model import Account, Categorised, Category, Entry, NetWorth, NotConnected, Page, Recurring, TransactionQuery
+from .model import (Account, Categorised, Category, Entry, NetWorth, NotConnected, Noted, Page, Recurring,
+                    TransactionQuery)
 
 
 class Ledger(Service):
@@ -59,6 +59,11 @@ class Ledger(Service):
         changed; setting a category again is harmless. Raises UnknownCategory, LedgerFailed, LedgerUnavailable,
         NotConnected."""
 
+    @abstractmethod
+    async def note(self, household_id: int, transaction_id: str, note: str) -> Noted:
+        """Make `note` the note on the household's transaction `transaction_id`, in place of any it carries; what became
+        of it. Raises LedgerFailed, LedgerUnavailable, NotConnected."""
+
 
 class NullLedger(Ledger):
     """No household has a ledger."""
@@ -89,4 +94,7 @@ class NullLedger(Ledger):
 
     async def categorise(self, household_id: int, category_id: str,
                          transaction_ids: Sequence[str]) -> Mapping[str, Categorised]:
+        raise NotConnected
+
+    async def note(self, household_id: int, transaction_id: str, note: str) -> Noted:
         raise NotConnected

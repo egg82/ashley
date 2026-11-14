@@ -1,11 +1,10 @@
-"""The household's finances, read through the Ledger (`ashley.ledger.ledger`), and a transaction's category set
+"""The household's finances, read through the Ledger (`ashley.ledger.ledger`), and a transaction's category and note set
 through it, as her money tools (`money_specs`). Offered per turn by `ashley.channels.turn_tools.for_turn` only where the
 reply reaches the speaker alone (`ashley.channels.audience.owner_alone`), so a change is made only for a named person of
-the household; `money_categorise` is not a read, so a reads-only turn is not offered it, and its tier is `asks`: every
-call is held for the person's OK (`ashley.tools.outside`), shown by `shown`, and reaches Sure only when they agree. A
-household with no ledger is offered none. Tool arguments and
-results are never logged; `tools.call` carries the tool, outcome and row count (for a categorisation, how many were
-set)."""
+the household; `money_categorise` and `money_note` are not reads, so a reads-only turn is not offered them, and their
+tier is `asks`: every call is held for the person's OK (`ashley.tools.outside`), shown by `shown`, and reaches Sure only
+when they agree. A household with no ledger is offered none. Tool arguments and results are never logged; `tools.call`
+carries the tool, outcome and row count (for a change, how many were set)."""
 
 import asyncio
 import time
@@ -17,7 +16,8 @@ from ..ledger.ledger import Ledger
 from ..ledger.model import LedgerFailed, LedgerUnavailable, NotConnected, Reason, UnknownCategory
 from . import bench_results, money_render
 from .money_config import MoneyConfig
-from .money_specs import ACCOUNTS, CATEGORIES, CATEGORISE, INSTRUCTIONS, NAMES, NET_WORTH, categorisation, specs, transaction_query
+from .money_specs import (ACCOUNTS, CATEGORIES, CATEGORISE, CHANGES, INSTRUCTIONS, NAMES, NET_WORTH, NOTE, annotation,
+                          categorisation, specs, transaction_query)
 from .tools import Catalogue, Tools, ToolsUnavailable, Unshown
 
 _FAILED: dict[Reason, tuple[str, str]] = {
@@ -61,7 +61,7 @@ class MoneyTools(Tools):
             return bench_results.failed(call, started, "bad_arguments", _UNKNOWN_CATEGORY)
         except LedgerFailed as e:
             outcome, hint = _FAILED[e.reason]
-            if call.name == CATEGORISE and e.reason == "refused":
+            if call.name in CHANGES and e.reason == "refused":
                 hint = _REFUSED_CHANGE
             return bench_results.failed(call, started, outcome, hint)
         if isinstance(got, str):
@@ -69,9 +69,11 @@ class MoneyTools(Tools):
         return bench_results.ok(call, started, got, rows=_rows(got))
 
     async def shown(self, call: ToolCall) -> str | None:
-        """For `money_categorise`, what it would change as Sure holds it now (`money_render.recategorising`); None for
-        any other tool. Raises Unshown for wrong arguments, a category or transaction not the household's, or a ledger
-        that cannot be read."""
+        """For `money_categorise` and `money_note`, what it would change as Sure holds it now
+        (`money_render.recategorising`, `money_render.noting`); None for any other tool. Raises Unshown for wrong
+        arguments, a category or transaction not the household's, or a ledger that cannot be read."""
+        if call.name == NOTE:
+            return await self._shown_note(call)
         if call.name != CATEGORISE:
             return None
         asked = categorisation(dict(call.arguments), self._config)
@@ -90,6 +92,18 @@ class MoneyTools(Tools):
             raise Unshown(_UNKNOWN_TRANSACTION)
         return money_render.recategorising(category, found)
 
+    async def _shown_note(self, call: ToolCall) -> str:
+        asked = annotation(dict(call.arguments), self._config)
+        if isinstance(asked, str):
+            raise Unshown(asked)
+        try:
+            entry = await services.get(Ledger).entry(self._household_id, asked.transaction_id)
+        except (LedgerFailed, LedgerUnavailable, NotConnected) as e:
+            raise Unshown(_UNSHOWN) from e
+        if entry is None:
+            raise Unshown(_UNKNOWN_TRANSACTION)
+        return money_render.noting(entry, asked.note)
+
     async def _read(self, call: ToolCall) -> dict[str, object] | str:
         ledger, household = services.get(Ledger), self._household_id
         if call.name == ACCOUNTS:
@@ -103,6 +117,12 @@ class MoneyTools(Tools):
             if isinstance(asked, str):
                 return asked
             return money_render.categorised(await ledger.categorise(household, asked.category_id, asked.transaction_ids))
+        if call.name == NOTE:
+            noted = annotation(dict(call.arguments), self._config)
+            if isinstance(noted, str):
+                return noted
+            outcome = await ledger.note(household, noted.transaction_id, noted.note)
+            return money_render.categorised({noted.transaction_id: outcome})
         query = transaction_query(dict(call.arguments), self._config)
         if isinstance(query, str):
             return query

@@ -1,4 +1,4 @@
-"""`money_categorise` end to end through `MoneyTools` against the fake Sure: it is offered as the one change, not a
+"""`money_categorise` end to end through `MoneyTools` against the fake Sure: it is offered as a change, not a
 read, so a reads-only turn loses it; it sets the transactions `money_transactions` named, and the next read shows the
 category; wrong arguments and a category that is not the household's change nothing; a key that may only read is told
 apart from Sure turning the household's key away; the row count logged is how many were set."""
@@ -96,10 +96,10 @@ def test_a_key_that_may_only_read_says_so(sure: FakeSure) -> None:
     assert "may write" not in run("money_accounts").content
 
 
-def test_it_is_the_one_change_and_a_reads_only_turn_is_not_offered_it(sure: FakeSure) -> None:
+def test_it_is_a_change_and_a_reads_only_turn_is_not_offered_it(sure: FakeSure) -> None:
     offered = asyncio.run(MoneyTools(HOME, CONFIG).catalogue()).specs
     changes = [s for s in offered if not s.reads]
-    assert [(s.name, s.outside, s.tier) for s in changes] == [(CATEGORISE, False, "asks")]
+    assert [(s.name, s.outside, s.tier) for s in changes if s.name == CATEGORISE] == [(CATEGORISE, False, "asks")]
     reading = asyncio.run(Reading(MoneyTools(HOME, CONFIG)).catalogue()).specs
     assert CATEGORISE not in [s.name for s in reading] and TRANSACTIONS in [s.name for s in reading]
 
