@@ -270,7 +270,6 @@ def test_attach_stdin_sends_stdin_frames_then_the_close_signal_and_reads_the_sta
     assert protocols[0] == "v5.channel.k8s.io" and seen[1:] == [b"\x00ab", b"\x00cd", bytes([255, 0])]
 
 
-@pytest.mark.xfail(strict=True, reason="an empty status frame before the status is read as a failure")
 def test_attach_stdin_accepts_the_empty_status_frame_the_api_server_sends_before_success(tmp_path: Path) -> None:
     async def socket(ws: WebSocket) -> None:
         await ws.accept(subprotocol="v5.channel.k8s.io")
