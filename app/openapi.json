@@ -12128,6 +12128,17 @@
           "overridden_count": {
             "type": "integer",
             "title": "Overridden Count"
+          },
+          "has_connection": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Connection"
           }
         },
         "type": "object",
@@ -12136,10 +12147,11 @@
           "name",
           "api",
           "model_count",
-          "overridden_count"
+          "overridden_count",
+          "has_connection"
         ],
         "title": "ModelCatalogueProvider",
-        "description": "A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models\nit lists and how many of those carry an override."
+        "description": "A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models\nit lists and how many of those carry an override. `has_connection`: whether the deployment holds a model-provider\nconnection priced as it (the first household's, not a key only the env holds); null when the connections could not\nbe read."
       },
       "ModelCatalogueRefused": {
         "properties": {
