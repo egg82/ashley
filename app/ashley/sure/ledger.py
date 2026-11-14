@@ -1,5 +1,5 @@
-"""Sure as the household's Ledger (`ashley.ledger.ledger`): its accounts, categories, balance sheet and transactions
-read through the household's Sure connection and turned from `wire`'s shapes into the ledger's neutral records, and a
+"""Sure as the household's Ledger (`ashley.ledger.ledger`): its accounts, categories, balance sheet and transactions,
+and one transaction or category by id (`GET /api/v1/transactions/:id`, `GET /api/v1/categories/:id`), read through the household's Sure connection and turned from `wire`'s shapes into the ledger's neutral records, and a
 transaction's category set through it. Every answered call moves the connection's `checked_at`. Nothing outside this
 module and `wire` knows Sure's field names. A categorisation logs `sure.categorised` with the connection id and counts."""
 
@@ -49,6 +49,14 @@ class SureLedger(Ledger):
     async def transactions(self, household_id: int, query: TransactionQuery) -> Page[Entry]:
         got = await _read(household_id, "/api/v1/transactions", _params(query), wire.Transactions)
         return Page(tuple(entry_from(t) for t in got.transactions), _total(got.pagination))
+
+    async def entry(self, household_id: int, transaction_id: str) -> Entry | None:
+        got = await _found(household_id, f"/api/v1/transactions/{_segment(transaction_id)}", wire.Transaction)
+        return None if got is None else entry_from(got)
+
+    async def category(self, household_id: int, category_id: str) -> Category | None:
+        got = await _found(household_id, f"/api/v1/categories/{_segment(category_id)}", wire.Category)
+        return None if got is None else Category(got.id, got.name, got.parent.name if got.parent is not None else None)
 
     async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
         got = await _read(household_id, "/api/v1/recurring_transactions", {"per_page": limit}, wire.RecurringTransactions)
@@ -143,13 +151,24 @@ async def _opened(household_id: int) -> Opened | None:
 
 
 async def _read[M: BaseModel](household_id: int, path: str, params: Mapping[str, str | int], model: type[M]) -> M:
+    got = await _found(household_id, path, model, params)
+    if got is None:
+        raise LedgerFailed(_REASON["not_found"])
+    return got
+
+
+async def _found[M: BaseModel](household_id: int, path: str, model: type[M],
+                               params: Mapping[str, str | int] | None = None) -> M | None:
+    """What Sure answers at `path`, None for its own 404 (a record the household does not have)."""
     opened = await _opened(household_id)
     if opened is None:
         raise NotConnected
     try:
-        body = await services.get(Sure).get(opened.connection.base_url, opened.secret, path, params)
+        body = await services.get(Sure).get(opened.connection.base_url, opened.secret, path, params or {})
         got = wire.parsed(model, body)
     except SureFailed as e:
+        if e.reason == "not_found":
+            return None
         raise LedgerFailed(_REASON[e.reason]) from e
     await answered.record(opened.connection.id)
     return got

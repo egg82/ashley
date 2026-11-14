@@ -1,6 +1,7 @@
 """The Ledger service (`ashley.services`): a household's accounts, balances and transactions as neutral records
 (`model`), read from whichever app the household keeps them in. The one change it makes is a transaction's category
-(`categorise`); its callers offer it only through a gated change tool (`ashley.tools.money`). Callers import this module
+(`categorise`); its callers offer it only as a change held for the person's OK, shown first from `category` and
+`entry` (`ashley.tools.money`). Callers import this module
 and `model`; the adapter (for Sure, `ashley.sure.ledger`) lives with its backend."""
 
 from abc import abstractmethod
@@ -36,6 +37,16 @@ class Ledger(Service):
         """The transactions `query` asks for. Raises LedgerFailed, LedgerUnavailable, NotConnected."""
 
     @abstractmethod
+    async def entry(self, household_id: int, transaction_id: str) -> Entry | None:
+        """The household's transaction `transaction_id` as it stands, None when it is not the household's. Raises
+        LedgerFailed, LedgerUnavailable, NotConnected."""
+
+    @abstractmethod
+    async def category(self, household_id: int, category_id: str) -> Category | None:
+        """The household's category `category_id`, None when it is not the household's. Raises LedgerFailed,
+        LedgerUnavailable, NotConnected."""
+
+    @abstractmethod
     async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
         """Up to `limit` of the payments the household's backend has found repeating. Raises LedgerFailed,
         LedgerUnavailable, NotConnected."""
@@ -65,6 +76,12 @@ class NullLedger(Ledger):
         raise NotConnected
 
     async def transactions(self, household_id: int, query: TransactionQuery) -> Page[Entry]:
+        raise NotConnected
+
+    async def entry(self, household_id: int, transaction_id: str) -> Entry | None:
+        raise NotConnected
+
+    async def category(self, household_id: int, category_id: str) -> Category | None:
         raise NotConnected
 
     async def recurring(self, household_id: int, limit: int) -> Page[Recurring]:
