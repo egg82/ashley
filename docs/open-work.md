@@ -12,8 +12,8 @@ The first version worth switching to adds one thing to what runs today: her own 
     panel, model provider keys as connections, any OpenAI-compatible provider and a household's model choice are built; what is left, by how soon a
     new household meets it:
     - **Other OIDC providers** (Entra, …) added through an OIDC library when asked. Fits into: Sign-in.
-    - **What is left of the model catalogue:** an override that defines a provider, an admin page over
-      `/api/catalogue`, and a price for `gpt-image-2.5-flare`, which models.dev does not list. Fits into: Inference.
+    - **What is left of the model catalogue:** an override that defines a provider, and a price for
+      `gpt-image-2.5-flare`, which models.dev does not list. Fits into: Inference.
     - Held on purpose until the cluster repo moves with them: the pod label prefix, `failback.json`'s preferred
       site, and the room names in `app/ashley/evals/house_cases.json`.
 
@@ -70,9 +70,7 @@ The first version worth switching to adds one thing to what runs today: her own 
 5. **Web app, what is left.** Its rooms are built: sign-in, chat, memory (the facts she holds and where each was learned; a line
    dragged out of chat is input only, never shown back on the line), Devices (linked accounts, Discord linking,
    notifications, the household's devices) and the kiosk, with open screens kept current by Live. Left:
-   - **What we're working on**, beside her room's history: the person's open errands (item 7) and benches (item 11),
-     each with its state (running, waiting on you, done), filled in as those items land. A quick question stays in
-     the history; asking her to do or make something gets a place that outlasts the conversation.
+   - The `web` pods log only startup; give them a one-line access log so page traffic shows in Loki.
    - **The admin settings page past a table**, when the admin role lands, with the same design pass the other
      settings rooms had (three clean-room designers, `ui-craft`: each sees only the room's real payloads, its API
      schema and its purpose, takes a different lens, and the best layers are mixed). Connections' settings are still
@@ -94,7 +92,7 @@ The first version worth switching to adds one thing to what runs today: her own 
    The speech tasks get the same pass once her voice pipeline is live, research first: read what people report about
    ElevenLabs' v4 models (latency, quality, which voices and settings carry over) and the STT options before
    choosing what to golf, then measure first-audio latency and how she sounds on real replies.
-   The first real `chat` case, run once the continuous history (item 15) carries earlier turns: a person asked her to
+   The first real `chat` case, run once the continuous history carries earlier turns: a person asked her to
    add an item to the shopping list while the house was unreachable, and she couldn't. Hours later they said the house
    was back up, and she answered with no tool call, though the item was recalled and the shopping-list tools were
    offered. Pass: she adds it, or offers to, unprompted.
@@ -117,16 +115,10 @@ The first version worth switching to adds one thing to what runs today: her own 
    that"): held on its errand, untold until her next reply to the asker carries it (as the designed slice
    does); Initiative may raise it unprompted, through the outbox. What lasts in it reaches Memory through the turn she
    tells it in.
-   - **Standing errands: workers behind her, never beside her.** The aim is a team of bots on the backend, the way
-     Rakazo has an inbox manager, a chief of staff and so on, but with her as the only face: nobody talks to a bot.
-     A standing errand is an errand that never finishes: a method (a Skill document, one kind per job), what wakes it
-     (a repeating reminder's rule, a house wake, a watch: `decisions.md`, "Watches wake her when what a read returns
-     changes, until a condition or a time"), the tools its turn may use (as `Reminder.tools` already names) and where what it finds goes (as `Reminder.route`). What it finds reaches a
-     person the same way an errand's result does: held until her next reply to them, or raised through Initiative.
-     A reminder whose turn acts is already the smallest one, so this extends Reminders and Skills rather than adding
-     a bot store. Rejected: bots messaging each other (Rakazo's `message_bot`, with a hop counter against loops),
-     until two standing errands actually need to; a sub-agent inside one turn (`look_up`'s pattern) covers handing off
-     work.
+   - **Standing errands, what is left.** A standing errand is a repeating reminder that names her method
+     (`decisions.md`, "What she could not do for want of a source, she does once it answers, and says so next time",
+     its standing part). Left: waking one on a house wake or a watch instead of its rule; a finding Initiative keeps
+     quiet held until her next reply to the person; setting one from the web app.
    - Fits into: Initiative (when to act) over the orchestrator loop (`Inference.step` with its own task), Senses for
      checks, Tools for actions. A new kind of thing: durable plans with due times.
 38. **A browser of her own.** For the services with no API, a Chromium she drives in a gVisor pod: a session of
@@ -141,13 +133,10 @@ The first version worth switching to adds one thing to what runs today: her own 
 P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A turn that has read outside words asks before it
     does anything consequential the person did not ask for"). Left: a live
     `python -m ashley.evals action-judge` run and the model-golf pick of the final route. Fits into: Channels (`Outside`), Inference.
-43. **Flaky tests.** Each failed once on a busy CI runner and passed on rerun:
-    - `app/tests/test_db_pool.py::test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_left`
-      caught `other_connections=(1,)` in its "fresh" baseline: the baseline needs to wait out the previous test's
-      connection, or count only its own.
-    - The app-mode test in `app/tests/admin_role_blind/test_ar_ensure_one.py` took 3.15 s wall, over the per-test ceiling.
-    - `app/tests/test_watches_ha_entity.py::test_a_change_the_house_tells_wakes_her_at_once_through_the_subscription`
-      took 2.22 s and never woke once: it should wait on an injected event, not the clock.
+43. **Pool-bound tests.** `test_db_pool` tests reach 2-3 s under heavy load, and any test following fast ones waits on
+    its clone in setup (CREATE DATABASE throughput in `app/tests/db_pool.py`); decide whether the pool should hold more
+    spares or those two tests should take fewer clones.
+
 8. **Golf the system prompt.** Token counts per section are built: `python -m ashley.evals prompt-sizes` (stable sections, moment, each tool and
    source, reply schema; run it in the pod before each cut). Cut by ablation
    against the eval battery, keeping a cut only when nothing regresses (`model-golf`). Most of it is Home Assistant's:
@@ -192,7 +181,10 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       the display; a swipe sends it away, and it leaves on its own once the door is answered or quiet. It goes where
       people are: the tablet when someone is home, and the open web page of someone who is away but using it (at
       work), the same line and feed. Which screens are open and in the foreground is
-      recorded (`ashley.live.screens.Screens.open_screens`); left: announcements and pictures sent to a visible screen.
+      recorded (`ashley.live.screens.Screens.open_screens`), and an outbox reply for the kiosk's thread plays on the
+      visible screens by that rule (`ashley.channels.kiosk.announce`). Left: something that queues one (the doorbell
+      wake, Initiative choosing the hallway); pictures and the door feed sent the same way; a reminder routed to the
+      screen played aloud there; her chat voice and an announcement sharing one player.
       - Fits into: Channels (the kiosk adapter as an output, beside the satellites' `Announcer`), the outbox, Live,
         and Initiative over Senses for when a picture is worth showing unasked.
     - **She decides what the whole screen shows:** the kiosk is the first surface of item 20, in its glanceable skin;
@@ -216,14 +208,10 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
     arrival is Initiative's call over a sense, shown on whatever screen is in the room.
     - **The room, what is left**: a bench's screen becomes a surface of item 20, in a skin for making things (its layout
       and interruptions are that item's; its pieces stay this item's records, each shown through a component).
-    - **Live kinds**: the first `live` entry in `kinds.json` (a camera, a print job), its body a source reference the
-      client renders.
+    - **Live kinds**: built for sites, videos and Claude Code sessions (`decisions.md`, "The workshop"). Left: a camera
+      and a print job; a claude_code job's piece showing its session live (the job body names no session yet).
     - Streaming uploads past `max_bytes` (hash names the key, so it needs a staging key); herdr bridge `max_file_bytes`
       (25 MiB) and jobs `max_bytes_in` (50 MiB) are smaller than `max_bytes`. Fits into: Object store.
-    - **Model inputs past `input_bytes`**: a model run's file pieces reach the pod in the job spec, at most 768 KiB in
-      all (`runs.json`), so two ordinary STLs (about 600 KB each) cannot go to one run; the run is refused
-      `bad_inputs`. The pod should get them from the object store with its script still offline (e.g. a fetching init
-      container). Fits into: Runs (Sandbox), Object store.
     - **Simulations for model benches**: four ways to test a model beyond overlaps, each a model run with extra work
       whose results come back as report fields and ordinary checks. Built: parts carry a `role` from the closed list in
       `app/ashley/workshop/print.json`, and every model run's geometric print check (`deploy/cad/ashley_print.py`:
@@ -241,29 +229,21 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
          values, and the sandbox quota raised against node headroom.
       Fits into: Code runs (a sim is a run of the model piece, same runner, record and artifacts), Workshop (the `Run`
       command and the report's sections), Bench jobs (the `run` worker), Tools (`bench_simulate` beside `bench_run`).
-    - **Choices beside measurements, what is left**: a measurements row may be a choice (what kind of thing something
-      is, `decisions.md`, "Measurements are structured data"), a `reference` part names its form, and a fit against it
-      rests on that row. Left, each shipping alone:
-      1. **Guessed numbers on the same path**: a guessed number a check of this turn's run is unconfirmed on is shown
-         as a choice row is (`Surfaced`, `Receipts.facts` and the card's buttons); a migration turns each stored
-         `asked: true` into a `Surfaced`, and the `asked` field and its prose go.
-      2. **The kind renamed `facts`**: a data migration of the piece kind, and `measurements.json` becomes `facts.json`
-         in the CAD helper; behaviour byte-identical.
-      The replay measures with them: `form_declared` (her first model run's report names a form on every reference
-      part), `facts_surfaced` (`Surfaced` rows per ask, by row kind), and `form_before_model` also true on a `Surfaced`
-      of a reference part's form before her first model change.
-      Fits into: Workshop (the measurements kind's row union, one non-piece Command), Code runs (`ashley_cad`),
-      Conversations (receipts beside a turn).
+    - **Choices beside measurements, what is left**: the replay measures them. `form_declared` (her first model run's
+      report names a form on every reference part), `facts_surfaced` (`Surfaced` rows of numbers and of choices, per
+      ask, by row kind), and `form_before_model` also true on a `Surfaced` of a reference part's form before her
+      first model change.
+    - Drop the CAD helper's `measurements.json` fallback (`deploy/cad/`) with the next CAD image change.
     - **The bench order**, after bench polish, each its own change:
       1. **The herdr bridge** (item 12), on her own VM first.
       2. **3D**: she models in code with build123d, run server-side in Runs; a 3D view piece shows it, STL and 3MF
          leave through downloads, and she photographs the view with `bench_look` so the person can point out issues.
          Built: the CAD image and its `ashley_cad` helper (`deploy/cad/`), build123d as a Sandbox language with its own
-         profile in `runs.json` `languages` (`CAD_IMAGE` and its quota are set on both sites), and the measurements
+         profile in `runs.json` `languages` (`CAD_IMAGE` and its quota are set on both sites), and the `facts`
          kind (`decisions.md`, "Measurements are structured data"), and a run's GLB, STL and 3MF kept in the object
          store with download links and its report judged against the measurements, and the `model` kind, its 3D view
          and the four-view sheet a look photographs, and her method (the `3d` skill and the bench guidance naming the
-         `model` and `measurements` kinds; the judgement of a fit is the bench turn's own), changing an existing model
+         `model` and `facts` kinds; the judgement of a fit is the bench turn's own), changing an existing model
          (an uploaded STL, 3MF or STEP file piece is handed to a model run, `existing(piece_id)` in `ashley_cad`), and
          finding an existing design on Printables and putting its file on the bench (`decisions.md`, "Printables is a
          look-up source"). Left: a dev run end to end on a real object, and what it finds; designs from Thingiverse
@@ -287,35 +267,14 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       tool provider, offered only on a bench). The pieces are the Workshop system.
 12. **herdr bridge, remaining slices** (item 11's bench order, step 1). The bridge program is built (`bridge/herdr/`,
     its README sets it up) and registered to one person; one writer per slice:
-    - **A session as a live piece** on a bench (item 11's first `live` kind).
     - **A second machine of the owner's**: following the README, no code.
     - Fits into: Senses and Channels.
 13. **MCP channel for Claude Code.** Sessions ask her things or tell her to remember them, as their user.
     - Fits into: Channels.
 14. **Asides, remaining.** The Discord remark is built (`decisions.md`, "Whether she speaks unprompted is decided in
-    code"). Left: being on a call as focus; a person's own quiet hours; asides on other channels (voice, screens).
+    code"). Left: being on a call as focus; asides on other channels (voice, screens).
     Fits into: Initiative.
-15. **Her home on Discord.** `#ashley` in the household's server is hers to keep as she likes, a place of her own to
-    decorate: its topic, pins and what she posts there. Tools that change the channel are scoped to her home channel
-    and offered only on her own initiative, never in a reply, so a mention elsewhere cannot rewrite her channel. The server's
-    owner grants Manage Channel and Manage Messages on `#ashley` alone, as a channel permission override.
-    How much she reads and when she speaks differ by channel:
-
-    | | `#ashley` | Every other channel |
-    |---|---|---|
-    | Reads | every person's message, as turns (memory takes note) | when pinged; `discord_recent` reads the channel for context |
-    | Speaks | per message, a structured field on her reply: `reply`, `react` (an emoji) or `none`, erring to reply when asked anything | when pinged; unprompted only as an aside (Asides) |
-
-    The field is `Reply.says` (`ashley.inference.reply.Says`), shared by every channel; Discord adds `react`, voice takes `reply`, `offer` or `none`. Rejected: reading every channel and replying
-    when she has something to say, which is a model call per message and a rate a stateless call cannot keep, and would
-    have memory distil every channel.
-    - Fits into: Tools (a Discord tool provider beside Home Assistant's, `ashley.tools.discord_read`) and Initiative (when she tends it: a seeded
-      roll and a score in code, never "now and then" in a prompt); her posts go through the outbox (`ashley.channels.outbox.Outbox`).
 16. **Bench camera** as a sense, on request first.
-17. **Split the API from the web client**, as sibling apps in the cluster repo do: the same
-    image runs a second Deployment, `web`, that serves only the page's files, and both ingress paths (HTTPRoute and the
-    tunnel) send the server paths to `app` and everything else to `web`. Each scales on its own, and the page still
-    loads while the app or Postgres is down.
 18. **Move the witness to its permanent machine at the witness site** when that arrives: copy the data directory, start it
     there, `etcdctl member update <witness member> --peer-urls=https://<new-ip>:2380`, and issue a cert for the new IP.
 19. **Retire the `households.profile` column into standing facts**, once real standing facts exist to check the
@@ -381,9 +340,7 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       token in HA's `secrets.yaml`, and `rest_command.ashley_wake` in HA's configuration posting `event_id`, `event`,
       `who`, `what` and `when` to `/api/wakes` on the LAN address. Then an arrival routine worked through on a bench: its automation
       with a wake action, installed, and its wake rule.
-    - Only a phone hears her; a satellite, the tablet or Discord is item 4's choice of channel.
-    - **The wake turn speaks on a named speaker**, next after bench polish: a wake rule piece names a speaker, and the
-      turn's output plays through the household's HA media player for it. Then item 7 (errands) and item 6's cascade.
+    - Only a phone, or a speaker a rule names, hears her; a satellite, the tablet or Discord is item 4's choice of channel.
     - A wake rule is live once it is on an open bench, hers included; no person step stands between it and a turn
       (an automation's Install has one). A rule may need the person's approval as an install does.
     - Any household member's open bench supplies the rule, so another member's rule runs with your memory when the
@@ -394,35 +351,21 @@ P3. **The action judge, what is left.** The judge is built (`decisions.md`, "A t
       runner (item 7), which the `wakes` singleton should become one kind of when errands are built.
 25. **The household's finances, past reading** (`decisions.md`, "A household connects its own services"). She reads
     Sure through the household's connection; what is left:
-    - **Changes as approved Commands**: recategorising, a note on a transaction, a budget line, each one shown and
-      approved by the person before it reaches Sure, never by her alone.
+    - **More money changes as `asks` tools**: a note on a transaction, a budget line, each with its own `Tools.shown`
+      line from the ledger.
     - **Sure's MCP server** (`/mcp`, OAuth with scope `read_write`) in place of the REST reads, once writes are wanted
       and the connection can hold an OAuth grant instead of a key.
     - **Rotating `CONNECTIONS_KEY`**: a second version in the sealer and a pass that seals every row again under it.
-    - Fits into: Tools (the money source) over Connections; writes through the Commands pattern the Workshop uses.
-26. **Home Assistant from connections alone** (`decisions.md`, "A household connects its own services"). Every house
-    consumer reads its household's `home_assistant` connection; the env's HA is seeded as household 1's at start.
-    Left:
-    - **Remove `HA_URL` and `HA_TOKEN`** once `homes.seed outcome=kept` shows on both sites' pods: the settings, the
-      seed (`ashley.home_assistant.seed`), the fallback in `ConnectedHomes`, and the `app-home-assistant`
-      ExternalSecret in the cluster repo's `kustomization/ashley-app/`, in that repo's own MR. That also ends a removed
-      household 1 connection coming back at the next pod start. The house eval (`python -m ashley.evals house`) then
-      seeds its scratch household's connection instead of taking the env.
-    - Fits into: Connections and Homes; the settings and the cluster repo's ExternalSecret.
+    - Fits into: Tools (the money source) over Connections; writes through the `asks` tier of `Outside`.
 
 The next makes an existing system general (`engineering.md`, "Her systems are general, and she wires them").
 
-34. **Music on the house's speakers.** She plays, pauses, skips, sets the volume of, and searches music from the
-    household's services (Spotify, Apple Music, YouTube Music and the like) on its speakers, by room or group: "play
-    something mellow in the kitchen", "what's playing upstairs", "pause everything". Playback state is a read anyone
-    may ask; what is searched and played comes from the asker's own account where the service is per person.
-    - Fits into: Home Assistant (playback is a `media_player` service call, beside room speakers
-      `ashley.home_assistant.media_player.play_for` and the general HA primitives of the `ha-general` work) and
-      Connections (a service account is a person's own connection, as the code hosts are, read through a neutral
-      music port with one adapter per service, so search results and now-playing are one record whatever the source).
-      Check first whether the house's HA runs Music Assistant: it already holds Spotify, Apple Music and YouTube Music
-      providers and plays to Cast, AirPlay, Sonos and ESPHome speakers, so one adapter over it may stand in for the
-      per-service ones, leaving her own port with a single implementation until a service it lacks is wanted.
+34. **Music on the house's speakers.** Search and play from a music service, once the house runs Music Assistant or a
+    service is connected: playback and now-playing are `house_do`/`house_state` (`decisions.md`, "Music on the house's
+    speakers is the house primitives"). The house runs no Music Assistant.
+    - Fits into: Home Assistant (a search is a service call beside `house_do`) and Connections (a service account is a
+      person's own connection, as the code hosts are).
+
 ## Open questions
 
 - **Starting Claude Code sessions** from her (blocked today), and an in-cluster `claude -p` route as other
