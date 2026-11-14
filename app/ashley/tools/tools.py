@@ -24,6 +24,11 @@ class ToolsUnavailable(Exception):
     without tools, and say so."""
 
 
+class Unshown(Exception):
+    """A change cannot be shown to the person as it would be made, so it is not held; the message is what she is told,
+    and names no value."""
+
+
 @dataclass(frozen=True)
 class Catalogue:
     """The tools on offer, names unique, and the source's own guidance for using them (HA's Assist prompt, with its
@@ -70,6 +75,13 @@ class Tools(Service):
         """What this source makes of a `judged` call before the action judge is asked, given the person's own `words`: a
         view built from the things the call resolves to, or a reason to ask without a judge (`action_judge.Vetting`).
         None when the generic view of the call stands. A wrapper answers as the source that owns the call does."""
+        return None
+
+    async def shown(self, call: ToolCall) -> str | None:
+        """The line the person is shown for `call` when it is held for their OK, when this source can say exactly what
+        it would change; None when the generic summary of its arguments stands. The line is code-written and holds no
+        text from outside the household, since it is carried into her later turns. Raises Unshown when the change
+        cannot be shown as it would be made. A wrapper answers as the source that owns the call does."""
         return None
 
     async def for_turn(self) -> "Tools":

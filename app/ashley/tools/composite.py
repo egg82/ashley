@@ -92,3 +92,8 @@ class CompositeTools(Tools):
         """What the source that offered the tool makes of the call; None for a name no source offers."""
         source = self._routes.get(call.name)
         return None if source is None else await source.vetted(call, words)
+
+    async def shown(self, call: ToolCall) -> str | None:
+        """What the source that offered the tool shows; None for a name no source offers."""
+        source = self._routes.get(call.name)
+        return None if source is None else await source.shown(call)

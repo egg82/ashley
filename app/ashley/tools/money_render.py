@@ -2,7 +2,7 @@
 as the backend formats them, ids only where another tool takes them, and `cut` true when the backend holds more than was
 shown."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from ..ledger.model import Account, Categorised, Category, Entry, NetWorth, Page
 
@@ -64,6 +64,15 @@ def categorised(done: Mapping[str, Categorised]) -> dict[str, object]:
         if ids:
             out[outcome] = ids
     return out
+
+
+def recategorising(category: Category, entries: Sequence[Entry]) -> str:
+    """The line the person agrees to before `entries` go to `category`: each by its date, amount and account and the
+    category it leaves. Never a transaction's name or merchant, which are written outside the household."""
+    to = category.name if category.parent is None else f"{category.parent} / {category.name}"
+    each = [f"{e.date}, {e.amount or 'no amount'}{f' in {e.account}' if e.account else ''}, from "
+            f"{e.category or 'no category'}" for e in entries]
+    return f"Move {len(entries)} transaction{'' if len(entries) == 1 else 's'} to {to}: {'; '.join(each)}"
 
 
 def net_worth(worth: NetWorth) -> dict[str, object]:

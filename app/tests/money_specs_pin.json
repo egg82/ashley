@@ -96,5 +96,5 @@
    "reads": false
   }
  ],
- "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short. The one change you can make there is a transaction's category, with money_categorise, by the ids money_transactions and money_categories give, and only when the person asks for it; once you have read transactions it may wait for their OK instead of happening, and you say so."
+ "instructions": "The money tools read the household's finances in Sure, the app they keep them in: accounts with their balances, transactions, categories and net worth. Amounts are as Sure shows them, sign and currency included. Filter transactions by the ids money_accounts and money_categories give, and say so when an answer was cut short. The one change you can make there is a transaction's category, with money_categorise, by the ids money_transactions and money_categories give, and only when the person asks for it. It never happens straight away: it is shown to the person and waits for their OK, so say that it is waiting, not that it is done."
 }

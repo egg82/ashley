@@ -1,6 +1,6 @@
 """The money tools as the model sees them, and their arguments checked into a ledger query or a categorisation. All but
-`money_categorise` only read (`ToolSpec.reads`); it changes the household's records, so it is a `judged` change that a
-turn which has read outside words holds for the person's OK (`ashley.tools.outside`)."""
+`money_categorise` only read (`ToolSpec.reads`); it changes the household's records, so it is an `asks` change, held
+for the person's OK in every turn (`ashley.tools.outside`)."""
 
 import re
 from dataclasses import dataclass
@@ -27,8 +27,8 @@ INSTRUCTIONS = ("The money tools read the household's finances in Sure, the app 
                 "currency included. Filter transactions by the ids money_accounts and money_categories give, and say "
                 "so when an answer was cut short. The one change you can make there is a transaction's category, with "
                 "money_categorise, by the ids money_transactions and money_categories give, and only when the person "
-                "asks for it; once you have read transactions it may wait for their OK instead of happening, and you "
-                "say so.")
+                "asks for it. It never happens straight away: it is shown to the person and waits for their OK, so "
+                "say that it is waiting, not that it is done.")
 
 
 def specs(config: MoneyConfig) -> tuple[ToolSpec, ...]:
@@ -57,7 +57,7 @@ def specs(config: MoneyConfig) -> tuple[ToolSpec, ...]:
                                                    f"{config.categorise_max}"},
                 "category_id": {"type": "string", "description": "the category, by the id money_categories gives"}},
             "required": ["transaction_ids", "category_id"]},
-                 reads=False, outside=False, tier="judged", label="Categorised transactions in Sure"),
+                 reads=False, outside=False, tier="asks", label="Categorised transactions in Sure"),
     )
 
 
