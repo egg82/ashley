@@ -48,7 +48,7 @@ def test_it_starts_with_no_environment_and_loads_no_database_code(tmp_path: Path
                          env={"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT)})
     assert run.returncode == 0, run.stderr
     loaded = json.loads(run.stdout.strip().splitlines()[-1])
-    assert loaded == ["ashley", "ashley.logs", "ashley.web", "ashley.web.serve", "ashley.web.server_paths",
+    assert loaded == ["ashley", "ashley.logs", "ashley.web", "ashley.web.access", "ashley.web.serve", "ashley.web.server_paths",
                       "ashley.web.static"]
 
 
@@ -56,7 +56,6 @@ def request_lines(capsys: pytest.CaptureFixture[str]) -> list[str]:
     return [ln for ln in capsys.readouterr().out.splitlines() if "event=web.request" in ln]
 
 
-@pytest.mark.xfail(strict=True, reason="the web Deployment logs only its start")
 def test_it_logs_one_line_per_request_without_the_query_or_the_caller(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     c = TestClient(create_web(built_client(tmp_path)))
     capsys.readouterr()
@@ -72,7 +71,6 @@ def test_it_logs_one_line_per_request_without_the_query_or_the_caller(tmp_path: 
         assert all(secret not in ln for ln in lines)
 
 
-@pytest.mark.xfail(strict=True, reason="the web Deployment logs only its start")
 def test_it_does_not_log_health_probes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     c = TestClient(create_web(built_client(tmp_path)))
     capsys.readouterr()

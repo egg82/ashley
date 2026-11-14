@@ -16,6 +16,8 @@ uplink diverge or split-brain.
   (`ashley.web.server_paths`, which `app/tests/test_server_paths.py` holds every route to) to `app` and everything else
   to `web`; `web` answers a server path with 404 rather than the page. The app still mounts the client too, so either
   routing serves the page.
+  `web` logs one `web.request` line per request (method, path, status, bytes, duration; no query, headers or client
+  address), and not kubelet probes (`ashley.web.access`).
 
 ## Work in flight survives its pod
 
