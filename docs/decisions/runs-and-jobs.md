@@ -131,7 +131,7 @@ the pieces it made, never its transcript ("A call carries only what this reply n
   Claude Code job that is blocked on a dialog wakes her at once, because only the person can unblock it. A group still
   unsettled at `group_timeout_min` has its unfinished jobs ended `timed_out`, and then wakes once. The result is outside
   text: the woken turn is tainted `watch`.
-- `BenchJobs` lives in `errands` as its second job type; `tools` and `watches` call it.
+- `BenchJobs` lives in `errands` as its second job type; `tools` and `watches` call it, and `unfinished_of` reads a person's jobs that are not final.
 - A bench turn that offers `bench_hand_off` and runs past `hand_off_after_s` or `hand_off_after_rounds` (`turns.json`) is
   told once, as an act note, that handing the work off is the way; the tool choice stays `auto`. A step on such a turn
   cut off at the token limit is asked again with the `too_big_hand_off` note instead of `too_big`, chosen by the tool
@@ -180,6 +180,7 @@ person turn, so a turn owes at most once.
 | `sweep(claim_s, max_age_s) -> Counts` | `running` errands claimed more than `claim_s` ago become `given_up`, reason `interrupted`; `due` ones older than `max_age_s` become `given_up`, reason `expired`. |
 | `untold(hearer, limit) -> tuple[Done, ...]` | The hearer's `done` errands not yet told that `MAY_HEAR` lets them hear, oldest first. |
 | `told(errand_ids)` | Sets `told_at` on each. |
+| `held(asker_id, limit) -> tuple[Held, ...]` | The asker's errands that are `due`, `running`, or `done` and not yet told, newest first; a held answer is left out. |
 
 **The job** is `ashley.channels.errand.job.ErrandJob`, a singleton under `Lease` named `errands`, started in
 `ashley.wiring_singletons.singletons` beside the write job. Each tick (`tick_s`) it calls `sweep`. When anything is due, it reads
