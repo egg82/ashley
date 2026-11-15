@@ -169,8 +169,12 @@ alone, never her rules.
   `CLAUDE.md`, this file) from the doc deltas its writers report; a writer edits the decision file for its own system.
 - **The queue is the repo's issues**, ordered on [the Ashley: Work board](https://github.com/users/egg82/projects/3)
   by its Status (Ready, In progress, Blocked, Done). Take the top Ready issue, set it In progress, and open a pull
-  request whose description says `Closes #n`. A blocked issue ends with a **Blocked on:** line. Cite an issue by number,
-  never by its place on the board.
+  request whose description says `Closes #n` when it finishes the whole issue, or `Part of #n` when it ships one of
+  several bullets (then delete that bullet from the issue at merge). A blocked issue ends with a **Blocked on:** line.
+  Cite an issue by number, never by its place on the board.
+- **A pull request's title, scope and description follow the `pr-description` skill's baseline**: one change a
+  reviewer can hold in their head, a stand-alone body (what changes, Why, How, Verified, and the conditional sections
+  only when they apply), and nothing only the author can resolve.
 - **A refactor goes in byte-identical first**; a fix found on the way is its own commit, with its own test.
 - **Tests come from a different agent than the code**, written blind from the interface and its contract.
 - **A pull request that touches her tools, persona or routes reports `python -m ashley.evals house` before and after** (`--json` to diff the two); it measures and never gates, and no write reaches the house.
