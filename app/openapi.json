@@ -8958,7 +8958,14 @@
             "title": "Id"
           },
           "bench_id": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Bench Id"
           },
           "piece_id": {
@@ -9009,7 +9016,7 @@
           "expires_at"
         ],
         "title": "ChatLook",
-        "description": "A picture she was given of a bench for a message, as the page shows it under her answer: of piece `piece_id`\nof bench `bench_id`, or of the whole bench when `piece_id` is null. `url` is a link to the picture (same site, no\nsession needed) that stops working at `expires_at` (Unix seconds), so a page that stays open reads the\nconversation again before then; null when this process mints no links."
+        "description": "A picture she was given of a bench for a message, as the page shows it under her answer: of piece `piece_id`\nof bench `bench_id`, or of the whole bench when `piece_id` is null; a look through a camera has a null `bench_id`. `url` is a link to the picture (same site, no\nsession needed) that stops working at `expires_at` (Unix seconds), so a page that stays open reads the\nconversation again before then; null when this process mints no links."
       },
       "ChatMessage": {
         "properties": {

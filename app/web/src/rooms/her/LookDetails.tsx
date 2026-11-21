@@ -3,6 +3,7 @@
 import type { ChatLook } from '../../api/types';
 
 function of(look: ChatLook): string {
+  if (look.bench_id === null) return 'a camera';
   return look.piece_id === null ? 'the whole bench' : `piece ${look.piece_id}`;
 }
 
