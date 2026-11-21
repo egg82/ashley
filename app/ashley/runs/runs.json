@@ -8,11 +8,11 @@
   "languages": {
     "python": {
       "image": "docker.io/library/python:3.13.18-alpine3.24@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8",
-      "script_timeout_s": 10,
-      "pod_deadline_s": 30,
-      "cpu": "500m",
-      "cpu_request": "250m",
-      "memory": "256Mi",
+      "script_timeout_s": 30,
+      "pod_deadline_s": 60,
+      "cpu": "1",
+      "cpu_request": "500m",
+      "memory": "1Gi",
       "work_mib": 32,
       "log_bytes": 262144
     },

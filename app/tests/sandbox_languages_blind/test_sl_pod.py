@@ -29,8 +29,8 @@ def test_a_python_pod_keeps_the_python_image_and_limits_when_build123d_is_offere
     cfg = config()
     made = manifest(job("python"), cfg, RUNNER, RUNTIME)
     assert container(made)["image"] == cfg.languages["python"].image != CAD
-    assert made["spec"]["activeDeadlineSeconds"] == 30
-    assert container(made)["resources"]["limits"] == {"cpu": "500m", "memory": "256Mi"}
+    assert made["spec"]["activeDeadlineSeconds"] == 60
+    assert container(made)["resources"]["limits"] == {"cpu": "1", "memory": "1Gi"}
 
 
 def test_the_two_languages_pods_differ_only_in_what_the_profile_sets() -> None:

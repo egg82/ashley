@@ -22,8 +22,8 @@ def test_python_is_a_profile_under_languages_with_its_image() -> None:
     profile = shipped.profile("python")
     assert profile is not None and profile is shipped.languages["python"]
     assert "@sha256:" in profile.image
-    assert (profile.script_timeout_s, profile.pod_deadline_s) == (10, 30)
-    assert (profile.cpu, profile.cpu_request, profile.memory) == ("500m", "250m", "256Mi")
+    assert (profile.script_timeout_s, profile.pod_deadline_s) == (30, 60)
+    assert (profile.cpu, profile.cpu_request, profile.memory) == ("1", "500m", "1Gi")
     assert (profile.work_mib, profile.log_bytes) == (32, 262144)
 
 
