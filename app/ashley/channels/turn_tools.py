@@ -23,6 +23,7 @@ from ..tools.code_host import CodeHostTools
 from ..tools.bench_run import BenchRunTools
 from ..tools.bench_skills import BenchSkillTools
 from ..tools.bench_tidy import BenchTidyTools
+from ..tools.browser_session import BrowserSessionTools
 from ..tools.bench_tools import BenchTools
 from ..tools.composite import CompositeTools
 from ..tools.discord_home_tools import HomeTools
@@ -85,7 +86,8 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     (`audience.owner_alone`) and connections can be opened, their household's finances (`money`), the print queue (`print_queue`, and on a bench `print_upload`), the speaker's own code host (`code_host`) Claude Code sessions (`claude_code`) and watches on what they connected (`watches`), each an
     empty catalogue until they connect one; with a known speaker,
     reading the mailboxes the resource gate allows the turn (`mail`, `ConnectionResources.usable`: any turn, speaker or not), setting reminders (`reminders`), reading the household's devices (`devices`), and listing and cancelling theirs only where the reply reaches them alone; with
-    `said` (the conversation id and the person turn's id) and a `Sandbox` that runs some language, running code
+    `said` (the conversation id and the person turn's id), a browser she drives (`browser`, an empty catalogue while none
+    is wired), and with a `Sandbox` that runs some language, running code
     (`code`), recorded against that turn, whoever spoke, but on a bench with a known speaker running its code pieces
     instead (`bench_run`), recorded against the bench and the turn: code on a bench is a piece, never a loose run, and past
     `max_runs_per_turn` of them handed to a worker (`jobs`, `tools.bench_jobs`) where `hands_off`.
@@ -107,7 +109,7 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
         return CompositeTools({EVERYDAY: everyday, **rest, READERS: readers})
 
     added = {**sources(inbound, arrival, said and said[0], results, said, usable), **_mail(inbound),
-             **_code(inbound, said), **_home(inbound)}
+             **_code(inbound, said), **_browser(inbound, said), **_home(inbound)}
     own = narrowed(inbound, CompositeTools({EVERYDAY: everyday, **added}) if added else everyday)
     readers = ReaderTools(lambda names: Reading(Only(own, names)))
     if inbound.speaker_id is None:
@@ -153,6 +155,12 @@ def _code(inbound: Inbound, said: tuple[int, int] | None) -> Mapping[str, Tools]
         return {"bench_run": BenchRunTools(inbound.household_id, inbound.speaker_id, bench, *said,
                                            hand_off=hands_off(inbound))}
     return {"code": RunCodeTools(inbound.household_id, *said)}
+
+
+def _browser(inbound: Inbound, said: tuple[int, int] | None) -> Mapping[str, Tools]:
+    if said is None:
+        return {}
+    return {"browser": BrowserSessionTools(inbound.household_id, said[0])}
 
 
 def _bench_of(inbound: Inbound) -> int | None:
