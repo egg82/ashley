@@ -195,6 +195,9 @@ class Answers(HeldStates):
     async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
         return None
 
+    async def follow(self, owner: str, household_id: int, entity_ids: object, record: object) -> None:
+        return None
+
 
 @pytest.mark.parametrize("answers,expected", [
     (Answers({DOOR: EntityState("on", "Back door")}), {DOOR: {"state": "on"}}),

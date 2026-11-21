@@ -4,7 +4,7 @@ watches singleton holds (`hold`), so only the pod holding its lease keeps socket
 each thing once. `ha_held.SocketStates` implements it."""
 
 from abc import abstractmethod
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -34,6 +34,21 @@ class HouseEvent:
 Recorder = Callable[[HouseEvent], Awaitable[None]]
 
 
+@dataclass(frozen=True)
+class StateChange:
+    """One followed thing changed state: its `entity_id`, the new `state`, the new state's `attributes`, when Home
+    Assistant recorded it (`at`) and its context's id."""
+
+    entity_id: str
+    state: str
+    attributes: Mapping[str, object]
+    at: datetime
+    context: str
+
+
+Follower = Callable[[StateChange], Awaitable[None]]
+
+
 class HeldStates(Service):
     @classmethod
     def null(cls) -> "HeldStates":
@@ -61,6 +76,14 @@ class HeldStates(Service):
         raises loses that one event, logged. Raises HouseUnavailable when the house cannot be reached or nothing holds, HomesUnavailable when which
         house is the household's cannot be read; a household with no Home Assistant holds nothing."""
 
+    @abstractmethod
+    async def follow(self, owner: str, household_id: int, entity_ids: Collection[str], record: Follower) -> None:
+        """While held, hand each state change of `entity_ids` of the household to `record`, with the new state's
+        attributes, as it happens (a state trigger on exactly those things, so Home Assistant sends nothing else).
+        Replaces what `owner` followed before (none named lets go of all its own); the socket holds the union over
+        owners, and a thing two owners follow goes to both. A socket that dropped follows again; a change while it was
+        down is not told. A recorder that raises loses that one change, logged. Raises as `events` does."""
+
 
 class NullHeldStates(HeldStates):
     """No household reaches a house."""
@@ -72,4 +95,7 @@ class NullHeldStates(HeldStates):
         raise HouseUnavailable("held states are not wired")
 
     async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
+        raise HouseUnavailable("held states are not wired")
+
+    async def follow(self, owner: str, household_id: int, entity_ids: Collection[str], record: Follower) -> None:
         raise HouseUnavailable("held states are not wired")

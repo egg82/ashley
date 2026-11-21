@@ -5,7 +5,7 @@ REST. Which house is the household's comes from `Homes` on every ask. Tunables a
 import asyncio
 import json
 import time
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Collection, Mapping, Sequence
 from pathlib import Path
 from urllib.parse import quote
 
@@ -13,7 +13,7 @@ from .. import services
 from .ha_held_socket import HeldSettings, Socket, state_of
 from .ha_json import obj
 from .ha_rest import Rest
-from .held_states import EntityState, HeldStates, Recorder
+from .held_states import EntityState, Follower, HeldStates, Recorder
 from .homes import Home, Homes
 from .house import HouseUnavailable
 from .house_settings import HouseSettings, load as load_house
@@ -75,6 +75,15 @@ class SocketStates(HeldStates):
         if socket is None:
             raise HouseUnavailable("websocket: not held")
         await socket.events(owner, types)
+
+    async def follow(self, owner: str, household_id: int, entity_ids: Collection[str], record: Follower) -> None:
+        home = await services.get(Homes).of(household_id)
+        socket = self._socket(household_id, home)
+        if home is None:
+            return
+        if socket is None:
+            raise HouseUnavailable("websocket: not held")
+        await socket.follow(owner, entity_ids, record)
 
     def _socket(self, household_id: int, home: Home | None) -> Socket | None:
         """The household's held socket, opened on the first ask and replaced when its house changes; None while nothing
