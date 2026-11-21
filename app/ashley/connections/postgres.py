@@ -2,6 +2,7 @@
 kind and owner. One transaction per call; the statements are in `queries`."""
 
 import logging
+from collections.abc import Collection
 from typing import Any
 
 import psycopg
@@ -49,6 +50,12 @@ class PostgresConnections(Connections):
                 cur = await conn.execute(queries.LIST, {"household": household_id, "person": person_id})
                 rows = await cur.fetchall()
         return tuple(connection_of(r) for r in rows)
+
+    async def households_of_kinds(self, kinds: Collection[str]) -> tuple[int, ...]:
+        with translated():
+            async with self._database.connection() as conn:
+                cur = await conn.execute(queries.HOUSEHOLDS_OF_KINDS, {"kinds": list(kinds)})
+                return tuple(r[0] for r in await cur.fetchall())
 
     async def opened(self, connection_id: int, household_id: int, person_id: int | None = None) -> Opened | None:
         with translated():

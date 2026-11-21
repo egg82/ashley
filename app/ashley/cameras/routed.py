@@ -13,7 +13,7 @@ from ..connections import ports
 from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.model import Opened
 from .cameras import Cameras
-from .model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, LiveConfig, LiveSignal, NoLiveFeed, NoStill,
+from .model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, DetectionRecorder, LiveConfig, LiveSignal, NoLiveFeed, NoStill,
                     NoSuchCamera, NoSuchRecording, NotConnected, Recording, Roster, Still)
 from .source import CameraSource
 
@@ -100,6 +100,30 @@ class RoutedCameras(Cameras):
             raise NoSuchRecording
         return got
 
+
+    async def follow(self, household_id: int, record: DetectionRecorder) -> int:
+        serving = await self._serving(household_id)
+        kinds = {o.connection.kind for o in serving}
+        followed, failed = 0, None
+        for kind, adapter in self._adapters.items():
+            if kind not in kinds:
+                await self._quietly(household_id, kind, adapter.stop(household_id))
+        for opened in serving:
+            try:
+                followed += await self._adapters[opened.connection.kind].follow(opened, record)
+            except CamerasFailed as e:
+                logs.warning(log, "camera.follow_failed", source=opened.connection.kind, connection=opened.connection.id,
+                             reason=e.reason)
+                failed = e
+        if failed is not None and serving and followed == 0:
+            raise failed
+        return followed
+
+    async def _quietly(self, household_id: int, kind: str, stopping: Awaitable[None]) -> None:
+        try:
+            await stopping
+        except CamerasFailed as e:
+            logs.warning(log, "camera.follow_failed", source=kind, household=household_id, reason=e.reason)
 
     async def live_config(self, household_id: int, camera_id: str) -> LiveConfig:
         _, got = await self._through(household_id, camera_id, "live", lambda a, o, c: a.live_config(o, c))

@@ -1,7 +1,10 @@
 """What a camera's own detector captured, from Home Assistant's `nest` media source: the camera entity's device
 (`config/entity_registry/list`), the device's events (WebSocket `media_source/browse_media`), and an event's preview
 picture (REST GET of the thumbnail path the browse gives). A camera of another platform, or a device the source does not
-know, has no events."""
+know, has no events. The event entities that tell its detector's events as they happen are the ones on the same device
+(`detectors`)."""
+
+from collections.abc import Collection
 
 from .ha_json import JsonObject, obj, rows, text
 from .ha_registry import Registries
@@ -23,6 +26,17 @@ class Events:
     async def of(self, camera: str) -> tuple[Event, ...]:
         return tuple(Event(text(c.get("media_content_id")), text(c.get("title"))) for c in await self._children(camera)
                      if text(c.get("media_content_id")))
+
+    async def detectors(self, cameras: Collection[str]) -> dict[str, str]:
+        """Each `event` entity of a camera's device (`entity_registry`'s `device_id`), to the camera; a disabled entity,
+        or a camera with no device, has none."""
+        entries = await self._registries.rows("entity")
+        device_of = {text(e.get("entity_id")): text(e.get("device_id")) for e in entries
+                     if text(e.get("entity_id")) in cameras}
+        camera_of = {d: c for c, d in device_of.items() if d}
+        return {text(e.get("entity_id")): camera_of[text(e.get("device_id"))] for e in entries
+                if text(e.get("entity_id")).startswith("event.") and text(e.get("device_id")) in camera_of
+                and e.get("disabled_by") is None}
 
     async def picture(self, camera: str, event_id: str) -> Preview | None:
         for child in await self._children(camera):

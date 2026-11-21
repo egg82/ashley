@@ -10,7 +10,7 @@ Every change names an *operation key* (`perform:<action>`, `write:config:<kind>`
 irreversible is data (`irreversible.json`, `irreversible.is_irreversible`), and the adapter does not decide it."""
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Collection, Mapping
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from datetime import datetime
@@ -201,6 +201,11 @@ class House(ABC):
         """Hand the browser's `candidate` for the feed `session_id` to the house. Raises HouseRejected when the camera
         has no WebRTC feed, HouseUnavailable."""
         raise HouseUnavailable("no live feed")
+
+    async def detectors(self, cameras: Collection[str]) -> Mapping[str, str]:
+        """The event entities that carry the detections of `cameras` (entity ids): each one's entity id to its camera's,
+        found by the device they share. Raises HouseUnavailable."""
+        raise HouseUnavailable("no detectors")
 
     @abstractmethod
     async def events(self, camera: str) -> tuple[Event, ...]:

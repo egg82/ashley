@@ -3,7 +3,7 @@ registries and helpers through the WebSocket API (`ha_registry`, `ha_changes`). 
 data, `house.json`. Logs nothing itself; her tools log what they ask."""
 
 import asyncio
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Collection, Mapping
 from contextlib import AbstractAsyncContextManager
 from typing import Any, Literal
 from urllib.parse import quote
@@ -70,6 +70,9 @@ class HaHouse(House):
 
     async def event_picture(self, camera: str, event_id: str) -> Preview | None:
         return await self._events.picture(camera, event_id)
+
+    async def detectors(self, cameras: Collection[str]) -> Mapping[str, str]:
+        return await self._events.detectors(cameras)
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         if not window.ids:

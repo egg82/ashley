@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from contextlib import AbstractAsyncContextManager
 
 from ..connections.model import Opened
-from .model import Camera, Candidate, LiveConfig, LiveSignal, Recording, Still
+from .model import Camera, Candidate, DetectionRecorder, LiveConfig, LiveSignal, Recording, Still
 
 
 class CameraSource(ABC):
@@ -28,6 +28,16 @@ class CameraSource(ABC):
     async def recording_still(self, opened: Opened, camera: Camera, recording_id: str) -> Still | None:
         """One picture of the recording `recording_id` (as `recordings` listed it); None when the source has no such
         recording for `camera`. Asks once. Raises CamerasFailed."""
+        return None
+
+    async def follow(self, opened: Opened, record: DetectionRecorder) -> int:
+        """Follow the detectors of the cameras `cameras` lists, each detection handed to `record` as it happens, in
+        place of whatever was followed before; how many detectors are followed. A source with no detector events
+        follows none. A detection while the source was unreachable is not told. Raises CamerasFailed."""
+        return 0
+
+    async def stop(self, household_id: int) -> None:
+        """Stop following the household's detectors. Raises CamerasFailed."""
         return None
 
     @abstractmethod
