@@ -9,12 +9,8 @@ from typing import Any
 import httpx2
 
 from . import services
-from .channels.devices import Devices
 from .channels.lexicons import Lexicons
 from .channels.postgres_lexicons import PostgresLexicons
-from .channels.postgres_devices import PostgresDevices
-from .channels.kiosk.device_controls import DeviceControls
-from .channels.kiosk.postgres_device_controls import PostgresDeviceControls
 from .channels import outbox, resume
 from .channels.outbox import Outbox
 from .channels.postgres_outbox import PostgresOutbox
@@ -26,11 +22,6 @@ from .channels.spend_report import SpendReport
 from .channels.spend_view import SpendView
 from .channels.push.postgres_subscriptions import PostgresSubscriptions
 from .channels.push.subscriptions import Subscriptions
-from .channels.voice import config as voice_config
-from .channels.voice.clips import Clips
-from .channels.voice.postgres_clips import PostgresClips
-from .channels.voice.postgres_voices import PostgresVoices
-from .channels.voice.voices import Voices
 from .codehost.kinds import GITHUB, GITLAB
 from .connections.connections import Connections
 from .connections.deployment_secrets import DeploymentSecrets
@@ -113,6 +104,7 @@ from .runs.postgres import PostgresRuns
 from .runs.runs import Runs
 from .tidy.register import register as register_tidy
 from .settings import Settings
+from .wiring_devices import wire_devices
 from .wiring_discord import wire_discord
 from .wiring_inference import wire_inference
 from .wiring_secrets import register as register_secrets, settle as settle_secrets
@@ -241,15 +233,6 @@ def wire_files(settings: Settings) -> Callable[[], Coroutine[Any, Any, None]]:
     return http.aclose
 
 
-def _wire_devices() -> None:
-    """What belongs to a device: its sign-in, its touch controls, the clips it plays and the voices it knows."""
-    database = services.get(Database)
-    services.register(Devices, PostgresDevices(database))
-    services.register(DeviceControls, PostgresDeviceControls(database))
-    services.register(Clips, PostgresClips(database, voice_config.load().clip_retention_s))
-    services.register(Voices, PostgresVoices(database))
-
-
 def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallback,
          database: Database | None = None) -> list[Callable[[], Coroutine[Any, Any, None]]]:
     """Register every service the settings call for. Returns what the process must call on shutdown to release
@@ -266,7 +249,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(HouseholdWriter, PostgresHouseholdWriter(services.get(Database)))
     services.register(Memory, PostgresMemory(services.get(Database)))
     services.register(FactWriter, InferenceFactWriter())
-    _wire_devices()
+    wire_devices()
     services.register(Lexicons, PostgresLexicons(services.get(Database)))
     services.register(Outbox, PostgresOutbox(services.get(Database), outbox.load().stale_s, policy.load()))
     services.register(Sessions, PostgresSessions(services.get(Database), signin_policy.load(),
