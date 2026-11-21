@@ -1,11 +1,12 @@
 """The port to Bambuddy's REST API (`ashley.services`): a GET, a JSON POST or a file upload under a base URL with an API
-key, answering the parsed JSON body. The key travels in the `X-API-Key` header (the OpenAPI's bearer scheme is for the login token) and is never logged or put in an exception message; a call
-logs `bambuddy.get`, `bambuddy.post` or `bambuddy.upload` with the endpoint's path (no query), the status and duration_ms."""
+key, answering the parsed JSON body, or a GET answering a picture's bytes (`fetch`). The key travels in the `X-API-Key` header (the OpenAPI's bearer scheme is for the login token) and is never logged or put in an exception message; a call
+logs `bambuddy.get`, `bambuddy.fetch`, `bambuddy.post` or `bambuddy.upload` with the endpoint's path (no query), the status and duration_ms."""
 
 import logging
 import time
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass
 from typing import Literal
 
 import httpx2
@@ -39,6 +40,14 @@ def base_url(text: str) -> str | None:
     return address.base_url(text, _SCHEMES)
 
 
+@dataclass(frozen=True)
+class Fetched:
+    """A picture Bambuddy answered: its `data` and the `media_type` it gave it."""
+
+    data: bytes
+    media_type: str
+
+
 class Bambuddy(Service):
     @classmethod
     def null(cls) -> "Bambuddy":
@@ -47,6 +56,11 @@ class Bambuddy(Service):
     @abstractmethod
     async def get(self, base: str, api_key: str, path: str, params: Mapping[str, str | int | bool]) -> object:
         """The parsed JSON of `GET {base}{path}?{params}`, `path` starting `/api/v1/`. Raises BambuddyFailed."""
+
+    @abstractmethod
+    async def fetch(self, base: str, api_key: str, path: str, params: Mapping[str, str | int | bool]) -> Fetched:
+        """The picture `GET {base}{path}?{params}` answers, `path` starting `/api/v1/`; the key is sent as for `get`.
+        Raises BambuddyFailed (`not_bambuddy` for an answer that is not an image)."""
 
     @abstractmethod
     async def post(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
@@ -60,6 +74,9 @@ class Bambuddy(Service):
 
 class NullBambuddy(Bambuddy):
     async def get(self, base: str, api_key: str, path: str, params: Mapping[str, str | int | bool]) -> object:
+        raise BambuddyFailed("unreachable")
+
+    async def fetch(self, base: str, api_key: str, path: str, params: Mapping[str, str | int | bool]) -> Fetched:
         raise BambuddyFailed("unreachable")
 
     async def post(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
@@ -81,6 +98,22 @@ class HttpBambuddy(Bambuddy):
         return await self._send("get", path, lambda: self._http.get(
             base + path, params=query, timeout=self._timeout_s, headers=_headers(api_key)))
 
+    async def fetch(self, base: str, api_key: str, path: str, params: Mapping[str, str | int | bool]) -> Fetched:
+        query = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
+        started = time.monotonic()
+        try:
+            response = await self._http.get(base + path, params=query, timeout=self._timeout_s,
+                                            headers={"X-API-Key": api_key, "Accept": "image/*"})
+        except httpx2.HTTPError as e:
+            _logged("fetch", path, "none", started)
+            raise BambuddyFailed("unreachable") from e
+        _logged("fetch", path, response.status_code, started)
+        _checked(response, "get")
+        media_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+        if not media_type.startswith("image/"):
+            raise BambuddyFailed("not_bambuddy")
+        return Fetched(response.content, media_type)
+
     async def post(self, base: str, api_key: str, path: str, body: Mapping[str, object]) -> object:
         return await self._send("post", path, lambda: self._http.post(
             base + path, json=body, timeout=self._timeout_s, headers=_headers(api_key)))
@@ -99,18 +132,22 @@ class HttpBambuddy(Bambuddy):
             _logged(how, path, "none", started)
             raise BambuddyFailed("unreachable") from e
         _logged(how, path, response.status_code, started)
-        if response.status_code in (401, 403):
-            raise BambuddyFailed("refused")
-        if response.status_code == 404:
-            raise BambuddyFailed("not_found")
-        if how != "get" and response.status_code in _REJECTED:
-            raise BambuddyFailed("rejected")
-        if not response.is_success:
-            raise BambuddyFailed("unreachable")
+        _checked(response, how)
         try:
             return response.json()
         except ValueError as e:
             raise BambuddyFailed("not_bambuddy") from e
+
+
+def _checked(response: httpx2.Response, how: str) -> None:
+    if response.status_code in (401, 403):
+        raise BambuddyFailed("refused")
+    if response.status_code == 404:
+        raise BambuddyFailed("not_found")
+    if how != "get" and response.status_code in _REJECTED:
+        raise BambuddyFailed("rejected")
+    if not response.is_success:
+        raise BambuddyFailed("unreachable")
 
 
 def _headers(api_key: str) -> dict[str, str]:

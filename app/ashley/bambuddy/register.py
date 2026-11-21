@@ -1,4 +1,5 @@
-"""How Bambuddy is wired: its HTTP port and the household's Printing and Stock over it."""
+"""How Bambuddy is wired: its HTTP port and the household's Printing and Stock over it. Its camera source
+(`cameras.BambuddyCameras`) joins the others in `ashley.wiring_cameras`."""
 
 import httpx2
 

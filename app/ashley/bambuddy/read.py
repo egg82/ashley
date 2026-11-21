@@ -11,7 +11,7 @@ from ..connections import answered, ports
 from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.model import Opened, Port
 from . import wire
-from .client import Bambuddy, BambuddyFailed, Reason
+from .client import Bambuddy, BambuddyFailed, Fetched, Reason
 
 
 Turned = Literal["not_found", "rejected"]
@@ -40,6 +40,17 @@ class Reader:
         try:
             got = wire.parsed(model, await services.get(Bambuddy).get(opened.connection.base_url, opened.secret, path,
                                                                       params))
+        except BambuddyFailed as e:
+            if e.reason == "not_found":
+                return None
+            raise self._failed(e.reason) from e
+        await answered.record(opened.connection.id)
+        return got
+
+    async def fetch(self, opened: Opened, path: str, params: Mapping[str, str | int | bool]) -> Fetched | None:
+        """The picture Bambuddy answers at `path`, None for a 404. Raises the port's failure."""
+        try:
+            got = await services.get(Bambuddy).fetch(opened.connection.base_url, opened.secret, path, params)
         except BambuddyFailed as e:
             if e.reason == "not_found":
                 return None
