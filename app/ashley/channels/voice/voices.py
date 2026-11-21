@@ -34,6 +34,14 @@ class PersonPrints:
     vectors: tuple[tuple[float, ...], ...]
 
 
+@dataclass(frozen=True)
+class OwnPrint:
+    """What a person can recognise of one of their prints: the device it was enrolled on and when. Never the vector."""
+
+    device: str
+    enrolled_at: datetime
+
+
 class Voices(Service):
     @classmethod
     def null(cls) -> "Voices":
@@ -43,6 +51,10 @@ class Voices(Service):
     async def prints(self, household_id: int, model: str) -> tuple[PersonPrints, ...]:
         """Every person in that household with at least one print made by `model`, ordered by person id; empty when
         none. Raises VoicesUnavailable."""
+
+    @abstractmethod
+    async def own(self, person_id: int) -> tuple[OwnPrint, ...]:
+        """`person_id`'s prints, oldest first, whatever model made them; empty when none. Raises VoicesUnavailable."""
 
     @abstractmethod
     async def arm(self, device_id: int, person_id: int, wakes: int, until: datetime) -> None:
@@ -66,6 +78,9 @@ class NullVoices(Voices):
     answer nothing and an enrolment is not armed; only the admin's writes raise."""
 
     async def prints(self, household_id: int, model: str) -> tuple[PersonPrints, ...]:
+        return ()
+
+    async def own(self, person_id: int) -> tuple[OwnPrint, ...]:
         return ()
 
     async def arm(self, device_id: int, person_id: int, wakes: int, until: datetime) -> None:

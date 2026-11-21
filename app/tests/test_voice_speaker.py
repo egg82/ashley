@@ -16,7 +16,7 @@ from ashley.channels.model import Device, Satellite
 from ashley.channels.speaker import who
 from ashley.channels.voice.heard_as import MatchPolicy
 from ashley.channels.voice.run import Run
-from ashley.channels.voice.voices import Enrolled, PersonPrints, Voices, VoicesUnavailable
+from ashley.channels.voice.voices import Enrolled, OwnPrint, PersonPrints, Voices, VoicesUnavailable
 from ashley.inference.inference import Inference, InferenceUnavailable
 from ashley.inference.speech import AudioFormat, Heard, SpeechTask, Transcript
 from ashley.inference.voiceprint import Voiceprint
@@ -67,6 +67,9 @@ class FakeVoices(Voices):
         if self.error is not None:
             raise self.error
         return self.people if model == "titanet" else ()
+
+    async def own(self, person_id: int) -> tuple[OwnPrint, ...]:
+        raise AssertionError("not used")
 
     async def arm(self, device_id: int, person_id: int, wakes: int, until: datetime) -> None:
         raise AssertionError("not used")
