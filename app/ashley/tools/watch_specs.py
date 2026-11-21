@@ -52,6 +52,9 @@ def watch(kinds: Collection[str], tracked: Collection[str], max_hours: float, ac
                                       "description": "how long to watch at most; the kind's usual time if left out"},
                             **watch_sort.PROPERTIES,
                             **({"tools": TOOLS} if acting else {}),
+                            "method": {"type": "string", "maxLength": 40,
+                                       "description": "make each wake a round of a standing errand: the household's "
+                                                      "kind of work whose method you follow then"},
                         },
                         "required": ["kind"] if reads else ["kind", "target"],
                     }, outside=True, tier="runs", label="Started watching something")

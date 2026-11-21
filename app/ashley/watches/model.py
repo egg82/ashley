@@ -24,7 +24,9 @@ class Arm:
     `brief` is what its turn is for, people's data and never logged. A `standing` watch's `expires_at` moves forward by
     the time it was armed for on every successful read. `taint` is what tainted the turn that armed it, None for an untainted
     one: the woken turn starts `inherited` (`Watch.taint`). `made_in` is the conversation and turn that armed it when
-    `taint` is set, None for a watch armed before it was kept."""
+    `taint` is set, None for a watch armed before it was kept. `method` is the household's kind of work (a skill slug)
+    that makes each wake a round of a standing errand: the turn follows that skill (`Inbound.method`); None for a
+    wake that is only told what changed."""
 
     household_id: int
     person_id: int
@@ -44,6 +46,7 @@ class Arm:
     standing: bool = False
     taint: str | None = None
     made_in: tuple[int, int] | None = None
+    method: str | None = None
 
 
 @dataclass(frozen=True)
@@ -58,7 +61,7 @@ class Armed:
 class Watch:
     """One watch. `reason` is None while armed; for a paused watch the failure slug, for an ended one its
     `EndReason`. `baseline` is None until the first check; `version` rises each time a baseline is stored and `series`
-    each time the watch wakes her. `brief`, `standing`, `taint` and `made_in` are as `Arm` has them."""
+    each time the watch wakes her. `brief`, `standing`, `taint`, `made_in` and `method` are as `Arm` has them."""
 
     id: int
     household_id: int
@@ -88,6 +91,7 @@ class Watch:
     standing: bool = False
     taint: str | None = None
     made_in: tuple[int, int] | None = None
+    method: str | None = None
 
 
 @dataclass(frozen=True)

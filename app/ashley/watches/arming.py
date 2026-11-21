@@ -65,7 +65,7 @@ def hours_of(kind: str, hours: float | None) -> float:
 class Ask:
     """A person's request to watch `target` of `kind`, for `hours` (None: the kind's default), ending at `until`, its
     turn using `tools` (None: only the ones that read), on the talk of bench `bench_id` if any. `brief`, `standing`,
-    `taint` and `made_in` are as `Arm` has them. `track` and `when` are the kind's own when None; `tool` gives them, its
+    `taint`, `made_in` and `method` are as `Arm` has them. `track` and `when` are the kind's own when None; `tool` gives them, its
     target saying which fields it tracks."""
 
     household_id: int
@@ -82,6 +82,7 @@ class Ask:
     made_in: tuple[int, int] | None = None
     track: tuple[str, ...] | None = None
     when: Condition | None = None
+    method: str | None = None
 
 
 async def start(ask: Ask, seen: Seen | None, now: datetime) -> Armed:
@@ -92,7 +93,7 @@ async def start(ask: Ask, seen: Seen | None, now: datetime) -> Armed:
     arm = Arm(ask.household_id, ask.person_id, ask.kind, ask.target, label, ask.bench_id, "ashley",
               ask.track or config.track, ask.when or config.when, ask.until, ask.tools, config.interval_s,
               now + timedelta(hours=chosen), None if seen is None else seen.items, ask.brief, ask.standing, ask.taint,
-              ask.made_in)
+              ask.made_in, ask.method)
     armed = await services.get(Watches).arm(arm)
     logs.info(log, "watches.armed", watch=armed.id, kind=ask.kind, person=ask.person_id, armed_by="ashley",
               new=armed.new, hours=chosen)

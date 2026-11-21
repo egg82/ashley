@@ -361,7 +361,13 @@ and has no `ends_at`, so it never finishes.
   across both sites and is resumed by whichever pod holds it. A rule with a method names no speaker or device and does
   not greet, since findings go to the phone. Rejected: a link from a reminder to an event (a second event path beside
   the wake rules and the deposit-armed reminders).
-- **Not built yet:** a standing errand woken by a watch (a watch's `method`); a person setting one from the web app.
+- **A watch can carry the method.** `watch` takes an optional `method`, checked as `remind` checks it
+  (`ashley.tools.standing_method.named`), and the watch stores it (`watches.method`, the slug shape `wakes.method` has).
+  Its woken turn sets `Inbound.method`, so the turn is a round of the errand as a house wake's is. It is the watch path
+  extended by one column: the watch's check stores one `wakes` row per change, the wake's id is the turn's `source`, and a
+  watch with an unsettled wake is not checked again, so a round runs once across both sites. A re-arm of a live watch
+  replaces its method as it does its brief. Findings go where a watch's turn goes: the bench's talk, else the phone.
+- **Not built yet:** a person setting a standing errand from the web app.
 - **Rejected: a bot store** (Rakazo's agents, each with its own inbox and schedule). It would be a second scheduler and
   a second kind of method beside the `wakes` queue and Skills, which already hold both halves.
 - **Rejected: bots messaging each other** (Rakazo's `message_bot`, with a hop counter against loops), until two

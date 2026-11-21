@@ -47,8 +47,8 @@ class WatchSchedule:
     """A watch whose turn acts, to arm once the person agrees: `target` of `kind` for the reminder's person, ending at
     `until` or in `hours` (None: the kind's default), on bench `bench_id`'s talk. The `reminder` carries who and what:
     its brief is the watch's label, its tools the ones its turn uses, its `due_at` when it was proposed. `brief`
-    and `standing` are the watch's own (`ashley.watches.model.Arm`), as is `when` (None: the kind's): what the person agrees to
-    includes them."""
+    and `standing` are the watch's own (`ashley.watches.model.Arm`), as are `when` (None: the kind's) and `method`: what
+    the person agrees to includes them."""
 
     reminder: Reminder
     kind: str
@@ -59,6 +59,7 @@ class WatchSchedule:
     brief: str | None = None
     standing: bool = False
     when: Condition | None = None
+    method: str | None = None
 
 
 @dataclass(frozen=True)
@@ -140,11 +141,11 @@ def encode(payload: Payload) -> tuple[str, dict[str, Any]]:
             return REMINDERS.name, {"kind": "reminder", "reminder": _reminder_to_json(reminder)}
         case ReminderChange(reminder, target):
             return REMINDERS.name, {"kind": "reminder_change", "reminder": _reminder_to_json(reminder), "target": target}
-        case WatchSchedule(reminder, kind, target, until, hours, bench_id, brief, standing, when):
+        case WatchSchedule(reminder, kind, target, until, hours, bench_id, brief, standing, when, method):
             return REMINDERS.name, {"kind": "watch", "reminder": _reminder_to_json(reminder), "watch_kind": kind,
                                     "target": target, "until": None if until is None else condition.to_json(until),
                                     "hours": hours, "bench_id": bench_id, "brief": brief, "standing": standing,
-                                    "when": None if when is None else condition.to_json(when)}
+                                    "when": None if when is None else condition.to_json(when), "method": method}
         case HouseChange(change, summary):
             return HOUSE.name, {"kind": "house_change", "summary": summary, "change": {
                 "op": change.op, "kind": change.kind, "id": change.id, "data": dict(change.data),
@@ -165,7 +166,8 @@ def _decode_reminders(raw: Mapping[str, Any]) -> ReminderPayload:
                              None if raw["hours"] is None else float(raw["hours"]),
                              None if raw["bench_id"] is None else int(raw["bench_id"]),
                              None if raw.get("brief") is None else str(raw["brief"]), bool(raw.get("standing", False)),
-                             None if raw.get("when") is None else condition.from_json(raw["when"]))
+                             None if raw.get("when") is None else condition.from_json(raw["when"]),
+                             None if raw.get("method") is None else str(raw["method"]))
     if kind == "money_rule":
         return MoneyRule(reminder, deposit_rule.from_json(raw["rule"]))
     if kind == "reminder":
