@@ -218,7 +218,10 @@ webcam are later sources; detector events, live video and a bench watch are late
   only the named cameras and looks through only those: a camera not named is neither in `cameras` nor reachable by `camera_look`
   (the router finds the camera among the listed ones first).
 - **Some cameras give no still on demand.** HA's proxy answers 404, 500 or 503 for a camera with no image to give now (the
-  status codes are unverified against a live Nest camera); the adapter then returns none, `camera_look` answers `no_still` and
+  status codes are unverified against a live Nest camera), and so does a camera whose `camera/capabilities` (WebSocket)
+  list `frontend_stream_types` as `web_rtc` alone, which the proxy answers with a placeholder image, never asked
+  (measured on the household's Nest cameras: `["web_rtc"]` for the placeholder one, `["hls", "web_rtc"]` for the one
+  answering 500; `supported_features` and the attributes were identical); the adapter then returns none, `camera_look` answers `no_still` and
   tells her to say so, and nothing retries. Any other failure is `unreachable`, never none; a body that is not an image is too.
 - **Two tools: `cameras` and `camera_look`**, both reads and `outside=True` (a picture can carry text anyone put in front of
   the lens), offered to a known speaker in any chat with a turn while an object store is wired and a camera source serves. The

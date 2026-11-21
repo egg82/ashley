@@ -164,7 +164,7 @@ class House(ABC):
     @abstractmethod
     async def snapshot(self, camera: str) -> Snapshot | None:
         """The still the camera `camera` (an entity id) gives now; None when it gives none on demand (a camera that
-        only streams, or is off). Asks once. Raises HouseUnavailable."""
+        only streams, or is off). Asks the house for the camera's stream types, then the proxy once. Raises HouseUnavailable."""
 
     @abstractmethod
     async def history(self, window: Window) -> tuple[Series, ...]:

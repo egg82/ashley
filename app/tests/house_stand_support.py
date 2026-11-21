@@ -39,6 +39,7 @@ class Stand:
     commands: list[dict[str, Any]] = field(default_factory=list[dict[str, Any]])
     posted: list[tuple[str, Any, dict[str, str]]] = field(default_factory=list[tuple[str, Any, dict[str, str]]])
     stills: dict[str, tuple[int, str, bytes]] = field(default_factory=dict[str, tuple[int, str, bytes]])
+    stream_types: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     reject: str | None = None
     token: str = TOKEN
 
@@ -131,6 +132,8 @@ class Stand:
             return {"success": False, "error": {"code": "home_assistant_error", "message": self.reject}}
         if kind.endswith("_registry/list"):
             return {"success": True, "result": self.registries.get(kind.split("/")[1].removesuffix("_registry"), [])}
+        if kind == "camera/capabilities":
+            return {"success": True, "result": {"frontend_stream_types": self.stream_types.get(command["entity_id"], ["hls"])}}
         if kind == "config_entries/get":
             return {"success": True, "result": self.entries}
         if kind == "config/entity_registry/get_entries":
