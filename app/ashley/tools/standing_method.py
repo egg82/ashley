@@ -9,6 +9,8 @@ import logging
 
 from .. import logs, services
 from ..inference.model import ToolCall, ToolResult
+from ..skills import method
+from ..skills.method import NotAMethod
 from ..skills.skills import SkillRefused, Skills, SkillsUnavailable
 from .bench_args import BadArguments
 from .tools import Catalogue, Tools, ToolsUnavailable
@@ -19,24 +21,14 @@ UNREAD = ("This errand's method could not be read now. Carry out nothing for it 
 
 
 async def named(household_id: int, raw: object) -> str | None:
-    """The household's kind of work `raw` names, for a standing errand's method, when it has a method to follow; None
-    when `raw` is None. Raises BadArguments for anything else, naming the household's kinds; ToolsUnavailable when
-    the skills cannot be read."""
-    if raw is None:
-        return None
-    skills = services.get(Skills)
+    """`skills.method.named` for a tool: a kind that is not a method is a bad argument, and skills that cannot be read
+    are unavailable."""
     try:
-        try:
-            skill = await skills.current(household_id, raw) if isinstance(raw, str) else None
-        except SkillRefused:
-            skill = None
-        if skill is not None and skill.body.strip():
-            return skill.kind
-        kinds = await skills.kinds(household_id)
+        return await method.named(household_id, raw)
+    except NotAMethod as e:
+        raise BadArguments(str(e)) from e
     except SkillsUnavailable as e:
         raise ToolsUnavailable("skills unavailable") from e
-    raise BadArguments("method is the name of one of the household's kinds of work that has a method: "
-                       + ", ".join(k.kind for k in kinds))
 
 
 class StandingMethodTools(Tools):

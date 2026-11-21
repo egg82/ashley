@@ -197,3 +197,23 @@ def from_json(raw: Mapping[str, object]) -> Repeat:
         raise ValueError("nth is an integer and until a date")
     return Repeat(freq, every, datetime.fromisoformat(anchor), days or (), nth,
                   None if until is None else date.fromisoformat(until))
+
+
+def first_due(repeat: Repeat | None, local: datetime, zone: ZoneInfo, now: datetime) -> datetime:
+    """When it first falls due: `local` for a one-off, which must be ahead; for a rule its first occurrence, or when
+    that has passed the next one after `now`. Raises ValueError, saying why it has no such time."""
+    if repeat is None:
+        due = instant(local, zone)
+        if due <= now:
+            raise ValueError("that time has passed")
+        return due
+    first = starts(repeat)
+    if first is None:
+        raise ValueError("it would end before it starts")
+    due = instant(first, zone)
+    if due > now:
+        return due
+    later = next_after(repeat, now, zone)
+    if later is None:
+        raise ValueError("it has already ended")
+    return later

@@ -9,7 +9,8 @@ from typing import Any, NoReturn
 from zoneinfo import ZoneInfo
 
 from ..inference.model import ToolSpec
-from ..senses.repeat import MAX_COUNT, MAX_EVERY, NTHS, Repeat, freq_of, instant, next_after, starts, until_after
+from ..senses.repeat import MAX_COUNT, MAX_EVERY, NTHS, Repeat, freq_of, until_after
+from ..senses.repeat import first_due as repeat_first_due
 from ..senses.wakes import MAX_TOOLS, ROUTES, Route
 from .bench_args import BadArguments
 
@@ -71,23 +72,8 @@ def repeat_of(args: Mapping[str, object], anchor: datetime, base: Repeat | None)
 
 
 def first_due(repeat: Repeat | None, local: datetime, zone: ZoneInfo, now: datetime) -> datetime:
-    """When it first falls due: `local` for a one-off, which must be ahead; for a rule its first occurrence, or when
-    that has passed the next one after `now`."""
-    if repeat is None:
-        due = instant(local, zone)
-        if due <= now:
-            raise BadArguments("that time has passed")
-        return due
-    first = starts(repeat)
-    if first is None:
-        raise BadArguments("it would end before it starts")
-    due = instant(first, zone)
-    if due > now:
-        return due
-    later = next_after(repeat, now, zone)
-    if later is None:
-        raise BadArguments("it has already ended")
-    return later
+    """`repeat.first_due`, a time that cannot be had refused as a bad argument."""
+    return _made(lambda: repeat_first_due(repeat, local, zone, now))
 
 
 def route_of(raw: object, default: Route) -> Route:
