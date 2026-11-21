@@ -24,7 +24,7 @@ from money_support import EPOCH, HeldConnections
 
 HOME, ME = 1, 7
 CONFIG = claude_code_config.load()
-BENCH = "Alex's personal workstation, in the office near the workbench"
+BENCH = "The personal workstation, in the office near the workbench"
 
 
 def report(**changes: object) -> MachineReport:
@@ -58,7 +58,7 @@ def machines() -> Generator[Bridges]:
     held = HeldConnections()
     add(held, 1, "workstation", BENCH)
     add(held, 2, "vm", "")
-    add(held, 3, "laptop", "Alex's laptop")
+    add(held, 3, "laptop", "The travel laptop")
     bridges = Bridges({"https://workstation.test:7843": report(), "https://vm.test:7843": "old",
                        "https://laptop.test:7843": "down"})
     services.register(Connections, held)
@@ -90,7 +90,7 @@ def test_a_machine_that_cannot_report_is_listed_without_one_and_says_why(machine
     rows = {r["machine"]: r for r in say("claude_machines", {})[1]["machines"]}
     assert rows["vm"]["report"] is None and "too old" in rows["vm"]["report_unavailable"]
     assert rows["laptop"]["report"] is None and rows["laptop"]["report_unavailable"] == "it did not answer"
-    assert rows["laptop"]["description"] == "Alex's laptop"
+    assert rows["laptop"]["description"] == "The travel laptop"
 
 
 def test_a_named_machine_is_the_only_one_read_and_a_stranger_is_refused(machines: Bridges) -> None:
@@ -109,7 +109,7 @@ def test_a_field_the_bridge_could_not_read_stays_null_not_zero(machines: Bridges
 
 def test_the_sessions_list_names_each_machine_with_its_description(machines: Bridges) -> None:
     shown = say("claude_sessions", {})[1]["machines"]
-    assert {m["machine"]: m["description"] for m in shown} == {"workstation": BENCH, "vm": "", "laptop": "Alex's laptop"}
+    assert {m["machine"]: m["description"] for m in shown} == {"workstation": BENCH, "vm": "", "laptop": "The travel laptop"}
 
 
 def test_the_tool_is_outside_words_and_the_session_list_is_not(machines: Bridges) -> None:
