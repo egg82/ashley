@@ -6,8 +6,8 @@ from collections.abc import Generator
 
 import psycopg
 import pytest
-from ashley.api.model_catalogue_models import (ModelCatalogueModel, ModelCatalogueModelsResponse, ModelCatalogueRefused,
-                                               ModelCatalogueResponse)
+from ashley.api.model_catalogue_models import (ModelCatalogueModel, ModelCatalogueModelsResponse, ModelCatalogueProvider,
+                                               ModelCatalogueRefused, ModelCatalogueResponse)
 from ashley.api.person import SESSION_COOKIE
 from ashley.inference.catalogue_model import catalogue_to_json
 from ashley.main import create_app
@@ -91,12 +91,50 @@ def test_a_change_that_sets_and_resets_one_field_or_nothing_is_refused(client: t
     assert stored(url) == []
 
 
+def test_an_admin_defines_a_provider_models_dev_does_not_list_and_a_listed_one_keeps_its_models(
+        client: tuple[TestClient, str, int]) -> None:
+    c, url, person = client
+    made = c.put("/api/catalogue/providers", headers=WRITE, json={
+        "provider": "local", "set_fields": {"name": "Local vLLM", "api": "http://llm.test/v1"}})
+    assert made.status_code == 200, made.text
+    body = ModelCatalogueProvider.model_validate(made.json())
+    assert (body.name, body.api, body.listed_upstream, body.model_count) == ("Local vLLM", "http://llm.test/v1", False, 0)
+    assert [(o.field_name, o.set_by) for o in body.provider_overrides] == [("name", person), ("api", person)]
+    model = c.put("/api/catalogue/models", headers=WRITE, json={
+        "provider": "local", "model": "qwen", "set": {"input_usd_per_mtok": 0.5, "tool_call": True}})
+    assert model.status_code == 200 and ModelCatalogueModel.model_validate(model.json()).price.status == "priced"
+    anthropic = ModelCatalogueProvider.model_validate(c.put("/api/catalogue/providers", headers=WRITE, json={
+        "provider": "anthropic", "set_fields": {"name": "Anthropic", "api": "https://mine.test"}}).json())
+    assert (anthropic.name, anthropic.listed_upstream, [o.field_name for o in anthropic.provider_overrides]) == (
+        "Anthropic", True, ["api"]), "a name equal to upstream's is not stored"
+    reset = c.put("/api/catalogue/providers", headers=WRITE, json={"provider": "local", "set_fields": {}, "reset": ["name", "api"]})
+    assert ModelCatalogueProvider.model_validate(reset.json()).name == "local", "still listed through its model"
+    with psycopg.connect(url) as conn:
+        assert conn.execute("SELECT provider, field FROM model_catalogue_provider_overrides").fetchall() == [
+            ("anthropic", "api")]
+
+
+def test_a_provider_change_that_is_empty_contradicts_itself_or_names_nothing_is_refused(
+        client: tuple[TestClient, str, int]) -> None:
+    c, url, _ = client
+    both = c.put("/api/catalogue/providers", headers=WRITE, json={"provider": "x", "set_fields": {"name": "X"}, "reset": ["name"]})
+    empty = c.put("/api/catalogue/providers", headers=WRITE, json={"provider": "x", "set_fields": {}})
+    gone = c.put("/api/catalogue/providers", headers=WRITE, json={"provider": "x", "set_fields": {}, "reset": ["api"]})
+    assert [ModelCatalogueRefused.model_validate(r.json()).reason for r in (both, empty, gone)] == [
+        "set_and_reset", "empty", "empty"]
+    assert c.put("/api/catalogue/providers", headers=WRITE,
+                 json={"provider": "x", "set_fields": {"api": "ftp://nope"}}).status_code == 422
+    with psycopg.connect(url) as conn:
+        assert conn.execute("SELECT count(*) FROM model_catalogue_provider_overrides").fetchone() == (0,)
+
+
 def test_anyone_but_an_admin_of_the_first_household_is_refused(client: tuple[TestClient, str, int]) -> None:
     c, url, _ = client
     with psycopg.connect(url) as conn:
         conn.execute("UPDATE people SET admin = false")
     assert c.get("/api/catalogue").json()["code"] == "admin_only"
     assert c.put("/api/catalogue/models", headers=WRITE, json={**HAIKU, "set": {"free": True}}).status_code == 403
+    assert c.put("/api/catalogue/providers", headers=WRITE, json={"provider": "x", "set_fields": {"name": "X"}}).status_code == 403
     assert stored(url) == []
     c.cookies.clear()
     assert c.get("/api/catalogue").status_code == 401

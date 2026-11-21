@@ -8,7 +8,7 @@ from psycopg.types.json import Jsonb
 
 from .. import logs
 from ..db.database import Database
-from .catalogue_model import FieldName, to_json
+from .catalogue_model import FieldName, ProviderFieldName, to_json
 from .catalogue_override_write import CatalogueOverrideWriter
 from .postgres_catalogue import translated
 
@@ -18,6 +18,11 @@ _PUT = (
     "ON CONFLICT (provider, model, field) DO UPDATE SET value = excluded.value, person_id = excluded.person_id, "
     "set_at = now()")
 _RESET = "DELETE FROM model_catalogue_overrides WHERE provider = %s AND model = %s AND field = ANY(%s)"
+_PUT_PROVIDER = (
+    "INSERT INTO model_catalogue_provider_overrides (provider, field, value, person_id) VALUES (%s, %s, %s, %s) "
+    "ON CONFLICT (provider, field) DO UPDATE SET value = excluded.value, person_id = excluded.person_id, "
+    "set_at = now()")
+_RESET_PROVIDER = "DELETE FROM model_catalogue_provider_overrides WHERE provider = %s AND field = ANY(%s)"
 
 
 class PostgresCatalogueOverrideWriter(CatalogueOverrideWriter):
@@ -34,3 +39,13 @@ class PostgresCatalogueOverrideWriter(CatalogueOverrideWriter):
                     await conn.execute(_PUT, (provider, model, field, Jsonb(to_json(value)), person_id))
         logs.info(log, "catalogue.override_set", provider=provider, model=model, person=person_id, put=len(put),
                   reset=len(reset))
+
+    async def write_provider(self, provider: str, put: Mapping[ProviderFieldName, str],
+                             reset: Collection[ProviderFieldName], person_id: int) -> None:
+        with translated():
+            async with self._database.connection() as conn:
+                if reset:
+                    await conn.execute(_RESET_PROVIDER, (provider, list(reset)))
+                for field, value in put.items():
+                    await conn.execute(_PUT_PROVIDER, (provider, field, Jsonb(value), person_id))
+        logs.info(log, "catalogue.provider_set", provider=provider, person=person_id, put=len(put), reset=len(reset))

@@ -16,8 +16,9 @@ from psycopg.types.json import Jsonb
 from .. import logs
 from ..db.database import Database, DatabaseUnavailable
 from .catalogue import ModelCatalogueUnavailable
-from .catalogue_merge import Override
-from .catalogue_model import Catalogue, FieldName, catalogue_from_json, catalogue_to_json, field_value
+from .catalogue_merge import Override, ProviderOverride
+from .catalogue_model import (Catalogue, FieldName, ProviderFieldName, catalogue_from_json, catalogue_to_json,
+                              field_value, provider_field_value)
 from .catalogue_store import CatalogueStore
 
 log = logging.getLogger("ashley.inference")
@@ -78,6 +79,32 @@ class PostgresCatalogue(CatalogueStore):
                 continue
             found.append(Override(str(provider), str(model), held[0], held[1], person, at))
         return found
+
+    async def provider_overrides(self) -> list[ProviderOverride]:
+        with translated():
+            async with self._database.connection() as conn:
+                rows = await (await conn.execute(
+                    "SELECT provider, field, value, person_id, set_at FROM model_catalogue_provider_overrides")).fetchall()
+        found: list[ProviderOverride] = []
+        for provider, field, value, person, at in rows:
+            name = _provider_field(str(field))
+            held = None if name is None else _held_provider(name, value)
+            if name is None or held is None:
+                logs.warning(log, "catalogue.override_dropped", provider=provider, field=field)
+                continue
+            found.append(ProviderOverride(str(provider), name, held, person, at))
+        return found
+
+
+def _provider_field(field: str) -> ProviderFieldName | None:
+    return next(iter(f for f in get_args(ProviderFieldName) if f == field), None)
+
+
+def _held_provider(field: ProviderFieldName, value: object) -> str | None:
+    try:
+        return provider_field_value(field, value)
+    except ValueError:
+        return None
 
 
 def _held(field: str, value: object) -> tuple[FieldName, object] | None:

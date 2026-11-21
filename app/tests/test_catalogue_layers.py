@@ -9,8 +9,8 @@ from decimal import Decimal
 
 import pytest
 from ashley.inference.catalogue import PricedCatalogue
-from ashley.inference.catalogue_merge import Override, delta, merged, pricing, upstream
-from ashley.inference.catalogue_model import Catalogue, FieldName, ModelFields, Provider, Tier
+from ashley.inference.catalogue_merge import Override, ProviderOverride, delta, merged, pricing, provider_delta, upstream
+from ashley.inference.catalogue_model import Catalogue, FieldName, ModelFields, Provider, ProviderFieldName, Tier
 from ashley.inference.model import Usage
 from catalogue_support import PLAIN, flat
 
@@ -41,6 +41,40 @@ def test_the_fetch_replaces_the_snapshot_whole_and_the_snapshot_stands_alone_bef
     assert upstream(None, None) == (Catalogue({}), None)
     catalogue, layer = upstream(snapshot, fetched)
     assert set(merged(catalogue, layer, ()).listings) == {("p", "new")}, "a model gone upstream is gone"
+
+
+# --- a provider a person defines ---------------------------------------------------------------------------------
+
+def named(field: ProviderFieldName, value: str, provider: str = "local") -> ProviderOverride:
+    return ProviderOverride(provider, field, value, 7, AT)
+
+
+def test_a_provider_only_a_person_defines_is_listed_with_its_name_and_a_priced_model() -> None:
+    both = merged(Catalogue({}), "fetch", [override("input_usd_per_mtok", D("0.5"), "local", "qwen")],
+                  [named("name", "Local vLLM"), named("api", "http://llm.test/v1")])
+    assert (both.providers["local"].name, both.providers["local"].api) == ("Local vLLM", "http://llm.test/v1")
+    assert both.upstream_providers == {} and set(both.provider_overrides["local"]) == {"name", "api"}
+    only = merged(Catalogue({}), "fetch", (), [named("name", "Bare")])
+    assert only.providers["local"].name == "Bare" and only.listings == {}
+    assert merged(Catalogue({}), "fetch", (), [named("api", "http://x.test")]).providers["local"].name == "local"
+    assert PricedCatalogue(both, PLAIN).cost_usd_in("local", "qwen", MILLION_IN) == D("0.5")
+
+
+def test_upstream_listing_a_defined_provider_later_merges_with_it_by_id() -> None:
+    mine = [override("output_usd_per_mtok", D("2"), "local", "qwen"), override("input_usd_per_mtok", D("1"), "local", "qwen")]
+    theirs = Catalogue({"local": Provider("Upstream Name", "http://up.test", {"qwen": flat("5", "6"), "other": flat("7", "8")})})
+    after = merged(theirs, "fetch", mine, [named("name", "Local vLLM")])
+    assert (after.providers["local"].name, after.providers["local"].api) == ("Local vLLM", "http://up.test")
+    assert set(after.providers["local"].models) == {"qwen", "other"} and set(after.listings) == {("local", "qwen"), ("local", "other")}
+    assert (after.listings[("local", "qwen")].fields.input_usd_per_mtok, after.listings[("local", "other")].fields.input_usd_per_mtok) == (D("1"), D("7"))
+    assert list(after.upstream_providers) == ["local"]
+
+
+def test_a_provider_field_equal_to_upstreams_is_reset_not_stored() -> None:
+    upstream_provider = Provider("Up", "http://up.test", {})
+    assert provider_delta(upstream_provider, {"name": "Up", "api": "http://mine.test"}, ()) == (
+        {"api": "http://mine.test"}, {"name"})
+    assert provider_delta(None, {"name": "Up"}, ["api"]) == ({"name": "Up"}, {"api"})
 
 
 # --- overrides over upstream -------------------------------------------------------------------------------------

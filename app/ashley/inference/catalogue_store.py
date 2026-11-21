@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from .catalogue_merge import Override
+from .catalogue_merge import Override, ProviderOverride
 from .catalogue_model import Catalogue
 
 
@@ -23,4 +23,8 @@ class CatalogueStore(ABC):
 
     @abstractmethod
     async def overrides(self) -> list[Override]:
-        """Every field a person set. Raises ModelCatalogueUnavailable."""
+        """Every field of a model a person set. Raises ModelCatalogueUnavailable."""
+
+    @abstractmethod
+    async def provider_overrides(self) -> list[ProviderOverride]:
+        """Every field of a provider a person set. Raises ModelCatalogueUnavailable."""

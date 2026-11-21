@@ -4,7 +4,8 @@ route and the wiring reach `CatalogueOverrideWriter`, so nothing she does on her
 
 `GET /api/catalogue` answers every provider and the layers' ages; `GET /api/catalogue/models?provider=` one provider's
 models, each field in force beside upstream's with who set each override; `PUT /api/catalogue/models` sets and resets
-fields of one model and answers it as stored. A change reaches every call's pricing within `stored_catalogue.REFRESH_S`.
+fields of one model and answers it as stored; `PUT /api/catalogue/providers` sets and resets a provider's name and api,
+which defines a provider models.dev does not list, and answers it as stored. A change reaches every call's pricing within `stored_catalogue.REFRESH_S`.
 
 One log line per write (the writer's `catalogue.override_set`) and one per refusal (`catalogue.change_refused`)."""
 
@@ -20,14 +21,16 @@ from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.kinds import FIRST_HOUSEHOLD, ConnectionKinds
 from ..inference import catalogue_config
 from ..inference.catalogue import ModelCatalogue, ModelCatalogueUnavailable
-from ..inference.catalogue_merge import Listing, delta, pricing
-from ..inference.catalogue_model import FIELD_NAMES, FieldName, ModelFields, Tier, field_value
+from ..inference.catalogue_merge import Listing, Merged, delta, pricing, provider_delta
+from ..inference.catalogue_model import (FIELD_NAMES, PROVIDER_FIELD_NAMES, FieldName, ModelFields, ProviderFieldName, Tier,
+                                              field_value, provider_field_value)
 from ..inference.catalogue_override_write import CatalogueOverrideWriter
 from ..signin.model import SignedIn
 from .admin_gate import ADMIN_ONLY, refused
 from .model_catalogue_models import (ModelCatalogueChange, ModelCatalogueFields, ModelCatalogueModel,
                                      ModelCatalogueModelsResponse, ModelCatalogueOverride, ModelCataloguePrice,
-                                     ModelCatalogueProvider, ModelCatalogueRefused, ModelCatalogueResponse,
+                                     ModelCatalogueProvider, ModelCatalogueProviderChange,
+                                     ModelCatalogueProviderOverride, ModelCatalogueRefused, ModelCatalogueResponse,
                                      ModelCatalogueTier)
 from .models import ErrorResponse
 from .person import Person
@@ -94,6 +97,17 @@ def _model(listing: Listing) -> ModelCatalogueModel:
         price=ModelCataloguePrice(status=priced.status, source_layer=source))
 
 
+def _provider(merged: Merged, pid: str, connected: frozenset[str] | None) -> ModelCatalogueProvider:
+    p = merged.providers[pid]
+    listed = [listing for (provider, _), listing in merged.listings.items() if provider == pid]
+    set_fields = merged.provider_overrides.get(pid, {})
+    return ModelCatalogueProvider(
+        provider=pid, name=p.name, api=p.api, model_count=len(listed), overridden_count=sum(bool(m.overrides) for m in listed),
+        has_connection=None if connected is None else pid in connected, listed_upstream=pid in merged.upstream_providers,
+        provider_overrides=[ModelCatalogueProviderOverride(field_name=o.field, set_by=o.set_by, set_at=o.set_at)
+                   for o in sorted(set_fields.values(), key=lambda o: PROVIDER_FIELD_NAMES.index(o.field))])
+
+
 async def _connected() -> frozenset[str] | None:
     """The catalogue providers the first household's model-provider connections are priced as (a keyed kind as its
     route name is listed, an OpenAI-compatible one as it names); None when the connections cannot be read."""
@@ -115,16 +129,8 @@ async def read_catalogue(signed_in: Person) -> ModelCatalogueResponse | JSONResp
         state = await services.get(ModelCatalogue).state()
     except ModelCatalogueUnavailable:
         return _unavailable()
-    counts: dict[str, list[int]] = {}
-    for (pid, _), listing in state.merged.listings.items():
-        count = counts.setdefault(pid, [0, 0])
-        count[0] += 1
-        count[1] += bool(listing.overrides)
     connected = await _connected()
-    providers = [ModelCatalogueProvider(provider=pid, name=p.name, api=p.api, model_count=counts.get(pid, [0, 0])[0],
-                                        overridden_count=counts.get(pid, [0, 0])[1],
-                                        has_connection=None if connected is None else pid in connected)
-                 for pid, p in sorted(state.merged.providers.items())]
+    providers = [_provider(state.merged, pid, connected) for pid in sorted(state.merged.providers)]
     return ModelCatalogueResponse(snapshot_taken_at=state.snapshot_at, fetched_at=state.fetched_at,
                                   refresh_s=round(catalogue_config.load().refresh_s), catalogue_providers=providers)
 
@@ -172,3 +178,32 @@ async def change_model(signed_in: Person, body: ModelCatalogueChange) -> ModelCa
         return JSONResponse(status_code=422, content=ModelCatalogueRefused(
             reason="empty", detail="the catalogue lists no such model and nothing was set on it").model_dump())
     return _model(after)
+
+
+@router.put("/api/catalogue/providers", response_model=ModelCatalogueProvider, responses=_WRITE)
+async def change_provider(signed_in: Person, body: ModelCatalogueProviderChange) -> ModelCatalogueProvider | JSONResponse:
+    """200 `ModelCatalogueProvider` as stored; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 422
+    `ModelCatalogueRefused`; 503 `unavailable`."""
+    if not _deployment_admin(signed_in):
+        return refused(signed_in, "catalogue")
+    put: dict[ProviderFieldName, str] = {f: provider_field_value(f, v) for f in PROVIDER_FIELD_NAMES
+                                         if (v := getattr(body.set_fields, f)) is not None}
+    why = "set_and_reset" if set(put) & set(body.reset) else "empty" if not put and not body.reset else None
+    if why is not None:
+        logs.info(log, "catalogue.change_refused", person=signed_in.person.id, reason=why)
+        detail = "a field cannot be both set and reset" if why == "set_and_reset" else "nothing to set or reset"
+        return JSONResponse(status_code=422, content=ModelCatalogueRefused(reason=why, detail=detail).model_dump())
+    catalogue = services.get(ModelCatalogue)
+    try:
+        before = (await catalogue.state()).merged
+        stored, deleted = provider_delta(before.upstream_providers.get(body.provider), put, body.reset)
+        await services.get(CatalogueOverrideWriter).write_provider(body.provider, stored, deleted, signed_in.person.id)
+        after = (await catalogue.state()).merged
+        connected = await _connected()
+    except ModelCatalogueUnavailable:
+        return _unavailable()
+    if body.provider not in after.providers:
+        return JSONResponse(status_code=422, content=ModelCatalogueRefused(
+            reason="empty", detail="the catalogue lists no such provider and nothing was set on it").model_dump())
+    return _provider(after, body.provider, connected)
+

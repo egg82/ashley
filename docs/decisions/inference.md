@@ -45,6 +45,14 @@ breaking her.
     connection names, or unpriced where it names none (`decisions.md`, "A model provider's key is a connection").
     models.dev's prices are the current ones, and each call's cost is fixed in its ledger row when it is made, so
     there are no dated price periods.
+  - **A person may define a provider models.dev does not list** (a household's local vLLM, a small hosted provider):
+    its name and api are overrides like a model's field, one row each in `model_catalogue_provider_overrides`, set
+    through `PUT /api/catalogue/providers`, and its models are added under the same id through `PUT /api/catalogue/models`.
+    A provider is listed once it has a name, an api or a model of a person's, so a connection may name it and its calls
+    are priced and refused for tools as a listed model's are. Providers merge with upstream by id, field by field: a
+    person's name and api win where set, upstream's models and every field the person did not set stay, and a model
+    both list merges as any override does. So models.dev later listing the same id neither drops the person's models
+    nor overwrites their fields, and a value set equal to upstream's is not stored (`catalogue_merge.provider_delta`).
   - **A price override is flat**: a person's price on any price field replaces upstream's prompt-length tiers.
   - Rejected: committing the snapshot. The list is several megabytes and changes weekly; a build already fetches the
     embedding model, so the image carries the list the same way.

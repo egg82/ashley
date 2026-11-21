@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { cadence, connectedCount, orderProviders, perMtok, priceWord, tokenCount, yesNo } from './format.ts';
 
 const p = (provider: string, name: string, has_connection: boolean | null) =>
-  ({ provider, name, api: null, model_count: 1, overridden_count: 0, has_connection });
+  ({ provider, name, api: null, model_count: 1, overridden_count: 0, has_connection, listed_upstream: true, provider_overrides: [] });
 
 test('an unknown value is null, a listed zero is a price', () => {
   assert.equal(perMtok(null), null);
