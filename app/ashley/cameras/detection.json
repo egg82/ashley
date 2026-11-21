@@ -1,0 +1,6 @@
+{
+  "show_feed_on": ["ring"],
+  "min_gap_s": 30,
+  "keep_s": 86400,
+  "tick_s": 60
+}

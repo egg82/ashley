@@ -253,6 +253,22 @@ webcam are later sources; detector events, live video and a bench watch are late
   from `media_source/browse_media`, a preview by GET of the event's `thumbnail` path; the still is the middle frame of the
   animated preview. A camera of another platform, or a device the source does not know, has none. `camera_recordings` and
   `camera_look`'s `recording` are reads and `outside=True`; a recording look is kept and counted like a live one.
+- **A detector's event is the camera port's third capability, a sense** (`CameraSource.follow` and `stop`; `Cameras.follow`):
+  a `Detection` is the camera, the detector's own class (`kind`, the event entity's `event_type` attribute, never read out of
+  text) and when it saw it. Home Assistant's source follows the `event` entities on a listed camera's device
+  (`House.detectors`, the entity registry's `device_id`, the id the recordings use) with a `platform: state` trigger on exactly
+  those ids (`HeldStates.follow`, `subscribe_trigger` as `websocket_api/commands.py`'s `handle_subscribe_trigger` sends it:
+  `variables.trigger.to_state` carries the attributes), so only listed cameras produce events and HA sends nothing else.
+  The entity's state is the time of its last event, which is the detection's time; a change that is not a time or names no
+  class is no detection. The watches singleton runs the follow beside the watches and shadow runs (`channels.kiosk.detected`),
+  again each `tick_s`, so a camera named, dropped or switched off is followed or let go; a household whose camera port is off
+  is let go (`CameraSource.stop`). Each detection is recorded once by camera and time (`Detections.claim`, table
+  `camera_detections`), so one event heard by a pod on each site, or told twice, acts once; an event while the socket was
+  down is not told. Detector classes and gaps are data (`ashley/cameras/detection.json`): `show_feed_on` classes put that
+  camera's feed on the household's visible screens through `kiosk.feed.show` and its auto-clear, unless a feed was shown for
+  that camera within `min_gap_s` (counted between the events' own times). Nothing is spoken and no model is called. Logs carry
+  a short hash of the camera, the class and the outcome. Rejected: a `state_changed` subscription (the whole house's changes
+  to find a few); a scheduler of its own (the lease holder that holds the sockets runs it).
 - Rejected: a second record of what she saw through a camera, which the Looks system already keeps. Rejected: the setting on
   the port rather than the connection, which is where `discreet_calendars` and `household_reads` live.
 

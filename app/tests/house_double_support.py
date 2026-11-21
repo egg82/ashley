@@ -2,7 +2,7 @@
 noted in `done`, and `down` making every call raise HouseUnavailable. Nothing here is Home Assistant's own shape."""
 
 import asyncio
-from collections.abc import AsyncGenerator, AsyncIterator, Mapping
+from collections.abc import AsyncGenerator, AsyncIterator, Collection, Mapping
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -32,6 +32,7 @@ class MemoryHouse(House):
     returns: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     stills: dict[str, Snapshot | None] = field(default_factory=dict[str, Snapshot | None])
     captured: dict[str, list[Event]] = field(default_factory=dict[str, list[Event]])
+    detector_of: dict[str, str] = field(default_factory=dict[str, str])
     previews: dict[tuple[str, str], Snapshot] = field(default_factory=dict[tuple[str, str], Snapshot])
     live_script: list[LiveSignal] = field(default_factory=list[LiveSignal])
     live_cfg: LiveConfig = LiveConfig((), None)
@@ -74,6 +75,10 @@ class MemoryHouse(House):
     async def events(self, camera: str) -> tuple[Event, ...]:
         self._up()
         return tuple(self.captured.get(camera, ()))
+
+    async def detectors(self, cameras: Collection[str]) -> Mapping[str, str]:
+        self._up()
+        return {e: c for e, c in self.detector_of.items() if c in cameras}
 
     async def event_picture(self, camera: str, event_id: str) -> Preview | None:
         self._up()

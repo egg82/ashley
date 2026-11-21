@@ -7,7 +7,7 @@ may only read), and an in-memory Connections holding one household's Sure. Every
 query and key, and every PUT with its body, so a test can see what was asked and with what."""
 
 import json
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -189,6 +189,10 @@ class HeldConnections(Connections):
         self._up()
         return tuple(o.connection for (h, _), o in self.held.items()
                      if h == household_id and o.connection.person_id in (None, person_id))
+
+    async def households_of_kinds(self, kinds: Collection[str]) -> tuple[int, ...]:
+        self._up()
+        return tuple(sorted({h for (h, _), o in self.held.items() if o.connection.kind in kinds}))
 
     async def opened(self, connection_id: int, household_id: int, person_id: int | None = None) -> Opened | None:
         self._up()

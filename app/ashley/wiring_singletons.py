@@ -15,6 +15,7 @@ from .channels.discord import bot as discord_bot, client as discord_client, conf
 from .channels.discord.following import follow
 from .channels.discord.postgres_seen import PostgresSeen
 from .channels.discord.token_in_force import TokenInForce
+from .channels.kiosk import detected
 from .channels.push import config as push_config, later as push_later
 from .channels.push.sender import WebPushSender
 from .channels.respond import respond
@@ -30,6 +31,7 @@ from .connections.connections import Connections
 from .connections import reseal
 from .connections.deployment_secrets import DeploymentSecrets
 from .connections.sealing import sealer_of
+from .cameras.detections_postgres import register as register_detections
 from .db.database import Database
 from .files import config as files_config, repair as files_repair, sweep as files_sweep
 from .files.intake import PREFIX as FILES_PREFIX
@@ -82,10 +84,12 @@ def wire_lease(settings: Settings) -> None:
 
 
 async def _watches_and_shadows() -> None:
-    """The watches singleton also keeps the shadow runs (`shadow_job`): it holds the one set of Home Assistant sockets."""
+    """The watches singleton also keeps the shadow runs (`shadow_job`) and follows the cameras' detectors
+(`channels.kiosk.detected`, which records each in `Detections`, registered here): it holds the one set of Home Assistant sockets."""
     async with asyncio.TaskGroup() as group:
         group.create_task(watches_job.run())
         group.create_task(shadow_job.run())
+        group.create_task(detected.run())
 
 
 def _catalogue_refresh() -> Coroutine[Any, Any, None]:
@@ -100,6 +104,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, sealing every stored value again under the current connections key when `connections_key_opens` is set, resuming
     turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, fetching the model catalogue, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
     Discord session on the token in force (`ashley.channels.discord.following`), and web push once the deployment's secrets are settled, when her VAPID identity is (`push_config.identity`)."""
+    register_detections(services.get(Database))
     running: list[Coroutine[Any, Any, None]] = []
     if settings.etcd_url and settings.failback == "off":
         logs.info(log, "failback.off")

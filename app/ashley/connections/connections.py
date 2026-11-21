@@ -7,6 +7,7 @@ never logged and never leave through `of_household`; logs carry household and co
 labels."""
 
 from abc import abstractmethod
+from collections.abc import Collection
 
 from ..services import Service
 from .model import Connection, Holder, Kind, Opened
@@ -49,6 +50,11 @@ class Connections(Service):
     @abstractmethod
     async def of_household(self, household_id: int, person_id: int | None = None) -> tuple[Connection, ...]:
         """The connections visible to `person_id`, by kind, then label, then id. Raises ConnectionsUnavailable."""
+
+    async def households_of_kinds(self, kinds: Collection[str]) -> tuple[int, ...]:
+        """The households holding a connection of any of `kinds`, by id; for a singleton that follows each one. Raises
+        ConnectionsUnavailable."""
+        raise ConnectionsUnavailable("connections are not wired")
 
     @abstractmethod
     async def opened(self, connection_id: int, household_id: int, person_id: int | None = None) -> Opened | None:
