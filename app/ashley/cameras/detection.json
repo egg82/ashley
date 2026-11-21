@@ -1,6 +1,7 @@
 {
   "show_feed_on": ["ring"],
-  "speak_on": ["ring"],
+  "speak_on": ["ring", "failed"],
+  "look_now_on": ["failed"],
   "look_wait_s": 60,
   "min_gap_s": 30,
   "keep_s": 86400,

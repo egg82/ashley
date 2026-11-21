@@ -20,6 +20,7 @@ async def carried(inbound: Inbound, conversation_id: int, said_id: int, entries:
     if inbound.seen is None or not any(s.name == LOOK for s in offered):
         return entries
     camera, recording = inbound.seen
-    call = ToolCall(CALL_ID, LOOK, {"camera": camera, "recording": recording})
+    arguments = {"camera": camera} if recording is None else {"camera": camera, "recording": recording}
+    call = ToolCall(CALL_ID, LOOK, arguments)
     result = await CameraTools(inbound.household_id, conversation_id, said_id).call(call)
     return (*entries, ToolCalls((call,)), ToolResults((result,)))

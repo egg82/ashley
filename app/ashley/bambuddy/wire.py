@@ -1,11 +1,12 @@
 """The parts of Bambuddy's JSON bodies she reads, as its OpenAPI document (v1.3.1) writes them: `PrinterResponse`,
 `PrinterStatus` with its `AMSUnit`, `AMSTray` and `HMSErrorResponse`, `SpoolResponse` (the shape the spoolman inventory
 routes document as `InventorySpool`), `SpoolmanSlotAssignmentEnriched`, `FileListResponse`, `FileUploadResponse`, `PrintQueueItemResponse`, `ArchiveResponse` (the
-print archive, whose `timelapse_path` says it holds a timelapse), `ThumbnailResponse` and the stream token's body. The document gives
+print archive, whose `timelapse_path` says it holds a timelapse and whose `status` and `completed_at` say how and when the print ended; Bambuddy writes `completed_at` in UTC and stores it with no zone), `ThumbnailResponse` and the stream token's body. The document gives
 `GET /printers/`, the spoolman inventory spools and a file's filament requirements no response schema; those are read as
 the shapes its descriptions name, every field they might leave out optional. Fields she does not read are ignored.
 `parsed` turns a body into one of these or raises BambuddyFailed (`not_bambuddy`)."""
 
+from datetime import datetime
 from typing import TypeVar
 
 from pydantic import BaseModel, RootModel, ValidationError
@@ -123,6 +124,8 @@ class Archive(BaseModel):
     print_name: str | None = None
     filename: str = ""
     timelapse_path: str | None = None
+    status: str = ""
+    completed_at: datetime | None = None
 
 
 class Archives(RootModel[list[Archive]]):

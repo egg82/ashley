@@ -157,7 +157,7 @@ def _inbound(raw: dict[str, Any]) -> Inbound:
     seen = fields.pop("seen", None)
     return Inbound(**fields, taint=origin, made_in=made, moment=None if moment is None else _moment(moment),
                    remark=None if remark is None else _remark(remark),
-                   seen=None if seen is None else (str(seen[0]), str(seen[1])))
+                   seen=None if seen is None else (str(seen[0]), None if seen[1] is None else str(seen[1])))
 
 
 def _moment(raw: dict[str, Any]) -> Moment:
