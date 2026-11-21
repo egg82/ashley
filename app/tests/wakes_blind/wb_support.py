@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 import psycopg
-from ashley.senses.wakes import Delivery, Due, Outcome, Received, Reminder, Route, SaidBefore, Scheduled, Wake, Wakes
+from ashley.senses.wakes import Delivery, DetectionWake, Due, Outcome, Received, Reminder, Route, SaidBefore, Scheduled, Wake, Wakes
 
 NOW = datetime(2026, 10, 31, 12, 0, tzinfo=UTC)
 
@@ -60,6 +60,9 @@ class MemoryWakes(Wakes):
             return False
         self.settled.add(wake_id)
         return True
+
+    async def detected(self, wake: DetectionWake) -> Received:
+        raise NotImplementedError
 
     async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
         return None

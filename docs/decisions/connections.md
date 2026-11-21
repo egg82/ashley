@@ -266,9 +266,26 @@ webcam are later sources; detector events, live video and a bench watch are late
   `camera_detections`), so one event heard by a pod on each site, or told twice, acts once; an event while the socket was
   down is not told. Detector classes and gaps are data (`ashley/cameras/detection.json`): `show_feed_on` classes put that
   camera's feed on the household's visible screens through `kiosk.feed.show` and its auto-clear, unless a feed was shown for
-  that camera within `min_gap_s` (counted between the events' own times). Nothing is spoken and no model is called. Logs carry
-  a short hash of the camera, the class and the outcome. Rejected: a `state_changed` subscription (the whole house's changes
-  to find a few); a scheduler of its own (the lease holder that holds the sockets runs it).
+  that camera within `min_gap_s` (counted between the events' own times). A feed alone speaks nothing and calls no model. Logs
+  carry a short hash of the camera, the class and the outcome. Rejected: a `state_changed` subscription (the whole house's
+  changes to find a few); a scheduler of its own (the lease holder that holds the sockets runs it).
+- **She says what a detector saw through the wake path, not a turn kind of its own** (`speak_on`, `look_wait_s`). A class in
+  `speak_on` is claimed as above, so the gap and the once-across-both-sites guarantee hold, and is stored as a `detection` wake
+  (`Wakes.detected`: household, camera and time are its identity; the camera and the ids of the camera's recordings at that
+  moment ride in `changes`). The `wakes` singleton takes it as any wake (`channels.wake.detection_turn`): her own turn, the
+  household's, addressed to no one (`speaker_id` None, as tending her Discord home channel is), on the thread of a screen of the
+  household (the one whose page is in the foreground, else the first), so its reply is queued in the outbox and
+  `kiosk.announce` plays it where people are. Initiative decides whether it goes out: the turn has no moment, so on her `says`
+  alone, and not while every person of the household is within their own quiet hours at the event's time. The picture is in
+  the turn as her look: the recording that appeared after the event is the camera's newest one whose id was not known when
+  it was heard (no title is read; unreadable recordings at the event mean none is ever taken), and the turn begins with
+  `camera_look`'s own call and result for it (`Inbound.seen`, `channels.seen`), so it is prepared, kept as a look on no
+  bench and counted as a look she asks for is, and survives a runner's death in the checkpoint. A recording that has not
+  appeared leaves the wake due, up to `look_wait_s` since it was stored; then she speaks with the instruction to say she could
+  not see and not guess. A wake past the wakes' `max_age_s`, with the camera gone from the list or no screen, ends unspoken.
+  Her tool is `camera_look` alone, offered to this speakerless turn because the call is in its first step. The house's satellites are not
+  a route of this turn: only the screens' announcement is built for a turn addressed to no one. Rejected: a new turn kind for detections, a wait in the
+  singleton's loop, and matching a recording to the event by the time in its title.
 - Rejected: a second record of what she saw through a camera, which the Looks system already keeps. Rejected: the setting on
   the port rather than the connection, which is where `discreet_calendars` and `household_reads` live.
 

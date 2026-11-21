@@ -101,7 +101,7 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     From a server channel (`discord_channel`) with a known speaker, reading that channel's recent messages (`discord_read`). With a known speaker, `send_readers` (`readers`) too, whose readers read with the turn's other tools, so narrowed. `results` is the turn's numbered search results (`tools.results`), which her bench tools name a site or video
     by; the conversation she is in (`said`) is what they check a URL the person gave against. With `errand` and a known
     speaker, `check_again` (`errand`) beside all of that, not narrowed; with `method` and a known speaker, the
-    standing errand's method (`method`) likewise. On a turn tending her home channel (`Inbound.tends_home`), the tools
+    standing errand's method (`method`) likewise. A turn nobody spoke that begins with her look at a recording (`Inbound.seen`) is offered the camera tools. On a turn tending her home channel (`Inbound.tends_home`), the tools
     that change that channel (`home`), and on no other turn."""
     everyday = HouseholdTools(inbound.household_id)
 
@@ -169,6 +169,12 @@ def _bench_of(inbound: Inbound) -> int | None:
     return inbound.bench_id if inbound.moved_to is None else inbound.moved_to
 
 
+def _seen(inbound: Inbound, turn: tuple[int, int] | None) -> Mapping[str, Tools]:
+    """The camera tools for a turn nobody spoke that begins with her look at a recording (`Inbound.seen`), whose call is
+    in its first step: the tool a prompt holding a call must offer."""
+    return {"camera": CameraTools(inbound.household_id, *turn)} if inbound.seen is not None and turn is not None else {}
+
+
 def _screen(inbound: Inbound) -> Mapping[str, Tools]:
     """Her screen tools for a known speaker, and for a turn on a device's own thread whoever speaks; which screens that
     reaches is the tools' to say."""
@@ -182,7 +188,7 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
             results: Results | None = None, turn: tuple[int, int] | None = None,
             usable: Callable[[], Tools] | None = None) -> Mapping[str, Tools]:
     if inbound.speaker_id is None:
-        return _screen(inbound)
+        return {**_screen(inbound), **_seen(inbound, turn)}
     household, person = inbound.household_id, inbound.speaker_id
     found: dict[str, Tools] = {}
     bench = _bench_of(inbound)
