@@ -52,6 +52,18 @@ class Recording(PostgresWatches):
         return stored
 
 
+class Telling(SocketStates):
+    """The held states, noting each time the socket tells the job to look again in `told`."""
+
+    told: asyncio.Event
+
+    async def hold(self, changed: Callable[[], None]) -> None:
+        def note() -> None:
+            self.told.set()
+            changed()
+        await super().hold(note)
+
+
 @dataclass
 class World:
     ha: FakeHa
@@ -59,6 +71,7 @@ class World:
     db: PoolDatabase
     naps: Naps
     ticks: asyncio.Event
+    told: asyncio.Event
     home: int
     who: int
 
@@ -80,6 +93,11 @@ class World:
         """Wait until the job is paused with nothing left to do since the last check it recorded."""
         await self.store.parked.wait()
 
+    async def served_again(self) -> None:
+        """Wait until the socket has resumed after the drop and told the job to look again: Home Assistant having the
+        subscription is not that, and a check made before it fails `not_connected`."""
+        await self.told.wait()
+
 
 @asynccontextmanager
 async def world(url: str, ha: FakeHa) -> AsyncGenerator[World]:
@@ -90,6 +108,8 @@ async def world(url: str, ha: FakeHa) -> AsyncGenerator[World]:
     store = Recording(db)
     store.recorded, store.stored, store.parked = [], asyncio.Event(), asyncio.Event()
     naps, ticks = Naps(), asyncio.Event()
+    states = Telling(SETTINGS, load_house(), naps, Clock())
+    states.told = asyncio.Event()
 
     async def pause(_: float) -> None:
         store.parked.set()
@@ -98,12 +118,12 @@ async def world(url: str, ha: FakeHa) -> AsyncGenerator[World]:
 
     async with home_of(ha) as connected:
         wired = ((Watches, store), (Homes, FakeHomes(connected, home)),
-                 (HeldStates, SocketStates(SETTINGS, load_house(), naps, Clock())))
+                 (HeldStates, states))
         for interface, impl in wired:
             services.register(interface, impl)
         running = asyncio.create_task(job.run(CONFIG, KINDS, pause))
         try:
-            yield World(ha, store, db, naps, ticks, home, who)
+            yield World(ha, store, db, naps, ticks, states.told, home, who)
         finally:
             running.cancel()
             with pytest.raises(asyncio.CancelledError):
@@ -161,9 +181,11 @@ def test_a_dropped_socket_is_subscribed_again_and_the_change_made_meanwhile_wake
             await w.recorded(Quiet)
             await ha.drop()
             await until(lambda: w.naps.taken, "a backoff")
+            w.told.clear()
             ha.states[DOOR] = "on"
             w.naps.free = 1
-            await until(lambda: ha.connections == 2 and ha.subscribed() == [DOOR], "the door subscribed again")
+            await w.served_again()
+            assert ha.connections == 2 and ha.subscribed() == [DOOR]
             await w.due_now()
             await w.tick()
             await w.recorded(Woke)
