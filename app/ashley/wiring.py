@@ -84,6 +84,7 @@ from .people.postgres_admins import PostgresAdmins
 from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
 from .home_assistant import adapters as home_assistant_adapters
+from .wiring_cameras import register as register_cameras
 from .senses.calendar import Calendar
 from .senses.homes_calendar import HomesCalendar
 from .senses.focus import Focus
@@ -309,7 +310,8 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     homes = ConnectedHomes(services.get(Connections))
     closers.append(homes.close)
     services.register(Homes, homes)
-    home_assistant_adapters.register(looks_config.load().max_recordings)
+    home_assistant_adapters.register()
+    register_cameras(looks_config.load().max_recordings)
     services.register(HeldStates, SocketStates())
     services.register(Presence, HomesPresence(services.get(People)))
     services.register(Calendar, HomesCalendar())

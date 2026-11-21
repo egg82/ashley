@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ConnectionCatalogue } from '../../../api/types';
-import { calendarLines, found, listLines, lookupLines, needLines, nameOf } from './house.ts';
+import { calendarLines, cameraLines, found, listLines, lookupLines, needLines, nameOf } from './house.ts';
 
 const thing = (entity_id: string, name: string, device_class: string | null = null) =>
   ({ entity_id, name, domain: entity_id.split('.')[0] ?? '', device_class });
 const house: ConnectionCatalogue = {
   entities: [thing('todo.shop', 'Shopping'), thing('todo.chores', 'Chores'), thing('script.where', 'Where is everyone'),
-    thing('script.bed', 'Bedtime'), thing('lock.front', 'Front door'), thing('calendar.family', 'Family'), thing('calendar.work', 'Work'), thing('switch.rack', 'Server rack'), thing('light.den', 'Den')],
+    thing('script.bed', 'Bedtime'), thing('lock.front', 'Front door'), thing('calendar.family', 'Family'), thing('calendar.work', 'Work'), thing('switch.rack', 'Server rack'), thing('light.den', 'Den'), thing('camera.porch', 'Porch'), thing('printer.1', 'Shed printer'), thing('printer.2', 'Loft printer')],
   actions: [{ name: 'script.where', domain: 'script', looks_up_only: false }, { name: 'script.bed', domain: 'script', looks_up_only: false },
     { name: 'weather.get_forecasts', domain: 'weather', looks_up_only: true }, { name: 'light.turn_on', domain: 'light', looks_up_only: false }],
   read_at: '2026-11-07T00:00:00Z',
@@ -47,4 +47,10 @@ test('search finds what is not listed yet by name or id, says Already for a lock
 test('every calendar the house has is a row, the shown ones on, and a stored calendar the house lost stays on', () => {
   const rows = calendarLines(house, ['calendar.family', 'calendar.gone']);
   assert.deepEqual(rows.map((r) => [r.name, r.only, r.missing]), [['Family', true, false], ['Gone', true, true], ['Work', false, false]]);
+});
+
+test('a service offers its cameras from the domain its kind names, and a stored camera it lost stays marked', () => {
+  const printers = cameraLines(house, ['printer.2', 'printer.9'], 'printer');
+  assert.deepEqual(printers.map((r) => [r.name, r.only, r.missing]), [['9', true, true], ['Loft printer', true, false], ['Shed printer', false, false]]);
+  assert.deepEqual(cameraLines(house, [], 'camera').map((r) => r.id), ['camera.porch']);
 });

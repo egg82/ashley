@@ -8,8 +8,16 @@ The two writes follow the document too: `POST /api/v1/queue/` takes `PrintQueueI
 schema lacks, or a field of the wrong type, is 422) and answers a `PrintQueueItemResponse`; `POST /api/v1/library/files`
 takes the multipart `file` of `Body_upload_file_api_v1_library_files_post` and answers a `FileUploadResponse`, `duplicate_of`
 naming the earlier file when the same bytes came before. The document does not say which files the queue turns away, nor
-which types an upload does; the fake turns away a file in `unsliced` (422) and an upload whose name ends `.exe` (415)."""
+which types an upload does; the fake turns away a file in `unsliced` (422) and an upload whose name ends `.exe` (415).
 
+The camera routes are as its source (`backend/app/api/routes/camera.py`, `archives.py`) and a live read of v1.3.1 give them, with
+Bambuddy's login on: `POST /api/v1/printers/camera/stream-token` answers `{"token"}`, and
+`GET /api/v1/printers/:id/camera/snapshot?token=` answers a JPEG, 401 without a token it minted and 503 for a printer in
+`dark`; `GET /api/v1/archives/?printer_id=` lists that printer's archives (`ArchiveResponse` fields), those with a
+`timelapse_path` holding one; `GET /api/v1/archives/:id/timelapse/thumbnails?count=&width=` answers `{"thumbnails": [base64
+JPEG...], "timestamps": [...]}` for an archive of a timelapse. Every picture, title and path is made up."""
+
+import base64
 import json
 import re
 from dataclasses import dataclass, field
@@ -57,6 +65,16 @@ def library_file(id_: int, name: str, created: str = "2026-11-01T00:00:00") -> d
     return {"id": id_, "folder_id": None, "filename": name + ".3mf", "file_type": "3mf", "file_size": 1,
             "thumbnail_path": None, "print_count": 2, "created_at": created, "print_name": name,
             "print_time_seconds": 3600, "filament_used_grams": 12.5, "sliced_for_model": "X1C"}
+
+
+JPEG = b"\xff\xd8\xff\xe0made-up-frame"
+
+
+def archive(id_: int, printer_id: int, print_name: str | None, timelapse: bool = True) -> dict[str, object]:
+    return {"id": id_, "printer_id": printer_id, "filename": f"plate-{id_}.gcode.3mf", "file_path": f"archives/{id_}.3mf",
+            "print_name": print_name, "status": "completed", "started_at": "2026-11-01T10:00:00",
+            "completed_at": "2026-11-01T12:00:00", "created_at": "2026-11-01T12:01:00",
+            "timelapse_path": f"timelapse/{id_}.mp4" if timelapse else None}
 
 
 QUEUE_FIELDS: dict[str, tuple[type, ...]] = {
@@ -107,6 +125,10 @@ class FakeBambuddy:
     queued: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
     uploaded: list[tuple[str, bytes]] = field(default_factory=list[tuple[str, bytes]])
     unsliced: set[int] = field(default_factory=set[int])
+    archives: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
+    frames: dict[int, list[bytes]] = field(default_factory=dict[int, list[bytes]])
+    dark: set[int] = field(default_factory=set[int])
+    minted: set[str] = field(default_factory=set[str])
     refused_types: tuple[str, ...] = (".exe",)
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
@@ -122,12 +144,38 @@ class FakeBambuddy:
             return httpx2.Response(403, json={"detail": "missing permission"})
         if request.method == "POST":
             return self.write(path, request)
+        taken = self.camera(path, request)
+        if taken is not None:
+            return taken
         body = self.answers.get(path)
         if body is None or path in self.missing:
             return httpx2.Response(404, json={"detail": "Not Found"})
         return httpx2.Response(200, content=json.dumps(body).encode(), headers={"content-type": "application/json"})
 
+    def camera(self, path: str, request: httpx2.Request) -> httpx2.Response | None:
+        snapshot = re.fullmatch(r"/api/v1/printers/(\d+)/camera/snapshot", path)
+        if snapshot is not None:
+            if request.url.params.get("token") not in self.minted:
+                return httpx2.Response(401, json={"detail": "Valid camera stream token required."})
+            if int(snapshot.group(1)) in self.dark:
+                return httpx2.Response(503, json={"detail": "Failed to capture camera frame."})
+            return httpx2.Response(200, content=JPEG, headers={"content-type": "image/jpeg"})
+        if path == "/api/v1/archives/":
+            wanted = int(request.url.params["printer_id"])
+            return httpx2.Response(200, json=[a for a in self.archives if a["printer_id"] == wanted])
+        thumbs = re.fullmatch(r"/api/v1/archives/(\d+)/timelapse/thumbnails", path)
+        if thumbs is not None:
+            held = self.frames.get(int(thumbs.group(1)))
+            if held is None:
+                return httpx2.Response(404, json={"detail": "Timelapse not found"})
+            return httpx2.Response(200, json={"thumbnails": [base64.b64encode(f).decode() for f in held],
+                                              "timestamps": [float(i) for i in range(len(held))]})
+        return None
+
     def write(self, path: str, request: httpx2.Request) -> httpx2.Response:
+        if path == "/api/v1/printers/camera/stream-token":
+            self.minted.add(f"token-{len(self.minted)}")
+            return httpx2.Response(200, json={"token": f"token-{len(self.minted) - 1}"})
         if path == "/api/v1/queue/":
             return self.enqueue(request)
         if path == "/api/v1/library/files":
