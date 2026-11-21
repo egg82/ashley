@@ -2,7 +2,7 @@
 (`ArchiveResponse`: `status`, `completed_at` in UTC with no zone): a print archive that ended `failed` is one detection of
 the class `failed`, the printer's snapshot is what she looks at as she tells it, and the same failure read on every pass,
 a printer the household has not listed, a class not in `speak_on`, a print that was cancelled or finished and a failure
-from before the last few passes each make nothing more."""
+from before the lookback each make nothing more."""
 
 import logging
 from collections.abc import AsyncGenerator
@@ -107,12 +107,24 @@ async def test_a_class_not_in_speak_on_makes_no_wake(
 
 
 @sync
-async def test_only_a_print_that_failed_within_the_last_few_passes_is_a_detection(
+async def test_only_a_print_that_failed_within_the_lookback_is_a_detection(
         db_url: str, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     caplog.set_level(logging.INFO)
-    lookback = 3 * load().tick_s
+    lookback = load().failure_lookback_s
     archives = [ended("cancelled", 20, 31), ended("completed", 20, 32), ended("failed", lookback + 60, 33),
                 {**ended("failed", 20, 34), "completed_at": None}]
     async with printers(db_url, monkeypatch, archives) as (s, _):
         await s.w.tick(PRINTING)
         assert outcomes(caplog) == [] and await s.wakes() == 0
+
+
+@sync
+async def test_a_failure_that_ended_across_a_gap_longer_than_three_passes_is_still_told_once(
+        db_url: str, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    caplog.set_level(logging.INFO)
+    gap = 10 * load().tick_s
+    assert gap < load().failure_lookback_s
+    async with printers(db_url, monkeypatch, [ended("failed", gap)]) as (s, _):
+        await s.w.tick(PRINTING)
+        await s.w.tick(PRINTING)
+        assert await settled(caplog, 2) == ["told", "duplicate"] and await s.wakes() == 1
