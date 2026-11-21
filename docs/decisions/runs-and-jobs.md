@@ -369,7 +369,7 @@ and has no `ends_at`, so it never finishes.
   replaces its method as it does its brief. Findings go where a watch's turn goes: the bench's talk, else the phone.
 - **A person sets one from the Reminders tab.** `POST /api/reminders` sets a reminder for the signed-in person and
   `PATCH /api/reminders/{id}` sets or clears the `method` of one of theirs still to fire (whoever may cancel it may change it).
-  Both check the method through `standing_method.named`, as `remind` does, and refuse one on a reminder that does not
+  Both check the method through `skills.method.named`, as `remind` does, and refuse one on a reminder that does not
   repeat (422 `refused`); the tab offers `WorkshopKinds.work_kinds`. A method decides neither taint nor judging, so
   the route adds no tool and sets no taint.
 - **Rejected: a bot store** (Rakazo's agents, each with its own inbox and schedule). It would be a second scheduler and

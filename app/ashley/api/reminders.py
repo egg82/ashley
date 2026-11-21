@@ -4,7 +4,7 @@ themselves, `PATCH /api/reminders/{id}` sets or clears the method that makes a r
 (`runs-and-jobs.md`, "A standing errand is a repeating reminder that names her method"), and `DELETE
 /api/reminders/{id}` cancels one still to fire, or dismisses one listed as undelivered or failed. Any other id,
 another person's, another household's or one delivered, is 404 alike, so nobody learns of a reminder they may not see.
-A method is checked as her `remind` tool checks it (`standing_method.named`).
+A method is checked as her `remind` tool checks it (`skills.method.named`).
 Logs `reminders.listed` with the household and a count, `reminders.created` with the wake id and whether it is a
 standing errand, `reminders.method` with the wake id and whether it now has a method, and `reminders.cancelled` with
 the wake id; never what a reminder says."""
@@ -21,11 +21,10 @@ from fastapi.responses import JSONResponse
 from .. import logs, services
 from ..people.people import People, PeopleUnavailable
 from ..senses.deposit_rule import describe
-from ..senses.repeat import LOCAL_FORMAT
+from ..senses.repeat import LOCAL_FORMAT, Repeat, first_due
 from ..senses.wakes import Reminder as Stored, Scheduled, Wakes, WakesUnavailable
-from ..tools import reminder_shape as shape, standing_method
-from ..tools.bench_args import BadArguments
-from ..tools.tools import ToolsUnavailable
+from ..skills.method import NotAMethod, named
+from ..skills.skills import SkillsUnavailable
 from .models import ErrorResponse, Person as PersonModel, wire_person
 from .person import Person
 from .reminder_models import Reminder, ReminderCancelled, ReminderMethodRequest, ReminderRequest, RemindersResponse
@@ -44,6 +43,10 @@ _WRITE: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": "`refused`: a time, rule or method that cannot be set, `detail` saying "
                                                  "which (and naming the household's kinds for a method it has none of); "
                                                  "FastAPI's own validation error for a malformed body"}}
+
+
+class Refused(Exception):
+    """A reminder or method the request asks for cannot be set; the message says why and carries no data."""
 
 
 def _error(status: int, code: Literal["not_found", "unavailable", "refused"], detail: str) -> JSONResponse:
@@ -78,18 +81,16 @@ async def create_reminder(signed_in: Person, body: ReminderRequest) -> Reminder 
             return _error(503, "unavailable", "reminders are unavailable right now; try again shortly")
         zone = ZoneInfo(household.timezone)
         local = datetime.strptime(body.local_at, LOCAL_FORMAT)
-        repeat = None if body.repeat is None else shape.repeat_of({"repeat": body.repeat, "every": body.every}, local, None)
-        due_at = shape.first_due(repeat, local, zone, datetime.now(UTC))
-        method = await standing_method.named(me.household_id, body.method)
+        repeat = None if body.repeat is None else Repeat(body.repeat, body.every, local)
+        due_at = first_due(repeat, local, zone, datetime.now(UTC))
+        method = await named(me.household_id, body.method)
         if method is not None and repeat is None:
-            raise BadArguments("a standing errand repeats; give how it repeats, or leave out the method")
+            raise Refused("a standing errand repeats; give how it repeats, or leave out the method")
         made = await services.get(Wakes).schedule(Stored(me.household_id, me.id, me.id, body.what, due_at, repeat, method=method))
         scheduled = next(s for s in await services.get(Wakes).reminders(me.household_id, me.id) if s.id == made)
-    except BadArguments as e:
+    except (Refused, NotAMethod, ValueError) as e:
         return _error(422, "refused", str(e))
-    except ValueError:
-        return _error(422, "refused", "that time is not a time of day")
-    except (PeopleUnavailable, WakesUnavailable, ToolsUnavailable):
+    except (PeopleUnavailable, WakesUnavailable, SkillsUnavailable):
         return _error(503, "unavailable", "reminders are unavailable right now; try again shortly")
     logs.info(log, "reminders.created", wake=made, standing=int(method is not None))
     return _wire(scheduled, {p.id: wire_person(p) for p in household.people}, zone)
@@ -110,15 +111,15 @@ async def set_reminder_method(signed_in: Person, reminder_id: _Id, body: Reminde
         if household is None or not found:
             return _error(404, "not_found", "no such reminder")
         current = found[0].reminder
-        method = await standing_method.named(me.household_id, body.method)
+        method = await named(me.household_id, body.method)
         if method is not None and (current.repeat is None or current.ends_at is not None):
-            raise BadArguments("only a repeating reminder can be a standing errand")
+            raise Refused("only a repeating reminder can be a standing errand")
         if not await wakes.edit(me.household_id, me.id, reminder_id, replace(current, method=method)):
             return _error(404, "not_found", "no such reminder")
         changed = next(s for s in await wakes.reminders(me.household_id, me.id) if s.id == reminder_id)
-    except BadArguments as e:
+    except (Refused, NotAMethod) as e:
         return _error(422, "refused", str(e))
-    except (PeopleUnavailable, WakesUnavailable, ToolsUnavailable):
+    except (PeopleUnavailable, WakesUnavailable, SkillsUnavailable):
         return _error(503, "unavailable", "reminders are unavailable right now; try again shortly")
     logs.info(log, "reminders.method", wake=reminder_id, standing=int(method is not None))
     return _wire(changed, {p.id: wire_person(p) for p in household.people}, ZoneInfo(household.timezone))
