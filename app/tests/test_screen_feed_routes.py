@@ -265,7 +265,7 @@ def test_a_feed_whose_time_is_nearly_up_ends_its_stream_by_itself_and_closes_the
 
 def test_a_swipe_takes_the_feed_off_that_screen(world: World) -> None:
     showing(world)
-    assert kiosk().delete("/api/kiosk/feed", params={"screen": TOKEN}).status_code == 204
+    assert kiosk().post("/api/kiosk/feed/dismiss", json={"screen": TOKEN}).status_code == 204
     assert ScreenFeedRead.model_validate(kiosk().get("/api/kiosk/feed", params={"screen": TOKEN}).json()).feed is None
 
 
@@ -281,7 +281,8 @@ def test_bodies_outside_the_models_are_validation_errors(world: World) -> None:
     assert kiosk().post("/api/kiosk/feed/offer", json={"screen": "not-a-uuid", "offer": OFFER}).status_code == 422
     assert kiosk().post("/api/kiosk/feed/offer", json={"screen": TOKEN, "offer": ""}).status_code == 422
     assert kiosk().post("/api/kiosk/feed/candidate", json={"screen": TOKEN, "session_id": "s"}).status_code == 422
-    assert kiosk().get("/api/kiosk/feed").status_code == 422
+    assert kiosk().get("/api/kiosk/feed", params={"screen": "nope"}).status_code == 422
+    assert ScreenFeedRead.model_validate(kiosk().get("/api/kiosk/feed").json()).feed is None   # names no screen
 
 
 def test_no_sign_in_is_401(world: World) -> None:

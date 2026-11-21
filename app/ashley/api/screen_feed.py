@@ -1,8 +1,9 @@
 """A camera's live feed on a screen, for a person's page (`/api/screens/feed`) and the kiosk (`/api/kiosk/feed`), the same
 four routes for each, by the token the page opened its live feed under (`GET /api/live?screen=`):
 
-- `GET ?screen=` reads the feed this screen shows (`ScreenFeedRead`), or none.
-- `DELETE ?screen=` takes it off this screen: the page's swipe.
+- `GET ?screen=` reads the feed this screen shows (`ScreenFeedRead`), or none (also with no `screen`, which names no
+  screen).
+- `POST /dismiss` takes it off this screen: the page's swipe.
 - `POST /offer` relays the page's WebRTC offer to the camera through her, and streams the camera's session, answer and
   candidates back as Server-Sent Events (`FeedSignal`). The media goes from the camera to the page; her connection to the
   camera's service stays open exactly as long as the stream, since the service ends the feed when it closes, and the stream
@@ -32,7 +33,7 @@ from .kiosk_device import Kiosk
 from .live import CONFIG, HEARTBEAT, EventStream
 from .models import ErrorResponse
 from .person import Person
-from .screen_feed_models import FeedCandidate, FeedOffer, FeedSignal, ScreenFeed, ScreenFeedRead
+from .screen_feed_models import FeedCandidate, FeedDismiss, FeedOffer, FeedSignal, ScreenFeed, ScreenFeedRead
 from .screens import unavailable
 
 log = logging.getLogger("ashley.api.screen_feed")
@@ -79,9 +80,11 @@ def routes(prefix: str, owner_of: Owned, owner: str) -> APIRouter:
     router = APIRouter(prefix=prefix)
 
     @router.get("", operation_id=f"{owner}_feed_read", response_model=ScreenFeedRead, responses={k: v for k, v in _ERRORS.items() if k in (401, 422, 503)})
-    async def read(who: Annotated[Owner, Depends(owner_of)], screen: UUID) -> ScreenFeedRead | JSONResponse:
+    async def read(who: Annotated[Owner, Depends(owner_of)], screen: UUID | None = None) -> ScreenFeedRead | JSONResponse:
         """200 `ScreenFeedRead`, the feed this screen shows now (null when none); 401 `unauthorized`; 422 FastAPI's
         validation error; 503 `unavailable`."""
+        if screen is None:
+            return ScreenFeedRead(feed=None)
         try:
             showing = await feed.current(who, str(screen), _now())
         except NotShowing:
@@ -92,13 +95,13 @@ def routes(prefix: str, owner_of: Owned, owner: str) -> APIRouter:
         return ScreenFeedRead(feed=ScreenFeed.model_validate({
             "camera_title": showing.title, "remaining_s": showing.remaining_s, **showing.config}))
 
-    @router.delete("", operation_id=f"{owner}_feed_dismiss", status_code=204, response_class=Response, responses={
+    @router.post("/dismiss", operation_id=f"{owner}_feed_dismiss", status_code=204, response_class=Response, responses={
         k: v for k, v in _ERRORS.items() if k in (401, 403, 422, 503)})
-    async def dismiss(who: Annotated[Owner, Depends(owner_of)], screen: UUID) -> Response:
+    async def dismiss(who: Annotated[Owner, Depends(owner_of)], body: FeedDismiss) -> Response:
         """204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
         `unavailable`."""
         try:
-            await feed.dismiss(who, str(screen))
+            await feed.dismiss(who, str(body.screen))
         except ScreensUnavailable:
             return unavailable()
         logs.info(log, "screen.feed", route="dismiss", outcome="ok", **_owner_id(who))

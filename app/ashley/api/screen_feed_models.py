@@ -31,6 +31,12 @@ class ScreenFeedRead(BaseModel):
     feed: ScreenFeed | None
 
 
+class FeedDismiss(BaseModel):
+    """The screen whose feed is taken off: the token it opened its live feed under."""
+
+    screen: UUID
+
+
 class FeedOffer(BaseModel):
     """The page's WebRTC offer for the feed it shows: `screen` is the token it opened its live feed under, `offer` its SDP."""
 
