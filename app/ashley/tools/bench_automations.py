@@ -98,12 +98,15 @@ class BenchAutomationTools(Tools):
         version, enabled, turn_off = (call.arguments.get(k) for k in ("base_version", "enabled", "turn_off"))
         if type(version) is not int or not isinstance(enabled, bool):
             raise BadArguments("base_version is a whole number and enabled true or false")
+        shadow = call.arguments.get("shadow", False)
+        if not isinstance(shadow, bool):
+            raise BadArguments("shadow is true or false")
         if turn_off is not None and not isinstance(turn_off, str):
             raise BadArguments("turn_off is an entity id")
         if turn_off is not None and turn_off not in {a.thing for a in await (await self._house()).configs("automation")}:
             return bench_results.failed(call, started, "no_such_automation", NO_ENTITY, bench=self._bench, piece=piece)
         applied = await services.get(Workshop).apply(self._owner, self._bench,
-                                                     Propose(HER, piece, version, enabled, turn_off))
+                                                     Propose(HER, piece, version, enabled, turn_off, shadow))
         if applied.outcome != "accepted":
             return bench_results.failed(call, started, applied.outcome, bench_results.HINTS[applied.outcome],
                                         bench=self._bench, command="propose", seq=applied.seq, piece=piece)
@@ -120,7 +123,7 @@ class BenchAutomationTools(Tools):
             "piece_id": piece,
             "waiting_on_approval": None if proposal is None else {
                 "seq": proposal.seq, "version": proposal.proposed.version, "enabled": proposal.proposed.enabled,
-                "turn_off": proposal.proposed.turn_off},
+                "turn_off": proposal.proposed.turn_off, "shadow": proposal.proposed.shadow},
             "last": None if last is None else _record(last)}
         return bench_results.ok(call, started, body, bench=self._bench, piece=piece)
 

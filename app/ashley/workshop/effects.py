@@ -44,14 +44,19 @@ def shelved(shelf: tuple[Piece, ...], effect: Effect, seq: int) -> tuple[Piece, 
     return shelf
 
 
+def _changes_nothing(effect: Effect) -> bool:
+    return isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed)) or (isinstance(effect, Installed) and effect.shadow)
+
+
 def settled(effect: Effect, effects: Mapping[int, Effect], undos: Mapping[int, int], done_seq: int) -> bool:
     """Whether the piece `effect` (command `done_seq`) changed is as that command left it: every later effect on the
     piece is a command that a later undo took back, or such an undo. A `Ran`, a `Cued`, a `Pointed`, a `Shown` or a `Proposed` changed nothing, so it
-    never counts; an `Installed` does, so a change before an install is undone only after the install is."""
+    never counts; an `Installed` does, so a change before an install is undone only after the install is, except a shadow
+    run's, which changed nothing of the piece."""
     taken_back = set(undos.values())
     return all(s in taken_back or undos.get(s, 0) > done_seq
                for s, e in effects.items()
-               if s > done_seq and not isinstance(e, (Ran, Cued, Pointed, Shown, Proposed)) and piece_of(e) == piece_of(effect))
+               if s > done_seq and not _changes_nothing(e) and piece_of(e) == piece_of(effect))
 
 
 def inverse(effect: Effect, pieces: tuple[Piece, ...], shelf: tuple[Piece, ...], title: str,
@@ -63,6 +68,8 @@ def inverse(effect: Effect, pieces: tuple[Piece, ...], shelf: tuple[Piece, ...],
     by an `Uninstalled` naming it, a rename by renaming the bench back."""
     if isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed, Uninstalled)):
         return None
+    if isinstance(effect, Installed) and effect.shadow:
+        return Uninstalled(effect.piece_id, done_seq, effect.automation_id)
     if isinstance(effect, Renamed):
         return Renamed(title, effect.before) if settled(effect, effects, undos, done_seq) else None
     current = next((p for p in pieces if p.id == piece_of(effect)), None)

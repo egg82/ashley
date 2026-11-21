@@ -1,0 +1,7 @@
+{
+  "duration_s": 86400,
+  "keep_s": 604800,
+  "max_events": 500,
+  "shown": 50,
+  "tick_s": 30
+}

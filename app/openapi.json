@@ -11584,6 +11584,10 @@
               }
             ],
             "title": "Turn Off"
+          },
+          "shadow": {
+            "type": "boolean",
+            "title": "Shadow"
           }
         },
         "type": "object",
@@ -11591,10 +11595,11 @@
           "seq",
           "piece_version",
           "enabled",
-          "turn_off"
+          "turn_off",
+          "shadow"
         ],
         "title": "InstallProposal",
-        "description": "Her proposal `seq` to install the piece as it is at `piece_version`: `enabled` or not once installed, turning off\n`turn_off` (an automation's entity id) with it, null for none. The person approves it with an `install` command\nnaming `seq`."
+        "description": "Her proposal `seq` to install the piece as it is at `piece_version`: `enabled` or not once installed, turning off\n`turn_off` (an automation's entity id) with it, null for none. The person approves it with an `install` command\nnaming `seq`. A `shadow` proposal is for a shadow run: the piece installed as a shadow that only records when it\nwould have fired, turning nothing off (`turn_off`, then, is the automation it would replace, which is recorded\nbeside it)."
       },
       "InstallState": {
         "properties": {
@@ -14680,13 +14685,24 @@
             },
             "type": "array",
             "title": "Unanswered Events"
+          },
+          "shadow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShadowState"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
         "required": [
           "install_proposal",
           "last_install",
-          "unanswered_events"
+          "unanswered_events",
+          "shadow"
         ],
         "title": "PieceAutomation",
         "description": "An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the\npiece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece\nnever installed). `unanswered_events` are the wake events the installed automation sends that no wake rule on an\nopen bench of the household answers: Home Assistant sends them and nothing happens (empty when it is not installed,\nsends none, or every one has a rule)."
@@ -16950,6 +16966,97 @@
         ],
         "title": "SettingsRefused",
         "description": "Why settings were not stored; nothing was. `reason`: `unknown_key`, the kind has no such setting;\n`wrong_shape`, the value is not the setting's shape; `bad_id`, an id is not `domain.name` or an action is not one the\nsetting takes; `too_many`, a list is too long. `key` is the setting it concerns."
+      },
+      "ShadowFiring": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "would",
+              "did"
+            ],
+            "title": "Kind"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "at"
+        ],
+        "title": "ShadowFiring",
+        "description": "One recorded firing: `would`, the piece's shadow fired (it would have), or `did`, the automation it would replace\nwas triggered, at `at`."
+      },
+      "ShadowState": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "piece_version": {
+            "type": "integer",
+            "title": "Piece Version"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ends At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "replaces": {
+            "type": "boolean",
+            "title": "Replaces"
+          },
+          "would": {
+            "type": "integer",
+            "title": "Would"
+          },
+          "did": {
+            "type": "integer",
+            "title": "Did"
+          },
+          "firings": {
+            "items": {
+              "$ref": "#/components/schemas/ShadowFiring"
+            },
+            "type": "array",
+            "title": "Firings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "piece_version",
+          "started_at",
+          "ends_at",
+          "ended_at",
+          "replaces",
+          "would",
+          "did",
+          "firings"
+        ],
+        "title": "ShadowState",
+        "description": "The latest shadow run of the piece, begun by install command `seq` of the piece at `piece_version` and set to\nend at `ends_at`; `ended_at` is null while it runs (a person takes it out with an `undo` of `seq`). `replaces` says\nwhether it names an automation to record beside it (`did` is then meaningful, else always 0). `would` and `did`\ncount the firings kept, `firings` the newest of them, newest first."
       },
       "SkillDetail": {
         "properties": {

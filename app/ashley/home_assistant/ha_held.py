@@ -13,8 +13,9 @@ from .. import services
 from .ha_held_socket import HeldSettings, Socket, state_of
 from .ha_json import obj
 from .ha_rest import Rest
-from .held_states import EntityState, HeldStates
+from .held_states import EntityState, HeldStates, Recorder
 from .homes import Home, Homes
+from .house import HouseUnavailable
 from .house_settings import HouseSettings, load as load_house
 
 FILE = Path(__file__).with_name("ha_held.json")
@@ -59,20 +60,37 @@ class SocketStates(HeldStates):
 
     async def states(self, household_id: int, entity_ids: Sequence[str]) -> Mapping[str, EntityState | None] | None:
         home = await services.get(Homes).of(household_id)
+        socket = self._socket(household_id, home)
+        if home is None:
+            return None
+        if socket is None:
+            return await self._once(home, entity_ids)
+        return await socket.states(entity_ids)
+
+    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+        home = await services.get(Homes).of(household_id)
+        socket = self._socket(household_id, home)
+        if home is None:
+            return
+        if socket is None:
+            raise HouseUnavailable("websocket: not held")
+        await socket.events(types)
+
+    def _socket(self, household_id: int, home: Home | None) -> Socket | None:
+        """The household's held socket, opened on the first ask and replaced when its house changes; None while nothing
+        holds, or the household has no house."""
         held = self._sockets.get(household_id)
         if held is not None and (home is None or held[0].home is not home):
             held[1].cancel()
             del self._sockets[household_id]
             held = None
-        if home is None:
+        if home is None or self._group is None:
             return None
-        if self._group is None:
-            return await self._once(home, entity_ids)
         if held is None:
             socket = Socket(household_id, home, self._settings, self._house, self._told, self._sleep, self._clock)
             held = (socket, self._group.create_task(socket.run()))
             self._sockets[household_id] = held
-        return await held[0].states(entity_ids)
+        return held[0]
 
     def _told(self) -> None:
         self._changed()

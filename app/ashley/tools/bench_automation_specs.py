@@ -49,9 +49,13 @@ SPECS: tuple[ToolSpec, ...] = (
              _object({"automation_id": {"type": "string"}}, ("automation_id",)), reads=True, outside=False),
     ToolSpec(PROPOSE, "Propose installing an automation piece of this bench, as it is at the version you read, into "
              "Home Assistant. Nothing changes until the person approves it on the piece. `enabled`: whether it runs "
-             "once installed; `turn_off`: the entity id of an automation it replaces, turned off with it.",
+             "once installed; `turn_off`: the entity id of an automation it replaces, turned off with it. `shadow`: true "
+             "to propose a shadow run instead, which installs the piece as a copy that only records when it would have "
+             "fired and changes nothing in the house; it is shown beside what the automation named in `turn_off` did, "
+             "which is not turned off, and ends by itself after a day.",
              _object({"piece_id": _INT, "base_version": _INT, "enabled": {"type": "boolean"},
-                      "turn_off": {"type": "string"}}, ("piece_id", "base_version", "enabled")), outside=False, tier="judged"),
+                      "turn_off": {"type": "string"}, "shadow": {"type": "boolean"}},
+                     ("piece_id", "base_version", "enabled")), outside=False, tier="judged"),
     ToolSpec(STATE, "Whether an automation piece's install is waiting on the person's approval, and what its latest "
              "install, or undo of one, did to the house.", _object({"piece_id": _INT}, ("piece_id",)), reads=True, outside=False),
 )

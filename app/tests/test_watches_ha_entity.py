@@ -5,7 +5,7 @@ wakes her; a thing the house does not have is refused at arming; and what each r
 
 import asyncio
 import json
-from collections.abc import AsyncGenerator, Callable, Coroutine, Sequence
+from collections.abc import AsyncGenerator, Callable, Coroutine, Mapping, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -15,7 +15,7 @@ import pytest
 from ashley import services
 from ashley.db.pool import PoolDatabase
 from ashley.home_assistant.ha_held import SocketStates
-from ashley.home_assistant.held_states import EntityState, HeldStates
+from ashley.home_assistant.held_states import EntityState, HeldStates, Recorder
 from ashley.home_assistant.homes import Homes
 from ashley.home_assistant.house import HouseUnavailable
 from ashley.home_assistant.house_settings import load as load_house
@@ -191,6 +191,9 @@ class Answers(HeldStates):
         if self.fail is not None:
             raise self.fail
         return self.found
+
+    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+        return None
 
 
 @pytest.mark.parametrize("answers,expected", [

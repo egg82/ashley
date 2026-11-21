@@ -4,6 +4,7 @@ else's id is 404 `not_found`, as one that does not exist. A page showing a bench
 says it changed (`LiveBench`). The bench's talk is `api.bench_talk`."""
 
 from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Any, Literal
 
 from fastapi import APIRouter, Request
@@ -23,6 +24,7 @@ from ..workshop import rules as workshop_rules
 from ..workshop.commands import type_of
 from ..workshop.install_piece import carry_out
 from ..workshop.installs import InstallRecord, Installs, InstallsUnavailable
+from ..workshop.shadows import ShadowRun, Shadows, ShadowsUnavailable
 from ..workshop.model import SIZES, Bench, Change, Owner, Piece
 from ..workshop.provisional import provisional_title
 from ..workshop.wake_links import WakeLinks, links_of
@@ -81,10 +83,11 @@ def summary(bench: Bench) -> BenchSummary:
 
 
 def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[int, InstallRecord],
-           links: WakeLinks, link_key: bytes = b"", metric: bool = False) -> BenchPiece:
+           links: WakeLinks, link_key: bytes = b"", metric: bool = False,
+           shadows: Mapping[int, ShadowRun] = MappingProxyType({})) -> BenchPiece:
     change: Change = view.changes[piece.id]
     kind = RULES.kinds.get(piece.kind)
-    automation = (automation_of(view.proposals.get(piece.id), installs.get(piece.id), links)
+    automation = (automation_of(view.proposals.get(piece.id), installs.get(piece.id), links, shadows.get(piece.id))
                   if kind is not None and kind.format == "automation" else None)
     return BenchPiece(id=piece.id, kind=piece.kind, title=piece.text.title, body=piece.text.body,
                       piece_version=piece.version, placement=PiecePlace(order=piece.place.order, size=piece.place.size),
@@ -198,24 +201,25 @@ async def read_bench(signed_in: Person, bench_id: int, request: Request) -> Benc
         return await detail_of(owner_of(signed_in), bench_id, services.get(DeploymentSecrets).link_key().encode(), settings.public_url)
     except BenchNotFound:
         return not_found()
-    except (WorkshopUnavailable, RunsUnavailable, InstallsUnavailable):
+    except (WorkshopUnavailable, RunsUnavailable, InstallsUnavailable, ShadowsUnavailable):
         return unavailable()
 
 
 async def detail_of(owner: Owner, bench_id: int, key: bytes, origin: str | None = None) -> BenchDetail:
     """Bench `bench_id` as `owner` sees it, its files' links minted under `key`. With an `origin` (where this page is
     reached, possibly empty), an open bench's site addresses not yet measured are measured in the background
-    (`bench_frames`). Raises BenchNotFound, WorkshopUnavailable, RunsUnavailable and InstallsUnavailable."""
+    (`bench_frames`). Raises BenchNotFound, WorkshopUnavailable, RunsUnavailable, InstallsUnavailable and ShadowsUnavailable."""
     view = await services.get(Workshop).read(owner, bench_id)
     if origin is not None and view.bench.closed_at is None:
         measure_in_background(owner, view, RULES, origin)
     runs = await services.get(Runs).last_on_bench(owner.household_id, bench_id)
     installs = await services.get(Installs).latest_on_bench(owner.household_id, bench_id)
+    shadows = await services.get(Shadows).of_bench(owner.household_id, bench_id)
     metric = await metric_of(owner.household_id)
     links = await links_of(owner)
-    return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, links, key, metric) for p in view.pieces],
+    return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.pieces],
                        recent=[_logged(r) for r in view.recent], undo_next=view.undo_next,
-                       shelf=[_piece(p, view, runs.get(p.id), installs, links, key, metric) for p in view.shelf])
+                       shelf=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.shelf])
 
 
 @router.post("/api/benches/{bench_id}/close", response_model=BenchSummary, responses={**WRITE_ERRORS, **BENCH_ERRORS})

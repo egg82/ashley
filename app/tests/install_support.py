@@ -1,6 +1,6 @@
 """A world for installing a bench's automation pieces over a real database: the Postgres Workshop and Installs on one
 pool, a fake Home Assistant (`automations_support.FakeHouse`) as the household's house, and a Live that keeps what it
-heard; and the commands that put a proposed automation piece on a bench."""
+heard; and the commands that put a proposed automation piece on a bench. `world` takes the shadow settings a test wants."""
 
 import json
 from collections.abc import AsyncGenerator
@@ -18,6 +18,9 @@ from ashley.workshop.install_piece import automation_id_for
 from ashley.workshop.installs import Installs
 from ashley.workshop.installs_postgres import PostgresInstalls
 from ashley.workshop.model import HER, By, Owner, Text
+from ashley.workshop.shadow import Settings, load as load_shadow
+from ashley.workshop.shadows import Shadows
+from ashley.workshop.shadows_postgres import PostgresShadows
 from ashley.workshop.postgres import PostgresWorkshop
 from ashley.workshop.workshop import Workshop
 from automations_support import FakeHouse
@@ -40,8 +43,9 @@ def add(owner: Owner, text: str | None = None) -> Add:
     return Add(By(owner.person_id), "automation", Text("porch", body() if text is None else text), "medium")
 
 
-def propose(piece: int = 1, version: int = 1, enabled: bool = False, turn_off: str | None = None) -> Propose:
-    return Propose(HER, piece, version, enabled, turn_off)
+def propose(piece: int = 1, version: int = 1, enabled: bool = False, turn_off: str | None = None,
+            shadow: bool = False) -> Propose:
+    return Propose(HER, piece, version, enabled, turn_off, shadow)
 
 
 def install(owner: Owner, bench_id: int, proposal: int, piece: int = 1) -> Install:
@@ -56,17 +60,18 @@ class World:
 
 
 @asynccontextmanager
-async def world(url: str, house: FakeHouse | None = None) -> AsyncGenerator[World]:
+async def world(url: str, house: FakeHouse | None = None, shadows: Settings | None = None) -> AsyncGenerator[World]:
     database = PoolDatabase(url)
     await database.open()
     made = World(house or FakeHouse(), Heard(), database)
     services.register(Workshop, PostgresWorkshop(database, RULES))
     services.register(Installs, PostgresInstalls(database))
+    services.register(Shadows, PostgresShadows(database, shadows or load_shadow()))
     services.register(Homes, AnyHousehold(made.house.house()))
     services.register(Live, made.heard)
     try:
         yield made
     finally:
-        for interface in (Workshop, Installs, Homes, Live):
+        for interface in (Workshop, Installs, Shadows, Homes, Live):
             services.unregister(interface)
         await database.close()

@@ -14,6 +14,7 @@ import logging
 import time
 from collections.abc import Mapping
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from .. import logs, services
@@ -21,10 +22,11 @@ from ..home_assistant.homes import house_of
 from ..home_assistant.house import House, HouseRejected, HouseUnavailable
 from ..live.events import BenchChanged, Shown
 from ..live.live import Live
-from . import automation_config, wake_action
+from . import automation_config, shadow, wake_action
 from .commands import Installed, Uninstalled
 from .installs import Before, Ending, InstallRecord, Installs, InstallsUnavailable, NewInstall
 from .model import Owner
+from .shadows import NewShadow, Shadows, ShadowsUnavailable
 from .workshop import Applied, Workshop, WorkshopError
 
 log = logging.getLogger("ashley.workshop")
@@ -57,7 +59,7 @@ async def carry_out(owner: Owner, bench_id: int, applied: Applied) -> InstallRec
             ending = await _install(owner, bench_id, applied.seq, effect)
         else:
             ending = await _uninstall(owner, bench_id, applied.seq, effect)
-    except (InstallsUnavailable, WorkshopError):
+    except (InstallsUnavailable, ShadowsUnavailable, WorkshopError):
         logs.warning(log, "workshop.install", bench=bench_id, seq=applied.seq, piece=effect.piece_id,
                      outcome="unrecorded", ms=_ms(started))
         return None
@@ -79,7 +81,7 @@ def _ms(started: float) -> int:
 def _new(owner: Owner, bench_id: int, seq: int, effect: Installed, before: Before | None, touched: bool,
          events: tuple[str, ...] = ()) -> NewInstall:
     return NewInstall(owner.household_id, bench_id, seq, effect.piece_id, "install", effect.automation_id,
-                      effect.enabled, effect.turn_off, before, touched, events)
+                      effect.enabled, effect.turn_off, before, touched, events, effect.shadow)
 
 
 async def _untouched(install: NewInstall, note: str) -> Ending:
@@ -93,6 +95,10 @@ async def _install(owner: Owner, bench_id: int, seq: int, effect: Installed) -> 
     view = await services.get(Workshop).read(owner, bench_id)
     piece = next((p for p in view.pieces if p.id == effect.piece_id and p.version == effect.version), None)
     config = None if piece is None else automation_config.config_of(piece.text.body)
+    mirrors = effect.turn_off if effect.shadow else None
+    if effect.shadow:
+        effect = replace(effect, turn_off=None)
+        config = None if config is None else shadow.config_of(config, bench_id, effect.piece_id, effect.version)
     if config is None:
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), CHANGED)
     try:
@@ -100,18 +106,30 @@ async def _install(owner: Owner, bench_id: int, seq: int, effect: Installed) -> 
         before = await _before(house, effect)
     except HouseUnavailable:
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), UNREACHABLE)
-    if before.config is not None and not await _installed_before(owner, bench_id, effect.piece_id):
+    if before.config is not None and not await _installed_before(owner, bench_id, effect.piece_id, effect.shadow):
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), TAKEN)
+    if effect.shadow:
+        await _begin_shadow(owner, bench_id, seq, effect, mirrors)
     await services.get(Installs).start(_new(owner, bench_id, seq, effect, before, True, wake_action.events_of(config)))
     ending, note = await _write(house, effect, config, before)
     await services.get(Installs).finish(bench_id, seq, ending, note)
+    if effect.shadow and ending != "done":
+        await services.get(Shadows).end(bench_id, seq, datetime.now(UTC))
     return ending
 
 
-async def _installed_before(owner: Owner, bench_id: int, piece_id: int) -> bool:
-    """Whether an earlier install or uninstall of the piece may have written to the house, so what HA holds under its
-    id is ours."""
-    return await services.get(Installs).wrote_before(owner.household_id, bench_id, piece_id)
+async def _begin_shadow(owner: Owner, bench_id: int, seq: int, effect: Installed, mirrors: str | None) -> None:
+    """Record the run before the house is written to, so the job that ends it knows it."""
+    now = datetime.now(UTC)
+    ends = now + timedelta(seconds=shadow.load().duration_s)
+    await services.get(Shadows).begin(NewShadow(owner.household_id, bench_id, seq, effect.piece_id, effect.version,
+                                                owner.person_id, mirrors, now, ends))
+
+
+async def _installed_before(owner: Owner, bench_id: int, piece_id: int, shadowed: bool) -> bool:
+    """Whether an earlier install or uninstall of the piece (of its shadow runs when `shadowed`) may have written to
+    the house, so what HA holds under its id is ours."""
+    return await services.get(Installs).wrote_before(owner.household_id, bench_id, piece_id, shadowed)
 
 
 async def _before(house: House, effect: Installed) -> Before:
@@ -150,8 +168,9 @@ async def _written(house: House, automation_id: str, config: Mapping[str, Any]) 
 async def _uninstall(owner: Owner, bench_id: int, seq: int, effect: Uninstalled) -> Ending:
     installed = await services.get(Installs).of(owner.household_id, bench_id, effect.install)
     turn_off = None if installed is None else installed.started.turn_off
+    shadowed = installed is not None and installed.started.shadow
     new = NewInstall(owner.household_id, bench_id, seq, effect.piece_id, "uninstall", effect.automation_id, None,
-                     turn_off, None, True)
+                     turn_off, None, True, (), shadowed)
     if installed is None or not installed.started.touched or installed.ending == "refused":
         await services.get(Installs).start(replace(new, touched=False))
         await services.get(Installs).finish(bench_id, seq, "done", NOTHING)
@@ -159,6 +178,8 @@ async def _uninstall(owner: Owner, bench_id: int, seq: int, effect: Uninstalled)
     await services.get(Installs).start(new)
     ending, note = await _take_back(await house_of(owner.household_id), effect, installed)
     await services.get(Installs).finish(bench_id, seq, ending, note)
+    if shadowed and ending == "done":
+        await services.get(Shadows).end(bench_id, effect.install, datetime.now(UTC))
     return ending
 
 
