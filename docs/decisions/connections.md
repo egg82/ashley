@@ -230,6 +230,16 @@ webcam are later sources; detector events, live video and a bench watch are late
   never a camera's name or a byte.
 - **A look on no bench**: `bench_looks.bench_id` is nullable (migration 0125; `piece_id` already was), so `Look.bench_id` and
   `ChatLook.bench_id` may be null and the page captions it "a camera". Which camera is not stored; the row says it was a camera.
+- **Recordings are the camera port's second capability** (`CameraSource.recordings` and `recording_still`; `Cameras.recordings`
+  and `look_recording`): what a camera's own detector captured, found through the same listed cameras, so the `look_cameras`
+  list governs them and a camera she may not look through has none for her. A `Recording` is an id, its camera and a `title`
+  exactly as the source writes it, given to her as information; nothing parses it. A `Still`'s `taken` is None when the source
+  states no time, and the tool then omits it. The list is capped (`max_recordings`, `looks.json`, passed to the router at wiring),
+  newest first as the source lists them. Home Assistant's source is the `nest` media source behind `House.events` and
+  `House.event_picture` (`ashley.home_assistant.ha_events`): the camera entity's device from the entity registry, its events
+  from `media_source/browse_media`, a preview by GET of the event's `thumbnail` path; the still is the middle frame of the
+  animated preview. A camera of another platform, or a device the source does not know, has none. `camera_recordings` and
+  `camera_look`'s `recording` are reads and `outside=True`; a recording look is kept and counted like a live one.
 - Rejected: a second record of what she saw through a camera, which the Looks system already keeps. Rejected: the setting on
   the port rather than the connection, which is where `discreet_calendars` and `household_reads` live.
 
