@@ -4,8 +4,8 @@ recorded in it: the piece's would-have-fired events and the real automation's di
 
 from alembic import op
 
-revision: str = "0131"
-down_revision: str | None = "0129"
+revision: str = "0132"
+down_revision: str | None = "0131"
 
 
 def upgrade() -> None:
