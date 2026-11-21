@@ -1,7 +1,7 @@
 // A session piece followed while it is on screen: its body names one of the person's Claude Code sessions, and the
 // page asks the server for that session's screen, again after the wait each answer gives, and not at all while the page
 // is hidden. The last screen stays shown when the bridge stops answering or the session ends.
-import type { SessionScreen } from '../../../api/sessions';
+import type { SessionRef, SessionScreen } from '../../../api/sessions';
 
 export type ScreenState = SessionScreen['state'];
 export type ScreenStatus = NonNullable<SessionScreen['status']>;
@@ -14,28 +14,30 @@ const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** How long to wait after a request that failed in the page (offline, signed out) before asking again. */
 export const FAILED_MS = 20000;
 
-/** The session a piece's body names, or null for a body that is not a session reference (the server checks bodies, but
- *  an id goes into a URL, so the page checks it too). */
-export function sessionOf(body: string): string | null {
+/** The session a piece's body names and the machine it is on (null: the default one), or null for a body that is not a
+ *  session reference (the server checks bodies, but an id goes into a URL, so the page checks it too). */
+export function sessionOf(body: string): SessionRef | null {
   try {
     const got: unknown = JSON.parse(body);
     if (!got || typeof got !== 'object' || Array.isArray(got)) return null;
-    const { source, session } = got as Record<string, unknown>;
-    return source === 'herdr' && typeof session === 'string' && ID.test(session) ? session : null;
+    const { source, session, machine } = got as Record<string, unknown>;
+    if (source !== 'herdr' || typeof session !== 'string' || !ID.test(session)) return null;
+    if (machine !== undefined && (typeof machine !== 'string' || machine.length < 1)) return null;
+    return { id: session, machine: machine ?? null };
   } catch {
     return null;
   }
 }
 
 export type Follow = {
-  read: (session: string, seen: string | null, signal: AbortSignal) => Promise<SessionScreen>;
+  read: (session: SessionRef, seen: string | null, signal: AbortSignal) => Promise<SessionScreen>;
   wait: (ms: number, signal: AbortSignal) => Promise<void>;
   visible: () => boolean;
   shown: (signal: AbortSignal) => Promise<void>;
 };
 
 /** Ask for `session`'s screen until `signal` aborts, calling `show` after each answer. */
-export async function follow(session: string, show: (s: Shown) => void, deps: Follow, signal: AbortSignal): Promise<void> {
+export async function follow(session: SessionRef, show: (s: Shown) => void, deps: Follow, signal: AbortSignal): Promise<void> {
   let seen: string | null = null;
   let last: Shown = { state: 'live', status: null, text: '', truncated: false };
   while (!signal.aborted) {

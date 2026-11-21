@@ -1,6 +1,7 @@
 """The herdr bridge as a connection kind: a person's own Claude Code sessions, checked by the bridge answering
 `whoami` for them. The address carries the bridge's certificate fingerprint (`https://host:7843#sha256=<hex>`), since
-the row holds an address and one secret and the fingerprint is neither typed apart nor secret."""
+the row holds an address and one secret and the fingerprint is neither typed apart nor secret. A person holds up to
+`most` of them, one per machine, each named by its label (`ashley.herdr.machines`)."""
 
 from .. import services
 from ..connections.kinds import ConnectionKind, Refusal
@@ -28,7 +29,7 @@ HERDR = ConnectionKind(
     removed="Removed. She can’t reach your Claude Code sessions now.",
     holders=frozenset({"person"}), schemes=frozenset({"https"}), address_placeholder="https://host:7843#sha256=<fingerprint>",
     secret_field="token", secret_label="Token, printed once when you set the bridge up", secret_noun="token",
-    check=_check, pinned=True, ports=frozenset({"herdr"}),
+    check=_check, pinned=True, ports=frozenset({"herdr"}), most=4,
     refusals={"bad_url": "the address is the bridge’s https address followed by #sha256= and the fingerprint it "
                          "printed, 64 hex digits",
               "key_refused": "the bridge turned that token away, or serves another person; set it up again to get "

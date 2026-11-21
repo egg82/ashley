@@ -2049,7 +2049,8 @@ export interface paths {
         /**
          * Session Screen
          * @description 200 `SessionScreen`, whatever the bridge answered; 401 `unauthorized`; 422 for an id that is not a session's.
-         *     `seen` is the `digest` of the screen the page shows, so an unchanged screen is not sent again. (The bridge's own
+         *     `machine` is the label of the person's herdr connection the piece names; left out, their default machine
+         *     (`herdr.machines`). `seen` is the `digest` of the screen the page shows, so an unchanged screen is not sent again. (The bridge's own
          *     `revision` is herdr's count of changes to the agent, not to its screen, so it cannot say that.)
          */
         get: operations["session_screen"];
@@ -5429,7 +5430,7 @@ export interface components {
         /**
          * SessionScreen
          * @description A session's screen as it is now. `state`: `live` (shown below), `gone` (the bridge lists no such session: it
-         *     ended or was closed), `not_connected` (the person has no herdr bridge), `unreachable` (the bridge, herdr or the
+         *     ended or was closed), `not_connected` (the person has no herdr bridge), `unknown_machine` (the piece names a machine the person no longer holds under that name), `unreachable` (the bridge, herdr or the
          *     person's connections did not answer) or `refused` (the bridge turned the connection away: its token, person or
          *     certificate). While `live`, `status` is the session's (`idle`, `working`, `blocked`, `done` or `unknown`),
          *     `digest` names the screen's text (a hash, the same for the same text), and `text` is its last lines as unwrapped
@@ -5441,7 +5442,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "live" | "gone" | "not_connected" | "unreachable" | "refused";
+            state: "live" | "gone" | "not_connected" | "unknown_machine" | "unreachable" | "refused";
             /** Status */
             status?: ("idle" | "working" | "blocked" | "done" | "unknown") | null;
             /** Digest */
@@ -12247,6 +12248,7 @@ export interface operations {
         parameters: {
             query?: {
                 seen?: string | null;
+                machine?: string | null;
             };
             header?: never;
             path: {

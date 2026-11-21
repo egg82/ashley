@@ -6,7 +6,8 @@ sends a prompt to one that is ready, starts a new one in an allowed directory, a
 a session's `in/` folder and hand back the files the session left in `out/`, and nothing else of the session's directory.
 It cannot send keys, type into a pane, or run a command.
 
-One bridge serves one person. The first call that reaches it names the person, and any other person is refused with
+One bridge serves one person, and runs on one machine: with several machines, run one bridge on each and add each as its own
+connection (up to four, each under a label that names the machine, which is what Ashley calls it). The first call that reaches it names the person, and any other person is refused with
 `wrong_person` until you run `init` again. Ashley reaches it with mutual TLS: she presents a client certificate from
 the `ashley-bridges` CA, and the bridge accepts no other.
 
@@ -59,7 +60,8 @@ Open the port (7843/tcp unless you passed `--port`) to the cluster, e.g. `sudo f
 --add-port=7843/tcp && sudo firewall-cmd --reload`.
 
 Then, in Ashley's devices room, add a herdr connection with the address `https://<this machine>:7843`, the fingerprint
-and the token. She stores it only after the bridge answers `GET /v1/whoami`.
+and the token, labelled with this machine's name (`vm`, `laptop`); repeat the install and this step on each machine. A
+laptop needs the cluster to reach its port wherever the laptop is. She stores it only after the bridge answers `GET /v1/whoami`.
 
 ## The API
 

@@ -233,13 +233,15 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   address (and, for a video, a start as seconds or `m:ss`), which the page shapes into the body and the server judges. Rejected: regex over a pasted URL in prose to pick a provider; a `provider` field she
   would have to get right, which the host already says.
 - **A session piece is one of the owner's Claude Code sessions, shown as it runs; only its id is stored** (kind
-  `session`, family `live`, `ashley.workshop.session_piece`). Its body is exactly `{"source": "herdr", "session": "<id>"}`:
-  the owner's herdr bridge (the only source there is) and a session id as the bridge lists it. An Add or Edit of
+  `session`, family `live`, `ashley.workshop.session_piece`). Its body is `{"source": "herdr", "session": "<id>"}`
+  with an optional `"machine": "<label>"`: the owner's herdr bridge (the only source there is), a session id as the bridge
+  lists it, and the label of the owner's herdr connection it is on. A body with no `machine` is on the owner's default
+  machine, the first made, so a piece made before a second machine was added keeps its meaning. An Add or Edit of
   anything else is refused `bad_session`; an empty body is a draft. She puts one up with the ordinary piece tools, with an
   id from `claude_sessions`; the page has no Add form for it. The page shows it by asking
   `GET /api/claude/sessions/{id}/screen` (`ashley.api.claude_screen`), which reads the signed-in person's own bridge each
   time (the session's status and its last `screen_lines`, `app/ashley/herdr/herdr.json`) and answers a state, never an
-  error: `live`, `gone`, `not_connected`, `unreachable` or `refused`. It asks while the piece is on screen and the page
+  error: `live`, `gone`, `not_connected`, `unknown_machine` (the named label is not one of the person's connections), `unreachable` or `refused`. It asks while the piece is on screen and the page
   is visible, again after the answer's `again_ms` (sooner while the session works), and sends the digest of the screen
   it holds, so an unchanged screen comes back without its text; the last screen stays shown, dimmed, when the bridge
   stops answering or the session ends. Nothing is kept between asks, so a pod on either site answers the same, and the
