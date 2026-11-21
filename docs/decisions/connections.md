@@ -81,7 +81,7 @@ same family's accounts; one HA is the one house), so a key per person would add 
   person holds several, and a label that is not the person's own is refused `unknown_machine`), a watch or focus read
   looks across all of them, and a caller that names none (a bench job, a piece with no `machine`) gets the first made,
   which stays the same when a machine is added. A connection is addressed by its id and carries its owner's label (at most 40 characters,
-  unique per owner and kind), the owner being the household or, for a personal kind, the person. Adding past `most`
+  unique per owner and kind) and, for a kind that `takes_description`, the owner's own sentences about what it reaches (`Connection.description`, edited with the label), the owner being the household or, for a personal kind, the person. Adding past `most`
   is 409 `too_many` and a taken label 409 `label_taken`. A second account of one kind is that kind's `most`
   raised and its tools asking which one by label; storage, routes, the room and the service need no change.
 
@@ -143,7 +143,7 @@ consumer checks a switch itself.
 - Rejected: a switch table of its own beside the settings, which would duplicate the compare-and-set, the change log and
   the person-only write path. Rejected: a rule per port in code, which is the "system in hiding" the table avoids.
 
-### Calendars are read through a neutral port
+## Calendars are read through a neutral port
 
 Her calendar tool reads `ashley.calendars.calendars.Calendars`, never Home Assistant: neutral records
 (`ashley.calendars.model`: `Calendar`, `Event`, `Agenda`) whose fields are documented in calendar terms. Home Assistant is
@@ -178,7 +178,7 @@ This is the Ledger's and Printing's shape, and only reads exist.
 - Rejected: a calendar tool per source, which is the "system in hiding" the port avoids. Rejected: moving `glance_calendars`
   onto the port's own setting in this change, which would reshape the kiosk's panel.
 
-### To-do lists are read and changed through a neutral port
+## To-do lists are read and changed through a neutral port
 
 Her to-do tools use `ashley.todos.todos.Todos`, never Home Assistant: neutral records (`ashley.todos.model`: `TodoList`,
 `TodoItem`, `Board`, `Change`). Home Assistant's `todo` entities are the first adapter (`ashley.home_assistant.todos.HaTodos`,

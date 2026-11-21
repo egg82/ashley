@@ -58,13 +58,15 @@ mention of `decisions.md`: the title is an entry below, or a `###` heading or bo
 - [Every fact has an owner, a household and one of four visibilities](decisions/memory.md): each fact carries `household_id`, an owner and a visibility.
 - [What she knows lives where the thing that would make it wrong lives](decisions/memory.md): what would make a thing stale decides its home, where she meets it on the way to using it.
 - [Memory is atomic facts in Postgres that are superseded, never edited](decisions/memory.md): one row per fact, current while `valid_to` is null; a correction closes the old row and points it at the new one.
-- [People see, correct and forget what she knows of them](decisions/memory.md): a signed-in person reaches the facts that concern them through `/api/memory/facts`.
+- [People see, correct and forget what she knows of them](decisions/memory.md): a signed-in person reaches the facts that concern them through `/api/memory/facts`, and lists and forgets their own voiceprints through `/api/memory/voice`.
 
 ## Connections and the ledger
 
 - [A household connects its own services](decisions/connections.md): a household's links to services outside her are Connections, each a kind, a label, a base URL and a secret sealed at rest.
 - [Her money is read through a neutral ledger](decisions/connections.md): her money tools and the deposit sense read `Ledger`'s neutral records, never Sure; Sure is the first adapter. Her one write, a transaction's category, is a judged change through the gate every change uses.
-- [3D printing is read through a neutral port](decisions/connections.md): her printing and stock tools read `Printing` and `Stock`'s neutral records, never Bambuddy; Bambuddy is the first adapter of both, and a household's Spoolman supplies stock ahead of it.
+- [3D printing is read through a neutral port](decisions/connections.md): her printing and stock tools read `Printing` and `Stock`'s neutral records, never Bambuddy; Bambuddy is the first adapter of both, and a household's Spoolman supplies stock ahead of it. The port's two writes are queuing a library file, staged and held as the person's agreed change, and uploading a bench's STL or 3MF to the library.
+- [Calendars are read through a neutral port](decisions/connections.md): her calendar tool reads `Calendars`' neutral records, never Home Assistant; Home Assistant is the first adapter, every enabled connection is read, and a source that fails is named rather than read as an empty day.
+- [To-do lists are read and changed through a neutral port](decisions/connections.md): her to-do tools read and change `Todos`' neutral records, never Home Assistant; Home Assistant's `todo` entities are the first adapter, and a change goes to the connection that holds the list.
 - [A model provider's key is a connection](decisions/connections.md): a deployment's model provider keys are connections, added or rotated in the connections room with no redeploy.
 
 ## Mail
