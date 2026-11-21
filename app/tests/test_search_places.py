@@ -3,7 +3,6 @@ distance from the precise point, how the house's location is read and cached, ho
 
 import asyncio
 import json
-import re
 from dataclasses import replace
 
 import httpx2
@@ -14,6 +13,7 @@ from ashley.home_assistant.zone import Coordinates, HomeUnknown
 from ashley.inference.model import ToolCall, ToolResult
 from ashley.tools.places import PlacesTools, distance_mi
 from ashley.tools.search_config import SearchConfig
+from contract.conversations_support import blank_ts
 from search_support import CONFIG, Fake, call, captured, events, raising, serving
 
 HOUSE = Coordinates(40.004321, -104.998765)   # near the round point the capture was taken around
@@ -119,7 +119,7 @@ def test_the_log_carries_outcome_and_count_never_the_query_or_place(capsys: pyte
     out = capsys.readouterr().out
     assert [(e["tool"], e["outcome"], e["results"]) for e in events(out, "tools.call")] == [
         ("find_places", "ok", str(CONFIG.places_results)), ("find_places", "unavailable", "0")]
-    fields = re.sub(r"(?m)^ts=\S+ ", "", out)   # a timestamp like 06:03:40.091Z holds "40.0" by chance
+    fields = blank_ts(out)
     for planted in ("PLANTED-QUERY-zq", "Orchard", "40.0", "-105"):
         assert planted not in fields
 
@@ -191,6 +191,6 @@ def test_the_own_location_never_reaches_the_log_or_the_wire_unrounded(capsys: py
     capsys.readouterr()
     fake = serving(captured("photon"))
     find_own(fake, Own(Coordinates(51.507222, -0.127583)), Home(), query="Target")
-    out = re.sub(r"(?m)^ts=\S+ ", "", capsys.readouterr().out)
+    out = blank_ts(capsys.readouterr().out)
     for planted in ("51.507", "0.1275", "0.127583"):
         assert planted not in out and planted not in str(fake.requests[0].url)

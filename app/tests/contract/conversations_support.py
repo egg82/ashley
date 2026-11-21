@@ -181,6 +181,13 @@ async def gather_settled(*calls: Awaitable[Any]) -> list[Any]:
     return list(await asyncio.gather(*calls, return_exceptions=True))
 
 
+def blank_ts(out: str) -> str:
+    """Captured log output with each line's `ts=` value blanked. A test that asserts a value never reaches a log line
+    must search this, not `out`: the timestamp is part of every line, so a forbidden value shaped like a clock time,
+    a date or a short decimal (`T09:00`, `39.73`, `600`) matches it whenever the clock lines up."""
+    return re.sub(r"(?m)^ts=\S+", "ts=", out)
+
+
 def events(out: str, event: str) -> list[dict[str, str]]:
     """The logfmt lines of `event`, field values unquoted."""
     lines = [{k: v.strip('"') for k, v in FIELD.findall(line)} for line in out.splitlines()]
