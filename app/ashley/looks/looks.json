@@ -23,5 +23,12 @@
   "poll_s": 0.5,
   "warm_tick_s": 30,
   "warm_max_age_s": 21600,
-  "warm_connect_s": 2
+  "warm_connect_s": 2,
+  "session_max_s": 600,
+  "session_max_actions": 60,
+  "session_step_s": 30,
+  "max_sessions": 2,
+  "snapshot_nodes": 300,
+  "snapshot_name_chars": 120,
+  "type_chars": 1000
 }

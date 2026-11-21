@@ -20,9 +20,12 @@ from typing import Any
 from ..runs.labels import PREFIX
 from ..runs.media_pod import FETCH_LABEL
 from .config import LooksConfig
+from . import driver
 from .shooter import PORT
 
 LABEL = PREFIX + "look"
+SESSION_LABEL = PREFIX + "look-session"
+SESSION_KEY_LABEL = PREFIX + "look-session-key"
 WARM_LABEL = PREFIX + "look-warm"
 WARM_SERVICE = "ashley-look-warm"
 NOBODY = 65534
@@ -45,6 +48,24 @@ def read_manifest(name: str, url: str, config: LooksConfig, image: str, runtime_
     spec = {"restartPolicy": "Never", "activeDeadlineSeconds": config.pod_deadline_s}
     return _pod(name, {LABEL: "true", FETCH_LABEL: "true"}, spec, _container(env, config, image, shooter), config,
                 runtime_class)
+
+
+def session_manifest(name: str, key: str, token: str, config: LooksConfig, image: str, runtime_class: str,
+                     program: str) -> dict[str, Any]:
+    """A pod that holds one browser session (`driver.py`, whose text is `program`), serving it on `driver.PORT` to
+    whoever has `token`. It carries `FETCH_LABEL` (public HTTPS and nothing private) and `SESSION_LABEL`, with `key`
+    (whose session it is) under `SESSION_KEY_LABEL`, and not `LABEL`: a look's sweep must not delete a session that
+    outlives a look's deadline. It ends itself at the session's cap, and Kubernetes ends it a little after that
+    whatever the program does."""
+    limits = {"width": config.width, "height": config.height, "session_max_s": config.session_max_s,
+              "session_max_actions": config.session_max_actions, "session_step_s": config.session_step_s,
+              "snapshot_nodes": config.snapshot_nodes, "snapshot_name_chars": config.snapshot_name_chars}
+    env = {"ASHLEY_LOOK_LIMITS": json.dumps(limits), "ASHLEY_LOOK_TOKEN": token}
+    container = _container(env, config, image, program)
+    container["ports"] = [{"containerPort": driver.PORT}]
+    labels = {SESSION_LABEL: "true", SESSION_KEY_LABEL: key, FETCH_LABEL: "true"}
+    spec = {"restartPolicy": "Never", "activeDeadlineSeconds": config.session_max_s + config.ready_timeout_s}
+    return _pod(name, labels, spec, container, config, runtime_class)
 
 
 def warm_manifest(name: str, prefix: str, config: LooksConfig, image: str, runtime_class: str,
