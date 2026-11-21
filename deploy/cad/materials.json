@@ -1,0 +1,25 @@
+{
+  "layer_axis": "Z",
+  "materials": {
+    "PLA": {
+      "label": "Prusament PLA",
+      "source": "https://cdn.shopify.com/s/files/1/1745/6181/files/PRUSA_PLA_TechSheet_ENG.pdf",
+      "source_note": "Prusa Polymers technical data sheet, version 1.0, last update 20-09-2018; printed ISO 527-1 specimens",
+      "density_g_cm3": {"value": 1.24, "tolerance": 0.0},
+      "youngs_modulus_mpa": {"value": 2200, "tolerance": 100, "note": "horizontal specimen"},
+      "yield_along_layers_mpa": {"value": 50.8, "tolerance": 2.4, "note": "horizontal specimen"},
+      "yield_across_layers_mpa": {"value": 37.6, "tolerance": 4.0, "note": "vertical Z-axis specimen"},
+      "poisson_ratio": {"value": 0.35, "assumed": true, "note": "not in the data sheet; assumed, and it moves stress very little"}
+    },
+    "PETG": {
+      "label": "Prusament PETG",
+      "source": "https://cdn.shopify.com/s/files/1/1745/6181/files/PETG_TechSheet_ENG.pdf",
+      "source_note": "Prusa Polymers technical data sheet for Prusament PETG; printed ISO 527-1 specimens",
+      "density_g_cm3": {"value": 1.27, "tolerance": 0.0},
+      "youngs_modulus_mpa": {"value": 1500, "tolerance": 100, "note": "horizontal specimen"},
+      "yield_along_layers_mpa": {"value": 47.0, "tolerance": 2.0, "note": "horizontal specimen"},
+      "yield_across_layers_mpa": {"value": 30.0, "tolerance": 5.0, "note": "vertical Z-axis specimen"},
+      "poisson_ratio": {"value": 0.35, "assumed": true, "note": "not in the data sheet; assumed, and it moves stress very little"}
+    }
+  }
+}

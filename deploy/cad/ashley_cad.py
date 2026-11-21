@@ -20,6 +20,9 @@ An existing model on the bench (an uploaded STL, 3MF or STEP file piece) is `exi
     holder = existing(7)
     show(joined(holder, clip))
 
+`study` declares a weak-points study of a part, which `show` solves (`ashley_fea`) into the report's `fea` section, a
+stress-coloured `out/stress_<part>.glb` and the check `fea_safety_factor:<part>`.
+
 `check` records a comparison of a number the script measured on its geometry; the app judges it from the numbers and
 the measurement's source, so nothing here says pass or fail."""
 
@@ -59,6 +62,7 @@ LEGACY_FACTS = Path("measurements.json")
 _rows: dict[str, dict[str, Any]] | None = None
 _read: list[str] = []
 _checks: list[dict[str, Any]] = []
+_studies: list[Any] = []
 
 
 def _file() -> Path | None:
@@ -244,6 +248,29 @@ def check(name: str, actual: float, op: str, target: float, *, tolerance: float 
         raise KeyError(f"check {name!r} rests on {unknown}, which the bench does not measure")
     _checks.append({"name": name, "actual": float(actual), "op": op, "target": float(target),
                     "tolerance": float(tolerance), "rests_on": basis})
+
+
+def study(part: str, material: str, fixed: dict[str, Any], loads: dict[str, tuple[Any, Sequence[float]]], *,
+          mesh_mm: float | None = None, min_safety_factor: float = 2.0, max_nodes: int | None = None) -> None:
+    """Declare a weak-points study of the part `part` (the name `show` is given it by), solved by `show`: `material` is a
+    key of `materials.json` ("PLA", "PETG"), `fixed` maps names to faces of the part's own shape that are held, and
+    `loads` maps names to `(face, (fx, fy, fz))`, a force in newtons spread over that face. `mesh_mm` is the element
+    size (default: coarse, chosen from the part), `min_safety_factor` what the check `fea_safety_factor:<part>` asks of
+    the low safety factor, `max_nodes` lowers the mesh a study may solve. The report's `fea` section says what it
+    found or why it could not."""
+    import ashley_fea
+
+    if not fixed or not loads:
+        raise ValueError("a study needs at least one fixed face and one load")
+    vectors = {n: (f, tuple(float(v) for v in vec)) for n, (f, vec) in loads.items()}
+    if any(len(vec) != 3 or not all(math.isfinite(v) for v in vec) for _, vec in vectors.values()):
+        raise ValueError("a load is (face, (fx, fy, fz)) in newtons, finite")
+    if set(fixed) & set(loads):
+        raise ValueError(f"face names {sorted(set(fixed) & set(loads))} are both fixed and loaded")
+    if min_safety_factor <= 0 or (mesh_mm is not None and mesh_mm <= 0):
+        raise ValueError("min_safety_factor and mesh_mm are positive")
+    _studies.append(ashley_fea.Study(part, material, dict(fixed), vectors, mesh_mm, float(min_safety_factor),
+                                     min(ashley_fea.MAX_NODES, max_nodes or ashley_fea.MAX_NODES)))
 
 
 def _shape(part: Any) -> Any:
@@ -437,6 +464,7 @@ def show(*parts: Any) -> None:
     which a pair with a reference part has whether they overlap or not (`_apart_checks`);
     parts meant to touch are one part, made with `joined`. The print check (`ashley_print`) adds the report's `print`
     section and its failed checks `print_gap:<part>` and `print_trapped_support:<part>`."""
+    import ashley_fea
     import ashley_print
     import build123d as bd  # imported late: OCP takes seconds to load and a script that fails earlier need not pay
 
@@ -462,8 +490,13 @@ def show(*parts: Any) -> None:
     with tempfile.TemporaryDirectory(dir=Path.cwd()) as scratch:
         printed = [] if settings is None or triangles > settings["max_print_triangles"] else _printed_triangles(named, Path(scratch))
         printing, print_checks = ashley_print.check(printed, settings, triangles)
+    missing = [s.part for s in _studies if s.part not in {n for n, _, _ in named}]
+    if missing:
+        raise ValueError(f"a study names part {missing[0]!r}, which show() was not given; it has {[n for n, _, _ in named]}")
+    studied, study_checks = ashley_fea.run(_studies, {n: s for n, s, _ in named}, out) if _studies else (None, [])
     apart = _apart_checks([n for n, _, _ in named], overlaps, forms)
     report = {"unit": "mm", "parts": [_part_report(n, s, r, forms.get(n)) for n, s, r in named], "triangles": triangles,
-              "checks": _checks + apart + print_checks, "overlaps": overlaps,
-              "overlap_parts_skipped": max(0, len(named) - MAX_OVERLAP_PARTS), "print": printing}
+              "checks": _checks + apart + print_checks + study_checks, "overlaps": overlaps,
+              "overlap_parts_skipped": max(0, len(named) - MAX_OVERLAP_PARTS), "print": printing,
+              **({} if studied is None else {"fea": studied})}
     (out / "report.json").write_text(json.dumps(report), encoding="utf-8")
