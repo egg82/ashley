@@ -1,0 +1,5 @@
+{
+  "days_default": 1,
+  "days_max": 31,
+  "events_max": 100
+}

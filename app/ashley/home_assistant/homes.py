@@ -52,6 +52,11 @@ class Homes(Service):
     async def of(self, household_id: int) -> Home | None:
         """The household's Home Assistant; None when it has none. Raises HomesUnavailable."""
 
+    async def reads_calendars(self, household_id: int) -> bool:
+        """Whether the household lets her read its house's calendars (its `calendar` port is on at its house). Raises
+        HomesUnavailable."""
+        return True
+
     async def writes_automations(self, household_id: int) -> bool:
         """Whether the household lets her write the house's own configuration (its `automations` port is on at its
         house): automations, scripts, helpers and the names and areas of things. A household with no house, or whose

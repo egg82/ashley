@@ -163,8 +163,8 @@ error, not JSON, or lacks the path fails `bad_result`; one past `max_items` fail
 gone. Her `watch` takes `read` (tool, arguments, path, track) in place of `target`, and a `when` over the tracked
 fields, since this kind has no default that knows what matters: left out, any change wakes her. The woken turn's note
 lists each change with its tracked values, as text from outside. The kind is `outside`: a tool's marking is per result and
-a wake has no result, so a watch is never taken as inside. A calendar watch is `house_ask` with `calendar.get_events` and
-the path `response`, the calendar's id, `events`.
+a wake has no result, so a watch is never taken as inside. A calendar watch is `calendar_events` (`connections.md`, "Calendars are read through a neutral port") with
+the path `events`, tracking `title` and `start`.
 
 **The `ha_entity` kind watches one thing in the household's Home Assistant, by subscription, so she needs no automation
 installed in the house.** Its target is an entity id (her `watch` names it from `house_find`); its item is keyed by that id
