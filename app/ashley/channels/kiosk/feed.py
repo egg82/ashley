@@ -53,10 +53,15 @@ class Showing:
 async def screens_in_reach(household_id: int, person_id: int | None, device_id: int | None) -> tuple[int, ...]:
     """The screen devices a turn may use: the device whose own thread it is, else every screen of the household for a known
     speaker. Raises DevicesUnavailable."""
-    screens = {d.device.id for d in await services.get(Devices).of_household(household_id) if d.form == "other"}
+    screens = await screens_of(household_id)
     if device_id is not None:
         return (device_id,) if device_id in screens else ()
-    return tuple(sorted(screens)) if person_id is not None else ()
+    return screens if person_id is not None else ()
+
+
+async def screens_of(household_id: int) -> tuple[int, ...]:
+    """The household's screen devices (the kiosks), by id. Raises DevicesUnavailable."""
+    return tuple(sorted({d.device.id for d in await services.get(Devices).of_household(household_id) if d.form == "other"}))
 
 
 async def show(household_id: int, camera_id: str, reach: tuple[int, ...], now: datetime) -> int:
