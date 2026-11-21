@@ -305,8 +305,9 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   end time and the person are rows, so any pod ends a run; the run is recorded before the house is written, so a pod
   that stopped leaves one the job still ends. A run lasts `duration_s` (`shadow.json`); a run keeps its newest
   `max_events` firings and firings older than `keep_s` are deleted by the job's pass. An end the bench refuses (it was
-  closed, or the Install is past `undo_window`) still ends the recording and leaves the shadow in HA, which is
-  logged. Logs name ids and counts, never an entity id or an event's data. Rejected: a watch kind, which wakes her;
+  closed, or the Install is past `undo_window`) deletes the shadow from HA directly by its own id
+  (`ashley.workshop.shadow_job.remove`, which refuses any id without the shadow prefix, so it needs no person's
+  approval), and a delete that fails is logged and retried each pass until it works or HA has none. Logs name ids and counts, never an entity id or an event's data. Rejected: a watch kind, which wakes her;
   a run recorded only after its install.
 - **She opens a bench from the person's own web chat** (`ashley.tools.open_bench.OpenBenchTools`, offered only there,
   the speaker known): `open_bench` with a title of hers, returning the bench's id and the room's path,

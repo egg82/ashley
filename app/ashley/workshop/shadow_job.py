@@ -2,12 +2,14 @@
 at a time and holding the one set of Home Assistant sockets (`held_states.HeldStates.events`). Each pass subscribes the
 households with a run still running to the events a run needs, records each as it arrives (`shadows.Shadows`), ends the
 runs whose time has come by the Undo of their Install, as the person who approved it, and prunes old firings. An end
-whose Undo is refused (the bench is closed, or the command is past the undo window) still ends the run's recording, and
-the shadow is left in the house for its person to remove there.
+whose Undo is refused (the bench is closed, or the command is past the undo window) is taken out of the house directly,
+by the shadow's own id (`remove`, which refuses any id that is not a shadow's: a shadow is only ever hers, so it needs no
+person's approval); a delete that fails leaves the run running and is tried again on the next pass, until it succeeds or
+Home Assistant has no such automation.
 
 The run's end time lives in the database, so a pod that stopped leaves nothing for another to forget.
 
-Logs `workshop.shadow_tick` (households, ended, refused, pruned, unreachable) when anything was done, and
+Logs `workshop.shadow_tick` (households, ended, retry, pruned, unreachable), `workshop.shadow_remove_failed` (bench, seq) when anything was done, and
 `workshop.shadow_firing` (bench, piece, kind) per recorded event. Never an entity id or an event's data."""
 
 import asyncio
@@ -18,11 +20,11 @@ from datetime import UTC, datetime
 
 from .. import logs, services
 from ..home_assistant.held_states import HeldStates, HouseEvent, Recorder
-from ..home_assistant.homes import HomesUnavailable
-from ..home_assistant.house import HouseUnavailable
+from ..home_assistant.homes import HomesUnavailable, house_of
+from ..home_assistant.house import House, HouseRejected, HouseUnavailable
 from . import shadow
 from .commands import Undo
-from .install_piece import carry_out
+from .install_piece import automation_id_for, carry_out
 from .installs import InstallsUnavailable
 from .model import By, Owner
 from .shadows import NewShadow, Shadows, ShadowsUnavailable
@@ -64,11 +66,10 @@ async def tick(now: datetime, watching: set[int]) -> Counter[str]:
             watching.discard(household)
     counts["households"] = len(active)
     for run_ in await store.due(now):
-        taken = await _end(run_, now)
-        counts["ended" if taken else "refused"] += 1
+        counts["ended" if await _end(run_, now) else "retry"] += 1
     counts["pruned"] = await store.prune(now)
-    if counts["ended"] or counts["refused"] or counts["pruned"] or counts["unreachable"]:
-        logs.info(log, "workshop.shadow_tick", **{k: counts[k] for k in ("households", "ended", "refused", "pruned",
+    if counts["ended"] or counts["retry"] or counts["pruned"] or counts["unreachable"]:
+        logs.info(log, "workshop.shadow_tick", **{k: counts[k] for k in ("households", "ended", "retry", "pruned",
                                                                          "unreachable")})
     return counts
 
@@ -90,14 +91,29 @@ def _recorders(household_id: int) -> dict[str, Recorder]:
 
 
 async def _end(run_: NewShadow, now: datetime) -> bool:
-    """Undo the run's Install as its person and carry that out; whether the house was taken back. The run ends either way."""
+    """End the run: Undo its Install as its person, and when that cannot take the shadow out of the house, delete the
+    shadow directly. False, the run still running, when the house could not be written to."""
     owner = Owner(run_.household_id, run_.person_id)
-    taken = False
     try:
         applied = await services.get(Workshop).apply(owner, run_.bench_id, Undo(By(run_.person_id), run_.install_seq))
         record = await carry_out(owner, run_.bench_id, applied)
-        taken = record is not None and record.ending == "done"
+        if record is not None and record.ending == "done":
+            await services.get(Shadows).end(run_.bench_id, run_.install_seq, now)
+            return True
     except (WorkshopError, InstallsUnavailable, HomesUnavailable):
-        taken = False
+        pass
+    try:
+        await remove(await house_of(run_.household_id), shadow.id_for(automation_id_for(run_.bench_id, run_.piece_id)))
+    except (HouseUnavailable, HouseRejected, HomesUnavailable):
+        logs.warning(log, "workshop.shadow_remove_failed", bench=run_.bench_id, seq=run_.install_seq)
+        return False
     await services.get(Shadows).end(run_.bench_id, run_.install_seq, now)
-    return taken
+    return True
+
+
+async def remove(house: House, automation_id: str) -> bool:
+    """Delete shadow `automation_id` from the house; False when it has none. Raises ValueError, deleting nothing, for an
+    id that is not a shadow's, and HouseUnavailable."""
+    if not shadow.is_id(automation_id):
+        raise ValueError("only a shadow's id is deleted")
+    return await house.delete_config("automation", automation_id)
