@@ -94,6 +94,58 @@ class Need:
 
 
 @dataclass(frozen=True)
+class Placement:
+    """Where one filament of a file is to come from: the file's filament `need` (`Need.slot`, from 1) is fed from AMS
+    `unit` (`AmsUnit.unit`, from 1), `slot` (`Slot.slot`, from 1) of the printer it is queued on."""
+
+    need: int
+    unit: int
+    slot: int
+
+
+@dataclass(frozen=True)
+class QueueRequest:
+    """A print to queue: library file `file_id` on printer `printer_id`, its filaments fed as `placements` say (a need
+    with no placement is left to the manager), `plate` the plate of a multi-plate file to print (from 1; None for the
+    manager's choice). It is always staged: it waits in the queue until a person starts it."""
+
+    file_id: str
+    printer_id: str
+    placements: tuple[Placement, ...] = ()
+    plate: int | None = None
+
+
+Queued = Literal["queued", "not_found", "rejected"]
+"""What became of a queued print: `queued`; `not_found`, the file or the printer is not the household's; `rejected`, the
+manager would not queue it (a file that is not sliced, a filament the printer cannot supply, a placement it does not
+accept)."""
+
+
+@dataclass(frozen=True)
+class Queueing:
+    """What `Printing.queue` did: the outcome, and the queue entry's `item_id` and `position` (from 1, None when the
+    manager does not say) when it is `queued`."""
+
+    outcome: Queued
+    item_id: str | None = None
+    position: int | None = None
+
+
+Uploaded = Literal["uploaded", "rejected"]
+"""What became of an uploaded file: `uploaded`, now in the library (`already_there` when the library already held the same
+file, and `file_id` is that one); `rejected`, the manager would not take it (a type or size it does not accept)."""
+
+
+@dataclass(frozen=True)
+class Uploading:
+    """What `Printing.upload` did: the outcome and the library file's `file_id` as `Printing.files` gives it."""
+
+    outcome: Uploaded
+    file_id: str | None = None
+    already_there: bool = False
+
+
+@dataclass(frozen=True)
 class Page[T]:
     """What one read holds, and `total`, how many the backend holds in all."""
 

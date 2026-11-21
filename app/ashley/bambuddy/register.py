@@ -10,8 +10,8 @@ from .printing import BambuddyPrinting
 from .stock import BambuddyStock
 
 
-def register(http: httpx2.AsyncClient, timeout_s: float) -> None:
+def register(http: httpx2.AsyncClient, timeout_s: float, upload_timeout_s: float) -> None:
     """Register Bambuddy's port on `http`, which must not follow redirects, and the services that read through it."""
-    services.register(Bambuddy, HttpBambuddy(http, timeout_s))
+    services.register(Bambuddy, HttpBambuddy(http, timeout_s, upload_timeout_s))
     services.register(Printing, BambuddyPrinting())
     services.register(Stock, BambuddyStock())

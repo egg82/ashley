@@ -37,6 +37,8 @@ from ..tools.calendar_config import load as calendar_config
 from ..tools.calendar_tools import CalendarTools
 from ..tools.printing import PrintingTools
 from ..tools.printing_config import load as printing_config
+from ..tools.printing_queue import PrintQueueTools
+from ..tools.printing_upload import PrintUploadTools
 from ..tools.stock_tools import StockTools
 from ..tools.move_page import MovePageTools
 from ..tools.only import Only
@@ -80,7 +82,7 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     household has no house) and its kind of work with the household's skill for it (`skills`); with `opens_benches` and a known speaker, opening a bench for them (`open_bench`); with
     `on_page` and a known speaker, moving their page (`page`); with a known speaker or a device's own thread (`device_id`),
     arranging the household's screens (`screen`; the thread's own screen alone on a device's thread); where the reply reaches the speaker alone
-    (`audience.owner_alone`) and connections can be opened, their household's finances (`money`) the speaker's own code host (`code_host`) Claude Code sessions (`claude_code`) and watches on what they connected (`watches`), each an
+    (`audience.owner_alone`) and connections can be opened, their household's finances (`money`), the print queue (`print_queue`, and on a bench `print_upload`), the speaker's own code host (`code_host`) Claude Code sessions (`claude_code`) and watches on what they connected (`watches`), each an
     empty catalogue until they connect one; with a known speaker,
     reading the mailboxes the resource gate allows the turn (`mail`, `ConnectionResources.usable`: any turn, speaker or not), setting reminders (`reminders`), reading the household's devices (`devices`), and listing and cancelling theirs only where the reply reaches them alone; with
     `said` (the conversation id and the person turn's id) and a `Sandbox` that runs some language, running code
@@ -200,6 +202,9 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["calendar"] = CalendarTools(household, _CALENDAR)
     if owner_alone(inbound) and services.get(Connections).can_open():
         found["money"] = MoneyTools(household, _MONEY)
+        found["print_queue"] = PrintQueueTools(household, _PRINTING)
+        if bench is not None:
+            found["print_upload"] = PrintUploadTools(household, person, bench)
     if owner_alone(inbound) and services.get(Connections).can_open():
         found["code_host"] = CodeHostTools(household, person, bench, _CODE_HOST, READABLE_CHARS)
         found["claude_code"] = ClaudeCodeTools(household, person, _CLAUDE_CODE, READABLE_CHARS, bench)

@@ -7,7 +7,8 @@ from .check import printers_seen
 NAME = "bambuddy"
 
 _REFUSED: dict[client.Reason, Refusal] = {"refused": "key_refused", "unreachable": "unreachable",
-                                          "not_bambuddy": "wrong_service", "not_found": "wrong_service"}
+                                          "not_bambuddy": "wrong_service", "not_found": "wrong_service",
+                                          "rejected": "wrong_service"}
 
 
 async def _check(base: str, api_key: str, person_id: int) -> Refusal | None:
@@ -21,8 +22,9 @@ async def _check(base: str, api_key: str, person_id: int) -> Refusal | None:
 BAMBUDDY = ConnectionKind(
     name=NAME, title="Bambuddy", what="3D printing",
     blurb="Let her see what the household’s printers are doing, what is loaded in each AMS slot, what filament is in "
-          "stock and what a model in the print library needs. A key that may only read status, the library and the "
-          "inventory is enough.",
+          "stock and what a model in the print library needs, and, once you agree, queue a print for you. A key that may "
+          "read status, the library and the inventory is enough to look; add permission to queue and to manage the "
+          "library for her to queue, and never permission to control a printer.",
     connected="Connected. She can see the household’s printers and filament.",
     removed="Removed. She can’t see the printers now.",
     holders=frozenset({"household"}), schemes=frozenset({"http", "https"}), address_placeholder="https://bambuddy.example",

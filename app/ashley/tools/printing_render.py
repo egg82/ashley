@@ -3,7 +3,7 @@
 
 from collections.abc import Sequence
 
-from ..printing.model import AmsUnit, Need, Page, PrintFile, Printer, Slot
+from ..printing.model import AmsUnit, Need, Page, Placement, PrintFile, Printer, QueueRequest, Queueing, Slot, Uploading
 from ..stock.model import Page as StockPage, Spool
 
 
@@ -48,3 +48,54 @@ def spools(found: StockPage[Spool]) -> dict[str, object]:
                   "colour": s.colour, "grams_left": s.remaining_grams, "grams_full": s.full_grams,
                   "location": s.location}) for s in found.rows]
     return {"spools": rows, "cut": found.total > len(rows)}
+
+
+def queued(done: Queueing) -> dict[str, object]:
+    """What became of a queued print: `outcome` (`queued`, `not_found`, `rejected`), and for a queued one its entry's id
+    and place, and that it is staged."""
+    return _set({"outcome": done.outcome, "item_id": done.item_id, "position": done.position,
+                 "staged": True if done.outcome == "queued" else None})
+
+
+def uploaded(done: Uploading) -> dict[str, object]:
+    """What became of an upload: `outcome` (`uploaded`, `rejected`), the library file's id, and whether the library
+    already held the file."""
+    return _set({"outcome": done.outcome, "file_id": done.file_id, "already_there": done.already_there or None})
+
+
+def _slot_at(printer: Printer, placement: Placement) -> Slot | None:
+    unit = next((u for u in printer.ams if u.unit == placement.unit), None)
+    return None if unit is None else next((s for s in unit.slots if s.slot == placement.slot), None)
+
+
+def _duration(seconds: int | None) -> str:
+    if seconds is None:
+        return "an unknown time"
+    minutes = max(1, round(seconds / 60))
+    return f"{minutes // 60} h {minutes % 60} min" if minutes >= 60 else f"{minutes} min"
+
+
+def _feed(printer: Printer, placement: Placement, needs: Sequence[Need]) -> str | None:
+    """One filament's line, None when the printer has no such slot or the file no such filament."""
+    slot, need = _slot_at(printer, placement), next((n for n in needs if n.slot == placement.need), None)
+    if slot is None or need is None:
+        return None
+    held = slot.material or "empty"
+    differs = need.material is not None and slot.material is not None and need.material.lower() != slot.material.lower()
+    return (f"filament {placement.need} from AMS {placement.unit} slot {placement.slot} ({held})"
+            f"{', not the type the file is sliced for' if differs else ''}")
+
+
+def queuing(file: PrintFile, printer: Printer, request: QueueRequest, needs: Sequence[Need]) -> str | None:
+    """The line the person agrees to before the print is queued: the library file by its id, type, print time and grams
+    (never its name, which is written outside the household), the printer by the name the household gave it, each
+    placement against what the printer says is in the slot, and that it waits staged. None when a placement names a slot
+    the printer lacks or a filament the file does not need."""
+    feeds = [_feed(printer, p, needs) for p in request.placements]
+    if any(f is None for f in feeds):
+        return None
+    grams = "" if file.grams is None else f", {file.grams:g} g"
+    plate = "" if request.plate is None else f", plate {request.plate}"
+    placed = "" if not feeds else "; " + "; ".join(f for f in feeds if f is not None)
+    return (f"Queue library file {file.id} ({file.kind or 'unknown type'}, {_duration(file.print_seconds)}{grams}) on "
+            f"{printer.name}{plate}{placed}. It waits, staged, until someone starts it in Bambuddy")
