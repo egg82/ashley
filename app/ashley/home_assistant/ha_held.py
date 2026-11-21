@@ -67,14 +67,14 @@ class SocketStates(HeldStates):
             return await self._once(home, entity_ids)
         return await socket.states(entity_ids)
 
-    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+    async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
         home = await services.get(Homes).of(household_id)
         socket = self._socket(household_id, home)
         if home is None:
             return
         if socket is None:
             raise HouseUnavailable("websocket: not held")
-        await socket.events(types)
+        await socket.events(owner, types)
 
     def _socket(self, household_id: int, home: Home | None) -> Socket | None:
         """The household's held socket, opened on the first ask and replaced when its house changes; None while nothing

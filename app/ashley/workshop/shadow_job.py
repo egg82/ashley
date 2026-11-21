@@ -32,6 +32,7 @@ from .workshop import Workshop, WorkshopError
 
 log = logging.getLogger("ashley.workshop")
 TRIGGERED = "automation_triggered"
+OWNER = "shadows"
 
 
 async def run(settings: shadow.Settings | None = None,
@@ -56,7 +57,7 @@ async def tick(now: datetime, watching: set[int]) -> Counter[str]:
     for household in sorted(set(active) | watching):
         types: dict[str, Recorder] = _recorders(household) if household in active else {}
         try:
-            await services.get(HeldStates).events(household, types)
+            await services.get(HeldStates).events(OWNER, household, types)
         except (HouseUnavailable, HomesUnavailable):
             counts["unreachable"] += 1
             continue

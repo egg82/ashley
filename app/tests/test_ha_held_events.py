@@ -31,7 +31,7 @@ def test_an_event_of_a_held_type_is_handed_to_its_recorder_with_its_time_and_con
 
     async def scenario() -> None:
         async with held(ha) as h:
-            await h.states.events(1, {"ashley_shadow": shadow, "automation_triggered": other})
+            await h.states.events("t", 1, {"ashley_shadow": shadow, "automation_triggered": other})
             assert ha.event_types() == ["ashley_shadow", "automation_triggered"]
             await ha.fire("ashley_shadow", {"bench": 3, "piece": 1, "version": 2}, context="abc")
             await ha.fire("something_else", {})
@@ -48,17 +48,39 @@ def test_asking_again_changes_the_held_types_and_lets_go_of_the_ones_dropped() -
 
     async def scenario() -> None:
         async with held(ha) as h:
-            await h.states.events(1, {"ashley_shadow": shadow, "automation_triggered": Heard()})
-            await h.states.events(1, {"ashley_shadow": shadow})
+            await h.states.events("t", 1, {"ashley_shadow": shadow, "automation_triggered": Heard()})
+            await h.states.events("t", 1, {"ashley_shadow": shadow})
             assert ha.event_types() == ["ashley_shadow"]
             subscribed = len([c for c in ha.commands if c["type"] == "subscribe_events"])
-            await h.states.events(1, {"ashley_shadow": shadow})
+            await h.states.events("t", 1, {"ashley_shadow": shadow})
             assert len([c for c in ha.commands if c["type"] == "subscribe_events"]) == subscribed
-            await h.states.events(1, {})
+            await h.states.events("t", 1, {})
             assert ha.event_types() == []
             await ha.fire("ashley_shadow", {})
             await asyncio.sleep(0)
             assert shadow.events == []
+    go(scenario)
+
+
+def test_two_owners_hold_their_own_types_and_neither_lets_go_of_the_other() -> None:
+    ha, mine, theirs, both = FakeHa(), Heard(), Heard(), Heard()
+
+    async def scenario() -> None:
+        async with held(ha) as h:
+            await h.states.events("a", 1, {"one": mine, "shared": both})
+            await h.states.events("b", 1, {"two": theirs, "shared": both})
+            assert ha.event_types() == ["one", "shared", "two"]
+            await h.states.events("a", 1, {})
+            assert ha.event_types() == ["shared", "two"]
+            await ha.fire("shared", {})
+            await ha.fire("two", {})
+            await until(lambda: theirs.events and both.events, "b's events")
+            assert [len(both.events), len(theirs.events), len(mine.events)] == [1, 1, 0]
+            await h.states.events("a", 1, {"shared": mine})
+            await ha.fire("shared", {})
+            await until(lambda: len(both.events) == 2 and mine.events, "both owners told")
+            await h.states.events("b", 1, {})
+            assert ha.event_types() == ["shared"]
     go(scenario)
 
 
@@ -67,7 +89,7 @@ def test_a_dropped_socket_subscribes_the_held_types_again() -> None:
 
     async def scenario() -> None:
         async with held(ha) as h:
-            await h.states.events(1, {"ashley_shadow": shadow})
+            await h.states.events("t", 1, {"ashley_shadow": shadow})
             await ha.drop()
             await until(lambda: h.naps.taken, "a backoff")
             h.naps.free = 1
@@ -88,7 +110,7 @@ def test_a_recorder_that_raises_loses_that_event_and_is_logged_without_its_data(
 
     async def scenario() -> None:
         async with held(ha) as h:
-            await h.states.events(1, {"ashley_shadow": bad, "automation_triggered": good})
+            await h.states.events("t", 1, {"ashley_shadow": bad, "automation_triggered": good})
             await ha.fire("ashley_shadow", {"piece": 9})
             await ha.fire("automation_triggered", {"entity_id": "automation.x"})
             await until(lambda: good.events, "the next event")
@@ -104,14 +126,14 @@ def test_asking_fails_at_once_when_nothing_holds_or_the_house_refuses() -> None:
             services.register(Homes, FakeHomes(home))
             try:
                 with pytest.raises(HouseUnavailable):
-                    await SocketStates(SETTINGS, load_house(), Naps(), Clock()).events(1, {"ashley_shadow": Heard()})
+                    await SocketStates(SETTINGS, load_house(), Naps(), Clock()).events("t", 1, {"ashley_shadow": Heard()})
             finally:
                 services.unregister(Homes)
 
     async def refused() -> None:
         async with held(FakeHa(refuse=True)) as h:
             with pytest.raises(HouseUnavailable):
-                await h.states.events(1, {"ashley_shadow": Heard()})
+                await h.states.events("t", 1, {"ashley_shadow": Heard()})
 
     go(not_held)
     go(refused)
