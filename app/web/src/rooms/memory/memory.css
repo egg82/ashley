@@ -82,6 +82,10 @@
 .fact.rem .err { grid-area: 4 / 2 / 5 / 5; }
 .rem-state { grid-area: 3 / 2 / 4 / 4; font-size: 13px; color: var(--text); }
 .fact.rem.undelivered, .fact.rem.failed { --kc: var(--red); border-color: rgba(255,93,108,.45); }
+.rem-form, .rem-new { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding: 4px 0 2px; }
+.rem-new { grid-template-columns: 1fr; margin-top: 12px; max-width: 520px; }
+.fact.rem .rem-form .err, .rem-new .err { grid-area: auto; grid-column: 1 / -1; }
+.rem-form .rem-acts, .rem-new .rem-acts { grid-area: auto; }
 @media (max-width: 900px) {
   .fact.rem { grid-template-columns: minmax(0, 1fr) auto; }
   .rem-when { grid-area: 1 / 1; } .fact.rem .pill { grid-area: 1 / 2; justify-self: end; }

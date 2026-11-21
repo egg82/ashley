@@ -417,7 +417,12 @@ export interface paths {
          */
         get: operations["list_reminders"];
         put?: never;
-        post?: never;
+        /**
+         * Create Reminder
+         * @description 201 `Reminder`, for the signed-in person, to their phone, with no tools beyond the ones that look; 401
+         *     `unauthorized`; 403 `forbidden`; 422 `refused`; 503 `unavailable`.
+         */
+        post: operations["create_reminder"];
         delete?: never;
         options?: never;
         head?: never;
@@ -441,7 +446,14 @@ export interface paths {
         delete: operations["cancel_reminder"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Set Reminder Method
+         * @description 200 `Reminder` with its method set, or cleared by null (an ordinary reminder again, still repeating); 401
+         *     `unauthorized`; 403 `forbidden`; 404 `not_found`, for one that is not theirs or has fired; 422 `refused`, for a
+         *     reminder that does not repeat or a method the household has none of; 503 `unavailable`. Whoever may cancel it may
+         *     change it.
+         */
+        patch: operations["set_reminder_method"];
         trace?: never;
     };
     "/api/accounts": {
@@ -5125,7 +5137,9 @@ export interface components {
          *     `undelivered`, fired but no push reached their phone yet (it is tried again for a day, and her words are in
          *     their conversation history); `failed`, it could not fire. A fired one stays listed until it is delivered or the
          *     person dismisses it. `on_deposit` is, for a reminder that waits on a deposit instead of a time, the rule in words
-         *     (it fires on every match until cancelled, and `due_at` is when it was set); None for a timed one.
+         *     (it fires on every match until cancelled, and `due_at` is when it was set); None for a timed one. `method` makes a
+         *     repeating reminder a standing errand: the slug of the household's kind of work (`WorkshopKinds.work_kinds`) whose
+         *     skill her turn follows each time it fires; None for any other reminder.
          */
         Reminder: {
             /** Id */
@@ -5147,6 +5161,8 @@ export interface components {
             every: number | null;
             /** On Deposit */
             on_deposit?: string | null;
+            /** Method */
+            method?: string | null;
             /**
              * State
              * @enum {string}
@@ -5161,6 +5177,37 @@ export interface components {
         ReminderCancelled: {
             /** Id */
             id: number;
+        };
+        /**
+         * ReminderMethodRequest
+         * @description A reminder's `method` as it is to be: a kind of work the household has with a method, for a repeating reminder
+         *     still to fire, or null to make it an ordinary reminder again. Always sent; null is a choice.
+         */
+        ReminderMethodRequest: {
+            /** Method */
+            method: string | null;
+        };
+        /**
+         * ReminderRequest
+         * @description A reminder the signed-in person sets for themselves, to reach their phone: `what`, and `local_at`, the first time as
+         *     the household's wall clock, `YYYY-MM-DDTHH:MM`. With `repeat` it comes round every `every` days, weeks, months or
+         *     years from `at`; without, it fires once. `method` makes it a standing errand and needs `repeat`: a kind of work
+         *     the household has with a method.
+         */
+        ReminderRequest: {
+            /** What */
+            what: string;
+            /** Local At */
+            local_at: string;
+            /** Repeat */
+            repeat?: ("daily" | "weekly" | "monthly" | "yearly") | null;
+            /**
+             * Every
+             * @default 1
+             */
+            every: number;
+            /** Method */
+            method?: string | null;
         };
         /**
          * RemindersResponse
@@ -7187,6 +7234,66 @@ export interface operations {
             };
         };
     };
+    create_reminder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReminderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`: a time, rule or method that cannot be set, `detail` saying which (and naming the household's kinds for a method it has none of); FastAPI's own validation error for a malformed body */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     cancel_reminder: {
         parameters: {
             query?: never;
@@ -7240,6 +7347,77 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_reminder_method: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reminder_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReminderMethodRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no reminder of yours still to fire has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`: a time, rule or method that cannot be set, `detail` saying which (and naming the household's kinds for a method it has none of); FastAPI's own validation error for a malformed body */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description `unavailable`: the database could not be reached */
             503: {

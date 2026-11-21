@@ -14,7 +14,7 @@ import psycopg
 import pytest
 from ashley import logs
 from ashley.api.person import SESSION_COOKIE
-from ashley.api.reminder_models import RemindersResponse
+from ashley.api.reminder_models import Reminder, RemindersResponse
 from ashley.main import create_app
 from ashley.people import admin
 from ashley.settings import Settings
@@ -110,3 +110,59 @@ def test_signed_out_is_401_and_no_log_line_carries_what_a_reminder_says(db_url: 
     assert "Bluebird" not in out and "Autosave" not in out
     client.cookies.clear()
     assert client.get("/api/reminders").status_code == 401
+
+
+def _body(**over: object) -> dict[str, object]:
+    when = (datetime.now(ZoneInfo("America/Denver")) + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M")
+    return {"what": WHAT, "local_at": when, "repeat": "daily", "method": "research", **over}
+
+
+def test_a_person_sets_a_standing_errand_changes_and_clears_its_method(db_url: str, homes: Homes,
+                                                                        client: TestClient) -> None:
+    made = client.post("/api/reminders", json=_body(), headers=ORIGIN)
+    assert made.status_code == 201
+    item = Reminder.model_validate(made.json())
+    assert (item.method, item.repeat, item.person.name, item.made_by.name) == ("research", "daily", "Alana", "Alana")
+    assert scalar(db_url, "SELECT method FROM wakes WHERE id = %s", (item.id,)) == "research"
+    plain = Reminder.model_validate(client.post("/api/reminders", json=_body(method=None), headers=ORIGIN).json())
+    assert plain.method is None
+    assert [i.method for i in RemindersResponse.model_validate(client.get("/api/reminders").json()).reminders] \
+        in (["research", None], [None, "research"])
+    cleared = client.patch(f"/api/reminders/{item.id}", json={"method": None}, headers=ORIGIN)
+    assert cleared.status_code == 200 and cleared.json()["method"] is None
+    assert scalar(db_url, "SELECT method FROM wakes WHERE id = %s", (item.id,)) is None
+    set_again = client.patch(f"/api/reminders/{plain.id}", json={"method": "research"}, headers=ORIGIN)
+    assert set_again.status_code == 200 and set_again.json()["method"] == "research"
+    assert scalar(db_url, "SELECT repeat->>'freq' FROM wakes WHERE id = %s", (plain.id,)) == "daily"
+
+
+def test_a_method_is_refused_unless_it_is_a_kind_with_a_method_on_a_repeating_reminder(db_url: str, homes: Homes,
+                                                                                       client: TestClient) -> None:
+    for bad in ({"method": "no-such-kind"}, {"method": "Not A Slug"}, {"repeat": None}):
+        got = client.post("/api/reminders", json=_body(**bad), headers=ORIGIN)
+        assert got.status_code == 422 and got.json()["code"] == "refused", bad
+    assert "research" in client.post("/api/reminders", json=_body(method="nope"), headers=ORIGIN).json()["detail"]
+    assert client.post("/api/reminders", json=_body(local_at="2020-01-01T09:00", repeat=None, method=None), headers=ORIGIN).status_code == 422
+    assert client.post("/api/reminders", json=_body(extra=1), headers=ORIGIN).status_code == 422
+    assert client.post("/api/reminders", json=_body(), headers={"origin": "https://elsewhere.test"}).status_code == 403
+    once = reminder(db_url, homes.home, homes.alana, homes.alana, 1)
+    for bad in ({"method": "no-such-kind"}, {"method": "research"}):
+        got = client.patch(f"/api/reminders/{once}", json=bad, headers=ORIGIN)
+        assert got.status_code == 422 and got.json()["code"] == "refused", bad
+    assert scalar(db_url, "SELECT method FROM wakes WHERE id = %s", (once,)) is None
+    assert client.post("/api/reminders", json=_body(), headers=ORIGIN).status_code == 201
+    assert scalar(db_url, "SELECT count(*) FROM wakes WHERE household_id = %s", (homes.home,)) == 2
+
+
+def test_a_method_changes_only_a_reminder_of_theirs_still_to_fire(db_url: str, homes: Homes, client: TestClient) -> None:
+    daily = '{"freq": "daily", "every": 1, "anchor": "2027-03-07T09:00"}'
+    sams = reminder(db_url, homes.home, homes.sam, homes.sam, 1, daily)
+    kims = reminder(db_url, homes.other, homes.kim, homes.kim, 1, daily)
+    for other in (sams, kims, 999999):
+        got = client.patch(f"/api/reminders/{other}", json={"method": "research"}, headers=ORIGIN)
+        assert got.status_code == 404 and got.json()["code"] == "not_found"
+    for id_ in (sams, kims):
+        assert scalar(db_url, "SELECT method FROM wakes WHERE id = %s", (id_,)) is None
+    by_alana_for_sam = reminder(db_url, homes.home, homes.sam, homes.alana, 1, daily)
+    assert client.patch(f"/api/reminders/{by_alana_for_sam}", json={"method": "research"}, headers=ORIGIN).status_code == 200
+    assert client.patch(f"/api/reminders/{by_alana_for_sam}", json={}, headers=ORIGIN).status_code == 422

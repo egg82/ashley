@@ -196,7 +196,7 @@ class Wakes(Service):
 
     @abstractmethod
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
-        """Replace the brief, `due_at`, `repeat`, `route` and `tools` of the household's reminder `wake_id` with
+        """Replace the brief, `due_at`, `repeat`, `route`, `tools` and `method` of the household's reminder `wake_id` with
         `changed`'s, keeping its id, for `person_id` or made by them, while it is unsettled; its occurrences already
         fired are untouched, and the next ones follow the new rule. An armed money reminder keeps its time and has no
         repeat. False, changing nothing, when it is settled, not theirs or does not exist. Raises ValueError as

@@ -1110,9 +1110,165 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "Create Reminder",
+        "description": "201 `Reminder`, for the signed-in person, to their phone, with no tools beyond the ones that look; 401\n`unauthorized`; 403 `forbidden`; 422 `refused`; 503 `unavailable`.",
+        "operationId": "create_reminder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`refused`: a time, rule or method that cannot be set, `detail` saying which (and naming the household's kinds for a method it has none of); FastAPI's own validation error for a malformed body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/reminders/{reminder_id}": {
+      "patch": {
+        "summary": "Set Reminder Method",
+        "description": "200 `Reminder` with its method set, or cleared by null (an ordinary reminder again, still repeating); 401\n`unauthorized`; 403 `forbidden`; 404 `not_found`, for one that is not theirs or has fired; 422 `refused`, for a\nreminder that does not repeat or a method the household has none of; 503 `unavailable`. Whoever may cancel it may\nchange it.",
+        "operationId": "set_reminder_method",
+        "parameters": [
+          {
+            "name": "reminder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Reminder Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderMethodRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`refused`: a time, rule or method that cannot be set, `detail` saying which (and naming the household's kinds for a method it has none of); FastAPI's own validation error for a malformed body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no reminder of yours still to fire has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "summary": "Cancel Reminder",
         "description": "200 `ReminderCancelled`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`.",
@@ -14846,6 +15002,17 @@
             ],
             "title": "On Deposit"
           },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -14870,7 +15037,7 @@
           "state"
         ],
         "title": "Reminder",
-        "description": "A reminder still to fire: for `person`, set by `made_by` (often the same person), what it says, when it fires\nnext (`due_at`, and `local_at`, that time as the household's wall clock, `YYYY-MM-DDTHH:MM`), and how it repeats:\n`repeat` none for once, else every `every` days, weeks, months or years. `what` is the person's own, shown only to\nthem and to whoever set it. `state`: `scheduled`, still to fire; `sending`, fired and its push not tried yet;\n`undelivered`, fired but no push reached their phone yet (it is tried again for a day, and her words are in\ntheir conversation history); `failed`, it could not fire. A fired one stays listed until it is delivered or the\nperson dismisses it. `on_deposit` is, for a reminder that waits on a deposit instead of a time, the rule in words\n(it fires on every match until cancelled, and `due_at` is when it was set); None for a timed one."
+        "description": "A reminder still to fire: for `person`, set by `made_by` (often the same person), what it says, when it fires\nnext (`due_at`, and `local_at`, that time as the household's wall clock, `YYYY-MM-DDTHH:MM`), and how it repeats:\n`repeat` none for once, else every `every` days, weeks, months or years. `what` is the person's own, shown only to\nthem and to whoever set it. `state`: `scheduled`, still to fire; `sending`, fired and its push not tried yet;\n`undelivered`, fired but no push reached their phone yet (it is tried again for a day, and her words are in\ntheir conversation history); `failed`, it could not fire. A fired one stays listed until it is delivered or the\nperson dismisses it. `on_deposit` is, for a reminder that waits on a deposit instead of a time, the rule in words\n(it fires on every match until cancelled, and `due_at` is when it was set); None for a timed one. `method` makes a\nrepeating reminder a standing errand: the slug of the household's kind of work (`WorkshopKinds.work_kinds`) whose\nskill her turn follows each time it fires; None for any other reminder."
       },
       "ReminderCancelled": {
         "properties": {
@@ -14885,6 +15052,88 @@
         ],
         "title": "ReminderCancelled",
         "description": "The reminder cancelled, so a repeating one fires no more, or, for one that already fired and is listed\nundelivered or failed, dismissed from the list."
+      },
+      "ReminderMethodRequest": {
+        "properties": {
+          "method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method"
+        ],
+        "title": "ReminderMethodRequest",
+        "description": "A reminder's `method` as it is to be: a kind of work the household has with a method, for a repeating reminder\nstill to fire, or null to make it an ordinary reminder again. Always sent; null is a choice."
+      },
+      "ReminderRequest": {
+        "properties": {
+          "what": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "What"
+          },
+          "local_at": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "Local At"
+          },
+          "repeat": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "daily",
+                  "weekly",
+                  "monthly",
+                  "yearly"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
+          },
+          "every": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Every",
+            "default": 1
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "what",
+          "local_at"
+        ],
+        "title": "ReminderRequest",
+        "description": "A reminder the signed-in person sets for themselves, to reach their phone: `what`, and `local_at`, the first time as\nthe household's wall clock, `YYYY-MM-DDTHH:MM`. With `repeat` it comes round every `every` days, weeks, months or\nyears from `at`; without, it fires once. `method` makes it a standing errand and needs `repeat`: a kind of work\nthe household has with a method."
       },
       "RemindersResponse": {
         "properties": {
