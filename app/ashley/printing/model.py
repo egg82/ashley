@@ -27,8 +27,8 @@ class Slot:
 
 @dataclass(frozen=True)
 class AmsUnit:
-    """One AMS unit of a printer: `unit` counts from 1, `humidity` is the printer's own reading as the backend passes it
-    on (a grade, not a percentage, on the AMS models that report one) and None when it reports none."""
+    """One AMS unit of a printer: `unit` counts from 1, `humidity` is the unit's relative humidity in percent as the backend
+    passes it on, and None when it reports none."""
 
     unit: int
     humidity: int | None
