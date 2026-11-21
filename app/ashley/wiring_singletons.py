@@ -60,6 +60,7 @@ from .senses import deposit_sense
 from .watches import job as watches_job
 from .settings import Settings
 from .workshop import rules as workshop_rules
+from .workshop import shadow_job
 from .workshop.file_references import named_keys
 
 log = logging.getLogger("ashley.wiring_singletons")
@@ -78,6 +79,13 @@ def wire_lease(settings: Settings) -> None:
         services.register(Lease, EtcdLease(settings.etcd_url, site, etcd_tls(settings)))
     else:
         services.register(Lease, PostgresLease(settings.database_url))
+
+
+async def _watches_and_shadows() -> None:
+    """The watches singleton also keeps the shadow runs (`shadow_job`): it holds the one set of Home Assistant sockets."""
+    async with asyncio.TaskGroup() as group:
+        group.create_task(watches_job.run())
+        group.create_task(shadow_job.run())
 
 
 def _catalogue_refresh() -> Coroutine[Any, Any, None]:
@@ -112,7 +120,7 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     if settings.connections_key_opens:
         sealing = partial(reseal.run, services.get(Database), sealer_of(settings.connections_key, settings.connections_key_opens))
         running.append(services.get(Lease).run(reseal.NAME, sealing))
-    running.append(services.get(Lease).run(watches_job.NAME, watches_job.run))
+    running.append(services.get(Lease).run(watches_job.NAME, _watches_and_shadows))
     looker = services.get(Looker)
     if isinstance(looker, WarmLooker):
         running.append(services.get(Lease).run_on_site(warm_pod.NAME, looker.keeper.run))

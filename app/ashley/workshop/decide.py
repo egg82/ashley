@@ -7,8 +7,8 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 
-from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, session_piece, stored_file,
-               surfacing, wake_rule)
+from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, session_piece, shadow,
+               stored_file, surfacing, wake_rule)
 from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Move, Moved,
                        Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored, Run,
                        Shown, Surfaced, Undo)
@@ -327,7 +327,7 @@ def _propose(piece: Piece, command: Propose, rules: Rules) -> Effect | Reason:
         return "stale_base"
     if not automation_config.complete(piece.text.body):
         return "incomplete"
-    return Proposed(piece.id, piece.version, command.enabled, command.turn_off)
+    return Proposed(piece.id, piece.version, command.enabled or command.shadow, command.turn_off, command.shadow)
 
 
 def _install(state: BenchState, piece: Piece, command: Install, rules: Rules) -> Effect | Reason:
@@ -340,8 +340,9 @@ def _install(state: BenchState, piece: Piece, command: Install, rules: Rules) ->
         return "no_proposal"
     if proposal.version != piece.version:
         return "stale_base"
-    return Installed(piece.id, piece.version, command.automation_id, proposal.enabled, proposal.turn_off,
-                     command.proposal)
+    ident = shadow.id_for(command.automation_id) if proposal.shadow else command.automation_id
+    return Installed(piece.id, piece.version, ident, proposal.enabled, proposal.turn_off, command.proposal,
+                     proposal.shadow)
 
 
 def _by_code(state: BenchState, piece_id: int, rules: Rules) -> bool:

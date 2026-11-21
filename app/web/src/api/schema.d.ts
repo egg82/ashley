@@ -3705,7 +3705,9 @@ export interface components {
          * InstallProposal
          * @description Her proposal `seq` to install the piece as it is at `piece_version`: `enabled` or not once installed, turning off
          *     `turn_off` (an automation's entity id) with it, null for none. The person approves it with an `install` command
-         *     naming `seq`.
+         *     naming `seq`. A `shadow` proposal is for a shadow run: the piece installed as a shadow that only records when it
+         *     would have fired, turning nothing off (`turn_off`, then, is the automation it would replace, which is recorded
+         *     beside it).
          */
         InstallProposal: {
             /** Seq */
@@ -3716,6 +3718,8 @@ export interface components {
             enabled: boolean;
             /** Turn Off */
             turn_off: string | null;
+            /** Shadow */
+            shadow: boolean;
         };
         /**
          * InstallState
@@ -4966,6 +4970,7 @@ export interface components {
             last_install: components["schemas"]["InstallState"] | null;
             /** Unanswered Events */
             unanswered_events: string[];
+            shadow: components["schemas"]["ShadowState"] | null;
         };
         /**
          * PieceFile
@@ -5952,6 +5957,56 @@ export interface components {
             reason: "unknown_key" | "wrong_shape" | "bad_id" | "too_many";
             /** Detail */
             detail: string;
+        };
+        /**
+         * ShadowFiring
+         * @description One recorded firing: `would`, the piece's shadow fired (it would have), or `did`, the automation it would replace
+         *     was triggered, at `at`.
+         */
+        ShadowFiring: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "would" | "did";
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+        };
+        /**
+         * ShadowState
+         * @description The latest shadow run of the piece, begun by install command `seq` of the piece at `piece_version` and set to
+         *     end at `ends_at`; `ended_at` is null while it runs (a person takes it out with an `undo` of `seq`). `replaces` says
+         *     whether it names an automation to record beside it (`did` is then meaningful, else always 0). `would` and `did`
+         *     count the firings kept, `firings` the newest of them, newest first.
+         */
+        ShadowState: {
+            /** Seq */
+            seq: number;
+            /** Piece Version */
+            piece_version: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Ended At */
+            ended_at: string | null;
+            /** Replaces */
+            replaces: boolean;
+            /** Would */
+            would: number;
+            /** Did */
+            did: number;
+            /** Firings */
+            firings: components["schemas"]["ShadowFiring"][];
         };
         /**
          * SkillDetail

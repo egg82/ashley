@@ -39,7 +39,8 @@ class NewInstall:
     an uninstall back on; None for none), `before` (an install's reading of the house; None for an uninstall) and
     `touched`, whether writing to the house may begin (False for one recorded only to say it could not, or that
     there was nothing to take back) and `wake_events`, the events of the wake actions in the config an install wrote
-    (`wake_action.events_of`; empty for an uninstall)."""
+    (`wake_action.events_of`; empty for an uninstall). `shadow` marks an install of a shadow run (`shadow`) and the
+    uninstall of one: the piece's own install state, its wake events and its writes-before check never see it."""
 
     household_id: int
     bench_id: int
@@ -52,6 +53,7 @@ class NewInstall:
     before: Before | None
     touched: bool
     wake_events: tuple[str, ...] = ()
+    shadow: bool = False
 
 
 @dataclass(frozen=True)
@@ -95,19 +97,20 @@ class Installs(Service):
         """The record of bench command `seq`, None when it has none. Raises InstallsUnavailable."""
 
     @abstractmethod
-    async def wrote_before(self, household_id: int, bench_id: int, piece_id: int) -> bool:
-        """Whether any install or uninstall of that piece recorded so far may have written to the house: it began
-        writing (`touched`) and HA did not refuse it. Raises InstallsUnavailable."""
+    async def wrote_before(self, household_id: int, bench_id: int, piece_id: int, shadow: bool = False) -> bool:
+        """Whether any install or uninstall of that piece (of its shadow runs when `shadow`, else its real installs)
+        recorded so far may have written to the house: it began writing (`touched`) and HA did not refuse it. Raises
+        InstallsUnavailable."""
 
     @abstractmethod
     async def latest_on_bench(self, household_id: int, bench_id: int) -> Mapping[int, InstallRecord]:
-        """The latest install or uninstall of each piece of the bench that has one, by piece id; empty for a bench of
-        another household. Raises InstallsUnavailable."""
+        """The latest install or uninstall of each piece of the bench that has one, by piece id, shadow runs left out;
+        empty for a bench of another household. Raises InstallsUnavailable."""
 
     @abstractmethod
     async def wake_installs(self, household_id: int) -> tuple[WakeInstall, ...]:
-        """Every piece of the household whose latest install or uninstall is a `done` install that sends at least one
-        wake event, whatever bench it is on, by bench and piece id. Raises InstallsUnavailable."""
+        """Every piece of the household whose latest install or uninstall (shadow runs left out) is a `done` install that
+        sends at least one wake event, whatever bench it is on, by bench and piece id. Raises InstallsUnavailable."""
 
 
 class NullInstalls(Installs):
@@ -122,7 +125,7 @@ class NullInstalls(Installs):
     async def of(self, household_id: int, bench_id: int, seq: int) -> InstallRecord | None:
         raise InstallsUnavailable("Installs is not wired")
 
-    async def wrote_before(self, household_id: int, bench_id: int, piece_id: int) -> bool:
+    async def wrote_before(self, household_id: int, bench_id: int, piece_id: int, shadow: bool = False) -> bool:
         raise InstallsUnavailable("Installs is not wired")
 
     async def latest_on_bench(self, household_id: int, bench_id: int) -> Mapping[int, InstallRecord]:

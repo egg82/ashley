@@ -170,6 +170,7 @@ from .tools.printables_search import PrintablesSearchTools
 from .workshop import rules as workshop_rules
 from .workshop.installs import Installs
 from .workshop.installs_postgres import PostgresInstalls
+from .workshop.shadows_postgres import register as register_shadows
 from .workshop.postgres import PostgresWorkshop
 from .workshop.workshop import Workshop
 
@@ -276,6 +277,7 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Looks, PostgresLooks(services.get(Database)))
     register_tidy(services.get(Database))
     services.register(Installs, PostgresInstalls(services.get(Database)))
+    register_shadows(services.get(Database))
     services.register(ConnectionKinds, ConnectionKinds(configured_kinds(settings)))
     if settings.connections_key:
         closers.extend(_wire_connections(settings))

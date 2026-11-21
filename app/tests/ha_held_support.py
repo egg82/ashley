@@ -1,7 +1,8 @@
 """A stand-in Home Assistant for the held-states tests, served in-process over httpx2's ASGI WebSocket transport: the
-WebSocket API's greeting and token, `subscribe_trigger` on a state trigger, `unsubscribe_events` and `get_states`, and
-REST's `/api/states/<entity>`. The test changes a thing's state (`change`), which tells every subscription on it as Home
-Assistant does, and drops every open socket (`drop`). Names and hosts are made up."""
+WebSocket API's greeting and token, `subscribe_trigger` on a state trigger, `subscribe_events` on an event type,
+`unsubscribe_events` and `get_states`, and REST's `/api/states/<entity>`. The test changes a thing's state (`change`),
+which tells every subscription on it as Home Assistant does, fires an event (`fire`), which tells every subscription
+on its type, and drops every open socket (`drop`). Names and hosts are made up."""
 
 import asyncio
 from collections.abc import AsyncGenerator
@@ -57,6 +58,7 @@ class Open:
 
     socket: WebSocket
     subscriptions: dict[int, str] = field(default_factory=dict[int, str])
+    events: dict[int, str] = field(default_factory=dict[int, str])
 
 
 @dataclass
@@ -89,6 +91,18 @@ class FakeHa:
                     trigger = {"platform": "state", "entity_id": entity, "from_state": before, "to_state": after}
                     await held.socket.send_json({"id": number, "type": "event",
                                                  "event": {"variables": {"trigger": trigger}, "context": None}})
+
+    async def fire(self, event_type: str, data: Json, context: str = "c1", at: str = "2026-11-21T10:00:00.000000+00:00") -> None:
+        """Fire a Home Assistant event, told to each subscription on its type."""
+        for held in list(self.open):
+            for number, watched in held.events.items():
+                if watched == event_type:
+                    event = {"event_type": event_type, "data": data, "origin": "LOCAL", "time_fired": at,
+                             "context": {"id": context, "parent_id": None, "user_id": None}}
+                    await held.socket.send_json({"id": number, "type": "event", "event": event})
+
+    def event_types(self) -> list[str]:
+        return sorted(t for held in self.open for t in held.events.values())
 
     async def drop(self) -> None:
         for held in list(self.open):
@@ -123,8 +137,11 @@ class FakeHa:
         if kind == "subscribe_trigger":
             held.subscriptions[number] = command["trigger"]["entity_id"]
             return {"id": number, "type": "result", "success": True, "result": None}
+        if kind == "subscribe_events":
+            held.events[number] = command["event_type"]
+            return {"id": number, "type": "result", "success": True, "result": None}
         if kind == "unsubscribe_events":
-            gone = held.subscriptions.pop(command["subscription"], None)
+            gone = held.subscriptions.pop(command["subscription"], None) or held.events.pop(command["subscription"], None)
             if gone is None:
                 return {"id": number, "type": "result", "success": False, "error": {"code": "not_found", "message": "x"}}
             return {"id": number, "type": "result", "success": True, "result": None}
