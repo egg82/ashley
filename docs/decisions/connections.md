@@ -231,7 +231,7 @@ Her printing tools read `ashley.printing.printing.Printing`, never Bambuddy, and
 `ashley.stock.model.Spool`) whose fields are documented in printing and stock terms. Bambuddy is the first adapter of
 both, `ashley.bambuddy.printing.BambuddyPrinting` and `ashley.bambuddy.stock.BambuddyStock`, over the port
 `ashley.bambuddy.client.Bambuddy`; `ashley.bambuddy.wire` is the only code that reads Bambuddy's field names. This is the
-Ledger's shape (above), and only reads exist so far.
+Ledger's shape (above). Reads came first; the two writes are below.
 
 - **Two ports, because filament stock has its own owner.** Spoolman will be a connection kind of its own that implements
   `stock` and not `printing`; Bambuddy implements both (`ConnectionKind.ports`). A slot that holds a known spool names it
@@ -243,7 +243,8 @@ Ledger's shape (above), and only reads exist so far.
   else changes: the second adapter adds a router that sends each call to the adapter of the opened connection's kind, as
   `ashley.mail.routed.RoutedMailbox` does. Until then the one adapter serves whatever opens.
 - **Bambuddy is one connection: an address (http or https) and an API key**, sent as `X-API-Key`. The key is made in
-  Bambuddy with permission to read status, the library and the inventory, and no permission to control a printer. A
+  Bambuddy with permission to read status, the library and the inventory, to queue, and to manage the library (a key
+  without those last two reads and is `refused` on a write), and no permission to control a printer. A
   connection is stored once `GET /api/v1/printers/` answers as a list of printers with it.
 - **What she reads.** Printers with state, the print's name, progress, minutes left, layers and reported problems
   (`GET /printers/` then `GET /printers/:id/status` for each); each AMS slot's filament type, colour and percent left, the
@@ -261,11 +262,56 @@ Ledger's shape (above), and only reads exist so far.
   notes are not read, so no text a stranger wrote reaches it.
 - **Offered to any known speaker in any chat, not only where the reply reaches them alone.** What the printers are doing
   is the household's, unlike its money (`ashley.channels.audience.owner_alone`). A household with no connection of the
-  port is offered none (`catalogue` is empty); queuing a print, an upload and the print events are later work.
+  port is offered none (`catalogue` is empty). The two writes are offered only where the reply reaches the speaker alone,
+  as the money tools are; the print events are later work.
 - **Failures are `PrintingFailed(reason)` and `StockFailed(reason)`** (`refused`, `unreachable`, `unrecognised`),
   `PrintingUnavailable` and `StockUnavailable` when the household's link cannot be read, `NotConnected` when it has none.
-  A 404 for a library file is `None`, not a failure. Logs carry the path, status and duration, with connection ids and
-  counts, never a key, a name or a spool's text.
+  A 404 for a library file is `None`, not a failure. Logs carry the path (`bambuddy.get`, `bambuddy.post`,
+  `bambuddy.upload`), status and duration, with connection ids and counts, never a key, a name or a spool's text.
+- **Queuing a print is a change at the `asks` tier, held as the person's proposal.** `printing_queue`
+  (`ashley.tools.printing_queue.PrintQueueTools`) is the money changes' shape (above) over `Printing.queue`: not a read,
+  offered where the reply reaches a named person alone, held in every turn without asking the action judge, and sent to
+  Bambuddy only through `carry_out` in their later turn or the Agree tap. Fits into: Proposals and Outside, with no store
+  or confirm tool of its own.
+  - **Every item goes in staged** (`manual_start: true`), whatever she asks: with the printer in LAN-only mode and
+    developer mode on, Bambuddy dispatches a queued item to an idle printer whose plate is marked clear, so only a staged
+    one waits for a person at the printer (`POST /api/v1/queue/:id/start` from Bambuddy). The model cannot unstage one:
+    the port has no such field.
+  - **`POST /api/v1/queue/` and not `POST /api/v1/library/files/add-to-queue`.** The OpenAPI's `AddToQueueRequest` takes
+    only file ids, a printer and a target model; `PrintQueueItemCreate` is the one carrying `manual_start`,
+    `ams_mapping` and `plate_id`, which a staged print with her slot suggestion needs. Only a sliced file queues
+    (the batch route's own description says so); what Bambuddy refuses comes back as `rejected`.
+  - **Her slot suggestion is `slots`**: each of the file's filaments (`Need.slot`) fed from an AMS unit and slot as
+    `printing_ams` numbers them (`Placement`, from 1). The adapter turns them into `ams_mapping`, a list indexed by the
+    file's filament holding each global tray id (`unit id * 4 + tray`, an AMS HT's own id from 128, -1 for a filament
+    she left open), reading the printer's status for its unit ids (`ashley.bambuddy.queueing`). That convention is
+    Bambu's and not stated in the OpenAPI, and no write was made to a live Bambuddy: check one queued item's mapping
+    in Bambuddy before relying on a slot suggestion. A placement naming a unit or slot the printer lacks is `rejected`
+    before anything is sent; a `plate` is `plate_id`.
+  - **What the person agrees to is written by code from the manager as it stands** (`Tools.shown`, here over
+    `Printing.file`, `Printing.printers` and `Printing.needs`): the file's id, type, print time and grams, the printer by
+    the household's name, each placement against the type the printer says the slot holds, with a flag when it is not
+    the type the file is sliced for (compared by code, so no file text is shown), and that it waits staged. Never the
+    file's name or its filament types, which are written outside the household and ride into her later turns. A file,
+    printer, slot or filament that is not there is not held, and she is told which list to read.
+  - **Outcomes are `queued`, `not_found` (the file or the printer is not the household's; Bambuddy's 404) and
+    `rejected` (400, 409, 413, 415 or 422)**; a key without queue permission (401, 403) is the `refused` failure, and
+    its hint names the permission, as a read-only Sure key's does. Bambuddy's write failures reach `BambuddyFailed` as
+    the new reason `rejected`; a read never answers it.
+- **A bench's STL or 3MF reaches the library through `printing_upload`, which is not an `asks` change**
+  (`ashley.tools.printing_upload.PrintUploadTools`, on a bench's talk beside the queue). The bytes are read as the model
+  runs read them: the file piece's stored file (`ashley.workshop.model_inputs.importable`, an STL or 3MF only) from the
+  object store at `ashley.files.intake.key_of`, sent as the multipart field `file` of `POST /api/v1/library/files` under
+  the piece's name, with its own longer timeout (`upload_timeout_s`, `printing.json`). Its tier is `judged`: a library
+  file starts nothing, costs nothing until it is queued, and is deleted in Bambuddy, so asking a person for every upload
+  would double the OKs of one print, while a turn that has read outside words still has the judge decide it. Queuing the
+  file is the step the person agrees to. The answer is the library file's id (`Uploading.file_id`, the id
+  `printing_queue` takes); the same bytes again answer the earlier file (`already_there`, Bambuddy's `duplicate_of`).
+  Outcomes are `uploaded` and `rejected`, and the tool's own `no_such_piece`, `not_a_model` and `gone` (the store lacks
+  the bytes). An STL, or a 3MF with no slice in it, uploads but does not queue: it is for the person to slice in Bambuddy.
+- Rejected: queuing as `judged` or `runs`, which would let a tainted turn start a print the person never saw. Rejected:
+  `add-to-queue` for its batch convenience, which has nowhere to put `manual_start`. Rejected: one tool doing upload and
+  queue together, which would hold an upload to the household's library behind the person's OK for nothing.
 - Rejected: one port for printers and stock, which would make a Spoolman adapter implement printer reads it cannot answer.
   Rejected: the AMS's humidity history (`GET /ams-history`), whose percent and index fields the OpenAPI does not explain;
   the reading the status gives is passed on as given.
