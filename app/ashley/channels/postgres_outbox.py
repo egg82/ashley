@@ -3,7 +3,8 @@ answer is queued in the transaction that stores her turn and ends its work (`pos
 
 Logs `conversation.turn` with the conversation, turn and author once an answer is stored, and `outbox.stale_dropped`
 with the reply's id, conversation, age_ms and `held` (1 when it is kept for her next reply to the asker, else 0) when a
-take removes one older than `stale_s` unsent. A held answer is stored in the same transaction as a `done` errand of the
+take removes one older than `stale_s` unsent, and `outbox.held` with the conversation, turn and `held` (same meaning)
+when a reply `Initiative` kept quiet is kept the same way (`Pushed.held`). A held answer is stored in the same transaction as a `done` errand of the
 asker's (`errands.postgres.HOLD`), so the next reply to them tells it once; her turn was stored with it, so it stays on
 the thread either way."""
 
@@ -47,7 +48,10 @@ class PostgresOutbox(Outbox):
             async with self._database.connection() as conn:
                 stored = await finished(conn, self._policy, claim, turn, services.get(InFlight).claim_s, after)
                 for p in pushed:
-                    await _queued(conn, p)
+                    if p.held:
+                        await _held(conn, p)
+                    else:
+                        await _queued(conn, p)
         logs.info(log, "conversation.turn", conversation=claim.conversation_id, turn=stored.id, author=turn.author)
         return stored
 
@@ -74,6 +78,12 @@ class PostgresOutbox(Outbox):
         return [Later(r[0], r[1], r[2], Outbound(r[3], r[4], r[5],
                                                  receipts=None if r[6] is None else Receipts.from_json(r[6])), r[7])
                 for r in sorted(fresh, key=lambda r: r[0])]
+
+
+async def _held(conn: Connection, pushed: Pushed) -> None:
+    cur = await conn.execute(HOLD, (pushed.outbound.body, pushed.answers))
+    logs.info(log, "outbox.held", conversation=pushed.outbound.conversation_id, turn=pushed.answers,
+              held=cur.rowcount)
 
 
 async def _queued(conn: Connection, pushed: Pushed) -> int:

@@ -40,12 +40,19 @@ class Later:
 @dataclass(frozen=True)
 class Pushed:
     """A reply to queue for `thread` of `household_id`. `answers` is the person turn the reply answers, set on a held
-    answer: should it wait past `stale_s` it is kept for the asker's next reply, not lost."""
+    answer: should it wait past `stale_s` it is kept for the asker's next reply, not lost. `held` says it is not queued
+    at all: `Initiative` kept it quiet, so it is kept for the asker's next reply at once (`answers` is then required),
+    in the transaction that stores her turn."""
 
     household_id: int
     thread: str
     outbound: Outbound
     answers: int | None = None
+    held: bool = False
+
+    def __post_init__(self) -> None:
+        if self.held and self.answers is None:
+            raise ValueError("a held reply names the turn it answers")
 
 
 @dataclass(frozen=True)
@@ -89,7 +96,8 @@ class Outbox(Service):
         then stores, one after the other, which only an in-memory store may: an implementation over the database
         overrides it."""
         for p in pushed:
-            await self.add(p.household_id, p.thread, p.outbound)
+            if not p.held:
+                await self.add(p.household_id, p.thread, p.outbound)
         return await services.get(InFlight).finish(claim, turn, after)
 
 
