@@ -48,7 +48,7 @@ def test_a_connection_never_set_answers_the_kind_s_schema_and_revision_zero(clie
     first = body["settings"][0]
     assert first["field"] == {"type": "entity_per_action", "for_actions": ["todo.get_items"], "domains": ["todo"]}
     assert first["decides"] == "taint" and {s["decides"] for s in body["settings"]} == {"taint", "tier", "read", "ports", "plain"}
-    assert body["settings"][-1]["field"] == {"type": "port_switches", "ports": ["automations", "calendar", "house"]}
+    assert body["settings"][-1]["field"] == {"type": "port_switches", "ports": ["automations", "calendar", "house", "todo"]}
 
 
 def test_a_write_is_stored_whole_and_answered_with_who_wrote_it(client: TestClient, home: People) -> None:
