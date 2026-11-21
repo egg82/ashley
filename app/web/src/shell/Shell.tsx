@@ -15,6 +15,8 @@ import { FollowHer } from './her/FollowHer';
 import { pageMoved } from './her/moves';
 import { TravellingMark } from './her/TravellingMark';
 import { roomForPath, type RoomId } from './rooms';
+import { CameraFeed } from '../camera/CameraFeed';
+import { screenCard } from '../camera/card';
 import { Announcement } from '../speech/Announcement';
 import { Stage } from './Stage';
 import { Topbar } from './topbar/Topbar';
@@ -72,6 +74,7 @@ export function Shell() {
       <Stage />
       {who && target !== 'signin' && <FollowHer />}
       {who && target !== 'signin' && <Announcement />}
+      {who && target !== 'signin' && <CameraFeed card={screenCard} />}
       <TravellingMark />
     </>
   );
