@@ -26,7 +26,7 @@ class MachineRefused(Exception):
 
 @dataclass(frozen=True)
 class Machine:
-    """One machine's connection. `access` raises BridgeFailed (`unexpected`) when its stored address is not a bridge's,
+    """One machine's connection, with what its person wrote about it (`description`, empty when nothing). `access` raises BridgeFailed (`unexpected`) when its stored address is not a bridge's,
     when used, so one bad address spoils that machine alone."""
 
     label: str
@@ -34,6 +34,7 @@ class Machine:
     token: str = field(repr=False)
     person_id: int
     connection_id: int
+    description: str = ""
 
     @property
     def access(self) -> Access:
@@ -44,7 +45,8 @@ async def held(household_id: int, person_id: int) -> tuple[Machine, ...]:
     """The person's machines, first made first. Raises ConnectionsUnavailable."""
     opened = await ports.opened_all(services.get(Connections), "herdr", household_id, person_id)
     made = sorted(opened, key=lambda o: o.connection.id)
-    return tuple(Machine(o.connection.label, o.connection.base_url, o.secret, person_id, o.connection.id)
+    return tuple(Machine(o.connection.label, o.connection.base_url, o.secret, person_id, o.connection.id,
+                         o.connection.description)
                  for o in made)
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from herdr_bridge.config import Config, ConfigError, load
+from herdr_bridge.jsonget import items
 from herdr_bridge.machine import DEFAULT_TOOLS, Machine, Roots
 from herdr_bridge.runner import HerdrMissing, HerdrTimeout, Outcome
 
@@ -28,6 +29,12 @@ class Smi:
         if isinstance(self.answer, Exception):
             raise self.answer
         return self.answer
+
+
+def usb_of(report: dict[str, object]) -> list[dict[str, object]]:
+    found = items(report["usb"])
+    assert found
+    return found
 
 
 def usb(base: Path, name: str, vendor: str, product: str, text: str | None, serial: str = "SN-SECRET") -> None:
@@ -66,8 +73,7 @@ def test_the_report_reads_the_machine_from_fixed_files(tree: Roots) -> None:
 
 
 def test_usb_lists_ids_and_product_strings_without_serials_or_root_hubs(tree: Roots) -> None:
-    found = Machine((), tree, Smi(HerdrMissing("x"))).report(None)["usb"]
-    assert isinstance(found, list)
+    found = usb_of(Machine((), tree, Smi(HerdrMissing("x"))).report(None))
     by_id = {d["id"]: d["product"] for d in found}
     assert set(by_id) == {"1a86:7523", "0403:6010", "046d:c52b"}
     assert by_id["1a86:7523"] == "USB Serial" and by_id["046d:c52b"] is None

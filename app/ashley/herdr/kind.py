@@ -29,7 +29,7 @@ HERDR = ConnectionKind(
     removed="Removed. She can’t reach your Claude Code sessions now.",
     holders=frozenset({"person"}), schemes=frozenset({"https"}), address_placeholder="https://host:7843#sha256=<fingerprint>",
     secret_field="token", secret_label="Token, printed once when you set the bridge up", secret_noun="token",
-    check=_check, pinned=True, ports=frozenset({"herdr"}), most=4,
+    check=_check, pinned=True, ports=frozenset({"herdr"}), most=4, takes_description=True,
     refusals={"bad_url": "the address is the bridge’s https address followed by #sha256= and the fingerprint it "
                          "printed, 64 hex digits",
               "key_refused": "the bridge turned that token away, or serves another person; set it up again to get "

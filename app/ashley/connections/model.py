@@ -45,7 +45,8 @@ class Connection:
     household's. `label` is what its owner calls it ("work"), empty for one never named. `needs` is set while it
     cannot be used until its person acts, and `scopes` are the OAuth scopes its service granted (none for a pasted
     secret). `catalogue_provider` is the model catalogue provider a model provider's calls are priced as, where its
-    kind takes one (`ConnectionKind.picks_catalogue_provider`) and a person picked one; None otherwise."""
+    kind takes one (`ConnectionKind.picks_catalogue_provider`) and a person picked one; None otherwise. `description` is
+    what its owner wrote about what it reaches (`ConnectionKind.takes_description`), empty when nothing was."""
 
     id: int
     household_id: int
@@ -59,6 +60,7 @@ class Connection:
     needs: Needs | None = None
     scopes: tuple[str, ...] = ()
     catalogue_provider: str | None = None
+    description: str = ""
 
 
 @dataclass(frozen=True)

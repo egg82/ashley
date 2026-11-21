@@ -6,7 +6,8 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from .model import BridgeFailed, OutFile, Screen, Session, SessionList, Status, Whoami
+from .model import (BridgeFailed, Gpu, MachineReport, OutFile, Screen, Session, SessionList, Status, UsbDevice,
+                    Whoami)
 
 
 class WhoamiBody(BaseModel):
@@ -14,6 +15,38 @@ class WhoamiBody(BaseModel):
     herdr_version: str | None
     person: str | None
     capabilities: list[str] = []
+
+
+class CpuBody(BaseModel):
+    model: str | None = None
+    cores: int | None = None
+
+
+class MemoryBody(BaseModel):
+    total_mb: int | None = None
+    available_mb: int | None = None
+
+
+class GpuBody(BaseModel):
+    model: str | None = None
+    memory_mb: int | None = None
+
+
+class UsbBody(BaseModel):
+    id: str
+    product: str | None = None
+
+
+class MachineBody(BaseModel):
+    hostname: str | None = None
+    os: str | None = None
+    kernel: str | None = None
+    cpu: CpuBody = CpuBody()
+    memory: MemoryBody = MemoryBody()
+    gpus: list[GpuBody] | None = None
+    busy: bool | None = None
+    tools: list[str] = []
+    usb: list[UsbBody] | None = None
 
 
 class SessionBody(BaseModel):
@@ -76,6 +109,14 @@ def session(b: SessionBody) -> Session:
 def whoami(raw: bytes) -> Whoami:
     b = body_as(WhoamiBody, raw)
     return Whoami(b.bridge_version, b.herdr_version, b.person, tuple(b.capabilities))
+
+
+def machine(raw: bytes) -> MachineReport:
+    b = body_as(MachineBody, raw)
+    return MachineReport(
+        b.hostname, b.os, b.kernel, b.cpu.model, b.cpu.cores, b.memory.total_mb, b.memory.available_mb,
+        None if b.gpus is None else tuple(Gpu(g.model, g.memory_mb) for g in b.gpus), b.busy, tuple(b.tools),
+        None if b.usb is None else tuple(UsbDevice(u.id, u.product) for u in b.usb))
 
 
 def sessions(raw: bytes) -> SessionList:

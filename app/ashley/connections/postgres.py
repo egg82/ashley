@@ -162,6 +162,18 @@ class PostgresConnections(Connections):
                       connection=connection.id, person=person_id)
         return connection
 
+    async def describe(self, connection_id: int, household_id: int, person_id: int, description: str) -> Connection | None:
+        args = {"id": connection_id, "household": household_id, "person": person_id, "description": description}
+        with translated():
+            async with self._database.connection() as conn:
+                found = await (await conn.execute(queries.IDENTITY, args)).fetchone()
+                row = None if found is None else await (await conn.execute(queries.DESCRIBE, args)).fetchone()
+        connection = None if row is None else connection_of(row)
+        if connection is not None:
+            logs.info(log, "connections.described", household=household_id, kind=connection.kind,
+                      connection=connection.id, person=person_id, chars=len(description))
+        return connection
+
     async def seed(self, household_id: int, kind: Kind, base_url: str, secret: str) -> Connection | None:
         return await self.seed_labelled(household_id, kind, "", base_url, secret)
 

@@ -111,6 +111,12 @@ class Connections(Service):
         `connections.relabeled`. Raises ConnectionsUnavailable; LabelTaken when the owner has another of that kind with
         that label."""
 
+    async def describe(self, connection_id: int, household_id: int, person_id: int, description: str) -> Connection | None:
+        """What its owner says the connection reaches, for a connection visible to `person_id`; None when it is not
+        visible to them. Logs `connections.described`. Raises ConnectionsUnavailable; a store that keeps no
+        descriptions raises it too."""
+        raise ConnectionsUnavailable("this store cannot describe connections")
+
     @abstractmethod
     async def seed(self, household_id: int, kind: Kind, base_url: str, secret: str) -> Connection | None:
         """Add the household's connection of `kind` from her own setup, with no one as its adder and an empty label,
@@ -149,6 +155,9 @@ class NullConnections(Connections):
         raise ConnectionsUnavailable("connections are not wired")
 
     async def relabel(self, connection_id: int, household_id: int, person_id: int, label: str) -> Connection | None:
+        raise ConnectionsUnavailable("connections are not wired")
+
+    async def describe(self, connection_id: int, household_id: int, person_id: int, description: str) -> Connection | None:
         raise ConnectionsUnavailable("connections are not wired")
 
     async def seed(self, household_id: int, kind: Kind, base_url: str, secret: str) -> Connection | None:

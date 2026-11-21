@@ -4,7 +4,7 @@ and closed, and the files moved through a session's `in/` and `out/`. Each call 
 from abc import abstractmethod
 
 from ..services import Service
-from .model import Access, BridgeFailed, OutFile, Screen, Session, SessionList, Whoami
+from .model import Access, BridgeFailed, MachineReport, OutFile, Screen, Session, SessionList, Whoami
 
 
 class Bridge(Service):
@@ -15,6 +15,11 @@ class Bridge(Service):
     @abstractmethod
     async def whoami(self, access: Access) -> Whoami:
         """The bridge's versions and the person it serves: the one authenticated read that checks a connection."""
+
+    async def machine(self, access: Access) -> MachineReport:
+        """What the bridge's machine can do now. `not_found` from a bridge older than the report (`Whoami.capabilities`
+        lacks `machine`), which is also what a bridge stand-in that reports none answers."""
+        raise BridgeFailed("not_found")
 
     @abstractmethod
     async def sessions(self, access: Access) -> SessionList:
@@ -58,6 +63,9 @@ class Bridge(Service):
 
 class NullBridge(Bridge):
     async def whoami(self, access: Access) -> Whoami:
+        raise BridgeFailed("herdr_unavailable")
+
+    async def machine(self, access: Access) -> MachineReport:
         raise BridgeFailed("herdr_unavailable")
 
     async def sessions(self, access: Access) -> SessionList:

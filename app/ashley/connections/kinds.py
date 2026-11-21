@@ -94,7 +94,8 @@ class ConnectionKind:
     the provider name routes use) sets `label_pattern`, the shape every label of it must match whole, and
     `reserved_labels`, names it must not take (`takes_label`); any other kind takes any label. A kind that sets
     `picks_catalogue_provider` lets a person say which model catalogue provider its calls are priced as
-    (`Connection.catalogue_provider`). A kind with `addresses` takes several, typed comma-separated, each judged by
+    (`Connection.catalogue_provider`). A kind that sets `takes_description` lets its owner write a sentence or two about
+    what a connection reaches (`Connection.description`: a herdr bridge's machine). A kind with `addresses` takes several, typed comma-separated, each judged by
     the address rule and stored in the typed order (the object store's, one per site)."""
 
     name: str
@@ -123,6 +124,7 @@ class ConnectionKind:
     configured: bool = True
     label_pattern: str | None = None
     reserved_labels: frozenset[str] = frozenset()
+    takes_description: bool = False
     picks_catalogue_provider: bool = False
     addresses: bool = False
 

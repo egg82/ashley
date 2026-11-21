@@ -2,7 +2,7 @@
 theirs (`VISIBLE`, taking household and person)."""
 
 COLUMNS = ("id, household_id, kind, base_url, added_by, added_at, checked_at, person_id, label, needs, scopes, "
-           "catalogue_provider")
+           "catalogue_provider, description")
 WIDTH = len(COLUMNS.split(", "))
 """How many columns `COLUMNS` names: a statement that selects more after them reads those from this index on."""
 VISIBLE = "household_id = %(household)s AND (person_id IS NULL OR person_id = %(person)s)"
@@ -34,6 +34,7 @@ REPLACE = (
     f"catalogue_provider = %(catalogue_provider)s WHERE id = %(id)s RETURNING {COLUMNS}"
 )
 RELABEL = f"UPDATE connections SET label = %(label)s WHERE id = %(id)s RETURNING {COLUMNS}"
+DESCRIBE = f"UPDATE connections SET description = %(description)s WHERE id = %(id)s RETURNING {COLUMNS}"
 REMOVE = f"DELETE FROM connections WHERE id = %(id)s AND {VISIBLE} RETURNING kind"
 SEED = (
     "INSERT INTO connections (household_id, kind, label, base_url, secret) "
