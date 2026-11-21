@@ -931,6 +931,92 @@
         }
       }
     },
+    "/api/memory/voice": {
+      "get": {
+        "summary": "List Voiceprints",
+        "description": "200 `VoiceprintsResponse`, the signed-in person's own prints; 401 `unauthorized`; 503 `unavailable`.",
+        "operationId": "list_voiceprints",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceprintsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: memory or the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Forget Voiceprints",
+        "description": "200 `VoiceForgotten`, how many of the signed-in person's prints went (0 when none); 401 `unauthorized`;\n403 `forbidden`; 503 `unavailable`.",
+        "operationId": "forget_voiceprints",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceForgotten"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: memory or the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/outside-actions": {
       "get": {
         "summary": "List Outside Actions",
@@ -16477,6 +16563,57 @@
         ],
         "title": "VaultWrite",
         "description": "A write-back: the vault and keychain (base64) the keeper read at `generation`, from the pod of `epoch`."
+      },
+      "VoiceForgotten": {
+        "properties": {
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "VoiceForgotten",
+        "description": "How many of the reader's prints were deleted, and any enrolment armed for them was cancelled; 0 when there were\nnone."
+      },
+      "Voiceprint": {
+        "properties": {
+          "device": {
+            "type": "string",
+            "title": "Device"
+          },
+          "enrolled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Enrolled At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device",
+          "enrolled_at"
+        ],
+        "title": "Voiceprint",
+        "description": "One print of the reader's voice: the name of the device it was enrolled on and when. The vector is never sent."
+      },
+      "VoiceprintsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Voiceprint"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "VoiceprintsResponse",
+        "description": "The reader's own prints, oldest first; empty when none are enrolled. Nobody else's."
       },
       "WakeAccepted": {
         "properties": {

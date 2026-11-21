@@ -8,14 +8,21 @@ one turn the text they typed; the old fact is superseded through `Memory.apply` 
 A move between a person and the household is a correction that keeps the text and changes whose it is.
 Forgetting deletes the fact and every version it replaced. Remembering a line of a conversation the person took part in
 runs the write job's decision over it now (`ashley.memory.remember`); a conversation they were not in is 404, as one
-that does not exist. Fact text is never logged."""
+that does not exist. Fact text is never logged.
 
+The person's own voiceprints are here too (`decisions.md`, "A voice names the speaker as a hint"): `GET
+/api/memory/voice` lists the signed-in person's prints, and `DELETE /api/memory/voice` forgets all of them, as the
+admin CLI's `voice-forget` does. Only the signed-in person's own: the route takes no id, so nobody's prints but the
+session's are reachable, admin or not. The vector is never sent; a forget logs the household, person and count."""
+
+import logging
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Path
 from fastapi.responses import JSONResponse
 
-from .. import services
+from .. import logs, services
+from ..channels.voice.voices import Voices, VoicesUnavailable
 from ..conversations.conversations import Conversations, ConversationsUnavailable
 from ..conversations.model import NewTurn
 from ..memory.memory import Memory, MemoryUnavailable
@@ -27,8 +34,10 @@ from .models import (CorrectionRequest, ErrorResponse, FactSource, ForgetRespons
                      MoveRequest, Person as PersonModel, RememberRequest, RememberResponse, ReplacedFact,
                      wire_person)
 from .person import Person
+from .voice_models import Voiceprint, VoiceForgotten, VoiceprintsResponse
 
 router = APIRouter()
+log = logging.getLogger("ashley.api")
 _FactId = Annotated[int, Path(ge=1)]
 _NOT_FOUND = "no such fact"
 _DOWN = (MemoryUnavailable, PeopleUnavailable, ConversationsUnavailable)
@@ -196,3 +205,27 @@ async def remember_turn(signed_in: Person, body: RememberRequest) -> RememberRes
         return _unavailable()
     seen = [_wire(held[i], people) for i in done.inserted if i in held]
     return RememberResponse(facts=seen, unseen=len(done.inserted) - len(seen), ended=done.ended)
+
+
+@router.get("/api/memory/voice", response_model=VoiceprintsResponse, responses=_SIGNED_IN)
+async def list_voiceprints(signed_in: Person) -> VoiceprintsResponse | JSONResponse:
+    """200 `VoiceprintsResponse`, the signed-in person's own prints; 401 `unauthorized`; 503 `unavailable`."""
+    try:
+        prints = await services.get(Voices).own(signed_in.person.id)
+    except VoicesUnavailable:
+        return _unavailable()
+    return VoiceprintsResponse(items=[Voiceprint(device=p.device, enrolled_at=p.enrolled_at) for p in prints])
+
+
+@router.delete("/api/memory/voice", response_model=VoiceForgotten, responses={
+    **_SIGNED_IN, 403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"}})
+async def forget_voiceprints(signed_in: Person) -> VoiceForgotten | JSONResponse:
+    """200 `VoiceForgotten`, how many of the signed-in person's prints went (0 when none); 401 `unauthorized`;
+    403 `forbidden`; 503 `unavailable`."""
+    person = signed_in.person
+    try:
+        deleted = await services.get(Voices).forget(person.id)
+    except VoicesUnavailable:
+        return _unavailable()
+    logs.info(log, "voice.forgotten", household=person.household_id, person=person.id, deleted=deleted)
+    return VoiceForgotten(deleted=deleted)

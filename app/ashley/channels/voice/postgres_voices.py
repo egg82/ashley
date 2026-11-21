@@ -6,7 +6,7 @@ import psycopg
 
 from ...db.database import Database, DatabaseUnavailable
 from ...inference.voiceprint import Voiceprint
-from .voices import Enrolled, PersonPrints, UnknownEnrolee, Voices, VoicesUnavailable
+from .voices import Enrolled, OwnPrint, PersonPrints, UnknownEnrolee, Voices, VoicesUnavailable
 
 _ARM = """
     INSERT INTO voice_enrolments (device_id, household_id, person_id, remaining, until)
@@ -44,6 +44,17 @@ class PostgresVoices(Voices):
         for person_id, vector in rows:
             people.setdefault(person_id, []).append(tuple(vector))
         return tuple(PersonPrints(person_id, tuple(vectors)) for person_id, vectors in people.items())
+
+    async def own(self, person_id: int) -> tuple[OwnPrint, ...]:
+        try:
+            async with self._database.connection() as conn:
+                cur = await conn.execute(
+                    "SELECT d.name, v.created_at FROM voiceprints v JOIN devices d ON d.id = v.device_id "
+                    "WHERE v.person_id = %s ORDER BY v.created_at, v.id", (person_id,))
+                rows = await cur.fetchall()
+        except (DatabaseUnavailable, psycopg.Error) as e:
+            raise VoicesUnavailable("database unreachable") from e
+        return tuple(OwnPrint(name, at) for name, at in rows)
 
     async def arm(self, device_id: int, person_id: int, wakes: int, until: datetime) -> None:
         if wakes < 1:
