@@ -79,7 +79,7 @@ ALLOWED: dict[str, set[str]] = {
     "wiring_inference": {"connections", "db", "inference", "services", "settings", "wiring_providers"},
     "wiring_singletons": {"channels", "connections", "conversations", "db", "files", "home_assistant", "inference", "logs", "looks", "mail", "memory",
                           "referee", "senses", "services", "settings", "watches", "workshop"},
-    "wiring": {"channels", "calendars", "codehost", "connections", "conversations", "db", "errands", "files", "google", "herdr", "home_assistant", "inference", "initiative", "live",
+    "wiring": {"channels", "codehost", "connections", "conversations", "db", "errands", "files", "google", "herdr", "home_assistant", "inference", "initiative", "live",
                "looks", "mail", "memory", "people", "printables", "runs", "senses", "services", "settings", "signin", "sure", "bambuddy",
                "tidy", "tools", "watches", "wiring_bridge", "wiring_discord", "wiring_inference", "wiring_sandbox", "wiring_secrets", "wiring_seeds", "wiring_singletons", "wiring_skills",
                "workshop"},
