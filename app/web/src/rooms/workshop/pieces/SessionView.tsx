@@ -8,6 +8,7 @@ const STATUS: Record<ScreenStatus, string> = { idle: 'Idle', working: 'Working',
 const NOT_LIVE: Record<Exclude<ScreenState, 'live'>, string> = {
   gone: 'This session has ended.',
   not_connected: 'Connect your Claude Code bridge in Connections to see this session.',
+  unknown_machine: 'This session is on a machine that is not connected under that name now. Check it in Connections.',
   unreachable: "Can't reach your machine right now. Trying again.",
   refused: 'Your bridge turned this connection away. Check it in Connections.',
 };
@@ -36,7 +37,7 @@ export function SessionView({ body }: { body: string }) {
     const stop = new AbortController();
     void follow(session, setShown, FOLLOW, stop.signal);
     return () => stop.abort();
-  }, [session]);
+  }, [body]);
   if (!session) return <div class="pbody plain"><p>{body}</p></div>;
   if (!shown) return <div class="pbody session"><span class="meta">Reading the session…</span></div>;
   const live = shown.state === 'live';

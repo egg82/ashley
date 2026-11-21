@@ -15,11 +15,11 @@ from fastapi import Path as PathParam
 from pydantic import BaseModel, ConfigDict
 
 from .. import logs, services
-from ..connections import ports
-from ..connections.connections import Connections, ConnectionsUnavailable
-from ..herdr import config
+from ..connections.connections import ConnectionsUnavailable
+from ..herdr import config, machines
 from ..herdr.bridge import Bridge
-from ..herdr.model import Access, BridgeFailed, Reason, Status
+from ..herdr.machines import MachineRefused
+from ..herdr.model import BridgeFailed, Reason, Status
 from ..workshop.session_piece import SESSION_ID
 from .models import ErrorResponse
 from .person import Person
@@ -27,7 +27,7 @@ from .person import Person
 router = APIRouter()
 CONFIG = config.load()
 log = logging.getLogger("ashley.api")
-State = Literal["live", "gone", "not_connected", "unreachable", "refused"]
+State = Literal["live", "gone", "not_connected", "unknown_machine", "unreachable", "refused"]
 _REFUSED: tuple[Reason, ...] = ("bad_token", "wrong_person", "pin_mismatch", "unexpected")
 _ERRORS: dict[int | str, dict[str, Any]] = {
     401: {"model": ErrorResponse, "description": "`unauthorized`: no live session"},
@@ -37,7 +37,7 @@ _ERRORS: dict[int | str, dict[str, Any]] = {
 
 class SessionScreen(BaseModel):
     """A session's screen as it is now. `state`: `live` (shown below), `gone` (the bridge lists no such session: it
-    ended or was closed), `not_connected` (the person has no herdr bridge), `unreachable` (the bridge, herdr or the
+    ended or was closed), `not_connected` (the person has no herdr bridge), `unknown_machine` (the piece names a machine the person no longer holds under that name), `unreachable` (the bridge, herdr or the
     person's connections did not answer) or `refused` (the bridge turned the connection away: its token, person or
     certificate). While `live`, `status` is the session's (`idle`, `working`, `blocked`, `done` or `unknown`),
     `digest` names the screen's text (a hash, the same for the same text), and `text` is its last lines as unwrapped
@@ -56,22 +56,25 @@ class SessionScreen(BaseModel):
 
 @router.get("/api/claude/sessions/{session_id}/screen", response_model=SessionScreen, responses=_ERRORS)
 async def session_screen(signed_in: Person, session_id: Annotated[str, PathParam(pattern=SESSION_ID.pattern)],
-                         seen: str | None = None) -> SessionScreen:
+                         seen: str | None = None, machine: str | None = None) -> SessionScreen:
     """200 `SessionScreen`, whatever the bridge answered; 401 `unauthorized`; 422 for an id that is not a session's.
-    `seen` is the `digest` of the screen the page shows, so an unchanged screen is not sent again. (The bridge's own
+    `machine` is the label of the person's herdr connection the piece names; left out, their default machine
+    (`herdr.machines`). `seen` is the `digest` of the screen the page shows, so an unchanged screen is not sent again. (The bridge's own
     `revision` is herdr's count of changes to the agent, not to its screen, so it cannot say that.)"""
     started = time.monotonic()
     person = signed_in.person
     try:
-        opened = await ports.opened(services.get(Connections), "herdr", person.household_id, person.id)
-        if opened is None:
+        chosen = machines.choose(await machines.held(person.household_id, person.id), machine)
+        if chosen is None:
             return _not_live("not_connected", None, started)
-        access = Access.of(opened.connection.base_url, opened.secret, person.id)
+        access = chosen.access
         bridge = services.get(Bridge)
         listed, screen = await asyncio.gather(bridge.sessions(access),
                                               bridge.read(access, session_id, CONFIG.screen_lines))
     except ConnectionsUnavailable:
         return _not_live("unreachable", None, started)
+    except MachineRefused:
+        return _not_live("unknown_machine", None, started)
     except BridgeFailed as e:
         state: State = "gone" if e.reason == "not_found" else "refused" if e.reason in _REFUSED else "unreachable"
         return _not_live(state, e.reason, started)

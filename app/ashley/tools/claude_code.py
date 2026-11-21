@@ -3,24 +3,28 @@
 `ashley.channels.turn_tools.sources` where the reply reaches the speaker alone (as the code host tools are), and only
 to a person who connected a bridge. Prompting, starting and closing act on the person's machine and are not proposed
 first: the bridge refuses a session that is not ready, and `decisions.md` ("For code and the cluster she is a front for
-Claude Code") bounds what she may do. Arguments, screen text and prompts are never logged; `tools.call` carries the
+Claude Code") bounds what she may do. A person may hold several bridges, one per machine and named by label (`herdr.machines`): the tools that act on one
+take the machine, and the list spans them all. Arguments, screen text and prompts are never logged; `tools.call` carries the
 outcome, counts and the bridge's reason."""
 
+import logging
 import time
 from collections.abc import Awaitable, Callable, Mapping
 
-from .. import services
-from ..connections import ports
-from ..connections.connections import Connections, ConnectionsUnavailable
-from ..connections.model import Opened
+from .. import logs, services
+from ..connections.connections import ConnectionsUnavailable
+from ..herdr import machines
 from ..herdr.bridge import Bridge
-from ..herdr.model import Access, BridgeFailed, Reason, Session
+from ..herdr.machines import Machine, MachineRefused
+from ..herdr.model import BridgeFailed, Reason, Session
 from ..inference.model import ToolCall, ToolResult, ToolSpec
 from . import bench_results, cut
 from .bench_args import BadArguments, check_names
 from .claude_code_config import ClaudeCodeConfig
 from .claude_watching import state_of, watching
 from .tools import Catalogue, Tools, ToolsUnavailable
+
+log = logging.getLogger("ashley.tools")
 
 SESSIONS, READ, PROMPT, START, CLOSE = ("claude_sessions", "claude_read", "claude_prompt", "claude_start",
                                         "claude_close")
@@ -40,7 +44,10 @@ INSTRUCTIONS = (
     "you are woken to read it and tell them, unless the result says watched is false, which you tell them instead. "
     "On a bench, a session the person wants to watch as it runs goes up as a session piece (bench_add, kind session, "
     'body {"source": "herdr", "session": "<its id>"}): their screen shows its output live, and you see only the id. '
-    "These act on their machine, so do what they asked and nothing more.")
+    "These act on their machine, so do what they asked and nothing more. A person may have more than one machine, each "
+    "with its own bridge and named by a label: claude_sessions then lists the sessions of all of them, each row naming "
+    "its machine, and claude_read, claude_prompt, claude_start and claude_close take that machine, which they need "
+    "whenever the person has more than one.")
 _HINTS: dict[Reason, str] = {
     "bad_request": "the bridge refused the arguments; a label is a lowercase letter then up to 31 of a-z, 0-9, _ and -, "
                    "a model is a model name, lines are 1 to 400",
@@ -62,29 +69,37 @@ _HINTS: dict[Reason, str] = {
     "pin_mismatch": "what answered is not the person's bridge, so nothing was sent; the person can check the bridge's "
                     "address in settings",
     "unexpected": "the bridge answered with something unexpected"}
+_MACHINE_HINTS: dict[str, str] = {
+    "unknown_machine": "the person has no machine of that name; claude_sessions shows their machines' names",
+    "machine_needed": "the person has more than one machine, so say which with machine; claude_sessions shows "
+                      "each session's machine"}
 
 
 def specs(config: ClaudeCodeConfig) -> tuple[ToolSpec, ...]:
     session = {"type": "string", "description": "A session's id as claude_sessions gives it"}
+    machine = {"type": "string", "description": "The machine's name as claude_sessions gives it; needed when the person "
+                                                "has more than one machine"}
     return (
         ToolSpec(SESSIONS, "List the person's Claude Code sessions, and the roots: the absolute folders a session may be "
-                           "started under (null when the bridge does not say).", {"type": "object", "properties": {}}, True, outside=False),
+                           "started under (null when the bridge does not say). Without a machine, the sessions of every machine.",
+                           {"type": "object", "properties": {"machine": machine}}, True, outside=False),
         ToolSpec(READ, "Read the end of a session's screen as text.", {
-            "type": "object", "required": ["session"], "properties": {"session": session, "lines": {
+            "type": "object", "required": ["session"], "properties": {"session": session, "machine": machine, "lines": {
                 "type": "integer", "description": f"How many lines from the end, at most {config.read_lines_max}; "
                                                   f"{config.read_lines} when left out"}}}, True, outside=True),
         ToolSpec(PROMPT, "Send a prompt to a session that is idle or done. A session that is working or blocked "
                          "refuses it.", {
-            "type": "object", "required": ["session", "text"], "properties": {"session": session, "text": {
+            "type": "object", "required": ["session", "text"], "properties": {"session": session, "machine": machine, "text": {
                 "type": "string", "description": f"The prompt, at most {config.prompt_chars} characters"}}}, outside=False, tier="judged", label="Sent a prompt to a coding session"),
         ToolSpec(START, "Start a new Claude Code session in a folder the bridge allows, for work that needs a session: a "
                        "clone, a long run, a multi-step investigation.", {
             "type": "object", "required": ["dir", "label"], "properties": {
+                "machine": machine,
                 "dir": {"type": "string", "description": "The folder's absolute path: a root from claude_sessions or a "
                                                          "path beneath one, which is created if it is new"},
                 "label": {"type": "string", "description": "The session's name: lowercase, no spaces"},
                 "model": {"type": "string", "description": "A model name; the session's default when left out"}}}, outside=False, tier="judged", label="Started a coding session"),
-        ToolSpec(CLOSE, "End a session.", {"type": "object", "required": ["session"], "properties": {"session": session}}, outside=False, tier="judged", label="Ended a coding session"))
+        ToolSpec(CLOSE, "End a session.", {"type": "object", "required": ["session"], "properties": {"session": session, "machine": machine}}, outside=False, tier="judged", label="Ended a coding session"))
 
 
 class ClaudeCodeTools(Tools):
@@ -99,7 +114,7 @@ class ClaudeCodeTools(Tools):
 
     async def catalogue(self) -> Catalogue:
         """Empty when the person has connected no bridge. Raises ToolsUnavailable when connections cannot be read."""
-        if await self._opened() is None:
+        if not await self._held():
             return Catalogue((), None)
         return Catalogue(self._specs, INSTRUCTIONS)
 
@@ -110,35 +125,60 @@ class ClaudeCodeTools(Tools):
         if spec is None:
             return bench_results.failed(call, started, "unknown_tool", f"no tool named {call.name}")
         try:
-            opened = await self._opened()
+            held = await self._held()
         except ToolsUnavailable:
             return bench_results.failed(call, started, "unavailable", "the person's connections cannot be read")
-        if opened is None:
+        if not held:
             return bench_results.failed(call, started, "not_connected", "the person has not connected their Claude "
                                         "Code sessions")
         try:
-            access = Access.of(opened.connection.base_url, opened.secret, self._person)
             check_names(call.arguments, spec)
-            return await self._runner(call.name)(call, started, access)
+            if call.name == SESSIONS:
+                return await self._sessions(call, started, held)
+            machine = _machine(call.arguments, held)
+            return await self._runner(call.name)(call, started, machine)
         except BadArguments as e:
             return bench_results.failed(call, started, "bad_arguments", str(e))
+        except MachineRefused as e:
+            return bench_results.failed(call, started, e.reason, _MACHINE_HINTS[e.reason])
         except BridgeFailed as e:
             return bench_results.failed(call, started, e.reason, _HINTS[e.reason])
 
-    async def _opened(self) -> Opened | None:
-        """The person's bridge connection, or None. Raises ToolsUnavailable."""
+    async def _held(self) -> tuple[Machine, ...]:
+        """The person's machines, none when they have connected no bridge. Raises ToolsUnavailable."""
         try:
-            return await ports.opened(services.get(Connections), "herdr", self._household, self._person)
+            return await machines.held(self._household, self._person)
         except ConnectionsUnavailable as e:
             raise ToolsUnavailable("connections unavailable") from e
 
-    async def _sessions(self, call: ToolCall, started: float, access: Access) -> ToolResult:
-        found = await services.get(Bridge).sessions(access)
-        return bench_results.ok(call, started, {"sessions": [_row(s) for s in found.sessions],
-                                                       "roots": None if found.roots is None else list(found.roots)},
-                                rows=len(found.sessions))
+    async def _sessions(self, call: ToolCall, started: float, held: tuple[Machine, ...]) -> ToolResult:
+        """One machine's sessions and roots when the person has one or names one; else every machine's, each row naming
+        its machine, and a machine that does not answer shown as `reachable: false` with its sessions missing."""
+        named = _label(call.arguments)
+        chosen = machines.choose(held, named)
+        assert chosen is not None
+        if len(held) == 1 or named:
+            found = await services.get(Bridge).sessions(chosen.access)
+            return bench_results.ok(call, started, {"sessions": [_row(s, chosen.label) for s in found.sessions],
+                                                    "roots": None if found.roots is None else list(found.roots)},
+                                    rows=len(found.sessions))
+        rows: list[dict[str, object]] = []
+        shown: list[dict[str, object]] = []
+        for m in held:
+            try:
+                found = await services.get(Bridge).sessions(m.access)
+            except BridgeFailed as e:
+                logs.info(log, "claude_code.machine_failed", connection=m.connection_id, reason=e.reason)
+                shown.append({"machine": m.label, "roots": None, "reachable": False})
+                continue
+            rows += [_row(s, m.label) for s in found.sessions]
+            shown.append({"machine": m.label, "roots": None if found.roots is None else list(found.roots),
+                          "reachable": True})
+        return bench_results.ok(call, started, {"sessions": rows, "machines": shown}, rows=len(rows),
+                                machines=len(held))
 
-    async def _read(self, call: ToolCall, started: float, access: Access) -> ToolResult:
+    async def _read(self, call: ToolCall, started: float, machine: Machine) -> ToolResult:
+        access = machine.access
         lines = _lines(call.arguments, self._config)
         screen = await services.get(Bridge).read(access, _session(call.arguments), lines)
         text = screen.text
@@ -149,7 +189,8 @@ class ClaudeCodeTools(Tools):
         return bench_results.ok(call, started, end(cut.fit(len(text), end, self._result_chars)),
                                 lines=lines, bytes=len(text.encode()))
 
-    async def _prompt(self, call: ToolCall, started: float, access: Access) -> ToolResult:
+    async def _prompt(self, call: ToolCall, started: float, machine: Machine) -> ToolResult:
+        access = machine.access
         text = _string(call.arguments, "text", self._config.prompt_chars)
         session = _session(call.arguments)
         before = await state_of(access, session)
@@ -157,25 +198,38 @@ class ClaudeCodeTools(Tools):
         watched = before is not None and await watching(self._household, self._person, self._bench, before)
         return bench_results.ok(call, started, {"sent": True, "watched": watched}, chars=len(text))
 
-    async def _start(self, call: ToolCall, started: float, access: Access) -> ToolResult:
+    async def _start(self, call: ToolCall, started: float, machine: Machine) -> ToolResult:
+        access = machine.access
         args = call.arguments
         model = _string(args, "model", 100, required=False)
         made = await services.get(Bridge).start(access, _string(args, "dir", 500), _string(args, "label", 64),
                                                 model or None)
         watched = await watching(self._household, self._person, self._bench, made)
-        return bench_results.ok(call, started, {**_row(made), "watched": watched}, status=made.status)
+        return bench_results.ok(call, started, {**_row(made, machine.label), "watched": watched}, status=made.status)
 
-    async def _close(self, call: ToolCall, started: float, access: Access) -> ToolResult:
-        await services.get(Bridge).close(access, _session(call.arguments))
+    async def _close(self, call: ToolCall, started: float, machine: Machine) -> ToolResult:
+        await services.get(Bridge).close(machine.access, _session(call.arguments))
         return bench_results.ok(call, started, {"closed": True})
 
-    def _runner(self, name: str) -> Callable[[ToolCall, float, Access], Awaitable[ToolResult]]:
-        return {SESSIONS: self._sessions, READ: self._read, PROMPT: self._prompt, START: self._start,
-                CLOSE: self._close}[name]
+    def _runner(self, name: str) -> Callable[[ToolCall, float, Machine], Awaitable[ToolResult]]:
+        return {READ: self._read, PROMPT: self._prompt, START: self._start, CLOSE: self._close}[name]
 
 
-def _row(s: Session) -> dict[str, object]:
-    return {"id": s.id, "label": s.label, "dir": s.dir, "status": s.status, "last_typed_at": s.last_typed_at}
+def _row(s: Session, machine: str) -> dict[str, object]:
+    return {"id": s.id, "machine": machine, "label": s.label, "dir": s.dir, "status": s.status,
+            "last_typed_at": s.last_typed_at}
+
+
+def _label(args: Mapping[str, object]) -> str | None:
+    value = _string(args, "machine", 40, required=False)
+    return value or None
+
+
+def _machine(args: Mapping[str, object], held: tuple[Machine, ...]) -> Machine:
+    """The machine a call acts on: the one named, else the person's only one. Raises BadArguments, MachineRefused."""
+    chosen = machines.choose(held, _label(args), must_name=True)
+    assert chosen is not None
+    return chosen
 
 
 def _string(args: Mapping[str, object], name: str, longest: int, required: bool = True) -> str:

@@ -1,15 +1,15 @@
-"""The `claude_session` kind: a person's Claude Code sessions on their herdr bridge. One `Bridge.sessions` call serves
-every watch of the person; a watch keeps only its target, an item keyed by session id with the kind's tracked
-fields. A target the bridge no longer lists reads as no items, which is gone."""
+"""The `claude_session` kind: a person's Claude Code sessions on their herdr bridges, one per machine. One
+`Bridge.sessions` call per machine serves every watch of the person; a watch keeps only its target, an item keyed by
+session id (unique across machines) with the kind's tracked fields. A target no machine lists reads as no items, which
+is gone, unless a machine did not answer: the session may be on it, so the watch reads as failed instead."""
 
 from collections.abc import Mapping, Sequence
 
 from .. import services
 from ..criteria.record import Change
-from ..connections import ports
-from ..connections.connections import Connections
+from ..herdr import machines
 from ..herdr.bridge import Bridge
-from ..herdr.model import Access, BridgeFailed, Reason, Session
+from ..herdr.model import BridgeFailed, Reason, Session
 from .config import CONFIG
 from .diff import Items, to_items
 from .kinds import Kind
@@ -39,10 +39,8 @@ class ClaudeSession(Kind):
 
     async def read(self, group: Sequence[Watch]) -> Mapping[int, Read]:
         first = group[0]
-        listed = await _listed(first.household_id, first.person_id)
-        if isinstance(listed, ReadFailed):
-            return _all(group, listed)
-        return {w.id: items_of(w.target, listed.get(w.target)) for w in group}
+        listed, failed = await _listed(first.household_id, first.person_id)
+        return {w.id: items_of(w.target, listed[w.target]) if w.target in listed else failed or {} for w in group}
 
     def said(self, watch: Watch, changes: Sequence[Change]) -> str:
         return f"Claude Code session {watch.label}: {_status(changes)}"
@@ -52,29 +50,28 @@ class ClaudeSession(Kind):
         return CLOSED_NOTE if status == "closed" else BLOCKED_NOTE if status == "blocked" else DONE_NOTE
 
     async def available(self, household_id: int, person_id: int) -> bool:
-        return await ports.opened(services.get(Connections), "herdr", household_id, person_id) is not None
+        return bool(await machines.held(household_id, person_id))
 
     async def label(self, watch: Watch) -> str:
-        listed = await _listed(watch.household_id, watch.person_id)
-        session = None if isinstance(listed, ReadFailed) else listed.get(watch.target)
+        listed, _ = await _listed(watch.household_id, watch.person_id)
+        session = listed.get(watch.target)
         return watch.target if session is None else session.label
 
 
-async def _listed(household_id: int, person_id: int) -> dict[str, Session] | ReadFailed:
-    """The person's sessions by id, or why the bridge could not say."""
-    opened = await ports.opened(services.get(Connections), "herdr", household_id, person_id)
-    if opened is None:
-        return ReadFailed("not_connected")
-    try:
-        access = Access.of(opened.connection.base_url, opened.secret, person_id)
-        found = await services.get(Bridge).sessions(access)
-    except BridgeFailed as e:
-        return ReadFailed(_REASONS.get(e.reason, "bad_result"))
-    return {s.id: s for s in found.sessions}
-
-
-def _all(group: Sequence[Watch], failed: ReadFailed) -> Mapping[int, Read]:
-    return {w.id: failed for w in group}
+async def _listed(household_id: int, person_id: int) -> tuple[dict[str, Session], ReadFailed | None]:
+    """The sessions by id of the machines that answered, and why the first that did not could not say (`not_connected`
+    when the person holds no machine)."""
+    held = await machines.held(household_id, person_id)
+    if not held:
+        return {}, ReadFailed("not_connected")
+    found: dict[str, Session] = {}
+    failed: ReadFailed | None = None
+    for machine in held:
+        try:
+            found |= {s.id: s for s in (await services.get(Bridge).sessions(machine.access)).sessions}
+        except BridgeFailed as e:
+            failed = failed or ReadFailed(_REASONS.get(e.reason, "bad_result"))
+    return found, failed
 
 
 def _status(changes: Sequence[Change]) -> str:

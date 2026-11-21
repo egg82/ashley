@@ -6,9 +6,11 @@ import { FAILED_MS, follow, sessionOf, type Follow, type Shown } from './session
 const ID = '0a1b2c3d-0000-4000-8000-00000000abcd';
 
 test('a session body names its session; anything else names none', () => {
-  assert.equal(sessionOf(JSON.stringify({ source: 'herdr', session: ID })), ID);
+  assert.deepEqual(sessionOf(JSON.stringify({ source: 'herdr', session: ID })), { id: ID, machine: null });
+  assert.deepEqual(sessionOf(JSON.stringify({ source: 'herdr', session: ID, machine: 'laptop' })), { id: ID, machine: 'laptop' });
   for (const body of ['', 'x', '[]', JSON.stringify({ session: ID }), JSON.stringify({ source: 'tmux', session: ID }),
-    JSON.stringify({ source: 'herdr', session: ID.toUpperCase() }), JSON.stringify({ source: 'herdr', session: `../${ID}` })]) {
+    JSON.stringify({ source: 'herdr', session: ID.toUpperCase() }), JSON.stringify({ source: 'herdr', session: `../${ID}` }), JSON.stringify({ source: 'herdr', session: ID, machine: '' }),
+    JSON.stringify({ source: 'herdr', session: ID, machine: 7 })]) {
     assert.equal(sessionOf(body), null, body);
   }
 });
@@ -27,7 +29,7 @@ function scripted(answers: (SessionScreen | Error)[], hiddenFor = 0) {
   let shownWaits = 0;
   const deps: Follow = {
     read: async (session, s) => {
-      assert.equal(session, ID);
+      assert.equal(session.id, ID);
       seen.push(s);
       const next = answers.shift()!;
       if (next instanceof Error) throw next;
@@ -40,7 +42,7 @@ function scripted(answers: (SessionScreen | Error)[], hiddenFor = 0) {
     visible: () => hidden === 0,
     shown: async () => { shownWaits += 1; hidden -= 1; },
   };
-  const done = follow(ID, (s) => shown.push(s), deps, stop.signal);
+  const done = follow({ id: ID, machine: null }, (s) => shown.push(s), deps, stop.signal);
   return { done, seen, waits, shown, shownWaits: () => shownWaits };
 }
 
@@ -80,6 +82,6 @@ test('an aborted follow asks nothing', async () => {
   const stop = new AbortController();
   stop.abort();
   let asked = 0;
-  await follow(ID, () => {}, { read: async () => { asked += 1; return live('x', 'a'); }, wait: async () => {}, visible: () => true, shown: async () => {} }, stop.signal);
+  await follow({ id: ID, machine: null }, () => {}, { read: async () => { asked += 1; return live('x', 'a'); }, wait: async () => {}, visible: () => true, shown: async () => {} }, stop.signal);
   assert.equal(asked, 0);
 });

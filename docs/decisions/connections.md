@@ -73,10 +73,14 @@ same family's accounts; one HA is the one house), so a key per person would add 
 - Rejected: refusing private or internal base URLs. A household's own services resolve to private addresses on
   split-horizon DNS (a Sure instance on a public name can resolve to a home-network address from her pods), and the caller is a
   signed-in member of that household.
-- **How many connections of a kind one owner may hold is the kind's `most`, one for every kind today.** No case
-  needs more: each one looked at is another kind (Gmail beside Proton, GitHub beside a local GitLab), a
-  resource inside one connection (a person's mailboxes or calendars), or a personal kind's one per person (a herdr
-  per person's machine). A connection is addressed by its id and carries its owner's label (at most 40 characters,
+- **How many connections of a kind one owner may hold is the kind's `most`, one for every kind but herdr.** Most
+  cases looked at are another kind (Gmail beside Proton, GitHub beside a local GitLab) or a resource inside one
+  connection (a person's mailboxes or calendars). herdr is four: each of a person's machines (her VM, a workstation,
+  a laptop) runs its own bridge, and four covers those with one to spare. A herdr connection's label is its machine's
+  name, and every caller goes through `ashley.herdr.machines`: a tool names the machine by label (required when the
+  person holds several, and a label that is not the person's own is refused `unknown_machine`), a watch or focus read
+  looks across all of them, and a caller that names none (a bench job, a piece with no `machine`) gets the first made,
+  which stays the same when a machine is added. A connection is addressed by its id and carries its owner's label (at most 40 characters,
   unique per owner and kind), the owner being the household or, for a personal kind, the person. Adding past `most`
   is 409 `too_many` and a taken label 409 `label_taken`. A second account of one kind is that kind's `most`
   raised and its tools asking which one by label; storage, routes, the room and the service need no change.

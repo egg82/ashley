@@ -1,4 +1,5 @@
-"""The person's herdr bridge as a Claude Code job needs it: whether a job may start there (`ready`), and the access a
+"""The person's herdr bridge as a Claude Code job needs it (their default machine, the first made, whatever others
+they hold: a job has no machine of its own yet): whether a job may start there (`ready`), and the access a
 running job calls it with (`access_of`). `ready` raises `NotReady("herdr_unavailable")` for a bridge that does not
 answer, which hands a Claude Code job off `waiting`. A bridge is ready when the person has connected one, it answers, reports the
 `files` capability, and was set up with roots to start a session under."""
@@ -6,8 +7,8 @@ answer, which hands a Claude Code job off `waiting`. A bridge is ready when the 
 from typing import Literal
 
 from .. import services
-from ..connections import ports
-from ..connections.connections import Connections, ConnectionsUnavailable
+from ..connections.connections import ConnectionsUnavailable
+from ..herdr import machines
 from ..herdr.bridge import Bridge
 from ..herdr.model import Access, BridgeFailed
 
@@ -24,8 +25,8 @@ class NotReady(Exception):
 async def access_of(household_id: int, person_id: int) -> Access | None:
     """The access for the person's bridge, None when they have connected none. Raises ConnectionsUnavailable and
     BridgeFailed (`unexpected`) for an address that is not a bridge's."""
-    opened = await ports.opened(services.get(Connections), "herdr", household_id, person_id)
-    return None if opened is None else Access.of(opened.connection.base_url, opened.secret, person_id)
+    chosen = machines.choose(await machines.held(household_id, person_id), None)
+    return None if chosen is None else chosen.access
 
 
 async def ready(household_id: int, person_id: int) -> Access:
