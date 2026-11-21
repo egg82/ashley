@@ -18,16 +18,18 @@ into eight shards that each take every eighth test file in name order; the pyrig
 `app/tools/ci_image_hash.py` with no flag), which the `test-image` job builds first when the tag is missing; Postgres,
 etcd and Dex join that container's network, so the suite reaches them on 127.0.0.1. Beside them it builds the app image (`app/Containerfile`) and the images
 other pods run, each tagged by a hash of what it bakes in (`app/tools/ci_image_hash.py` with `--look`, `--media`,
-`--cad` or `--bridge`) and built only when a registry lacks that tag:
+`--cad`, `--python` or `--bridge`) and built only when a registry lacks that tag:
 - the browser image `bench_look` runs its pods in (`deploy/look/Containerfile`: Playwright's image plus the matching
   `playwright` package);
 - the media image (`deploy/media/Containerfile`), which holds ffmpeg for the media pods (the test image holds it too, since
   the media runner's tests run it for real);
-- the image build123d model runs use (`deploy/cad/Containerfile`: Python slim, build123d pinned, and the helper
-  `deploy/cad/ashley_cad.py` with its print check `deploy/cad/ashley_print.py`). It holds build123d, which the `tests` job
+- the image build123d model runs use (`deploy/cad/Containerfile`: Python slim, build123d, gmsh and scikit-fem pinned, and the helper
+  `deploy/cad/ashley_cad.py` with its print check `deploy/cad/ashley_print.py` and its weak-points study `deploy/cad/ashley_fea.py`). It holds build123d, which the `tests` job
   does not, so the helper's tests (`deploy/cad/test_ashley_*.py`, `unittest`) run in that image as the sandbox runs it
   (read-only root, no network, uid 65534), over real model files (`app/tests/cad_models/`, sources beside them) with the
   print settings the app ships (`app/ashley/workshop/print.json`);
+- the science image Python runs use when `PYTHON_IMAGE` is set (`deploy/python-run/Containerfile`: the stock Alpine Python
+  with numpy, scipy, sympy and trimesh at exact versions, all from wheels), hashed by that file alone;
 - the Proton Mail Bridge image (`deploy/mail-bridge/Containerfile`), whose keeper test runs in the image against a real
   Bridge, read-only as the pod runs it.
 
