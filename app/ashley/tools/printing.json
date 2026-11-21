@@ -1,8 +1,10 @@
 {
   "timeout_s": 10,
+  "upload_timeout_s": 120,
   "printers_max": 10,
   "spools_max": 50,
   "files_default": 20,
   "files_max": 100,
-  "search_chars": 100
+  "search_chars": 100,
+  "placements_max": 16
 }

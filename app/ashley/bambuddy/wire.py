@@ -1,6 +1,6 @@
 """The parts of Bambuddy's JSON bodies she reads, as its OpenAPI document (v1.3.1) writes them: `PrinterResponse`,
 `PrinterStatus` with its `AMSUnit`, `AMSTray` and `HMSErrorResponse`, `SpoolResponse` (the shape the spoolman inventory
-routes document as `InventorySpool`), `SpoolmanSlotAssignmentEnriched` and `FileListResponse`. The document gives
+routes document as `InventorySpool`), `SpoolmanSlotAssignmentEnriched`, `FileListResponse`, `FileUploadResponse` and `PrintQueueItemResponse`. The document gives
 `GET /printers/`, the spoolman inventory spools and a file's filament requirements no response schema; those are read as
 the shapes its descriptions name, every field they might leave out optional. Fields she does not read are ignored.
 `parsed` turns a body into one of these or raises BambuddyFailed (`not_bambuddy`)."""
@@ -110,6 +110,16 @@ class Filament(BaseModel):
 
 class Requirements(BaseModel):
     filaments: list[Filament] = []
+
+
+class QueueItem(BaseModel):
+    id: int
+    position: int | None = None
+
+
+class Upload(BaseModel):
+    id: int
+    duplicate_of: int | None = None
 
 
 M = TypeVar("M", bound=BaseModel)

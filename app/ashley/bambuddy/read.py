@@ -1,7 +1,9 @@
 """How the adapters read Bambuddy for a household: its connection opened by port, one GET parsed into a wire shape, the
 connection's `checked_at` moved when it answered. Failures leave as the caller's own exception, built by `fail`."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
+from typing import Literal
+
 from pydantic import BaseModel
 
 from .. import services
@@ -12,8 +14,12 @@ from . import wire
 from .client import Bambuddy, BambuddyFailed, Reason
 
 
+Turned = Literal["not_found", "rejected"]
+"""A write Bambuddy turned away: the record it names is not there, or it would not accept what was sent."""
+
+
 class Reader:
-    """Reads for one port: `unavailable`, `not_connected` and `failed` build the port's own exceptions."""
+    """Reads and writes for one port: `unavailable`, `not_connected` and `failed` build the port's own exceptions."""
 
     def __init__(self, port: Port, unavailable: Callable[[], Exception], not_connected: Callable[[], Exception],
                  failed: Callable[[Reason], Exception]) -> None:
@@ -37,6 +43,32 @@ class Reader:
         except BambuddyFailed as e:
             if e.reason == "not_found":
                 return None
+            raise self._failed(e.reason) from e
+        await answered.record(opened.connection.id)
+        return got
+
+    async def post[M: BaseModel](self, opened: Opened, path: str, body: Mapping[str, object],
+                                 model: type[M]) -> M | Turned:
+        """What Bambuddy answers a JSON POST at `path`; `not_found` or `rejected` when it turned the write away so.
+        Raises the port's failure."""
+        connection, secret = opened.connection, opened.secret
+        return await self._written(opened, model,
+                                   services.get(Bambuddy).post(connection.base_url, secret, path, body))
+
+    async def upload[M: BaseModel](self, opened: Opened, path: str, name: str, data: bytes,
+                                   model: type[M]) -> M | Turned:
+        """As `post`, for the file `name` of `data` sent as a multipart upload."""
+        connection, secret = opened.connection, opened.secret
+        return await self._written(opened, model, services.get(Bambuddy).upload(connection.base_url, secret, path, name,
+                                                                                 data))
+
+    async def _written[M: BaseModel](self, opened: Opened, model: type[M],
+                                     sent: Awaitable[object]) -> M | Turned:
+        try:
+            got = wire.parsed(model, await sent)
+        except BambuddyFailed as e:
+            if e.reason in ("not_found", "rejected"):
+                return e.reason
             raise self._failed(e.reason) from e
         await answered.record(opened.connection.id)
         return got

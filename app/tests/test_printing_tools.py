@@ -6,6 +6,7 @@ tools are offered to a known speaker in any chat."""
 import asyncio
 import json
 from collections.abc import Iterator
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -153,6 +154,14 @@ def test_the_tools_are_offered_to_a_known_speaker_in_any_chat(fake: FakeBambuddy
                         audience="present", speaker_id=1, shared=True, place="kitchen", channel="voice", heard_as=1)
     assert {"printing", "stock"} <= named(web) and {"printing", "stock"} <= named(satellite)
     assert "money" not in named(satellite)
+    assert {"print_queue", "print_upload"} & named(satellite) == set() and {"print_queue"} <= named(web)
+
+
+def test_the_queue_is_offered_where_the_reply_is_theirs_alone_and_the_upload_only_on_a_bench(fake: FakeBambuddy) -> None:
+    web = chat.inbound_from(SignedIn(3, Person(1, HOME, "Alana")), ChatRequest(text="queue it"))
+    assert "print_queue" in named(web) and "print_upload" not in named(web)
+    on_bench = replace(web, bench_id=5)
+    assert {"print_queue", "print_upload"} <= named(on_bench)
 
 
 def test_they_are_not_offered_without_the_apps_key() -> None:

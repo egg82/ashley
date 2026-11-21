@@ -2,7 +2,8 @@
 units (`GET /api/v1/printers/` then `GET /api/v1/printers/:id/status` for each), which spool the household says sits in
 each slot (`GET /api/v1/spoolman/inventory/slot-assignments/all`), the print library (`GET /api/v1/library/files`) and one
 file's filament needs (`GET /api/v1/library/files/:id/filament-requirements`), turned from `wire`'s shapes into the
-printing records. Every answered call moves the connection's `checked_at`. Nothing outside this module, `wire` and
+printing records; and its two writes, a print put in the queue staged (`POST /api/v1/queue/`, `queueing`) and a file
+added to the library (`POST /api/v1/library/files`). Every answered call moves the connection's `checked_at`. Nothing outside this module, `wire` and
 `colour` knows Bambuddy's field names. A read that cannot say which spool is in a slot (Bambuddy has no Spoolman) logs
 `bambuddy.assignments_skipped` with the connection id and leaves `Slot.spool_id` None."""
 
@@ -13,16 +14,17 @@ from urllib.parse import quote
 from .. import logs
 from ..connections.model import Opened
 from ..printing.model import (AmsUnit, Fault, NotConnected, Need, Page, PrintFile, Printer, PrintingFailed,
-                              PrintingUnavailable, Reason, Slot)
+                              PrintingUnavailable, QueueRequest, Queueing, Reason, Slot, Uploading)
 from ..printing.printing import Printing
-from . import wire
+from . import queueing, wire
 from .client import Reason as BambuddyReason
 from .colour import hex_of
 from .read import Reader
 
 log = logging.getLogger("ashley.bambuddy")
 _REASON: dict[BambuddyReason, Reason] = {"refused": "refused", "unreachable": "unreachable",
-                                         "not_bambuddy": "unrecognised", "not_found": "unrecognised"}
+                                         "not_bambuddy": "unrecognised", "not_found": "unrecognised",
+                                         "rejected": "unrecognised"}
 _READER = Reader("printing", PrintingUnavailable, NotConnected, lambda r: PrintingFailed(_REASON[r]))
 _Held = dict[tuple[int, int, int], str]
 """The spool id of each (printer, AMS unit, tray) the household has recorded."""
@@ -60,6 +62,41 @@ class BambuddyPrinting(Printing):
             return None
         return tuple(Need(slot=f.slot_id, material=f.type, colour=hex_of(f.color), grams=f.used_grams)
                      for f in got.filaments)
+
+    async def file(self, household_id: int, file_id: str) -> PrintFile | None:
+        opened = await _READER.need(household_id)
+        if (number := queueing.number(file_id)) is None:
+            return None
+        got = await _READER.get(opened, f"/api/v1/library/files/{number}", {}, wire.File)
+        return None if got is None else _file_from(got)
+
+    async def queue(self, household_id: int, request: QueueRequest) -> Queueing:
+        opened = await _READER.need(household_id)
+        printer, file = queueing.number(request.printer_id), queueing.number(request.file_id)
+        if printer is None or file is None:
+            return Queueing("not_found")
+        mapping = None
+        if request.placements:
+            status = await _READER.get(opened, f"/api/v1/printers/{printer}/status", {}, wire.Status)
+            if status is None:
+                return Queueing("not_found")
+            if (mapping := queueing.mapping_of(status, request.placements)) is None:
+                return Queueing("rejected")
+        put = await _READER.post(opened, "/api/v1/queue/", queueing.body_of(request, printer, file, mapping),
+                                 wire.QueueItem)
+        if isinstance(put, str):
+            return Queueing(put)
+        return Queueing("queued", str(put.id), put.position)
+
+    async def upload(self, household_id: int, name: str, data: bytes) -> Uploading:
+        opened = await _READER.need(household_id)
+        put = await _READER.upload(opened, "/api/v1/library/files", name, data, wire.Upload)
+        if put == "not_found":
+            raise PrintingFailed("unrecognised")
+        if put == "rejected":
+            return Uploading("rejected")
+        assert not isinstance(put, str)
+        return Uploading("uploaded", str(put.duplicate_of or put.id), put.duplicate_of is not None)
 
 
 async def _status(opened: Opened, printer_id: int) -> wire.Status:

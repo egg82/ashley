@@ -1,12 +1,13 @@
 """The Printing service (`ashley.services`): a household's printers, their AMS units, its print library and what a file
-needs, as neutral records (`model`), read from whichever manager runs them. It only reads: queuing a print is a change
-that waits for a person's OK and is not here yet. Callers import this module and `model`; the adapter (for Bambuddy,
-`ashley.bambuddy.printing`) lives with its backend."""
+needs, as neutral records (`model`), read from whichever manager runs them. It changes two things: a print put in the
+queue (`queue`, always staged) and a file added to the library (`upload`). Its callers offer queuing only as a change held
+for the person's OK, shown first from `file` and `printers` (`ashley.tools.printing_queue`). Callers import this module and
+`model`; the adapter (for Bambuddy, `ashley.bambuddy.printing`) lives with its backend."""
 
 from abc import abstractmethod
 
 from ..services import Service
-from .model import NotConnected, Need, Page, PrintFile, Printer
+from .model import NotConnected, Need, Page, PrintFile, Printer, QueueRequest, Queueing, Uploading
 
 
 class Printing(Service):
@@ -33,6 +34,21 @@ class Printing(Service):
         """The filaments the library file `file_id` needs, None when the library has no such file. Raises PrintingFailed,
         PrintingUnavailable, NotConnected."""
 
+    @abstractmethod
+    async def file(self, household_id: int, file_id: str) -> PrintFile | None:
+        """The library file `file_id`, None when the library has no such file. Raises PrintingFailed,
+        PrintingUnavailable, NotConnected."""
+
+    @abstractmethod
+    async def queue(self, household_id: int, request: QueueRequest) -> Queueing:
+        """Put a print in the queue, staged: it starts only when a person starts it in the manager. Raises
+        PrintingFailed (`refused` for a key that may not queue), PrintingUnavailable, NotConnected."""
+
+    @abstractmethod
+    async def upload(self, household_id: int, name: str, data: bytes) -> Uploading:
+        """Add a file to the library under `name`. Raises PrintingFailed (`refused` for a key that may not manage the
+        library), PrintingUnavailable, NotConnected."""
+
 
 class NullPrinting(Printing):
     """No household has a printing manager."""
@@ -47,4 +63,13 @@ class NullPrinting(Printing):
         raise NotConnected
 
     async def needs(self, household_id: int, file_id: str) -> tuple[Need, ...] | None:
+        raise NotConnected
+
+    async def file(self, household_id: int, file_id: str) -> PrintFile | None:
+        raise NotConnected
+
+    async def queue(self, household_id: int, request: QueueRequest) -> Queueing:
+        raise NotConnected
+
+    async def upload(self, household_id: int, name: str, data: bytes) -> Uploading:
         raise NotConnected

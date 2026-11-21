@@ -11,7 +11,8 @@ from .colour import hex_of
 from .read import Reader
 
 _REASON: dict[BambuddyReason, Reason] = {"refused": "refused", "unreachable": "unreachable",
-                                         "not_bambuddy": "unrecognised", "not_found": "unrecognised"}
+                                         "not_bambuddy": "unrecognised", "not_found": "unrecognised",
+                                         "rejected": "unrecognised"}
 
 _READER = Reader("stock", StockUnavailable, NotConnected, lambda r: StockFailed(_REASON[r]))
 

@@ -24,8 +24,8 @@ INSTRUCTIONS = ("The printing tools read the household's 3D printing in Bambuddy
                 "amount left with the unit's humidity, the print library and the filaments a library file needs. "
                 "Colours are hex. Slots count from 1. A slot's spool_id is the spool the household recorded in it, as "
                 "stock_spools gives it. Humidity is the AMS's own reading; say it as given. You can suggest which spool "
-                "to swap into which slot for a file's needs, but you cannot change a slot, start a print or queue one: "
-                "a person does that at the printer.")
+                "to swap into which slot for a file's needs, but you cannot change a slot or start a print: a person "
+                "does that at the printer.")
 
 
 def specs(config: PrintingConfig) -> tuple[ToolSpec, ...]:

@@ -54,7 +54,7 @@ def test_the_key_goes_in_the_api_key_header_and_only_reads_are_made(fake: FakeBa
         methods.append(request.method)
         return fake.handle(request)
 
-    client = HttpBambuddy(httpx2.AsyncClient(transport=httpx2.MockTransport(handle)), 5)
+    client = HttpBambuddy(httpx2.AsyncClient(transport=httpx2.MockTransport(handle)), 5, 5)
     assert run(client.get(BASE, KEY, "/api/v1/printers/", {})) == fake.answers["/api/v1/printers/"]
     assert methods == ["GET"] and fake.seen == [("/api/v1/printers/", {}, KEY)]
 

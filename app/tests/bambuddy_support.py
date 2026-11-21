@@ -2,9 +2,16 @@
 (v1.3.1) gives them: `PrinterResponse`, `PrinterStatus` with `AMSUnit`/`AMSTray`/`HMSErrorResponse`, `FileListResponse`,
 `SpoolmanSlotAssignmentEnriched`, and, where the document gives no schema (the spoolman inventory spools, a file's filament
 requirements), the shape its descriptions name. No live response was captured. Printer names, serials and hosts are made up.
-Every request is recorded with its path, query and `X-API-Key` header; one without the key is 401."""
+Every request is recorded with its path, query and `X-API-Key` header; one without the key is 401.
+
+The two writes follow the document too: `POST /api/v1/queue/` takes `PrintQueueItemCreate` (a body naming a field the
+schema lacks, or a field of the wrong type, is 422) and answers a `PrintQueueItemResponse`; `POST /api/v1/library/files`
+takes the multipart `file` of `Body_upload_file_api_v1_library_files_post` and answers a `FileUploadResponse`, `duplicate_of`
+naming the earlier file when the same bytes came before. The document does not say which files the queue turns away, nor
+which types an upload does; the fake turns away a file in `unsliced` (422) and an upload whose name ends `.exe` (415)."""
 
 import json
+import re
 from dataclasses import dataclass, field
 
 import httpx2
@@ -52,6 +59,19 @@ def library_file(id_: int, name: str, created: str = "2026-11-01T00:00:00") -> d
             "print_time_seconds": 3600, "filament_used_grams": 12.5, "sliced_for_model": "X1C"}
 
 
+QUEUE_FIELDS: dict[str, tuple[type, ...]] = {
+    "printer_id": (int, type(None)), "target_model": (str, type(None)), "library_file_id": (int, type(None)),
+    "archive_id": (int, type(None)), "manual_start": (bool,), "ams_mapping": (list, type(None)),
+    "plate_id": (int, type(None)), "require_previous_success": (bool,), "auto_off_after": (bool,),
+    "skip_filament_check": (bool,), "quantity": (int,), "use_ams": (bool,)}
+"""The `PrintQueueItemCreate` fields the adapter may send, each with the JSON types the schema gives it."""
+
+
+def _typed(value: object, types: tuple[type, ...]) -> bool:
+    """JSON-typed: a bool is not an integer."""
+    return isinstance(value, types) and not (isinstance(value, bool) and bool not in types)
+
+
 def bodies() -> dict[str, object]:
     return {
         "/api/v1/printers/": [printer()],
@@ -64,6 +84,7 @@ def bodies() -> dict[str, object]:
                                                                                               location="")],
         "/api/v1/library/files": [library_file(1, "Benchy", "2026-10-01T00:00:00"), library_file(2, "Phone stand"),
                                   library_file(3, "Benchy Boat Mk2", "2026-11-10T00:00:00")],
+        "/api/v1/library/files/2": library_file(2, "Phone stand"),
         "/api/v1/library/files/2/filament-requirements": {
             "file_id": 2, "filename": "Phone stand.3mf", "filaments": [
                 {"slot_id": 1, "type": "PLA", "color": "#FF0000", "used_grams": 10.5},
@@ -83,6 +104,10 @@ class FakeBambuddy:
     missing: set[str] = field(default_factory=set[str])
     forbidden: set[str] = field(default_factory=set[str])
     seen: list[tuple[str, dict[str, str], str | None]] = field(default_factory=list[tuple[str, dict[str, str], str | None]])
+    queued: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
+    uploaded: list[tuple[str, bytes]] = field(default_factory=list[tuple[str, bytes]])
+    unsliced: set[int] = field(default_factory=set[int])
+    refused_types: tuple[str, ...] = (".exe",)
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         self.seen.append((request.url.raw_path.split(b"?")[0].decode(), dict(request.url.params), request.headers.get("x-api-key")))
@@ -95,13 +120,51 @@ class FakeBambuddy:
         path = request.url.raw_path.split(b"?")[0].decode()
         if path in self.forbidden:
             return httpx2.Response(403, json={"detail": "missing permission"})
+        if request.method == "POST":
+            return self.write(path, request)
         body = self.answers.get(path)
         if body is None or path in self.missing:
             return httpx2.Response(404, json={"detail": "Not Found"})
         return httpx2.Response(200, content=json.dumps(body).encode(), headers={"content-type": "application/json"})
 
+    def write(self, path: str, request: httpx2.Request) -> httpx2.Response:
+        if path == "/api/v1/queue/":
+            return self.enqueue(request)
+        if path == "/api/v1/library/files":
+            return self.add_file(request)
+        return httpx2.Response(404, json={"detail": "Not Found"})
+
+    def enqueue(self, request: httpx2.Request) -> httpx2.Response:
+        sent = json.loads(request.content)
+        wrong = [k for k, v in sent.items() if k not in QUEUE_FIELDS or not _typed(v, QUEUE_FIELDS[k])]
+        mapping: list[object] = sent.get("ams_mapping") or []
+        if wrong or any(not _typed(n, (int,)) for n in mapping):
+            return httpx2.Response(422, json={"detail": [{"loc": ["body", *wrong], "msg": "invalid"}]})
+        file, printer = sent.get("library_file_id"), sent.get("printer_id")
+        if f"/api/v1/library/files/{file}" not in self.answers or f"/api/v1/printers/{printer}/status" not in self.answers:
+            return httpx2.Response(404, json={"detail": "Not Found"})
+        if file in self.unsliced:
+            return httpx2.Response(422, json={"detail": "Only sliced files can be queued"})
+        self.queued.append(sent)
+        return httpx2.Response(200, json={**sent, "id": 100 + len(self.queued), "position": len(self.queued),
+                                          "status": "pending", "waiting_reason": None, "created_at": "2026-11-20T00:00:00"})
+
+    def add_file(self, request: httpx2.Request) -> httpx2.Response:
+        named = re.search(rb'filename="([^"]+)"', request.content)
+        assert named is not None and b'name="file"' in request.content, "the upload is the multipart field `file`"
+        name = named.group(1).decode()
+        if name.lower().endswith(self.refused_types):
+            return httpx2.Response(415, json={"detail": "Unsupported file type"})
+        data = request.content.split(b"\r\n\r\n", 1)[1].rsplit(b"\r\n--", 1)[0]
+        earlier = next((i for i, (_, d) in enumerate(self.uploaded) if d == data), None)
+        self.uploaded.append((name, data))
+        return httpx2.Response(200, json={
+            "id": 500 + len(self.uploaded), "filename": name, "file_type": name.rsplit(".", 1)[-1].lower(),
+            "file_size": len(data), "thumbnail_path": None, "metadata": None,
+            "duplicate_of": None if earlier is None else 501 + earlier})
+
     def client(self) -> HttpBambuddy:
-        return HttpBambuddy(httpx2.AsyncClient(transport=httpx2.MockTransport(self.handle), follow_redirects=False), 5)
+        return HttpBambuddy(httpx2.AsyncClient(transport=httpx2.MockTransport(self.handle), follow_redirects=False), 5, 5)
 
 
 def held(household: int) -> HeldConnections:
