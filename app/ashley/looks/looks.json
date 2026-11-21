@@ -9,6 +9,7 @@
   "max_image_pixels": 60000000,
   "min_region": 0.05,
   "max_looks_per_turn": 4,
+  "max_recordings": 10,
   "link_ttl_s": 120,
   "pod_deadline_s": 45,
   "ready_timeout_s": 20,

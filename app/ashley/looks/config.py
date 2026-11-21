@@ -1,6 +1,7 @@
 """The look tunables, data in `looks.json` beside this module: the screenshot's `width` and `height` (CSS pixels) and the tallest it is cut to (`max_height`) and
 `jpeg_quality`; the most bytes of a picture she is given (`max_image_bytes`, for an image piece's own bytes and for a
-screenshot alike) and the most looks one turn takes (`max_looks_per_turn`); how an image is made fit to be seen
+screenshot alike), the most looks one turn takes (`max_looks_per_turn`) and the most of a camera's recordings she is
+listed (`max_recordings`); how an image is made fit to be seen
 (`ashley.looks.pictures`): its longest side (`max_image_px`), the JPEG quality it is encoded at
 (`image_jpeg_quality`), the most pixels a source may hold before it is refused unread (`max_image_pixels`), and the
 smallest crop of it she may ask for, as a fraction of each side (`min_region`); how long the page's link lives
@@ -37,6 +38,7 @@ class LooksConfig:
     max_image_pixels: int
     min_region: float
     max_looks_per_turn: int
+    max_recordings: int
     link_ttl_s: int
     pod_deadline_s: int
     ready_timeout_s: int

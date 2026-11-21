@@ -106,6 +106,7 @@ from .senses.postgres_wakes import PostgresWakes
 from .senses.presence import Presence
 from .senses.register_proposals import register as register_proposals
 from .senses.wakes import Wakes
+from .looks import config as looks_config
 from .looks.looks import Looks
 from .looks.postgres import PostgresLooks
 from .runs.postgres import PostgresRuns
@@ -323,7 +324,7 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     homes = ConnectedHomes(services.get(Connections))
     closers.append(homes.close)
     services.register(Homes, homes)
-    home_assistant_adapters.register()
+    home_assistant_adapters.register(looks_config.load().max_recordings)
     services.register(HeldStates, SocketStates())
     services.register(Presence, HomesPresence(services.get(People)))
     services.register(Calendar, HomesCalendar())
