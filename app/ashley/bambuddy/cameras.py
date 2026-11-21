@@ -8,7 +8,7 @@ logged. A printer's recordings are the timelapses of its print archives (`GET /a
 feed this port can pass on (its stream is motion JPEG), so a live look is `NoLiveFeed`. A printer's detector is its print
 failing: an archive whose `status` is `failed` (Bambuddy's own word, which is the detection's class), at its `completed_at`.
 Each `follow` pass, which the detection singleton makes every `tick_s`, reads the listed printers' archives and tells the
-failures that ended within the last few passes; the Detections record keeps one told twice from acting twice. Nothing here
+failures that ended within `detection.json`'s `failure_lookback_s`; the Detections record keeps one told twice from acting twice. Nothing here
 retries."""
 
 import base64
@@ -38,7 +38,7 @@ ARCHIVES_SEEN = 50
 FRAMES = 3
 WIDTH = 320
 FAILED = "failed"
-LOOKBACK = timedelta(seconds=3 * load().tick_s)
+LOOKBACK = timedelta(seconds=load().failure_lookback_s)
 
 log = logging.getLogger("ashley.bambuddy")
 _REASON: dict[BambuddyReason, Reason] = {"refused": "refused", "unreachable": "unreachable",
