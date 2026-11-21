@@ -17,14 +17,15 @@ class LooksUnavailable(Exception):
 @dataclass(frozen=True)
 class NewLook:
     """A look about to be kept: the household; the conversation, person turn and tool call that asked for it; the bench
-    and the piece looked at (None for the whole bench); and the picture, as its `sha256` in the object store, its
+    and the piece looked at (None for the whole bench; the bench is None for a look through a camera, which is on no bench);
+    and the picture, as its `sha256` in the object store, its
     `media_type` and `size`."""
 
     household_id: int
     conversation_id: int
     turn_id: int
     call_id: str
-    bench_id: int
+    bench_id: int | None
     piece_id: int | None
     sha256: str
     media_type: str
@@ -40,7 +41,7 @@ class Look:
     conversation_id: int
     turn_id: int
     call_id: str
-    bench_id: int
+    bench_id: int | None
     piece_id: int | None
     sha256: str
     media_type: str

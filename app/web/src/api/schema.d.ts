@@ -2630,7 +2630,7 @@ export interface components {
         /**
          * ChatLook
          * @description A picture she was given of a bench for a message, as the page shows it under her answer: of piece `piece_id`
-         *     of bench `bench_id`, or of the whole bench when `piece_id` is null. `url` is a link to the picture (same site, no
+         *     of bench `bench_id`, or of the whole bench when `piece_id` is null; a look through a camera has a null `bench_id`. `url` is a link to the picture (same site, no
          *     session needed) that stops working at `expires_at` (Unix seconds), so a page that stays open reads the
          *     conversation again before then; null when this process mints no links.
          */
@@ -2638,7 +2638,7 @@ export interface components {
             /** Id */
             id: number;
             /** Bench Id */
-            bench_id: number;
+            bench_id: number | null;
             /** Piece Id */
             piece_id: number | null;
             /** Media Type */
