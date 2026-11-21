@@ -77,7 +77,7 @@ def parse(response: Mapping[str, Any] | None, calendars: tuple[str, ...]) -> lis
     return out
 
 
-def _moment(value: object) -> date | datetime | None:
+def moment(value: object) -> date | datetime | None:
     if not isinstance(value, str):
         return None
     try:
@@ -91,8 +91,8 @@ def _text(value: object) -> str | None:
 
 
 def _event(row: JsonObject, calendar: str) -> Event | None:
-    title, start = row.get("summary"), _moment(row.get("start"))
+    title, start = row.get("summary"), moment(row.get("start"))
     if not isinstance(title, str) or start is None:
         return None
-    return Event(title.strip()[:TEXT_CHARS], start, _moment(row.get("end")), not isinstance(start, datetime),
+    return Event(title.strip()[:TEXT_CHARS], start, moment(row.get("end")), not isinstance(start, datetime),
                  _text(row.get("location")), calendar)
