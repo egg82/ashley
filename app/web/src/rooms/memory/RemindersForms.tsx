@@ -47,7 +47,7 @@ export function MethodForm({ r, onDone }: { r: Reminder; onDone: () => void }) {
       <label><span class="meta">Her method for it</span><KindSelect value={value} onChange={setValue} disabled={busy} /></label>
       <span class="rem-acts">
         <button class="btn sm primary" type="submit" disabled={busy || value === (r.method ?? NO_METHOD)}>Save</button>
-        <button class="btn sm ghost" type="button" disabled={busy} onClick={onDone}>Cancel</button>
+        <button class="btn sm ghost" type="button" disabled={busy} onClick={onDone}>Close</button>
       </span>
       {failed && <span class="err" role="alert">{failed}</span>}
     </form>

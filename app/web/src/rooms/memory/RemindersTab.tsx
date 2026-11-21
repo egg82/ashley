@@ -113,8 +113,8 @@ function Asking({ r }: { r: Reminder }) {
 
 function Setting() {
   const [open, setOpen] = useState(false);
-  return open ? <NewReminder onDone={() => setOpen(false)} /> : (
-    <div><button class="btn sm" type="button" onClick={() => setOpen(true)}>Set a reminder</button></div>
+  return open ? <div class="rem-set"><NewReminder onDone={() => setOpen(false)} /></div> : (
+    <div class="rem-set"><button class="btn sm" type="button" onClick={() => setOpen(true)}>Set a reminder</button></div>
   );
 }
 
