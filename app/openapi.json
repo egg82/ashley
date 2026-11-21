@@ -8548,6 +8548,16 @@
                 "type": "null"
               }
             ]
+          },
+          "wake": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PieceWake"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -8569,10 +8579,11 @@
           "pointer",
           "file",
           "site",
-          "recipe"
+          "recipe",
+          "wake"
         ],
         "title": "BenchPiece",
-        "description": "One piece of a bench, on its layout or its shelf. `id` is the `seq` of the command that added it. `piece_version` rises by one with every\nchange to its title or body; an edit names the version it was based on (`base_version`). `placement` is where it\nsits (on the shelf, where it sat when archived). `changed_by` is the `seq` of the last command\nthat added, edited, moved, archived or restored it, and `changed_at` and `changed_author` (`changed_person_id` for a person's, null\nfor hers) are when that command was decided and who made it, however long ago. `last_run` is the piece's latest\nrun, whoever ran it, null for a piece never run. `automation` is an automation piece's installing into Home\nAssistant (null for any other kind). `video` is a video piece's video, understood (null for any other kind, and\nfor a video piece with no body yet). `reader` is a reader piece's page, understood (null for any other kind, and for\na reader piece with no body yet), and `pointer` its highlight (null for none, or once the piece has changed since).\n`file` is an image or file piece's bytes, understood, with a short-lived link to them (null for any other kind).\n`site` is a site piece's address, measured (null for any other kind, and for a site piece with no address yet).\n`recipe` is a recipe piece's recipe, scaled for its headcount (null for any other kind, and for an empty body)."
+        "description": "One piece of a bench, on its layout or its shelf. `id` is the `seq` of the command that added it. `piece_version` rises by one with every\nchange to its title or body; an edit names the version it was based on (`base_version`). `placement` is where it\nsits (on the shelf, where it sat when archived). `changed_by` is the `seq` of the last command\nthat added, edited, moved, archived or restored it, and `changed_at` and `changed_author` (`changed_person_id` for a person's, null\nfor hers) are when that command was decided and who made it, however long ago. `last_run` is the piece's latest\nrun, whoever ran it, null for a piece never run. `automation` is an automation piece's installing into Home\nAssistant (null for any other kind). `video` is a video piece's video, understood (null for any other kind, and\nfor a video piece with no body yet). `reader` is a reader piece's page, understood (null for any other kind, and for\na reader piece with no body yet), and `pointer` its highlight (null for none, or once the piece has changed since).\n`file` is an image or file piece's bytes, understood, with a short-lived link to them (null for any other kind).\n`site` is a site piece's address, measured (null for any other kind, and for a site piece with no address yet).\n`recipe` is a recipe piece's recipe, scaled for its headcount (null for any other kind, and for an empty body).\n`wake` is a wake rule piece's senders (null for any other kind)."
       },
       "BenchRequest": {
         "properties": {
@@ -13685,15 +13696,23 @@
                 "type": "null"
               }
             ]
+          },
+          "unanswered_events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unanswered Events"
           }
         },
         "type": "object",
         "required": [
           "install_proposal",
-          "last_install"
+          "last_install",
+          "unanswered_events"
         ],
         "title": "PieceAutomation",
-        "description": "An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the\npiece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece\nnever installed)."
+        "description": "An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the\npiece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece\nnever installed). `unanswered_events` are the wake events the installed automation sends that no wake rule on an\nopen bench of the household answers: Home Assistant sends them and nothing happens (empty when it is not installed,\nsends none, or every one has a rule)."
       },
       "PieceFile": {
         "properties": {
@@ -14160,6 +14179,23 @@
         ],
         "title": "PieceVideo",
         "description": "A video piece's video: its `provider` (`youtube`, `vimeo`, or `file` for a direct media file), the `url` as\nwritten, the `embed_url` to frame (a `file`'s is its own url, to play in a video element) with the start already in\nit, and `start`, where it begins in whole seconds. A site's url is its body."
+      },
+      "PieceWake": {
+        "properties": {
+          "senders": {
+            "items": {
+              "$ref": "#/components/schemas/WakeSender"
+            },
+            "type": "array",
+            "title": "Senders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "senders"
+        ],
+        "title": "PieceWake",
+        "description": "A wake rule piece's `senders`: the automations installed in Home Assistant, as their latest install left them,\nwhose wake action names the rule's event. Empty when none does, or the piece holds no rule yet."
       },
       "PinRequest": {
         "properties": {
@@ -16760,6 +16796,37 @@
         ],
         "title": "WakeRequest",
         "description": "One wake from Home Assistant, as `rest_command.ashley_wake` sends it: structured fields only, so free text\ncannot arrive here. `event_id` is HA's id for this run of the automation (`{{ context.id }}`), which makes a\nretry the same wake; `event` the slug a wake rule answers; `who` the `person.*` entity it is about; `what` a slug\nof what it concerns; `when` when it happened, with its offset (now when absent)."
+      },
+      "WakeSender": {
+        "properties": {
+          "bench_id": {
+            "type": "integer",
+            "title": "Bench Id"
+          },
+          "piece_id": {
+            "type": "integer",
+            "title": "Piece Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bench_id",
+          "piece_id",
+          "title"
+        ],
+        "title": "WakeSender",
+        "description": "An installed automation that sends the rule's event: its piece `piece_id` on bench `bench_id`, named by `title`\non the viewer's own benches and null on another member's."
       },
       "WireAgreed": {
         "properties": {

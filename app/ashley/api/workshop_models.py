@@ -16,6 +16,7 @@ from .bench_embed_models import PieceVideo
 from .bench_file_models import PieceFile
 from .bench_reader_models import PiecePointer, PieceReader
 from .bench_recipe_models import PieceRecipe
+from .bench_wake_models import PieceWake
 from .bench_site_models import PieceSite
 from .bench_install_models import PieceAutomation
 from .bench_run_models import PieceRun
@@ -121,7 +122,8 @@ class BenchPiece(BaseModel):
     a reader piece with no body yet), and `pointer` its highlight (null for none, or once the piece has changed since).
     `file` is an image or file piece's bytes, understood, with a short-lived link to them (null for any other kind).
     `site` is a site piece's address, measured (null for any other kind, and for a site piece with no address yet).
-    `recipe` is a recipe piece's recipe, scaled for its headcount (null for any other kind, and for an empty body)."""
+    `recipe` is a recipe piece's recipe, scaled for its headcount (null for any other kind, and for an empty body).
+    `wake` is a wake rule piece's senders (null for any other kind)."""
 
     id: int
     kind: str
@@ -141,6 +143,7 @@ class BenchPiece(BaseModel):
     file: PieceFile | None
     site: PieceSite | None
     recipe: PieceRecipe | None
+    wake: PieceWake | None
 
 
 class LoggedCommand(BaseModel):

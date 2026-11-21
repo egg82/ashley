@@ -4,7 +4,7 @@ import type { BenchPiece } from '../../../api/types';
 import { inOrder, movedTo, ordered } from './layout.ts';
 
 const piece = (id: number, order: number): BenchPiece =>
-  ({ id, kind: 'note', title: `p${id}`, body: '', piece_version: 1, placement: { order, size: 'medium' }, changed_by: id, changed_at: '2026-10-29T12:00:00Z', changed_author: 'person', changed_person_id: 1, last_run: null, automation: null, video: null, reader: null, pointer: null, file: null, site: null, recipe: null });
+  ({ id, kind: 'note', title: `p${id}`, body: '', piece_version: 1, placement: { order, size: 'medium' }, changed_by: id, changed_at: '2026-10-29T12:00:00Z', changed_author: 'person', changed_person_id: 1, last_run: null, automation: null, video: null, reader: null, pointer: null, file: null, site: null, recipe: null, wake: null });
 
 test('pieces in their order', () => {
   assert.deepEqual(ordered([piece(3, 2), piece(1, 0), piece(2, 1)]).map((p) => p.id), [1, 2, 3]);

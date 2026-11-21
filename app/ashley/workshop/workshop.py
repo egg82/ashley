@@ -151,6 +151,7 @@ class Placed:
     piece_id: int
     version: int
     body: str
+    title: str = ""
 
 
 class Workshop(Service):

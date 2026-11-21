@@ -21,7 +21,7 @@ from ..home_assistant.homes import house_of
 from ..home_assistant.house import House, HouseRejected, HouseUnavailable
 from ..live.events import BenchChanged, Shown
 from ..live.live import Live
-from . import automation_config
+from . import automation_config, wake_action
 from .commands import Installed, Uninstalled
 from .installs import Before, Ending, InstallRecord, Installs, InstallsUnavailable, NewInstall
 from .model import Owner
@@ -76,9 +76,10 @@ def _ms(started: float) -> int:
     return round((time.monotonic() - started) * 1000)
 
 
-def _new(owner: Owner, bench_id: int, seq: int, effect: Installed, before: Before | None, touched: bool) -> NewInstall:
+def _new(owner: Owner, bench_id: int, seq: int, effect: Installed, before: Before | None, touched: bool,
+         events: tuple[str, ...] = ()) -> NewInstall:
     return NewInstall(owner.household_id, bench_id, seq, effect.piece_id, "install", effect.automation_id,
-                      effect.enabled, effect.turn_off, before, touched)
+                      effect.enabled, effect.turn_off, before, touched, events)
 
 
 async def _untouched(install: NewInstall, note: str) -> Ending:
@@ -101,7 +102,7 @@ async def _install(owner: Owner, bench_id: int, seq: int, effect: Installed) -> 
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), UNREACHABLE)
     if before.config is not None and not await _installed_before(owner, bench_id, effect.piece_id):
         return await _untouched(_new(owner, bench_id, seq, effect, None, False), TAKEN)
-    await services.get(Installs).start(_new(owner, bench_id, seq, effect, before, True))
+    await services.get(Installs).start(_new(owner, bench_id, seq, effect, before, True, wake_action.events_of(config)))
     ending, note = await _write(house, effect, config, before)
     await services.get(Installs).finish(bench_id, seq, ending, note)
     return ending

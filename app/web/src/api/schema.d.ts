@@ -2449,6 +2449,7 @@ export interface components {
          *     `file` is an image or file piece's bytes, understood, with a short-lived link to them (null for any other kind).
          *     `site` is a site piece's address, measured (null for any other kind, and for a site piece with no address yet).
          *     `recipe` is a recipe piece's recipe, scaled for its headcount (null for any other kind, and for an empty body).
+         *     `wake` is a wake rule piece's senders (null for any other kind).
          */
         BenchPiece: {
             /** Id */
@@ -2484,6 +2485,7 @@ export interface components {
             file: components["schemas"]["PieceFile"] | null;
             site: components["schemas"]["PieceSite"] | null;
             recipe: components["schemas"]["PieceRecipe"] | null;
+            wake: components["schemas"]["PieceWake"] | null;
         };
         /**
          * BenchRequest
@@ -4640,11 +4642,15 @@ export interface components {
          * PieceAutomation
          * @description An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the
          *     piece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece
-         *     never installed).
+         *     never installed). `unanswered_events` are the wake events the installed automation sends that no wake rule on an
+         *     open bench of the household answers: Home Assistant sends them and nothing happens (empty when it is not installed,
+         *     sends none, or every one has a rule).
          */
         PieceAutomation: {
             install_proposal: components["schemas"]["InstallProposal"] | null;
             last_install: components["schemas"]["InstallState"] | null;
+            /** Unanswered Events */
+            unanswered_events: string[];
         };
         /**
          * PieceFile
@@ -4833,6 +4839,15 @@ export interface components {
             embed_url: string;
             /** Start */
             start: number;
+        };
+        /**
+         * PieceWake
+         * @description A wake rule piece's `senders`: the automations installed in Home Assistant, as their latest install left them,
+         *     whose wake action names the rule's event. Empty when none does, or the piece holds no rule yet.
+         */
+        PieceWake: {
+            /** Senders */
+            senders: components["schemas"]["WakeSender"][];
         };
         /** PinRequest */
         PinRequest: {
@@ -5982,6 +5997,19 @@ export interface components {
             what?: string | null;
             /** When */
             when?: string | null;
+        };
+        /**
+         * WakeSender
+         * @description An installed automation that sends the rule's event: its piece `piece_id` on bench `bench_id`, named by `title`
+         *     on the viewer's own benches and null on another member's.
+         */
+        WakeSender: {
+            /** Bench Id */
+            bench_id: number;
+            /** Piece Id */
+            piece_id: number;
+            /** Title */
+            title: string | null;
         };
         /**
          * WireAgreed

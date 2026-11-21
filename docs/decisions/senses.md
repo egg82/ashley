@@ -109,6 +109,16 @@ person, and to ask only what the house cannot tell her.
   as a count (`tools.only_unmatched`), never refused on the piece: the catalogue changes while a source is down, and
   `decide` is pure.
   Rejected: the brief and tools in HA's automation, which would put her prompt and free text in the house.
+- **The bench shows which installed automation sends a rule's event, and warns of one no rule answers.** What an
+  automation sends is what its latest `done` install wrote to the house: the install records the `event` of each wake
+  action in the config it wrote (`NewInstall.wake_events`, read with `wake_action.events_of`), so an edit after
+  installing changes neither the list nor the warning until it is installed again, and an uninstall removes the
+  automation from both. The links are computed when the bench is read (`ashley.workshop.wake_links`), from that record
+  and the open benches' rules, never stored: the rules and the benches they sit on change without any install. A rule
+  answers an event when any rule on an open bench names it, whatever `who` and `what` it is keyed on; a keyed rule that
+  matches no wake is `no_rule` at run time, not a warning here. Another member's automation is counted but never
+  named. Installs from before this record sent nothing until reinstalled. Rejected: parsing the piece's body at render,
+  which lists what the piece says now and not what the house holds.
 - **The turn is the shared turn loop**, `unprompted`: nobody waits on its response, so it never holds (a bench's reaction is the exception, "A reaction holds like a
   person's turn") and its answer is queued in the outbox with her stored turn, from whichever runner finishes it, checkpointed as every turn
   that takes later replies is. It runs on the phone thread of the person the wake is about, with that person as the
