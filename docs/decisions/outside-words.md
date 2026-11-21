@@ -53,6 +53,7 @@ Today's tools, set by the field at each spec:
 | true | `git_projects`, `git_tree`, `git_read_file` | a repository holds files, names and messages written by anyone |
 | true | `discord_recent` | the latest messages of the server channel the turn came from, written by anyone who can post there |
 | true | `claude_read` | a session's screen shows what Claude Code read |
+| true | `todo_lists` | item text written by whoever may add to a list |
 | true | `money_transactions` | payee names and payment memos written by merchants and payers |
 | true, narrowed per result | `send_readers` | the result is true when a reader that answered read a result that taints (`ashley.tools.readers`), else false |
 | true, narrowed per result | `watch` | the result is its kind's `outside` in `ashley/watches/watches.json`: false for `claude_session` (status and seq), true for `mail_inbox` (senders and subjects) |
@@ -63,7 +64,7 @@ Today's tools, set by the field at each spec:
 | false | `house_find`, `house_history`, `house_automations`, `house_automation` | the household's own setup and device states; `house_find` reads the registry, which holds no state attributes |
 | false | `money_accounts`, `money_categories`, `money_net_worth`, `reminders`, `household_devices`, `claude_sessions`, `skill_read`, `bench_install_state` | the household's records |
 | false | `bench_run`, `bench_last_run`, `run_code` | output of code she or the person wrote, run with no network |
-| false | every change's own result (`house_do`, `house_change`, `remind`, the bench edits, `claude_prompt`, ...) | a confirmation the tool writes |
+| false | every change's own result (`house_do`, `house_change`, `remind`, `todo_change`, the bench edits, `claude_prompt`, ...) | a confirmation the tool writes |
 
 A gate keeps every tool classified (`app/tests/test_outside_classified.py`). It scans `app/ashley` with
 `ast`, and fails on any `ToolSpec(` call that does not pass `outside=` and any `Inbound(` call that does not pass
