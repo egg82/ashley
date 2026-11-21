@@ -321,6 +321,24 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     reference part still get one only when they overlap. Rejected: making only a formless stand-in's checks
     unconfirmed, a softer signal of the kind she had already read past; a failed run cannot be missed and costs one
     re-run.
+- **A weak-points study is a linear static finite-element solve inside the CAD image, in its helper, and says when it has
+  no answer.** A script declares `study(part, material, fixed, loads)` on faces of the part's own shape; `show` meshes
+  that part with gmsh into second-order tetrahedra and solves it (`deploy/cad/ashley_fea.py`, `ashley_fem.py`), writing the
+  report's `fea` section (peak von Mises stress and its point and nearest named face, largest deflection, the mesh, a safety
+  factor as a low-to-high range), `out/stress_<part>.glb` (the surface coloured by stress, kept as any GLB artifact is) and
+  the check `fea_safety_factor:<part>`. Materials are `deploy/cad/materials.json`, each value from a maker's data sheet
+  (the URL beside it) or marked `assumed`. Prints are weaker across layers, which stack along Z as the print check
+  models them: the solve takes the along-layer stiffness and the safety factor is against the across-layer yield less its
+  stated tolerance (`low`) and at it (`high`). A study that cannot be answered (`too_large` past `MAX_NODES`, `mesh_failed`,
+  `not_solved` when the residual exceeds `1e-6`, `over_time`, `face_not_found`, `unknown_material`) carries a
+  `skip_reason` and a `detail` and no number, and adds no check. The solver is held to a cantilever's closed-form tip
+  deflection and root stress (`deploy/cad/test_ashley_fea.py`). All FEA-specific code is in the CAD image, so a
+  simulation run (`bench_simulate`, #147) stays a script, an image and a place, and FEA is its first profile.
+  Built here: the helper. Not built: `bench_simulate`, `sims.json`, `Run.sims`, the purpose-keyed latest run and prune,
+  and the view as a bench piece; until then a study runs in the design run's own quota.
+  Rejected: CalculiX, which Debian 13 no longer packages (`calculix-ccx` has no candidate; only its test files are
+  there), leaving a source build or a foreign suite in a slim image; a pure-Python solver on the same tetrahedra
+  is a few dozen lines and measured against the closed form. Rejected: first-order tetrahedra, which lock in bending.
 - **Her 3D method is the `3d` skill, and whether a model fits the real object is the bench turn's own judgement.** The
   seed `app/ashley/skills/seeds/3d.md` is the method: facts first, each with its source, the model built from
   them with `ashley_cad`, a `check` for every fit, the report read before anything is said, `bench_look` after, and an
