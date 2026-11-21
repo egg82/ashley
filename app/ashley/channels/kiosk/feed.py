@@ -18,7 +18,7 @@ from ...live.live import Live, load as live_config
 from ...live.screens import Screens
 from ...senses.presence import Presence
 from ...tools import camera_feed
-from ...tools.camera_feed import FeedRefused
+from ...tools.camera_feed import FeedRefused as FeedRefused
 from ..devices import Devices
 from .announce import PRESENT_S, chosen
 
