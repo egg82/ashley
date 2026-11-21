@@ -5,6 +5,7 @@ reason, and logs free of the query and coordinates."""
 
 import copy
 import json
+import re
 import time
 from typing import Any
 from urllib.parse import parse_qs
@@ -313,6 +314,7 @@ def test_no_query_coordinate_name_address_or_url_reaches_a_log_line(capsys: pyte
     reasons.append(find(json_web(PHOTON), {"query": " "}, Home(home)).content)
     out = capsys.readouterr().out
     assert len(events(out, "tools.call")) == len(reasons) == 13, "control: every call was logged"
+    out = re.sub(r"\bts=\S+", "ts=", out)  # a timestamp's seconds can read 39.73
     for leaked in (MARK, "pharmacy", "39.73", "104.99", "-105", "photon.test", "https://", "Orchard", "Westminster",
                    "Target"):
         assert leaked not in out
