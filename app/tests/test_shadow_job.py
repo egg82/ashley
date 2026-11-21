@@ -48,7 +48,7 @@ class FakeHeld(HeldStates):
     async def states(self, household_id: int, entity_ids: Any) -> Mapping[str, EntityState | None] | None:
         return None
 
-    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+    async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
         if household_id in self.down:
             raise HouseUnavailable("down")
         self.held[household_id] = dict(types)

@@ -51,7 +51,7 @@ class Socket:
         self._wanted: dict[str, float] = {}
         self._subscribed: dict[str, int] = {}
         self._of: dict[int, str] = {}
-        self._events: dict[str, Recorder] = {}
+        self._events: dict[str, Mapping[str, Recorder]] = {}
         self._event_numbers: dict[int, str] = {}
         self._known: dict[str, EntityState | None] = {}
         self._waiting: dict[int, asyncio.Future[JsonObject]] = {}
@@ -94,12 +94,16 @@ class Socket:
                           subscriptions=len(self._subscribed))
         return {e: self._known.get(e) for e in entity_ids}
 
-    async def events(self, types: Mapping[str, Recorder]) -> None:
-        """Hold exactly these event types, each handed to its recorder; the others are let go. Raises HouseUnavailable
-        while the socket is down, or when it has not come up within `timeout_s`."""
+    async def events(self, owner: str, types: Mapping[str, Recorder]) -> None:
+        """Hold exactly these event types for `owner`, each handed to its recorder; the owner's others are let go, and
+        the types other owners hold stay. Raises HouseUnavailable while the socket is down, or when it has not come up
+        within `timeout_s`."""
         await self._up()
         async with self._lock:
-            self._events = dict(types)
+            if types:
+                self._events[owner] = dict(types)
+            else:
+                self._events.pop(owner, None)
             await self._sync_events()
 
     async def _up(self) -> None:
@@ -113,14 +117,15 @@ class Socket:
 
     async def _sync_events(self) -> None:
         held = {t: n for n, t in self._event_numbers.items()}
+        wanted = {kind for types in self._events.values() for kind in types}
         for kind, number in held.items():
-            if kind not in self._events:
+            if kind not in wanted:
                 del self._event_numbers[number]
                 try:
                     await self._request(self._next(), {"type": "unsubscribe_events", "subscription": number})
                 except HouseUnavailable:
                     pass
-        for kind in self._events:
+        for kind in wanted:
             if kind not in held:
                 number = self._next()
                 self._event_numbers[number] = kind
@@ -189,18 +194,18 @@ class Socket:
                 await self._told_event(self._event_numbers[number], obj(message.get("event")))
 
     async def _told_event(self, kind: str, event: JsonObject) -> None:
-        record = self._events.get(kind)
+        records = [types[kind] for types in self._events.values() if kind in types]
         fired = text(event.get("time_fired"))
         try:
             at = datetime.fromisoformat(fired).astimezone(UTC)
         except ValueError:
             at = datetime.now(UTC)
-        if record is None:
-            return
-        try:
-            await record(HouseEvent(kind, obj(event.get("data")), at, text(obj(event.get("context")).get("id"))))
-        except Exception as e:
-            logs.warning(log, "ha_held.event_lost", household=self.household_id, reason=type(e).__name__)
+        told = HouseEvent(kind, obj(event.get("data")), at, text(obj(event.get("context")).get("id")))
+        for record in records:
+            try:
+                await record(told)
+            except Exception as e:
+                logs.warning(log, "ha_held.event_lost", household=self.household_id, reason=type(e).__name__)
 
     async def _subscribe(self, entities: Sequence[str]) -> None:
         """A state trigger on each of `entities` (state changes only, not attributes), then their states read once."""

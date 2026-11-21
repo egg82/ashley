@@ -192,7 +192,7 @@ class Answers(HeldStates):
             raise self.fail
         return self.found
 
-    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+    async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
         return None
 
 

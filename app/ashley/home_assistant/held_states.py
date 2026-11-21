@@ -53,11 +53,12 @@ class HeldStates(Service):
         cannot be reached, HomesUnavailable when which house is the household's cannot be read."""
 
     @abstractmethod
-    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+    async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
         """While held, hand each Home Assistant event of the household of one of `types` to its recorder as it
-        arrives, and let go of any type held before and not named (none named lets go of all); a socket that dropped
-        subscribes them again, an event while it was down is not told. A recorder that raises loses that one event,
-        logged. Raises HouseUnavailable when the house cannot be reached or nothing holds, HomesUnavailable when which
+        arrives, and let go of any type `owner` held before and not named now (none named lets go of all its own). Each
+        owner's set replaces only its own: the socket holds the union, and an event of a type two owners hold goes to
+        both. A socket that dropped subscribes them again, an event while it was down is not told. A recorder that
+        raises loses that one event, logged. Raises HouseUnavailable when the house cannot be reached or nothing holds, HomesUnavailable when which
         house is the household's cannot be read; a household with no Home Assistant holds nothing."""
 
 
@@ -70,5 +71,5 @@ class NullHeldStates(HeldStates):
     async def states(self, household_id: int, entity_ids: Sequence[str]) -> Mapping[str, EntityState | None] | None:
         raise HouseUnavailable("held states are not wired")
 
-    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+    async def events(self, owner: str, household_id: int, types: Mapping[str, Recorder]) -> None:
         raise HouseUnavailable("held states are not wired")
