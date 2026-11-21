@@ -126,6 +126,8 @@ from .signin.postgres import PostgresSessions
 from .signin.sessions import Sessions
 from .sure.register import register as register_sure
 from .sure.kind import SURE
+from .bambuddy.kind import BAMBUDDY
+from .bambuddy.register import register as register_bambuddy
 from .google.kind import GOOGLE
 from .google.oauth import NAME as GOOGLE_NAME, App as GoogleApp, GoogleOAuth
 from .herdr.kind import HERDR
@@ -146,7 +148,7 @@ from .codehost.gitlab import GitLabHost
 from .codehost.host import CodeHost
 from .codehost.routed import RoutedCodeHost
 from .codehost.wire import Wire
-from .tools import home_assistant_config, home_location, house_look_config, house_state_config, look_up_config, money_config, outside_config, search_config
+from .tools import home_assistant_config, home_location, house_look_config, house_state_config, look_up_config, money_config, outside_config, printing_config, search_config
 from .tools.action_judge import ActionJudge
 from .tools.action_judge_model import ModelActionJudge
 from .tools.composite import CompositeTools
@@ -170,7 +172,7 @@ from .workshop.postgres import PostgresWorkshop
 from .workshop.workshop import Workshop
 
 
-CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, GITLAB, GITHUB, HERDR,
+CONNECTION_KINDS: tuple[ConnectionKind, ...] = (HOME_ASSISTANT, SURE, BAMBUDDY, GITLAB, GITHUB, HERDR,
                                                 replace(GOOGLE, resources=mailboxes),
                                                 *(k.kind for k in KEYED), COMPATIBLE, WYOMING, SEARXNG, DISCORD, FILES, SATELLITE_KEY)  # the panel's order
 
@@ -212,6 +214,7 @@ def _wire_connections(settings: Settings) -> list[Callable[[], Coroutine[Any, An
     _wire_oauth(settings, sealer, closers)
     http = httpx2.AsyncClient(follow_redirects=False)
     register_sure(http, money_config.load().timeout_s)
+    register_bambuddy(http, printing_config.load().timeout_s)
     hosts = codehost_config.load()
     wire = Wire(http, hosts.timeout_s)
     services.register(CodeHost, RoutedCodeHost({"gitlab": GitLabHost(wire, hosts), "github": GitHubHost(wire, hosts)}))
