@@ -33,6 +33,9 @@ from ..tools.house_change import HouseChangeTools
 from ..tools.mail import MailTools
 from ..tools.money import MoneyTools
 from ..tools.money_config import load as money_config
+from ..tools.printing import PrintingTools
+from ..tools.printing_config import load as printing_config
+from ..tools.stock_tools import StockTools
 from ..tools.move_page import MovePageTools
 from ..tools.only import Only
 from ..tools.reading import Reading
@@ -57,6 +60,7 @@ EVERYDAY = "everyday"
 READERS = "readers"
 """The key `send_readers` goes under, last: its readers read with the turn's other tools as narrowed, never with it."""
 _MONEY = money_config()
+_PRINTING = printing_config()
 _CODE_HOST = codehost_config.load()
 _CLAUDE_CODE = claude_code_config()
 READABLE_CHARS = smallest_result_chars(load_limits())
@@ -187,6 +191,9 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["open_bench"] = OpenBenchTools(household, person, arrival)
     if inbound.on_page:
         found["page"] = MovePageTools(household, person, arrival)
+    if services.get(Connections).can_open():
+        found["printing"] = PrintingTools(household, _PRINTING)
+        found["stock"] = StockTools(household, _PRINTING)
     if owner_alone(inbound) and services.get(Connections).can_open():
         found["money"] = MoneyTools(household, _MONEY)
     if owner_alone(inbound) and services.get(Connections).can_open():
