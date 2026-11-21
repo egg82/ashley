@@ -44,10 +44,10 @@ class Cantilever(unittest.TestCase):
         root = FORCE * L * (H / 2) / (B * H ** 3 / 12)
         self.assertLess(abs(self.entry["peak_von_mises_mpa"] / root - 1), 0.05)
 
-    def test_the_peak_is_at_the_wall_end_and_on_the_top_surface(self) -> None:
+    def test_the_peak_is_at_the_wall_end_and_on_a_bending_surface(self) -> None:
         x, _, z = self.entry["peak"]["point_mm"]
         self.assertLess(x, -L / 2 + 0.1 * L)
-        self.assertAlmostEqual(z, H / 2, places=3)
+        self.assertAlmostEqual(abs(z), H / 2, places=3)
         self.assertEqual(self.entry["peak"]["nearest_named_face"], "wall")
 
     def test_the_safety_factor_is_the_across_layer_range_over_the_peak(self) -> None:
@@ -82,6 +82,27 @@ class Cantilever(unittest.TestCase):
         self.assertGreater(self.entry["seconds"], 0)
 
 
+class Default(unittest.TestCase):
+    def test_a_thin_part_with_no_mesh_size_is_coarsened_to_fit_the_node_limit_and_says_so(self) -> None:
+        script = """
+from build123d import Axis, Box, Cylinder, Pos
+from ashley_cad import show, study
+b = Pos(0, 0, 1.5) * Box(50, 30, 3) + Pos(0, -13.5, 21.5) * Box(50, 3, 40)
+for x in (-15, 15):
+    b -= Pos(x, 5, 1.5) * Cylinder(2.2, 10)
+faces = b.faces().sort_by(Axis.Z)
+study("bracket", "PETG", {"mount": faces[0]}, {"pull": (faces[-1], (0, -30, 0))})
+show(("bracket", b, "structural"))
+"""
+        done, out = run(script)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        entry = json.loads((out / "report.json").read_text())["fea"]["studies"][0]
+        self.assertIsNone(entry["skip_reason"])
+        self.assertLessEqual(entry["mesh"]["nodes"], 7500)
+        self.assertGreater(entry["mesh"]["size_mm"], entry["mesh"]["mean_thickness_mm"])
+        self.assertLess(entry["mesh"]["elements_through_thickness"], 1.0)
+
+
 class Skipped(unittest.TestCase):
     def skipped(self, extra: str = "", material: str = "PLA") -> tuple[dict, dict]:
         report, out = report_of(extra, material)
@@ -94,7 +115,7 @@ class Skipped(unittest.TestCase):
         self.assertFalse([c for c in report["checks"] if c["name"].startswith("fea_")])
 
     def test_a_mesh_over_the_node_limit_is_too_large_and_has_no_stress(self) -> None:
-        self.assert_no_numbers(*self.skipped(", max_nodes=500"), "too_large")
+        self.assert_no_numbers(*self.skipped(", mesh_mm=2.5, max_nodes=500"), "too_large")
 
     def test_a_material_that_is_not_in_the_file_is_unknown(self) -> None:
         self.assert_no_numbers(*self.skipped(material="Unobtainium"), "unknown_material")

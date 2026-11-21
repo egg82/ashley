@@ -1,5 +1,5 @@
 """The weak-points study `ashley_cad.show` runs for each `study(...)` a script declares: a linear static finite-element
-analysis of one printed part. gmsh meshes the part's STEP into second-order tetrahedra, `ashley_fem` solves it, and the
+analysis of one printed part. gmsh meshes the part's STEP into second-order tetrahedra, scikit-fem (`ashley_fem`) solves it, and the
 result is a `fea` section of the report and `out/stress_<part>.glb`, the part's surface coloured by von Mises stress.
 
 A study names the part, a material of `materials.json`, the faces held fixed and the forces on faces, all by the
@@ -22,8 +22,10 @@ import numpy as np
 import ashley_fem
 
 MATERIALS = Path(__file__).with_name("materials.json")
-MAX_NODES = 10000
+MAX_NODES = 7500
 """Mesh nodes a study may solve (`study`'s `max_nodes` lowers it): measured to solve inside the sandbox's memory and time."""
+COARSEN, COARSEN_STEPS = 1.4, 3
+"""When no `mesh_mm` was given and the mesh is over the node limit, the element size grows by this factor, up to this many times."""
 BUDGET_S = 40.0
 """Seconds from the start of a study after which a mesh is not solved."""
 MATCH = 1e-3
@@ -73,9 +75,8 @@ def _mesh(shape: Any, size: float | None, faces: dict[str, Any], max_nodes: int)
     try:
         gmsh.option.setNumber("General.Terminal", 0)
         gmsh.option.setNumber("General.NumThreads", 1)
-        gmsh.option.setNumber("Mesh.MeshSizeMax", h)
-        gmsh.option.setNumber("Mesh.MeshSizeMin", h / 4)
         gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 8)
+        gmsh.option.setNumber("Mesh.SecondOrderLinear", 1)
         with tempfile.TemporaryDirectory(dir=Path.cwd()) as scratch:
             step = Path(scratch) / "part.step"
             bd.export_step(shape, step)
@@ -85,12 +86,19 @@ def _mesh(shape: Any, size: float | None, faces: dict[str, Any], max_nodes: int)
         surfaces = {}
         for name, face in faces.items():
             surfaces[name] = _surface_of(face, diagonal)
-        try:
-            gmsh.model.mesh.generate(3)
-            gmsh.model.mesh.setOrder(2)
-        except Exception as e:
-            raise Skip("mesh_failed", f"gmsh could not mesh the part: {e}") from e
-        tags, coords, _ = gmsh.model.mesh.getNodes()
+        for _ in range(COARSEN_STEPS + 1):
+            gmsh.option.setNumber("Mesh.MeshSizeMax", h)
+            gmsh.option.setNumber("Mesh.MeshSizeMin", h / 4)
+            try:
+                gmsh.model.mesh.clear()
+                gmsh.model.mesh.generate(3)
+                gmsh.model.mesh.setOrder(2)
+            except Exception as e:
+                raise Skip("mesh_failed", f"gmsh could not mesh the part: {e}") from e
+            tags, coords, _ = gmsh.model.mesh.getNodes()
+            if len(tags) <= max_nodes or size is not None:
+                break
+            h *= COARSEN
         if len(tags) > max_nodes:
             raise Skip("too_large", f"the mesh at {h:.2f} mm has {len(tags)} nodes, over the {max_nodes} a study may solve; "
                                     "give a larger mesh_mm or study a smaller part")
