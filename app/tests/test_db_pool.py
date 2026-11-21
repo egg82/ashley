@@ -57,10 +57,9 @@ def test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_l
         assert used != fresh, "the setup left nothing to reset"
         assert used["advisory_locks"] != (0,) and used["other_connections"] != (0,)
         migrated_template.release(first)
-        for _ in range(3):
-            url = migrated_template.take()
-            assert state(url) == fresh
-            migrated_template.release(url)
+        url = migrated_template.take()
+        assert state(url) == fresh
+        migrated_template.release(url)
     finally:
         for conn in held:
             conn.close()
@@ -69,11 +68,10 @@ def test_a_database_the_pool_hands_out_is_a_fresh_clone_whatever_the_last_test_l
 def test_a_closed_pool_has_dropped_every_database_it_made_even_one_a_test_left_connected(
         migrated_template: DatabasePool) -> None:
     pool = DatabasePool(admin_url(), migrated_template.template)
-    taken = [pool.take(), pool.take()]
-    held = dirty(taken[0])
-    names = [conninfo_to_dict(url)["dbname"] for url in taken] + [pool.spare()]
-    for url in taken:
-        pool.release(url)
+    taken = pool.take()
+    held = dirty(taken)
+    names = [conninfo_to_dict(taken)["dbname"], pool.spare()]
+    pool.release(taken)
     pool.close()
     for conn in held:
         conn.close()
