@@ -66,13 +66,18 @@ class Run:
 class Propose:
     """Propose installing piece `piece_id`, an automation piece, as it is at `base_version`, into Home Assistant:
     `enabled` or not once installed, and `turn_off`, the entity id of an automation to turn off with it (None for
-    none). It changes no piece and is never undone; nothing is installed until a person's Install names it."""
+    none). It changes no piece and is never undone; nothing is installed until a person's Install names it.
+
+    A `shadow` proposal asks for a shadow run (`workshop.shadow`): the piece installed under its own shadow id with its
+    actions replaced by one event, on for the run's length, turning nothing off. `turn_off` then names the automation the
+    piece would replace, whose firings are recorded beside the piece's."""
 
     by: By
     piece_id: int
     base_version: int
     enabled: bool
     turn_off: str | None
+    shadow: bool = False
 
 
 @dataclass(frozen=True)
@@ -278,19 +283,21 @@ class Shown:
 @dataclass(frozen=True)
 class Proposed:
     """Installing piece `piece_id` as it was at `version` was proposed, with its options. It changes no piece and is
-    never undone."""
+    never undone. `shadow`: a shadow run (always `enabled`)."""
 
     piece_id: int
     version: int
     enabled: bool
     turn_off: str | None
+    shadow: bool = False
 
 
 @dataclass(frozen=True)
 class Installed:
     """Piece `piece_id` as it was at `version` is to be installed under `automation_id`, `enabled` or not, turning off
     `turn_off` (None for none), as proposal `proposal` said. It changes no piece's text or place, but counts as a
-    change of the piece for undo, and is undone by an `Uninstalled`."""
+    change of the piece for undo, and is undone by an `Uninstalled`. A `shadow` install (`automation_id` its shadow id)
+    changes nothing of the piece's: it never blocks an undo, and its own undo reaches it whatever became of the piece."""
 
     piece_id: int
     version: int
@@ -298,6 +305,7 @@ class Installed:
     enabled: bool
     turn_off: str | None
     proposal: int
+    shadow: bool = False
 
 
 @dataclass(frozen=True)

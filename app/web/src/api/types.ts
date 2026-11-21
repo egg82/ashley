@@ -140,6 +140,7 @@ export type ReportPrintPart = components['schemas']['ReportPrintPart'];
 export type PieceAutomation = components['schemas']['PieceAutomation'];
 export type InstallProposal = components['schemas']['InstallProposal'];
 export type InstallState = components['schemas']['InstallState'];
+export type ShadowState = components['schemas']['ShadowState'];
 export type ModelCatalogueResponse = components['schemas']['ModelCatalogueResponse'];
 export type ModelCatalogueProvider = components['schemas']['ModelCatalogueProvider'];
 export type ModelCatalogueModelsResponse = components['schemas']['ModelCatalogueModelsResponse'];

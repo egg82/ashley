@@ -4,8 +4,9 @@ watches singleton holds (`hold`), so only the pod holding its lease keeps socket
 each thing once. `ha_held.SocketStates` implements it."""
 
 from abc import abstractmethod
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 
 from ..services import Service
 from .house import HouseUnavailable
@@ -17,6 +18,20 @@ class EntityState:
 
     state: str
     name: str
+
+
+@dataclass(frozen=True)
+class HouseEvent:
+    """One event Home Assistant fired: its `type`, its `data` object, when it fired (`at`) and its context's id, which
+    tells a retold event from a second one."""
+
+    type: str
+    data: Mapping[str, object]
+    at: datetime
+    context: str
+
+
+Recorder = Callable[[HouseEvent], Awaitable[None]]
 
 
 class HeldStates(Service):
@@ -37,6 +52,14 @@ class HeldStates(Service):
         what it was told) and a thing not asked about for `idle_s` is let go. Raises HouseUnavailable when the house
         cannot be reached, HomesUnavailable when which house is the household's cannot be read."""
 
+    @abstractmethod
+    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
+        """While held, hand each Home Assistant event of the household of one of `types` to its recorder as it
+        arrives, and let go of any type held before and not named (none named lets go of all); a socket that dropped
+        subscribes them again, an event while it was down is not told. A recorder that raises loses that one event,
+        logged. Raises HouseUnavailable when the house cannot be reached or nothing holds, HomesUnavailable when which
+        house is the household's cannot be read; a household with no Home Assistant holds nothing."""
+
 
 class NullHeldStates(HeldStates):
     """No household reaches a house."""
@@ -45,4 +68,7 @@ class NullHeldStates(HeldStates):
         return None
 
     async def states(self, household_id: int, entity_ids: Sequence[str]) -> Mapping[str, EntityState | None] | None:
+        raise HouseUnavailable("held states are not wired")
+
+    async def events(self, household_id: int, types: Mapping[str, Recorder]) -> None:
         raise HouseUnavailable("held states are not wired")

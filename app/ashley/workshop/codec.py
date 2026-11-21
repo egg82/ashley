@@ -42,7 +42,8 @@ def _encode(command: Command) -> Json:
     if isinstance(command, Run):
         return {**out, "base_version": command.base_version, "language": command.language}
     if isinstance(command, Propose):
-        return {**out, "base_version": command.base_version, "enabled": command.enabled, "turn_off": command.turn_off}
+        return {**out, "base_version": command.base_version, "enabled": command.enabled, "turn_off": command.turn_off,
+                "shadow": command.shadow}
     if isinstance(command, Install):
         return {**out, "proposal": command.proposal, "automation_id": command.automation_id}
     return out
@@ -67,7 +68,8 @@ def _decode(raw: Json, by: By) -> Command:
     if kind == "run":
         return Run(by, int(raw["piece_id"]), int(raw["base_version"]), str(raw["language"]))
     if kind == "propose":
-        return Propose(by, int(raw["piece_id"]), int(raw["base_version"]), bool(raw["enabled"]), _maybe(raw["turn_off"]))
+        return Propose(by, int(raw["piece_id"]), int(raw["base_version"]), bool(raw["enabled"]), _maybe(raw["turn_off"]),
+                       bool(raw.get("shadow", False)))
     if kind == "install":
         return Install(by, int(raw["piece_id"]), int(raw["proposal"]), str(raw["automation_id"]))
     if kind == "cue":
@@ -112,11 +114,11 @@ def encode_effect(effect: Effect) -> Json:
         return {"type": "shown", "piece_id": effect.piece_id, "rows": _rows(effect.rows)}
     if isinstance(effect, Proposed):
         return {"type": "proposed", "piece_id": effect.piece_id, "version": effect.version, "enabled": effect.enabled,
-                "turn_off": effect.turn_off}
+                "turn_off": effect.turn_off, "shadow": effect.shadow}
     if isinstance(effect, Installed):
         return {"type": "installed", "piece_id": effect.piece_id, "version": effect.version,
                 "automation_id": effect.automation_id, "enabled": effect.enabled, "turn_off": effect.turn_off,
-                "proposal": effect.proposal}
+                "proposal": effect.proposal, "shadow": effect.shadow}
     if isinstance(effect, Uninstalled):
         return {"type": "uninstalled", "piece_id": effect.piece_id, "install": effect.install,
                 "automation_id": effect.automation_id}
@@ -147,10 +149,11 @@ def decode_effect(raw: Json) -> Effect:
     if kind == "shown":
         return Shown(int(raw["piece_id"]), _rows_of(raw["rows"]))
     if kind == "proposed":
-        return Proposed(int(raw["piece_id"]), int(raw["version"]), bool(raw["enabled"]), _maybe(raw["turn_off"]))
+        return Proposed(int(raw["piece_id"]), int(raw["version"]), bool(raw["enabled"]), _maybe(raw["turn_off"]),
+                        bool(raw.get("shadow", False)))
     if kind == "installed":
         return Installed(int(raw["piece_id"]), int(raw["version"]), str(raw["automation_id"]), bool(raw["enabled"]),
-                         _maybe(raw["turn_off"]), int(raw["proposal"]))
+                         _maybe(raw["turn_off"]), int(raw["proposal"]), bool(raw.get("shadow", False)))
     if kind == "uninstalled":
         return Uninstalled(int(raw["piece_id"]), int(raw["install"]), str(raw["automation_id"]))
     if kind == "moved":

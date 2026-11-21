@@ -19,6 +19,7 @@ from ..looks.keys import key_of as look_key
 from ..runs.runs import RunsUnavailable
 from ..workshop.model import Owner
 from ..workshop.installs import InstallsUnavailable
+from ..workshop.shadows import ShadowsUnavailable
 from ..workshop.workshop import BenchNotFound, WorkshopUnavailable
 from .benches import detail_of, kinds_of
 from .look_models import LookPage
@@ -44,7 +45,7 @@ async def read_look(request: Request) -> LookPage | JSONResponse:
         whole = await detail_of(Owner(grant.household_id, grant.person_id), grant.bench_id, key)
     except BenchNotFound:
         return _error(404, "not_found", "that bench is gone")
-    except (WorkshopUnavailable, RunsUnavailable, InstallsUnavailable):
+    except (WorkshopUnavailable, RunsUnavailable, InstallsUnavailable, ShadowsUnavailable):
         return _error(503, "unavailable", "the bench cannot be reached right now")
     if grant.piece_id is not None:
         only = [p for p in whole.pieces if p.id == grant.piece_id]

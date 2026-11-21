@@ -111,9 +111,30 @@ def test_her_proposal_writes_nothing_to_the_house_and_waits_on_the_person(db_url
             assert house.writes == []
             state = loaded(await ask(tools, "bench_install_state", piece_id=1))
             assert state == {"piece_id": 1, "last": None,
-                             "waiting_on_approval": {"seq": 2, "version": 1, "enabled": True, "turn_off": old}}
+                             "waiting_on_approval": {"seq": 2, "version": 1, "enabled": True, "turn_off": old, "shadow": False}}
             view = await shop.read(alana, bench.id)
             assert view.proposals[1].seq == 2 and view.recent[-1].by == HER
+
+    run(scenario())
+
+
+def test_her_shadow_proposal_is_always_enabled_writes_nothing_and_a_non_boolean_shadow_is_a_bad_argument(db_url: str) -> None:
+    alana = owner(db_url)
+    house = FakeHouse()
+    old = house.add("7e9f", "Alana is home")
+
+    async def scenario() -> None:
+        async with world(db_url, house):
+            shop = services.get(Workshop)
+            bench = await shop.open(alana, "b")
+            await shop.apply(alana, bench.id, add(alana))
+            tools = BenchAutomationTools(alana.household_id, alana.person_id, bench.id)
+            wrong = await ask(tools, "bench_propose_install", piece_id=1, base_version=1, enabled=False, shadow="yes")
+            assert wrong.is_error and "shadow" in wrong.content
+            loaded(await ask(tools, "bench_propose_install", piece_id=1, base_version=1, enabled=False, turn_off=old, shadow=True))
+            assert house.writes == []
+            state = loaded(await ask(tools, "bench_install_state", piece_id=1))
+            assert state["waiting_on_approval"] == {"seq": 2, "version": 1, "enabled": True, "turn_off": old, "shadow": True}
 
     run(scenario())
 

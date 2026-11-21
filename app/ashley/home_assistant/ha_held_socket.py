@@ -2,21 +2,26 @@
 each thing asked about, and the last state each was told. A dropped socket reconnects with backoff, subscribes every
 thing again and reads their states once, so a change while it was down is caught on return.
 
+It also holds event subscriptions (`events`): each Home Assistant event of a wanted type is handed to its recorder
+as it arrives, and a dropped socket subscribes them again with the rest (an event while it was down is not told).
+
 Logs `ha_held.connected` (household), `ha_held.subscribed` and `ha_held.resubscribed` (household, entities, the
-subscriptions now), `ha_held.released` (household, entities let go after `idle_s` unasked) and `ha_held.dropped`
-(household, reason, subscriptions, retry_s). Never an entity id, a state, a URL or the token."""
+subscriptions now), `ha_held.released` (household, entities let go after `idle_s` unasked), `ha_held.event_lost`
+(household, a recorder that raised) and `ha_held.dropped` (household, reason, subscriptions, retry_s). Never an entity
+id, a state, an event's data, a URL or the token."""
 
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from httpx2.websockets import AsyncWebSocketSession, WebSocketDisconnect, WebSocketNetworkError
 
 from .. import logs
 from .ha_json import JsonObject, obj, rows, text
 from .ha_socket import authenticate, socket_url, token_of
-from .held_states import EntityState
+from .held_states import EntityState, HouseEvent, Recorder
 from .homes import Home
 from .house import HouseUnavailable
 from .house_settings import HouseSettings
@@ -46,6 +51,8 @@ class Socket:
         self._wanted: dict[str, float] = {}
         self._subscribed: dict[str, int] = {}
         self._of: dict[int, str] = {}
+        self._events: dict[str, Recorder] = {}
+        self._event_numbers: dict[int, str] = {}
         self._known: dict[str, EntityState | None] = {}
         self._waiting: dict[int, asyncio.Future[JsonObject]] = {}
         self._ws: AsyncWebSocketSession | None = None
@@ -78,13 +85,7 @@ class Socket:
         for entity in entity_ids:
             self._wanted[entity] = now
         await self._release(now)
-        try:
-            async with asyncio.timeout(self._house.timeout_s):
-                await self._tried.wait()
-        except TimeoutError:
-            raise HouseUnavailable("websocket: not connected") from None
-        if not self._ready.is_set():
-            raise HouseUnavailable("websocket: not connected")
+        await self._up()
         async with self._lock:
             new = [e for e in dict.fromkeys(entity_ids) if e not in self._subscribed]
             if new:
@@ -92,6 +93,42 @@ class Socket:
                 logs.info(log, "ha_held.subscribed", household=self.household_id, entities=len(new),
                           subscriptions=len(self._subscribed))
         return {e: self._known.get(e) for e in entity_ids}
+
+    async def events(self, types: Mapping[str, Recorder]) -> None:
+        """Hold exactly these event types, each handed to its recorder; the others are let go. Raises HouseUnavailable
+        while the socket is down, or when it has not come up within `timeout_s`."""
+        await self._up()
+        async with self._lock:
+            self._events = dict(types)
+            await self._sync_events()
+
+    async def _up(self) -> None:
+        try:
+            async with asyncio.timeout(self._house.timeout_s):
+                await self._tried.wait()
+        except TimeoutError:
+            raise HouseUnavailable("websocket: not connected") from None
+        if not self._ready.is_set():
+            raise HouseUnavailable("websocket: not connected")
+
+    async def _sync_events(self) -> None:
+        held = {t: n for n, t in self._event_numbers.items()}
+        for kind, number in held.items():
+            if kind not in self._events:
+                del self._event_numbers[number]
+                try:
+                    await self._request(self._next(), {"type": "unsubscribe_events", "subscription": number})
+                except HouseUnavailable:
+                    pass
+        for kind in self._events:
+            if kind not in held:
+                number = self._next()
+                self._event_numbers[number] = kind
+                try:
+                    await self._request(number, {"type": "subscribe_events", "event_type": kind})
+                except BaseException:
+                    self._event_numbers.pop(number, None)
+                    raise
 
     async def _session(self) -> None:
         http = self.home.home_assistant.http
@@ -113,6 +150,7 @@ class Socket:
         async with self._lock:
             entities = sorted(self._wanted)
             await self._subscribe(entities)
+            await self._sync_events()
         event = "ha_held.resubscribed" if self._served else "ha_held.subscribed"
         self._served = self._came_up = True
         self._ready.set()
@@ -126,6 +164,7 @@ class Socket:
         self._tried.set()
         self._subscribed.clear()
         self._of.clear()
+        self._event_numbers.clear()
         for future in self._waiting.values():
             if not future.done():
                 future.set_exception(HouseUnavailable("websocket: dropped"))
@@ -146,6 +185,22 @@ class Socket:
                 entity = self._of[number]
                 self._known[entity] = state_of(entity, trigger.get("to_state"))
                 self._changed()
+            elif message.get("type") == "event" and number in self._event_numbers:
+                await self._told_event(self._event_numbers[number], obj(message.get("event")))
+
+    async def _told_event(self, kind: str, event: JsonObject) -> None:
+        record = self._events.get(kind)
+        fired = text(event.get("time_fired"))
+        try:
+            at = datetime.fromisoformat(fired).astimezone(UTC)
+        except ValueError:
+            at = datetime.now(UTC)
+        if record is None:
+            return
+        try:
+            await record(HouseEvent(kind, obj(event.get("data")), at, text(obj(event.get("context")).get("id"))))
+        except Exception as e:
+            logs.warning(log, "ha_held.event_lost", household=self.household_id, reason=type(e).__name__)
 
     async def _subscribe(self, entities: Sequence[str]) -> None:
         """A state trigger on each of `entities` (state changes only, not attributes), then their states read once."""
