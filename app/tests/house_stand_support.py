@@ -38,6 +38,7 @@ class Stand:
     calls: list[tuple[str, str, str]] = field(default_factory=list[tuple[str, str, str]])
     commands: list[dict[str, Any]] = field(default_factory=list[dict[str, Any]])
     posted: list[tuple[str, Any, dict[str, str]]] = field(default_factory=list[tuple[str, Any, dict[str, str]]])
+    stills: dict[str, tuple[int, str, bytes]] = field(default_factory=dict[str, tuple[int, str, bytes]])
     reject: str | None = None
     token: str = TOKEN
 
@@ -59,6 +60,9 @@ class Stand:
                 return await self._config(request, store, path.removeprefix(prefix))
         if path == "/api/states":
             return JSONResponse(self.states)
+        if path.startswith("/api/camera_proxy/"):
+            status, kind, data = self.stills.get(path.rsplit("/", 1)[1], (404, "text/plain", b""))
+            return Response(data, status_code=status, media_type=kind)
         if path == "/api/services" and request.method == "GET":
             return JSONResponse(self.services)
         if path.startswith("/api/services/"):

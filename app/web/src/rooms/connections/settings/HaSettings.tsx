@@ -1,7 +1,8 @@
 // Home Assistant's settings in the words of what she does: why they exist, then lists, look-ups, the things that need
-// the person's word and the calendars the hallway screen shows. Each section edits the stored settings through the draft; the page saves them whole.
+// the person's word, the calendars the hallway screen shows and the cameras she may look through. Each section edits the stored settings through the draft; the page saves them whole.
 import { Why } from './Why';
 import { CalendarsSection } from './CalendarsSection';
+import { CamerasSection } from './CamerasSection';
 import { ListsSection } from './ListsSection';
 import { LookupsSection } from './LookupsSection';
 import { NeedWordSection } from './NeedWordSection';
@@ -24,6 +25,7 @@ export function HaSettings({ id }: { id: number }) {
       <LookupsSection house={catalogue} />
       <NeedWordSection house={catalogue} />
       <CalendarsSection house={catalogue} />
+      <CamerasSection house={catalogue} />
     </>
   );
 }

@@ -66,6 +66,8 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     serve it under her final answer as `ChatTurn.looks` with a picture link (`GET /api/looks/{token}`, a third
     purpose, ending in the files' `link_ttl_s` half-windows like a file link, not the look's own `link_ttl_s`). The files repair singleton keeps both prefixes whole on every site (`ashley.wiring_singletons.REPAIRED_PREFIXES`), so a look taken
     on one site is served after a failover; the sweep lists `bench/` only and never reaches a look.
+  - **A look need not be on a bench**: a still from a camera (`docs/decisions/connections.md`, "Cameras are looked through a
+    neutral port") is kept the same way with a null `bench_id` and `piece_id`.
   - A model piece takes a `view` (`ashley/looks/views.json`, matched by the client's `SIDES`): the look's address carries
     `?view=<side>` and the page draws that one side where it would draw the four-view sheet, which stays the answer
     when she names none. `region` also crops a screenshot, though that holds no more detail than the screenshot.

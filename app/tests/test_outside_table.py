@@ -17,7 +17,7 @@ OUTSIDE = {
     "money_transactions", "bench_frames", "bench_transcribe", "bench_read", "bench_read_piece", "bench_shelf",
     "bench_look", "watch", "mail_search", "mail_read", "send_readers", "discord_recent",
     "printing_printers", "printing_files", "printing_needs", "stock_spools", "calendar_events",
-    "todo_lists",
+    "todo_lists", "cameras", "camera_look",
 }
 OWN = {
     "house_state", "house_find", "house_history", "house_automations", "house_automation", "money_accounts",

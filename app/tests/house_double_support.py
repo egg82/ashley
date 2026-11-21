@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, HouseRejected, HouseUnavailable,
-                                         LogEntry, Performed, Reading, Record, RecordKind, Series, State, Window)
+                                         LogEntry, Performed, Reading, Record, RecordKind, Snapshot, Series, State, Window)
 
 NOW = datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
 
@@ -27,6 +27,7 @@ class MemoryHouse(House):
     entries: list[LogEntry] = field(default_factory=list[LogEntry])
     reports: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     returns: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
+    stills: dict[str, Snapshot | None] = field(default_factory=dict[str, Snapshot | None])
     down: bool = False
     refuse: str | None = None
     done: list[tuple[str, str, str, tuple[str, ...], Mapping[str, Any]]] = field(
@@ -53,6 +54,10 @@ class MemoryHouse(House):
     async def records(self, kind: RecordKind) -> tuple[Record, ...]:
         self._up()
         return tuple(self.records_of.get(kind, ()))
+
+    async def snapshot(self, camera: str) -> Snapshot | None:
+        self._up()
+        return self.stills.get(camera)
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         self._up()

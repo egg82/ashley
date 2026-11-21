@@ -17,7 +17,7 @@ from ashley.db.pool import PoolDatabase
 from ashley.home_assistant.change import Change
 from ashley.home_assistant.client import connect
 from ashley.home_assistant.homes import Home, Homes
-from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, LogEntry, Performed, Record, RecordKind,
+from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, LogEntry, Performed, Record, RecordKind, Snapshot,
                                          Series, State, Window)
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
 from ashley.people.model import Account, Household, Person
@@ -118,6 +118,9 @@ class RecordingHouse(House):
 
     async def records(self, kind: RecordKind) -> tuple[Record, ...]:
         return ()
+
+    async def snapshot(self, camera: str) -> Snapshot | None:
+        return None
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         return ()

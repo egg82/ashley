@@ -50,5 +50,6 @@ def test_each_port_is_implemented_by_its_adapters_kinds_in_registration_order() 
     assert [k.name for k in kinds.of_port("stock")] == ["bambuddy"]
     assert [k.name for k in kinds.of_port("calendar")] == ["home_assistant"]
     assert [k.name for k in kinds.of_port("todo")] == ["home_assistant"]
+    assert [k.name for k in kinds.of_port("camera")] == ["home_assistant"]
     assert [k.name for k in kinds.of_port("code_host")] == ["gitlab", "github"]
     assert [k.name for k in kinds.of_port("herdr")] == ["herdr"]
