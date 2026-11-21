@@ -62,13 +62,18 @@ HINTS = {
 }
 
 
+def drives() -> bool:
+    """Whether a browser is wired, so a turn offers the tools."""
+    return services.get(BrowserSessions).drives()
+
+
 class BrowserSessionTools(Tools):
     def __init__(self, household_id: int, conversation_id: int) -> None:
         self._who = Who(household_id, conversation_id)
 
     async def catalogue(self) -> Catalogue:
         """Empty when no browser is wired."""
-        if not services.get(BrowserSessions).drives():
+        if not drives():
             return Catalogue((), None)
         return Catalogue((SNAPSHOT_SPEC, ACT_SPEC), INSTRUCTIONS)
 
