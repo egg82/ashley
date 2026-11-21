@@ -9,12 +9,13 @@ from urllib.parse import quote
 
 from .client import HomeAssistant
 from .ha_changes import Changes
+from .ha_events import Events
 from .ha_json import JsonObject, is_list, is_object, listed, moment, obj, rows, text
 from .ha_registry import Registries
 from .ha_rest import Rest
 from .ha_socket import Commands
-from .house import (ActionInfo, ConfigItem, ConfigKind, House, HouseRejected, HouseUnavailable, LogEntry, Performed,
-                    Reading, Record, RecordKind, Series, Snapshot, State, Window)
+from .house import (ActionInfo, ConfigItem, ConfigKind, Event, House, HouseRejected, HouseUnavailable, LogEntry, Performed,
+                    Preview, Reading, Record, RecordKind, Series, Snapshot, State, Window)
 from .house_settings import HouseSettings
 
 NO_STILL = (404, 500, 503)
@@ -28,6 +29,7 @@ class HaHouse(House):
         self._rest = Rest(home_assistant, settings)
         self._registries = Registries(commands)
         self._changes = Changes(self._rest, commands)
+        self._events = Events(self._rest, commands, self._registries)
 
     def offered(self) -> bool:
         return True
@@ -49,6 +51,12 @@ class HaHouse(House):
         placeholder image, not a frame."""
         caps = obj(await self._commands.run({"type": "camera/capabilities", "entity_id": camera}))
         return listed(caps.get("frontend_stream_types")) == ["web_rtc"]
+
+    async def events(self, camera: str) -> tuple[Event, ...]:
+        return await self._events.of(camera)
+
+    async def event_picture(self, camera: str, event_id: str) -> Preview | None:
+        return await self._events.picture(camera, event_id)
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         if not window.ids:

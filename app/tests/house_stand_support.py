@@ -40,6 +40,8 @@ class Stand:
     posted: list[tuple[str, Any, dict[str, str]]] = field(default_factory=list[tuple[str, Any, dict[str, str]]])
     stills: dict[str, tuple[int, str, bytes]] = field(default_factory=dict[str, tuple[int, str, bytes]])
     stream_types: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
+    browsable: dict[str, list[dict[str, Any]]] = field(default_factory=dict[str, list[dict[str, Any]]])
+    thumbnails: dict[str, tuple[int, str, bytes]] = field(default_factory=dict[str, tuple[int, str, bytes]])
     reject: str | None = None
     token: str = TOKEN
 
@@ -63,6 +65,9 @@ class Stand:
             return JSONResponse(self.states)
         if path.startswith("/api/camera_proxy/"):
             status, kind, data = self.stills.get(path.rsplit("/", 1)[1], (404, "text/plain", b""))
+            return Response(data, status_code=status, media_type=kind)
+        if path.startswith("/api/nest/event_media/"):
+            status, kind, data = self.thumbnails.get(path, (404, "text/plain", b""))
             return Response(data, status_code=status, media_type=kind)
         if path == "/api/services" and request.method == "GET":
             return JSONResponse(self.services)
@@ -134,6 +139,11 @@ class Stand:
             return {"success": True, "result": self.registries.get(kind.split("/")[1].removesuffix("_registry"), [])}
         if kind == "camera/capabilities":
             return {"success": True, "result": {"frontend_stream_types": self.stream_types.get(command["entity_id"], ["hls"])}}
+        if kind == "media_source/browse_media":
+            found = self.browsable.get(str(command["media_content_id"]))
+            if found is None:
+                return {"success": False, "error": {"code": "browse_media_failed", "message": "unknown source"}}
+            return {"success": True, "result": {"media_class": "directory", "can_expand": True, "children": found}}
         if kind == "config_entries/get":
             return {"success": True, "result": self.entries}
         if kind == "config/entity_registry/get_entries":
