@@ -80,6 +80,7 @@ ENV: dict[str, tuple[str, str]] = {
     "MEDIA_APP_URL": (D, "infra placement: an in-cluster URL"),
     "LOOK_IMAGE": (D, "infra placement: an image pinned by digest"),
     "CAD_IMAGE": (D, "infra placement: an image pinned by digest"),
+    "PYTHON_IMAGE": (D, "infra placement: an image pinned by digest"),
     "LOOK_APP_URL": (D, "infra placement: an in-cluster URL"),
     "LOOK_WARM_URL": (D, "infra placement: an in-cluster URL"),
     "MAIL_BRIDGE_IMAGE": (D, "infra placement: an image pinned by digest"),

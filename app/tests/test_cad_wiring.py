@@ -57,3 +57,25 @@ def test_a_floating_tag_is_refused() -> None:
     with pytest.raises(ValueError, match="pinned"):
         wired(Settings(database_url="postgresql://x", build_version="t", cad_image="registry.example/cad:latest",
                        **SANDBOX))
+
+
+PYTHON = "registry.example/ashley-python-run@sha256:" + "d" * 64
+
+
+def test_the_python_image_replaces_the_stock_one_and_adds_no_language() -> None:
+    sandbox = wired(Settings(database_url="postgresql://x", build_version="t", python_image=PYTHON, **SANDBOX))
+    assert sandbox.languages() == ("python",)
+    assert getattr(sandbox, "_config").profile("python").image == PYTHON
+
+
+def test_the_python_image_is_read_trimmed_and_needs_the_sandbox_settings() -> None:
+    env = {"DATABASE_URL": "postgresql://x", "PYTHON_IMAGE": f" {PYTHON}\n", **{k.upper(): v for k, v in SANDBOX.items()}}
+    assert from_env(env).python_image == PYTHON
+    with pytest.raises(ValueError, match="PYTHON_IMAGE needs"):
+        Settings(database_url="postgresql://x", build_version="t", python_image=PYTHON)
+
+
+def test_a_floating_python_tag_is_refused() -> None:
+    with pytest.raises(ValueError, match="pinned"):
+        wired(Settings(database_url="postgresql://x", build_version="t", python_image="registry.example/py:latest",
+                       **SANDBOX))

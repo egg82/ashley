@@ -1,0 +1,6 @@
+# The image her `python` runs use when `PYTHON_IMAGE` is set (.github/workflows/ci.yml, hashed-images): the stock
+# Alpine Python of `runs.json` with numpy, scipy, sympy and trimesh at exact versions (all install from wheels, so
+# no compiler). Tagged by a hash of this file (app/tools/ci_image_hash.py --python); the build context is this directory.
+# The pod runs as 65534 on a read-only root with no network.
+FROM docker.io/library/python:3.13.18-alpine3.24@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8
+RUN pip install --no-cache-dir numpy==2.5.5 scipy==1.18.1 sympy==1.14.0 mpmath==1.3.0 trimesh==5.2.1
