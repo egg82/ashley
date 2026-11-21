@@ -12,7 +12,7 @@ import psycopg
 from . import logs, services
 from .channels.push.config import is_pair, new_pair
 from .connections.deployment_secrets import LINK_KEY, VAPID, DeploymentSecrets, Wanted, settle_one, vapid_value
-from .connections.sealing import VERSION as SEAL_VERSION, Sealer, Unsealable, key_from
+from .connections.sealing import Unsealable, sealer_of
 from .db.database import Database, DatabaseUnavailable
 from .settings import Settings
 
@@ -57,7 +57,7 @@ async def settle(settings: Settings, sleep: Callable[[float], Awaitable[None]] =
         logs.info(log, "deployment_secrets.unsealed", reason="no_key")
         holder.settle({})
         return
-    sealer = Sealer({SEAL_VERSION: key_from(settings.connections_key)})
+    sealer = sealer_of(settings.connections_key, settings.connections_key_opens)
     pending = wanted(settings)
     values: dict[str, str] = {}
     attempt = 0

@@ -27,7 +27,9 @@ from .channels.voice.satellites import NAME as SATELLITES, Satellites
 from .channels.wake import runner as wake_runner
 from .conversations import policy
 from .connections.connections import Connections
+from .connections import reseal
 from .connections.deployment_secrets import DeploymentSecrets
+from .connections.sealing import sealer_of
 from .db.database import Database
 from .files import config as files_config, repair as files_repair, sweep as files_sweep
 from .files.intake import PREFIX as FILES_PREFIX
@@ -87,7 +89,7 @@ def _catalogue_refresh() -> Coroutine[Any, Any, None]:
 
 def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     """Each singleton running under the wired `Lease` until cancelled, for the app to start after `wire`: fail-back
-    when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, resuming
+    when `etcd_url` is set and `failback` is on (it drives Patroni through etcd), and with or without etcd the memory write job, sealing every stored value again under the current connections key when `connections_key_opens` is set, resuming
     turns whose runner stopped, taking up Home Assistant's wakes, watching each provider's failed share of chat calls, fetching the model catalogue, reading Sure for deposits an armed reminder waits on, running the bench jobs she handed to workers, polling the Claude Code sessions she handed work to, checking the watches she keeps, comparing the object store's copies on each site and sweeping the bytes no piece names, each site's warm look pod when `look_warm_url` is set, Proton Bridge's pod when `mail_bridge_image` is set, the satellite connections when `voice_clip_base_url` is set, the
     Discord session on the token in force (`ashley.channels.discord.following`), and web push once the deployment's secrets are settled, when her VAPID identity is (`push_config.identity`)."""
     running: list[Coroutine[Any, Any, None]] = []
@@ -107,6 +109,9 @@ def singletons(settings: Settings) -> list[Coroutine[Any, Any, None]]:
     running.append(_catalogue_refresh())
     running.append(services.get(Lease).run(wake_runner.NAME, wake_runner.run))
     running.append(services.get(Lease).run(deposit_sense.NAME, deposit_sense.run))
+    if settings.connections_key_opens:
+        sealing = partial(reseal.run, services.get(Database), sealer_of(settings.connections_key, settings.connections_key_opens))
+        running.append(services.get(Lease).run(reseal.NAME, sealing))
     running.append(services.get(Lease).run(watches_job.NAME, watches_job.run))
     looker = services.get(Looker)
     if isinstance(looker, WarmLooker):

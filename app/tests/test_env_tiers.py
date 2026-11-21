@@ -27,6 +27,7 @@ ENV: dict[str, tuple[str, str]] = {
     "DATABASE_URL": (D, "the database the process cannot start without"),
     "BUILD_VERSION": (D, "names the running build"),
     "CONNECTIONS_KEY": (D, "seals every connection, so it cannot itself be one"),
+    "CONNECTIONS_KEY_OPENS": (D, "the key a rotation is moving off, which opens the old rows until they are sealed again"),
     "PUBLIC_URL": (D, "names this deployment to browsers and sign-in providers"),
     "OPERATOR_NAME": (D, "names who runs this deployment, for its legal pages"),
     "OPERATOR_CONTACT": (D, "names who runs this deployment, for its legal pages"),
@@ -109,6 +110,7 @@ itself, which no outside service holds, so no connection kind."""
 
 ROOT_SECRETS: dict[str, str] = {
     "CONNECTIONS_KEY": "seals the connections table, so it cannot be read from it",
+    "CONNECTIONS_KEY_OPENS": "the connections key's other half during a rotation, so it cannot be read from the table either",
     "PATRONI_RESTAPI_PASSWORD": "controls the database cluster the process must reach first",
     "OIDC_CLIENT_SECRET": "the sign-in client, used before any person or connection exists",
     "DISCORD_OAUTH_CLIENT_SECRET": "the deployment's registered OAuth app, as the sign-in client is",

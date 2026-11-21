@@ -14,6 +14,19 @@ same family's accounts; one HA is the one house), so a key per person would add 
   store's `ashley-connections`): a version byte naming the key, a random nonce, and the household and kind as
   associated data, so a sealed value copied to another row does not open (`ashley.connections.sealing`). It is never
   on the wire back and never logged. Without the key nothing can be added or read, and the room says it is not set up.
+- **The connections key rotates in place.** A key is written `N:<base64>` (N from 1 to 255; no prefix is 1, the
+  key every row was sealed under before a rotation) and the version byte of each sealed value names the key that
+  made it, so rows under two keys open side by side. `CONNECTIONS_KEY` seals; `CONNECTIONS_KEY_OPENS` is a second key
+  the process opens and never seals under. The singleton `reseal` (lease `reseal`, started while the second key is
+  set; `ashley.connections.reseal`) seals every value in `ashley.connections.reseal_columns.SEALED` again under the
+  current key, in batches of fifty rows each its own transaction, reading only rows not already under it, so a pod that
+  dies mid-pass loses nothing and the next holder carries on. A row is written only if it still holds what the pass
+  read; a value that opens under neither key is left as it is, counted and logged by row id. Both sites read one
+  secret, so a rotation is three deploys of it: `CONNECTIONS_KEY` unchanged and `CONNECTIONS_KEY_OPENS` the new key
+  (every pod can open it before any seals under it); then the two swapped, the new key current and the old one the
+  second, until a pass logs `reseal.finish` with `unsealable=0`; then `CONNECTIONS_KEY_OPENS` dropped. Rejected: one
+  "previous key" variable, whose single deploy has a pod seal under a key the pods not yet rolled cannot open; a
+  re-seal that stores its own progress, which the rows already say.
 - **The deployment's own secrets are rows it makes for itself**, not connections: the key that signs file links and
   her Web Push key pair (`ashley.connections.deployment_secrets`). No outside service holds them, so there is nothing to
   check a value against, and no person edits them: a replaced VAPID pair orphans every browser's subscription and a
