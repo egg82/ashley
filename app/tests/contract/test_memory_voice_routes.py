@@ -43,7 +43,7 @@ def seed(w: Cast) -> None:
 def listed(w: Cast, name: str) -> list[dict[str, Any]]:
     r = w.get(name, VOICE)
     assert r.status_code == 200, r.text
-    return list(r.json()["items"])
+    return list(r.json()["prints"])
 
 
 def test_a_person_sees_their_own_prints_by_device_and_time_and_never_the_vector(world: Cast) -> None:

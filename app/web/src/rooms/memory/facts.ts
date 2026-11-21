@@ -5,7 +5,7 @@ import { hour, locale } from '../../household/format.ts';
 
 export type Tab = 'you' | 'household';
 /** A tab of the room: the facts' two, the person's reminders, and what she did on her own. */
-export type RoomTab = Tab | 'reminders' | 'outside';
+export type RoomTab = Tab | 'reminders' | 'outside' | 'voice';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 

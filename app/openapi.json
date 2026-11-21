@@ -16600,17 +16600,17 @@
       },
       "VoiceprintsResponse": {
         "properties": {
-          "items": {
+          "prints": {
             "items": {
               "$ref": "#/components/schemas/Voiceprint"
             },
             "type": "array",
-            "title": "Items"
+            "title": "Prints"
           }
         },
         "type": "object",
         "required": [
-          "items"
+          "prints"
         ],
         "title": "VoiceprintsResponse",
         "description": "The reader's own prints, oldest first; empty when none are enrolled. Nobody else's."
