@@ -350,6 +350,7 @@ jobs:
           docker run --rm --read-only --network=none --user 65534 --tmpfs /work:rw,mode=1777 -w /work -e HOME=/work
           -v "$PWD/deploy/cad/test_ashley_cad.py:/test/test_ashley_cad.py:ro"
           -v "$PWD/deploy/cad/test_ashley_print.py:/test/test_ashley_print.py:ro"
+          -v "$PWD/deploy/cad/test_ashley_fea.py:/test/test_ashley_fea.py:ro"
           -v "$PWD/deploy/cad/test_ashley_facts_blind.py:/test/test_ashley_facts_blind.py:ro"
           -v "$PWD/app/tests/cad_models:/test/models:ro" -v "$PWD/app/ashley/workshop/print.json:/test/print.json:ro"
           "${{ steps.want.outputs.local }}" python -m unittest discover -v -s /test

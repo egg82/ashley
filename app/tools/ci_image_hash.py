@@ -2,7 +2,7 @@
 app/requirements-dev.txt and app/ci/Containerfile, concatenated in that order (the build job reproduces it with
 `cat ... | sha256sum`). The browser image's and the media image's: the same over deploy/look/Containerfile and
 deploy/media/Containerfile alone. The CAD image's: the same over deploy/cad/Containerfile,
-deploy/cad/ashley_cad.py then deploy/cad/ashley_print.py, since the helper is baked into the image. The mail bridge image's: the same over
+deploy/cad/ashley_cad.py, ashley_print.py, ashley_fea.py, ashley_fem.py then materials.json, since the helper is baked into the image. The mail bridge image's: the same over
 deploy/mail-bridge/Containerfile, `bridge.proto` and the keeper's `keeper*.py` in name order, all of which are baked in.
 
     python tools/ci_image_hash.py           print the test image's hash
@@ -18,7 +18,7 @@ APP = Path(__file__).resolve().parent.parent
 FILES = ("requirements.txt", "requirements-dev.txt", "ci/Containerfile")
 LOOK_FILE = APP.parent / "deploy" / "look" / "Containerfile"
 MEDIA_FILE = APP.parent / "deploy" / "media" / "Containerfile"
-CAD_FILES = tuple(APP.parent / "deploy" / "cad" / f for f in ("Containerfile", "ashley_cad.py", "ashley_print.py"))
+CAD_FILES = tuple(APP.parent / "deploy" / "cad" / f for f in ("Containerfile", "ashley_cad.py", "ashley_print.py", "ashley_fea.py", "ashley_fem.py", "materials.json"))
 BRIDGE_DIR = APP.parent / "deploy" / "mail-bridge"
 
 
