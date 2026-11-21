@@ -83,7 +83,10 @@
 .rem-state { grid-area: 3 / 2 / 4 / 4; font-size: 13px; color: var(--text); }
 .fact.rem.undelivered, .fact.rem.failed { --kc: var(--red); border-color: rgba(255,93,108,.45); }
 .rem-form, .rem-new { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding: 4px 0 2px; }
-.rem-new { grid-template-columns: 1fr; margin-top: 12px; max-width: 520px; }
+.rem-new { grid-template-columns: 1fr; max-width: 520px; }
+.rem-form select, .rem-new select { min-width: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-hi); background: rgba(4,7,12,.9); color: var(--text); font: inherit; }
+.rem-form select:focus, .rem-new select:focus { outline: none; border-color: var(--blue); }
+.rem-set { margin-top: 12px; }
 .fact.rem .rem-form .err, .rem-new .err { grid-area: auto; grid-column: 1 / -1; }
 .rem-form .rem-acts, .rem-new .rem-acts { grid-area: auto; }
 @media (max-width: 900px) {
