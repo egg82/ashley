@@ -13,6 +13,7 @@ from .herdr import Herdr
 from .install import init
 from .ledger import Ledger
 from .logs import Log, StdoutLog
+from .machine import Machine
 from .runner import SubprocessRunner
 from .server import make_server
 from .sessions import Sessions
@@ -49,7 +50,8 @@ def make_api(config: Config, herdr: Herdr, log: Log) -> Api:
     ledger = Ledger(Path(config.state_dir) / "sent-prompts.jsonl")
     transcripts = Transcripts(CLAUDE_DIR / "projects", ledger)
     sessions = Sessions(herdr, config.roots, config.start_timeout_ms, log, transcripts, keep_job_dirs=config.keep_job_dirs)
-    return Api(Auth(Path(config.state_dir)), sessions, herdr, log, Limits(config.max_file_bytes, config.max_files))
+    return Api(Auth(Path(config.state_dir)), sessions, herdr, log, Limits(config.max_file_bytes, config.max_files),
+               Machine(config.bench_tools))
 
 
 def run_serve() -> int:

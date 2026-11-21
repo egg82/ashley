@@ -4,7 +4,8 @@ A small HTTPS service that lets Ashley see and drive your Claude Code sessions. 
 herdr runs, as you, and calls the `herdr` CLI. It lists your Claude sessions, reads their screens,
 sends a prompt to one that is ready, starts a new one in an allowed directory, and closes one. It can also put files into
 a session's `in/` folder and hand back the files the session left in `out/`, and nothing else of the session's directory.
-It cannot send keys, type into a pane, or run a command.
+It cannot send keys, type into a pane, or run a command. It also reports what the machine can do (`GET /v1/machine`):
+the facts Ashley picks a machine by, each read live from a fixed source.
 
 One bridge serves one person, and runs on one machine: with several machines, run one bridge on each and add each as its own
 connection (up to four, each under a label that names the machine, which is what Ashley calls it). The first call that reaches it names the person, and any other person is refused with
@@ -42,8 +43,10 @@ outside the roots is refused, and one under them that does not exist yet is crea
 - the **token**. Only its digest is stored; if you lose it, run `init` again, which mints a new token and releases the
   bridge from whoever it was serving.
 
-Start it, with the herdr server beside it. Both are user services, so they come back after a reboot; without
-`herdr-server` the bridge still answers `whoami` but every session call fails with `herdr_unavailable`:
+Start it. Both services are user services, so they come back after a reboot; without a running herdr server the bridge
+still answers `whoami` but every session call fails with `herdr_unavailable`.
+
+A machine with no herdr server running installs both units, and the bridge unit starts the server through its `Wants=`:
 
 ```bash
 mkdir -p ~/.config/systemd/user
@@ -54,7 +57,19 @@ herdr session list   # the default session shows running
 journalctl --user -u ashley-herdr-bridge -f
 ```
 
-If you already run herdr from a terminal, stop that server first (`herdr server stop`), so the service owns it.
+A machine whose herdr already runs from a terminal installs **only** `ashley-herdr-bridge.service`, and leaves its
+own server alone. Do not install `herdr-server.service` there: the bridge unit `Wants=` it, so with both present
+systemd starts a second server, which exits "already running", and restarts it every five seconds for ever.
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp bridge/herdr/ashley-herdr-bridge.service ~/.config/systemd/user/
+sed -i 's/ herdr-server.service//g' ~/.config/systemd/user/ashley-herdr-bridge.service
+systemctl --user daemon-reload
+systemctl --user enable --now ashley-herdr-bridge
+```
+
+The `sed` drops the unit's `Wants=` and `After=` on `herdr-server.service`, which this machine does not have.
 
 Open the port (7843/tcp unless you passed `--port`) to the cluster, e.g. `sudo firewall-cmd --permanent
 --add-port=7843/tcp && sudo firewall-cmd --reload`.
@@ -70,7 +85,8 @@ bytes; an error is `{"error": <code>}`.
 
 | Call | Body or query | Answer |
 |---|---|---|
-| `GET /v1/whoami` | | `bridge_version`, `herdr_version`, `person`, `capabilities` (`files` from 0.2.0; absent before) |
+| `GET /v1/whoami` | | `bridge_version`, `herdr_version`, `person`, `capabilities` (`files` from 0.2.0, `machine` from 0.5.0; absent before) |
+| `GET /v1/machine` | | the machine report (see Machine report) |
 | `GET /v1/sessions` | | `sessions` (`id`, `label`, `dir`, `status`, `seq`, `last_typed_at`), `last_typed_at`, `roots` (the absolute paths a start may name) |
 | `GET /v1/sessions/{id}/read` | `lines` 1 to 400, default 120 | `text`, `truncated`, `revision` |
 | `POST /v1/sessions/{id}/prompt` | `{"text"}`, 1 to 8000 characters | `{"submitted": true}` |
@@ -100,6 +116,31 @@ ISO time you last typed into the session, and the list's own `last_typed_at` the
 | `unconfirmed` | 504 | a change may or may not have happened: a prompt or close that timed out, or a started session that never reported a state (its tab is closed again) |
 
 A `label` is a herdr agent name: a lowercase letter, then up to 31 of `a-z`, `0-9`, `_`, `-`.
+
+### Machine report
+
+`GET /v1/machine` answers what the machine is, read live for each call, so a card plugged in or a session started shows
+at the next one:
+
+| Field | Source |
+|---|---|
+| `hostname`, `os`, `kernel` | `gethostname`, `PRETTY_NAME` in `/etc/os-release`, `/proc/sys/kernel/osrelease` |
+| `cpu` (`model`, `cores`) | `/proc/cpuinfo` |
+| `memory` (`total_mb`, `available_mb`) | `/proc/meminfo` |
+| `gpus` (`model`, `memory_mb` each) | `nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits`, 5 second limit; `[]` when it is not installed |
+| `busy` | whether herdr lists a session `working` |
+| `tools` | those of `bench_tools` found on `PATH` |
+| `usb` (`id` as `vendor:product`, `product`) | `idVendor`, `idProduct` and `product` under `/sys/bus/usb/devices`; root hubs left out |
+
+A value the bridge could not read is `null` (`gpus` when `nvidia-smi` failed or timed out, `usb` when the bus cannot be
+listed), never `0` or empty. The bridge still cannot run an arbitrary command, and the report does not change that: each
+probe is a fixed read of a kernel file, or `nvidia-smi` with fixed arguments and a timeout. A tool in `bench_tools` is only
+looked up on `PATH`, never run. No serial number, file content or environment value is read. A USB `product` is text the
+device chose, so it is cut to 64 printable ASCII characters and Ashley treats the report as words from outside.
+
+`bench_tools` is a list of program names in `config.json`, default `pio`, `sigrok-cli`, `podman`, `docker`, `python3`.
+Extend it with the instruments' tools (`ccx`, `openocd`) and restart the service; a name with a path or a space is refused
+at start.
 
 ### Files
 
@@ -152,21 +193,22 @@ list are read. Typing into a session herdr does not list is not seen.
 
 ## Upgrading
 
-0.4.0 answers `last_typed_at`. Nothing about the other calls changed, and the settings file needs no edit. From a checkout
-of this repository at the new version:
+0.5.0 adds `GET /v1/machine` and `bench_tools` in the settings file, which is optional: a file without it gets the default
+list. Nothing about the other calls changed. A bridge older than 0.5.0 answers `not_found` to the machine report, and Ashley
+shows that machine without one. From a checkout of this repository at the new version:
 
 ```bash
 ~/.local/share/ashley-herdr-bridge/venv/bin/pip install --upgrade ./bridge/herdr
 systemctl --user restart ashley-herdr-bridge
-~/.local/share/ashley-herdr-bridge/venv/bin/pip show ashley-herdr-bridge | grep '^Version'   # 0.4.0
+~/.local/share/ashley-herdr-bridge/venv/bin/pip show ashley-herdr-bridge | grep '^Version'   # 0.5.0
 journalctl --user -u ashley-herdr-bridge -n 3                                                  # call=serve status=listening
 ```
 
 The token, fingerprint and recorded person are kept, herdr and its sessions are not touched, and the service files did not
-change. Prompts sent before the upgrade are not in the ledger.
+change (a machine that runs its own herdr keeps its one-unit install). Prompts sent before the upgrade are not in the ledger.
 
 ## Logs
 
 One logfmt line per call to the journal: `call`, `session` (the first 8 hex digits of a sha256 of the session id),
 `status`, `ms`, `bytes`, and `error` when refused. Never prompt text, screen text, file names, paths, labels, the token
-or the person id. A file call is `upload`, `outputs` or `download`, and its `bytes` is the file's size.
+or the person id. The machine report is `machine`. A file call is `upload`, `outputs` or `download`, and its `bytes` is the file's size.
