@@ -92,9 +92,7 @@ from .people.postgres_accounts import PostgresAccounts
 from .people.postgres_admins import PostgresAdmins
 from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
-from .calendars.calendars import Calendars
-from .calendars.routed import RoutedCalendars
-from .home_assistant.calendars import NAME as HA_CALENDARS_NAME, HaCalendars
+from .home_assistant import adapters as home_assistant_adapters
 from .senses.calendar import Calendar
 from .senses.homes_calendar import HomesCalendar
 from .senses.focus import Focus
@@ -325,7 +323,7 @@ def _wire_homes(settings: Settings, closers: list[Callable[[], Coroutine[Any, An
     homes = ConnectedHomes(services.get(Connections))
     closers.append(homes.close)
     services.register(Homes, homes)
-    services.register(Calendars, RoutedCalendars({HA_CALENDARS_NAME: HaCalendars()}))
+    home_assistant_adapters.register()
     services.register(HeldStates, SocketStates())
     services.register(Presence, HomesPresence(services.get(People)))
     services.register(Calendar, HomesCalendar())
