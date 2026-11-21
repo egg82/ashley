@@ -1,6 +1,7 @@
 """SettingsReader in Postgres, tables `connection_settings` and `connection_settings_log`."""
 
 import logging
+from collections.abc import Mapping
 
 from .. import logs, services
 from ..db.database import Database
@@ -8,7 +9,7 @@ from .connections import ConnectionsUnavailable
 from .kinds import ConnectionKinds
 from .model import Port
 from .rows import translated
-from .settings import SettingValues
+from .settings import PORTS_OFF as SETTINGS_PORTS_OFF, SettingValues
 from .settings_read import Change, SettingsReader, StoredSettings
 
 log = logging.getLogger("ashley.connections")
@@ -16,6 +17,8 @@ log = logging.getLogger("ashley.connections")
 OF_PORT = ("SELECT s.values FROM connection_settings s JOIN connections c ON c.id = s.connection_id "
            "WHERE c.household_id = %(household)s AND c.person_id IS NULL AND c.kind = ANY(%(kinds)s::text[]) "
            "ORDER BY array_position(%(kinds)s::text[], c.kind), c.label, c.id LIMIT 1")
+PORTS_OFF = ("SELECT connection_id, values->%(key)s::text FROM connection_settings "
+             "WHERE household_id = %(household)s AND values ? %(key)s::text")
 STORED = ("SELECT version, values, updated_at, updated_by FROM connection_settings "
           "WHERE connection_id = %(id)s AND household_id = %(household)s")
 HISTORY = ("SELECT id, key, changed_by, changed_at FROM connection_settings_log "
@@ -37,6 +40,12 @@ class PostgresSettingsReader(SettingsReader):
             logs.warning(log, "settings.unreadable", household=household_id, port=port)
             return {}
         return {} if row is None else row[0]
+
+    async def ports_off(self, household_id: int) -> Mapping[int, frozenset[str]]:
+        with translated():
+            async with self._database.connection() as conn:
+                rows = await (await conn.execute(PORTS_OFF, {"household": household_id, "key": SETTINGS_PORTS_OFF})).fetchall()
+        return {r[0]: frozenset(r[1]) for r in rows if r[1]}
 
     async def stored(self, connection_id: int, household_id: int) -> StoredSettings:
         with translated():

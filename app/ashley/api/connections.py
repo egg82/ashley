@@ -98,7 +98,7 @@ def _kinds(signed_in: Person) -> list[ConnectionKindInfo]:
         name=k.name, title=k.title, what=k.what, blurb=k.blurb, connected=k.connected, removed=k.removed,
         holders=sorted(k.holders), most=k.most, takes_address=k.fixed_address is None,
         address_placeholder=k.address_placeholder, secret_field=k.secret_field, secret_label=k.secret_label,
-        secret_noun=k.secret_noun, connect=_connect_of(k), has_settings=bool(k.settings), label_pattern=k.label_pattern,
+        secret_noun=k.secret_noun, connect=_connect_of(k), has_settings=bool(k.configurable), label_pattern=k.label_pattern,
         picks_catalogue_provider=k.picks_catalogue_provider,
         set_up=not isinstance(k.connect, OAuth) or services.get(OAuthProviders).get(k.connect.provider) is not None)
         for k in services.get(ConnectionKinds).offered(signed_in.person.household_id) if may_change(signed_in, k)]

@@ -31,16 +31,26 @@ class EntityPerActionField(BaseModel):
     domains: list[str]
 
 
-SettingField = Annotated[EntityListField | ActionListField | EntityPerActionField, Field(discriminator="type")]
+class PortSwitchField(BaseModel):
+    """The ports of the connection's kind a person may switch off, as a list of port names from `ports`; a connection
+    serves every port not listed."""
+
+    type: Literal["port_switches"]
+    ports: list[str]
+
+
+SettingField = Annotated[EntityListField | ActionListField | EntityPerActionField | PortSwitchField,
+                         Field(discriminator="type")]
 
 
 class SettingInfo(BaseModel):
     """One setting a kind declares. `decides` is what it changes in how she behaves: `taint`, `tier` and `read` settings
-    change what she trusts, asks about or counts as a change; `plain` ones are preferences."""
+    change what she trusts, asks about or counts as a change; `ports` is which ports the connection serves; `plain`
+    ones are preferences."""
 
     key: str
     field: SettingField
-    decides: Literal["taint", "tier", "read", "plain"]
+    decides: Literal["taint", "tier", "read", "ports", "plain"]
 
 
 class ActionIds(BaseModel):

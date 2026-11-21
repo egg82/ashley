@@ -6,6 +6,7 @@ from typing import Any
 import psycopg
 from ashley import services
 from ashley.connections.connections import Connections
+from ashley.connections.kinds import ConnectionKinds
 from ashley.home_assistant.homes import Home, Homes
 from ashley.home_assistant.house import ActionInfo, State
 from fastapi.testclient import TestClient
@@ -42,10 +43,12 @@ def test_a_connection_never_set_answers_the_kind_s_schema_and_revision_zero(clie
     body = got.json()
     assert (body["connection_id"], body["kind"], body["revision"], body["values"]) == (cid, "home_assistant", 0, [])
     assert body["updated_at"] is None and body["updated_by"] is None
-    assert [s["key"] for s in body["settings"]] == ["household_reads", "service_reads", "reads", "consequential_entities", "glance_calendars"]
+    assert [s["key"] for s in body["settings"]] == ["household_reads", "service_reads", "reads", "consequential_entities",
+                                                    "glance_calendars", "ports_off"]
     first = body["settings"][0]
     assert first["field"] == {"type": "entity_per_action", "for_actions": ["todo.get_items"], "domains": ["todo"]}
-    assert first["decides"] == "taint" and {s["decides"] for s in body["settings"]} == {"taint", "tier", "read", "plain"}
+    assert first["decides"] == "taint" and {s["decides"] for s in body["settings"]} == {"taint", "tier", "read", "ports", "plain"}
+    assert body["settings"][-1]["field"] == {"type": "port_switches", "ports": ["automations", "house"]}
 
 
 def test_a_write_is_stored_whole_and_answered_with_who_wrote_it(client: TestClient, home: People) -> None:
@@ -109,9 +112,9 @@ def test_a_connection_of_another_household_or_a_kind_with_no_settings_is_404(cli
     for tail in ("settings", "settings/history", "catalogue"):
         assert client.get(settings_url(theirs[0], tail)).status_code == 404, tail
     assert put(client, theirs[0], 0, [{"key": "reads", "ids": ["script.a"]}]).status_code == 404
-    sure = add(client, home, "sure")
-    assert client.get(settings_url(sure)).status_code == 404
-    assert put(client, sure, 0, []).status_code == 404
+    mine = add(client, home, "google", person=home.alana)
+    assert client.get(settings_url(mine)).status_code == 404
+    assert put(client, mine, 0, []).status_code == 404
     assert client.get(settings_url(0)).status_code == 404
 
 
@@ -181,4 +184,17 @@ def test_a_domain_that_is_not_a_domain_is_422(client: TestClient, home: People) 
 
 def test_the_kinds_listing_says_which_kinds_have_settings(client: TestClient) -> None:
     offered = {k["name"]: k["has_settings"] for k in client.get("/api/connections").json()["offered"]}
-    assert offered["home_assistant"] is True and offered["sure"] is False
+    assert offered["home_assistant"] is True and offered["sure"] is True
+    kinds = {k.name: k for k in services.get(ConnectionKinds).all()}
+    assert offered == {name: bool(kinds[name].configurable) for name in offered}
+
+
+def test_the_ports_a_household_switches_off_are_stored_as_a_setting_and_only_the_kind_s_ports_are_taken(
+        client: TestClient, home: People) -> None:
+    sure = add(client, home, "sure")
+    assert client.get(settings_url(sure)).json()["settings"][0]["field"] == {"type": "port_switches", "ports": ["ledger"]}
+    assert put(client, sure, 0, [{"key": "ports_off", "ids": ["house"]}]).status_code == 422
+    wrote = put(client, sure, 0, [{"key": "ports_off", "ids": ["ledger"]}])
+    assert wrote.status_code == 200, wrote.text
+    assert client.get(settings_url(sure)).json()["values"] == [{"key": "ports_off", "ids": ["ledger"], "per_action": []}]
+    assert put(client, sure, 1, []).status_code == 200

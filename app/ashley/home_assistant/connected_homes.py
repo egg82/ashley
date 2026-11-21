@@ -76,6 +76,14 @@ class ConnectedHomes(Homes):
             return self._unreadable(household_id, e)
         return await self._current(household_id, opened)
 
+    async def writes_automations(self, household_id: int) -> bool:
+        if not self._connections.can_open():
+            return False
+        try:
+            return await ports.opened(self._connections, "automations", household_id) is not None
+        except ConnectionsUnavailable as e:
+            raise HomesUnavailable("the household's connections could not be read") from e
+
     def _unreadable(self, household_id: int, error: ConnectionsUnavailable) -> Home:
         known = self._known.get(household_id)
         logs.warning(log, "homes.unreadable", household=household_id, kept=known is not None)

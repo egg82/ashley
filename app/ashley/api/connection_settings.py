@@ -1,6 +1,7 @@
 """What a person sets on a connection (`decisions.md`, "A connection has settings its person sets"). Any person of the
 household may read and write them, from a signed-in session of this site: nothing else reaches `SettingsWriter`, so
-what decides her trust (`ConnectionKind.settings` marked `taint` or `tier`) is never written by her own tools.
+what decides her trust (`ConnectionKind.settings` marked `taint` or `tier`) and which ports a connection serves (`ports`) are
+never written by her own tools.
 
 `GET /api/connections/{id}/settings` answers the settings with the schema the kind declares and a `revision`;
 `PUT` replaces the whole of them and must carry the revision read, else 409 `version_conflict`; an unknown key, a value
@@ -23,14 +24,14 @@ from .. import logs, services
 from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.kinds import CatalogueUnavailable, ConnectionKind, ConnectionKinds
 from ..connections.model import Catalogued, Connection
-from ..connections.settings import (ActionList, EntityList, EntityListPerAction, Field, SettingsInvalid, SettingValue,
-                                    SettingValues)
+from ..connections.settings import (ActionList, EntityList, EntityListPerAction, Field, PortSwitches, SettingsInvalid,
+                                    SettingValue, SettingValues)
 from ..connections.settings_read import SettingsReader, StoredSettings
 from ..connections.settings_write import SettingsWriter, VersionConflict
 from ..people.people import People, PeopleUnavailable
 from .connection_settings_models import (ActionIds, ActionListField, CatalogueActionInfo, CatalogueEntityInfo,
                                          ConnectionCatalogue, ConnectionSettings, ConnectionSettingsRequest,
-                                         EntityListField, EntityPerActionField, SettingChange, SettingChanges,
+                                         EntityListField, EntityPerActionField, PortSwitchField, SettingChange, SettingChanges,
                                          SettingEntry, SettingField, SettingInfo, SettingsRefused)
 from .admin_gate import may_change, refused
 from .models import ErrorResponse, Person as WirePerson, wire_person
@@ -74,12 +75,14 @@ async def _held(signed_in: Person, connection_id: int) -> tuple[Connection, Conn
     found = await services.get(Connections).of_household(person.household_id, person.id)
     held = next((c for c in found if c.id == connection_id and c.person_id is None), None)
     kind = None if held is None else services.get(ConnectionKinds).get(held.kind)
-    return None if held is None or kind is None or not kind.settings else (held, kind)
+    return None if held is None or kind is None or not kind.configurable else (held, kind)
 
 
 def _field(field: Field) -> SettingField:
     if isinstance(field, EntityListPerAction):
         return EntityPerActionField(type="entity_per_action", for_actions=list(field.actions), domains=list(field.domains))
+    if isinstance(field, PortSwitches):
+        return PortSwitchField(type="port_switches", ports=list(field.ports))
     if isinstance(field, EntityList):
         return EntityListField(type="entity_list", domains=list(field.domains))
     assert isinstance(field, ActionList)
@@ -110,7 +113,7 @@ async def _wire(connection: Connection, kind: ConnectionKind, stored: StoredSett
     return ConnectionSettings(
         connection_id=connection.id, kind=kind.name, revision=stored.version,
         settings=[SettingInfo(key=s.key, field=_field(s.field), decides=s.decides)
-                  for s in kind.settings],
+                  for s in kind.configurable],
         values=_entries(stored.values), updated_at=stored.updated_at,
         updated_by=await _person(connection.household_id, stored.updated_by))
 

@@ -265,3 +265,22 @@ def test_the_migration_seeds_nothing_on_household_ones_connection_either(db_url:
 
 def test_the_migration_seeds_nothing_where_there_is_no_connection(db_url: str) -> None:
     assert seeded(db_url, False) == []
+
+
+def test_the_ports_a_household_switched_off_are_read_by_connection_and_never_across_households(db_url: str) -> None:
+    home, person = household(db_url)
+    other, _ = household(db_url, "other")
+    cid, theirs, untouched = connection(db_url, home), connection(db_url, other), connection(db_url, home, "sure")
+
+    async def scenario(reader: PostgresSettingsReader, writer: PostgresSettingsWriter) -> None:
+        assert await reader.ports_off(home) == {}
+        await writer.put(HOME_ASSISTANT, cid, home, person, 0, {"ports_off": ["automations"]})
+        await writer.put(HOME_ASSISTANT, theirs, other, person, 0, {"ports_off": ["house"]})
+        await writer.put(HOME_ASSISTANT, untouched, home, person, 0, {"reads": ["script.a"]})
+        assert await reader.ports_off(home) == {cid: frozenset({"automations"})}
+        await writer.put(HOME_ASSISTANT, cid, home, person, 1, {})
+        assert await reader.ports_off(home) == {}
+        with pytest.raises(SettingsInvalid):
+            await writer.put(HOME_ASSISTANT, cid, home, person, 2, {"ports_off": ["ledger"]})
+
+    run(db_url, scenario)

@@ -87,6 +87,21 @@ def pending(url: str) -> int:
     return int(scalar(url, "SELECT count(*) FROM proposals"))
 
 
+def test_nothing_is_offered_or_done_once_the_household_switches_its_automations_port_off(db_url: str) -> None:
+    class Switched(OneHome):
+        async def writes_automations(self, household_id: int) -> bool:
+            return False
+
+    async def go() -> None:
+        async with world(db_url) as w:
+            services.register(Homes, Switched(Home(w.home, HomeAssistant(httpx2.AsyncClient()), w.house)))
+            assert await w.offered(w.alana, 1, 5) == []
+            refused = await w.ask(w.alana, 1, 5, CHANGE, op="create", kind="area", data={"name": "Garage"})
+            assert refused.is_error and not w.house.done
+
+    run(go())
+
+
 def test_a_configuration_change_is_made_at_once_without_asking(db_url: str) -> None:
     async def go() -> None:
         async with world(db_url) as w:

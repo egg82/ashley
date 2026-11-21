@@ -101,9 +101,10 @@ class HouseChangeTools(Tools):
     async def _house(self) -> House | None:
         try:
             home: Home | None = await services.get(Homes).of(self._household_id)
+            writes = home is not None and await services.get(Homes).writes_automations(self._household_id)
         except HomesUnavailable as e:
             raise ToolsUnavailable("the household's house could not be read") from e
-        return home.house if home is not None and home.house.offered() else None
+        return home.house if home is not None and writes and home.house.offered() else None
 
     async def _can_confirm(self) -> bool:
         """Whether there is a proposal of the speaker's to carry out in this turn: she is offered `house_confirm` only

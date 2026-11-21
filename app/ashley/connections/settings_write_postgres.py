@@ -40,7 +40,7 @@ class PostgresSettingsWriter(SettingsWriter):
 
     async def put(self, kind: ConnectionKind, connection_id: int, household_id: int, person_id: int, version: int,
                   values: SettingValues) -> StoredSettings | None:
-        checked = validate(kind.settings, values)
+        checked = validate(kind.configurable, values)
         args = {"id": connection_id, "household": household_id, "person": person_id}
         with translated():
             async with self._database.connection() as conn:

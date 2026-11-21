@@ -41,12 +41,12 @@ export function SettingsDigest({ id }: { id: number }) {
   const lines = historyOf(read.changes).slice(0, 5);
   return (
     <div class="rr-settings">
-      <p class="cn-blurb">{summaryOf(read.settings.values)}</p>
+      {read.settings.settings.some((s) => s.decides !== 'ports') && <p class="cn-blurb">{summaryOf(read.settings.values)}</p>}
       <ul class="rr-set-rows">
         {rows.map((r) => (
           <li key={r.key} class={r.judging ? 'judging' : ''}>
             <span class="rr-set-title">{r.title}</span>
-            <span class="meta">{r.decides} · {r.count} {r.count === 1 ? 'entry' : 'entries'}</span>
+            <span class="meta">{r.decides} · {r.held}</span>
             <Who by={r.by} at={r.at} />
           </li>
         ))}

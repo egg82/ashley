@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from datetime import tzinfo
 
 from .. import services
-from ..home_assistant.homes import house_of
+from ..home_assistant.homes import automation_house_of
 from ..home_assistant.house import ConfigItem, House, HouseUnavailable, has_action
 from ..inference.model import ToolCall, ToolResult
 from ..people.zone import zone_of
@@ -73,7 +73,7 @@ class BenchAutomationTools(Tools):
                                         "right now; nothing changed", bench=self._bench)
 
     async def _house(self) -> House:
-        return await house_of(self._owner.household_id)
+        return await automation_house_of(self._owner.household_id)
 
     async def _list(self, call: ToolCall, started: float) -> ToolResult:
         listed = await (await self._house()).configs("automation")

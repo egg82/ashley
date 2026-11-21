@@ -3,6 +3,7 @@ Reading is open to every system that behaves by a setting; writing is `settings_
 inference never import (`tests/test_settings_boundary.py`)."""
 
 from abc import abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -43,6 +44,11 @@ class SettingsReader(Service):
         """The settings of the household's own connection that serves `port`, none when it has none. Never raises:
         settings that cannot be read are none, which is the least trust (everything outside, nothing listed), logged
         `settings.unreadable`."""
+
+    async def ports_off(self, household_id: int) -> Mapping[int, frozenset[str]]:
+        """The ports each of the household's connections does not serve (`settings.PORTS_OFF`), by connection id; a
+        connection with every port on is absent. Raises ConnectionsUnavailable."""
+        return {}
 
     @abstractmethod
     async def stored(self, connection_id: int, household_id: int) -> StoredSettings:

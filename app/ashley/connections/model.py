@@ -1,5 +1,6 @@
 """A household's connection to a service outside her, as values."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
@@ -18,9 +19,22 @@ Holder = Literal["household", "person"]
 ResourceKind = Literal["mailbox"]
 """What a connection reaches, as its service names it."""
 
-Port = Literal["house", "ledger", "code_host", "herdr", "mail", "inference", "search", "chat", "files", "voice", "printing", "stock"]
+Port = Literal["house", "automations", "ledger", "code_host", "herdr", "mail", "inference", "search", "chat", "files",
+               "voice", "printing", "stock"]
 """What a service is for: the question a consumer asks, whichever service answers it. A kind declares the ports it
-implements (`ConnectionKind.ports`); a consumer opens a port, never a kind."""
+implements (`ConnectionKind.ports`); a consumer opens a port, never a kind. A household may switch each port of a
+connection off (`ashley.connections.settings.PORTS_OFF`); `automations` is the house's own configuration being written,
+which needs `house` too."""
+
+Combine = Literal["combine", "one"]
+"""How a port's connections answer together: `combine`, every enabled one serves (`ashley.connections.ports.opened_all`
+lists all); `one`, the first in the kind registration order serves and the rest wait behind it."""
+
+PORTS: Mapping[Port, Combine] = {
+    "house": "one", "automations": "one", "ledger": "one", "printing": "one", "stock": "one",
+    "search": "one", "chat": "one", "files": "one", "voice": "one",
+    "code_host": "combine", "herdr": "combine", "mail": "combine", "inference": "combine"}
+"""Every port's combine rule, the one place it is stated."""
 
 
 @dataclass(frozen=True)

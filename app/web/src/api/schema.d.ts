@@ -4825,6 +4825,20 @@ export interface components {
             pinned: boolean;
         };
         /**
+         * PortSwitchField
+         * @description The ports of the connection's kind a person may switch off, as a list of port names from `ports`; a connection
+         *     serves every port not listed.
+         */
+        PortSwitchField: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "port_switches";
+            /** Ports */
+            ports: string[];
+        };
+        /**
          * ProtonAccount
          * @description A Proton account of a connection the signed-in person can see. `state` is Bridge's; `syncing` is true while Bridge
          *     serves its mailbox empty, with the last `sync_progress` it reported (0 to 1, null before any).
@@ -5505,18 +5519,19 @@ export interface components {
         /**
          * SettingInfo
          * @description One setting a kind declares. `decides` is what it changes in how she behaves: `taint`, `tier` and `read` settings
-         *     change what she trusts, asks about or counts as a change; `plain` ones are preferences.
+         *     change what she trusts, asks about or counts as a change; `ports` is which ports the connection serves; `plain`
+         *     ones are preferences.
          */
         SettingInfo: {
             /** Key */
             key: string;
             /** Field */
-            field: components["schemas"]["EntityListField"] | components["schemas"]["ActionListField"] | components["schemas"]["EntityPerActionField"];
+            field: components["schemas"]["EntityListField"] | components["schemas"]["ActionListField"] | components["schemas"]["EntityPerActionField"] | components["schemas"]["PortSwitchField"];
             /**
              * Decides
              * @enum {string}
              */
-            decides: "taint" | "tier" | "read" | "plain";
+            decides: "taint" | "tier" | "read" | "ports" | "plain";
         };
         /**
          * SettingsRefused

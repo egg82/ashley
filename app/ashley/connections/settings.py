@@ -1,7 +1,8 @@
 """What a connection's person can set on it, declared by its kind as data (`ConnectionKind.settings`, Type Object) and
 checked by `validate`. A setting is a named value of one `Field` shape; `decides` says what the setting changes in how
 she behaves: `taint`, `tier` and `read` settings widen or narrow what she trusts, asks about or counts as a change, so only
-a person writes them (`settings_write`), `plain` ones are preferences.
+a person writes them (`settings_write`), `plain` ones are preferences. `ports` is the household's choice of which ports a
+connection serves (`PORTS_OFF`): it widens or narrows what she can do, so only a person writes it too.
 
 A value is JSON: a list of ids (`EntityList`, `ActionList`) or an object from a declared action to a list of ids
 (`EntityListPerAction`). The service's own catalogue is advisory: `domains` filters what the room offers, and an id
@@ -18,6 +19,7 @@ SettingValues = Mapping[str, SettingValue]
 
 MAX_IDS = 200
 _ID = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
+_PORT = re.compile(r"^[a-z_]+$")
 
 
 @dataclass(frozen=True)
@@ -42,8 +44,19 @@ class EntityListPerAction:
     domains: tuple[str, ...]
 
 
-Field = EntityList | ActionList | EntityListPerAction
-Decides = Literal["taint", "tier", "read", "plain"]
+@dataclass(frozen=True)
+class PortSwitches:
+    """The ports of the connection's kind that a person may switch off: a list of port names from `ports`."""
+
+    ports: tuple[str, ...]
+
+
+Field = EntityList | ActionList | EntityListPerAction | PortSwitches
+Decides = Literal["taint", "tier", "read", "ports", "plain"]
+
+PORTS_OFF = "ports_off"
+"""The key every switchable connection's settings carry: the ports it does not serve. Nothing stored means every port
+is on."""
 
 
 @dataclass(frozen=True)
@@ -85,6 +98,11 @@ def validate(settings: tuple[Setting, ...], values: SettingValues) -> dict[str, 
 
 def _checked(key: str, field: Field, value: object) -> SettingValue:
     loose: Any = value
+    if isinstance(field, PortSwitches):
+        named = _ids(key, value, _PORT)
+        if any(p not in field.ports for p in named):
+            raise SettingsInvalid(key, "bad_id")
+        return named
     if isinstance(field, EntityListPerAction):
         if not isinstance(value, dict):
             raise SettingsInvalid(key, "wrong_shape")
@@ -101,14 +119,14 @@ def _checked(key: str, field: Field, value: object) -> SettingValue:
     return _ids(key, value)
 
 
-def _ids(key: str, value: object) -> list[str]:
+def _ids(key: str, value: object, shape: re.Pattern[str] = _ID) -> list[str]:
     loose: Any = value
     if not isinstance(value, list):
         raise SettingsInvalid(key, "wrong_shape")
     ids: list[object] = list(loose)
     if len(ids) > MAX_IDS:
         raise SettingsInvalid(key, "too_many")
-    named = [i for i in ids if isinstance(i, str) and _ID.match(i)]
+    named = [i for i in ids if isinstance(i, str) and shape.match(i)]
     if len(named) != len(ids):
         raise SettingsInvalid(key, "bad_id")
     return list(dict.fromkeys(named))
