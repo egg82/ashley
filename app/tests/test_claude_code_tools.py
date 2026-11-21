@@ -40,7 +40,7 @@ RESULT_CHARS = smallest_result_chars(load_limits())
 HOME, ALANA, SAM = 1, int(PERSON), 8
 PANE = "w5H:pK"
 WORKING = session_ids()[0]
-ALL = ["claude_sessions", "claude_read", "claude_prompt", "claude_start", "claude_close"]
+ALL = ["claude_sessions", "claude_machines", "claude_read", "claude_prompt", "claude_start", "claude_close"]
 Replies = dict[tuple[str, ...], Outcome | Exception | list[Outcome]]
 
 
@@ -118,7 +118,7 @@ def test_a_person_without_a_bridge_is_offered_nothing_and_so_is_another_of_the_h
     assert names(tools_for(SAM)) == []
     error(say(tools_for(SAM), "claude_sessions", {}), "not_connected")
     assert names(tools_for(ALANA)) == ALL
-    assert names(Reading(tools_for(ALANA))) == ["claude_sessions", "claude_read"]
+    assert names(Reading(tools_for(ALANA))) == ["claude_sessions", "claude_machines", "claude_read"]
     assert world.calls == []
 
 
@@ -292,3 +292,12 @@ def test_a_prompt_that_is_refused_or_a_store_that_is_down_watches_nothing_new(wo
     services.register(Watches, DownWatches())
     got = json.loads(say(tools, "claude_prompt", {"session": THROWAWAY, "text": "clone it and look"}).content)
     assert got == {"sent": True, "watched": False}
+
+
+def test_the_machine_report_comes_from_the_real_bridge_over_tls(world: World) -> None:
+    world.connect()
+    got = say(tools_for(), "claude_machines", {})
+    assert not got.is_error
+    report = json.loads(got.content)["machines"][0]["report"]
+    assert set(report) == {"hostname", "os", "kernel", "cpu", "memory_mb", "gpus", "session_busy", "tools", "usb"}
+    assert isinstance(report["cpu"]["cores"], int) and report["session_busy"] is True

@@ -1,5 +1,5 @@
 """What a kind asks of a new connection's label and catalogue provider beyond the request's schema
-(`ConnectionKind.takes_label`, `ConnectionKind.picks_catalogue_provider`), checked by `ashley.api.connections` before
+(`ConnectionKind.takes_label`, `ConnectionKind.picks_catalogue_provider`, `ConnectionKind.takes_description`), checked by `ashley.api.connections` before
 anything is sent to the service."""
 
 from fastapi.responses import JSONResponse
@@ -17,6 +17,14 @@ def label_refused(kind: ConnectionKind, label: str) -> JSONResponse | None:
     return JSONResponse(status_code=422, content=ErrorResponse(
         code="bad_label", detail="that name is lowercase letters, digits, - and _, and not one a provider already has"
     ).model_dump())
+
+
+def description_refused(kind: ConnectionKind, description: str | None) -> JSONResponse | None:
+    """The 422 `unsupported` when a description is named for a kind that takes none; None otherwise."""
+    if description is None or kind.takes_description:
+        return None
+    return JSONResponse(status_code=422, content=ErrorResponse(
+        code="unsupported", detail=f"{kind.title} has nothing to describe").model_dump())
 
 
 async def catalogue_refused(kind: ConnectionKind, provider: str | None) -> JSONResponse | None:

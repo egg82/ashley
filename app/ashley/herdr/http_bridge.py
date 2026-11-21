@@ -13,9 +13,10 @@ from typing import TypeVar, get_args
 from .. import logs
 from .bridge import Bridge
 from .config import HerdrConfig
-from .model import Access, BridgeFailed, OutFile, Reason, Screen, Session, SessionList, Whoami
+from .model import Access, BridgeFailed, MachineReport, OutFile, Reason, Screen, Session, SessionList, Whoami
 from .transport import ClientCertificate, Request, exchange
-from .wire import ClosedBody, SessionBody, SubmittedBody, UploadedBody, body_as, outputs, screen, session, sessions, whoami
+from .wire import (ClosedBody, SessionBody, SubmittedBody, UploadedBody, body_as, machine, outputs, screen, session,
+                   sessions, whoami)
 
 log = logging.getLogger("ashley.herdr")
 SESSION_ID = re.compile(r"[0-9a-fA-F-]{36}")
@@ -70,6 +71,9 @@ class HttpBridge(Bridge):
 
     async def whoami(self, access: Access) -> Whoami:
         return await self._call("whoami", access, Request("GET", "/v1/whoami"), whoami)
+
+    async def machine(self, access: Access) -> MachineReport:
+        return await self._call("machine", access, Request("GET", "/v1/machine"), machine)
 
     async def sessions(self, access: Access) -> SessionList:
         return await self._call("sessions", access, Request("GET", "/v1/sessions"), sessions)

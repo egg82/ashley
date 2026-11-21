@@ -76,6 +76,40 @@ class SessionList:
 
 
 @dataclass(frozen=True)
+class Gpu:
+    model: str | None
+    memory_mb: int | None
+
+
+@dataclass(frozen=True)
+class UsbDevice:
+    """A USB device by `vendor:product` id; `product` is the text the device chose, never a serial number."""
+
+    id: str
+    product: str | None
+
+
+@dataclass(frozen=True)
+class MachineReport:
+    """What the bridge's machine can do, read live (`GET /v1/machine`). A field the bridge could not read is None, which
+    is not zero: `gpus` None means `nvidia-smi` failed, `()` that there is none; `usb` None that the bus could not be
+    listed; `busy` None that herdr could not say. `tools` are those of the bridge's `bench_tools` found on its PATH.
+    `usb` strings and the model names are text from devices, so a report is words from outside."""
+
+    hostname: str | None
+    os: str | None
+    kernel: str | None
+    cpu_model: str | None
+    cpu_cores: int | None
+    memory_total_mb: int | None
+    memory_available_mb: int | None
+    gpus: tuple[Gpu, ...] | None
+    busy: bool | None
+    tools: tuple[str, ...]
+    usb: tuple[UsbDevice, ...] | None
+
+
+@dataclass(frozen=True)
 class OutFile:
     """A regular file in a session's `out/`: its flat name and size in bytes."""
 

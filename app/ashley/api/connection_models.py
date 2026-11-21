@@ -11,6 +11,7 @@ from ..text import NoNul
 from .models import Person
 
 Label = Annotated[NoNul, StringConstraints(strip_whitespace=True, max_length=40)]
+Description = Annotated[NoNul, StringConstraints(strip_whitespace=True, max_length=280)]
 """What an owner calls a connection: stripped of surrounding whitespace, at most 40 characters, empty allowed."""
 
 
@@ -39,7 +40,8 @@ class HouseholdConnection(BaseModel):
     added it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it
     up: false for a deployment's connection (a model provider's key) unless they are an admin. `catalogue_provider` is
     the model catalogue provider an OpenAI-compatible provider's calls are priced as, null for one at a custom address
-    (its calls are unpriced) and for every other kind."""
+    (its calls are unpriced) and for every other kind. `description` is what its owner wrote about what it reaches (a herdr
+    machine), empty when nothing was."""
 
     id: int
     label: str
@@ -57,6 +59,7 @@ class HouseholdConnection(BaseModel):
     can_take_back: bool = False
     can_change: bool = True
     catalogue_provider: str | None = None
+    description: str = ""
 
 
 class ConnectionKindInfo(BaseModel):
@@ -74,7 +77,8 @@ class ConnectionKindInfo(BaseModel):
     (an OpenAI-compatible provider's label is the name routes call it by, so it is required and an identifier); some
     names a shipped provider has are refused too (422 `bad_label`). `picks_catalogue_provider` says a new connection
     may name the model catalogue provider it is (`GET /api/catalogue`), whose `api` is its address; without one it is
-    at a custom address and its calls are unpriced."""
+    at a custom address and its calls are unpriced. `takes_description` says its owner may write a sentence or two about
+    what a connection reaches (`HouseholdConnection.description`)."""
 
     name: str
     title: str
@@ -94,6 +98,7 @@ class ConnectionKindInfo(BaseModel):
     has_settings: bool = False
     label_pattern: str | None = None
     picks_catalogue_provider: bool = False
+    takes_description: bool = False
 
 
 class ConnectionsResponse(BaseModel):
@@ -149,16 +154,19 @@ NewConnectionRequest = NewApiKeyConnectionRequest | NewTokenConnectionRequest
 
 
 class ConnectionChange(BaseModel):
-    """`PATCH /api/connections/{id}`: either the new `label`, or the new `holder`: `household` hands the connection to
-    the household, `person` takes back one the signed-in person handed over. Exactly one of them."""
+    """`PATCH /api/connections/{id}`: the new `label` and or `description` (empty clears it; only a kind that
+    `takes_description` accepts one), or the new `holder`: `household` hands the connection to the household, `person`
+    takes back one the signed-in person handed over. A holder is sent alone."""
 
     label: Label | None = None
+    description: Description | None = None
     holder: Literal["household", "person"] | None = None
 
     @model_validator(mode="after")
     def _one(self) -> "ConnectionChange":
-        if (self.label is None) == (self.holder is None):
-            raise ValueError("send a label or a holder, not both and not neither")
+        renamed = self.label is not None or self.description is not None
+        if renamed == (self.holder is not None):
+            raise ValueError("send a label or a description, or a holder alone")
         return self
 
 
