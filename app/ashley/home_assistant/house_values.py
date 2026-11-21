@@ -16,6 +16,7 @@ READS = "reads"
 CONSEQUENTIAL = "consequential_entities"
 GLANCE_CALENDARS = "glance_calendars"
 DISCREET_CALENDARS = "discreet_calendars"
+LOOK_CAMERAS = "look_cameras"
 
 
 @dataclass(frozen=True)
@@ -23,7 +24,8 @@ class HouseValues:
     """`household_reads`: for a read action, the entities whose response only the household writes. `service_reads`:
     reads whose response a trusted service writes. `reads`: scripts that change nothing though the house does not say.
     `consequential`: entities always judged. `glance_calendars`: the calendars the kiosk's glance shows. `discreet_calendars`: calendars she answers
-about only when asked directly, never volunteering them."""
+about only when asked directly, never volunteering them. `look_cameras`: the cameras she may list and look through; none
+    until a person names them."""
 
     household_reads: Mapping[str, tuple[str, ...]] = field(default_factory=dict[str, tuple[str, ...]])
     service_reads: tuple[str, ...] = ()
@@ -31,6 +33,7 @@ about only when asked directly, never volunteering them."""
     consequential: tuple[str, ...] = ()
     glance_calendars: tuple[str, ...] = ()
     discreet_calendars: tuple[str, ...] = ()
+    look_cameras: tuple[str, ...] = ()
 
 
 def of(values: SettingValues) -> HouseValues:
@@ -38,7 +41,8 @@ def of(values: SettingValues) -> HouseValues:
     per_action = values.get(HOUSEHOLD_READS)
     return HouseValues({a: tuple(ids) for a, ids in per_action.items()} if isinstance(per_action, dict) else {},
                        _ids(values.get(SERVICE_READS)), _ids(values.get(READS)), _ids(values.get(CONSEQUENTIAL)),
-                       _ids(values.get(GLANCE_CALENDARS)), _ids(values.get(DISCREET_CALENDARS)))
+                       _ids(values.get(GLANCE_CALENDARS)), _ids(values.get(DISCREET_CALENDARS)),
+                       _ids(values.get(LOOK_CAMERAS)))
 
 
 def _ids(value: SettingValue | None) -> tuple[str, ...]:

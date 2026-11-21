@@ -9,6 +9,8 @@ from .house import HouseRejected, HouseUnavailable
 from .ha_json import obj
 from .house_settings import HouseSettings
 
+MAX_IMAGE_BYTES = 16 * 1024 * 1024
+
 
 class Rest:
     def __init__(self, home_assistant: HomeAssistant, settings: HouseSettings) -> None:
@@ -23,6 +25,19 @@ class Rest:
         """As `get`, None for a 404."""
         got = await self._send("GET", path, step, None, None)
         return None if got.status_code == 404 else _json(got, step)
+
+    async def image(self, path: str, step: str, absent: tuple[int, ...]) -> tuple[bytes, str] | None:
+        """The bytes and media type of a GET that answers an image; None for a status in `absent`. Raises
+        HouseUnavailable for any other failure, or a body that is not an image or is over `MAX_IMAGE_BYTES`."""
+        got = await self._send("GET", path, step, None, None)
+        if got.status_code in absent:
+            return None
+        if got.status_code // 100 != 2:
+            raise HouseUnavailable(f"{step}: status {got.status_code}")
+        kind = got.headers.get("content-type", "").split(";")[0].strip().lower()
+        if not kind.startswith("image/") or len(got.content) > MAX_IMAGE_BYTES:
+            raise HouseUnavailable(f"{step}: not an image of a size to read")
+        return got.content, kind
 
     async def send(self, method: str, path: str, step: str, body: object = None,
                    params: dict[str, str] | None = None) -> object:

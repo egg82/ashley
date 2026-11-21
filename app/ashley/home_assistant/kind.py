@@ -9,7 +9,7 @@ from ..connections.model import CatalogueAction, CatalogueEntity, Catalogued, Op
 from ..connections.settings import ActionList, EntityList, EntityListPerAction, Setting
 from .homes import SCHEMES, HomeAssistantFailed, Homes, HomesUnavailable, Reason
 from .house import HouseUnavailable
-from .house_values import CONSEQUENTIAL, DISCREET_CALENDARS, GLANCE_CALENDARS, HOUSEHOLD_READS, READS, SERVICE_READS
+from .house_values import CONSEQUENTIAL, DISCREET_CALENDARS, GLANCE_CALENDARS, HOUSEHOLD_READS, LOOK_CAMERAS, READS, SERVICE_READS
 
 
 _REFUSED: dict[Reason, Refusal] = {"refused": "key_refused", "unreachable": "unreachable",
@@ -48,7 +48,8 @@ SETTINGS = (
     Setting(READS, ActionList(("script",)), "read"),
     Setting(CONSEQUENTIAL, EntityList(()), "tier"),
     Setting(GLANCE_CALENDARS, EntityList(("calendar",)), "plain"),
-    Setting(DISCREET_CALENDARS, EntityList(("calendar",)), "taint"))
+    Setting(DISCREET_CALENDARS, EntityList(("calendar",)), "taint"),
+    Setting(LOOK_CAMERAS, EntityList(("camera",)), "read"))
 
 HOME_ASSISTANT = ConnectionKind(
     name="home_assistant", title="Home Assistant", what="the house",
@@ -59,7 +60,7 @@ HOME_ASSISTANT = ConnectionKind(
     holders=frozenset({"household"}), schemes=SCHEMES, address_placeholder="http://homeassistant.local:8123",
     secret_field="token", secret_label="Long-lived access token, from your profile in Home Assistant",
     secret_noun="token", check=_check,
-    ports=frozenset({"house", "automations", "calendar", "todo"}), settings=SETTINGS, catalogue=_catalogue,
+    ports=frozenset({"house", "automations", "calendar", "todo", "camera"}), settings=SETTINGS, catalogue=_catalogue,
     refusals={
         "bad_url": "the address is an http or https address of Home Assistant, with nothing after it but a path",
         "key_refused": "Home Assistant turned that token away; make a long-lived one on your profile there",

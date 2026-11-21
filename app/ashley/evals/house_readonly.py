@@ -8,7 +8,7 @@ from dataclasses import replace
 from typing import Any
 
 from ..home_assistant.homes import Home, Homes
-from ..home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, LogEntry, Performed, Record, RecordKind,
+from ..home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, LogEntry, Performed, Record, RecordKind, Snapshot,
                                     Series, State, Window)
 from .house_guard import Attempt
 
@@ -29,6 +29,9 @@ class ReadOnlyHouse(House):
 
     async def records(self, kind: RecordKind) -> tuple[Record, ...]:
         return await self._inner.records(kind)
+
+    async def snapshot(self, camera: str) -> Snapshot | None:
+        return await self._inner.snapshot(camera)
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         return await self._inner.history(window)

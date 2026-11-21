@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from ashley.home_assistant.client import connect
 from ashley.home_assistant.ha_house import HaHouse
-from ashley.home_assistant.house import HouseRejected, HouseUnavailable, Window
+from ashley.home_assistant.house import HouseRejected, HouseUnavailable, Snapshot, Window
 from ashley.home_assistant.house_settings import HouseSettings
 from house_stand_support import TOKEN, Stand, serving
 
@@ -237,3 +237,26 @@ def test_a_house_that_is_not_there_is_unavailable() -> None:
             await client.http.aclose()
     with pytest.raises(HouseUnavailable):
         asyncio.run(go())
+
+
+def test_a_camera_still_is_its_bytes_and_type_asked_once_from_the_camera_proxy() -> None:
+    stand = world()
+    stand.stills = {"camera.porch": (200, "image/jpeg", b"\xff\xd8jpeg")}
+    assert run(stand, lambda h: h.snapshot("camera.porch")) == Snapshot(b"\xff\xd8jpeg", "image/jpeg")
+    assert [c[1] for c in stand.calls] == ["GET /api/camera_proxy/camera.porch"]
+
+
+@pytest.mark.parametrize("status", [404, 500, 503])
+def test_a_camera_that_gives_no_image_when_asked_is_none_not_an_error(status: int) -> None:
+    stand = world()
+    stand.stills = {"camera.porch": (status, "text/plain", b"no")}
+    assert run(stand, lambda h: h.snapshot("camera.porch")) is None
+    assert len(stand.calls) == 1
+
+
+@pytest.mark.parametrize("answer", [(401, "text/plain", b""), (200, "text/html", b"<p>login</p>")])
+def test_a_camera_proxy_that_answers_otherwise_is_unavailable(answer: tuple[int, str, bytes]) -> None:
+    stand = world()
+    stand.stills = {"camera.porch": answer}
+    with pytest.raises(HouseUnavailable):
+        run(stand, lambda h: h.snapshot("camera.porch"))

@@ -49,18 +49,25 @@ export function nameOf(house: House, id: string): string {
   return entityIn(house, id)?.name ?? humanised(id);
 }
 
-/** One line per to-do list the house has, plus any stored list it no longer has. */
-export function listLines(house: House, stored: readonly string[]): ListLine[] {
-  const have = (house?.entities ?? []).filter((e) => e.domain === 'todo').map((e) => e.entity_id);
+function entityLines(house: House, domain: string, stored: readonly string[]): ListLine[] {
+  const have = (house?.entities ?? []).filter((e) => e.domain === domain).map((e) => e.entity_id);
   const ids = [...have, ...stored.filter((id) => !have.includes(id))];
   return byName(ids.map((id) => ({ id, name: nameOf(house, id), sub: id, missing: house !== null && !have.includes(id), only: stored.includes(id) })));
 }
 
+/** One line per to-do list the house has, plus any stored list it no longer has. */
+export function listLines(house: House, stored: readonly string[]): ListLine[] {
+  return entityLines(house, 'todo', stored);
+}
+
 /** One line per calendar the house has, plus any stored one it no longer has; `only` is true for one the hallway screen shows. */
 export function calendarLines(house: House, stored: readonly string[]): ListLine[] {
-  const have = (house?.entities ?? []).filter((e) => e.domain === 'calendar').map((e) => e.entity_id);
-  const ids = [...have, ...stored.filter((id) => !have.includes(id))];
-  return byName(ids.map((id) => ({ id, name: nameOf(house, id), sub: id, missing: house !== null && !have.includes(id), only: stored.includes(id) })));
+  return entityLines(house, 'calendar', stored);
+}
+
+/** One line per camera the house has, plus any stored one it no longer has; `only` is true for one she may look through. */
+export function cameraLines(house: House, stored: readonly string[]): ListLine[] {
+  return entityLines(house, 'camera', stored);
 }
 
 function actionsOf(house: House): CatalogueActionInfo[] {

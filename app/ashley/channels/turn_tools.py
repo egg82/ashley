@@ -41,6 +41,7 @@ from ..tools.printing_queue import PrintQueueTools
 from ..tools.printing_upload import PrintUploadTools
 from ..tools.stock_tools import StockTools
 from ..tools.todo_tools import TodoTools
+from ..tools.camera_tools import CameraTools
 from ..tools.move_page import MovePageTools
 from ..tools.only import Only
 from ..tools.reading import Reading
@@ -202,6 +203,8 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["stock"] = StockTools(household, _PRINTING)
         found["calendar"] = CalendarTools(household, _CALENDAR)
         found["todo"] = TodoTools(household)
+        if turn is not None:
+            found["camera"] = CameraTools(household, *turn)
     if owner_alone(inbound) and services.get(Connections).can_open():
         found["money"] = MoneyTools(household, _MONEY)
         found["print_queue"] = PrintQueueTools(household, _PRINTING)
