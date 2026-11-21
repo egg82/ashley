@@ -15,13 +15,14 @@ OUTSIDE = {
     "look_up", "read_page", "printables_files", "git_projects", "git_tree", "git_read_file", "claude_read", "house_ask",
     "money_transactions", "bench_frames", "bench_transcribe", "bench_read", "bench_read_piece", "bench_shelf",
     "bench_look", "watch", "mail_search", "mail_read", "send_readers", "discord_recent",
+    "printing_printers", "printing_files", "printing_needs", "stock_spools",
 }
 OWN = {
     "house_state", "house_find", "house_history", "house_automations", "house_automation", "money_accounts",
     "money_categories", "money_net_worth", "reminders", "household_devices", "claude_sessions", "skill_read",
     "bench_install_state", "bench_run", "bench_last_run", "run_code", "house_do", "house_change", "house_confirm",
     "claude_prompt", "bench_add", "bench_edit", "bench_remove", "unwatch", "watches", "arm_reminder", "mail_boxes",
-    "mail_labels", "mail_draft", "mail_label", "mail_send",
+    "mail_labels", "mail_draft", "mail_label", "mail_send", "printing_ams",
 }
 
 

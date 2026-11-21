@@ -4,6 +4,7 @@ address rule and `address.base_url`."""
 from dataclasses import replace
 
 import pytest
+from ashley.bambuddy.kind import BAMBUDDY
 from ashley.codehost.kinds import GITHUB, GITLAB
 from ashley.connections import address
 from ashley.connections.kinds import ConnectionKind, ConnectionKinds
@@ -39,11 +40,12 @@ def custom(name: str, personal: bool = False, fixed: str | None = None) -> Conne
 
 def test_the_four_services_and_the_herdr_bridge_are_the_registered_kinds() -> None:
     assert sorted(k.name for k in CONNECTION_KINDS) == sorted((*KIND_NAMES, "herdr", "google", *PROVIDERS,
-                                                                    "openai_compatible", "wyoming", "searxng", "discord", "files", "esphome"))
+                                                                    "openai_compatible", "wyoming", "searxng", "discord", "files", "esphome", "bambuddy"))
     assert {k.name: k for k in CONNECTION_KINDS} == {"sure": SURE, "home_assistant": HOME_ASSISTANT, "gitlab": GITLAB,
                                                      "github": GITHUB, "herdr": HERDR, "google": replace(GOOGLE, resources=mailboxes),
                                                      **{k.kind.name: k.kind for k in KEYED}, COMPATIBLE.name: COMPATIBLE,
-                                                     WYOMING.name: WYOMING, SEARXNG.name: SEARXNG, DISCORD.name: DISCORD, FILES.name: FILES, ESPHOME.name: ESPHOME}
+                                                     WYOMING.name: WYOMING, SEARXNG.name: SEARXNG, DISCORD.name: DISCORD, FILES.name: FILES, ESPHOME.name: ESPHOME,
+                                                     BAMBUDDY.name: BAMBUDDY}
 
 
 @pytest.mark.parametrize(("name", "personal", "field"), [
