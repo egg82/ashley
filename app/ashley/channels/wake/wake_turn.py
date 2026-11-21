@@ -8,7 +8,9 @@ it to one line, or say nothing. Any other rule's turn carries neither. A greetin
 screen runs on that device's thread instead (`on_device.moved`), and its answer is stored for the device's delivery
 (`device_delivery`) rather than queued in the outbox. A rule that names a speaker runs on the speaker's thread instead
 (`speaker.moved`), which wins over a placement, and its answer is queued in the outbox as the phone's is. A rule that
-names a paired kiosk runs on the kiosk's thread (`on_device.moved`), its answer queued in the outbox for `announce`."""
+names a paired kiosk runs on the kiosk's thread (`on_device.moved`), its answer queued in the outbox for `announce`.
+A rule with a `method` makes the turn a round of a standing errand (`Inbound.method`): on the phone thread, and a finding
+`Initiative` keeps quiet is held for her next reply to the person (`channels.storing.held`)."""
 
 from dataclasses import replace
 
@@ -29,6 +31,10 @@ _THIS_TIME: dict[Outcome, str] = {
 }
 
 
+_ROUND = ("This is a round of a standing errand: do it now, following the method for it in your instructions. Tell the "
+          "person only what they would want to hear now; otherwise set `says` to none.\n")
+
+
 def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Moment | None = None,
             outcome: Outcome | None = None, at: tuple[Route, Device] | None = None,
             speaker: str | None = None, announced: bool = False) -> Inbound:
@@ -40,7 +46,7 @@ def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Mo
                    channel="device", remembers=False, later=True, later_by="outbox", source=f"wake:{wake_id}",
                    unprompted=True, tools_only=rule.tools, author="household",
                    note=note(rule, person, wake, outcome, at, speaker), taint=None, moment=moment,
-                   quiet=held(person, wake.at))
+                   quiet=held(person, wake.at), method=rule.method)
     if speaker is not None:
         return speakers.moved(phone, person.id, speaker)
     return phone if at is None else replace(moved(phone, *at), later_by="outbox" if announced else "turn")
@@ -57,7 +63,7 @@ def note(rule: WakeRule, person: Person, wake: Wake, outcome: Outcome | None = N
     instruction for this call that `outcome` gives, when there is one."""
     return (f"The event happened at {wake.at.isoformat(timespec='minutes')}.\n"
             f"Your brief for this wake: {rule.brief}\n"
-            + _goes(person, at, speaker) + ("" if outcome is None else f"\n{_THIS_TIME[outcome]}"))
+            + ("" if rule.method is None else _ROUND) + _goes(person, at, speaker) + ("" if outcome is None else f"\n{_THIS_TIME[outcome]}"))
 
 
 def _goes(person: Person, at: tuple[Route, Device] | None, speaker: str | None = None) -> str:

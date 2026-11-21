@@ -9,7 +9,11 @@ exactly that; absent, any. `speaker` (a `media_player.*` entity id) names the ho
 the turn is said on instead of the phone; whether it is one of the household's is read when a wake runs
 (`ashley.channels.wake.speaker`), since this check is pure. `device` (a device id) names the household's paired kiosk
 the turn is announced on instead (`ashley.channels.wake.reminder_device`), likewise read when a wake runs; a rule
-naming both a speaker and a device is no rule. An empty body is a draft and passes."""
+naming both a speaker and a device is no rule. `method` (a slug of the shape the household's kinds of work have,
+`ashley.skills.config`) makes the wake a round of a standing errand: the household's skill of that kind loads as the
+turn's method (`ashley.tools.standing_method`), whether it exists being read when the wake runs. Its findings go to the
+phone, so a rule with a method names no speaker, no device and does not greet. An empty body is a draft and
+passes."""
 
 import json
 import re
@@ -21,10 +25,11 @@ from .automation_config import object_of
 MAX_BRIEF = 1000
 EVENT = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _TOOL = re.compile(r"[A-Za-z0-9_.\-]{1,128}")
+_METHOD = re.compile(r"[a-z0-9][a-z0-9-]{0,39}")
 _PERSON = re.compile(r"person\.[a-z0-9_]+")
 _SPEAKER = re.compile(r"media_player\.[a-z0-9_]+")
 _FIELDS = frozenset(("event", "brief", "tools"))
-_OPTIONAL = frozenset(("greets", "who", "what", "speaker", "device"))
+_OPTIONAL = frozenset(("greets", "who", "what", "speaker", "device", "method"))
 
 
 @dataclass(frozen=True)
@@ -37,6 +42,7 @@ class WakeRule:
     what: str | None = None
     speaker: str | None = None
     device: int | None = None
+    method: str | None = None
 
     @property
     def specificity(self) -> int:
@@ -65,17 +71,24 @@ def rule_of(body: str) -> WakeRule | None:
         return None
     if "device" in loaded and (type(device) is not int or device < 1 or speaker is not None):
         return None
+    method = loaded.get("method")
+    if "method" in loaded and not _method_ok(method, bool(greets), speaker, device):
+        return None
     event, brief, tools = loaded["event"], loaded["brief"], _names(loaded["tools"])
     if not isinstance(event, str) or not EVENT.fullmatch(event) or tools is None:
         return None
     if not isinstance(brief, str) or not brief.strip() or len(brief) > MAX_BRIEF:
         return None
-    return WakeRule(event, brief, tools, greets, who, what, speaker, device)
+    return WakeRule(event, brief, tools, greets, who, what, speaker, device, method)
 
 
 def well_formed(body: str) -> bool:
     """Whether `body` is empty or a rule of the shape above."""
     return not body.strip() or rule_of(body) is not None
+
+
+def _method_ok(method: object, greets: bool, speaker: str | None, device: object) -> bool:
+    return isinstance(method, str) and _METHOD.fullmatch(method) is not None and not greets and speaker is None and device is None
 
 
 def _match(loaded: dict[str, Any], key: str, shape: re.Pattern[str]) -> tuple[bool, str | None]:
