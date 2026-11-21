@@ -184,7 +184,7 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
     logs.info(log, "respond.offered", conversation=conversation.id, **offered_fields(catalogue))
     ran = await history_runs.carried(inbound.household_id, carried.recent, said, LIMITS[inbound.kind])
     messages = await seen.carried(inbound, conversation.id, said.id, prompt.messages(
-        carried.recent, said, who.household, ran, inbound.note, carried.places))
+        carried.recent, said, who.household, ran, inbound.note, carried.places), () if catalogue is None else catalogue.specs)
     offered = recall.offered_ids(remembered.standing, remembered.recalled)
     try:
         work = await begin(Checkpoint(

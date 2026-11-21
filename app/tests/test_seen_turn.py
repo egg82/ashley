@@ -12,7 +12,7 @@ from ashley.channels import seen
 from ashley.channels.checkpoint import dumps, loads
 from ashley.channels.model import Inbound
 from ashley.channels.respond import respond
-from ashley.inference.model import Entry, Image, Message, ToolCall, ToolCalls, ToolResult, ToolResults
+from ashley.inference.model import Entry, Image, Message, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ashley.inference.reply import Reply
 from ashley.looks.looks import Looks
 from ashley.tools.camera_specs import LOOK
@@ -23,6 +23,7 @@ from test_camera_port import HALL, PORCH, world
 from test_camera_recordings import RED, GREEN, BLUE, gif, keep
 
 START: tuple[Entry, ...] = (Message("person", "ring"),)
+OFFERED = (ToolSpec(LOOK, "look", {"type": "object"}, reads=True),)
 
 
 def seeing(camera: str, recording: str) -> Inbound:
@@ -41,7 +42,7 @@ def pair(got: tuple[Entry, ...]) -> tuple[ToolCall, ToolResult]:
 async def test_the_look_is_her_tool_call_and_its_result_with_the_picture_kept_as_a_look_on_no_bench(db_url: str) -> None:
     async with world(db_url) as (house, home, conversation, turn):
         (event, *_) = keep(house, PORCH, 1, gif((RED, GREEN, BLUE)))
-        got = await seen.carried(replace(inbound(), household_id=home, seen=(PORCH, event.id)), conversation, turn, START)
+        got = await seen.carried(replace(inbound(), household_id=home, seen=(PORCH, event.id)), conversation, turn, START, OFFERED)
         call, result = pair(got)
         assert (call.name, dict(call.arguments)) == (LOOK, {"camera": PORCH, "recording": event.id})
         assert not result.is_error and len(result.images) == 1 and result.call_id == call.id
@@ -53,7 +54,7 @@ async def test_the_look_is_her_tool_call_and_its_result_with_the_picture_kept_as
 async def test_without_seen_the_entries_are_returned_untouched_and_nothing_is_looked_at(db_url: str) -> None:
     async with world(db_url) as (house, home, conversation, turn):
         keep(house, PORCH, 1, gif((RED,)))
-        assert await seen.carried(replace(inbound(), household_id=home), conversation, turn, START) == START
+        assert await seen.carried(replace(inbound(), household_id=home), conversation, turn, START, OFFERED) == START
         assert await services.get(Looks).in_conversation(home, conversation) == []
 
 
@@ -62,7 +63,7 @@ async def test_a_look_that_fails_is_an_error_result_telling_her_so_and_keeps_not
     async with world(db_url) as (house, home, conversation, turn):
         (event, *_) = keep(house, PORCH, 1, gif((RED, GREEN)))
         other = replace(inbound(), household_id=home, seen=(HALL, event.id))
-        _, result = pair(await seen.carried(other, conversation, turn, START))
+        _, result = pair(await seen.carried(other, conversation, turn, START, OFFERED))
         assert result.is_error and result.images == ()
         assert await services.get(Looks).in_conversation(home, conversation) == []
 
@@ -87,9 +88,19 @@ class _Picture:
 def test_the_first_step_is_asked_with_her_look_after_the_message_and_the_checkpoint_keeps_it(
         wired: Fakes, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(seen, "CameraTools", _Picture)
+    wired.tools.specs = OFFERED
     wired.inference.script = [Reply(spoken="Someone is there.", text="Someone is there.")]
     asyncio.run(respond(seeing("cam", "rec")))
     entries = wired.inference.prompts[0].messages
     assert [type(e) for e in entries] == [Message, ToolCalls, ToolResults]
     results = entries[2]
     assert isinstance(results, ToolResults) and results.results[0].images == (Image("image/png", b"png"),)
+
+
+@sync
+async def test_a_turn_that_does_not_offer_the_tool_begins_without_the_look(db_url: str) -> None:
+    async with world(db_url) as (house, home, conversation, turn):
+        (event, *_) = keep(house, PORCH, 1, gif((RED,)))
+        asked = replace(inbound(), household_id=home, seen=(PORCH, event.id))
+        assert await seen.carried(asked, conversation, turn, START, ()) == START
+        assert await services.get(Looks).in_conversation(home, conversation) == []

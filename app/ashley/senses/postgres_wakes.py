@@ -1,5 +1,7 @@
 """Wakes in Postgres, table `wakes`: a row per house wake and per reminder occurrence, its `kind` saying which."""
 
+import hashlib
+import re
 from datetime import datetime
 from typing import Any, LiteralString
 
@@ -11,8 +13,8 @@ from .deposit_rule import from_json as rule_from_json
 from .deposit_rule import landed_from_json
 from .repeat import from_json, to_json
 from ..conversations.quiet import QUIET
-from .wakes import (MAX_BRIEF, MAX_TOOLS, Delivery, Due, Outcome, Received, Reminder, Route, SaidBefore, Scheduled, Wake,
-                    Wakes, WakesUnavailable, WatchWake, stored_route)
+from .wakes import (MAX_BRIEF, MAX_TOOLS, Delivery, DetectionWake, Due, Outcome, Received, Reminder, Route, SaidBefore,
+                    Scheduled, Wake, Wakes, WakesUnavailable, WatchWake, stored_route)
 
 _DUE = ("SELECT id, kind, household_id, event_id, event, who, what, at, person_id, made_by, brief, due_at, repeat, "
         "extract(epoch FROM clock_timestamp() - due_at), landed, route, tools, watch_id, changes, taint, made_conversation_id, made_turn_id, route_device_id, ends_at, plan, method FROM wakes "
@@ -74,12 +76,15 @@ _SAID_BEFORE = (
 
 
 def _due(r: tuple[Any, ...]) -> Due:
-    wake: Wake | Reminder | WatchWake
+    wake: Wake | Reminder | WatchWake | DetectionWake
     if r[1] == "reminder":
         wake = _reminder(r[2], r[8], r[9], r[10], r[11], r[12], r[14], r[15], r[16], r[19], r[20], r[21], r[22], r[23],
                          r[24], r[25])
     elif r[1] == "watch":
         wake = WatchWake(int(r[2]), int(r[8]), int(r[17]), "paused" if r[6] == "paused" else "changed", dict(r[18]))
+    elif r[1] == "detection":
+        known = r[18].get("known")
+        wake = DetectionWake(int(r[2]), str(r[18]["camera"]), str(r[4]), r[7], None if known is None else tuple(str(k) for k in known))
     else:
         wake = Wake(int(r[2]), r[3], r[4], r[5], r[6], r[7])
     return Due(int(r[0]), wake, float(r[13]))
@@ -128,9 +133,34 @@ def _repeat(reminder: Reminder) -> Jsonb | None:
     return None if reminder.repeat is None else Jsonb(to_json(reminder.repeat))
 
 
+_CLASS = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
+def _detection_id(wake: DetectionWake) -> str:
+    return f"detection:{hashlib.sha256(wake.camera_id.encode()).hexdigest()[:24]}:{wake.at.isoformat()}"
+
+
 class PostgresWakes(Wakes):
     def __init__(self, database: Database) -> None:
         self._database = database
+
+    async def detected(self, wake: DetectionWake) -> Received:
+        if _CLASS.match(wake.kind) is None or "\x00" in wake.camera_id or any("\x00" in k for k in wake.known or ()):
+            raise ValueError("a detection's class is a lowercase slug and its camera and recordings hold no NUL")
+        changes = {"camera": wake.camera_id, **({} if wake.known is None else {"known": list(wake.known)})}
+        event_id = _detection_id(wake)
+        stored = await self._one(
+            "WITH made AS (INSERT INTO wakes (household_id, kind, event_id, event, at, changes) "
+            "VALUES (%s, 'detection', %s, %s, %s, %s) ON CONFLICT (household_id, event_id) DO NOTHING RETURNING id) "
+            "SELECT id, true FROM made UNION ALL "
+            "SELECT id, false FROM wakes WHERE household_id = %s AND event_id = %s AND NOT EXISTS (SELECT 1 FROM made)",
+            (wake.household_id, event_id, wake.kind, wake.at, Jsonb(changes), wake.household_id, event_id))
+        if stored is None:
+            stored = await self._one("SELECT id, false FROM wakes WHERE household_id = %s AND event_id = %s",
+                                     (wake.household_id, event_id))
+        if stored is None:
+            raise WakesUnavailable("the wake was neither stored nor found")
+        return Received(int(stored[0]), bool(stored[1]))
 
     async def receive(self, device_id: int, wake: Wake) -> Received:
         stored = await self._one(

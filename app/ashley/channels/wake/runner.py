@@ -12,6 +12,8 @@ that plan's instruction, if any (`wake_turn.inbound`), and it is `turn`, or `fai
 wake whose rule or person cannot be read now (the workshop or People out of reach), or whose turn could not run now
 (`RespondUnavailable`, as during a failover), is left due for the next sweep, until `max_age_s`; handing it in again
 is the same turn (`Inbound.source`).
+A camera detector's wake (`detection_turn`) is told as a household turn on a screen's thread, with a look at the recording the
+detector captured; it is left due while that recording has not appeared, for `look_wait_s`, and expires at `max_age_s`.
 Each sweep also lets her react to benches whose person has paused (`bench_reacts`), under the same lease.
 Settled wakes older than `keep_s` are pruned each sweep. Tunables are data, `wakes.json` beside this module (`config`).
 
@@ -32,20 +34,22 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from ... import logs, services
+from ...cameras.model import CamerasUnavailable
 from ...initiative.initiative import Initiative
 from ...initiative.moment import Plan
 from ...people.model import Person
 from ...people.people import People, PeopleUnavailable
 from ...senses.home_assistant_presence import SYSTEM
 from ...senses.house_lists import HouseUnreadable
-from ...senses.wakes import Due, Outcome, Reminder, Route, Wake, Wakes, WakesUnavailable, WatchWake
+from ...live.screens import ScreensUnavailable
+from ...senses.wakes import Due, DetectionWake, Outcome, Reminder, Route, Wake, Wakes, WakesUnavailable, WatchWake
 from ...watches.watches import WatchesUnavailable
 from ...workshop.wake_rule import WakeRule
 from ...workshop.workshop import WorkshopUnavailable
 from ..devices import DevicesUnavailable
 from ..model import Device
 from ..respond import RespondRefused, RespondUnavailable, respond
-from . import reminder, reminder_device, speaker, wake_turn, watch_turn
+from . import detection_turn, reminder, reminder_device, speaker, wake_turn, watch_turn
 from .bench_reacts import BenchReacts
 from .config import CONFIG
 from .moment import gathered
@@ -91,8 +95,10 @@ async def _taken(due: Due) -> None:
     started = time.perf_counter()
     try:
         outcome, next_due = await _outcome(due)
+    except detection_turn.Waiting:
+        return
     except (WorkshopUnavailable, PeopleUnavailable, DevicesUnavailable, RespondUnavailable, WatchesUnavailable,
-            HouseUnreadable) as e:
+            HouseUnreadable, CamerasUnavailable, ScreensUnavailable) as e:
         logs.warning(log, "wakes.deferred", wake=due.id, reason=type(e).__name__)
         return
     if await _fires_again(due, outcome):
@@ -121,11 +127,14 @@ async def _outcome(due: Due) -> tuple[Outcome, datetime | None]:
         return await reminder.fired(due.id, due.wake)
     if isinstance(due.wake, WatchWake):
         return await watch_turn.fired(due.id, due.wake, due.age_s), None
+    if isinstance(due.wake, DetectionWake):
+        return await detection_turn.fired(due.id, due.wake, due.age_s), None
     return await _house(due, due.wake), None
 
 
-def _kind(wake: Wake | Reminder | WatchWake) -> str:
-    return "reminder" if isinstance(wake, Reminder) else "watch" if isinstance(wake, WatchWake) else "house"
+def _kind(wake: Wake | Reminder | WatchWake | DetectionWake) -> str:
+    return ("reminder" if isinstance(wake, Reminder) else "watch" if isinstance(wake, WatchWake)
+            else "detection" if isinstance(wake, DetectionWake) else "house")
 
 
 async def _house(due: Due, wake: Wake) -> Outcome:

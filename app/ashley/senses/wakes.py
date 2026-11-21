@@ -22,7 +22,7 @@ Outcome = Literal["turn", "failed", "no_rule", "ambiguous", "no_person", "expire
 """What came of a wake: `turn`, her turn on it ran (whether or not she spoke); `failed`, the turn could not run;
 `no_rule`, no open bench of the household holds a wake rule for its event; `ambiguous`, more than one does; `no_person`,
 it names no person of the household; `expired`, it waited past its use; `cancelled`, a reminder called off before it
-fired."""
+fired, or a detection's wake whose camera she may no longer look through or that has no screen to say it on."""
 
 MAX_BRIEF = 500
 MAX_TOOLS = 20
@@ -151,11 +151,26 @@ class WatchWake:
 
 
 @dataclass(frozen=True)
+class DetectionWake:
+    """A camera's detector event she is to speak on (`ashley.channels.kiosk.detected`): the camera's id as `Cameras.roster`
+    gives it, the detector's own class (`kind`) and when it saw it (`at`), which with the household identify it. `known` is
+    the ids of the camera's recordings when the event was heard, newest first, None when they could not be read: a
+    recording not among them is the event's, and with none known she is told no picture is to be had. Fields only,
+    never a title."""
+
+    household_id: int
+    camera_id: str
+    kind: str
+    at: datetime
+    known: tuple[str, ...] | None
+
+
+@dataclass(frozen=True)
 class Due:
     """A wake not yet settled and due, `age_s` after it fell due (a house wake falls due when it arrives)."""
 
     id: int
-    wake: Wake | Reminder | WatchWake
+    wake: Wake | Reminder | WatchWake | DetectionWake
     age_s: float
 
 
@@ -179,6 +194,12 @@ class Wakes(Service):
     async def receive(self, device_id: int, wake: Wake) -> Received:
         """Store `wake`, handed in by `device_id`; the same household and event id again returns the stored wake's id
         with `new` false and changes nothing. Raises WakesUnavailable."""
+
+    @abstractmethod
+    async def detected(self, wake: DetectionWake) -> Received:
+        """Store `wake`, due now; one wake per household, camera and time, so the same event again returns the stored
+        wake's id with `new` false and changes nothing. Raises ValueError for a class that is not a lowercase slug of at
+        most 64 characters or a camera id or recording id holding a NUL, before anything is written; WakesUnavailable."""
 
     @abstractmethod
     async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
@@ -282,6 +303,9 @@ class NullWakes(Wakes):
     """What an unwired process sees: every call raises, so a wake is never taken in and quietly dropped."""
 
     async def receive(self, device_id: int, wake: Wake) -> Received:
+        raise WakesUnavailable("wakes are not wired")
+
+    async def detected(self, wake: DetectionWake) -> Received:
         raise WakesUnavailable("wakes are not wired")
 
     async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:

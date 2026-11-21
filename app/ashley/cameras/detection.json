@@ -1,5 +1,7 @@
 {
   "show_feed_on": ["ring"],
+  "speak_on": ["ring"],
+  "look_wait_s": 60,
   "min_gap_s": 30,
   "keep_s": 86400,
   "tick_s": 60

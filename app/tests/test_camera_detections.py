@@ -72,9 +72,11 @@ class World:
     settings: Settings
     clock: list[datetime]
     watching: set[int]
+    url: str
+    house: MemoryHouse
 
-    async def tick(self) -> Counter[str]:
-        return await detected.tick(SETTINGS_, self.watching, lambda: self.clock[0])
+    async def tick(self, settings: DetectionSettings = SETTINGS_) -> Counter[str]:
+        return await detected.tick(settings, self.watching, lambda: self.clock[0])
 
     async def ring(self, entity: str, at: datetime, kind: str = "ring") -> None:
         self.clock[0] = at
@@ -116,7 +118,7 @@ async def world(url: str) -> AsyncGenerator[World]:
         await screens.device_opened(home, kiosk, token)
         await screens.device_visible(kiosk, token, True)
         try:
-            yield World(home, kiosk, ha, live, screens, database, token, settings, [SEEN], set())
+            yield World(home, kiosk, ha, live, screens, database, token, settings, [SEEN], set(), url, house)
         finally:
             holding.cancel()
             await asyncio.gather(holding, return_exceptions=True)

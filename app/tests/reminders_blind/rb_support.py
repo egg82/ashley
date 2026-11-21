@@ -26,7 +26,7 @@ from ashley.people.model import Account, Household, Person
 from ashley.people.people import People
 from ashley.senses.postgres_wakes import PostgresWakes
 from ashley.senses.repeat import Repeat
-from ashley.senses.wakes import Outcome, Reminder, Route, SaidBefore, Wakes
+from ashley.senses.wakes import DetectionWake, Outcome, Received, Reminder, Route, SaidBefore, Wakes
 from ashley.tools.tools import Catalogue, Tools
 from ashley.workshop import rules as workshop_rules
 from ashley.workshop.postgres import PostgresWorkshop
@@ -183,6 +183,9 @@ class KillableWakes(Wakes):
 
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
         return await self.inner.edit(household_id, person_id, wake_id, changed)
+
+    async def detected(self, wake: DetectionWake) -> Received:
+        raise NotImplementedError
 
     async def routed(self, wake_id: int, person_id: int, route: Route, device_id: int) -> None:
         return None
