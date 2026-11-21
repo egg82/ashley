@@ -125,7 +125,7 @@ async def offered(source: Tools) -> Catalogue | None:
         return None
 
 
-async def answer(kind: Task, system: Mapping[str, SystemPrompt], history: tuple[Message, ...], tools: tuple[ToolSpec, ...],
+async def answer(kind: Task, system: Mapping[str, SystemPrompt], history: tuple[Entry, ...], tools: tuple[ToolSpec, ...],
                  limits: Limits, conversation_id: int | None = None, hold: bool = False,
                  source: Tools | None = None, started: float | None = None,
                  clock: Callable[[], float] = time.perf_counter, steps: Steps = NO_STEPS,

@@ -35,12 +35,12 @@ from ..conversations.inflight import ClaimLost, InFlightUnavailable
 from ..conversations.model import Carried, Conversation, NewTurn, Turn
 from ..errands.model import Done
 from ..inference.inference import InferenceRefused, InferenceUnavailable
-from ..inference.model import Message, SystemPrompt, ToolSpec
+from ..inference.model import Entry, SystemPrompt, ToolSpec
 from ..inference.reply import Reply
 from ..people.people import PeopleUnavailable
 from ..workshop.model import thread_of
 from . import (aloud, answering, bench_after, continued, history, history_runs, inflight, inflight_config, keep, limits, owed, person_turn, prompt,
-               recall, settled, speaker, steering, storing, turn_prompt, tool_loop, unprompted, unsaid)
+               recall, seen, settled, speaker, steering, storing, turn_prompt, tool_loop, unprompted, unsaid)
 from .checkpoint import Checkpoint
 from .offered import fields as offered_fields
 from .landing import Landing
@@ -183,7 +183,8 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
                                                            prompted.carried, prompted.away, prompted.system)
     logs.info(log, "respond.offered", conversation=conversation.id, **offered_fields(catalogue))
     ran = await history_runs.carried(inbound.household_id, carried.recent, said, LIMITS[inbound.kind])
-    messages = prompt.messages(carried.recent, said, who.household, ran, inbound.note, carried.places)
+    messages = await seen.carried(inbound, conversation.id, said.id, prompt.messages(
+        carried.recent, said, who.household, ran, inbound.note, carried.places))
     offered = recall.offered_ids(remembered.standing, remembered.recalled)
     try:
         work = await begin(Checkpoint(
@@ -206,7 +207,7 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
         return Outbound(conversation.id, inbound.medium, "", follows=True)
 
 
-async def _answered(turn: "_Turn", system: Mapping[str, SystemPrompt], messages: tuple[Message, ...],
+async def _answered(turn: "_Turn", system: Mapping[str, SystemPrompt], messages: tuple[Entry, ...],
                     tools: tuple[ToolSpec, ...]) -> Outbound:
     inbound, conversation_id = turn.inbound, turn.conversation_id
     got = await turn.work.guarded(tool_loop.answer(
