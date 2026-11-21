@@ -14,6 +14,10 @@ FieldName = Literal["name", "tool_call", "structured_output", "context_tokens", 
 and `hidden` (left out of what the page offers) are a person's only."""
 
 FIELD_NAMES: tuple[FieldName, ...] = get_args(FieldName)
+ProviderFieldName = Literal["name", "api"]
+"""The fields of a provider a person may set: its display name and its OpenAI-compatible base URL."""
+
+PROVIDER_FIELD_NAMES: tuple[ProviderFieldName, ...] = get_args(ProviderFieldName)
 PRICE_FIELDS: frozenset[FieldName] = frozenset({"input_usd_per_mtok", "output_usd_per_mtok",
                                                 "cache_read_usd_per_mtok", "cache_write_usd_per_mtok"})
 _BOOLS = frozenset({"tool_call", "structured_output", "free", "hidden"})
@@ -96,6 +100,18 @@ def field_value(field: FieldName, value: object) -> object:
         return value
     if not isinstance(value, str) or not value.strip() or len(value) > 200:
         raise ValueError(f"{field}: expected text of 1 to 200 characters")
+    return value
+
+
+def provider_field_value(field: ProviderFieldName, value: object) -> str:
+    """`value` checked for a provider's `field`: a name is text of 1 to 200 characters, an api an http(s) address of at
+    most 500. Raises ValueError naming the field."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field}: expected text")
+    if field == "name" and len(value) > 200:
+        raise ValueError("name: expected text of 1 to 200 characters")
+    if field == "api" and (len(value) > 500 or not value.startswith(("http://", "https://"))):
+        raise ValueError("api: expected an http or https address of at most 500 characters")
     return value
 
 

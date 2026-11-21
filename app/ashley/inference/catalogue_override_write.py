@@ -10,7 +10,7 @@ from collections.abc import Collection, Mapping
 
 from ..services import Service
 from .catalogue import ModelCatalogueUnavailable
-from .catalogue_model import FieldName
+from .catalogue_model import FieldName, ProviderFieldName
 
 
 class CatalogueOverrideWriter(Service):
@@ -25,10 +25,20 @@ class CatalogueOverrideWriter(Service):
         `person_id`, and delete each of `reset`. Logs `catalogue.override_set` (provider, model, person, the count put
         and reset; never a value). Raises ModelCatalogueUnavailable."""
 
+    @abstractmethod
+    async def write_provider(self, provider: str, put: Mapping[ProviderFieldName, str],
+                             reset: Collection[ProviderFieldName], person_id: int) -> None:
+        """`write` for a provider's name and api. Logs `catalogue.provider_set` (provider, person, the count put and
+        reset; never a value). Raises ModelCatalogueUnavailable."""
+
 
 class NullCatalogueOverrideWriter(CatalogueOverrideWriter):
     """What an unwired process sees: every write raises ModelCatalogueUnavailable."""
 
     async def write(self, provider: str, model: str, put: Mapping[FieldName, object], reset: Collection[FieldName],
                     person_id: int) -> None:
+        raise ModelCatalogueUnavailable("CatalogueOverrideWriter is not wired")
+
+    async def write_provider(self, provider: str, put: Mapping[ProviderFieldName, str],
+                             reset: Collection[ProviderFieldName], person_id: int) -> None:
         raise ModelCatalogueUnavailable("CatalogueOverrideWriter is not wired")

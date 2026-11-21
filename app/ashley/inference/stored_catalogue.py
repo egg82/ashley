@@ -14,7 +14,7 @@ from datetime import datetime
 from .. import logs
 from .catalogue import CatalogueState, ModelCatalogueUnavailable, ModelCatalogue, PricedCatalogue
 from .catalogue_config import CatalogueConfig
-from .catalogue_merge import Override, merged, upstream
+from .catalogue_merge import Override, ProviderOverride, merged, upstream
 from .catalogue_model import Catalogue
 from .catalogue_store import CatalogueStore
 
@@ -36,6 +36,7 @@ class StoredCatalogue(ModelCatalogue):
         self._read_at: float | None = None
         self._fetched: tuple[Catalogue, datetime] | None = None
         self._overrides: list[Override] = []
+        self._provider_overrides: list[ProviderOverride] = []
         self._priced = self._build()
 
     def priced(self) -> PricedCatalogue:
@@ -73,12 +74,13 @@ class StoredCatalogue(ModelCatalogue):
         elif fetched is None or fetched[1] != at:
             fetched = await self._store.fetched()
         overrides = await self._store.overrides()
-        if fetched is self._fetched and overrides == self._overrides:
+        provider_overrides = await self._store.provider_overrides()
+        if fetched is self._fetched and overrides == self._overrides and provider_overrides == self._provider_overrides:
             return
-        self._fetched, self._overrides = fetched, overrides
+        self._fetched, self._overrides, self._provider_overrides = fetched, overrides, provider_overrides
         self._priced = self._build()
 
     def _build(self) -> PricedCatalogue:
         catalogue, layer = upstream(None if self._snapshot is None else self._snapshot[0],
                                     None if self._fetched is None else self._fetched[0])
-        return PricedCatalogue(merged(catalogue, layer, self._overrides), self._config)
+        return PricedCatalogue(merged(catalogue, layer, self._overrides, self._provider_overrides), self._config)

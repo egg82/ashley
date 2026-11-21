@@ -53,6 +53,17 @@ def test_an_openai_compatible_provider_is_the_catalogue_provider_it_names(client
     assert now["openai"] is True and now["google"] is False
 
 
+def test_a_connection_may_name_a_provider_an_admin_defined_and_is_then_connected_to_it(client: TestClient) -> None:
+    body = {"kind": "openai_compatible", "label": "mine", "api_key": "k", "base_url": "https://llm.test/v1",
+            "catalogue_provider": "local"}
+    assert client.post("/api/connections", headers=ORIGIN, json=body).status_code == 422
+    defined = client.put("/api/catalogue/providers", headers=ORIGIN, json={"provider": "local", "set_fields": {"name": "Local"}})
+    assert defined.status_code == 200, defined.text
+    made = client.post("/api/connections", headers=ORIGIN, json=body)
+    assert made.status_code == 201, made.text
+    assert connected(client)["local"] is True
+
+
 def test_connections_that_cannot_be_read_are_unknown(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     async def down(self: Connections, household_id: int, person_id: int | None = None) -> None:
         raise ConnectionsUnavailable("down")

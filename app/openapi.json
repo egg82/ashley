@@ -3578,6 +3578,75 @@
         }
       }
     },
+    "/api/catalogue/providers": {
+      "put": {
+        "summary": "Change Provider",
+        "description": "200 `ModelCatalogueProvider` as stored; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 422\n`ModelCatalogueRefused`; 503 `unavailable`.",
+        "operationId": "change_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelCatalogueProviderChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogueProvider"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`admin_only`: only an admin may change that; `forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the stored layers could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a change that cannot be made; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogueRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lexicon": {
       "get": {
         "summary": "Read Lexicon",
@@ -12247,6 +12316,17 @@
               }
             ],
             "title": "Has Connection"
+          },
+          "listed_upstream": {
+            "type": "boolean",
+            "title": "Listed Upstream"
+          },
+          "provider_overrides": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCatalogueProviderOverride"
+            },
+            "type": "array",
+            "title": "Provider Overrides"
           }
         },
         "type": "object",
@@ -12256,10 +12336,116 @@
           "api",
           "model_count",
           "overridden_count",
-          "has_connection"
+          "has_connection",
+          "listed_upstream",
+          "provider_overrides"
         ],
         "title": "ModelCatalogueProvider",
-        "description": "A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models\nit lists and how many of those carry an override. `has_connection`: whether the deployment holds a model-provider\nconnection priced as it (the first household's, not a key only the env holds); null when the connections could not\nbe read."
+        "description": "A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models\nit lists and how many of those carry an override. `has_connection`: whether the deployment holds a model-provider\nconnection priced as it (the first household's, not a key only the env holds); null when the connections could not\nbe read. `name` and `api` are in force; `listed_upstream` says models.dev lists the provider, and `provider_overrides` the\nfields a person set on it (a provider with none and not listed upstream exists only through a model's override)."
+      },
+      "ModelCatalogueProviderChange": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "set_fields": {
+            "$ref": "#/components/schemas/ModelCatalogueProviderSet"
+          },
+          "reset": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "name",
+                "api"
+              ]
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Reset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "set_fields"
+        ],
+        "title": "ModelCatalogueProviderChange",
+        "description": "A change to one provider, for the whole deployment: `set_fields` and `reset` those to upstream's. A\nprovider models.dev does not list is defined by setting its name; its models are added by `PUT\n/api/catalogue/models` under the same id."
+      },
+      "ModelCatalogueProviderOverride": {
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "enum": [
+              "name",
+              "api"
+            ],
+            "title": "Field Name"
+          },
+          "set_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set By"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Set At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_name",
+          "set_by",
+          "set_at"
+        ],
+        "title": "ModelCatalogueProviderOverride",
+        "description": "A provider field a person set: who (`set_by`, a person id, null once they are gone) and when."
+      },
+      "ModelCatalogueProviderSet": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "api": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1,
+                "pattern": "^https?://"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelCatalogueProviderSet",
+        "description": "The fields a person sets on a provider; a field left out or null is not changed. A value equal to upstream's is\nnot stored: it resets the field. `api` is an http or https address."
       },
       "ModelCatalogueRefused": {
         "properties": {

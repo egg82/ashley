@@ -15,7 +15,7 @@ from ashley.db.database import NullDatabase
 from ashley.db.pool import PoolDatabase
 from ashley.inference import catalogue_refresh, models_dev
 from ashley.inference.catalogue import ModelCatalogueUnavailable
-from ashley.inference.catalogue_merge import Override
+from ashley.inference.catalogue_merge import Override, ProviderOverride
 from ashley.inference.catalogue_model import Catalogue, Provider
 from ashley.inference.catalogue_store import CatalogueStore
 from ashley.inference.model import Usage
@@ -92,6 +92,32 @@ def test_a_stored_override_the_code_cannot_read_is_dropped_and_the_rest_kept(db_
     assert [(o.field, o.value, o.set_by) for o in found] == [("name", "Kept", None)]
 
 
+def test_a_provider_is_stored_per_field_with_who_set_it_and_a_reset_deletes_it(
+        db_url: str, caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO, "ashley.inference")
+    alana = person(db_url)
+
+    async def work(store: PostgresCatalogue, writer: PostgresCatalogueOverrideWriter) -> list[list[ProviderOverride]]:
+        await writer.write_provider("local", {"name": "Local", "api": "http://llm.test/v1"}, (), alana)
+        first = await store.provider_overrides()
+        await writer.write_provider("local", {"name": "Mine"}, ["api"], alana)
+        return [first, await store.provider_overrides()]
+    first, then = on(db_url, work)
+    assert {(o.provider, o.field, o.value, o.set_by) for o in first} == {
+        ("local", "name", "Local", alana), ("local", "api", "http://llm.test/v1", alana)}
+    assert [(o.field, o.value) for o in then] == [("name", "Mine")]
+    assert events(caplog, "catalogue.provider_set") == [
+        {"provider": "local", "person": alana, "put": 2, "reset": 0}, {"provider": "local", "person": alana, "put": 1, "reset": 1}]
+
+
+def test_a_stored_provider_field_the_code_cannot_read_is_dropped_and_the_rest_kept(db_url: str) -> None:
+    with psycopg.connect(db_url) as conn:
+        conn.execute("INSERT INTO model_catalogue_provider_overrides (provider, field, value) VALUES "
+                     "('p', 'retired', '\"x\"'), ('p', 'api', '\"ftp://nope\"'), ('p', 'name', '\"Kept\"')")
+    found = on(db_url, lambda store, _: store.provider_overrides())
+    assert [(o.field, o.value, o.set_by) for o in found] == [("name", "Kept", None)]
+
+
 def test_each_pod_prices_from_the_snapshot_then_the_stored_layers_within_its_bound(db_url: str) -> None:
     alana = person(db_url)
     clock = [0.0]
@@ -143,6 +169,9 @@ class Stored(CatalogueStore):
         self.at = at
 
     async def overrides(self) -> list[Override]:
+        return []
+
+    async def provider_overrides(self) -> list[ProviderOverride]:
         return []
 
 

@@ -1013,6 +1013,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalogue/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Provider
+         * @description 200 `ModelCatalogueProvider` as stored; 401 `unauthorized`; 403 `admin_only` or `forbidden`; 422
+         *     `ModelCatalogueRefused`; 503 `unavailable`.
+         */
+        put: operations["change_provider"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lexicon": {
         parameters: {
             query?: never;
@@ -4064,7 +4085,8 @@ export interface components {
          * @description A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models
          *     it lists and how many of those carry an override. `has_connection`: whether the deployment holds a model-provider
          *     connection priced as it (the first household's, not a key only the env holds); null when the connections could not
-         *     be read.
+         *     be read. `name` and `api` are in force; `listed_upstream` says models.dev lists the provider, and `provider_overrides` the
+         *     fields a person set on it (a provider with none and not listed upstream exists only through a model's override).
          */
         ModelCatalogueProvider: {
             /** Provider */
@@ -4079,6 +4101,52 @@ export interface components {
             overridden_count: number;
             /** Has Connection */
             has_connection: boolean | null;
+            /** Listed Upstream */
+            listed_upstream: boolean;
+            /** Provider Overrides */
+            provider_overrides: components["schemas"]["ModelCatalogueProviderOverride"][];
+        };
+        /**
+         * ModelCatalogueProviderChange
+         * @description A change to one provider, for the whole deployment: `set_fields` and `reset` those to upstream's. A
+         *     provider models.dev does not list is defined by setting its name; its models are added by `PUT
+         *     /api/catalogue/models` under the same id.
+         */
+        ModelCatalogueProviderChange: {
+            /** Provider */
+            provider: string;
+            set_fields: components["schemas"]["ModelCatalogueProviderSet"];
+            /** Reset */
+            reset?: ("name" | "api")[];
+        };
+        /**
+         * ModelCatalogueProviderOverride
+         * @description A provider field a person set: who (`set_by`, a person id, null once they are gone) and when.
+         */
+        ModelCatalogueProviderOverride: {
+            /**
+             * Field Name
+             * @enum {string}
+             */
+            field_name: "name" | "api";
+            /** Set By */
+            set_by: number | null;
+            /**
+             * Set At
+             * Format: date-time
+             */
+            set_at: string;
+        };
+        /**
+         * ModelCatalogueProviderSet
+         * @description The fields a person sets on a provider; a field left out or null is not changed. A value equal to upstream's is
+         *     not stored: it resets the field. `api` is an http or https address.
+         */
+        ModelCatalogueProviderSet: {
+            /** Name */
+            name?: string | null;
+            /** Api */
+            api?: string | null;
         };
         /**
          * ModelCatalogueRefused
@@ -8974,6 +9042,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelCatalogueModel"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `admin_only`: only an admin may change that; `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a change that cannot be made; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogueRefused"];
+                };
+            };
+            /** @description `unavailable`: the stored layers could not be read or written */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    change_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelCatalogueProviderChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogueProvider"];
                 };
             };
             /** @description `unauthorized`: no live session */

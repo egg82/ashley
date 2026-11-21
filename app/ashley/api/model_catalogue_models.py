@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..inference.catalogue_merge import PriceStatus
-from ..inference.catalogue_model import FIELD_NAMES, FieldName
+from ..inference.catalogue_model import FIELD_NAMES, PROVIDER_FIELD_NAMES, FieldName, ProviderFieldName
 
 Price = float | None
 
@@ -71,11 +71,20 @@ class ModelCatalogueModel(BaseModel):
     price: ModelCataloguePrice
 
 
+class ModelCatalogueProviderOverride(BaseModel):
+    """A provider field a person set: who (`set_by`, a person id, null once they are gone) and when."""
+
+    field_name: ProviderFieldName
+    set_by: int | None
+    set_at: datetime
+
+
 class ModelCatalogueProvider(BaseModel):
     """A provider in the catalogue: its id, its name, its OpenAI-compatible base URL where it lists one, how many models
     it lists and how many of those carry an override. `has_connection`: whether the deployment holds a model-provider
     connection priced as it (the first household's, not a key only the env holds); null when the connections could not
-    be read."""
+    be read. `name` and `api` are in force; `listed_upstream` says models.dev lists the provider, and `provider_overrides` the
+    fields a person set on it (a provider with none and not listed upstream exists only through a model's override)."""
 
     provider: str
     name: str
@@ -83,6 +92,8 @@ class ModelCatalogueProvider(BaseModel):
     model_count: int
     overridden_count: int
     has_connection: bool | None
+    listed_upstream: bool
+    provider_overrides: list[ModelCatalogueProviderOverride]
 
 
 class ModelCatalogueResponse(BaseModel):
@@ -139,3 +150,25 @@ class ModelCatalogueRefused(BaseModel):
 
     reason: Literal["set_and_reset", "empty"]
     detail: str
+
+
+class ModelCatalogueProviderSet(BaseModel):
+    """The fields a person sets on a provider; a field left out or null is not changed. A value equal to upstream's is
+    not stored: it resets the field. `api` is an http or https address."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    api: str | None = Field(default=None, min_length=1, max_length=500, pattern=r"^https?://")
+
+
+class ModelCatalogueProviderChange(BaseModel):
+    """A change to one provider, for the whole deployment: `set_fields` and `reset` those to upstream's. A
+    provider models.dev does not list is defined by setting its name; its models are added by `PUT
+    /api/catalogue/models` under the same id."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str = Field(min_length=1, max_length=100)
+    set_fields: ModelCatalogueProviderSet
+    reset: list[ProviderFieldName] = Field(default_factory=list[ProviderFieldName], max_length=len(PROVIDER_FIELD_NAMES))

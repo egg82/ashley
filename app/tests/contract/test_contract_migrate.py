@@ -69,6 +69,7 @@ NOT_HOUSEHOLD_DATA = {
     "proton_bridge": "the one Bridge the deployment runs: its vault holds every household's Proton sessions at once, and its epoch and heartbeat say nothing about any one",
     "model_catalogue_fetch": "models.dev's public list of models and prices, one row for the deployment",
     "model_catalogue_overrides": "an admin's deployment-wide corrections to that list: a model's field and who set it",
+    "model_catalogue_provider_overrides": "an admin's deployment-wide definition of a provider: its name and api and who set each",
     "file_orphans": "object-store keys the sweep found unreferenced, which name their household and file hash and span households",
     "deployment_secrets": "the deployment's own keys (the file link key, her Web Push key pair), sealed, one row per key and nothing about any household",
 }

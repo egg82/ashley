@@ -8,11 +8,11 @@ output is `listed_zero`, priced as unknown until a person marks the model `free`
 from."""
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime
 from typing import Literal
 
-from .catalogue_model import PRICE_FIELDS, Catalogue, FieldName, ModelFields, Provider, Tier
+from .catalogue_model import PRICE_FIELDS, Catalogue, FieldName, ModelFields, Provider, ProviderFieldName, Tier
 
 Layer = Literal["snapshot", "fetch", "override"]
 PriceStatus = Literal["priced", "unpriced", "listed_zero", "free", "local"]
@@ -26,6 +26,17 @@ class Override:
     model: str
     field: FieldName
     value: object
+    set_by: int | None
+    set_at: datetime
+
+
+@dataclass(frozen=True)
+class ProviderOverride:
+    """One field of one provider as a person set it; a provider only a person names exists through these."""
+
+    provider: str
+    field: ProviderFieldName
+    value: str
     set_by: int | None
     set_at: datetime
 
@@ -54,8 +65,14 @@ class Pricing:
 
 @dataclass(frozen=True)
 class Merged:
+    """`providers` as in force; `upstream_providers` the upstream layer's own; `provider_overrides` what a
+    person set on each provider."""
+
     providers: Mapping[str, Provider]
     listings: Mapping[tuple[str, str], Listing]
+    upstream_providers: Mapping[str, Provider] = dataclass_field(default_factory=dict[str, Provider])
+    provider_overrides: Mapping[str, Mapping[ProviderFieldName, ProviderOverride]] = dataclass_field(
+        default_factory=dict[str, Mapping[ProviderFieldName, ProviderOverride]])
 
 
 UNPRICED = Pricing("unpriced", None, None)
@@ -71,9 +88,15 @@ def upstream(snapshot: Catalogue | None, fetched: Catalogue | None) -> tuple[Cat
     return Catalogue({}), None
 
 
-def merged(catalogue: Catalogue, layer: Layer | None, overrides: Iterable[Override]) -> Merged:
-    """Every upstream model and every model a person named, with the person's fields over upstream's. A provider only
-    a person named is listed under its own id as its name."""
+def merged(catalogue: Catalogue, layer: Layer | None, overrides: Iterable[Override],
+           provider_overrides: Iterable[ProviderOverride] = ()) -> Merged:
+    """Every upstream model and every model a person named, with the person's fields over upstream's. Providers merge
+    the same way by id: a person's name and api win where set, upstream's models and every field a person did not set
+    stay, so a provider a person defined and models.dev later lists is one provider with both sets of models. A provider
+    only a person named is listed under the name they gave it, else its id."""
+    by_provider: dict[str, dict[ProviderFieldName, ProviderOverride]] = {}
+    for p in provider_overrides:
+        by_provider.setdefault(p.provider, {})[p.field] = p
     by_model: dict[tuple[str, str], dict[FieldName, Override]] = {}
     for o in overrides:
         by_model.setdefault((o.provider, o.model), {})[o.field] = o
@@ -83,10 +106,16 @@ def merged(catalogue: Catalogue, layer: Layer | None, overrides: Iterable[Overri
             listings[(pid, mid)] = _listing(pid, mid, fields, layer, by_model.pop((pid, mid), {}))
     for (pid, mid), set_fields in by_model.items():
         listings[(pid, mid)] = _listing(pid, mid, None, None, set_fields)
-    providers = dict(catalogue.providers)
-    for pid, _ in listings:
-        providers.setdefault(pid, Provider(pid, None, {}))
-    return Merged(providers, listings)
+    providers = {pid: _provider(p, by_provider.get(pid, {})) for pid, p in catalogue.providers.items()}
+    for pid in by_provider.keys() | {pid for pid, _ in listings}:
+        providers.setdefault(pid, _provider(Provider(pid, None, {}), by_provider.get(pid, {})))
+    return Merged(providers, listings, catalogue.providers, by_provider)
+
+
+def _provider(upstream_provider: Provider, set_fields: Mapping[ProviderFieldName, ProviderOverride]) -> Provider:
+    name, api = set_fields.get("name"), set_fields.get("api")
+    return Provider(upstream_provider.name if name is None else name.value,
+                    upstream_provider.api if api is None else api.value, upstream_provider.models)
 
 
 def _listing(pid: str, mid: str, default: ModelFields | None, layer: Layer | None,
@@ -113,6 +142,21 @@ def delta(default: ModelFields | None, put: Mapping[FieldName, object],
         else:
             stored[field] = value
             deleted.discard(field)
+    return stored, deleted
+
+
+def provider_delta(default: Provider | None, put: Mapping[ProviderFieldName, str],
+                   reset: Iterable[ProviderFieldName]) -> tuple[dict[ProviderFieldName, str], set[ProviderFieldName]]:
+    """`delta` for a provider: a field equal to upstream's (`default`, None for a provider only a person names) is
+    deleted, not stored."""
+    stored: dict[ProviderFieldName, str] = {}
+    deleted = set(reset)
+    for name, value in put.items():
+        if default is not None and value == (default.name if name == "name" else default.api):
+            deleted.add(name)
+        else:
+            stored[name] = value
+            deleted.discard(name)
     return stored, deleted
 
 
