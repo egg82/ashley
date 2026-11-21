@@ -323,7 +323,7 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
     re-run.
 - **A weak-points study is a linear static finite-element solve inside the CAD image, in its helper, and says when it has
   no answer.** A script declares `study(part, material, fixed, loads)` on faces of the part's own shape; `show` meshes
-  that part with gmsh into second-order tetrahedra and solves it (`deploy/cad/ashley_fea.py`, `ashley_fem.py`), writing the
+  that part with gmsh into second-order tetrahedra and solves it with scikit-fem (`deploy/cad/ashley_fea.py`, `ashley_fem.py`), writing the
   report's `fea` section (peak von Mises stress and its point and nearest named face, largest deflection, the mesh, a safety
   factor as a low-to-high range), `out/stress_<part>.glb` (the surface coloured by stress, kept as any GLB artifact is) and
   the check `fea_safety_factor:<part>`. Materials are `deploy/cad/materials.json`, each value from a maker's data sheet
@@ -336,9 +336,10 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
   simulation run (`bench_simulate`, #147) stays a script, an image and a place, and FEA is its first profile.
   Built here: the helper. Not built: `bench_simulate`, `sims.json`, `Run.sims`, the purpose-keyed latest run and prune,
   and the view as a bench piece; until then a study runs in the design run's own quota.
+  Her method for asking for and reading one is the `engineering` seed skill, which the `3d` skill points to.
   Rejected: CalculiX, which Debian 13 no longer packages (`calculix-ccx` has no candidate; only its test files are
-  there), leaving a source build or a foreign suite in a slim image; a pure-Python solver on the same tetrahedra
-  is a few dozen lines and measured against the closed form. Rejected: first-order tetrahedra, which lock in bending.
+  there), leaving a source build in a slim image. Rejected: a solver of our own, when scikit-fem is maintained and
+  measured against the same closed form. Rejected: first-order tetrahedra, which lock in bending.
 - **Her 3D method is the `3d` skill, and whether a model fits the real object is the bench turn's own judgement.** The
   seed `app/ashley/skills/seeds/3d.md` is the method: facts first, each with its source, the model built from
   them with `ashley_cad`, a `check` for every fit, the report read before anything is said, `bench_look` after, and an
