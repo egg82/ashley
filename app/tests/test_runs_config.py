@@ -55,7 +55,7 @@ def test_a_missing_key_is_refused() -> None:
 
 
 QUOTA_PODS = 4
-QUOTA = {"requests.cpu": 1000, "limits.cpu": 2000, "requests.memory": 1024, "limits.memory": 2048}
+QUOTA = {"requests.cpu": 2250, "limits.cpu": 6000, "requests.memory": 4608, "limits.memory": 5632}
 """The sandbox namespace's ResourceQuota, millicores and MiB (cluster repo, kustomization/ashley-sandbox/limits.yaml)."""
 
 
@@ -64,8 +64,8 @@ def milli(cpu: str) -> int:
 
 
 def mib(memory: str) -> int:
-    assert memory.endswith("Mi")
-    return int(memory[:-2])
+    assert memory.endswith(("Mi", "Gi"))
+    return int(memory[:-2]) * (1024 if memory.endswith("Gi") else 1)
 
 
 def test_as_many_runs_as_the_quota_admits_pods_fit_its_totals_at_once() -> None:

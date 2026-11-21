@@ -18,10 +18,12 @@ recorded in Postgres before and after (`ashley.runs`, "Code runs" in `systems.md
   scipy, sympy and trimesh at exact versions, from wheels), which replaces it under the same limits; unset, Python
   runs in the stock image. A separate slim image rather than the CAD image's contents: build123d adds about 1 GB the
   script runs do not use, and a library a run needs is a line in that Containerfile.
-- **Seconds, not minutes.** The script is stopped after `script_timeout_s` (10 s) by the runner in the pod, which
-  keeps what it printed; `activeDeadlineSeconds` (30 s, starting the pod included) is the hard stop. A pod that never
-  starts in that time is `unavailable` and nothing ran. Each pod requests 250m CPU and may use 500m, so the
-  namespace's quota (1 CPU requested, 2 CPU limit, 4 pods) admits four runs at once.
+- **Seconds, not minutes.** The script is stopped after `script_timeout_s` (30 s) by the runner in the pod, which
+  keeps what it printed; `activeDeadlineSeconds` (60 s, starting the pod included) is the hard stop. A pod that never
+  starts in that time is `unavailable` and nothing ran. Each pod requests 500m CPU and 1 GiB and may use one CPU, the
+  namespace's per-container maximum, and the quota admits four runs at once. The science image needs that size:
+  importing numpy, `scipy.optimize`, sympy and trimesh took 11.3 s at half a CPU under gVisor and 5.7 s at one, with
+  193 MiB resident before any work.
 - **The job goes in through the pod spec, the output comes out through the log.** The script, input and files are
   environment variables, one per value (Linux caps one at 128 KiB); the runner prints one marked JSON line, which
   is re-checked and cut to the limits, since the script can print that line too. The app needs only to create, read,
