@@ -52,7 +52,7 @@ def test_with_an_address_the_looker_is_the_warm_one_and_its_client_is_closed_on_
 def test_without_an_address_every_look_has_a_pod_of_its_own(api: KubeApi) -> None:
     closers: list[Callable[[], Coroutine[Any, Any, None]]] = []
     wiring_sandbox.wire_looker(Settings(**BASE), api, closers)
-    assert isinstance(services.get(Looker), KubernetesLooker) and closers == []
+    assert isinstance(services.get(Looker), KubernetesLooker) and len(closers) == 1
 
 
 def test_a_floating_look_image_is_refused_with_or_without_the_warm_pod(api: KubeApi) -> None:

@@ -16,7 +16,7 @@ OUTSIDE = {
     "claude_machines", "house_ask",
     "money_transactions", "bench_frames", "bench_transcribe", "bench_read", "bench_read_piece", "bench_shelf",
     "bench_look", "watch", "mail_search", "mail_read", "send_readers", "discord_recent",
-    "printing_printers", "printing_files", "printing_needs", "stock_spools", "calendar_events",
+    "printing_printers", "printing_files", "printing_needs", "stock_spools", "calendar_events", "browser_snapshot",
 }
 OWN = {
     "house_state", "house_find", "house_history", "house_automations", "house_automation", "money_accounts",
@@ -24,6 +24,7 @@ OWN = {
     "bench_install_state", "bench_run", "bench_last_run", "run_code", "house_do", "house_change", "house_confirm",
     "claude_prompt", "bench_add", "bench_edit", "bench_remove", "unwatch", "watches", "arm_reminder", "mail_boxes",
     "mail_labels", "mail_draft", "mail_label", "mail_send", "printing_ams", "printing_queue", "printing_upload",
+    "browser_act",
 }
 
 

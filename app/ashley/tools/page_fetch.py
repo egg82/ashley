@@ -155,6 +155,11 @@ async def _follow[T](http: httpx2.AsyncClient, url: str, limits: Limits, resolve
     raise Refused()
 
 
+async def public(url: str, resolve: Resolve = resolve) -> None:
+    """Raises Refused unless `url` is https and resolves only to global addresses; NoPage when it does not resolve."""
+    await _check(url, resolve, None)
+
+
 async def _check(url: str, resolve: Resolve, hosts: frozenset[str] | None) -> None:
     """Raises Refused unless `url` is https, its host is one of `hosts` when given, and it resolves only to global
     addresses; NoPage when it does not resolve."""
