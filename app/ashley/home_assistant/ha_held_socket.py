@@ -2,8 +2,9 @@
 each thing asked about, and the last state each was told. A dropped socket reconnects with backoff, subscribes every
 thing again and reads their states once, so a change while it was down is caught on return.
 
-It also holds event subscriptions (`events`): each Home Assistant event of a wanted type is handed to its recorder
-as it arrives, and a dropped socket subscribes them again with the rest (an event while it was down is not told).
+It also holds event subscriptions (`events`) and followed things (`follow`: a state trigger on exactly the things
+named, told with the new state's attributes): each is handed to its owner's recorder as it arrives, the socket holds the
+union over owners, and a dropped socket subscribes them again with the rest (a change while it was down is not told).
 
 Logs `ha_held.connected` (household), `ha_held.subscribed` and `ha_held.resubscribed` (household, entities, the
 subscriptions now), `ha_held.released` (household, entities let go after `idle_s` unasked), `ha_held.event_lost`
@@ -12,7 +13,7 @@ id, a state, an event's data, a URL or the token."""
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -21,7 +22,7 @@ from httpx2.websockets import AsyncWebSocketSession, WebSocketDisconnect, WebSoc
 from .. import logs
 from .ha_json import JsonObject, obj, rows, text
 from .ha_socket import authenticate, socket_url, token_of
-from .held_states import EntityState, HouseEvent, Recorder
+from .held_states import EntityState, Follower, HouseEvent, Recorder, StateChange
 from .homes import Home
 from .house import HouseUnavailable
 from .house_settings import HouseSettings
@@ -53,6 +54,8 @@ class Socket:
         self._of: dict[int, str] = {}
         self._events: dict[str, Mapping[str, Recorder]] = {}
         self._event_numbers: dict[int, str] = {}
+        self._followed: dict[str, tuple[frozenset[str], Follower]] = {}
+        self._follow_numbers: dict[int, str] = {}
         self._known: dict[str, EntityState | None] = {}
         self._waiting: dict[int, asyncio.Future[JsonObject]] = {}
         self._ws: AsyncWebSocketSession | None = None
@@ -106,6 +109,17 @@ class Socket:
                 self._events.pop(owner, None)
             await self._sync_events()
 
+    async def follow(self, owner: str, entity_ids: Collection[str], record: Follower) -> None:
+        """Follow exactly these things for `owner`, their changes handed to `record`; the owner's others are let go, and
+        what other owners follow stays. Raises HouseUnavailable as `events` does."""
+        await self._up()
+        async with self._lock:
+            if entity_ids:
+                self._followed[owner] = (frozenset(entity_ids), record)
+            else:
+                self._followed.pop(owner, None)
+            await self._sync_follows()
+
     async def _up(self) -> None:
         try:
             async with asyncio.timeout(self._house.timeout_s):
@@ -116,24 +130,32 @@ class Socket:
             raise HouseUnavailable("websocket: not connected")
 
     async def _sync_events(self) -> None:
-        held = {t: n for n, t in self._event_numbers.items()}
-        wanted = {kind for types in self._events.values() for kind in types}
-        for kind, number in held.items():
-            if kind not in wanted:
-                del self._event_numbers[number]
+        await self._sync(self._event_numbers, {kind for types in self._events.values() for kind in types},
+                         lambda kind: {"type": "subscribe_events", "event_type": kind})
+
+    async def _sync_follows(self) -> None:
+        await self._sync(self._follow_numbers, {e for things, _ in self._followed.values() for e in things},
+                         lambda entity: {"type": "subscribe_trigger",
+                                         "trigger": {"platform": "state", "entity_id": entity, "to": None}})
+
+    async def _sync(self, numbers: dict[int, str], wanted: set[str], subscribe: Callable[[str], Mapping[str, object]]) -> None:
+        """Make the subscriptions in `numbers` (id to what it follows) exactly `wanted`."""
+        held = {t: n for n, t in numbers.items()}
+        for key, number in held.items():
+            if key not in wanted:
+                del numbers[number]
                 try:
                     await self._request(self._next(), {"type": "unsubscribe_events", "subscription": number})
                 except HouseUnavailable:
                     pass
-        for kind in wanted:
-            if kind not in held:
-                number = self._next()
-                self._event_numbers[number] = kind
-                try:
-                    await self._request(number, {"type": "subscribe_events", "event_type": kind})
-                except BaseException:
-                    self._event_numbers.pop(number, None)
-                    raise
+        for key in wanted - held.keys():
+            number = self._next()
+            numbers[number] = key
+            try:
+                await self._request(number, subscribe(key))
+            except BaseException:
+                numbers.pop(number, None)
+                raise
 
     async def _session(self) -> None:
         http = self.home.home_assistant.http
@@ -156,6 +178,7 @@ class Socket:
             entities = sorted(self._wanted)
             await self._subscribe(entities)
             await self._sync_events()
+            await self._sync_follows()
         event = "ha_held.resubscribed" if self._served else "ha_held.subscribed"
         self._served = self._came_up = True
         self._ready.set()
@@ -170,6 +193,7 @@ class Socket:
         self._subscribed.clear()
         self._of.clear()
         self._event_numbers.clear()
+        self._follow_numbers.clear()
         for future in self._waiting.values():
             if not future.done():
                 future.set_exception(HouseUnavailable("websocket: dropped"))
@@ -192,6 +216,8 @@ class Socket:
                 self._changed()
             elif message.get("type") == "event" and number in self._event_numbers:
                 await self._told_event(self._event_numbers[number], obj(message.get("event")))
+            elif message.get("type") == "event" and number in self._follow_numbers:
+                await self._told_follow(self._follow_numbers[number], obj(message.get("event")))
 
     async def _told_event(self, kind: str, event: JsonObject) -> None:
         records = [types[kind] for types in self._events.values() if kind in types]
@@ -206,6 +232,25 @@ class Socket:
                 await record(told)
             except Exception as e:
                 logs.warning(log, "ha_held.event_lost", household=self.household_id, reason=type(e).__name__)
+
+    async def _told_follow(self, entity: str, event: JsonObject) -> None:
+        trigger = obj(obj(event.get("variables")).get("trigger"))
+        new = obj(trigger.get("to_state"))
+        if not new:
+            return
+        changed = text(new.get("last_updated")) or text(new.get("last_changed"))
+        try:
+            at = datetime.fromisoformat(changed).astimezone(UTC)
+        except ValueError:
+            at = datetime.now(UTC)
+        told = StateChange(entity, text(new.get("state")), obj(new.get("attributes")), at,
+                           text(obj(event.get("context")).get("id")))
+        for things, record in list(self._followed.values()):
+            if entity in things:
+                try:
+                    await record(told)
+                except Exception as e:
+                    logs.warning(log, "ha_held.event_lost", household=self.household_id, reason=type(e).__name__)
 
     async def _subscribe(self, entities: Sequence[str]) -> None:
         """A state trigger on each of `entities` (state changes only, not attributes), then their states read once."""

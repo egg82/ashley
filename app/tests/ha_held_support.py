@@ -65,6 +65,7 @@ class Open:
 class FakeHa:
     states: dict[str, str] = field(default_factory=dict[str, str])
     names: dict[str, str] = field(default_factory=dict[str, str])
+    attributes: dict[str, Json] = field(default_factory=dict[str, Json])
     refuse: bool = False
     open: list[Open] = field(default_factory=list[Open])
     commands: list[Json] = field(default_factory=list[Json])
@@ -75,7 +76,8 @@ class FakeHa:
         if entity not in self.states:
             return None
         return {"entity_id": entity, "state": self.states[entity],
-                "attributes": {"friendly_name": self.names.get(entity, entity)}}
+                "attributes": {"friendly_name": self.names.get(entity, entity), **self.attributes.get(entity, {})},
+                "last_updated": "2026-11-21T10:00:00.000000+00:00"}
 
     async def change(self, entity: str, to: str | None) -> None:
         """Set the thing's state (None removes it) and tell each subscription on it."""

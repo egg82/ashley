@@ -53,6 +53,10 @@ class FakeHeld(HeldStates):
             raise HouseUnavailable("down")
         self.held[household_id] = dict(types)
 
+
+    async def follow(self, owner: str, household_id: int, entity_ids: Any, record: Any) -> None:
+        return None
+
     async def told(self, household_id: int, event: HouseEvent) -> None:
         await self.held[household_id][event.type](event)
 
