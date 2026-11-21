@@ -329,6 +329,15 @@ and has no `ends_at`, so it never finishes.
 - **Its findings take an errand's path.** Its turn is not `promised`: Initiative decides from her `says`, so a round
   with nothing new stays quiet and one that finds something goes out by the reminder's route, as an open-ended
   errand's check does.
+- **A finding Initiative keeps quiet is held, not lost.** A round carries the person's own quiet hours at its due
+  time (`Inbound.quiet`), so one that found something while they hold is stored as her staying quiet. When her `says`
+  was not `none` and the turn did not go out, `ashley.channels.storing.held` hands the outbox a `Pushed` with `held`
+  set, which `PostgresOutbox.answer` turns into the stale answer's `done` errand (`errands.postgres.HOLD`, source
+  `outbox`) in the transaction that stores her turn. Her next reply to the person tells it through `untold` and
+  `told`, as above; no second holding path exists. The errand is keyed by the round's person turn, which is stored
+  once per wake, so a round finished by another pod or site holds one finding. Logged `outbox.held` (conversation,
+  turn, `held` 1 or 0). Rejected: a hold of its own beside the errands table, which would be a second place a reply
+  waits.
 - **She sets one with `remind`'s `method`** on the person's ask, beside a repeat: a person asks her as they ask for any
   reminder, the tools it names are proposed and agreed as any acting reminder's, and it is listed, changed and
   cancelled as one (`method` shown in the list). A method naming no kind of the household's with a body is refused,
@@ -340,8 +349,8 @@ and has no `ends_at`, so it never finishes.
   `app/tests/errand_checks/test_standing_errands_run.py`: a round follows the seeded method, is offered only its named
   tool, tells what it found and stays quiet when there is nothing new, its next round carries the method, a method
   that cannot be read says to carry out nothing, and a round killed on one pod is finished on another with its method.
-- **Not built yet:** a standing errand woken by a house wake or a watch instead of its rule; a finding held until her
-  next reply to the person when Initiative keeps it quiet; a person setting one from the web app.
+- **Not built yet:** a standing errand woken by a house wake or a watch instead of its rule; a person setting one
+  from the web app.
 - **Rejected: a bot store** (Rakazo's agents, each with its own inbox and schedule). It would be a second scheduler and
   a second kind of method beside the `wakes` queue and Skills, which already hold both halves.
 - **Rejected: bots messaging each other** (Rakazo's `message_bot`, with a hop counter against loops), until two

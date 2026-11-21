@@ -19,12 +19,15 @@ stays quiet.
 
 A standing errand's occurrence (`Reminder.method`) is one round of work that never finishes: she is given the ask, and
 the household's skill of that kind loads as her method (`Inbound.method`). It is not `promised` either, so a round
-with nothing new to tell stays quiet, and what she finds reaches the person by its route when she says it."""
+with nothing new to tell stays quiet, and what she finds reaches the person by its route when she says it. Their own
+quiet hours at the round's due time hold it back (`Inbound.quiet`); what she found is then kept for her next reply to
+them (`ashley.channels.storing.held`)."""
 
 from datetime import UTC
 from zoneinfo import ZoneInfo
 
 from ...people.model import Person
+from ...people.quiet import held
 from ...senses.deposit_rule import Landed, money
 from ...senses.repeat import LOCAL_FORMAT
 from ...senses.wakes import Reminder
@@ -45,7 +48,8 @@ def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, d
                     promised=not _judged(reminder) and not errand and not standing,
                     tools_only=reminder.tools, reads_only=reminder.tools is None,
                     taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in,
-                    errand=wake_id if errand else None, method=reminder.method)
+                    errand=wake_id if errand else None, method=reminder.method,
+                    quiet=standing and held(person, reminder.due_at))
     if device is None:
         return phone
     return moved(phone, reminder.route, device)

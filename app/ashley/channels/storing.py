@@ -20,7 +20,7 @@ def stored(reply: Reply, inbound: Inbound, speaker: Person | None, phone: int | 
            said_id: int, queued: tuple[Pushed, ...] = (),
            receipts: Receipts | None = None) -> tuple[NewTurn, tuple[Pushed, ...]]:
     """Her turn answering the person turn `said_id` and what is queued with it: `queued` and the copy to the phone, in
-    which case the turn holds `text`, private to the speaker; else the field the medium delivers, heard as the
+    which case the turn holds `text`, private to the speaker, and `held` (a standing errand's finding Initiative kept quiet); else the field the medium delivers, heard as the
     channel's turns are; on an unprompted turn that does not go out, `unprompted.QUIET`. The turn carries `receipts`
     (what code shows beside her words), and on a spoken channel nothing of them is said: they go to the speaker's phone,
     in the copy when she chose to send one, else on their own (`receipt_push`). The turn carries `spoken` when the
@@ -29,7 +29,8 @@ def stored(reply: Reply, inbound: Inbound, speaker: Person | None, phone: int | 
     reply = unprompted.as_said(reply, inbound)
     copy = to_phone.copy(reply, phone, inbound.household_id, conversation_id, receipts)
     alone = receipt_push(receipts, inbound, phone, conversation_id, silent=reply is not heard) if copy is None else None
-    queued = (*queued, *((alone,) if alone is not None else ()))
+    queued = (*queued, *((alone,) if alone is not None else ()),
+              *held(heard, inbound, said_id, conversation_id))
     voice = aloud.spoken(reply, inbound, conversation_id)
     if inbound.unprompted:
         logs.info(log, "wake.outcome", conversation=conversation_id,
@@ -57,6 +58,18 @@ def receipt_push(receipts: Receipts | None, inbound: Inbound, phone: int | None,
                   held=len(receipts.held))
         return None
     return Pushed(inbound.household_id, thread(phone), Outbound(conversation_id, "text", "", receipts=receipts))
+
+
+def held(reply: Reply, inbound: Inbound, said_id: int, conversation_id: int) -> tuple[Pushed, ...]:
+    """What of a standing errand's round `Initiative` kept quiet, for the asker's next reply to tell (`Pushed.held`): her
+    words when she had something to say (`says` not `none`) and the turn did not go out (the person's own quiet hours).
+    Nothing for any other turn."""
+    if inbound.method is None or not inbound.later or reply.says == "none" or not reply.text:
+        return ()
+    if unprompted.speaks(reply, inbound):
+        return ()
+    return (Pushed(inbound.household_id, inbound.thread, Outbound(conversation_id, inbound.medium, reply.text),
+                   said_id, held=True),)
 
 
 async def pushed(reply: Reply, inbound: Inbound, conversation_id: int, receipts: Receipts | None = None,

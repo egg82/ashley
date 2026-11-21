@@ -56,7 +56,8 @@ weight's sign is part of that data's contract, so the loader refuses a recent gr
   asked for carries it as `Inbound.quiet`, which `Initiative.speaks` refuses, logged `initiative.decided` with
   `outcome=quiet`. That covers a house wake's greeting or notice (read at the event's time), a watch's wake for the
   person's phone, and a remark; a watch's wake on a bench the person has open is not held, nor is a reply to the
-  person, nor a reminder they asked for (`Inbound.promised`). The tending of the household's home channel is
+  person, nor a reminder they asked for (`Inbound.promised`). A standing errand's round is held, and what it found is
+  kept for her next reply to them (`decisions/runs-and-jobs.md`, its standing part). The tending of the household's home channel is
   addressed to no one, so it keeps to the household's night alone. Rejected: a check in each caller, which is a second
   gate beside Initiative's decision; holding replies, which the person asked for.
 - **When she tends her home channel on Discord is decided the same way** (`ashley.initiative.tend`, rates in
