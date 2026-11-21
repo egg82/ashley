@@ -6,7 +6,7 @@ import { teethOf, teethSummary } from './teeth.ts';
 const box = (name: string, shared: boolean) => ({ ref: name, kind: 'mailbox' as const, name, shared });
 const conn = (resources: HouseholdConnection['resources']): HouseholdConnection => ({
   id: 1, kind: 'proton', label: '', base_url: '', added_by: { id: 1, household_id: 1, name: 'Sam', admin: true }, added_at: '', checked_at: '',
-  personal: true, needs: null, scopes: [], missing_scopes: [], resources, can_hand_over: false, can_take_back: false, can_change: true,
+  personal: true, needs: null, scopes: [], missing_scopes: [], resources, can_hand_over: false, can_take_back: false, can_change: true, description: '',
 });
 
 test('one tooth per resource, in the order the server gave', () => {

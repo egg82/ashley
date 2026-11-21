@@ -584,8 +584,8 @@ export interface paths {
          * @description 200 `HouseholdConnection`, under its new label or held by its new holder (`connection_holders`); 401
          *     `unauthorized`; 403 `forbidden`, for taking back one the signed-in person did not add, or `admin_only`; 404
          *     `not_found`; 409 `label_taken` or `too_many`; 422 `unsupported`, a holder the kind does not allow; 422
-         *     `bad_label`, a label the kind does not take; 503
-         *     `unavailable`.
+         *     `bad_label`, a label the kind does not take; 422 `unsupported`, a description for a kind that takes none; 503
+         *     `unavailable`. A body may carry a label and a description together.
          */
         patch: operations["change"];
         trace?: never;
@@ -2829,12 +2829,15 @@ export interface components {
         };
         /**
          * ConnectionChange
-         * @description `PATCH /api/connections/{id}`: either the new `label`, or the new `holder`: `household` hands the connection to
-         *     the household, `person` takes back one the signed-in person handed over. Exactly one of them.
+         * @description `PATCH /api/connections/{id}`: the new `label` and or `description` (empty clears it; only a kind that
+         *     `takes_description` accepts one), or the new `holder`: `household` hands the connection to the household, `person`
+         *     takes back one the signed-in person handed over. A holder is sent alone.
          */
         ConnectionChange: {
             /** Label */
             label?: string | null;
+            /** Description */
+            description?: string | null;
             /** Holder */
             holder?: ("household" | "person") | null;
         };
@@ -2854,7 +2857,8 @@ export interface components {
          *     (an OpenAI-compatible provider's label is the name routes call it by, so it is required and an identifier); some
          *     names a shipped provider has are refused too (422 `bad_label`). `picks_catalogue_provider` says a new connection
          *     may name the model catalogue provider it is (`GET /api/catalogue`), whose `api` is its address; without one it is
-         *     at a custom address and its calls are unpriced.
+         *     at a custom address and its calls are unpriced. `takes_description` says its owner may write a sentence or two about
+         *     what a connection reaches (`HouseholdConnection.description`).
          */
         ConnectionKindInfo: {
             /** Name */
@@ -2909,6 +2913,11 @@ export interface components {
              * @default false
              */
             picks_catalogue_provider: boolean;
+            /**
+             * Takes Description
+             * @default false
+             */
+            takes_description: boolean;
         };
         /**
          * ConnectionRefused
@@ -3257,7 +3266,8 @@ export interface components {
          *     added it and its kind allows a person to hold it). `can_change` says they may replace, rename, remove or set it
          *     up: false for a deployment's connection (a model provider's key) unless they are an admin. `catalogue_provider` is
          *     the model catalogue provider an OpenAI-compatible provider's calls are priced as, null for one at a custom address
-         *     (its calls are unpriced) and for every other kind.
+         *     (its calls are unpriced) and for every other kind. `description` is what its owner wrote about what it reaches (a herdr
+         *     machine), empty when nothing was.
          */
         HouseholdConnection: {
             /** Id */
@@ -3315,6 +3325,11 @@ export interface components {
             can_change: boolean;
             /** Catalogue Provider */
             catalogue_provider?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
         };
         /**
          * HouseholdRefused
@@ -7707,7 +7722,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description `unsupported`: a holder the kind does not allow; `bad_label`: a label the kind does not take. A body or id outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            /** @description `unsupported`: a holder the kind does not allow; `bad_label`: a label the kind does not take; `unsupported` also a description the kind takes none of. A body or id outside the request's schema gets FastAPI's own validation error, which is not this schema */
             422: {
                 headers: {
                     [name: string]: unknown;

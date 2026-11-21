@@ -5,10 +5,10 @@ import { needOf, scopeLabel } from './needs.ts';
 
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   id: 1, kind: 'gitlab', label: '', base_url: '', added_by: { id: 1, household_id: 1, name: 'Sam', admin: true }, added_at: '', checked_at: '',
-  personal: true, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
+  personal: true, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '', ...over,
 });
 const kind = (over: Partial<ConnectionKindInfo>): ConnectionKindInfo => ({
-  name: 'gitlab', title: 'GitLab', what: '', blurb: '', connected: '', removed: '', holders: ['person'], most: 1, picks_catalogue_provider: false, takes_address: true,
+  name: 'gitlab', title: 'GitLab', what: '', blurb: '', connected: '', removed: '', holders: ['person'], most: 1, picks_catalogue_provider: false, takes_description: false, takes_address: true,
   address_placeholder: '', secret_field: 'token', secret_label: '', secret_noun: 'token', connect: 'pasted', set_up: true, has_settings: false, ...over,
 });
 

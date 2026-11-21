@@ -6,6 +6,7 @@ import { accounts, canLink, linkDiscord } from './accounts';
 import { addable, matching, whose, type Choice, type Whose } from './choices';
 import { connectionsState, held, kinds } from './connections';
 import { BridgeForm } from './BridgeForm';
+import { takesDescription } from './describing';
 import { KindForm } from './KindForm';
 import { OAuthForm } from './OAuthForm';
 import { isOAuth } from './oauth';
@@ -87,7 +88,7 @@ function FormStep({ kind, base, fromList, replacing }: { kind: ConnectionKindInf
 
 function heading(p: Picking): string {
   if (p.step === 'list') return 'Add a service';
-  if (p.step === 'rename') return `Rename ${p.connection.label || p.connection.kind}`;
+  if (p.step === 'rename') return `${takesDescription(kinds.value, p.connection.kind) ? 'Edit' : 'Rename'} ${p.connection.label || p.connection.kind}`;
   if (isBridge(p.kind)) return p.replacing === undefined ? `Connect ${p.kind.title}` : `Log in to ${p.kind.title} again`;
   return p.base ? `Replace ${p.kind.title}’s ${p.kind.secret_noun}` : `Connect ${p.kind.title}`;
 }

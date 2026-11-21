@@ -5,7 +5,7 @@ import { standingOf } from './standing.ts';
 
 const conn = (id: number, over: Partial<HouseholdConnection>): HouseholdConnection => ({
   id, kind: 'sure', label: '', base_url: '', added_by: null, added_at: '', checked_at: '', personal: false, needs: null, scopes: [],
-  missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
+  missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '', ...over,
 });
 const kinds = [{ name: 'sure', title: 'Sure', connect: 'pasted', secret_noun: 'key' }] as unknown as ConnectionKindInfo[];
 
