@@ -10,6 +10,7 @@ import { benchChangedBy, herMoved } from '../shell/her/moves';
 import { announced } from '../speech/announce';
 import { herLive, herLiveLost } from '../shell/her/state';
 import type { Cue } from '../rooms/workshop/pieces/player';
+import { screenCard } from '../camera/card';
 import { createFeed } from './feed';
 import { createReporting, screenToken } from './screen';
 
@@ -33,9 +34,11 @@ const feed = createFeed(() => liveFeed(screenToken), {
     else if (event.type === 'cue') benchCues.forEach((h) => h(event.bench_id, event.piece_id, event, 'her'));
     else if (event.type === 'page') herMoved(event.room, event.bench_id ?? null);
     else if (event.type === 'announce') void announced(event.clip);
+    else if (event.type === 'feed') void screenCard.read();
   },
   resync() {
     herLiveLost();
+    void screenCard.read();
     resyncs.forEach((readBack) => readBack());
   },
   lost: herLiveLost,
