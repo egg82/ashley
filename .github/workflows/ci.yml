@@ -313,6 +313,9 @@ jobs:
           - image: ashley-cad
             flag: --cad
             context: deploy/cad
+          - image: ashley-python-run
+            flag: --python
+            context: deploy/python-run
           - image: ashley-mail-bridge
             flag: --bridge
             context: deploy/mail-bridge
@@ -354,6 +357,13 @@ jobs:
           -v "$PWD/deploy/cad/test_ashley_facts_blind.py:/test/test_ashley_facts_blind.py:ro"
           -v "$PWD/app/tests/cad_models:/test/models:ro" -v "$PWD/app/ashley/workshop/print.json:/test/print.json:ro"
           "${{ steps.want.outputs.local }}" python -m unittest discover -v -s /test
+
+      # As the sandbox runs it: read-only root, no network, uid 65534.
+      - name: Import the science stack in its image
+        if: steps.want.outputs.build == 'true' && matrix.image == 'ashley-python-run'
+        run: >
+          docker run --rm --read-only --network=none --user 65534 --tmpfs /work:rw,mode=1777 -w /work -e HOME=/work
+          "${{ steps.want.outputs.local }}" python -c "import numpy, scipy.optimize, sympy, trimesh"
 
       # As the pod runs it: read-only root, uid 1000. The keeper runs against a real Bridge.
       - name: Test the keeper in its image

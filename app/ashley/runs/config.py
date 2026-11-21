@@ -7,7 +7,7 @@ Each language is one `Profile` under `languages`, and Python's is required: how 
 `cpu` limit and `cpu_request`, its `memory` (request and limit), the size of its working directory (`work_mib`), the most of
 the pod's log read (`log_bytes`, which varies with the language's output) and `artifact_bytes` (the most binary output it
 carries back, left out for none) and `input_bytes` (the most binary input it is given, in an emptyDir of its own beside the working directory, left out for none). Python's profile also carries its pinned `image`; any other language's is given at start
-(`CAD_IMAGE`) through `with_image`, and a language with no image is not run."""
+(`CAD_IMAGE`) through `with_image`, which `PYTHON_IMAGE` also uses to swap Python's for the science image, and a language with no image is not run."""
 
 import json
 import re

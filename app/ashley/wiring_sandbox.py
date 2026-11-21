@@ -40,13 +40,15 @@ def _link_key() -> bytes:
 def wire_sandbox(settings: Settings, closers: list[Callable[[], Coroutine[Any, Any, None]]],
                  whisper: Callable[[], Awaitable[str]]) -> KubeApi:
     """Register the sandbox, and the Looker (and its warm pod's keeper) and Media when their images are set; `closers` takes what must be closed.
-    Returns the Kubernetes API client, for the other pods she keeps. Raises ValueError for an image not pinned by digest (`CAD_IMAGE` too). `whisper` gives the speech service's address (`wire_media`)."""
+    Returns the Kubernetes API client, for the other pods she keeps. Raises ValueError for an image not pinned by digest (`CAD_IMAGE` and `PYTHON_IMAGE` too). `whisper` gives the speech service's address (`wire_media`)."""
     kube = httpx2.AsyncClient(base_url=settings.sandbox_api_url,
                               verify=ssl.create_default_context(cafile=settings.sandbox_ca_file), timeout=10.0)
     closers.append(kube.aclose)
     sandbox = runs_config.load()
     if settings.cad_image:
         sandbox = sandbox.with_image("build123d", settings.cad_image)
+    if settings.python_image:
+        sandbox = sandbox.with_image("python", settings.python_image)
     api = KubeApi(kube, settings.sandbox_token_file)
     services.register(Sandbox, KubernetesSandbox(api, sandbox, settings.sandbox_namespace, settings.sandbox_runtime_class))
     if settings.look_image:

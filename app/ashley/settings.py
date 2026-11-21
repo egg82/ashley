@@ -74,6 +74,9 @@ class Settings:
     `cad_image` (Python with build123d and `ashley_cad`, pinned by digest) is the image of the build123d language of the same
     sandbox, run in pods of the same namespace under the same rules; it needs the sandbox settings (ValueError) and wiring
     refuses an image not pinned by digest (ValueError). Unset, the sandbox runs Python only.
+    `python_image` (Python with numpy, scipy, sympy and trimesh, pinned by digest) replaces the stock image of the python
+    language, under the same rules and with the same limits; it needs the sandbox settings (ValueError) and wiring refuses
+    an image not pinned by digest (ValueError). Unset, python runs in the stock image of `runs.json`.
     `media_image` (Python with ffmpeg and the Wyoming client, pinned by digest) and `media_app_url` (where a pod in the sandbox
     namespace reaches the app) let her take frames of a video and transcribe a recording in pods of that namespace
     (`ashley.runs.media_kubernetes`); both or neither, and they need the sandbox settings and the download-link key
@@ -147,6 +150,7 @@ class Settings:
     sandbox_runtime_class: str = "gvisor"
     look_image: str = ""
     cad_image: str = ""
+    python_image: str = ""
     look_app_url: str = ""
     look_warm_url: str = ""
     media_image: str = ""
@@ -220,6 +224,8 @@ class Settings:
             raise ValueError("LOOK_WARM_URL needs LOOK_IMAGE")
         if self.cad_image and not self.sandbox_token_file:
             raise ValueError("CAD_IMAGE needs SANDBOX_TOKEN_FILE")
+        if self.python_image and not self.sandbox_token_file:
+            raise ValueError("PYTHON_IMAGE needs SANDBOX_TOKEN_FILE")
         bridge = (self.mail_bridge_image, self.mail_bridge_namespace, self.mail_bridge_app_url, self.mail_bridge_keeper_url)
         if any(bridge) and not all(bridge):
             raise ValueError("MAIL_BRIDGE_IMAGE, MAIL_BRIDGE_NAMESPACE, MAIL_BRIDGE_APP_URL and MAIL_BRIDGE_KEEPER_URL "
@@ -275,6 +281,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     media_image=env.get("MEDIA_IMAGE", "").strip(),
                     media_app_url=env.get("MEDIA_APP_URL", "").strip().rstrip("/"),
                     look_image=env.get("LOOK_IMAGE", "").strip(), cad_image=env.get("CAD_IMAGE", "").strip(),
+                    python_image=env.get("PYTHON_IMAGE", "").strip(),
                     look_app_url=env.get("LOOK_APP_URL", "").strip().rstrip("/"),
                     look_warm_url=env.get("LOOK_WARM_URL", "").strip().rstrip("/"),
                     mail_bridge_image=env.get("MAIL_BRIDGE_IMAGE", "").strip(),

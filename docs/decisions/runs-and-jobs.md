@@ -14,7 +14,10 @@ recorded in Postgres before and after (`ashley.runs`, "Code runs" in `systems.md
   namespace's default ServiceAccount has none), uses no host namespace, gets no service links and no resolver, runs
   as nobody with no capabilities on a read-only root, with CPU and memory limits and two size-limited emptyDirs.
   Its image is pinned by digest in `app/ashley/runs/runs.json` (`python:3.13.18-alpine3.24`, the official image,
-  standard library only).
+  standard library only) unless `PYTHON_IMAGE` gives the science image (`deploy/python-run/`: the same Alpine with numpy,
+  scipy, sympy and trimesh at exact versions, from wheels), which replaces it under the same limits; unset, Python
+  runs in the stock image. A separate slim image rather than the CAD image's contents: build123d adds about 1 GB the
+  script runs do not use, and a library a run needs is a line in that Containerfile.
 - **Seconds, not minutes.** The script is stopped after `script_timeout_s` (10 s) by the runner in the pod, which
   keeps what it printed; `activeDeadlineSeconds` (30 s, starting the pod included) is the hard stop. A pod that never
   starts in that time is `unavailable` and nothing ran. Each pod requests 250m CPU and may use 500m, so the

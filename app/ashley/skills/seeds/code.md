@@ -50,7 +50,7 @@ the fix comes with the test that would have caught it.
 ## Running on the bench
 
 - Run the piece with the bench's run tool and read the actual output before saying it works. "It should work" is not a
-  result. The sandbox runs the standard library only, has no network, and stops a script after a few seconds, so keep
+  result. The sandbox has the standard library, plus numpy, scipy, sympy and trimesh when its science image is wired (an import error says it is not), has no network, and stops a script after a few seconds, so keep
   runs small and say plainly when something could not be run there.
 - When the run fails, read the error, change one thing and run again. Several edits at once leave you unable to tell
   which one helped.

@@ -50,3 +50,11 @@ def test_a_changed_requirement_changes_the_hash(tmp_path: Path) -> None:
     with (tmp_path / "requirements-dev.txt").open("a") as f:
         f.write("one-more-package==1.0\n")
     assert ci_image_hash.image_hash(tmp_path) != before
+
+
+def test_a_changed_containerfile_changes_the_python_run_hash(tmp_path: Path) -> None:
+    copy = tmp_path / "Containerfile"
+    copy.write_bytes(ci_image_hash.PYTHON_RUN_FILE.read_bytes())
+    assert ci_image_hash.python_run_hash(copy) == ci_image_hash.python_run_hash()
+    copy.write_text(copy.read_text() + "RUN true\n")
+    assert ci_image_hash.python_run_hash(copy) != ci_image_hash.python_run_hash()

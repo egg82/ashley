@@ -31,8 +31,9 @@ def offered() -> tuple[Language, ...]:
 def spec(languages: tuple[Language, ...], config: RunsConfig = CONFIG) -> ToolSpec:
     return ToolSpec(NAME, f"Run a short script once in a sandbox with no network and no access to the house, and get "
                     f"back what it printed, its exit code and the text files it left in its working directory. It "
-                    f"is stopped after {config.languages["python"].script_timeout_s} seconds; only the standard library is there; nothing "
-                    "is kept between runs.",
+                    f"is stopped after {config.languages["python"].script_timeout_s} seconds; the standard library is "
+                    "there, and numpy, scipy, sympy and trimesh when the sandbox has its science image (an import "
+                    "error says it does not); nothing is kept between runs.",
                     {"type": "object", "properties": {
                         "language": {"type": "string", "enum": list(languages)},
                         "script": {"type": "string", "description": f"the program, at most "

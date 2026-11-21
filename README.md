@@ -105,7 +105,7 @@ app at start-up when one of them is missing.
 | Privacy and terms pages | `OPERATOR_NAME`, `OPERATOR_CONTACT` |
 | Log detail | `LOG_LEVEL` (default `info`); logs are one `key=value` line per event |
 | Two sites | `ETCD_URL` (with `ETCD_CA_FILE`, `ETCD_CERT_FILE`, `ETCD_KEY_FILE`), `SITE`, `PATRONI_RESTAPI_PASSWORD`; `ACTIVE_SITE_LEADER_PATH`, `ACTIVE_SITE_MEMBER` (where the referee keeps the leader, and the value naming this site; default Patroni's key and `SITE`), `FAILBACK=off` |
-| Code sandbox, screenshots, media, Proton Bridge (Kubernetes only) | `SANDBOX_*`, `CAD_IMAGE`, `LOOK_*`, `MEDIA_*`, `MAIL_BRIDGE_*` |
+| Code sandbox, screenshots, media, Proton Bridge (Kubernetes only) | `SANDBOX_*`, `CAD_IMAGE`, `PYTHON_IMAGE`, `LOOK_*`, `MEDIA_*`, `MAIL_BRIDGE_*` |
 | Code sandbox with podman instead (see below) | `SANDBOX_PODMAN=trusted` |
 
 **Running code without Kubernetes.** `SANDBOX_PODMAN=trusted` runs each script she writes in a podman container on
