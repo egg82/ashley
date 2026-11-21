@@ -10,6 +10,7 @@ import { reportKioskVisibility } from '../api/screens';
 import type { MarkState } from '../components/AshleyMark';
 import { createFeed } from '../session/feed';
 import { createReporting, screenToken } from '../session/screen';
+import { kioskCard } from '../camera/card';
 import { announced } from '../speech/announce';
 
 type Doing = 'listening' | 'thinking' | 'speaking';
@@ -41,10 +42,12 @@ const feed = createFeed(() => kioskLiveFeed(screenToken), {
     else if (event.type === 'failed') turnFailed(event.why);
     else if (event.type === 'screen') screenChanged(event.device_id);
     else if (event.type === 'announce') void announced(event.clip);
+    else if (event.type === 'feed') void kioskCard.read();
     else readTurn();
   },
   resync() {
     forget();
+    void kioskCard.read();
     readAll();
   },
   lost: forget,
