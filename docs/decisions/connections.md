@@ -216,7 +216,7 @@ behind `ashley.todos.routed.RoutedTodos`, the Calendars' shape with changes adde
 - Rejected: moving `household_reads` onto the port in this change, which would reshape its setting and the taint record
   (`OutsideRecord`) behind it. No migration: nothing is stored.
 
-### Cameras are looked through a neutral port
+## Cameras are looked through a neutral port
 
 Her camera tools use `ashley.cameras.cameras.Cameras`, never Home Assistant: neutral records (`ashley.cameras.model`:
 `Camera`, `Still`, `Roster`). Home Assistant's `camera` entities are the first adapter (`ashley.home_assistant.cameras.HaCameras`),
