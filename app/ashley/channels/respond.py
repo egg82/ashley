@@ -222,7 +222,7 @@ async def _answered(turn: "_Turn", system: Mapping[str, SystemPrompt], messages:
     got = await answering.stored(turn.work, got, lambda r: _end(turn, r, inbound.unprompted), turn.going(system, tools))
     _done(turn, got, later=False)
     return Outbound(conversation_id, inbound.medium, await render(got.reply, inbound.medium, inbound.household_id),
-                    says=unprompted.says(got.reply, inbound), receipts=turn.landing.receipts)
+                    says=unprompted.says(got.reply, inbound), receipts=turn.landing.receipts, ask=got.reply.ask)
 
 
 @dataclass(frozen=True)
@@ -339,7 +339,7 @@ def _done(turn: _Turn, answer: tool_loop.Answer, later: bool) -> None:
               standing_facts=recall.ids(remembered.standing), recalled_facts=recall.ids(remembered.recalled),
               used_facts=",".join(map(str, used)), used_unrecalled=unrecalled, recent_turns=len(turn.carried.recent),
               relevant_turns=len(turn.carried.relevant), turns_filtered=turn.carried.filtered,
-              offered=answer.reply.offer is not None, duration_ms=_ms(turn.started), held=turn.landing.held,
+              offered=answer.reply.offer is not None, ask=answer.reply.ask, duration_ms=_ms(turn.started), held=turn.landing.held,
               tainted=turn.work.taint or "none", **owed.fields(answer.reply, turn.unreachable, who.speaker, turn.away, turn.work.changed))
 
 

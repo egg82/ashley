@@ -12,6 +12,10 @@ Says = Literal["reply", "offer", "none"]
 not said at all (`none`). Code honours `offer` and `none` only where the turn offers them
 (`ashley.channels.unprompted.says`)."""
 
+Ask = Literal["none", "time", "date"]
+"""The fixed ask a person made, one code could answer without the model: the current `time` or `date`, else `none`.
+Only counted today (`respond.done`, `voice.run`); nothing answers on it."""
+
 
 def _all_required(schema: dict[str, Any]) -> None:
     """The schema a model is sent names every field required and carries no defaults, so it states each one; defaults
@@ -85,6 +89,9 @@ class Reply(BaseModel):
                                   "you tell them next time. Null for anything else: an ask the unreachable source "
                                   "does not bear on, one that only makes sense right now, a plain statement, "
                                   "or when every source answered.")
+    ask: Ask = Field(
+        default="none", description="time or date only when what the person asked is just the current time or the "
+                                    "current date, however they word it. none for everything else.")
     says: Says = Field(
         default="reply", description="none only on a turn you were woken for (a wake from the house, or the person "
                                      "pausing on a bench; the message says which) when nothing in it is worth saying "

@@ -23,7 +23,7 @@ Open screens are told through `Mark`: listening to the transcript, speaking from
 
 Logs `voice.run` once per run: device, outcome (`ok`, `room_speaker`, `empty`, `silent`, `pending`, `aborted`, the
 failure's reason, or `error` after `voice.run_error` with the traceback), `says` (`reply`, `offer` or `none`, once she
-answered), clip id, `stt_provider` and `stt_model` (the route
+answered), `ask` (`none`, `time` or `date`: the fixed ask the reply names, counted only), clip id, `stt_provider` and `stt_model` (the route
 that transcribed), and `wake_to_stt_end_ms` (speech plus the end-of-speech wait), `stt_ms` (end of speech to transcript) and `respond_ms`, each present only once reached. The clip
 route logs `voice.clip` with the TTS route and timings. Never audio or text."""
 
@@ -148,7 +148,7 @@ class Run:
         except RespondUnavailable:
             return self._fail("intent-failed", "respond_unavailable")
         self._ms["respond_ms"] = _ms_since(started)
-        self._says = {"says": out.says}
+        self._says = {"says": out.says, "ask": out.ask}
         self._send(Event.VOICE_ASSISTANT_INTENT_END,
                    {"conversation_id": str(out.conversation_id), "continue_conversation": "0"})
         if out.says == "none":
