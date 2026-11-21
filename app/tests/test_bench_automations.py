@@ -51,6 +51,19 @@ def test_nothing_is_offered_while_no_house_is_wired() -> None:
     assert catalogue.specs == () and catalogue.instructions is None
 
 
+class Switched(AnyHousehold):
+    """A house whose household has switched its `automations` port off."""
+
+    async def writes_automations(self, household_id: int) -> bool:
+        return False
+
+
+def test_nothing_is_offered_once_the_household_switches_its_automations_port_off() -> None:
+    services.register(Homes, Switched(FakeHouse().house()))
+    catalogue = asyncio.run(BenchAutomationTools(1, 2, 3).catalogue())
+    assert catalogue.specs == () and catalogue.instructions is None
+
+
 def test_she_lists_the_houses_automations_and_reads_one_as_a_pieces_body(db_url: str) -> None:
     alana = owner(db_url)
     house = FakeHouse()

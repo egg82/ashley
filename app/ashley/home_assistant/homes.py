@@ -52,6 +52,12 @@ class Homes(Service):
     async def of(self, household_id: int) -> Home | None:
         """The household's Home Assistant; None when it has none. Raises HomesUnavailable."""
 
+    async def writes_automations(self, household_id: int) -> bool:
+        """Whether the household lets her write the house's own configuration (its `automations` port is on at its
+        house): automations, scripts, helpers and the names and areas of things. A household with no house, or whose
+        `house` port is off, is reached by none of that. Raises HomesUnavailable."""
+        return True
+
     @abstractmethod
     async def check(self, base_url: str, token: str) -> None:
         """Whether Home Assistant at `base_url` answers its API with `token`: one `GET /api/`, no redirect followed.
@@ -76,3 +82,13 @@ async def house_of(household_id: int) -> House:
     except HomesUnavailable:
         return NullHouse()
     return NullHouse() if home is None else home.house
+
+
+async def automation_house_of(household_id: int) -> House:
+    """`house_of`, and the Null Object too when the household has switched its `automations` port off."""
+    try:
+        if not await services.get(Homes).writes_automations(household_id):
+            return NullHouse()
+    except HomesUnavailable:
+        return NullHouse()
+    return await house_of(household_id)

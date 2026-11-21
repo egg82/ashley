@@ -10,7 +10,7 @@ from typing import Literal
 from ..services import Service
 from . import address
 from .model import Catalogued, Holder, Listed, Opened, Port
-from .settings import Setting
+from .settings import PORTS_OFF, PortSwitches, Setting
 
 FIRST_HOUSEHOLD = 1
 """The deployment's first household: the one its own setup (the env) describes, and the only one that holds a
@@ -138,6 +138,20 @@ class ConnectionKind:
         if self.label_pattern is None:
             return True
         return re.fullmatch(self.label_pattern, label) is not None and label not in self.reserved_labels
+
+    @property
+    def switchable(self) -> bool:
+        """Whether a household may switch this kind's ports off: it implements some, a household may hold it and it is
+        not a `deployment` kind (those configure the whole deployment, which wires them by port)."""
+        return bool(self.ports) and "household" in self.holders and not self.deployment
+
+    @property
+    def configurable(self) -> tuple[Setting, ...]:
+        """Everything a person sets on a connection of this kind: `settings`, and the switch per port where
+        `switchable`."""
+        if not self.switchable:
+            return self.settings
+        return (*self.settings, Setting(PORTS_OFF, PortSwitches(tuple(sorted(self.ports))), "ports"))
 
     @property
     def default_holder(self) -> Holder:

@@ -14153,6 +14153,29 @@
         ],
         "title": "PinRequest"
       },
+      "PortSwitchField": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "port_switches",
+            "title": "Type"
+          },
+          "ports": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ports"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "ports"
+        ],
+        "title": "PortSwitchField",
+        "description": "The ports of the connection's kind a person may switch off, as a list of port names from `ports`; a connection\nserves every port not listed."
+      },
       "ProtonAccount": {
         "properties": {
           "connection_id": {
@@ -15674,6 +15697,9 @@
               },
               {
                 "$ref": "#/components/schemas/EntityPerActionField"
+              },
+              {
+                "$ref": "#/components/schemas/PortSwitchField"
               }
             ],
             "title": "Field",
@@ -15682,7 +15708,8 @@
               "mapping": {
                 "action_list": "#/components/schemas/ActionListField",
                 "entity_list": "#/components/schemas/EntityListField",
-                "entity_per_action": "#/components/schemas/EntityPerActionField"
+                "entity_per_action": "#/components/schemas/EntityPerActionField",
+                "port_switches": "#/components/schemas/PortSwitchField"
               }
             }
           },
@@ -15692,6 +15719,7 @@
               "taint",
               "tier",
               "read",
+              "ports",
               "plain"
             ],
             "title": "Decides"
@@ -15704,7 +15732,7 @@
           "decides"
         ],
         "title": "SettingInfo",
-        "description": "One setting a kind declares. `decides` is what it changes in how she behaves: `taint`, `tier` and `read` settings\nchange what she trusts, asks about or counts as a change; `plain` ones are preferences."
+        "description": "One setting a kind declares. `decides` is what it changes in how she behaves: `taint`, `tier` and `read` settings\nchange what she trusts, asks about or counts as a change; `ports` is which ports the connection serves; `plain`\nones are preferences."
       },
       "SettingsRefused": {
         "properties": {

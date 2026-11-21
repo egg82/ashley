@@ -114,6 +114,35 @@ same family's accounts; one HA is the one house), so a key per person would add 
   the cap by hand; wrapping a cut result in JSON, which escapes the head
   and wastes the budget.
 
+### A household switches each port of a connection on or off
+
+What a connection supplies is the ports its kind declares (`ConnectionKind.ports`), and a household turns each off on that
+connection in the connections room's settings page, a switch per port. A port switched off is as if that connection did not
+implement it: `ashley.connections.ports.opened_all` skips it, and every consumer reaches ports only through that, so no
+consumer checks a switch itself.
+
+- **Stored as a connection setting, the key `ports_off`** (`ashley.connections.settings.PORTS_OFF`): the ports the household
+  switched off, a list of port names the kind declares. Nothing stored is every port on, so rows that exist today change
+  nothing, and no migration was needed. The setting is derived (`ConnectionKind.configurable`: `settings` plus the switches)
+  rather than declared by each kind. Its `decides` is `ports`, a person-written class: switching a port on widens what she
+  can do, so it goes through the settings writer like `taint` and `tier` settings, which only the member route imports.
+  Her tools can never switch a port.
+- **Which kinds have switches:** those a household may hold that are not `deployment` kinds (`ConnectionKind.switchable`).
+  A deployment kind configures the whole deployment, wired by port at start, and an admin-only row that a switch could
+  silently disable (a model provider's key, the object store) is not a household's choice. Only a household's own
+  connection has the page, so a person's own connection (their mail) has none.
+- **Each port states its combine rule as data** (`ashley.connections.model.PORTS`; a test holds it to every `Port`).
+  `one`: the first connection in the kind registration order that serves it, and `opened_all` returns that one alone;
+  `combine`: every connection that serves it. `house`, `automations`, `ledger`, `printing`, `stock` (Spoolman before
+  Bambuddy, because both carry the same data) and the deployment's `search`, `chat`, `files` and `voice` are `one`;
+  `code_host`, `herdr`, `mail` and `inference` are `combine`, which is what their callers already did.
+- **Home Assistant declares `house` and `automations`.** `house` off: her house tools are not offered, as for a household
+  with no house. `automations` off: `house_change` and `house_confirm` and the bench's automation tools are not offered,
+  and `house_change` refuses if called (`Homes.writes_automations`). Automations are written through the house, so they also
+  need `house` on. Installing an automation a person has agreed to on a bench is the person's act and is not gated.
+- Rejected: a switch table of its own beside the settings, which would duplicate the compare-and-set, the change log and
+  the person-only write path. Rejected: a rule per port in code, which is the "system in hiding" the table avoids.
+
 ## Her money is read through a neutral ledger
 
 Her money tools and the deposit sense read `ashley.ledger.ledger.Ledger`, never Sure: neutral records (`Account`,

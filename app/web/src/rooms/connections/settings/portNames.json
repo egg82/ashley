@@ -1,0 +1,10 @@
+{
+  "house": { "name": "The house", "sub": "Its lights, rooms, sensors and history, and running its actions." },
+  "automations": { "name": "Automations", "sub": "Writing the house’s own setup: automations, scripts, helpers and the names of things." },
+  "ledger": { "name": "Money", "sub": "Reading accounts and transactions, and changing a category or a note once you agree." },
+  "printing": { "name": "3D printing", "sub": "Printers, what they are printing, AMS slots and library files." },
+  "stock": { "name": "Filament stock", "sub": "The spools in stock and how much is left." },
+  "code_host": { "name": "Code", "sub": "Projects, files and merge requests on this code host." },
+  "mail": { "name": "Mail", "sub": "The mailboxes this account reaches." },
+  "herdr": { "name": "Coding sessions", "sub": "The sessions running on this machine." }
+}

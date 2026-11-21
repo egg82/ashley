@@ -9,6 +9,7 @@ const DECIDES: Record<SettingInfo['decides'], string> = {
   taint: 'decides what she trusts',
   tier: 'decides what she asks about',
   read: 'decides what she may read',
+  ports: 'decides what she uses it for',
   plain: 'a preference',
 };
 
@@ -19,6 +20,8 @@ export interface DigestRow {
   /** Whether it changes how she behaves, as against a preference. */
   judging: boolean;
   count: number;
+  /** How the count reads: entries held, or for the port switches the ports switched off. */
+  held: string;
   /** Who last changed it: a name (null for a person who has since left), or null when the changelog holds no change to it. */
   by: { name: string | null } | null;
   at: string | null;
@@ -41,12 +44,14 @@ export function digestOf(
 ): DigestRow[] {
   const rows = settings.map((s): DigestRow => {
     const last = changes.find((c) => c.key === s.key);
+    const count = countOf(values.find((v) => v.key === s.key));
     return {
       key: s.key,
       title: NAMES[s.key] ?? humanised(s.key),
       decides: DECIDES[s.decides],
       judging: s.decides !== 'plain',
-      count: countOf(values.find((v) => v.key === s.key)),
+      count,
+      held: s.decides === 'ports' ? `${count} switched off` : `${count} ${count === 1 ? 'entry' : 'entries'}`,
       by: last ? { name: last.edited_by?.name ?? null } : null,
       at: last?.changed_at ?? null,
     };

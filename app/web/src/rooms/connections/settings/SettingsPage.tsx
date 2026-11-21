@@ -1,9 +1,10 @@
-// A connection's settings, which are Home Assistant's alone today. Opened at
+// A connection's settings: the switch per port every switchable kind has, and Home Assistant's own. Opened at
 // `/connections/<id>/settings`, so a reload or a shared link lands here. Saving replaces the whole of them.
 import { useEffect } from 'preact/hooks';
 import { locale } from '../../../household/format';
 import { held, kinds } from '../connections';
 import { HaSettings } from './HaSettings';
+import { PortsSection } from './PortsSection';
 import { dirty, discard, loadHouse, loadSettings, loaded, said, save, saving, settings } from './state';
 
 const changedAt = (iso: string) => new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
@@ -53,7 +54,8 @@ function Body({ id }: { id: number }) {
     case 'ready':
       return (
         <>
-          <HaSettings id={id} />
+          <PortsSection />
+          {settings.value?.settings.some((s) => s.decides !== 'ports') && <HaSettings id={id} />}
           <Foot id={id} />
         </>
       );
@@ -63,8 +65,11 @@ function Body({ id }: { id: number }) {
 export function SettingsPage({ id }: { id: number }) {
   useEffect(() => {
     void loadSettings(id);
-    void loadHouse(id);
   }, [id]);
+  const readable = settings.value?.settings.some((s) => s.decides !== 'ports') ?? false;
+  useEffect(() => {
+    if (readable) void loadHouse(id);
+  }, [id, readable]);
   const connection = held.value.find((c) => c.id === id);
   const kind = kinds.value.find((k) => k.name === (connection?.kind ?? settings.value?.kind));
   const title = connection?.label || kind?.title || 'Connection';

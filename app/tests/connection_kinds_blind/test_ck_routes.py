@@ -55,7 +55,7 @@ def test_an_offered_kind_carries_what_its_adapter_declared(client: TestClient, n
         name=name, title=declared.title, what=declared.what, blurb=declared.blurb, connected=declared.connected,
         removed=declared.removed, holders=sorted(declared.holders), most=declared.most, takes_address=declared.fixed_address is None,
         address_placeholder=declared.address_placeholder, secret_field=declared.secret_field,
-        secret_label=declared.secret_label, secret_noun=declared.secret_noun, has_settings=bool(declared.settings))
+        secret_label=declared.secret_label, secret_noun=declared.secret_noun, has_settings=bool(declared.configurable))
 
 
 def test_the_offer_is_the_same_before_and_after_connecting(client: TestClient) -> None:

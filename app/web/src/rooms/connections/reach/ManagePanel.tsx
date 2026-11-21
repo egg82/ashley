@@ -72,7 +72,7 @@ export function ManagePanel({ c, kind }: { c: HouseholdConnection; kind: Connect
         <Held c={c} kind={kind} />
         <Access c={c} />
         {c.resources.length > 0 && <Item term="Mailboxes"><Resources c={c} /></Item>}
-        {kind.has_settings && <Item term="Settings"><SettingsDigest id={c.id} /></Item>}
+        {kind.has_settings && !c.personal && <Item term="Settings"><SettingsDigest id={c.id} /></Item>}
       </dl>
       {removing.value === c.id ? <RemoveConfirm c={c} kind={kind} /> : <Actions c={c} kind={kind} />}
     </div>
