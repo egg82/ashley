@@ -158,6 +158,6 @@ def test_there_is_no_when_argument() -> None:
         async with world() as w:
             spec = next(s for s in (await w.tools().catalogue()).specs if s.name == "watch")
             assert sorted(schema_of(spec)["properties"]) == [
-                "brief", "hours", "kind", "standing", "target", "tools", "until"]
+                "brief", "hours", "kind", "method", "standing", "target", "tools", "until"]
             assert sorted(schema_of(spec)["required"]) == ["kind", "target"]
     asyncio.run(go())
