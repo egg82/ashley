@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ..conversations.model import Attachment, Channel, Kind, Receipts
-from ..inference.reply import Says
+from ..inference.reply import Ask, Says
 from ..initiative.moment import Moment
 from ..initiative.remark import Chance
 from ..workshop.model import thread_of
@@ -224,7 +224,7 @@ class Outbound:
     """Her reply for the channel to deliver: `body` rendered for `medium` (`render.render`). `follows` is true when it
     only says she will check, and the answer will come through the `Outbox` for the thread. `says` is her
     reply's `Reply.says` as code honoured it (`unprompted.says`): `none` when she kept it to herself
-    (`unprompted.QUIET` is what was stored). `receipts` is what code shows beside the
+    (`unprompted.QUIET` is what was stored). `ask` is her reply's `Reply.ask`, logged only. `receipts` is what code shows beside the
     reply (`conversations.model.Receipts`), never part of `body`; None when there is none."""
 
     conversation_id: int
@@ -233,6 +233,7 @@ class Outbound:
     follows: bool = False
     says: Says = "reply"
     receipts: Receipts | None = None
+    ask: Ask = "none"
 
 
 def on_bench(household_id: int, speaker_id: int | None, bench_id: int, text: str) -> Inbound:

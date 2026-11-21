@@ -15,7 +15,7 @@ from ashley.channels.voice.run import Pipeline
 from ashley.inference.embedding import EmbedTask
 from ashley.inference.inference import Inference
 from ashley.inference.model import Prompt, Task, ToolCalls
-from ashley.inference.reply import Says
+from ashley.inference.reply import Ask, Says
 from ashley.inference.speech import Heard, Speech, SpeechTask, Transcript
 from ashley.inference.voiceprint import VoiceprintTask
 from contract.conversations_support import scalar
@@ -157,12 +157,13 @@ class FakeTurnLoop:
     asked: list[Inbound] = field(default_factory=list[Inbound])
     follows: bool = False
     says: Says = "reply"
+    ask: Ask = "none"
 
     async def __call__(self, inbound: Inbound) -> Outbound:
         self.asked.append(inbound)
         if self.error is not None:
             raise self.error
-        return Outbound(41, "spoken", self.body, follows=self.follows, says=self.says)
+        return Outbound(41, "spoken", self.body, follows=self.follows, says=self.says, ask=self.ask)
 
 
 @dataclass
