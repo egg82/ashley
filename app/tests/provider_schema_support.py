@@ -18,6 +18,7 @@ from ashley.home_assistant.homes import Homes
 from ashley.inference import anthropic_wire, openai_responses_wire, openai_wire
 from ashley.inference.model import ToolSpec
 from ashley.inference.reply import Reply
+from ashley.looks.session import BrowserSessions
 from ashley.memory import writer_output
 from ashley.memory.eval.judge import Verdict
 from ashley.tools.action_judge_model import Answer
@@ -37,6 +38,7 @@ from pydantic import BaseModel
 from automations_support import FakeHouse
 from source_tree import Parsed
 from bench_run_support import Box
+from browser_support import ScriptedSessions
 from homes_support import AnyHousehold
 from money_support import HeldConnections
 from test_reminder_turn import Home
@@ -103,14 +105,14 @@ TURNS: tuple[Inbound, ...] = (
 
 def offered() -> list[ToolSpec]:
     """Every tool the app offers across `TURNS`, from `turn_tools.for_turn` over the wired shared tools, a household
-    with Sure, GitLab and GitHub connected, a sandbox, a house, and a money-rule proposal waiting."""
+    with Sure, GitLab and GitHub connected, a sandbox, a browser, a house, and a money-rule proposal waiting."""
     shared, *_ = wiring.tools([], "https://search.test")
     connections = HeldConnections()
     for kind in ("sure", "gitlab", "github", "herdr"):
         connections.connect(HOUSEHOLD, kind=kind, person_id=ALANA if kind != "sure" else None)
     people = Household(HOUSEHOLD, "home", "America/Denver", "",
                        (Person(ALANA, HOUSEHOLD, "Alana"), Person(SAM, HOUSEHOLD, "Sam")))
-    wired: dict[type[Any], Any] = {Tools: shared, Connections: connections, People: Home(people), Sandbox: Box(),
+    wired: dict[type[Any], Any] = {Tools: shared, Connections: connections, People: Home(people), Sandbox: Box(), BrowserSessions: ScriptedSessions(),
                                    Deposits: NullDeposits(), Proposals: _Proposed(), Homes: AnyHousehold(FakeHouse().house())}
     for interface, provider in wired.items():
         services.register(interface, provider)

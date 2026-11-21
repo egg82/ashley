@@ -9,7 +9,11 @@ has to say it is drawn), `cpu`, `cpu_request`, `memory`, `shm_mib` (its `/dev/sh
 (`log_bytes`, room for a base64 picture of `max_image_bytes` and a page of `read_bytes`), the most of a page a read pod
 brings back (`read_bytes`, `shooter.read`); and how often the pod is asked whether it has finished
 (`poll_s`); and the warm pod's: how often it is checked (`warm_tick_s`), the longest it lives (`warm_max_age_s`) and how
-long a look waits to reach it before taking a pod of its own (`warm_connect_s`)."""
+long a look waits to reach it before taking a pod of its own (`warm_connect_s`); and a browser session's
+(`ashley.looks.session`): the longest it lasts (`session_max_s`), the most actions it takes (`session_max_actions`), the
+longest one step on the page may take (`session_step_s`), how many sessions run at once (`max_sessions`), and the most
+elements (`snapshot_nodes`) and characters of an element's name (`snapshot_name_chars`) a snapshot of the page holds, and the most
+characters she may type into one field (`type_chars`)."""
 
 import json
 from dataclasses import dataclass, fields
@@ -48,6 +52,13 @@ class LooksConfig:
     warm_tick_s: float
     warm_max_age_s: int
     warm_connect_s: float
+    session_max_s: int
+    session_max_actions: int
+    session_step_s: int
+    max_sessions: int
+    snapshot_nodes: int
+    snapshot_name_chars: int
+    type_chars: int
 
 
 def load() -> LooksConfig:
@@ -58,7 +69,7 @@ def load() -> LooksConfig:
 def parse(data: object) -> LooksConfig:
     """A LooksConfig from JSON already parsed. Raises ValueError when a key is missing or unknown, a value has the
     wrong type or is not positive, `max_height` is under `height`, `jpeg_quality` is over 100, `ephemeral_mib` is not over `home_mib`, the pod's deadline leaves the page no time to be drawn
-    in, or `log_bytes` has no room for a picture of `max_image_bytes` in base64."""
+    in, `session_max_s` is not over `ready_timeout_s`, or `log_bytes` has no room for a picture of `max_image_bytes` in base64."""
     loose: Any = data
     if not isinstance(data, dict):
         raise ValueError("looks config is an object")
@@ -79,6 +90,8 @@ def parse(data: object) -> LooksConfig:
         raise ValueError("max_height: at least height")
     if config.ephemeral_mib <= config.home_mib:
         raise ValueError("ephemeral_mib: more than home_mib")
+    if config.session_max_s <= config.ready_timeout_s:
+        raise ValueError("session_max_s: longer than ready_timeout_s")
     if config.jpeg_quality > 100 or config.image_jpeg_quality > 100:
         raise ValueError("jpeg_quality and image_jpeg_quality: at most 100")
     if config.min_region > 1:

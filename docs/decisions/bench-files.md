@@ -112,6 +112,31 @@ Files, photographs and 3D on a bench: the object store, uploads, looks and model
       one warm pod for both sites, which every look from the other site would reach across the link. Rejected: reusing
       one browser across looks, which saves about a second and shares a profile between households. Rejected: an
       exec into the pod, which wants `pods/exec` for the app's account.
+- **She drives a page for a session of minutes** (`ashley.tools.browser_session.BrowserSessionTools`, `browser_snapshot` and
+  `browser_act`, on any turn that has a conversation): a browser for services with no API, the look pod's image
+  and spec given a long life (`ashley.looks.session.BrowserSessions`, `ashley.looks.kubernetes_session.KubernetesSessions`,
+  program `ashley.looks.driver`), not a third kind of Code runs pod: a run is a script's seconds with no network and a log
+  read at the end, a session is minutes of back and forth with egress, which is the look pod's browser, its sweep and its
+  network policy.
+  - **One pod per session, held by its labels.** The first `navigate` creates the pod (`FETCH_LABEL` for public HTTPS, and
+    `SESSION_LABEL` with the household and conversation under `SESSION_KEY_LABEL`, never `LABEL`, whose sweep is a look's
+    45 s); any app pod of either site finds it by those labels and talks to its address, so no state is in the app. The pod
+    holds the clock and the action count itself, ends at either cap and Kubernetes ends it a little after
+    (`activeDeadlineSeconds`); the app deletes the pod on `end`, a cap, a bad answer or a pod that never came up, and
+    `PodLog.sweep` removes any left by a stopped app pod. `max_sessions` run at once, else `busy`. The pod's token is its
+    name signed with the link key, so nothing is stored.
+  - **She acts on references, never positions.** A snapshot names each interactive element `e<n>`; before every action the
+    pod snapshots again and the element must be there under the same role, name and place among its twins, or the action is
+    refused `stale_ref` and she snapshots again.
+  - **She never types a password, one-time code or card number.** The snapshot marks those fields `secret` and the pod refuses
+    `type` into them (`secret_field`); the tool's contract says so. Page text is outside words: a snapshot taints the turn
+    and `browser_act` is a change at tier `judged`. Logs carry the action, outcome, counts and durations.
+  - **Limits are data** (`looks.json`): `session_max_s`, `session_max_actions`, `session_step_s`, `max_sessions`,
+    `snapshot_nodes`, `snapshot_name_chars`, `type_chars`. Later slices, each its own change: the browser's profile kept in the
+    object store between sessions, code typing credentials over CDP, a person taking over the page from the web app. The
+    cluster repo must let the app reach `SESSION_LABEL` pods on `driver.PORT`, as it does the warm pod's Service.
+  - Rejected: a record table per session, since the pod and its labels already are the record and a second copy
+    would drift; a screen-coordinate action; Rakazo's Teach, a recorded demonstration replayed.
 - **She watches a video and listens to audio** (`ashley.tools.bench_media.BenchMediaTools`, on a bench's talk while a
   store and a media worker are wired).
   - **A video file is a `clip` piece and an audio file an `audio` piece**, large kinds chosen by the bytes' media type
