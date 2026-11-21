@@ -14,11 +14,11 @@ from taint_fields_blind_support import OBJ, SPECS, located_specs, missing_keywor
 
 OUTSIDE_TOOLS = (
     "look_up", "read_page", "find_places", "search_printables", "printables_files", "git_projects", "git_tree",
-    "git_read_file", "claude_read", "house_ask", "money_transactions", "bench_frames", "bench_transcribe",
+    "git_read_file", "claude_read", "house_ask", "money_transactions", "printing_printers", "printing_files", "printing_needs", "stock_spools", "bench_frames", "bench_transcribe",
     "bench_read", "bench_read_piece", "bench_shelf", "bench_look")
 HOUSEHOLD_TOOLS = (
     "house_state", "house_find", "house_history", "house_automations", "house_automation", "money_accounts",
-    "money_categories", "money_net_worth", "reminders", "household_devices", "claude_sessions", "skill_read",
+    "money_categories", "money_net_worth", "printing_ams", "reminders", "household_devices", "claude_sessions", "skill_read",
     "bench_install_state", "bench_run", "bench_last_run", "run_code", "house_do", "house_change", "remind",
     "claude_prompt")
 FLOOR = 18

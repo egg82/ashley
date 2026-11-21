@@ -160,6 +160,52 @@ second kind exists; the adapter finds it, so a caller passes a household id.
   `not_sure` for `unrecognised`), since the model is told the source is Sure; they change with the first second backend.
 - Rejected: an adapter per tool. The records are the contract, and the tools plus the sense share one adapter.
 
+## 3D printing is read through a neutral port
+
+Her printing tools read `ashley.printing.printing.Printing`, never Bambuddy, and her stock tool reads
+`ashley.stock.stock.Stock`: neutral records (`ashley.printing.model`: `Printer`, `AmsUnit`, `Slot`, `PrintFile`, `Need`;
+`ashley.stock.model.Spool`) whose fields are documented in printing and stock terms. Bambuddy is the first adapter of
+both, `ashley.bambuddy.printing.BambuddyPrinting` and `ashley.bambuddy.stock.BambuddyStock`, over the port
+`ashley.bambuddy.client.Bambuddy`; `ashley.bambuddy.wire` is the only code that reads Bambuddy's field names. This is the
+Ledger's shape (above), and only reads exist so far.
+
+- **Two ports, because filament stock has its own owner.** Spoolman will be a connection kind of its own that implements
+  `stock` and not `printing`; Bambuddy implements both (`ConnectionKind.ports`). A slot that holds a known spool names it
+  by the stock port's id (`Slot.spool_id`), never by a Bambuddy field, so a record from either adapter points at the
+  other's spools.
+- **Which connection supplies stock: the household's Spoolman when it has one, else Bambuddy's.** Spoolman is the record
+  and Bambuddy only relays it (`/api/v1/spoolman/inventory/*`). `ports.opened` opens the first connection of the port in
+  registration order, so Spoolman's kind is registered before Bambuddy's in `ashley.wiring.CONNECTION_KINDS` and nothing
+  else changes: the second adapter adds a router that sends each call to the adapter of the opened connection's kind, as
+  `ashley.mail.routed.RoutedMailbox` does. Until then the one adapter serves whatever opens.
+- **Bambuddy is one connection: an address (http or https) and an API key**, sent as `X-API-Key`. The key is made in
+  Bambuddy with permission to read status, the library and the inventory, and no permission to control a printer. A
+  connection is stored once `GET /api/v1/printers/` answers as a list of printers with it.
+- **What she reads.** Printers with state, the print's name, progress, minutes left, layers and reported problems
+  (`GET /printers/` then `GET /printers/:id/status` for each); each AMS slot's filament type, colour and percent left, the
+  unit's humidity as the printer reports it, and the recorded spool (`GET /spoolman/inventory/slot-assignments/all`, which
+  a Bambuddy with no Spoolman may refuse: logged `bambuddy.assignments_skipped`, `spool_id` left empty); spools in stock,
+  archived ones left out and most left first (`GET /spoolman/inventory/spools`, grams left being the label weight less
+  the weight used); library files searched by name in the adapter, since the route has no search (`GET /library/files`);
+  and one file's filaments (`GET /library/files/:id/filament-requirements`). Counts and limits are data
+  (`app/ashley/tools/printing.json`), and a cut list says so (`cut`).
+- **Which results are outside text.** A print's name, a library file's name and a file's filament types come from models
+  made elsewhere (a MakerWorld download names itself), and a spool's brand, colour name and location are written by whoever
+  added it or come from a filament catalogue: `printing_printers`, `printing_files`, `printing_needs` and `stock_spools`
+  are `outside=True`. `printing_ams` is `outside=False`: it carries printer names the household set, the filament type
+  and colour a slot reports, percent left, humidity and spool ids, and no free text. A slot's sub-brand and a spool's
+  notes are not read, so no text a stranger wrote reaches it.
+- **Offered to any known speaker in any chat, not only where the reply reaches them alone.** What the printers are doing
+  is the household's, unlike its money (`ashley.channels.audience.owner_alone`). A household with no connection of the
+  port is offered none (`catalogue` is empty); queuing a print, an upload and the print events are later work.
+- **Failures are `PrintingFailed(reason)` and `StockFailed(reason)`** (`refused`, `unreachable`, `unrecognised`),
+  `PrintingUnavailable` and `StockUnavailable` when the household's link cannot be read, `NotConnected` when it has none.
+  A 404 for a library file is `None`, not a failure. Logs carry the path, status and duration, with connection ids and
+  counts, never a key, a name or a spool's text.
+- Rejected: one port for printers and stock, which would make a Spoolman adapter implement printer reads it cannot answer.
+  Rejected: the AMS's humidity history (`GET /ams-history`), whose percent and index fields the OpenAPI does not explain;
+  the reading the status gives is passed on as given.
+
 ## A model provider's key is a connection
 
 A deployment's keys for Anthropic, OpenAI, Gemini and ElevenLabs are connections, so whoever runs the published image
