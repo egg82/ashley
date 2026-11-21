@@ -193,7 +193,19 @@ close, nothing else. A session she handed work to going `blocked` or finishing i
   since Claude Code ignores a project's allow rules until the folder is trusted, and a new folder never is. A prompt for
   anything outside the folder stops the session as before, `blocked`, for the person to answer. A bypass or skip-permissions
   mode is never used. A session she starts anywhere else gets no extra permissions.
-- **Her tools are `claude_sessions`, `claude_read`, `claude_prompt`, `claude_start` and `claude_close`**
+- **A machine is what its bridge reports and what its person says.** `GET /v1/machine` answers hostname, OS, CPU, memory,
+  GPUs, whether a session is working, which of the bridge's configured `bench_tools` are on `PATH`, and the USB devices by
+  `vendor:product` id and product string, each read live from a fixed source (kernel files, `nvidia-smi` with fixed
+  arguments); a value it could not read is `null`, never zero. It runs nothing a caller or the config names: a tool is
+  only looked up, and no serial, file content or environment value is read. The person's own sentences about the machine
+  are `connections.description` on its connection (`takes_description` on the kind), household text edited in the
+  connections room: not a `connection_settings` value, which holds lists of the service's ids on a household's connection,
+  and a herdr connection is a person's. She reads both through `claude_machines`, which is `outside` because a USB
+  product name is a device's words; the description alone rides on `claude_sessions`, which stays `outside=False`, so
+  listing sessions does not taint a turn. Choosing a machine stays by label (`ashley.herdr.machines.choose`); nothing
+  places a job by its report yet. Rejected: putting the report in `whoami`, which checks a connection and must stay
+  cheap; USB strings in `claude_sessions`, which would taint the call every prompt and start follows.
+- **Her tools are `claude_sessions`, `claude_machines`, `claude_read`, `claude_prompt`, `claude_start` and `claude_close`**
   (`ashley.tools.claude_code`), offered by the gate the code host tools use (`audience.owner_alone`, connections
   openable) and only to a person with a `herdr` connection. Prompt, start and close are not proposed first: the
   bridge's bounds above (a ready session only, a directory under the roots, no way to answer a dialog) are what keep

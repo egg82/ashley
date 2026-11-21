@@ -59,7 +59,7 @@ def refused(call: Awaitable[object]) -> str:
 
 
 def test_whoami_lists_the_files_capability(world: World) -> None:
-    assert run(world.bridge.whoami(world.access())).capabilities == ("files",)
+    assert run(world.bridge.whoami(world.access())).capabilities == ("files", "machine")
 
 
 def test_a_bridge_that_sends_no_capabilities_reads_as_having_none() -> None:
