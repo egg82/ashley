@@ -8,7 +8,7 @@ from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
 from ..services import Service
-from .model import Candidate, LiveConfig, LiveSignal, NotConnected, Recording, Roster, Still
+from .model import Candidate, DetectionRecorder, LiveConfig, LiveSignal, NotConnected, Recording, Roster, Still
 
 
 class Cameras(Service):
@@ -43,6 +43,13 @@ class Cameras(Service):
         """One picture of a recording of the camera `camera_id`; its `taken` is None unless the source states a time.
         Raises NoSuchCamera, NoSuchRecording, NotConnected, CamerasUnavailable, CamerasFailed. Logs `camera.look` with
         the source, outcome and duration_ms, never a title, a name or a byte."""
+
+    @abstractmethod
+    async def follow(self, household_id: int, record: DetectionRecorder) -> int:
+        """Follow what the detectors of the cameras she may look through report, each detection handed to `record`, in
+        place of what was followed before (so a camera named or dropped since is followed or let go); how many
+        detectors are followed. A household with no camera source on follows none and lets go of any it followed. Raises
+        CamerasUnavailable, CamerasFailed (every source failed). Logs `camera.follow_failed` per failing source."""
 
     @abstractmethod
     async def live_config(self, household_id: int, camera_id: str) -> LiveConfig:
@@ -80,6 +87,9 @@ class NullCameras(Cameras):
 
     async def look_recording(self, household_id: int, camera_id: str, recording_id: str) -> Still:
         raise NotConnected
+
+    async def follow(self, household_id: int, record: DetectionRecorder) -> int:
+        return 0
 
     async def live_config(self, household_id: int, camera_id: str) -> LiveConfig:
         raise NotConnected

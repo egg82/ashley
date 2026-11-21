@@ -2,6 +2,7 @@
 terms. An adapter (for Home Assistant, `ashley.home_assistant.cameras`) fills them from its service's own shapes; nothing
 outside it knows those shapes."""
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
@@ -43,6 +44,20 @@ class Recording:
     id: str
     camera_id: str
     title: str
+
+
+@dataclass(frozen=True)
+class Detection:
+    """What a camera's own detector reported: the camera (`camera_id`, as `Camera.id`), the detector's own class
+    (`kind`, a field the source states, never read out of text) and when it saw it (`at`). A neutral record; a source
+    that tells more (a score, a zone, the still it judged) adds fields here."""
+
+    camera_id: str
+    kind: str
+    at: datetime
+
+
+DetectionRecorder = Callable[[Detection], Awaitable[None]]
 
 
 @dataclass(frozen=True)
