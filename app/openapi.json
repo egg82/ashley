@@ -5952,10 +5952,17 @@
           {
             "name": "screen",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Screen"
             }
           }
@@ -5995,23 +6002,23 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/screens/feed/dismiss": {
+      "post": {
         "summary": "Dismiss",
         "description": "204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503\n`unavailable`.",
         "operationId": "screen_feed_dismiss",
-        "parameters": [
-          {
-            "name": "screen",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Screen"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedDismiss"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -6199,10 +6206,17 @@
           {
             "name": "screen",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Screen"
             }
           }
@@ -6242,23 +6256,23 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/kiosk/feed/dismiss": {
+      "post": {
         "summary": "Dismiss",
         "description": "204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503\n`unavailable`.",
         "operationId": "kiosk_feed_dismiss",
-        "parameters": [
-          {
-            "name": "screen",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Screen"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedDismiss"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -10950,6 +10964,21 @@
         ],
         "title": "FeedCandidate",
         "description": "One of the page's ICE candidates for the feed `session_id` (from the offer's `session` signal), as the browser's\n`RTCIceCandidateInit` names its fields."
+      },
+      "FeedDismiss": {
+        "properties": {
+          "screen": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Screen"
+          }
+        },
+        "type": "object",
+        "required": [
+          "screen"
+        ],
+        "title": "FeedDismiss",
+        "description": "The screen whose feed is taken off: the token it opened its live feed under."
       },
       "FeedError": {
         "properties": {

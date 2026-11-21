@@ -1704,12 +1704,28 @@ export interface paths {
         get: operations["screen_feed_read"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/screens/feed/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Dismiss
          * @description 204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
          *     `unavailable`.
          */
-        delete: operations["screen_feed_dismiss"];
+        post: operations["screen_feed_dismiss"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1772,12 +1788,28 @@ export interface paths {
         get: operations["kiosk_feed_read"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosk/feed/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Dismiss
          * @description 204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
          *     `unavailable`.
          */
-        delete: operations["kiosk_feed_dismiss"];
+        post: operations["kiosk_feed_dismiss"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3367,6 +3399,17 @@ export interface components {
             sdp_m_line_index?: number | null;
             /** Username Fragment */
             username_fragment?: string | null;
+        };
+        /**
+         * FeedDismiss
+         * @description The screen whose feed is taken off: the token it opened its live feed under.
+         */
+        FeedDismiss: {
+            /**
+             * Screen
+             * Format: uuid
+             */
+            screen: string;
         };
         /**
          * FeedError
@@ -11593,8 +11636,8 @@ export interface operations {
     };
     screen_feed_read: {
         parameters: {
-            query: {
-                screen: string;
+            query?: {
+                screen?: string | null;
             };
             header?: never;
             path?: never;
@@ -11640,14 +11683,16 @@ export interface operations {
     };
     screen_feed_dismiss: {
         parameters: {
-            query: {
-                screen: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedDismiss"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {
@@ -11826,8 +11871,8 @@ export interface operations {
     };
     kiosk_feed_read: {
         parameters: {
-            query: {
-                screen: string;
+            query?: {
+                screen?: string | null;
             };
             header?: never;
             path?: never;
@@ -11873,14 +11918,16 @@ export interface operations {
     };
     kiosk_feed_dismiss: {
         parameters: {
-            query: {
-                screen: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedDismiss"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {

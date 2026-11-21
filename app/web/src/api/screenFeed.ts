@@ -28,8 +28,8 @@ export function routes(prefix: '/api/screens/feed' | '/api/kiosk/feed'): FeedRou
       return ((await response.json()) as { feed: ScreenFeed | null }).feed;
     },
     async dismiss(screen) {
-      const response = await send(`${prefix}?screen=${screen}`, 'DELETE', undefined);
-      if (response.status !== 204) throw new ApiError(response.status, `DELETE ${prefix}`);
+      const response = await send(`${prefix}/dismiss`, 'POST', { screen });
+      if (response.status !== 204) throw new ApiError(response.status, `POST ${prefix}/dismiss`);
     },
     async offer(screen, sdp, abort) {
       const response = await send(`${prefix}/offer`, 'POST', { screen, offer: sdp }, abort);
