@@ -23,8 +23,8 @@ def hers(id: int, answers: int | None, follows: bool = False) -> Turn:
     return Turn(id, "ashley", None, "a", AT, follows, answers=answers)
 
 
-def look(id: int, turn: int, piece: int | None = 4, media: str = "image/jpeg") -> Look:
-    return Look(id, 7, 1, turn, f"c{id}", 9, piece, SHA, media, 100, AT)
+def look(id: int, turn: int, piece: int | None = 4, media: str = "image/jpeg", bench: int | None = 9) -> Look:
+    return Look(id, 7, 1, turn, f"c{id}", bench, piece, SHA, media, 100, AT)
 
 
 def test_looks_sit_under_the_answer_in_the_order_taken_and_a_held_line_has_none() -> None:
@@ -57,3 +57,8 @@ def test_a_picture_link_is_no_page_link_and_a_page_link_no_picture_link() -> Non
     page = links.mint(KEY, links.Grant(7, 1, 9, None, 2000))
     assert links.check_picture(KEY, page, now=0) is None
     assert links.check_picture(KEY, token, now=2000) is None
+
+
+def test_a_look_through_a_camera_is_on_no_bench_and_is_shown_like_any_other() -> None:
+    shown = under_answers([person(1), hers(2, 1)], [look(1, 1, None, bench=None)], KEY, now=1000)
+    assert [(x.bench_id, x.piece_id, x.url is not None) for x in shown[2]] == [(None, None, True)]

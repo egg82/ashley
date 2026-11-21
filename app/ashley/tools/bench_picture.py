@@ -20,7 +20,7 @@ async def over_limit(household_id: int, turn_id: int, call_id: str, limit: int) 
     return f"you have taken {taken} looks for this message, the most it allows; say what you saw"
 
 
-async def keep(household_id: int, said: tuple[int, int], call_id: str, bench_id: int, piece_id: int | None,
+async def keep(household_id: int, said: tuple[int, int], call_id: str, bench_id: int | None, piece_id: int | None,
                picture: Image) -> None:
     """Store `picture` and record it against `said` (conversation id, person turn id) and tool call `call_id`. Raises
     `files.store.StoreUnavailable` and `looks.looks.LooksUnavailable`."""
