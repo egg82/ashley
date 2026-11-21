@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from ..workshop.installs import Ending, InstallRecord
 from ..workshop.proposals import Proposal
+from ..workshop.wake_links import WakeLinks
 
 
 class InstallProposal(BaseModel):
@@ -44,20 +45,24 @@ class InstallState(BaseModel):
 class PieceAutomation(BaseModel):
     """An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the
     piece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece
-    never installed)."""
+    never installed). `unanswered_events` are the wake events the installed automation sends that no wake rule on an
+    open bench of the household answers: Home Assistant sends them and nothing happens (empty when it is not installed,
+    sends none, or every one has a rule)."""
 
     install_proposal: InstallProposal | None
     last_install: InstallState | None
+    unanswered_events: list[str]
 
 
-def automation_of(proposal: Proposal | None, last: InstallRecord | None) -> PieceAutomation:
+def automation_of(proposal: Proposal | None, last: InstallRecord | None, links: WakeLinks) -> PieceAutomation:
     shown = None if proposal is None else InstallProposal(
         seq=proposal.seq, piece_version=proposal.proposed.version, enabled=proposal.proposed.enabled,
         turn_off=proposal.proposed.turn_off)
     if last is None:
-        return PieceAutomation(install_proposal=shown, last_install=None)
+        return PieceAutomation(install_proposal=shown, last_install=None, unanswered_events=[])
     began = last.started
     state = InstallState(seq=began.seq, action=began.action, automation_id=began.automation_id, enabled=began.enabled,
                          turn_off=began.turn_off, started_at=last.started_at, install_ending=last.ending,
                          install_note=last.note, finished_at=last.finished_at)
-    return PieceAutomation(install_proposal=shown, last_install=state)
+    sends = began.wake_events if began.action == "install" and last.ending == "done" else ()
+    return PieceAutomation(install_proposal=shown, last_install=state, unanswered_events=list(links.unanswered(sends)))

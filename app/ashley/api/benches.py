@@ -25,6 +25,7 @@ from ..workshop.install_piece import carry_out
 from ..workshop.installs import InstallRecord, Installs, InstallsUnavailable
 from ..workshop.model import SIZES, Bench, Change, Owner, Piece
 from ..workshop.provisional import provisional_title
+from ..workshop.wake_links import WakeLinks, links_of
 from ..workshop.rules import Kind
 from ..workshop.workshop import BenchClosed, BenchNotFound, BenchView, Logged, Workshop, WorkshopUnavailable
 from . import bench_opening
@@ -36,6 +37,7 @@ from .bench_reader_models import PiecePointer, PieceReader, PieceRecording
 from .bench_recipe import recipe_of
 from .bench_site_models import PieceSite, site_of
 from .bench_install_models import automation_of
+from .bench_wake_models import wake_of
 from .bench_run_models import piece_run_of
 from .models import ErrorResponse
 from .person import Person
@@ -79,10 +81,10 @@ def summary(bench: Bench) -> BenchSummary:
 
 
 def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[int, InstallRecord],
-           link_key: bytes = b"", metric: bool = False) -> BenchPiece:
+           links: WakeLinks, link_key: bytes = b"", metric: bool = False) -> BenchPiece:
     change: Change = view.changes[piece.id]
     kind = RULES.kinds.get(piece.kind)
-    automation = (automation_of(view.proposals.get(piece.id), installs.get(piece.id))
+    automation = (automation_of(view.proposals.get(piece.id), installs.get(piece.id), links)
                   if kind is not None and kind.format == "automation" else None)
     return BenchPiece(id=piece.id, kind=piece.kind, title=piece.text.title, body=piece.text.body,
                       piece_version=piece.version, placement=PiecePlace(order=piece.place.order, size=piece.place.size),
@@ -91,7 +93,8 @@ def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[in
                       automation=automation, video=_video(piece, kind), reader=_reader(piece, kind),
                       pointer=_pointer(piece, view),
                       file=piece_file(view.bench.household_id, piece.text.body, kind, link_key),
-                      site=_site(piece, kind, view), recipe=recipe_of(piece, kind, metric))
+                      site=_site(piece, kind, view), recipe=recipe_of(piece, kind, metric),
+                      wake=wake_of(piece.text.body, links) if kind is not None and kind.format == "wake" else None)
 
 
 def _video(piece: Piece, kind: Kind | None) -> PieceVideo | None:
@@ -209,9 +212,10 @@ async def detail_of(owner: Owner, bench_id: int, key: bytes, origin: str | None 
     runs = await services.get(Runs).last_on_bench(owner.household_id, bench_id)
     installs = await services.get(Installs).latest_on_bench(owner.household_id, bench_id)
     metric = await metric_of(owner.household_id)
-    return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, key, metric) for p in view.pieces],
+    links = await links_of(owner)
+    return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, links, key, metric) for p in view.pieces],
                        recent=[_logged(r) for r in view.recent], undo_next=view.undo_next,
-                       shelf=[_piece(p, view, runs.get(p.id), installs, key, metric) for p in view.shelf])
+                       shelf=[_piece(p, view, runs.get(p.id), installs, links, key, metric) for p in view.shelf])
 
 
 @router.post("/api/benches/{bench_id}/close", response_model=BenchSummary, responses={**WRITE_ERRORS, **BENCH_ERRORS})

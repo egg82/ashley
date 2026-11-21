@@ -56,6 +56,9 @@ export function InstallStrip({ piece, closed }: { piece: BenchPiece; closed: boo
     <section class="prun pinstall" aria-label={`Installing ${piece.title}`} aria-busy={busy}>
       {proposal && !closed && <Proposal piece={piece} proposal={proposal} busy={busy} go={go} />}
       {last ? <Last last={last} busy={busy || closed} go={go} /> : !proposal && <p class="meta">Not installed</p>}
+      {shown?.unanswered_events.map((event) => (
+        <p key={event} class="meta rline"><span class="rstate bad">No wake rule</span> It sends <b>{event}</b>, and no wake rule on an open bench answers it.</p>
+      ))}
     </section>
   );
 }

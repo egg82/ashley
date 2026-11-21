@@ -100,11 +100,11 @@ async def pieces(conn: Conn, bench_id: int) -> tuple[Piece, ...]:
 async def of_kind(conn: Conn, household_id: int, kind: str) -> tuple[Placed, ...]:
     """The pieces of `kind` on the layout of the household's open benches, by bench and piece id."""
     cur = await conn.execute(
-        "SELECT p.bench_id, b.owner_id, p.piece_id, p.version, p.body FROM bench_pieces p "
+        "SELECT p.bench_id, b.owner_id, p.piece_id, p.version, p.body, p.title FROM bench_pieces p "
         "JOIN benches b ON b.id = p.bench_id AND b.household_id = p.household_id "
         "WHERE p.household_id = %s AND p.kind = %s AND NOT p.shelved AND b.closed_at IS NULL AND b.owner_id IS NOT NULL "
         "ORDER BY p.bench_id, p.piece_id", (household_id, kind))
-    return tuple(Placed(int(r[0]), int(r[1]), int(r[2]), int(r[3]), r[4]) for r in await cur.fetchall())
+    return tuple(Placed(int(r[0]), int(r[1]), int(r[2]), int(r[3]), r[4], r[5]) for r in await cur.fetchall())
 
 
 async def shelf(conn: Conn, bench_id: int) -> tuple[Piece, ...]:

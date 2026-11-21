@@ -38,7 +38,8 @@ class NewInstall:
     automation id, `enabled` (an install's choice; None for an uninstall), `turn_off` (the entity it turns off, or for
     an uninstall back on; None for none), `before` (an install's reading of the house; None for an uninstall) and
     `touched`, whether writing to the house may begin (False for one recorded only to say it could not, or that
-    there was nothing to take back)."""
+    there was nothing to take back) and `wake_events`, the events of the wake actions in the config an install wrote
+    (`wake_action.events_of`; empty for an uninstall)."""
 
     household_id: int
     bench_id: int
@@ -50,6 +51,7 @@ class NewInstall:
     turn_off: str | None
     before: Before | None
     touched: bool
+    wake_events: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -62,6 +64,15 @@ class InstallRecord:
     ending: Ending | None
     note: str | None
     finished_at: datetime | None
+
+
+@dataclass(frozen=True)
+class WakeInstall:
+    """An automation piece whose latest install is done, with the wake events it sends."""
+
+    bench_id: int
+    piece_id: int
+    events: tuple[str, ...]
 
 
 class Installs(Service):
@@ -93,6 +104,11 @@ class Installs(Service):
         """The latest install or uninstall of each piece of the bench that has one, by piece id; empty for a bench of
         another household. Raises InstallsUnavailable."""
 
+    @abstractmethod
+    async def wake_installs(self, household_id: int) -> tuple[WakeInstall, ...]:
+        """Every piece of the household whose latest install or uninstall is a `done` install that sends at least one
+        wake event, whatever bench it is on, by bench and piece id. Raises InstallsUnavailable."""
+
 
 class NullInstalls(Installs):
     """Records nothing, so nothing is written to the house: what an unwired process sees."""
@@ -110,4 +126,7 @@ class NullInstalls(Installs):
         raise InstallsUnavailable("Installs is not wired")
 
     async def latest_on_bench(self, household_id: int, bench_id: int) -> Mapping[int, InstallRecord]:
+        raise InstallsUnavailable("Installs is not wired")
+
+    async def wake_installs(self, household_id: int) -> tuple[WakeInstall, ...]:
         raise InstallsUnavailable("Installs is not wired")

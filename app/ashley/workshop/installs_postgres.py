@@ -13,11 +13,11 @@ from psycopg.types.json import Jsonb
 from .. import logs
 from ..db.database import Database, DatabaseUnavailable
 from ..text import has_nul
-from .installs import Before, Ending, InstallRecord, Installs, InstallsUnavailable, NewInstall
+from .installs import Before, Ending, InstallRecord, Installs, InstallsUnavailable, NewInstall, WakeInstall
 
 log = logging.getLogger("ashley.workshop")
 _ROW = ("household_id, bench_id, seq, piece_id, action, automation_id, enabled, turn_off, before, touched, started_at, "
-        "ending, note, finished_at")
+        "ending, note, finished_at, wake_events")
 
 
 @contextmanager
@@ -43,7 +43,8 @@ def _utc(moment: datetime) -> datetime:
 
 
 def _record(row: tuple[Any, ...]) -> InstallRecord:
-    started = NewInstall(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], _before(row[8]), row[9])
+    started = NewInstall(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], _before(row[8]), row[9],
+                         tuple(row[14]))
     return InstallRecord(started, _utc(row[10]), row[11], row[12], None if row[13] is None else _utc(row[13]))
 
 
@@ -61,10 +62,10 @@ class PostgresInstalls(Installs):
             async with self._database.connection() as conn:
                 await conn.execute(
                     "INSERT INTO bench_installs (household_id, bench_id, seq, piece_id, action, automation_id, enabled, "
-                    "turn_off, before, touched) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "turn_off, before, touched, wake_events) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (install.household_id, install.bench_id, install.seq, install.piece_id, install.action,
                      install.automation_id, install.enabled, install.turn_off, None if stored is None else Jsonb(stored),
-                     install.touched))
+                     install.touched, list(install.wake_events)))
         logs.info(log, "workshop.install_started", bench=install.bench_id, seq=install.seq, piece=install.piece_id,
                   action=install.action, automation=install.automation_id, touched=install.touched)
 
@@ -108,3 +109,14 @@ class PostgresInstalls(Installs):
                     "ORDER BY piece_id, seq DESC", (household_id, bench_id))
                 found = [_record(r) for r in await cur.fetchall()]
         return {r.started.piece_id: r for r in found}
+
+    async def wake_installs(self, household_id: int) -> tuple[WakeInstall, ...]:
+        with _translated():
+            async with self._database.connection() as conn:
+                cur = await conn.execute(
+                    "SELECT bench_id, piece_id, wake_events FROM (SELECT DISTINCT ON (bench_id, piece_id) bench_id, "
+                    "piece_id, action, ending, wake_events FROM bench_installs WHERE household_id = %s "
+                    "ORDER BY bench_id, piece_id, seq DESC) latest "
+                    "WHERE action = 'install' AND ending = 'done' AND cardinality(wake_events) > 0 "
+                    "ORDER BY bench_id, piece_id", (household_id,))
+                return tuple(WakeInstall(r[0], r[1], tuple(r[2])) for r in await cur.fetchall())

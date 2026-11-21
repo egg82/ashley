@@ -88,7 +88,7 @@ function Written({ piece, kind }: { piece: BenchPiece; kind: PieceKind }) {
   if (format === 'plain') return <div class="pbody plain"><p>{piece.body}</p></div>;
   if (format === 'code') return <div class="pbody code"><CodeBlock code={piece.body} language={languageNamed(kind.language)} /></div>;
   if (format === 'automation') return <AutomationView body={piece.body} />;
-  if (format === 'wake') return <WakeView body={piece.body} />;
+  if (format === 'wake') return <WakeView piece={piece} />;
   if (format === 'facts') return <FactsView body={piece.body} />;
   if (format === 'recipe') return <RecipeView piece={piece} />;
   if (format === 'diagram') return <DiagramView body={piece.body} />;
