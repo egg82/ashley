@@ -1,11 +1,12 @@
 """Open screens in Postgres, table `live_screens`."""
 
+from datetime import datetime
 from typing import Any, Literal, LiteralString
 
 import psycopg
 
 from ..db.database import Database, DatabaseUnavailable
-from .screens import OpenScreen, Screens, ScreensUnavailable
+from .screens import OpenScreen, ScreenFeed, Screens, ScreensUnavailable
 
 LEFT_BEHIND_S = 86400
 """How long a row survives with no heartbeat before the next opening in its household removes it."""
@@ -35,6 +36,30 @@ class PostgresScreens(Screens):
         rows = await self._run("SELECT person_id, device_id, visible FROM live_screens WHERE household_id = %s "
                                "AND seen_at > now() - make_interval(secs => %s) ORDER BY id", (household_id, within_s))
         return tuple(OpenScreen(row[0], row[1], row[2]) for row in rows)
+
+    async def show_feed(self, household_id: int, camera_id: str, until: datetime, people: tuple[int, ...],
+                        devices: tuple[int, ...], within_s: float) -> int:
+        shown = await self._run(
+            "UPDATE live_screens SET feed_camera = %s, feed_until = %s WHERE household_id = %s AND visible "
+            "AND seen_at > now() - make_interval(secs => %s) AND (person_id = ANY(%s) OR device_id = ANY(%s)) "
+            "RETURNING id", (camera_id, until, household_id, within_s, list(people), list(devices)))
+        return len(shown)
+
+    async def feed_of(self, token: str, now: datetime, person_id: int | None = None,
+                      device_id: int | None = None) -> ScreenFeed | None:
+        found = await self._run(
+            "SELECT feed_camera, feed_until FROM live_screens WHERE token = %s::uuid AND (person_id = %s "
+            "OR device_id = %s) AND feed_camera IS NOT NULL AND feed_until > %s", (token, person_id, device_id, now))
+        return ScreenFeed(found[0][0], found[0][1]) if found else None
+
+    async def dismiss_feed(self, token: str, person_id: int | None = None, device_id: int | None = None) -> None:
+        await self._run("UPDATE live_screens SET feed_camera = NULL, feed_until = NULL WHERE token = %s::uuid "
+                        "AND (person_id = %s OR device_id = %s)", (token, person_id, device_id))
+
+    async def clear_feed(self, household_id: int) -> int:
+        cleared = await self._run("UPDATE live_screens SET feed_camera = NULL, feed_until = NULL WHERE household_id = %s "
+                                  "AND feed_camera IS NOT NULL RETURNING id", (household_id,))
+        return len(cleared)
 
     async def beat(self, screen_id: int) -> None:
         await self._run("UPDATE live_screens SET seen_at = now() WHERE id = %s", (screen_id,))

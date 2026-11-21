@@ -3,13 +3,16 @@ registries and helpers through the WebSocket API (`ha_registry`, `ha_changes`). 
 data, `house.json`. Logs nothing itself; her tools log what they ask."""
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
+from contextlib import AbstractAsyncContextManager
 from typing import Any, Literal
 from urllib.parse import quote
 
+from ..cameras.model import Candidate, LiveConfig, LiveSignal
 from .client import HomeAssistant
 from .ha_changes import Changes
 from .ha_events import Events
+from .ha_live import HaLive
 from .ha_json import JsonObject, is_list, is_object, listed, moment, obj, rows, text
 from .ha_registry import Registries
 from .ha_rest import Rest
@@ -26,6 +29,7 @@ class HaHouse(House):
         commands = Commands(home_assistant, settings)
         self._settings = settings
         self._commands = commands
+        self._live = HaLive(commands)
         self._rest = Rest(home_assistant, settings)
         self._registries = Registries(commands)
         self._changes = Changes(self._rest, commands)
@@ -45,6 +49,15 @@ class HaHouse(House):
             return None
         got = await self._rest.image(f"/api/camera_proxy/{quote(camera, safe='')}", "camera_proxy", NO_STILL)
         return None if got is None else Snapshot(*got)
+
+    async def live_config(self, camera: str) -> LiveConfig:
+        return await self._live.config(camera)
+
+    def live_feed(self, camera: str, offer: str) -> AbstractAsyncContextManager[AsyncIterator[LiveSignal]]:
+        return self._live.feed(camera, offer)
+
+    async def live_candidate(self, camera: str, session_id: str, candidate: Candidate) -> None:
+        await self._live.candidate(camera, session_id, candidate)
 
     async def _streams_only_webrtc(self, camera: str) -> bool:
         """A camera whose only frontend stream type is WebRTC has no still to give: HA's proxy answers it with a

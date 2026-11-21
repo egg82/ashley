@@ -2,7 +2,8 @@
 send the command, read its result, close. No connection outlives a call, so none can go stale between pods or
 rollouts. A failure carries a short reason, never a payload, a URL or the token."""
 
-from collections.abc import Mapping
+from collections.abc import AsyncGenerator, AsyncIterator, Mapping
+from contextlib import asynccontextmanager
 import httpx2
 from httpx2.websockets import AsyncWebSocketSession, WebSocketDisconnect, WebSocketNetworkError, WebSocketUpgradeError
 
@@ -12,7 +13,8 @@ from .house import HouseRejected, HouseUnavailable
 from .house_settings import HouseSettings
 
 _REJECTIONS = frozenset({"invalid_format", "not_found", "home_assistant_error", "service_validation_error",
-                         "unknown_error", "invalid_info", "failed", "browse_media_failed"})
+                         "unknown_error", "invalid_info", "failed", "browse_media_failed", "webrtc_offer_failed",
+                         "webrtc_get_client_config_failed", "webrtc_candidate_failed"})
 
 
 def socket_url(client: httpx2.AsyncClient) -> str:
@@ -65,14 +67,54 @@ class Commands:
         await self._answered()
         return result
 
+    @asynccontextmanager
+    async def subscribe(self, command: Mapping[str, object]) -> AsyncGenerator[AsyncIterator[object]]:
+        """Send a command Home Assistant answers with a subscription, and yield the `event` of each message it then
+        sends under it, until the connection ends. Home Assistant drops the subscription when the connection closes, so
+        it stays open exactly as long as this context, which a caller bounds itself: nothing here times a quiet
+        subscription out. Entering raises as `run` does; an error after that is the caller's own."""
+        started = False
+        try:
+            async with self._http.websocket(
+                    socket_url(self._http), max_message_size_bytes=self._settings.socket_max_bytes,
+                    timeout=self._settings.timeout_s, keepalive_ping_interval_seconds=None) as ws:
+                await authenticate(ws, token_of(self._http), self._settings.timeout_s)
+                await ws.send_json({"id": 1, **command})
+                _result(await ws.receive_json(timeout=self._settings.timeout_s))
+                started = True
+                await self._answered()
+                yield _events(ws)
+        except BaseExceptionGroup as group:
+            if started:
+                raise
+            raise _unavailable(group) from group
+        except (WebSocketDisconnect, WebSocketNetworkError, WebSocketUpgradeError, httpx2.HTTPError, TimeoutError,
+                ValueError) as e:
+            if started:
+                raise
+            raise HouseUnavailable(f"websocket: {type(e).__name__}") from e
 
-def _unavailable(group: BaseExceptionGroup[BaseException]) -> HouseUnavailable:
+
+async def _events(ws: AsyncWebSocketSession) -> AsyncIterator[object]:
+    while True:
+        try:
+            got: object = await ws.receive_json()
+        except (WebSocketDisconnect, WebSocketNetworkError):
+            return
+        message = obj(got)
+        if message.get("type") == "event":
+            yield message.get("event")
+
+
+def _unavailable(group: BaseExceptionGroup[BaseException]) -> HouseUnavailable | HouseRejected:
     """The connection's task group wraps what its body raised; the caller sees the one reason inside it."""
     errors, _ = group.split(Exception)
     if errors is None:
         raise group
     leaf = errors.exceptions[0]
-    return leaf if isinstance(leaf, HouseUnavailable) else HouseUnavailable(f"websocket: {type(leaf).__name__}")
+    if isinstance(leaf, HouseUnavailable | HouseRejected):
+        return leaf
+    return HouseUnavailable(f"websocket: {type(leaf).__name__}")
 
 
 def _result(answer: object) -> object:

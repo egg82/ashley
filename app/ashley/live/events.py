@@ -172,7 +172,20 @@ class Announced:
             raise ValueError("an announcement is shown to one person or one device")
 
 
-Event = HerState | ThreadTurn | TurnFailed | BenchChanged | BenchCued | PageMoved | ScreenChanged | Announced
+@dataclass(frozen=True)
+class FeedChanged:
+    """A camera's live feed was put on screens or taken off them: a screen reads back what it is showing
+    (`ashley.live.screens.Screens.feed_of`). Carries nothing about the camera and goes to the household's screens, since
+    which of them show a feed is the record's to say."""
+
+    shown: Shown
+
+    def __post_init__(self) -> None:
+        if self.shown.person_id is not None or self.shown.device_id is not None:
+            raise ValueError("a feed's change is shown to the whole household")
+
+
+Event = HerState | ThreadTurn | TurnFailed | BenchChanged | BenchCued | PageMoved | ScreenChanged | Announced | FeedChanged
 Watcher = Viewer | DeviceViewer
 
 
@@ -217,6 +230,8 @@ def encode(event: Event) -> str:
         return json.dumps({**base, "type": "failed", "thread": event.thread, "why": event.why})
     if isinstance(event, Announced):
         return json.dumps({**base, "type": "announce", "clip": event.clip})
+    if isinstance(event, FeedChanged):
+        return json.dumps({**base, "type": "feed"})
     return json.dumps({**base, "type": "turn", "thread": event.thread})
 
 
@@ -242,6 +257,8 @@ def decode(payload: str) -> Event | None:
             return ScreenChanged(shown, int(raw["screen"]), int(raw["seq"]))
         if raw["type"] == "announce":
             return Announced(shown, str(raw["clip"]))
+        if raw["type"] == "feed":
+            return FeedChanged(shown)
         if raw["type"] == "page" and raw["room"] in get_args(PageRoom):
             return PageMoved(shown, raw["room"], None if raw["bench_id"] is None else int(raw["bench_id"]))
     except (ValueError, KeyError, TypeError):

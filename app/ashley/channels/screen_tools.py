@@ -24,6 +24,7 @@ from ..workshop.workshop import Applied, ScreenNotFound, ScreenView, Workshop, W
 from . import screen_args
 from .devices import Devices, DevicesUnavailable
 from .kiosk.controls import ControlRefused
+from .kiosk.feed import screens_in_reach
 from .kiosk.house_domains import domains
 
 RULES = workshop_rules.load_screen()
@@ -75,10 +76,7 @@ class ScreenTools(Tools):
 
     async def _in_reach(self) -> tuple[int, ...]:
         """The ids of the screens this turn may use. Raises DevicesUnavailable."""
-        screens = {d.device.id for d in await services.get(Devices).of_household(self._household) if d.form == "other"}
-        if self._device is not None:
-            return (self._device,) if self._device in screens else ()
-        return tuple(sorted(screens)) if self._person is not None else ()
+        return await screens_in_reach(self._household, self._person, self._device)
 
     async def _run(self, call: ToolCall, started: float, fields: dict[str, object]) -> ToolResult:
         reach = await self._in_reach()

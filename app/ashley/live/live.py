@@ -5,7 +5,8 @@ by before it is told to resync; `heartbeat_s`, the longest a stream goes without
 stream stays open before the screen reconnects (and its session is checked again); `thinking_at_most_s`, how long a
 screen shows her thinking without hearing the turn end; `reconnect_max_s`, the longest wait between attempts to
 reach the database's notifications; `pending_size`, the events one process may hold unsent before it drops new ones;
-`present_s`, how long after its last heartbeat a person's open screen still counts as open (`ashley.live.screens`)."""
+`present_s`, how long after its last heartbeat a person's open screen still counts as open (`ashley.live.screens`);
+`feed_s`, how long a camera's live feed stays on a screen before it leaves on its own."""
 
 import json
 from abc import abstractmethod
@@ -32,9 +33,10 @@ class Config:
     reconnect_max_s: float
     pending_size: int
     present_s: float
+    feed_s: float
 
     def __post_init__(self) -> None:
-        timings = (self.heartbeat_s, self.stream_s, self.thinking_at_most_s, self.reconnect_max_s, self.present_s)
+        timings = (self.heartbeat_s, self.stream_s, self.thinking_at_most_s, self.reconnect_max_s, self.present_s, self.feed_s)
         if self.queue_size < 2 or self.pending_size < 1 or min(timings) <= 0:
             raise ValueError("live timings and pending_size must be positive, queue_size at least 2")
 
@@ -46,7 +48,8 @@ def load() -> Config:
     if set(raw) != names:
         raise ValueError(f"live.json has exactly {sorted(names)}")
     return Config(int(raw["queue_size"]), float(raw["heartbeat_s"]), float(raw["stream_s"]),
-                  float(raw["thinking_at_most_s"]), float(raw["reconnect_max_s"]), int(raw["pending_size"]), float(raw["present_s"]))
+                  float(raw["thinking_at_most_s"]), float(raw["reconnect_max_s"]), int(raw["pending_size"]), float(raw["present_s"]),
+                  float(raw["feed_s"]))
 
 
 class Live(Service):
