@@ -6,7 +6,7 @@ labelled with its source. It only reads. Callers import this module and `model`;
 from abc import abstractmethod
 
 from ..services import Service
-from .model import NotConnected, Roster, Still
+from .model import NotConnected, Recording, Roster, Still
 
 
 class Cameras(Service):
@@ -30,6 +30,18 @@ class Cameras(Service):
         gives none on demand), NotConnected, CamerasUnavailable, CamerasFailed. Logs `camera.look` with the source,
         outcome and duration_ms, never a name or a byte."""
 
+    @abstractmethod
+    async def recordings(self, household_id: int, camera_id: str) -> tuple[Recording, ...]:
+        """What the camera `camera_id` (one she may look through) has captured, newest first, at most
+        the count the router was given. Raises NoSuchCamera, NotConnected, CamerasUnavailable, CamerasFailed. Logs
+        `camera.recordings` with the source, outcome, count and duration_ms, never a title or a name."""
+
+    @abstractmethod
+    async def look_recording(self, household_id: int, camera_id: str, recording_id: str) -> Still:
+        """One picture of a recording of the camera `camera_id`; its `taken` is None unless the source states a time.
+        Raises NoSuchCamera, NoSuchRecording, NotConnected, CamerasUnavailable, CamerasFailed. Logs `camera.look` with
+        the source, outcome and duration_ms, never a title, a name or a byte."""
+
 
 class NullCameras(Cameras):
     """No household has a camera source."""
@@ -41,4 +53,10 @@ class NullCameras(Cameras):
         raise NotConnected
 
     async def look(self, household_id: int, camera_id: str) -> Still:
+        raise NotConnected
+
+    async def recordings(self, household_id: int, camera_id: str) -> tuple[Recording, ...]:
+        raise NotConnected
+
+    async def look_recording(self, household_id: int, camera_id: str, recording_id: str) -> Still:
         raise NotConnected

@@ -25,11 +25,24 @@ class Camera:
 @dataclass(frozen=True)
 class Still:
     """One picture from a camera: its `data`, the `media_type` the service gave it and when it was `taken`. The household's
-    own read, tainted as any other, and never logged."""
+    own read, tainted as any other, and never logged. `taken` is None when the source states no time; one is never made up. A picture of a recording carries
+    that recording's `title`, as the source writes it."""
 
     data: bytes
     media_type: str
-    taken: datetime
+    taken: datetime | None
+    title: str | None = None
+
+
+@dataclass(frozen=True)
+class Recording:
+    """What a camera's own detector captured, listed by its source: `id` is the source's own, `camera_id` the camera that
+    holds it and `title` the label exactly as the source writes it (it may carry the kind and the time). Information
+    for her to read; nothing parses it or keys on its words."""
+
+    id: str
+    camera_id: str
+    title: str
 
 
 @dataclass(frozen=True)
@@ -57,6 +70,10 @@ class NotConnected(Exception):
 
 class NoSuchCamera(Exception):
     """No camera she may look through, of the household's serving connections, has that id."""
+
+
+class NoSuchRecording(Exception):
+    """The camera holds no recording with that id."""
 
 
 class NoStill(Exception):

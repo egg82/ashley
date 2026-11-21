@@ -33,7 +33,7 @@ from ashley.home_assistant.house import Snapshot
 from ashley.inference.model import ToolCall, ToolResult
 from ashley.looks.looks import Looks
 from ashley.looks.postgres import PostgresLooks
-from ashley.tools.camera_specs import CAMERAS, LOOK
+from ashley.tools.camera_specs import CAMERAS, LOOK, RECORDINGS
 from ashley.tools.camera_tools import CameraTools
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import household, scalar
@@ -74,7 +74,7 @@ async def world(url: str) -> AsyncGenerator[tuple[MemoryHouse, int, int, int]]:
     held.connect(home, "http://ha.test", "k", NAME)
     services.register(Connections, held)
     services.register(Homes, AnyHousehold(made))
-    services.register(Cameras, RoutedCameras({NAME: HaCameras()}))
+    services.register(Cameras, RoutedCameras({NAME: HaCameras()}, 3))
     services.register(SettingsReader, Settings())
     services.register(ObjectStore, MemoryStore())
     services.register(Looks, PostgresLooks(database))
@@ -171,7 +171,7 @@ async def test_a_house_that_cannot_give_a_still_is_an_error_and_a_roster_it_cann
 async def test_a_port_switched_off_or_no_store_offers_nothing(db_url: str) -> None:
     async with world(db_url) as (_, home, conversation, turn):
         tools = CameraTools(home, conversation, turn)
-        assert [s.name for s in (await tools.catalogue()).specs] == [CAMERAS, LOOK]
+        assert [s.name for s in (await tools.catalogue()).specs] == [CAMERAS, LOOK, RECORDINGS]
         services.register(SettingsReader, Settings(off=frozenset({"camera"})))
         assert (await tools.catalogue()).specs == ()
         assert (await run(home, conversation, turn, LOOK, {"camera": PORCH})).content.startswith("not_connected")
@@ -182,10 +182,10 @@ async def test_a_port_switched_off_or_no_store_offers_nothing(db_url: str) -> No
 
 
 @sync
-async def test_both_tools_are_reads_that_are_outside_words(db_url: str) -> None:
+async def test_every_camera_tool_is_a_read_that_is_outside_words(db_url: str) -> None:
     async with world(db_url) as (_, home, conversation, turn):
         specs = (await CameraTools(home, conversation, turn).catalogue()).specs
-        assert [(s.reads, s.outside) for s in specs] == [(True, True), (True, True)]
+        assert [(s.reads, s.outside) for s in specs] == [(True, True)] * 3
 
 
 @sync
