@@ -9,6 +9,8 @@ import logging
 
 import pytest
 from ashley import services
+from ashley.channels.turn_tools import for_turn
+from ashley.channels.model import Inbound
 from ashley.inference.model import ToolCall, ToolResult
 from ashley.looks.session import BrowserSessions, Who
 from ashley.looks.config import load
@@ -35,6 +37,16 @@ def test_nothing_is_offered_while_no_browser_is_wired() -> None:
     assert asyncio.run(BrowserSessionTools(7, 70).catalogue()).specs == ()
     refused = call(SNAPSHOT)
     assert refused.is_error and "no browser" in refused.content
+
+
+def test_a_turn_offers_the_browser_only_where_one_is_wired(sessions: ScriptedSessions) -> None:
+    turn = Inbound(household_id=7, thread="person:1:web", text="hi", kind="chat", medium="text", audience="owner",
+                   speaker_id=1, shared=False, place=None, channel="web", later=True, later_by="turn")
+    offered = [s.name for s in asyncio.run(for_turn(turn, (70, 80)).catalogue()).specs]
+    assert SNAPSHOT in offered and ACT in offered
+    assert SNAPSHOT not in [s.name for s in asyncio.run(for_turn(turn).catalogue()).specs]
+    services.unregister(BrowserSessions)
+    assert SNAPSHOT not in [s.name for s in asyncio.run(for_turn(turn, (70, 80)).catalogue()).specs]
 
 
 def test_the_two_tools_are_offered_with_their_contract(sessions: ScriptedSessions) -> None:
