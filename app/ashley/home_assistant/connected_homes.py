@@ -76,6 +76,14 @@ class ConnectedHomes(Homes):
             return self._unreadable(household_id, e)
         return await self._current(household_id, opened)
 
+    async def reads_calendars(self, household_id: int) -> bool:
+        if not self._connections.can_open():
+            return False
+        try:
+            return await ports.opened(self._connections, "calendar", household_id) is not None
+        except ConnectionsUnavailable as e:
+            raise HomesUnavailable("the household's connections could not be read") from e
+
     async def writes_automations(self, household_id: int) -> bool:
         if not self._connections.can_open():
             return False

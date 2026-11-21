@@ -143,6 +143,41 @@ consumer checks a switch itself.
 - Rejected: a switch table of its own beside the settings, which would duplicate the compare-and-set, the change log and
   the person-only write path. Rejected: a rule per port in code, which is the "system in hiding" the table avoids.
 
+### Calendars are read through a neutral port
+
+Her calendar tool reads `ashley.calendars.calendars.Calendars`, never Home Assistant: neutral records
+(`ashley.calendars.model`: `Calendar`, `Event`, `Agenda`) whose fields are documented in calendar terms. Home Assistant is
+the first adapter (`ashley.home_assistant.calendars.HaCalendars`, the only code that reads its field names), behind
+`ashley.calendars.routed.RoutedCalendars`, which sends each connection to the adapter of its kind and combines the answers.
+This is the Ledger's and Printing's shape, and only reads exist.
+
+- **The `calendar` port is `combine`** (`ashley.connections.model.PORTS`): every connection that serves it and that the
+  household has not switched off is read, and each calendar names its `source` and connection. A source that fails is named
+  in `Agenda.unread` and its calendars and events are absent, so one service being down never reads as an empty day and
+  never hides the others. Home Assistant's kind declares `calendar` beside `house` and `automations`, so it has a switch;
+  the adapter reaches the house through `Homes`, so `calendar` also needs `house` on (as `automations` does).
+- **Visibility is data on the calendar** (`Calendar.visibility`, `ashley.hearing.Visibility`), as `memory.md` has it for
+  source data: `shared`, or `discreet` for a calendar the household lists in Home Assistant's `discreet_calendars` setting
+  (a person-written `taint` class setting, since removing a calendar from it widens what she may say). Her tool's instructions
+  say a `discreet` calendar is answered about only when asked, never volunteered. A calendar has no owner here, so `members`
+  and `private` are not produced; an adapter whose calendars belong to a person (Google's) will set them.
+- **One tool, `calendar_events`**, replaces nothing: before it she read calendars only through `house_ask` with
+  `calendar.get_events`, which stays for what the house tools answer. It takes `from` (a day, the household's today unless
+  given), `days` and one `calendar` id, reads in the household's own zone, and returns the calendars read and the events
+  soonest first, `cut` when more matched than `events_max` (`app/ashley/tools/calendar.json`). It is `outside=True`: an event's
+  title and place can be written by whoever sent an invite. It is offered to any known speaker in any chat, as the house's reads
+  are, and to a household with no calendar source it is not offered.
+- **Calendar watches read this tool**, not `house_ask`: a watch's `read` names `calendar_events` with fixed arguments (`days`),
+  the `path` `events`, and tracks `title` and `start`, so a watch needs no calendar knowledge of its own and sees every source.
+- **The kiosk's glance is not on the port yet.** It reads `senses.calendar.Calendar` over the calendars of the
+  `glance_calendars` setting, through the same parser as the adapter and honouring the `calendar` switch; it moves when the
+  glance should show a second source.
+- **Google's calendars are next.** The Google connection holds only the Gmail scopes today, so there is nothing to read; its
+  adapter needs the calendar read scope added to the consent (existing connections reconnect) and an adapter registered in
+  `ashley.wiring` under `google`, with no tool or rule rewritten.
+- Rejected: a calendar tool per source, which is the "system in hiding" the port avoids. Rejected: moving `glance_calendars`
+  onto the port's own setting in this change, which would reshape the kiosk's panel.
+
 ## Her money is read through a neutral ledger
 
 Her money tools and the deposit sense read `ashley.ledger.ledger.Ledger`, never Sure: neutral records (`Account`,

@@ -15,7 +15,7 @@ OUTSIDE = {
     "look_up", "read_page", "printables_files", "git_projects", "git_tree", "git_read_file", "claude_read", "house_ask",
     "money_transactions", "bench_frames", "bench_transcribe", "bench_read", "bench_read_piece", "bench_shelf",
     "bench_look", "watch", "mail_search", "mail_read", "send_readers", "discord_recent",
-    "printing_printers", "printing_files", "printing_needs", "stock_spools",
+    "printing_printers", "printing_files", "printing_needs", "stock_spools", "calendar_events",
 }
 OWN = {
     "house_state", "house_find", "house_history", "house_automations", "house_automation", "money_accounts",
