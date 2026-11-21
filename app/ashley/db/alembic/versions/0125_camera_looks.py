@@ -3,7 +3,7 @@
 from alembic import op
 
 revision: str = "0125"
-down_revision: str | None = "0123"
+down_revision: str | None = "0124"
 
 
 def upgrade() -> None:
