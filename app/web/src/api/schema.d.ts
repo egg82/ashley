@@ -359,6 +359,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/memory/voice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Voiceprints
+         * @description 200 `VoiceprintsResponse`, the signed-in person's own prints; 401 `unauthorized`; 503 `unavailable`.
+         */
+        get: operations["list_voiceprints"];
+        put?: never;
+        post?: never;
+        /**
+         * Forget Voiceprints
+         * @description 200 `VoiceForgotten`, how many of the signed-in person's prints went (0 when none); 401 `unauthorized`;
+         *     403 `forbidden`; 503 `unavailable`.
+         */
+        delete: operations["forget_voiceprints"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/outside-actions": {
         parameters: {
             query?: never;
@@ -5869,6 +5894,36 @@ export interface components {
             keychain: string;
         };
         /**
+         * VoiceForgotten
+         * @description How many of the reader's prints were deleted, and any enrolment armed for them was cancelled; 0 when there were
+         *     none.
+         */
+        VoiceForgotten: {
+            /** Deleted */
+            deleted: number;
+        };
+        /**
+         * Voiceprint
+         * @description One print of the reader's voice: the name of the device it was enrolled on and when. The vector is never sent.
+         */
+        Voiceprint: {
+            /** Device */
+            device: string;
+            /**
+             * Enrolled At
+             * Format: date-time
+             */
+            enrolled_at: string;
+        };
+        /**
+         * VoiceprintsResponse
+         * @description The reader's own prints, oldest first; empty when none are enrolled. Nobody else's.
+         */
+        VoiceprintsResponse: {
+            /** Prints */
+            prints: components["schemas"]["Voiceprint"][];
+        };
+        /**
          * WakeAccepted
          * @description The wake's id, and `duplicate` when its event id had arrived before and nothing new was stored.
          */
@@ -6885,6 +6940,91 @@ export interface operations {
             };
             /** @description `refused`: her model declined to decide over the line; a body outside `RememberRequest` gets FastAPI's own validation error instead, which is not this schema */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: memory or the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_voiceprints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceprintsResponse"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: memory or the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    forget_voiceprints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceForgotten"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -35,6 +35,7 @@ type Ok<P extends keyof paths> = paths[P] extends {
 type Corrected = paths['/api/memory/facts/{fact_id}/corrections']['post']['responses'][201]['content']['application/json'];
 type Moved = paths['/api/memory/facts/{fact_id}/moves']['post']['responses'][201]['content']['application/json'];
 type Forgotten = paths['/api/memory/facts/{fact_id}']['delete']['responses'][200]['content']['application/json'];
+type VoiceForgotten = paths['/api/memory/voice']['delete']['responses'][200]['content']['application/json'];
 type Cancelled = paths['/api/reminders/{reminder_id}']['delete']['responses'][200]['content']['application/json'];
 type ControlDone = paths['/api/kiosk/controls/{name}']['post']['responses'][200]['content']['application/json'];
 type LinkStarted = paths['/api/accounts/discord/link']['post']['responses'][201]['content']['application/json'];
@@ -80,6 +81,16 @@ export async function moveFact(id: number, body: MoveRequest): Promise<Moved> {
 /** Deletes fact `id` and every earlier version it replaced, for good. */
 export async function forgetFact(id: number): Promise<Forgotten> {
   return answer(await fetch(`/api/memory/facts/${id}`, { method: 'DELETE' }), 200, 'DELETE /api/memory/facts/{id}');
+}
+
+/** The signed-in person's own voiceprints: the device each was enrolled on and when, never the print itself. */
+export async function getVoiceprints(): Promise<Ok<'/api/memory/voice'>> {
+  return answer(await fetch('/api/memory/voice'), 200, 'GET /api/memory/voice');
+}
+
+/** Deletes every one of the signed-in person's voiceprints, and any enrolment armed for them, for good. */
+export async function forgetVoiceprints(): Promise<VoiceForgotten> {
+  return answer(await fetch('/api/memory/voice', { method: 'DELETE' }), 200, 'DELETE /api/memory/voice');
 }
 
 /** The signed-in person's reminders still to fire, for them or set by them, soonest first. */

@@ -17,6 +17,7 @@ export type OutsideActionsResponse = components['schemas']['OutsideActionsRespon
 export type FactSource = components['schemas']['FactSource'];
 export type CorrectionRequest = components['schemas']['CorrectionRequest'];
 export type MoveRequest = components['schemas']['MoveRequest'];
+export type Voiceprint = components['schemas']['Voiceprint'];
 export type ForgetResponse = components['schemas']['ForgetResponse'];
 export type RememberRequest = components['schemas']['RememberRequest'];
 export type RememberResponse = components['schemas']['RememberResponse'];

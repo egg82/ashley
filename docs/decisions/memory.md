@@ -207,6 +207,11 @@ A signed-in person reaches the facts that concern them through `/api/memory/fact
   The two never write the same turns twice: `Memory.apply` moves the watermark only from where the decision began,
   under the watermark row's lock, so whichever lands second is stale. The job skips that conversation for the tick;
   the route decides once more from the new watermark.
+- **A person sees and forgets their own voiceprints in the same room** (`GET`/`DELETE /api/memory/voice`, the room's Voice
+  tab): each print as the device it was enrolled on and when, never the vector, and one forget that deletes all of them
+  and any enrolment armed for them, as the CLI's `voice-forget` does. The routes take no id, so only the session's own
+  person is reachable, admin or not. Prints carry no per-print identity a person can recognise beyond device and time,
+  so there is no per-print forget. One `voice.forgotten` line carries household, person and count.
 - **She acts on memory now when her reply says so: keep, correct or forget.** `Reply.memory` is null, or an act:
   `keep` when the person asks her to remember, note or keep something or says it is worth keeping, `correct` or
   `forget` when they ask her to change or remove something she holds, with `facts`, the ids from `What you remember`

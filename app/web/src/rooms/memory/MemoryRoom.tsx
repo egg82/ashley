@@ -1,6 +1,6 @@
 // Memory, at bearing 315: what she knows about the person signed in, newest first. "New this week" leads; then
 // everything else, filtered by kind; the household's facts have their own tab, the person's reminders theirs, and what
-// she did on her own (`OutsideTab.tsx`) a third.
+// she did on her own (`OutsideTab.tsx`) a third, and the prints of the person's voice (`VoiceTab.tsx`) a fourth.
 // Tab, kind and search live in the URL.
 import { useLocation } from 'preact-iso';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
@@ -15,6 +15,8 @@ import { corrected, facts, leaveRoom, loadFacts, loadState, note, selected } fro
 import { OutsideList } from './OutsideTab';
 import { loadOutside, outside, outsideState } from './outside';
 import { Rail } from './Rail';
+import { VoiceList } from './VoiceTab';
+import { loadPrints, prints, printsState } from './voice';
 import { RemindersList } from './RemindersTab';
 import { loadReminders, reminders, remindersState } from './reminders';
 
@@ -30,7 +32,7 @@ const NOTE_MS = 4200;
 function useView(): [View, SetView] {
   const { query, route } = useLocation();
   const view: View = {
-    tab: query.tab === 'household' || query.tab === 'reminders' || query.tab === 'outside' ? query.tab : 'you',
+    tab: query.tab === 'household' || query.tab === 'reminders' || query.tab === 'outside' || query.tab === 'voice' ? query.tab : 'you',
     kind: KINDS.find((k) => k === query.kind) ?? null,
     q: query.q ?? '',
   };
@@ -62,6 +64,9 @@ function Tabs({ view, set, all }: { view: View; set: SetView; all: readonly Memo
       </button>
       <button type="button" aria-pressed={view.tab === 'outside'} onClick={() => set({ tab: 'outside', kind: null, q: '' })}>
         On her own {outsideState.value === 'ready' && <span class="meta">{outside.value.length}</span>}
+      </button>
+      <button type="button" aria-pressed={view.tab === 'voice'} onClick={() => set({ tab: 'voice', kind: null, q: '' })}>
+        Voice {printsState.value === 'ready' && <span class="meta">{prints.value.length}</span>}
       </button>
     </div>
   );
@@ -147,6 +152,7 @@ export function MemoryRoom() {
     void loadFacts();
     void loadReminders();
     void loadOutside();
+    void loadPrints();
     return leaveRoom;
   }, []);
   const state = loadState.value;
@@ -156,7 +162,7 @@ export function MemoryRoom() {
     const room = here.current?.closest('.room');
     if (room && !room.classList.contains('leaving')) dockIn(room, false);
   }, [state]);
-  const factTab = view.tab === 'reminders' || view.tab === 'outside' ? null : view.tab;
+  const factTab = view.tab === 'reminders' || view.tab === 'outside' || view.tab === 'voice' ? null : view.tab;
   const mine = facts.value.filter((f) => tabOf(f) === factTab);
   const chosen = mine.find((f) => f.id === selected.value) ?? mine[0];
   return (
@@ -177,6 +183,7 @@ export function MemoryRoom() {
           {state === 'ready' && factTab && <Lists view={{ ...view, tab: factTab }} set={set} mine={mine} />}
           {state === 'ready' && view.tab === 'reminders' && <RemindersList />}
           {state === 'ready' && view.tab === 'outside' && <OutsideList />}
+          {state === 'ready' && view.tab === 'voice' && <VoiceList />}
         </div>
         {state === 'ready' && factTab && chosen && <Rail fact={chosen} />}
       </div>

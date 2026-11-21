@@ -15,7 +15,7 @@ class Voiceprint(BaseModel):
 class VoiceprintsResponse(BaseModel):
     """The reader's own prints, oldest first; empty when none are enrolled. Nobody else's."""
 
-    items: list[Voiceprint]
+    prints: list[Voiceprint]
 
 
 class VoiceForgotten(BaseModel):

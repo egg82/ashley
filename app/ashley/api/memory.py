@@ -214,7 +214,7 @@ async def list_voiceprints(signed_in: Person) -> VoiceprintsResponse | JSONRespo
         prints = await services.get(Voices).own(signed_in.person.id)
     except VoicesUnavailable:
         return _unavailable()
-    return VoiceprintsResponse(items=[Voiceprint(device=p.device, enrolled_at=p.enrolled_at) for p in prints])
+    return VoiceprintsResponse(prints=[Voiceprint(device=p.device, enrolled_at=p.enrolled_at) for p in prints])
 
 
 @router.delete("/api/memory/voice", response_model=VoiceForgotten, responses={
