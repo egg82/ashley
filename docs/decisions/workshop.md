@@ -286,6 +286,28 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   back; the old automation is turned on again only if the install found it on. An install that wrote nothing has
   nothing to take back. Rejected: disabling instead of deleting a fresh install, which leaves dead automations in
   HA's list for every trial.
+- **A shadow run shows when a piece would have fired beside what Home Assistant did**, and HA judges the triggers,
+  never her code: a second copy of its trigger and condition language would drift. She proposes it as a `shadow`
+  Propose (`bench_propose_install`), and the person's Install of it is the ordinary Install path with the config
+  swapped (`ashley.workshop.shadow.config_of`): the piece's triggers, conditions, mode and variables kept, its alias
+  marked, its actions replaced by one `ashley_shadow` event (bench, piece and version, numbers only), installed under
+  its own id (`ashley.workshop.shadow.id_for`), always on, turning nothing off; the proposal's `turn_off` names the
+  automation it would replace, which is recorded and left running. Its install and uninstall records carry a
+  `shadow` flag, so the piece's own install state, wake events and writes-before check never see it. A shadow
+  changes nothing of the piece, so it never blocks an Undo of an earlier edit, and its own Undo reaches it whatever
+  became of the piece since. Rejected: a second installer; evaluating triggers in the app.
+- **The shadow job records and ends runs** (`ashley.workshop.shadow_job`, run under the watches lease, which already
+  holds the household's HA sockets): it holds `ashley_shadow` and `automation_triggered` events for each household
+  with a run (`ashley.home_assistant.held_states.HeldStates.events`), records a `would` firing for the shadow's event
+  and a `did` firing for the replaced automation's trigger (`ashley.workshop.shadows.Shadows`, tables
+  `automation_shadows` and `automation_shadow_firings`; a firing is keyed by its HA context id, so a retold event
+  counts once), and ends each run whose time has come by the Undo of its Install as the person who approved it. The
+  end time and the person are rows, so any pod ends a run; the run is recorded before the house is written, so a pod
+  that stopped leaves one the job still ends. A run lasts `duration_s` (`shadow.json`); a run keeps its newest
+  `max_events` firings and firings older than `keep_s` are deleted by the job's pass. An end the bench refuses (it was
+  closed, or the Install is past `undo_window`) still ends the recording and leaves the shadow in HA, which is
+  logged. Logs name ids and counts, never an entity id or an event's data. Rejected: a watch kind, which wakes her;
+  a run recorded only after its install.
 - **She opens a bench from the person's own web chat** (`ashley.tools.open_bench.OpenBenchTools`, offered only there,
   the speaker known): `open_bench` with a title of hers, returning the bench's id and the room's path,
   `/workshop/<id>`, which her reply links to; the link opens the bench in place, and she can take the page there
