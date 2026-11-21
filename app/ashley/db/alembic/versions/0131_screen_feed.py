@@ -3,8 +3,8 @@ so any pod of either site can say what a screen shows and clear it. The row goes
 
 from alembic import op
 
-revision: str = "0130"
-down_revision: str | None = "0129"
+revision: str = "0131"
+down_revision: str | None = "0130"
 
 
 def upgrade() -> None:
