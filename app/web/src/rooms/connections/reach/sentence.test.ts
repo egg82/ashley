@@ -6,10 +6,10 @@ import { holderOf, hostOf, sentenceOf } from './sentence.ts';
 const sam = { id: 1, household_id: 1, name: 'Sam', admin: true };
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   id: 1, kind: 'sure', label: '', base_url: 'https://money.example/path', added_by: sam, added_at: '', checked_at: '', personal: false,
-  needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
+  needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '', ...over,
 });
 const kind = (over: Partial<ConnectionKindInfo>): ConnectionKindInfo => ({
-  name: 'sure', title: 'Sure', what: 'finances', blurb: '', connected: '', removed: '', holders: ['household'], most: 1, picks_catalogue_provider: false, takes_address: true,
+  name: 'sure', title: 'Sure', what: 'finances', blurb: '', connected: '', removed: '', holders: ['household'], most: 1, picks_catalogue_provider: false, takes_description: false, takes_address: true,
   address_placeholder: '', secret_field: 'api_key', secret_label: '', secret_noun: 'key', connect: 'pasted', set_up: true, has_settings: false, ...over,
 });
 const text = (s: ReturnType<typeof sentenceOf>) => `${s.before}${s.name}${s.after}`;

@@ -25,6 +25,10 @@ function Address({ c, kind }: { c: HouseholdConnection; kind: ConnectionKindInfo
   return <Item term="Address"><span class="rr-mono">{kind.takes_address ? c.base_url.replace(/#.*$/, '') : hostOf(c.base_url)}</span>{pinned && <span class="meta"> · pinned to one certificate</span>}</Item>;
 }
 
+function About({ c }: { c: HouseholdConnection }) {
+  return c.description ? <Item term="About">{c.description}</Item> : null;
+}
+
 function Held({ c, kind }: { c: HouseholdConnection; kind: ConnectionKindInfo }) {
   const why = stayReason(c, kind);
   return (
@@ -57,7 +61,7 @@ function Actions({ c, kind }: { c: HouseholdConnection; kind: ConnectionKindInfo
   return (
     <div class="dc-act rr-actions">
       <button class="btn sm" type="button" disabled={replace.fix === 'oauth' && !kind.set_up} onClick={() => runFix(replace.fix, c, kind)}>{replace.label}</button>
-      <button class="btn sm" type="button" onClick={() => openRename(c)}>Rename</button>
+      <button class="btn sm" type="button" onClick={() => openRename(c)}>{kind.takes_description ? 'Edit' : 'Rename'}</button>
       <button class="btn sm danger" type="button" onClick={() => startRemoving(c.id)}>Remove…</button>
     </div>
   );
@@ -69,6 +73,7 @@ export function ManagePanel({ c, kind }: { c: HouseholdConnection; kind: Connect
       <dl class="panel rr-items">
         <Address c={c} kind={kind} />
         <Item term="Secret"><span class="meta">Stored, never shown.</span></Item>
+        <About c={c} />
         <Held c={c} kind={kind} />
         <Access c={c} />
         {c.resources.length > 0 && <Item term="Mailboxes"><Resources c={c} /></Item>}

@@ -36,13 +36,14 @@ export async function replaceConnection(id: number, body: ConnectionRequest): Pr
   return answer(response, 200, 'PUT /api/connections/{id}');
 }
 
-/** Renames connection `id`; a 409 means the owner already uses that label for the kind, a 422 `bad_label` that the kind
- * does not take it. */
-export async function relabelConnection(id: number, label: string): Promise<HouseholdConnection> {
+/** Renames connection `id` and, when `description` is given, rewrites what its owner says it reaches (empty clears it); a
+ * 409 means the owner already uses that label for the kind, a 422 `bad_label` that the kind does not take it, `unsupported`
+ * that it takes no description. */
+export async function relabelConnection(id: number, label: string, description?: string): Promise<HouseholdConnection> {
   const response = await fetch(`/api/connections/${id}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ label }),
+    body: JSON.stringify(description === undefined ? { label } : { label, description }),
   });
   if (response.status === 409 || response.status === 422) {
     throw new ApiError(response.status, 'PATCH /api/connections/{id}', ((await response.json()) as Partial<ErrorResponse>).code);

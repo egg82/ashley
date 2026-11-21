@@ -113,11 +113,11 @@ export async function connect(info: ConnectionKindInfo, label: string, baseUrl: 
   }
 }
 
-/** True when the connection now has `label`. */
-export async function rename(c: HouseholdConnection, label: string): Promise<boolean> {
+/** True when the connection now has `label` and, when one is given, `description`. */
+export async function rename(c: HouseholdConnection, label: string, description?: string): Promise<boolean> {
   connectionsSaid.value = null;
   try {
-    keep(await relabelConnection(c.id, label));
+    keep(await relabelConnection(c.id, label, description));
     connectionsSaid.value = { kind: c.kind, said: 'renamed' };
     return true;
   } catch (error) {

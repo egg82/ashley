@@ -8,10 +8,10 @@ const DAY = 864e5;
 const sam = { id: 1, household_id: 1, name: 'Sam', admin: true };
 const conn = (id: number, kind: string, over: Partial<HouseholdConnection> = {}): HouseholdConnection => ({
   id, kind, label: '', base_url: '', added_by: sam, added_at: '', checked_at: new Date(NOW - 2 * DAY).toISOString(), personal: false, needs: null,
-  scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
+  scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '', ...over,
 });
 const kind = (name: string, holders: ('household' | 'person')[], most = 1): ConnectionKindInfo => ({
-  name, title: name, what: '', blurb: '', connected: '', removed: '', holders, most, picks_catalogue_provider: false, takes_address: false, address_placeholder: '',
+  name, title: name, what: '', blurb: '', connected: '', removed: '', holders, most, picks_catalogue_provider: false, takes_description: false, takes_address: false, address_placeholder: '',
   secret_field: 'token', secret_label: '', secret_noun: 'token', connect: 'pasted', set_up: true, has_settings: false,
 });
 

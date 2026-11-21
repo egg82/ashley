@@ -12,7 +12,7 @@ const day = (iso: string) => iso.slice(5, 10);
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   id: 1, kind: 'sure', label: '', base_url: '', added_by: { id: 1, household_id: 1, name: 'Sam', admin: true }, added_at: ago(9 * DAY),
   checked_at: ago(14 * MIN), personal: false, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false,
-  can_take_back: false, can_change: true, ...over,
+  can_take_back: false, can_change: true, description: '', ...over,
 });
 
 test('ages read in the unit that fits, singular at one', () => {

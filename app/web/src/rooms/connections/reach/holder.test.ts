@@ -5,7 +5,7 @@ import { holdsLine, stayReason } from './holder.ts';
 
 const conn = (over: Partial<HouseholdConnection>): HouseholdConnection => ({
   id: 1, kind: 'x', label: '', base_url: '', added_by: { id: 1, household_id: 1, name: 'Sam', admin: true }, added_at: '', checked_at: '',
-  personal: true, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, ...over,
+  personal: true, needs: null, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '', ...over,
 });
 const kind = (holders: ('household' | 'person')[]) => ({ holders }) as unknown as ConnectionKindInfo;
 

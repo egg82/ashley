@@ -7,14 +7,14 @@ function kind(name: string, title: string, what: string, holders: ConnectionKind
   return {
     name, title, what, blurb: `Let her read ${what}.`, connected: '', removed: '', holders, most: 1, takes_address: true,
     address_placeholder: '', secret_field: 'token', secret_label: 'Token', secret_noun: 'token', connect: 'pasted', set_up: true, has_settings: false,
-    picks_catalogue_provider: false,
+    picks_catalogue_provider: false, takes_description: false,
   };
 }
 
 const sure = kind('sure', 'Sure', 'finances', ['household']);
 const gitlab = kind('gitlab', 'GitLab', 'your code', ['person']);
 const google = kind('google', 'Google', 'your Google account', ['household', 'person']);
-const held: HouseholdConnection = { id: 1, label: '', kind: 'sure', base_url: '', added_by: null, added_at: '', checked_at: '', personal: false, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true };
+const held: HouseholdConnection = { id: 1, label: '', kind: 'sure', base_url: '', added_by: null, added_at: '', checked_at: '', personal: false, scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '' };
 const discord: LinkedAccount = { id: 1, system: 'discord', handle: 'a', unlinkable: true };
 
 test('a connected kind is not offered again', () => {

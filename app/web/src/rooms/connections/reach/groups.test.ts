@@ -5,7 +5,7 @@ import { groupsOf } from './groups.ts';
 
 const conn = (id: number, kind: string): HouseholdConnection => ({
   id, kind, label: '', base_url: '', added_by: null, added_at: '', checked_at: '', personal: false, needs: null,
-  scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true,
+  scopes: [], missing_scopes: [], resources: [], can_hand_over: false, can_take_back: false, can_change: true, description: '',
 });
 
 test('connections group by what they give her, in the room’s order, and empty groups are left out', () => {

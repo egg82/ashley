@@ -66,7 +66,7 @@ function kindLine(kinds: readonly ConnectionKindInfo[]): { text: string; ok: boo
   const kind = s && kinds.find((k) => k.name === s.kind);
   if (!s || !kind) return null;
   const ok = s.said === 'connected' || s.said === 'removed' || s.said === 'renamed' || s.said in MOVED;
-  const text = s.said === 'connected' ? kind.connected : s.said === 'removed' ? kind.removed : s.said === 'renamed' ? 'Renamed.' : (MOVED[s.said] ?? FAILED[s.said] ?? `${s.detail ?? ''} Nothing was saved.`);
+  const text = s.said === 'connected' ? kind.connected : s.said === 'removed' ? kind.removed : s.said === 'renamed' ? 'Saved.' : (MOVED[s.said] ?? FAILED[s.said] ?? `${s.detail ?? ''} Nothing was saved.`);
   return { text, ok };
 }
 
