@@ -43,6 +43,11 @@ def load() -> Settings:
     return Settings(float(numbers[0]), float(numbers[1]), int(numbers[2]), int(numbers[3]), float(numbers[4]))
 
 
+def is_id(automation_id: str) -> bool:
+    """Whether `automation_id` is a shadow's: the only ids the shadow job ever deletes from the house."""
+    return automation_id.startswith(_ID)
+
+
 def id_for(automation_id: str) -> str:
     """The id a piece's shadow is installed under, given the id its real install uses; never equal to it."""
     return _ID + automation_id.removeprefix("ashley_")

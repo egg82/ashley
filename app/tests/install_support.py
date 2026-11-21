@@ -1,6 +1,6 @@
 """A world for installing a bench's automation pieces over a real database: the Postgres Workshop and Installs on one
 pool, a fake Home Assistant (`automations_support.FakeHouse`) as the household's house, and a Live that keeps what it
-heard; and the commands that put a proposed automation piece on a bench. `world` takes the shadow settings a test wants."""
+heard; and the commands that put a proposed automation piece on a bench. `world` takes the shadow settings and bench rules a test wants."""
 
 import json
 from collections.abc import AsyncGenerator
@@ -13,6 +13,7 @@ from ashley.db.pool import PoolDatabase
 from ashley.home_assistant.homes import Homes
 from ashley.live.live import Live
 from ashley.workshop import rules as workshop_rules
+from ashley.workshop.rules import Rules
 from ashley.workshop.commands import Add, Install, Propose
 from ashley.workshop.install_piece import automation_id_for
 from ashley.workshop.installs import Installs
@@ -60,11 +61,12 @@ class World:
 
 
 @asynccontextmanager
-async def world(url: str, house: FakeHouse | None = None, shadows: Settings | None = None) -> AsyncGenerator[World]:
+async def world(url: str, house: FakeHouse | None = None, shadows: Settings | None = None,
+                rules: Rules | None = None) -> AsyncGenerator[World]:
     database = PoolDatabase(url)
     await database.open()
     made = World(house or FakeHouse(), Heard(), database)
-    services.register(Workshop, PostgresWorkshop(database, RULES))
+    services.register(Workshop, PostgresWorkshop(database, rules or RULES))
     services.register(Installs, PostgresInstalls(database))
     services.register(Shadows, PostgresShadows(database, shadows or load_shadow()))
     services.register(Homes, AnyHousehold(made.house.house()))
