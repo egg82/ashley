@@ -203,6 +203,33 @@ behind `ashley.todos.routed.RoutedTodos`, the Calendars' shape with changes adde
 - Rejected: moving `household_reads` onto the port in this change, which would reshape its setting and the taint record
   (`OutsideRecord`) behind it. No migration: nothing is stored.
 
+### Cameras are looked through a neutral port
+
+Her camera tools use `ashley.cameras.cameras.Cameras`, never Home Assistant: neutral records (`ashley.cameras.model`:
+`Camera`, `Still`, `Roster`). Home Assistant's `camera` entities are the first adapter (`ashley.home_assistant.cameras.HaCameras`),
+behind `ashley.cameras.routed.RoutedCameras`, the Calendars' shape. The still comes from HA's camera proxy over the house
+connection (`House.snapshot`, the only code that reads `/api/camera_proxy`). Bambuddy's printer cameras and a bench machine's
+webcam are later sources; detector events, live video and a bench watch are later slices.
+
+- **The `camera` port is `combine`**: every serving, switched-on connection's cameras are listed, each naming its `source`; a
+  source that fails is `unread`, not an empty roster. Home Assistant's kind declares it, so it has a switch.
+- **"She may look" is the connection setting `look_cameras`** (an `EntityList` of `camera` entities, decides `read`, written only
+  by a person through the connections room's settings route, never by her tools). Empty for a new household. The adapter lists
+  only the named cameras and looks through only those: a camera not named is neither in `cameras` nor reachable by `camera_look`
+  (the router finds the camera among the listed ones first).
+- **Some cameras give no still on demand.** HA's proxy answers 404, 500 or 503 for a camera with no image to give now (the
+  status codes are unverified against a live Nest camera); the adapter then returns none, `camera_look` answers `no_still` and
+  tells her to say so, and nothing retries. Any other failure is `unreachable`, never none; a body that is not an image is too.
+- **Two tools: `cameras` and `camera_look`**, both reads and `outside=True` (a picture can carry text anyone put in front of
+  the lens), offered to a known speaker in any chat with a turn while an object store is wired and a camera source serves. The
+  still goes to the model as `ToolResult.images`, made fit like a bench look's (`ashley.looks.pictures`), and is kept as a look
+  (`ashley.tools.bench_picture.keep`), counted with the turn's other looks. Logs carry the source, outcome, bytes and counts,
+  never a camera's name or a byte.
+- **A look on no bench**: `bench_looks.bench_id` is nullable (migration 0125; `piece_id` already was), so `Look.bench_id` and
+  `ChatLook.bench_id` may be null and the page captions it "a camera". Which camera is not stored; the row says it was a camera.
+- Rejected: a second record of what she saw through a camera, which the Looks system already keeps. Rejected: the setting on
+  the port rather than the connection, which is where `discreet_calendars` and `household_reads` live.
+
 ## Her money is read through a neutral ledger
 
 Her money tools and the deposit sense read `ashley.ledger.ledger.Ledger`, never Sure: neutral records (`Account`,

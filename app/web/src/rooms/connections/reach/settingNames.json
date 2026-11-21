@@ -2,6 +2,7 @@
   "household_reads": "Lists she counts as the household’s",
   "service_reads": "Look-ups she trusts",
   "reads": "Look-ups that only read",
+  "look_cameras": "Cameras she may look through",
   "consequential_entities": "Things that need your word",
   "ports_off": "What she uses it for"
 }

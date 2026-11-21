@@ -70,6 +70,14 @@ class State:
 
 
 @dataclass(frozen=True)
+class Snapshot:
+    """A camera's picture as the house gave it: its bytes and the media type the house said. Never logged."""
+
+    data: bytes
+    media_type: str
+
+
+@dataclass(frozen=True)
 class Record:
     kind: RecordKind
     id: str
@@ -154,6 +162,11 @@ class House(ABC):
         """Every record of the kind. Raises HouseUnavailable."""
 
     @abstractmethod
+    async def snapshot(self, camera: str) -> Snapshot | None:
+        """The still the camera `camera` (an entity id) gives now; None when it gives none on demand (a camera that
+        only streams, or is off). Asks once. Raises HouseUnavailable."""
+
+    @abstractmethod
     async def history(self, window: Window) -> tuple[Series, ...]:
         """The readings of each of `window.ids` between its start and end. Raises HouseUnavailable."""
 
@@ -224,6 +237,9 @@ class NullHouse(House):
         raise HouseUnavailable("no house")
 
     async def records(self, kind: RecordKind) -> tuple[Record, ...]:
+        raise HouseUnavailable("no house")
+
+    async def snapshot(self, camera: str) -> Snapshot | None:
         raise HouseUnavailable("no house")
 
     async def history(self, window: Window) -> tuple[Series, ...]:

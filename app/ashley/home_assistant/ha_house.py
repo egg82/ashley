@@ -14,8 +14,10 @@ from .ha_registry import Registries
 from .ha_rest import Rest
 from .ha_socket import Commands
 from .house import (ActionInfo, ConfigItem, ConfigKind, House, HouseRejected, HouseUnavailable, LogEntry, Performed,
-                    Reading, Record, RecordKind, Series, State, Window)
+                    Reading, Record, RecordKind, Series, Snapshot, State, Window)
 from .house_settings import HouseSettings
+
+NO_STILL = (404, 500, 503)
 
 
 class HaHouse(House):
@@ -34,6 +36,10 @@ class HaHouse(House):
 
     async def records(self, kind: RecordKind) -> tuple[Record, ...]:
         return await self._registries.records(kind)
+
+    async def snapshot(self, camera: str) -> Snapshot | None:
+        got = await self._rest.image(f"/api/camera_proxy/{quote(camera, safe='')}", "camera_proxy", NO_STILL)
+        return None if got is None else Snapshot(*got)
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         if not window.ids:

@@ -34,7 +34,7 @@ def bad(values: Mapping[str, Any]) -> tuple[str, str]:
 def test_home_assistant_declares_three_trust_settings_one_that_judges_and_one_preference() -> None:
     assert {s.key: s.decides for s in SETTINGS} == {
         "household_reads": "taint", "service_reads": "taint", "reads": "read", "consequential_entities": "tier",
-        "glance_calendars": "plain", "discreet_calendars": "taint"}
+        "glance_calendars": "plain", "discreet_calendars": "taint", "look_cameras": "read"}
     assert isinstance(next(s for s in SETTINGS if s.key == "household_reads").field, EntityListPerAction)
 
 

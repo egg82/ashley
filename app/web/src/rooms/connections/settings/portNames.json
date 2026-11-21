@@ -4,6 +4,7 @@
   "ledger": { "name": "Money", "sub": "Reading accounts and transactions, and changing a category or a note once you agree." },
   "printing": { "name": "3D printing", "sub": "Printers, what they are printing, AMS slots and library files." },
   "todo": { "name": "To-do lists", "sub": "Reading the lists and their items, and adding, ticking off or removing items." },
+  "camera": { "name": "Cameras", "sub": "Looking through the cameras you name below: one still at a time, when she is asked." },
   "stock": { "name": "Filament stock", "sub": "The spools in stock and how much is left." },
   "code_host": { "name": "Code", "sub": "Projects, files and merge requests on this code host." },
   "mail": { "name": "Mail", "sub": "The mailboxes this account reaches." },
