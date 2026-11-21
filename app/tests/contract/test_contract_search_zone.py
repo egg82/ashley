@@ -9,6 +9,7 @@ import pytest
 from ashley import logs
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.zone import Coordinates, HomeUnknown, home
+from conversations_support import blank_ts
 from ha_support import CAPTURES, HA_TOKEN
 from search_contract_support import Web, connect_web, json_web, run, timeout_web
 
@@ -84,6 +85,6 @@ def test_no_coordinate_or_token_reaches_a_log_line(capsys: pytest.CaptureFixture
     run(home(handle(json_web(state()))))
     for web in (timeout_web(), json_web(state(longitude="west")), json_web(state(), status=500)):
         unknown(web)
-    out = capsys.readouterr().out
+    out = blank_ts(capsys.readouterr().out)
     for leaked in ("39.73", "104.99", HA_TOKEN):
         assert leaked not in out

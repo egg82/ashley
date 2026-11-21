@@ -3,6 +3,7 @@
 import pytest
 from ashley import logs
 from ashley.ledger.model import LedgerFailed, TransactionQuery
+from contract.conversations_support import blank_ts
 from ledger_blind_support import AMOUNT, KEY, PAYEE, FakeSure, World, run
 
 
@@ -25,7 +26,7 @@ def test_answered_reads_log_none_of_the_money(db_url: str, capsys: pytest.Captur
     capsys.readouterr()
     run(db_url, every_read)
     out = capsys.readouterr()
-    text = out.out + out.err
+    text = blank_ts(out.out + out.err)
     assert "event=sure.get" in text
     for private in PRIVATE:
         assert private not in text, private
@@ -45,6 +46,6 @@ def test_failed_reads_log_none_of_the_money_either(db_url: str, capsys: pytest.C
                 await call
     run(db_url, scenario, fake)
     out = capsys.readouterr()
-    text = out.out + out.err
+    text = blank_ts(out.out + out.err)
     for private in PRIVATE:
         assert private not in text, private

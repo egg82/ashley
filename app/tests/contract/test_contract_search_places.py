@@ -5,7 +5,6 @@ reason, and logs free of the query and coordinates."""
 
 import copy
 import json
-import re
 import time
 from typing import Any
 from urllib.parse import parse_qs
@@ -14,7 +13,7 @@ import pytest
 from ashley import logs
 from ashley.home_assistant.zone import Coordinates, HomeUnknown
 from ashley.tools.places import PlacesTools
-from conversations_support import events
+from conversations_support import blank_ts, events
 from search_contract_support import (BROKEN_BODIES, CONFIG, MARK, PHOTON, Web, call, cfg, connect_web, json_web, miles, run,
                             timeout_web)
 
@@ -314,7 +313,7 @@ def test_no_query_coordinate_name_address_or_url_reaches_a_log_line(capsys: pyte
     reasons.append(find(json_web(PHOTON), {"query": " "}, Home(home)).content)
     out = capsys.readouterr().out
     assert len(events(out, "tools.call")) == len(reasons) == 13, "control: every call was logged"
-    out = re.sub(r"\bts=\S+", "ts=", out)  # a timestamp's seconds can read 39.73
+    out = blank_ts(out)
     for leaked in (MARK, "pharmacy", "39.73", "104.99", "-105", "photon.test", "https://", "Orchard", "Westminster",
                    "Target"):
         assert leaked not in out

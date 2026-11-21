@@ -24,7 +24,7 @@ from ashley.senses.wakes import Wakes
 from ashley.tools.reminders import ReminderTools
 from ashley.tools.tools import Tools
 from contract.conversations_support import db_url as db_url, household, migrated_template as migrated_template
-from contract.conversations_support import person, run
+from contract.conversations_support import blank_ts, person, run
 from test_reminder_turn import Home
 from wake_support import Switchboard
 
@@ -173,7 +173,7 @@ def test_no_log_line_carries_an_argument(db_url: str, capsys: pytest.CaptureFixt
             await tools.call(ToolCall("c1", "remind", {"for": "Sam", "at": soon(), "what": WHAT}))
             await tools.call(ToolCall("c2", "reminders", {}))
     run(go())
-    out = capsys.readouterr().out
+    out = blank_ts(capsys.readouterr().out)
     assert "event=tools.call" in out
     for value in ("Bluebird", "$300", "Sam", "T09:00"):
         assert value not in out, value
