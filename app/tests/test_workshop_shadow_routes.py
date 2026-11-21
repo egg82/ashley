@@ -49,7 +49,7 @@ def test_the_bench_shows_a_shadow_run_from_proposal_to_its_end(signed_in: As, ho
     old = house.add("7e9f", "Alana is home")
     on_app_loop(client, services.get(Workshop).apply(OWNER, bench, propose(shadow=True, turn_off=old)))
     shown = read(client, bench).pieces[0].automation
-    assert shown is not None and shown.install_proposal is not None and shown.install_proposal.shadow and shown.shadow is None
+    assert shown is not None and shown.install_proposal is not None and shown.install_proposal.shadow and shown.shadow_run is None
 
     status, _ = command(client, bench, {"type": "install", "piece_id": 1, "proposal": 2})
     assert status == 200
@@ -57,17 +57,17 @@ def test_the_bench_shows_a_shadow_run_from_proposal_to_its_end(signed_in: As, ho
     assert set(house.configs) == {"7e9f", ident} and house.enabled == {old: True, house.entity_of(ident): True}
     shown = read(client, bench).pieces[0].automation
     assert shown is not None and shown.last_install is None and shown.install_proposal is None
-    assert shown.shadow is not None and shown.shadow.ended_at is None and shown.shadow.replaces
-    assert (shown.shadow.seq, shown.shadow.piece_version, shown.shadow.would, shown.shadow.did) == (3, 1, 0, 0)
+    assert shown.shadow_run is not None and shown.shadow_run.ended_at is None and shown.shadow_run.replaces
+    assert (shown.shadow_run.seq, shown.shadow_run.piece_version, shown.shadow_run.would, shown.shadow_run.did) == (3, 1, 0, 0)
 
     on_app_loop(client, services.get(Shadows).would(OWNER.household_id, bench, 1, AT, "c1"))
     on_app_loop(client, services.get(Shadows).did(OWNER.household_id, old, AT, "c2"))
     seen = read(client, bench).pieces[0].automation
-    assert seen is not None and seen.shadow is not None
-    assert (seen.shadow.would, seen.shadow.did, sorted(f.kind for f in seen.shadow.firings)) == (1, 1, ["did", "would"])
+    assert seen is not None and seen.shadow_run is not None
+    assert (seen.shadow_run.would, seen.shadow_run.did, sorted(f.kind for f in seen.shadow_run.firings)) == (1, 1, ["did", "would"])
 
     status, _ = command(client, bench, {"type": "undo", "seq": 3})
     assert status == 200 and set(house.configs) == {"7e9f"}
     ended = read(client, bench).pieces[0].automation
-    assert ended is not None and ended.shadow is not None and ended.shadow.ended_at is not None
+    assert ended is not None and ended.shadow_run is not None and ended.shadow_run.ended_at is not None
     assert ended.last_install is None

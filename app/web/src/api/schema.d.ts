@@ -4970,7 +4970,7 @@ export interface components {
             last_install: components["schemas"]["InstallState"] | null;
             /** Unanswered Events */
             unanswered_events: string[];
-            shadow: components["schemas"]["ShadowState"] | null;
+            shadow_run: components["schemas"]["ShadowState"] | null;
         };
         /**
          * PieceFile
