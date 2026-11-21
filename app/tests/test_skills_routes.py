@@ -16,7 +16,7 @@ def test_a_bench_takes_a_kind_of_work_and_gives_it_up(signed_in: As, wired: Fake
     alana = signed_in(ALANA)
     bench = opened(alana)
     assert bench.work is None
-    seeded = {("3d", "3D"), ("code", "Code"), ("research", "Research"), ("writing", "Writing")}
+    seeded = {("3d", "3D"), ("code", "Code"), ("engineering", "Engineering"), ("research", "Research"), ("writing", "Writing")}
     first = WorkshopKinds.model_validate(alana.get("/api/workshop/kinds").json())
     assert {(k.name, k.label) for k in first.work_kinds} == seeded
     assert alana.put(f"/api/benches/{bench.id}/work", json={"work": "knitting"}).status_code == 422

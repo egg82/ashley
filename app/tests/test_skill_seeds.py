@@ -15,7 +15,7 @@ from contract.conversations_support import db_url as db_url, migrated_template a
 from contract.conversations_support import household, run
 
 CONFIG = skills_config.load()
-EXPECTED = {"code": "agentic-engineering", "3d": "cad-design", "research": "search-craft", "writing": "writing-craft"}
+EXPECTED = {"code": "agentic-engineering", "3d": "cad-design", "engineering": "cad-design", "research": "search-craft", "writing": "writing-craft"}
 
 # Shapes of instance data and of mechanics that belong to another tool. The household's own names and hosts are
 # test_household_names.py's, across the whole tree; these are other tools the source skills name.
