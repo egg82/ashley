@@ -87,7 +87,7 @@ async def world(url: str) -> AsyncGenerator[World]:
     held.connect(home, "http://ha.test", "k", NAME)
     screens = PostgresScreens(database)
     made = World(home, ann, bea, kiosk, house, FakeLive(), FakePresence(frozenset({ann})), screens, {})
-    for interface, service in ((Connections, held), (Homes, AnyHousehold(house)), (Cameras, RoutedCameras({NAME: HaCameras()})),
+    for interface, service in ((Connections, held), (Homes, AnyHousehold(house)), (Cameras, RoutedCameras({NAME: HaCameras()}, 3)),
                                (SettingsReader, Settings()), (Screens, screens), (Live, made.live),
                                (Presence, made.presence),
                                (Devices, HouseDevices({home: [Listed(Device(kiosk, home, "tablet", "hallway", "present",

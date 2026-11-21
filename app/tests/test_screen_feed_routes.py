@@ -109,7 +109,7 @@ def wire() -> None:
     w = CURRENT[0]
     services.register(Connections, w.connections)
     services.register(Homes, AnyHousehold(w.house))
-    services.register(Cameras, RoutedCameras({NAME: HaCameras()}))
+    services.register(Cameras, RoutedCameras({NAME: HaCameras()}, 3))
     services.register(SettingsReader, w.settings)
     services.register(Screens, w.screens)
 
