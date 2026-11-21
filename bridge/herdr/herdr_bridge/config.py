@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from .jsonget import integer, obj, strings, text
+from .machine import DEFAULT_TOOLS, TOOL_NAME
 
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "ashley-herdr-bridge"
 STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")) / "ashley-herdr-bridge"
@@ -26,6 +27,7 @@ class Config:
     start_timeout_ms: int = 90_000
     max_file_bytes: int = 26_214_400  # the most one transferred file may hold, either direction
     max_files: int = 32  # the most files `in/` or `out/` may hold
+    bench_tools: tuple[str, ...] = DEFAULT_TOOLS  # names looked up on PATH for the machine report, never run
     keep_job_dirs: int = 20  # the newest job folders (`<root>/ashley-jobs/j<id>`) kept; older ones are removed at a start
 
     @property
@@ -38,7 +40,7 @@ class Config:
 
     def dump(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({**asdict(self), "roots": list(self.roots)}, indent=2) + "\n")
+        path.write_text(json.dumps({**asdict(self), "roots": list(self.roots), "bench_tools": list(self.bench_tools)}, indent=2) + "\n")
 
 
 FIELDS = {f.name for f in fields(Config)}
@@ -54,6 +56,9 @@ def load(path: Path) -> Config:
     port = integer(raw, "port")
     if not roots or not all(os.path.isabs(r) for r in roots):
         raise ConfigError("roots must be a non-empty list of absolute directories")
+    tools = strings(raw["bench_tools"]) if "bench_tools" in raw else list(DEFAULT_TOOLS)
+    if tools is None or not all(TOOL_NAME.fullmatch(t) for t in tools):
+        raise ConfigError("bench_tools must be a list of plain program names")
     if host is None or port is None or state_dir is None or client_ca is None or set(raw) - FIELDS:
         raise ConfigError(f"{path} must hold exactly: {', '.join(sorted(FIELDS))}")
     if not Path(client_ca).is_file():
@@ -61,4 +66,4 @@ def load(path: Path) -> Config:
     return Config(host, port, tuple(roots), state_dir, client_ca,
                   text(raw, "herdr") or "herdr", integer(raw, "start_timeout_ms") or 90_000,
                   integer(raw, "max_file_bytes") or 26_214_400, integer(raw, "max_files") or 32,
-                  integer(raw, "keep_job_dirs") or 20)
+                  tuple(tools), integer(raw, "keep_job_dirs") or 20)

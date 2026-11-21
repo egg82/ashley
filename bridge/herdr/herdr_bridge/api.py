@@ -13,6 +13,7 @@ from .errors import BridgeError
 from .files import Files, Limits
 from .herdr import Herdr
 from .jsonget import obj, text
+from .machine import Machine
 from .logs import Log, call_line, short
 from .runner import HerdrMissing, HerdrTimeout
 from .sessions import Sessions
@@ -47,8 +48,10 @@ class Response:
 
 
 class Api:
-    def __init__(self, auth: Auth, sessions: Sessions, herdr: Herdr, log: Log, limits: Limits = Limits()) -> None:
+    def __init__(self, auth: Auth, sessions: Sessions, herdr: Herdr, log: Log, limits: Limits = Limits(),
+                 machine: Machine | None = None) -> None:
         self.auth = auth
+        self.machine = machine or Machine()
         self.sessions = sessions
         self.files = Files(sessions, limits)
         self.limits = limits
@@ -79,6 +82,8 @@ class Api:
         key = (req.method, req.path)
         if key == ("GET", "/v1/whoami"):
             return "whoami", None, lambda: self.whoami(person)
+        if key == ("GET", "/v1/machine"):
+            return "machine", None, self.machine_report
         if key == ("GET", "/v1/sessions"):
             return "list", None, self.listing
         if key == ("POST", "/v1/sessions"):
@@ -123,6 +128,13 @@ class Api:
         return {"sessions": [s.wire() for s in listed], "last_typed_at": self.sessions.last_typed(listed),
                 "roots": list(self.sessions.roots)}
 
+    def machine_report(self) -> dict[str, object]:
+        try:
+            busy: bool | None = any(s.status == "working" for s in self.sessions.sessions())
+        except BridgeError:
+            busy = None
+        return self.machine.report(busy)
+
     def prompt(self, sid: str, req: Request) -> dict[str, object]:
         self.sessions.prompt(sid, prompt_text(req.body))
         return {"submitted": True}
@@ -136,7 +148,7 @@ class Api:
             version = self.herdr.version()
         except (HerdrMissing, HerdrTimeout):
             version = None
-        return {"bridge_version": __version__, "herdr_version": version, "person": person, "capabilities": ["files"]}
+        return {"bridge_version": __version__, "herdr_version": version, "person": person, "capabilities": ["files", "machine"]}
 
     def start(self, req: Request) -> dict[str, object]:
         body = json_body(req.body)
