@@ -178,6 +178,31 @@ This is the Ledger's and Printing's shape, and only reads exist.
 - Rejected: a calendar tool per source, which is the "system in hiding" the port avoids. Rejected: moving `glance_calendars`
   onto the port's own setting in this change, which would reshape the kiosk's panel.
 
+### To-do lists are read and changed through a neutral port
+
+Her to-do tools use `ashley.todos.todos.Todos`, never Home Assistant: neutral records (`ashley.todos.model`: `TodoList`,
+`TodoItem`, `Board`, `Change`). Home Assistant's `todo` entities are the first adapter (`ashley.home_assistant.todos.HaTodos`,
+the only code that reads its field names, over `todo.get_items`, `todo.add_item`, `todo.update_item` and `todo.remove_item`),
+behind `ashley.todos.routed.RoutedTodos`, the Calendars' shape with changes added.
+
+- **The `todo` port is `combine`** (`ashley.connections.model.PORTS`): every connection that serves it and that the household
+  has not switched off is read, each list naming its `source`, and a source that fails is in `Board.unread`. Home Assistant's
+  kind declares `todo`, so it has a switch; like `calendar` it needs `house` on.
+- **A change goes to the connection that holds the list**, found by the list's id; an id no serving connection holds is
+  `NoSuchList`, and a source that fails answers `TodosFailed` rather than reading as done.
+- **Her change is her own, not an `asks` change.** `outside-words.md` ("Tiers") already puts list items at `runs` and
+  `tiers.json` gives `todo.add_item` and `todo.update_item` `runs`; `asks` is for records the household relies on that no
+  reading of its words should change (money categories and notes), and a list item is undone by the next edit. `todo_change`
+  is `runs` for `add`, `done` and `reopen`, and `judged` for `remove` (an argument rule in `tiers.json`), as a delete is
+  elsewhere. Nothing in `homes.md` makes list changes proposals.
+- **Two tools: `todo_lists`** (lists and the items asked for, `open` unless `status` says otherwise, `cut` past 200) **and
+  `todo_change`**. `todo_lists` is `outside=True` for every list, because anyone who may add to a list can write item text
+  and the port holds no per-list record of who does; `house_ask` with `todo.get_items` keeps the narrowing by the
+  household's `household_reads` for a list only the household fills. `todo_change` is not outside: its result is its own
+  confirmation. Both are offered to any known speaker in any chat, and to a household with no to-do source neither is.
+- Rejected: moving `household_reads` onto the port in this change, which would reshape its setting and the taint record
+  (`OutsideRecord`) behind it. No migration: nothing is stored.
+
 ## Her money is read through a neutral ledger
 
 Her money tools and the deposit sense read `ashley.ledger.ledger.Ledger`, never Sure: neutral records (`Account`,
