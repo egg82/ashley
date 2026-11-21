@@ -24,6 +24,7 @@ class HaHouse(House):
     def __init__(self, home_assistant: HomeAssistant, settings: HouseSettings) -> None:
         commands = Commands(home_assistant, settings)
         self._settings = settings
+        self._commands = commands
         self._rest = Rest(home_assistant, settings)
         self._registries = Registries(commands)
         self._changes = Changes(self._rest, commands)
@@ -38,8 +39,16 @@ class HaHouse(House):
         return await self._registries.records(kind)
 
     async def snapshot(self, camera: str) -> Snapshot | None:
+        if await self._streams_only_webrtc(camera):
+            return None
         got = await self._rest.image(f"/api/camera_proxy/{quote(camera, safe='')}", "camera_proxy", NO_STILL)
         return None if got is None else Snapshot(*got)
+
+    async def _streams_only_webrtc(self, camera: str) -> bool:
+        """A camera whose only frontend stream type is WebRTC has no still to give: HA's proxy answers it with a
+        placeholder image, not a frame."""
+        caps = obj(await self._commands.run({"type": "camera/capabilities", "entity_id": camera}))
+        return listed(caps.get("frontend_stream_types")) == ["web_rtc"]
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         if not window.ids:

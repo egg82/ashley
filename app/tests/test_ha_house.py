@@ -243,7 +243,7 @@ def test_a_camera_still_is_its_bytes_and_type_asked_once_from_the_camera_proxy()
     stand = world()
     stand.stills = {"camera.porch": (200, "image/jpeg", b"\xff\xd8jpeg")}
     assert run(stand, lambda h: h.snapshot("camera.porch")) == Snapshot(b"\xff\xd8jpeg", "image/jpeg")
-    assert [c[1] for c in stand.calls] == ["GET /api/camera_proxy/camera.porch"]
+    assert [c[1] for c in stand.calls if c[1] != "auth"] == ["camera/capabilities", "GET /api/camera_proxy/camera.porch"]
 
 
 @pytest.mark.parametrize("status", [404, 500, 503])
@@ -251,7 +251,22 @@ def test_a_camera_that_gives_no_image_when_asked_is_none_not_an_error(status: in
     stand = world()
     stand.stills = {"camera.porch": (status, "text/plain", b"no")}
     assert run(stand, lambda h: h.snapshot("camera.porch")) is None
-    assert len(stand.calls) == 1
+    assert [c[1] for c in stand.calls][-1] == "GET /api/camera_proxy/camera.porch"
+
+
+def test_a_camera_that_streams_only_over_webrtc_gives_no_still_and_the_proxy_is_not_asked() -> None:
+    stand = world()
+    stand.stills = {"camera.porch": (200, "image/png", b"\x89PNGplaceholder")}
+    stand.stream_types = {"camera.porch": ["web_rtc"]}
+    assert run(stand, lambda h: h.snapshot("camera.porch")) is None
+    assert [c[1] for c in stand.calls if c[1] != "auth"] == ["camera/capabilities"]
+
+
+def test_a_camera_that_also_streams_hls_is_still_asked_for_its_still() -> None:
+    stand = world()
+    stand.stills = {"camera.porch": (200, "image/jpeg", b"\xff\xd8jpeg")}
+    stand.stream_types = {"camera.porch": ["web_rtc", "hls"]}
+    assert run(stand, lambda h: h.snapshot("camera.porch")) == Snapshot(b"\xff\xd8jpeg", "image/jpeg")
 
 
 @pytest.mark.parametrize("answer", [(401, "text/plain", b""), (200, "text/html", b"<p>login</p>")])
