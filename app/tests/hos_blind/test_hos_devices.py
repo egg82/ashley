@@ -98,6 +98,23 @@ def test_what_each_device_is_comes_from_how_it_is_wired_and_never_its_name(db_ur
     go(scenario())
 
 
+def test_a_paired_kiosk_is_a_screen_and_no_other_device_is(db_url: str) -> None:
+    async def scenario() -> None:
+        async with rig(db_url) as r:
+            kiosk = await add(r, r.w.home, "Hall Tablet", "hallway", "household", "text")
+            echo = await add(r, r.w.home, "Kitchen Echo", "kitchen", "present", "spoken")
+            guild = await add(r, r.w.home, "Guild", "porch", "household", "text")
+            house = await add(r, r.w.home, "House", "hall", "household", "text")
+            await r.devices.set_satellite(echo, HOST, SPEAKER)
+            await r.devices.set_discord_server(guild, GUILD, GUILD + 1)
+            await r.devices.set_house(house)
+            by_id = {int(str(row["id"])): row for row in listed(await ask(r.w.home))}
+            assert {i: by_id[i]["screen"] for i in (kiosk, echo, guild, house)} == {
+                kiosk: True, echo: False, guild: False, house: False}
+
+    go(scenario())
+
+
 def test_it_names_no_token_host_or_server_id_and_logs_none(db_url: str, caplog: pytest.LogCaptureFixture) -> None:
     all_logs(caplog)
 

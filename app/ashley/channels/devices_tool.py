@@ -10,12 +10,13 @@ from ..inference.model import ToolCall, ToolResult, ToolSpec
 from ..tools import bench_results
 from ..tools.tools import Catalogue, Tools
 from .devices import Devices, DevicesUnavailable
+from .wake.reminder_device import fits
 
 NAME = "household_devices"
 SPEC = ToolSpec(NAME, "List the devices this household reaches you through: each one's id, name, place, what it is "
                 "(satellite: a voice satellite; discord_server; house: the household's Home Assistant; other: a "
-                "tablet or the like), who hears it (audience) and whether it speaks or shows text (medium). Use "
-                "it to count or name them. Their hardware and firmware are not here; a device's setup may be in "
+                "tablet or the like), who hears it (audience), whether it speaks or shows text (medium) and whether "
+                "it is a screen (a paired kiosk a reminder or a wake rule can show on). Use it to count or name them. Their hardware and firmware are not here; a device's setup may be in "
                 "the code host.", {"type": "object", "properties": {}}, reads=True, outside=False)
 
 
@@ -36,5 +37,6 @@ class DeviceTools(Tools):
         except DevicesUnavailable:
             return bench_results.failed(call, started, "unavailable", "the devices cannot be read right now")
         rows = [{"id": d.device.id, "name": d.device.name, "place": d.device.place, "form": d.form,
-                 "audience": d.device.audience, "medium": d.device.medium, "kind": d.device.kind} for d in found]
+                 "audience": d.device.audience, "medium": d.device.medium, "kind": d.device.kind,
+                 "screen": fits(d, "screen")} for d in found]
         return bench_results.ok(call, started, {"devices": rows, "count": len(rows)}, rows=len(rows))
