@@ -91,7 +91,11 @@ class Settings:
     the wired `Lease` holds the pod, and the keeper's site is `site`, or `local` without etcd;
     wiring refuses an image not pinned by digest (ValueError). Unset, no Proton kind is offered.
     `connections_key` is the app's key for households' connections (`ashley.connections.sealing`), standard base64
-    of 32 bytes (wiring raises ValueError otherwise); unset, no connection can be added or read.
+    of 32 bytes, optionally as `N:` and the base64 for key version N, 1 to 255, with no prefix meaning 1 (wiring raises
+    ValueError otherwise); unset, no connection can be added or read. `connections_key_opens`, in the same form and with
+    a different version, is a second key the process opens values under but never seals under, and with it set the
+    singleton `reseal` seals every stored value again under `connections_key` (`ashley.connections.reseal`); set
+    without `connections_key` is a ValueError.
     `files_endpoints` (comma-separated `http(s)://host:port` of S3-compatible storage, this site's first and the
     other sites' after), `files_bucket`, `files_access_key` and `files_secret_key` seed the object store connection at
     start (`ashley.files.store_seed`); all four or none (ValueError). Once a connection exists it wins, and with none
@@ -160,6 +164,7 @@ class Settings:
     mail_bridge_app_url: str = ""
     mail_bridge_keeper_url: str = ""
     connections_key: str = field(default="", repr=False)
+    connections_key_opens: str = field(default="", repr=False)
     files_endpoints: str = ""
     files_bucket: str = ""
     files_access_key: str = field(default="", repr=False)
@@ -234,6 +239,8 @@ class Settings:
             raise ValueError("MAIL_BRIDGE_APP_URL and MAIL_BRIDGE_KEEPER_URL must be https")
         if self.mail_bridge_image and not (self.sandbox_token_file and self.connections_key):
             raise ValueError("MAIL_BRIDGE_IMAGE needs SANDBOX_TOKEN_FILE and CONNECTIONS_KEY")
+        if self.connections_key_opens and not self.connections_key:
+            raise ValueError("CONNECTIONS_KEY_OPENS needs CONNECTIONS_KEY")
         if bool(self.herdr_client_cert_file) != bool(self.herdr_client_key_file):
             raise ValueError("HERDR_CLIENT_CERT_FILE and HERDR_CLIENT_KEY_FILE must be set together")
         if bool(self.media_image) != bool(self.media_app_url):
@@ -289,6 +296,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     mail_bridge_app_url=env.get("MAIL_BRIDGE_APP_URL", "").strip().rstrip("/"),
                     mail_bridge_keeper_url=env.get("MAIL_BRIDGE_KEEPER_URL", "").strip(),
                     connections_key=env.get("CONNECTIONS_KEY", "").strip(),
+                    connections_key_opens=env.get("CONNECTIONS_KEY_OPENS", "").strip(),
                     files_endpoints=env.get("FILES_ENDPOINTS", "").strip(), files_bucket=env.get("FILES_BUCKET", "").strip(),
                     files_access_key=env.get("FILES_ACCESS_KEY", "").strip(),
                     files_secret_key=env.get("FILES_SECRET_KEY", "").strip(),

@@ -3,7 +3,7 @@ singleton runs (`ashley.wiring_singletons`). The Proton connection kind is `conf
 (`ashley.wiring`)."""
 
 from . import services
-from .connections.sealing import VERSION as SEAL_VERSION, Sealer, key_from
+from .connections.sealing import sealer_of
 from .db.database import Database
 from .mail import config as mail_config
 from .mail.proton_bridge import ProtonBridge
@@ -26,7 +26,7 @@ def wire_mail_bridge(settings: Settings, api: KubeApi) -> None:
     if not PINNED.fullmatch(settings.mail_bridge_image):
         raise ValueError("MAIL_BRIDGE_IMAGE must be pinned by a full digest (name@sha256:<64 lowercase hex>)")
     config = mail_config.load()
-    bridge = PostgresProtonBridge(services.get(Database), Sealer({SEAL_VERSION: key_from(settings.connections_key)}))
+    bridge = PostgresProtonBridge(services.get(Database), sealer_of(settings.connections_key, settings.connections_key_opens))
     services.register(ProtonBridge, bridge)
     services.register(ProtonLogin, KeeperLogin(settings.mail_bridge_keeper_urls, bridge, config.timeout_s))
     services.register(Keeping, BridgeKeeping(bridge, api, settings.mail_bridge_namespace, settings.mail_bridge_image,

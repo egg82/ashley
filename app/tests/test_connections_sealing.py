@@ -6,7 +6,7 @@ import base64
 import os
 
 import pytest
-from ashley.connections.sealing import VERSION, Sealer, Unsealable, bound_to, key_from
+from ashley.connections.sealing import VERSION, Sealer, Unsealable, bound_to, key_from, versioned_key
 
 KEY = os.urandom(32)
 SECRET = "the-households-test-key"
@@ -68,3 +68,16 @@ def test_a_key_setting_is_base64_of_32_bytes() -> None:
 def test_a_current_version_needs_its_key() -> None:
     with pytest.raises(ValueError):
         Sealer({1: KEY}, current=2)
+
+
+def test_a_key_text_is_the_base64_alone_for_the_first_version_or_a_version_and_the_base64() -> None:
+    text = base64.b64encode(KEY).decode()
+    assert versioned_key(text) == (VERSION, KEY)
+    assert versioned_key(f" 7:{text} ") == (7, KEY)
+
+
+@pytest.mark.parametrize("bad", ["0:", "256:", "x:", "-1:", ":", "3:short", "2:" + "!" * 44])
+def test_a_key_text_with_a_bad_version_or_key_is_refused_without_echoing_it(bad: str) -> None:
+    with pytest.raises(ValueError) as refused:
+        versioned_key(bad + base64.b64encode(KEY).decode() if bad in ("0:", "256:", "x:", "-1:", ":") else bad)
+    assert base64.b64encode(KEY).decode() not in str(refused.value)

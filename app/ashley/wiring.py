@@ -48,7 +48,7 @@ from .connections.settings_postgres import PostgresSettingsReader
 from .connections.settings_read import SettingsReader
 from .connections.settings_write import SettingsWriter
 from .connections.settings_write_postgres import PostgresSettingsWriter
-from .connections.sealing import VERSION as SEAL_VERSION, Sealer, key_from
+from .connections.sealing import Sealer, sealer_of
 from .conversations import policy
 from .conversations.conversations import Conversations
 from .conversations.inflight import InFlight
@@ -205,7 +205,7 @@ def _wire_oauth(settings: Settings, sealer: Sealer, closers: list[Callable[[], C
 def _wire_connections(settings: Settings) -> list[Callable[[], Coroutine[Any, Any, None]]]:
     """Households' connections sealed under the connections key (ValueError when it is not base64 of 32 bytes), and
     Sure, the code hosts and OAuth reached with them. Returns the closers of their HTTP clients."""
-    sealer = Sealer({SEAL_VERSION: key_from(settings.connections_key)})
+    sealer = sealer_of(settings.connections_key, settings.connections_key_opens)
     stored = PostgresConnections(services.get(Database), sealer)
     services.register(Connections, stored)
     services.register(OAuthConnections, PostgresOAuthConnections(stored, services.get(Database), sealer))
