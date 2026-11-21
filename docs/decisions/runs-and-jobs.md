@@ -354,8 +354,14 @@ and has no `ends_at`, so it never finishes.
   `app/tests/errand_checks/test_standing_errands_run.py`: a round follows the seeded method, is offered only its named
   tool, tells what it found and stays quiet when there is nothing new, its next round carries the method, a method
   that cannot be read says to carry out nothing, and a round killed on one pod is finished on another with its method.
-- **Not built yet:** a standing errand woken by a house wake or a watch instead of its rule; a person setting one
-  from the web app.
+- **A house wake can carry the method.** A wake rule's optional `method` (`ashley.workshop.wake_rule`, the same slug
+  shape) makes the wake's turn a round of a standing errand: `Inbound.method` loads the skill as above, the turn is
+  not `promised`, and a finding kept quiet is held. It is the wake path extended by one field: one event id is one
+  wake, taken by the `wakes` singleton under `Lease`, and the wake's id is the turn's `source`, so a round runs once
+  across both sites and is resumed by whichever pod holds it. A rule with a method names no speaker or device and does
+  not greet, since findings go to the phone. Rejected: a link from a reminder to an event (a second event path beside
+  the wake rules and the deposit-armed reminders).
+- **Not built yet:** a standing errand woken by a watch (a watch's `method`); a person setting one from the web app.
 - **Rejected: a bot store** (Rakazo's agents, each with its own inbox and schedule). It would be a second scheduler and
   a second kind of method beside the `wakes` queue and Skills, which already hold both halves.
 - **Rejected: bots messaging each other** (Rakazo's `message_bot`, with a hop counter against loops), until two
