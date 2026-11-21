@@ -20,7 +20,7 @@ from money_support import BASE, KEY, FakeSure
 from test_connections_routes import APP_KEY, ORIGIN, PUBLIC, Homes, as_, homes as homes, listed, sure as sure
 
 ADDRESS = f"https://bench.test:7843#sha256={'0' * 64}"
-ABOUT = "Alex's personal workstation, in the office near the workbench"
+ABOUT = "The personal workstation, in the office near the workbench"
 
 
 @dataclass

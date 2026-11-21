@@ -1,4 +1,4 @@
-"""What a person writes about the thing a connection reaches: a herdr connection's machine ("Alex's workstation, in the
+"""What a person writes about the thing a connection reaches: a herdr connection's machine ("The workstation, in the
 office near the workbench"). Empty for one never described."""
 
 from alembic import op
