@@ -10,10 +10,13 @@ Every change names an *operation key* (`perform:<action>`, `write:config:<kind>`
 irreversible is data (`irreversible.json`, `irreversible.is_irreversible`), and the adapter does not decide it."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
+
+from ..cameras.model import Candidate, LiveConfig, LiveSignal
 
 RecordKind = Literal["device", "entity", "area", "floor", "label", "integration"]
 """device: name, area, manufacturer, model, version, integration, disabled. entity: name, domain, device, area,
@@ -165,6 +168,22 @@ class House(ABC):
     async def snapshot(self, camera: str) -> Snapshot | None:
         """The still the camera `camera` (an entity id) gives now; None when it gives none on demand (a camera that
         only streams, or is off). Asks the house for the camera's stream types, then the proxy once. Raises HouseUnavailable."""
+
+    async def live_config(self, camera: str) -> LiveConfig:
+        """What a browser needs to open a live feed of the camera `camera`. Raises HouseRejected when it has no WebRTC
+        feed, HouseUnavailable."""
+        raise HouseUnavailable("no live feed")
+
+    def live_feed(self, camera: str, offer: str) -> AbstractAsyncContextManager[AsyncIterator[LiveSignal]]:
+        """Pass the browser's `offer` (SDP) to the camera and yield what the house sends back (session, answer,
+        candidates, a refusal) for as long as the context is open: the house ends the feed when it closes. Raises
+        HouseRejected when the camera has no WebRTC feed, HouseUnavailable, both on entering."""
+        raise HouseUnavailable("no live feed")
+
+    async def live_candidate(self, camera: str, session_id: str, candidate: Candidate) -> None:
+        """Hand the browser's `candidate` for the feed `session_id` to the house. Raises HouseRejected when the camera
+        has no WebRTC feed, HouseUnavailable."""
+        raise HouseUnavailable("no live feed")
 
     @abstractmethod
     async def history(self, window: Window) -> tuple[Series, ...]:

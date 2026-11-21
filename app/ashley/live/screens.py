@@ -12,6 +12,7 @@ screens learn what changed through Live")."""
 
 from abc import abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Literal
 
 from ..services import Service
@@ -33,6 +34,14 @@ class OpenScreen:
     @property
     def kind(self) -> Literal["web", "kiosk"]:
         return "web" if self.person_id is not None else "kiosk"
+
+
+@dataclass(frozen=True)
+class ScreenFeed:
+    """The camera, by its id, whose live feed a screen shows until `until`."""
+
+    camera_id: str
+    until: datetime
 
 
 class Screens(Service):
@@ -64,6 +73,27 @@ class Screens(Service):
     async def open_screens(self, household_id: int, within_s: float) -> tuple[OpenScreen, ...]:
         """The household's screens open or refreshed in the last `within_s`, from any pod of either site. Raises
         ScreensUnavailable."""
+
+    async def show_feed(self, household_id: int, camera_id: str, until: datetime, people: tuple[int, ...],
+                        devices: tuple[int, ...], within_s: float) -> int:
+        """Put the feed of the camera `camera_id` on the household's screens of `people` and of `devices` that are open
+        (refreshed in the last `within_s`) and in the foreground, until `until`, replacing any feed they show; how many
+        screens it went to. Raises ScreensUnavailable."""
+        raise ScreensUnavailable("screens do not show feeds")
+
+    async def feed_of(self, token: str, now: datetime, person_id: int | None = None,
+                      device_id: int | None = None) -> ScreenFeed | None:
+        """The feed the screen that opened under `token`, of `person_id` or of the device `device_id`, shows at `now`;
+        None when it shows none, its time is up, or the token names none of theirs. Raises ScreensUnavailable."""
+        raise ScreensUnavailable("screens do not show feeds")
+
+    async def dismiss_feed(self, token: str, person_id: int | None = None, device_id: int | None = None) -> None:
+        """Take the feed off that one screen (as `feed_of` names it). Raises ScreensUnavailable."""
+        raise ScreensUnavailable("screens do not show feeds")
+
+    async def clear_feed(self, household_id: int) -> int:
+        """Take the feed off every screen of the household; how many showed one. Raises ScreensUnavailable."""
+        raise ScreensUnavailable("screens do not show feeds")
 
     @abstractmethod
     async def beat(self, screen_id: int) -> None:

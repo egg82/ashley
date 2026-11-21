@@ -1,11 +1,14 @@
 """An in-memory `House` for tests of her house tools: states, records, configs and actions held in dicts, every change
 noted in `done`, and `down` making every call raise HouseUnavailable. Nothing here is Home Assistant's own shape."""
 
-from collections.abc import Mapping
+import asyncio
+from collections.abc import AsyncGenerator, AsyncIterator, Mapping
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from ashley.cameras.model import Candidate, LiveConfig, LiveSignal
 from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, HouseRejected, HouseUnavailable,
                                          LogEntry, Performed, Reading, Record, RecordKind, Snapshot, Series, State, Window)
 
@@ -28,6 +31,13 @@ class MemoryHouse(House):
     reports: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     returns: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     stills: dict[str, Snapshot | None] = field(default_factory=dict[str, Snapshot | None])
+    live_script: list[LiveSignal] = field(default_factory=list[LiveSignal])
+    live_cfg: LiveConfig = LiveConfig((), None)
+    no_live: frozenset[str] = frozenset()
+    offers: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
+    candidates: list[tuple[str, str, Candidate]] = field(default_factory=list[tuple[str, str, Candidate]])
+    live_open: int = 0
+    live_closed: int = 0
     down: bool = False
     refuse: str | None = None
     done: list[tuple[str, str, str, tuple[str, ...], Mapping[str, Any]]] = field(
@@ -58,6 +68,39 @@ class MemoryHouse(House):
     async def snapshot(self, camera: str) -> Snapshot | None:
         self._up()
         return self.stills.get(camera)
+
+    async def live_config(self, camera: str) -> LiveConfig:
+        self._up()
+        if camera in self.no_live:
+            raise HouseRejected("no WebRTC")
+        return self.live_cfg
+
+    def live_feed(self, camera: str, offer: str) -> AbstractAsyncContextManager[AsyncIterator[LiveSignal]]:
+        return self._live_feed(camera, offer)
+
+    @asynccontextmanager
+    async def _live_feed(self, camera: str, offer: str) -> AsyncGenerator[AsyncIterator[LiveSignal]]:
+        self._up()
+        if camera in self.no_live:
+            raise HouseRejected("no WebRTC")
+        self.offers.append((camera, offer))
+        self.live_open += 1
+
+        async def signals() -> AsyncIterator[LiveSignal]:
+            for signal in self.live_script:
+                yield signal
+            await asyncio.Event().wait()
+
+        try:
+            yield signals()
+        finally:
+            self.live_closed += 1
+
+    async def live_candidate(self, camera: str, session_id: str, candidate: Candidate) -> None:
+        self._up()
+        if camera in self.no_live:
+            raise HouseRejected("no WebRTC")
+        self.candidates.append((camera, session_id, candidate))
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         self._up()

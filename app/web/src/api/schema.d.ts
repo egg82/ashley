@@ -1677,6 +1677,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/screens/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read
+         * @description 200 `ScreenFeedRead`, the feed this screen shows now (null when none); 401 `unauthorized`; 422 FastAPI's
+         *     validation error; 503 `unavailable`.
+         */
+        get: operations["screen_feed_read"];
+        put?: never;
+        post?: never;
+        /**
+         * Dismiss
+         * @description 204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
+         *     `unavailable`.
+         */
+        delete: operations["screen_feed_dismiss"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/screens/feed/offer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Offer
+         * @description 200 a stream of `FeedSignal` (an `error` signal ends one that failed); 401 `unauthorized`; 403 `forbidden`; 404
+         *     `not_found`; 422 FastAPI's validation error; 503 `unavailable`.
+         */
+        post: operations["screen_feed_offer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/screens/feed/candidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Candidate
+         * @description 204, the candidate handed to the camera's service; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422
+         *     FastAPI's validation error; 503 `unavailable`.
+         */
+        post: operations["screen_feed_candidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosk/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read
+         * @description 200 `ScreenFeedRead`, the feed this screen shows now (null when none); 401 `unauthorized`; 422 FastAPI's
+         *     validation error; 503 `unavailable`.
+         */
+        get: operations["kiosk_feed_read"];
+        put?: never;
+        post?: never;
+        /**
+         * Dismiss
+         * @description 204, the feed taken off this screen; 401 `unauthorized`; 403 `forbidden`; 422 FastAPI's validation error; 503
+         *     `unavailable`.
+         */
+        delete: operations["kiosk_feed_dismiss"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosk/feed/offer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Offer
+         * @description 200 a stream of `FeedSignal` (an `error` signal ends one that failed); 401 `unauthorized`; 403 `forbidden`; 404
+         *     `not_found`; 422 FastAPI's validation error; 503 `unavailable`.
+         */
+        post: operations["kiosk_feed_offer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosk/feed/candidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Candidate
+         * @description 204, the candidate handed to the camera's service; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422
+         *     FastAPI's validation error; 503 `unavailable`.
+         */
+        post: operations["kiosk_feed_candidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/spoken/limits": {
         parameters: {
             query?: never;
@@ -3186,6 +3322,118 @@ export interface components {
             place: string | null;
         };
         /**
+         * FeedAnswer
+         * @description The camera's answer (SDP), for `setRemoteDescription`.
+         */
+        FeedAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "answer";
+            /** Answer */
+            answer: string;
+        };
+        /**
+         * FeedCandidate
+         * @description One of the page's ICE candidates for the feed `session_id` (from the offer's `session` signal), as the browser's
+         *     `RTCIceCandidateInit` names its fields.
+         */
+        FeedCandidate: {
+            /**
+             * Screen
+             * Format: uuid
+             */
+            screen: string;
+            /** Session Id */
+            session_id: string;
+            /** Candidate */
+            candidate: string;
+            /** Sdp Mid */
+            sdp_mid?: string | null;
+            /** Sdp M Line Index */
+            sdp_m_line_index?: number | null;
+            /** Username Fragment */
+            username_fragment?: string | null;
+        };
+        /**
+         * FeedError
+         * @description The feed could not be set up or has ended, `code` the service's own short reason or `unavailable`: the page says the
+         *     camera did not answer.
+         */
+        FeedError: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "error";
+            /** Code */
+            code: string;
+        };
+        /**
+         * FeedIceServer
+         * @description A server the page's `RTCPeerConnection` may use, as its `iceServers` entry.
+         */
+        FeedIceServer: {
+            /** Urls */
+            urls: string[];
+            /** Username */
+            username: string | null;
+            /** Credential */
+            credential: string | null;
+        };
+        /**
+         * FeedOffer
+         * @description The page's WebRTC offer for the feed it shows: `screen` is the token it opened its live feed under, `offer` its SDP.
+         */
+        FeedOffer: {
+            /**
+             * Screen
+             * Format: uuid
+             */
+            screen: string;
+            /** Offer */
+            offer: string;
+        };
+        /**
+         * FeedRemoteCandidate
+         * @description A candidate from the camera's side, for `addIceCandidate` (a page that has neither `sdp_mid` nor
+         *     `sdp_m_line_index` uses mid `0`).
+         */
+        FeedRemoteCandidate: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "candidate";
+            /** Candidate */
+            candidate: string;
+            /** Sdp Mid */
+            sdp_mid: string | null;
+            /** Sdp M Line Index */
+            sdp_m_line_index: number | null;
+            /** Username Fragment */
+            username_fragment: string | null;
+        };
+        /**
+         * FeedSession
+         * @description The camera's service took the offer: the page's later candidates name `session_id`.
+         */
+        FeedSession: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "session";
+            /** Session Id */
+            session_id: string;
+        };
+        /**
+         * FeedSignal
+         * @description One `data:` line of the offer's stream, told apart by `type`.
+         */
+        FeedSignal: components["schemas"]["FeedSession"] | components["schemas"]["FeedAnswer"] | components["schemas"]["FeedRemoteCandidate"] | components["schemas"]["FeedError"];
+        /**
          * ForgetResponse
          * @description How many facts were deleted: the one forgotten and every earlier version it replaced. None of them is kept.
          */
@@ -3792,7 +4040,7 @@ export interface components {
          * LiveEvent
          * @description One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`.
          */
-        LiveEvent: components["schemas"]["LiveState"] | components["schemas"]["LiveTurn"] | components["schemas"]["LiveFailed"] | components["schemas"]["LiveBench"] | components["schemas"]["LiveCue"] | components["schemas"]["LivePage"] | components["schemas"]["LiveScreen"] | components["schemas"]["LiveAnnounce"] | components["schemas"]["LiveResync"];
+        LiveEvent: components["schemas"]["LiveState"] | components["schemas"]["LiveTurn"] | components["schemas"]["LiveFailed"] | components["schemas"]["LiveBench"] | components["schemas"]["LiveCue"] | components["schemas"]["LivePage"] | components["schemas"]["LiveScreen"] | components["schemas"]["LiveAnnounce"] | components["schemas"]["LiveFeed"] | components["schemas"]["LiveResync"];
         /**
          * LiveFailed
          * @description A turn on `thread`, one of this person's own, ended with no reply after its request had returned pending (an
@@ -3814,6 +4062,18 @@ export interface components {
              * @enum {string}
              */
             why: "unavailable" | "refused" | "retrying" | "unfinished" | "too_big";
+        };
+        /**
+         * LiveFeed
+         * @description A camera's live feed was put on screens or taken off them: a screen reads back what it shows
+         *     (`GET /api/screens/feed`, the kiosk's `GET /api/kiosk/feed`).
+         */
+        LiveFeed: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "feed";
         };
         /**
          * LivePage
@@ -5456,6 +5716,29 @@ export interface components {
             base_version: number;
             /** Run Language */
             run_language: string;
+        };
+        /**
+         * ScreenFeed
+         * @description The feed this screen shows: the camera's `camera_title`, the seconds it stays (`remaining_s`, after which the page
+         *     takes it down), and what the page's connection needs (`ice_servers`, and `data_channel`, the channel its offer
+         *     carries when it is not null). An empty `ice_servers` means the service gave none.
+         */
+        ScreenFeed: {
+            /** Camera Title */
+            camera_title: string;
+            /** Remaining S */
+            remaining_s: number;
+            /** Ice Servers */
+            ice_servers: components["schemas"]["FeedIceServer"][];
+            /** Data Channel */
+            data_channel: string | null;
+        };
+        /**
+         * ScreenFeedRead
+         * @description `feed` is null when this screen shows none.
+         */
+        ScreenFeedRead: {
+            feed: components["schemas"]["ScreenFeed"] | null;
         };
         /**
          * ScreenVisibility
@@ -11120,6 +11403,472 @@ export interface operations {
                 };
             };
             /** @description `unavailable`: a system it needs could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    screen_feed_read: {
+        parameters: {
+            query: {
+                screen: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenFeedRead"];
+                };
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    screen_feed_dismiss: {
+        parameters: {
+            query: {
+                screen: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    screen_feed_offer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedOffer"];
+            };
+        };
+        responses: {
+            /** @description A stream of `FeedSignal`, one per `data:` line */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["FeedSignal"];
+                };
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: this screen shows no feed, or its camera is no longer one she may show or gives no live video */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    screen_feed_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedCandidate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: this screen shows no feed, or its camera is no longer one she may show or gives no live video */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kiosk_feed_read: {
+        parameters: {
+            query: {
+                screen: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenFeedRead"];
+                };
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kiosk_feed_dismiss: {
+        parameters: {
+            query: {
+                screen: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kiosk_feed_offer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedOffer"];
+            };
+        };
+        responses: {
+            /** @description A stream of `FeedSignal`, one per `data:` line */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["FeedSignal"];
+                };
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: this screen shows no feed, or its camera is no longer one she may show or gives no live video */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kiosk_feed_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedCandidate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unauthorized`: no live session, or not a paired device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: this screen shows no feed, or its camera is no longer one she may show or gives no live video */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: a `screen` that is not a UUID, or a body outside its model */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: the open screens, or the camera's service, cannot be reached */
             503: {
                 headers: {
                     [name: string]: unknown;

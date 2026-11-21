@@ -5,14 +5,16 @@ hides the others, nor reads as having no camera."""
 
 import logging
 import time
-from collections.abc import Mapping
+from collections.abc import AsyncGenerator, AsyncIterator, Mapping
+from contextlib import asynccontextmanager
 
 from .. import logs, services
 from ..connections import ports
 from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.model import Opened
 from .cameras import Cameras
-from .model import Camera, CamerasFailed, CamerasUnavailable, NoStill, NoSuchCamera, NotConnected, Roster, Still
+from .model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, LiveConfig, LiveSignal, NoLiveFeed, NoStill,
+                    NoSuchCamera, NotConnected, Roster, Still)
 from .source import CameraSource
 
 log = logging.getLogger("ashley.cameras")
@@ -76,3 +78,46 @@ class RoutedCameras(Cameras):
         if failed is not None:
             raise failed
         raise NoSuchCamera
+
+    async def _held(self, household_id: int, camera_id: str) -> tuple[Opened, Camera]:
+        """The serving connection that holds the camera, and the camera as it lists it. Raises NoSuchCamera, NotConnected,
+        CamerasUnavailable, CamerasFailed (when no connection held it and one failed)."""
+        serving = await self._serving(household_id)
+        if not serving:
+            raise NotConnected
+        failed: CamerasFailed | None = None
+        for opened in serving:
+            try:
+                held = next((c for c in await self._adapters[opened.connection.kind].cameras(opened) if c.id == camera_id),
+                            None)
+            except CamerasFailed as e:
+                failed = e
+                continue
+            if held is not None:
+                return opened, held
+        if failed is not None:
+            raise failed
+        raise NoSuchCamera
+
+    async def live_config(self, household_id: int, camera_id: str) -> LiveConfig:
+        opened, camera = await self._held(household_id, camera_id)
+        return await self._adapters[opened.connection.kind].live_config(opened, camera)
+
+    @asynccontextmanager
+    async def live(self, household_id: int, camera_id: str, offer: str) -> AsyncGenerator[AsyncIterator[LiveSignal]]:
+        began = time.monotonic()
+        opened, camera = await self._held(household_id, camera_id)
+        kind = opened.connection.kind
+        outcome = "ok"
+        try:
+            async with self._adapters[kind].live(opened, camera, offer) as signals:
+                yield signals
+        except (CamerasFailed, NoLiveFeed) as e:
+            outcome = e.reason if isinstance(e, CamerasFailed) else "no_live_feed"
+            raise
+        finally:
+            logs.info(log, "camera.live", source=kind, outcome=outcome, duration_ms=int((time.monotonic() - began) * 1000))
+
+    async def live_candidate(self, household_id: int, camera_id: str, session_id: str, candidate: Candidate) -> None:
+        opened, camera = await self._held(household_id, camera_id)
+        await self._adapters[opened.connection.kind].live_candidate(opened, camera, session_id, candidate)

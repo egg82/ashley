@@ -33,6 +33,67 @@ class Still:
 
 
 @dataclass(frozen=True)
+class IceServer:
+    """One server a browser may use to reach a camera: its `urls`, and the `username` and `credential` it asks for, if any.
+    The credential is never logged."""
+
+    urls: tuple[str, ...]
+    username: str | None
+    credential: str | None
+
+
+@dataclass(frozen=True)
+class LiveConfig:
+    """What a browser needs to open a live feed of a camera: the `ice_servers` to reach it through, and the name of the
+    data channel its offer must carry (None when none)."""
+
+    ice_servers: tuple[IceServer, ...]
+    data_channel: str | None
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """One ICE candidate, as a browser makes and takes it. It holds addresses, so it is never logged."""
+
+    candidate: str
+    sdp_mid: str | None
+    sdp_m_line_index: int | None
+    username_fragment: str | None = None
+
+
+@dataclass(frozen=True)
+class LiveSession:
+    """The service has taken the offer: later candidates for it name `session_id`."""
+
+    session_id: str
+
+
+@dataclass(frozen=True)
+class LiveAnswer:
+    """The camera's answer to the offer, as SDP, which holds addresses and is never logged."""
+
+    sdp: str
+
+
+@dataclass(frozen=True)
+class LiveCandidate:
+    """A candidate the camera's side offers the browser."""
+
+    candidate: Candidate
+
+
+@dataclass(frozen=True)
+class LiveRefused:
+    """The service could not set the feed up; `code` is its own short reason."""
+
+    code: str
+
+
+LiveSignal = LiveSession | LiveAnswer | LiveCandidate | LiveRefused
+"""What comes back while a feed is being set up, in the order the service sends it."""
+
+
+@dataclass(frozen=True)
 class Roster:
     """The cameras she may look through and the `unread` sources (connection kinds) that could not be read now, whose
     cameras are missing."""
@@ -61,3 +122,7 @@ class NoSuchCamera(Exception):
 
 class NoStill(Exception):
     """The camera gives no still on demand now."""
+
+
+class NoLiveFeed(Exception):
+    """The camera gives no live feed in the way asked (the service has none for it, or not this way)."""

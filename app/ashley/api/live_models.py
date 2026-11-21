@@ -90,6 +90,13 @@ class LiveAnnounce(BaseModel):
     clip: str
 
 
+class LiveFeed(BaseModel):
+    """A camera's live feed was put on screens or taken off them: a screen reads back what it shows
+    (`GET /api/screens/feed`, the kiosk's `GET /api/kiosk/feed`)."""
+
+    type: Literal["feed"]
+
+
 class LiveResync(BaseModel):
     """Something may have been missed (the feed reconnected, or this stream fell behind): read back what is shown, and
     forget the turns heard so far."""
@@ -97,7 +104,7 @@ class LiveResync(BaseModel):
     type: Literal["resync"]
 
 
-class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LivePage | LiveScreen | LiveAnnounce | LiveResync, Field(discriminator="type")]]):
+class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LivePage | LiveScreen | LiveAnnounce | LiveFeed | LiveResync, Field(discriminator="type")]]):
     """One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`."""
 
 
