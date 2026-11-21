@@ -39,10 +39,12 @@ def test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state(
                 b = EtcdLease(etcd_url(), here(), ttl=2, holder="b")
                 tasks = {"a": await stack.enter_async_context(campaign(a, name, body)),
                          "b": await stack.enter_async_context(campaign(b, name, body))}
-                await wait_until(lambda: holder_of(name) is not None)
+                await wait_until(lambda: holder_of(name) is not None, what="a site to take the lease",
+                                 seen=lambda: holder_of(name))
                 w.bridge.state("blocked", 1002)
                 await w.due_now()
-                await wait_until(lambda: len(told(db_url)) == 1)
+                await wait_until(lambda: len(told(db_url)) == 1, what="the first change to be told",
+                                 seen=lambda: told(db_url))
                 await w.settle()
                 asked = w.bridge.asked
                 await asyncio.sleep(0.5)
@@ -52,7 +54,8 @@ def test_of_two_sites_one_checks_and_the_other_takes_over_from_the_stored_state(
                 tasks[holder].cancel()   # the site holding the lease is lost
                 w.bridge.state("done", 1003)
                 await w.due_now()
-                await wait_until(lambda: len(told(db_url)) == 2)
+                await wait_until(lambda: len(told(db_url)) == 2, what="the second change to be told after the takeover",
+                                 seen=lambda: told(db_url))
                 await asyncio.sleep(0.3)
             assert [s for _, s in told(db_url)] == ["blocked", "done"] and holder is not None
     run(go())

@@ -7,6 +7,7 @@ import re
 import uuid
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
+from pathlib import Path
 from typing import Any
 
 import httpx2
@@ -131,13 +132,24 @@ async def campaign(lease: Any, name: str, body: Body) -> AsyncGenerator[asyncio.
             await task
 
 
-async def wait_until(predicate: Callable[[], object], timeout: float = 8.0) -> None:
-    """Poll until `predicate` holds, failing after `timeout` seconds of the loop's clock."""
+def _where(predicate: Callable[[], object]) -> str:
+    code = getattr(predicate, "__code__", None)
+    return "a predicate" if code is None else f"{Path(code.co_filename).name}:{code.co_firstlineno}"
+
+
+async def wait_until(predicate: Callable[[], object], timeout: float = 8.0, *, what: str | None = None,
+                     seen: Callable[[], object] | None = None) -> None:
+    """Poll until `predicate` holds, failing after `timeout` seconds of the loop's clock. The failure names `what`
+    (the predicate's file and line when not given) and the last value `seen()` returned, or the predicate's own."""
     loop = asyncio.get_running_loop()
     deadline = loop.time() + timeout
-    while not predicate():
-        assert loop.time() < deadline, "timed out waiting"
+    got = predicate()
+    while not got:
+        if loop.time() >= deadline:
+            label = what or _where(predicate)
+            raise AssertionError(f"timed out after {timeout}s waiting for {label}; last seen {(seen or (lambda: got))()!r}")
         await asyncio.sleep(0.02)
+        got = predicate()
 
 
 def run(scenario: Awaitable[None], limit: float = 25.0) -> None:
