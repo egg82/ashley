@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, House, HouseRejected, HouseUnavailable,
-                                         LogEntry, Performed, Reading, Record, RecordKind, Snapshot, Series, State, Window)
+from ashley.home_assistant.house import (ActionInfo, ConfigItem, ConfigKind, Event, House, HouseRejected, HouseUnavailable,
+                                         LogEntry, Performed, Preview, Reading, Record, RecordKind, Snapshot, Series, State, Window)
 
 NOW = datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
 
@@ -28,6 +28,8 @@ class MemoryHouse(House):
     reports: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     returns: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     stills: dict[str, Snapshot | None] = field(default_factory=dict[str, Snapshot | None])
+    captured: dict[str, list[Event]] = field(default_factory=dict[str, list[Event]])
+    previews: dict[tuple[str, str], Snapshot] = field(default_factory=dict[tuple[str, str], Snapshot])
     down: bool = False
     refuse: str | None = None
     done: list[tuple[str, str, str, tuple[str, ...], Mapping[str, Any]]] = field(
@@ -58,6 +60,16 @@ class MemoryHouse(House):
     async def snapshot(self, camera: str) -> Snapshot | None:
         self._up()
         return self.stills.get(camera)
+
+    async def events(self, camera: str) -> tuple[Event, ...]:
+        self._up()
+        return tuple(self.captured.get(camera, ()))
+
+    async def event_picture(self, camera: str, event_id: str) -> Preview | None:
+        self._up()
+        found = next((e for e in self.captured.get(camera, ()) if e.id == event_id), None)
+        shown = self.previews.get((camera, event_id))
+        return None if found is None or shown is None else Preview(found.title, shown)
 
     async def history(self, window: Window) -> tuple[Series, ...]:
         self._up()

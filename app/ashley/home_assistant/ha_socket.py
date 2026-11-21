@@ -12,7 +12,7 @@ from .house import HouseRejected, HouseUnavailable
 from .house_settings import HouseSettings
 
 _REJECTIONS = frozenset({"invalid_format", "not_found", "home_assistant_error", "service_validation_error",
-                         "unknown_error", "invalid_info", "failed"})
+                         "unknown_error", "invalid_info", "failed", "browse_media_failed"})
 
 
 def socket_url(client: httpx2.AsyncClient) -> str:

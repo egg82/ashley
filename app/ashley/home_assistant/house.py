@@ -78,6 +78,23 @@ class Snapshot:
 
 
 @dataclass(frozen=True)
+class Event:
+    """One thing a camera's own detector captured, as the house lists it: its `id` and its `title`, the label exactly as
+    the house writes it. Never logged."""
+
+    id: str
+    title: str
+
+
+@dataclass(frozen=True)
+class Preview:
+    """An event's `title` and its preview `picture`, as the house gave it (it may be animated). Never logged."""
+
+    title: str
+    picture: Snapshot
+
+
+@dataclass(frozen=True)
 class Record:
     kind: RecordKind
     id: str
@@ -167,6 +184,16 @@ class House(ABC):
         only streams, or is off). Asks the house for the camera's stream types, then the proxy once. Raises HouseUnavailable."""
 
     @abstractmethod
+    async def events(self, camera: str) -> tuple[Event, ...]:
+        """What the camera `camera` (an entity id) has captured, in the order the house lists it (newest first); empty
+        when the house keeps none for it (a camera of a platform with no media source). Raises HouseUnavailable."""
+
+    @abstractmethod
+    async def event_picture(self, camera: str, event_id: str) -> Preview | None:
+        """The preview of the event `event_id` among those `events` lists for `camera`, as the house gives it
+        with its title; None when `camera` has no such event or it has no preview. Raises HouseUnavailable."""
+
+    @abstractmethod
     async def history(self, window: Window) -> tuple[Series, ...]:
         """The readings of each of `window.ids` between its start and end. Raises HouseUnavailable."""
 
@@ -240,6 +267,12 @@ class NullHouse(House):
         raise HouseUnavailable("no house")
 
     async def snapshot(self, camera: str) -> Snapshot | None:
+        raise HouseUnavailable("no house")
+
+    async def events(self, camera: str) -> tuple[Event, ...]:
+        raise HouseUnavailable("no house")
+
+    async def event_picture(self, camera: str, event_id: str) -> Preview | None:
         raise HouseUnavailable("no house")
 
     async def history(self, window: Window) -> tuple[Series, ...]:
