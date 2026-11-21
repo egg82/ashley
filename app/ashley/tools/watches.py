@@ -26,8 +26,8 @@ from ..watches.registry import KINDS
 from ..watches.tool_target import target_of
 from ..watches.tool_watch import NAME as TOOL
 from ..watches.watches import Watches, WatchesUnavailable
-from . import (bench_results, reminder_shape as shape, tainted, watch_agreed, watch_conditions, watch_read, watch_sort,
-               watch_specs as specs)
+from . import (bench_results, reminder_shape as shape, standing_method, tainted, watch_agreed, watch_conditions,
+               watch_read, watch_sort, watch_specs as specs)
 from .bench_args import BadArguments, check_names
 from .tools import Catalogue, Tools, ToolsUnavailable
 
@@ -96,8 +96,10 @@ class WatchTools(Tools):
         hours = _hours(kind, args.get("hours"))
         usable = await self._usable_specs()
         tools = shape.tools_of(args.get("tools"), usable)
+        method = await standing_method.named(self._household_id, args.get("method"))
         ask = Ask(self._household_id, self._speaker_id, self._bench_id, kind, target, until, tools, hours,
-                  watch_sort.brief(args), watch_sort.standing(args), tainted.current(), tainted.made_in(), track, when)
+                  watch_sort.brief(args), watch_sort.standing(args), tainted.current(), tainted.made_in(), track, when,
+                  method)
         if shape.acts(tools, usable):
             return await self._proposed(call, started, ask, tools or ())
         return await watch_agreed.arm(call, started, ask)
@@ -113,7 +115,7 @@ class WatchTools(Tools):
         reminder = Reminder(ask.household_id, ask.person_id, self._speaker_id, seen.label, now, None, tools=tools,
                             taint=ask.taint, made_in=ask.made_in)
         schedule = WatchSchedule(reminder, ask.kind, ask.target, ask.until, ask.hours, ask.bench_id, ask.brief,
-                                 ask.standing, ask.when)
+                                 ask.standing, ask.when, ask.method)
         try:
             await services.get(Proposals).propose(
                 Proposal(ask.household_id, self._speaker_id, *self._turn, now, schedule), DEPOSITS.proposal_ttl_s)
@@ -187,6 +189,8 @@ def _shown(w: Watch, zone: ZoneInfo) -> dict[str, object]:
         shown["standing"] = True
     if w.brief is not None:
         shown["brief"] = w.brief
+    if w.method is not None:
+        shown["method"] = w.method
     if w.state == "paused":
         shown["paused"] = w.reason
     return shown

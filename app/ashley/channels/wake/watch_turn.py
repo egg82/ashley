@@ -9,6 +9,8 @@ on the source's screen; what she is to do reaches her only as the turn's `note`:
 this is and since when, and whether the watch has now ended. Its tools follow `Reminder.tools`: none named offers only
 the ones that change nothing, named ones only those; a watch a hand-off armed keeps the tools of the thread she is on. The turn is tainted `watch` when its kind reads outside
 text, and `inherited` when a tainted turn armed the watch (`Watch.taint`).
+A watch with a `method` makes the turn a round of a standing errand (`Inbound.method`, `Watch.method`): its skill loads
+beside the turn's tools, and a finding `Initiative` keeps quiet is held for her next reply (`channels.storing.held`).
 The wake's id is the turn's `source`, so a wake handed in twice is one turn.
 
 Logs `watch_wake.done` with the watch id, what the wake told, whether it ran on a bench, and duration_ms;
@@ -69,7 +71,7 @@ def inbound(wake_id: int, watch: Watch, wake: WatchWake, on_bench: bool, detail:
                            source=f"wake:{wake_id}", unprompted=True, author="household", note=note(watch, wake, detail),
                            tools_only=None if watch.armed_by == "handoff" else watch.tools,
                            reads_only=watch.armed_by != "handoff" and watch.tools is None,
-                           taint=_taint(watch), made_in=watch.made_in, quiet=quiet and not on_bench)
+                           taint=_taint(watch), made_in=watch.made_in, quiet=quiet and not on_bench, method=watch.method)
     if not on_bench or watch.bench_id is None:
         return phone_thread
     return replace(phone_thread, thread=thread_of(watch.bench_id), kind="brainstorm", channel="web", remembers=True,

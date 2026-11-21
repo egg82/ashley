@@ -141,8 +141,9 @@ class Inbound:
     the wake id of the errand occurrence this turn is a check of, set only by the reminder turn
     (`channels.wake.reminder_turn`): it offers her `check_again` (`ashley.tools.errand_step`) whatever else narrows the
     turn's tools; None on every other turn. `method` is the household's skill kind a standing errand's turn follows,
-    set only by the reminder turn (`ashley.senses.wakes.Reminder.method`) and a wake rule's (`WakeRule.method`): its skill loads beside the turn's tools'
-    instructions (`ashley.tools.standing_method`), never narrowed; None on every other turn.
+    set only by the reminder turn (`ashley.senses.wakes.Reminder.method`), a wake rule's (`WakeRule.method`) and a
+    watch's (`Watch.method`): its skill loads beside the turn's tools' instructions (`ashley.tools.standing_method`),
+    never narrowed; None on every other turn.
     `discord_channel` is the id of the server channel the message came from, set only by the Discord adapter on a server
     message (never a DM), and offers her a read of that channel (`tools.discord_read`). `remark` is the facts of a
     remark nobody asked for that `Initiative` allowed before the turn (`channels.discord.remark`), set with

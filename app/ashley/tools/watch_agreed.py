@@ -78,7 +78,8 @@ async def arm_agreed(call: ToolCall, started: float, schedule: WatchSchedule) ->
     r = schedule.reminder
     track = parse_target(schedule.target).track if schedule.kind == TOOL else None
     ask = Ask(r.household_id, r.person_id, schedule.bench_id, schedule.kind, schedule.target, schedule.until, r.tools,
-              schedule.hours, schedule.brief, schedule.standing, r.taint, r.made_in, track, schedule.when)
+              schedule.hours, schedule.brief, schedule.standing, r.taint, r.made_in, track, schedule.when,
+              schedule.method)
     return await arm(call, started, ask)
 
 

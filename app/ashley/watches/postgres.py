@@ -53,13 +53,13 @@ WHERE id = %s AND version = %s AND state IN ('armed', 'paused') FOR UPDATE"""
 _INSERT = """
 INSERT INTO watches (household_id, person_id, kind, target, label, bench_id, armed_by, track, when_clauses,
                      until_clauses, tools, interval_s, expires_at, baseline, brief, standing_s, taint, made_conversation_id,
-                     made_turn_id)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id"""
+                     made_turn_id, method)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id"""
 
 _UPDATE = """
 UPDATE watches SET when_clauses = %s, until_clauses = %s, tools = %s, interval_s = %s, expires_at = %s,
     brief = %s, standing_s = %s, taint = COALESCE(%s, taint), made_conversation_id = COALESCE(%s, made_conversation_id),
-    made_turn_id = COALESCE(%s, made_turn_id), bench_id = %s, armed_by = CASE WHEN armed_by = 'handoff' OR %s = 'handoff' THEN 'handoff' ELSE 'ashley' END
+    made_turn_id = COALESCE(%s, made_turn_id), method = %s, bench_id = %s, armed_by = CASE WHEN armed_by = 'handoff' OR %s = 'handoff' THEN 'handoff' ELSE 'ashley' END
 WHERE id = %s"""
 
 _EXPIRE = """
@@ -102,7 +102,7 @@ class PostgresWatches(Watches):
         found = await cur.fetchone()
         if found is not None:
             await conn.execute(_UPDATE, (Jsonb(condition.to_json(arm.when)), until, tools, arm.interval_s,
-                                         arm.expires_at, arm.brief, standing_s, arm.taint, *made, arm.bench_id,
+                                         arm.expires_at, arm.brief, standing_s, arm.taint, *made, arm.method, arm.bench_id,
                                          arm.armed_by, found[0]))
             return Armed(int(found[0]), False)
         cur = await conn.execute("SELECT count(*) FROM watches WHERE person_id = %s AND state <> 'ended'",
@@ -112,7 +112,7 @@ class PostgresWatches(Watches):
         cur = await conn.execute(_INSERT, (
             arm.household_id, arm.person_id, arm.kind, arm.target, arm.label, arm.bench_id, arm.armed_by,
             list(arm.track), Jsonb(condition.to_json(arm.when)), until, tools, arm.interval_s, arm.expires_at,
-            None if arm.baseline is None else Jsonb(arm.baseline), arm.brief, standing_s, arm.taint, *made))
+            None if arm.baseline is None else Jsonb(arm.baseline), arm.brief, standing_s, arm.taint, *made, arm.method))
         made = await cur.fetchone()
         if made is None:
             raise WatchesUnavailable("the watch was not stored")
