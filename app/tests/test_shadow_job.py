@@ -2,28 +2,33 @@
 is given: it holds the event types for the households with a run and lets go of the rest; each `ashley_shadow` event
 is a would-have-fired of the run it names and each `automation_triggered` of the automation a run mirrors a did-fire,
 told twice counting once; a run keeps its newest firings only, and firings past the retention limit go; a run whose
-end has come is undone as its person and the shadow leaves the house; an end that cannot be carried out still ends
-the run; a house out of reach is counted and the rest of the pass still runs."""
+end has come is undone as its person and the shadow leaves the house; one the bench cannot undo (closed, or past the
+undo window) is deleted by its own id, retried each pass while the delete fails and ended once HA has none; only a
+shadow's id is ever deleted; a house out of reach is counted and the rest of the pass still runs."""
 
+import asyncio
+import logging
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import pytest
 from ashley import services
+from ashley.logs import Logfmt
 from ashley.home_assistant.held_states import EntityState, HeldStates, HouseEvent, Recorder
 from ashley.home_assistant.house import HouseUnavailable
 from ashley.workshop import shadow, shadow_job
-from ashley.workshop.commands import Undo
+from ashley.workshop.commands import Edit, Undo
 from ashley.workshop.install_piece import carry_out
-from ashley.workshop.model import Owner
+from ashley.workshop.model import By, Owner, Text
 from ashley.workshop.shadows import Shadows
 from ashley.workshop.workshop import Workshop
 from automations_support import FakeHouse
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import household, person, run
-from install_support import world
+from install_support import RULES, body, world
 from test_shadow_install import shadowed
 
 SETTINGS = shadow.Settings(duration_s=3600, keep_s=1000, max_events=3, shown=2, tick_s=1)
@@ -191,7 +196,51 @@ def test_a_run_whose_end_has_come_is_undone_as_its_person_and_leaves_the_house(d
     run(scenario())
 
 
-def test_an_end_the_bench_refuses_still_ends_the_run_and_leaves_the_shadow_in_the_house(db_url: str) -> None:
+def test_a_shadow_on_a_closed_bench_is_deleted_directly_and_its_run_ends(db_url: str) -> None:
+    alana = owner(db_url)
+    house = FakeHouse()
+    old = house.add("7e9f", "Alana is home")
+
+    async def scenario() -> None:
+        async with world(db_url, house, SETTINGS):
+            services.register(HeldStates, FakeHeld())
+            try:
+                bench = await running(alana)
+                await services.get(Workshop).close(alana, bench)
+                counts = await tick(datetime.now(UTC) + timedelta(days=2))
+                assert counts["ended"] == 1 and counts["retry"] == 0
+                assert set(house.configs) == {"7e9f"} and old in house.enabled
+                assert (await services.get(Shadows).of_bench(alana.household_id, bench))[1].ended_at is not None
+            finally:
+                services.unregister(HeldStates)
+    run(scenario())
+
+
+def test_a_shadow_past_the_undo_window_is_deleted_directly_and_its_run_ends(db_url: str) -> None:
+    alana = owner(db_url)
+    house = FakeHouse()
+
+    async def scenario() -> None:
+        async with world(db_url, house, SETTINGS, replace(RULES, undo_window=2)):
+            services.register(HeldStates, FakeHeld())
+            try:
+                bench = await running(alana)
+                shop = services.get(Workshop)
+                for n in range(3):
+                    await shop.apply(alana, bench, Edit(By(alana.person_id), 1, 1 + n, Text("porch", body(alias=f"v{n}"))))
+                assert (await shop.apply(alana, bench, Undo(By(alana.person_id), 3))).outcome == "nothing_to_undo"
+                assert len(house.configs) == 1
+                counts = await tick(datetime.now(UTC) + timedelta(days=2))
+                assert counts["ended"] == 1 and house.configs == {}
+                assert (await services.get(Shadows).of_bench(alana.household_id, bench))[1].ended_at is not None
+            finally:
+                services.unregister(HeldStates)
+    run(scenario())
+
+
+def test_a_delete_that_fails_is_logged_and_tried_again_on_the_next_pass_until_it_works(
+        db_url: str, caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO)
     alana = owner(db_url)
     house = FakeHouse()
 
@@ -201,12 +250,59 @@ def test_an_end_the_bench_refuses_still_ends_the_run_and_leaves_the_shadow_in_th
             try:
                 bench = await running(alana)
                 await services.get(Workshop).close(alana, bench)
-                counts = await tick(datetime.now(UTC) + timedelta(days=2))
-                assert counts["refused"] == 1 and counts["ended"] == 0 and len(house.configs) == 1
+                [ident] = house.configs
+                path = ("DELETE", "/api/config/automation/config/" + ident)
+                house.failing[path] = 500
+                later = datetime.now(UTC) + timedelta(days=2)
+                first = await tick(later)
+                assert first["retry"] == 1 and first["ended"] == 0 and ident in house.configs
+                assert (await services.get(Shadows).of_bench(alana.household_id, bench))[1].ended_at is None
+                del house.failing[path]
+                second = await tick(later)
+                assert second["ended"] == 1 and house.configs == {}
                 assert (await services.get(Shadows).of_bench(alana.household_id, bench))[1].ended_at is not None
+                assert (await tick(later))["ended"] == 0
             finally:
                 services.unregister(HeldStates)
     run(scenario())
+    [line] = [Logfmt().format(r) for r in caplog.records if r.name == "ashley.workshop" and "remove_failed" in r.getMessage()]
+    assert "bench=" in line and "seq=" in line and "automation" not in line and "shadow_bench" not in line
+
+
+def test_a_shadow_that_is_already_gone_ends_its_run(db_url: str) -> None:
+    alana = owner(db_url)
+    house = FakeHouse()
+
+    async def scenario() -> None:
+        async with world(db_url, house, SETTINGS):
+            services.register(HeldStates, FakeHeld())
+            try:
+                bench = await running(alana)
+                await services.get(Workshop).close(alana, bench)
+                house.configs.clear()
+                counts = await tick(datetime.now(UTC) + timedelta(days=2))
+                assert counts["ended"] == 1
+            finally:
+                services.unregister(HeldStates)
+    run(scenario())
+
+
+def test_only_a_shadows_id_is_ever_deleted_from_the_house() -> None:
+    house = FakeHouse()
+    real = house.add("ashley_bench_1_piece_1", "real")
+    other = house.add("7e9f", "other")
+    ours = house.add(shadow.id_for("ashley_bench_1_piece_1"), "shadow")
+
+    async def scenario() -> None:
+        for refused in ("ashley_bench_1_piece_1", "7e9f", "", "ashley_shadow", "x_ashley_shadow_bench_1_piece_1"):
+            with pytest.raises(ValueError):
+                await shadow_job.remove(house.house(), refused)
+        assert set(house.configs) == {"ashley_bench_1_piece_1", "7e9f", shadow.id_for("ashley_bench_1_piece_1")}
+        assert await shadow_job.remove(house.house(), shadow.id_for("ashley_bench_1_piece_1")) is True
+        assert await shadow_job.remove(house.house(), shadow.id_for("ashley_bench_1_piece_1")) is False
+        assert set(house.configs) == {"ashley_bench_1_piece_1", "7e9f"}
+        assert real in house.enabled and other in house.enabled and ours not in house.enabled
+    asyncio.run(scenario())
 
 
 def test_a_house_out_of_reach_is_counted_and_the_pass_still_ends_what_is_due(db_url: str) -> None:
