@@ -50,7 +50,7 @@ class PodLog:
         is deleted and the failure logged as for any other."""
         name = str(manifest["metadata"]["name"])
         started = self._clock()
-        await self._sweep(deadline_s)
+        await self.sweep(deadline_s)
         try:
             await self._api.create_pod(self._namespace, manifest)
             await self._ended(name, started, deadline_s)
@@ -94,7 +94,8 @@ class PodLog:
         except KubeError as e:
             logs.warning(self._log, f"{self._event}.pod_left", pod=name, error=str(e))
 
-    async def _sweep(self, deadline_s: int) -> None:
+    async def sweep(self, deadline_s: int) -> None:
+        """Delete the pods carrying this job's label that are past twice `deadline_s`."""
         try:
             pods = await self._api.pods(self._namespace, self._selector)
         except KubeError as e:
