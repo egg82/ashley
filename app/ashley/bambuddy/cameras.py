@@ -5,17 +5,22 @@ stream token minted first (`POST /api/v1/printers/camera/stream-token`); the tok
 logged. A printer's recordings are the timelapses of its print archives (`GET /api/v1/archives/?printer_id=`, those with a
 `timelapse_path`, newest first), and a recording's picture is the middle of three frames Bambuddy cuts from the video
 (`GET /api/v1/archives/:id/timelapse/thumbnails`), taken with no time stated. Bambuddy gives a printer camera no live
-feed this port can pass on (its stream is motion JPEG), so a live look is `NoLiveFeed`. Nothing here retries."""
+feed this port can pass on (its stream is motion JPEG), so a live look is `NoLiveFeed`. A printer's detector is its print
+failing: an archive whose `status` is `failed` (Bambuddy's own word, which is the detection's class), at its `completed_at`.
+Each `follow` pass, which the detection singleton makes every `tick_s`, reads the listed printers' archives and tells the
+failures that ended within the last few passes; the Detections record keeps one told twice from acting twice. Nothing here
+retries."""
 
 import base64
 import binascii
 import logging
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from .. import logs, services
-from ..cameras.model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, LiveConfig, LiveSignal, NoLiveFeed,
+from ..cameras.detection_settings import load
+from ..cameras.model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, Detection, DetectionRecorder, LiveConfig, LiveSignal, NoLiveFeed,
                              NotConnected, Reason, Recording, Still)
 from ..cameras.source import CameraSource
 from ..connections.connections import ConnectionsUnavailable
@@ -32,6 +37,8 @@ DOMAIN = "printer"
 ARCHIVES_SEEN = 50
 FRAMES = 3
 WIDTH = 320
+FAILED = "failed"
+LOOKBACK = timedelta(seconds=3 * load().tick_s)
 
 log = logging.getLogger("ashley.bambuddy")
 _REASON: dict[BambuddyReason, Reason] = {"refused": "refused", "unreachable": "unreachable",
@@ -87,6 +94,16 @@ class BambuddyCameras(CameraSource):
             raise CamerasFailed("unrecognised") from e
         return Still(data, "image/jpeg", None, held.print_name or held.filename)
 
+    async def follow(self, opened: Opened, record: DetectionRecorder) -> int:
+        listed = await self.cameras(opened)
+        since = datetime.now(UTC) - LOOKBACK
+        for camera in listed:
+            for archive in await _archives(opened, camera):
+                at = _ended(archive)
+                if archive.status == FAILED and at is not None and at >= since:
+                    await record(Detection(camera.id, archive.status, at))
+        return len(listed)
+
     async def live_config(self, opened: Opened, camera: Camera) -> LiveConfig:
         raise NoLiveFeed
 
@@ -108,12 +125,21 @@ async def _empty() -> AsyncIterator[LiveSignal]:
     yield
 
 
-async def _timelapses(opened: Opened, camera: Camera) -> list[wire.Archive]:
+async def _archives(opened: Opened, camera: Camera) -> list[wire.Archive]:
     got = await _READER.get(opened, "/api/v1/archives/", {"printer_id": _printer_of(camera), "limit": ARCHIVES_SEEN},
                             wire.Archives)
     if got is None:
         raise CamerasFailed("unrecognised")
-    return [a for a in got.root if a.timelapse_path]
+    return got.root
+
+
+async def _timelapses(opened: Opened, camera: Camera) -> list[wire.Archive]:
+    return [a for a in await _archives(opened, camera) if a.timelapse_path]
+
+
+def _ended(archive: wire.Archive) -> datetime | None:
+    at = archive.completed_at
+    return None if at is None else at.replace(tzinfo=UTC) if at.tzinfo is None else at.astimezone(UTC)
 
 
 async def _allowed(opened: Opened) -> frozenset[str]:

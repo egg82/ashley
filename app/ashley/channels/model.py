@@ -151,7 +151,7 @@ class Inbound:
     household's home channel on its Discord server (`DiscordServer.home_channel_id`), set only on her turn of tending
     it (`channels.discord.home`): on a turn that is also `unprompted` and the household's, it offers her the tools that
     change that channel (`tools.discord_home_tools`), and on no other turn. `seen` is a camera's id and the id of one of
-    its recordings, as `camera_recordings` gives them, set by the turn a camera's detector starts (`channels.wake.detection_turn`):
+    its recordings, as `camera_recordings` gives them (None: the camera's view now), set by the turn a camera's detector starts (`channels.wake.detection_turn`):
     the turn begins with her having looked at that recording (`channels.seen`), its picture in her first step."""
 
     household_id: int
@@ -196,7 +196,7 @@ class Inbound:
     discord_channel: int | None = None
     remark: Chance | None = None
     home_channel: int | None = None
-    seen: tuple[str, str] | None = None
+    seen: tuple[str, str | None] | None = None
 
     @property
     def lands_on(self) -> int | None:

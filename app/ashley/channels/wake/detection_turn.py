@@ -6,7 +6,8 @@ kiosk whose page is in the foreground, else the first by id.
 
 She is told the detector's class and time and the camera's title, and, when the camera's recordings (`Cameras.recordings`) now
 hold one that was not there when the event was heard, begins with having looked at it (`Inbound.seen`,
-`ashley.channels.seen`): she says what that picture shows. A recording that has not appeared leaves the wake due, until
+`ashley.channels.seen`): she says what that picture shows. A class of `look_now_on` begins with the camera's view now instead,
+waiting for nothing. A recording that has not appeared leaves the wake due, until
 `detection.json`'s `look_wait_s` has passed since the event was stored, then she is told no picture could be had and to say
 she could not see; the same when the recordings were unreadable at the event. Which recording is new is decided by ids, never
 by a title. Her tools are `camera_look` alone, since her look is in the turn as a call of it.
@@ -41,6 +42,7 @@ from .reminder_device import fits
 
 log = logging.getLogger("ashley.channels.wake")
 WAIT_S = load().look_wait_s
+NOW = load().look_now_on
 
 
 class Waiting(Exception):
@@ -55,7 +57,7 @@ def said(wake: DetectionWake) -> str:
 def note(wake: DetectionWake, device: Device, title: str | None) -> str:
     """What only she reads, with the turn."""
     where = "" if title is None else f", the camera {title}"
-    looked = ("If a camera_look result in this turn shows the recording the detector captured, say only what that picture "
+    looked = ("If a camera_look result in this turn shows what the detector captured, or the camera as it is now, say only what that picture "
               "shows. If there is none, or it says it failed, say that you could not see, and do not guess what it shows "
               "or who it is.")
     return (f"A camera's own detector reported `{wake.kind}` at {wake.at.isoformat(timespec='minutes')}{where}. {looked}\n"
@@ -63,14 +65,14 @@ def note(wake: DetectionWake, device: Device, title: str | None) -> str:
             f"{device.place}, where whoever is near may hear it: say nothing private. It is said only if you set `says` to reply.")
 
 
-def inbound(wake_id: int, wake: DetectionWake, device: Device, title: str | None, seen: str | None,
+def inbound(wake_id: int, wake: DetectionWake, device: Device, title: str | None, seen: tuple[str, str | None] | None,
             quiet: bool) -> Inbound:
     """The turn on `device`'s thread, with her look at the recording `seen` names when there is one."""
     return Inbound(household_id=wake.household_id, thread=f"device:{device.id}", text=said(wake), kind="chat", medium="text",
                    audience=device.audience, speaker_id=None, shared=True, place=device.place, channel="web",
                    remembers=False, later=True, later_by="outbox", device_id=device.id, source=f"wake:{wake_id}",
                    unprompted=True, author="household", note=note(wake, device, title),
-                   tools_only=(LOOK,), taint=None, quiet=quiet, seen=None if seen is None else (wake.camera_id, seen))
+                   tools_only=(LOOK,), taint=None, quiet=quiet, seen=seen)
 
 
 async def fired(wake_id: int, wake: DetectionWake, age_s: float) -> Outcome:
@@ -81,7 +83,7 @@ async def fired(wake_id: int, wake: DetectionWake, age_s: float) -> Outcome:
         return "expired"
     started = time.perf_counter()
     try:
-        seen = await _recording(wake, age_s)
+        seen = await _seen(wake, age_s)
         title = await _title(wake)
     except (NoSuchCamera, NotConnected):
         return "cancelled"
@@ -96,6 +98,16 @@ async def fired(wake_id: int, wake: DetectionWake, age_s: float) -> Outcome:
     logs.info(log, "detection_wake.done", wake=wake_id, kind=wake.kind, seen=seen is not None,
               duration_ms=int((time.perf_counter() - started) * 1000))
     return "turn"
+
+
+async def _seen(wake: DetectionWake, age_s: float) -> tuple[str, str | None] | None:
+    """What she begins by looking at: the camera's view now for a class of `look_now_on`, else the camera and its newest
+    recording not there when the event was heard; None when none is to be had. Raises Waiting, NoSuchCamera, NotConnected,
+    CamerasUnavailable."""
+    if wake.kind in NOW:
+        return wake.camera_id, None
+    fresh = await _recording(wake, age_s)
+    return None if fresh is None else (wake.camera_id, fresh)
 
 
 async def _recording(wake: DetectionWake, age_s: float) -> str | None:
