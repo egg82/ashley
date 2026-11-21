@@ -5,15 +5,16 @@ hides the others, nor reads as having no camera."""
 
 import logging
 import time
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Mapping
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
 from .. import logs, services
 from ..connections import ports
 from ..connections.connections import Connections, ConnectionsUnavailable
 from ..connections.model import Opened
 from .cameras import Cameras
-from .model import (Camera, CamerasFailed, CamerasUnavailable, NoStill, NoSuchCamera, NoSuchRecording, NotConnected,
-                    Recording, Roster, Still)
+from .model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, LiveConfig, LiveSignal, NoLiveFeed, NoStill,
+                    NoSuchCamera, NoSuchRecording, NotConnected, Recording, Roster, Still)
 from .source import CameraSource
 
 log = logging.getLogger("ashley.cameras")
@@ -98,6 +99,34 @@ class RoutedCameras(Cameras):
         if got is None:
             raise NoSuchRecording
         return got
+
+
+    async def live_config(self, household_id: int, camera_id: str) -> LiveConfig:
+        _, got = await self._through(household_id, camera_id, "live", lambda a, o, c: a.live_config(o, c))
+        return got
+
+    @asynccontextmanager
+    async def live(self, household_id: int, camera_id: str, offer: str) -> AsyncGenerator[AsyncIterator[LiveSignal]]:
+        began = time.monotonic()
+
+        async def start(adapter: CameraSource, opened: Opened, camera: Camera) -> AbstractAsyncContextManager[
+                AsyncIterator[LiveSignal]]:
+            return adapter.live(opened, camera, offer)
+
+        kind, feed = await self._through(household_id, camera_id, "live", start)
+        outcome = "ok"
+        try:
+            async with feed as signals:
+                yield signals
+        except (CamerasFailed, NoLiveFeed) as e:
+            outcome = e.reason if isinstance(e, CamerasFailed) else "no_live_feed"
+            raise
+        finally:
+            logs.info(log, "camera.live", source=kind, outcome=outcome, duration_ms=_ms(began))
+
+    async def live_candidate(self, household_id: int, camera_id: str, session_id: str, candidate: Candidate) -> None:
+        await self._through(household_id, camera_id, "live",
+                            lambda a, o, c: a.live_candidate(o, c, session_id, candidate))
 
 
 def _ms(began: float) -> int:

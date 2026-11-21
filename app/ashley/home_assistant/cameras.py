@@ -6,17 +6,20 @@ recording's picture is the middle frame of the event's animated preview, taken w
 
 import asyncio
 import io
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from datetime import UTC, datetime
 
 from PIL import Image, UnidentifiedImageError
 
 from .. import services
-from ..cameras.model import Camera, CamerasFailed, Recording, Still
+from ..cameras.model import (Camera, CamerasFailed, Candidate, LiveConfig, LiveSignal, NoLiveFeed, Recording,
+                             Still)
 from ..cameras.source import CameraSource
 from ..connections.model import Opened
 from . import house_values
 from .homes import Homes, HomesUnavailable
-from .house import House, HouseUnavailable, Snapshot
+from .house import House, HouseRejected, HouseUnavailable, Snapshot
 
 NAME = "home_assistant"
 
@@ -73,6 +76,37 @@ class HaCameras(CameraSource):
             return None
         data, media_type = await asyncio.to_thread(_middle_frame, got.picture)
         return Still(data, media_type, None, got.title)
+    async def live_config(self, opened: Opened, camera: Camera) -> LiveConfig:
+        house = await _live_house(opened)
+        try:
+            return await house.live_config(camera.id)
+        except HouseRejected as e:
+            raise NoLiveFeed from e
+        except HouseUnavailable as e:
+            raise CamerasFailed("unreachable") from e
+
+    def live(self, opened: Opened, camera: Camera, offer: str) -> AbstractAsyncContextManager[AsyncIterator[LiveSignal]]:
+        return self._live(opened, camera, offer)
+
+    @asynccontextmanager
+    async def _live(self, opened: Opened, camera: Camera, offer: str) -> AsyncGenerator[AsyncIterator[LiveSignal]]:
+        house = await _live_house(opened)
+        try:
+            async with house.live_feed(camera.id, offer) as signals:
+                yield signals
+        except HouseRejected as e:
+            raise NoLiveFeed from e
+        except HouseUnavailable as e:
+            raise CamerasFailed("unreachable") from e
+
+    async def live_candidate(self, opened: Opened, camera: Camera, session_id: str, candidate: Candidate) -> None:
+        house = await _live_house(opened)
+        try:
+            await house.live_candidate(camera.id, session_id, candidate)
+        except HouseRejected as e:
+            raise NoLiveFeed from e
+        except HouseUnavailable as e:
+            raise CamerasFailed("unreachable") from e
 
 
 def _middle_frame(preview: Snapshot) -> tuple[bytes, str]:
@@ -85,3 +119,10 @@ def _middle_frame(preview: Snapshot) -> tuple[bytes, str]:
     except (UnidentifiedImageError, OSError, EOFError, Image.DecompressionBombError) as e:
         raise CamerasFailed("unrecognised") from e
     return out.getvalue(), "image/png"
+
+
+async def _live_house(opened: Opened) -> House:
+    house = await _house(opened)
+    if house is None:
+        raise CamerasFailed("unreachable")
+    return house

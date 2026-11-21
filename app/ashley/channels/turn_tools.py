@@ -58,6 +58,7 @@ from . import said_links
 from .audience import owner_alone, use_of
 from .limits import load as load_limits, smallest_result_chars
 from .devices_tool import DeviceTools
+from .screen_feed_tools import ScreenFeedTools
 from .screen_tools import ScreenTools
 from .model import Inbound
 from .wake import reminder_device
@@ -173,7 +174,8 @@ def _screen(inbound: Inbound) -> Mapping[str, Tools]:
     reaches is the tools' to say."""
     if inbound.speaker_id is None and inbound.device_id is None:
         return {}
-    return {"screen": ScreenTools(inbound.household_id, inbound.speaker_id, inbound.device_id)}
+    ids = (inbound.household_id, inbound.speaker_id, inbound.device_id)
+    return {"screen": CompositeTools({"arrange": ScreenTools(*ids), "feed": ScreenFeedTools(*ids)})}
 
 
 def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: int | None = None,

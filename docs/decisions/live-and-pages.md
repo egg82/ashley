@@ -41,6 +41,15 @@ and fans out to its own streams; nothing about a screen is kept beyond its open 
   being looked at. This extends Screens, which Live's streams already feed, rather than adding a presence record:
   Presence (who is home) and this (which screens are open) answer different questions and stay apart. A report names
   the reporter's own screen only: the person or device comes from the session, never from the body.
+- **A camera's live feed is a column of that row, and the media never passes through her.** `screen_show_camera` puts a
+  camera on the open, foregrounded screens `announce.chosen` picks (`live_screens.feed_camera`, until `feed_until`, `feed_s`
+  in `live.json`); each page reads its own back by its token (`GET /api/screens/feed`, the kiosk's `GET /api/kiosk/feed`),
+  woken by `FeedChanged`, so either site can show, clear and expire it. The page makes the WebRTC offer and posts it to her; she
+  relays it over the house's own WebSocket (`camera/webrtc/offer`, whose events stream back as the answer and candidates,
+  with `camera/webrtc/candidate` and `camera/webrtc/get_client_config` beside it), so the house's token never reaches a
+  page. Home Assistant ends a session when the offer's connection closes, so that connection lives exactly as long as the
+  page's stream and a pod lost mid-feed shows the page "the camera did not answer". A page never names a camera: it can open
+  only the feed it is shown, and only while the camera is still on the household's `look_cameras` list.
 - **Rejected: polling per room.** Every open screen would ask every few seconds whether anything happened, mostly to
   hear no, and a screen would learn of a kitchen question only at its next poll.
 - **Rejected: Redis pub/sub or an etcd watch.** Redis is a new stateful service on both sites with its own failover to
