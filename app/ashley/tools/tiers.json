@@ -3,7 +3,8 @@
   "arguments": [
     {"tool": "mail_label", "argument": "folder", "values": ["archive", "spam", "trash"], "tier": "judged"},
     {"tool": "remind", "argument": "tools", "tier": "judged"},
-    {"tool": "watch", "argument": "tools", "tier": "judged"}
+    {"tool": "watch", "argument": "tools", "tier": "judged"},
+    {"tool": "todo_change", "argument": "op", "values": ["remove"], "tier": "judged"}
   ],
   "house_do": [
     {"tier": "judged", "domain": "cover", "device_class": ["garage", "gate", "door"]},

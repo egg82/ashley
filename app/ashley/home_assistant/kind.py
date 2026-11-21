@@ -59,7 +59,7 @@ HOME_ASSISTANT = ConnectionKind(
     holders=frozenset({"household"}), schemes=SCHEMES, address_placeholder="http://homeassistant.local:8123",
     secret_field="token", secret_label="Long-lived access token, from your profile in Home Assistant",
     secret_noun="token", check=_check,
-    ports=frozenset({"house", "automations", "calendar"}), settings=SETTINGS, catalogue=_catalogue,
+    ports=frozenset({"house", "automations", "calendar", "todo"}), settings=SETTINGS, catalogue=_catalogue,
     refusals={
         "bad_url": "the address is an http or https address of Home Assistant, with nothing after it but a path",
         "key_refused": "Home Assistant turned that token away; make a long-lived one on your profile there",
