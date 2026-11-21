@@ -14,16 +14,13 @@ from typing import Any, LiteralString
 import psycopg
 
 from .. import logs
-from ..connections.sealing import Sealer, Unsealable
+from ..connections.sealing import KEEPER_BOUND, KEYCHAIN_BOUND, VAULT_BOUND, Sealer, Unsealable
 from ..db.database import Database, DatabaseUnavailable
 from . import proton_bridge_queries as q
 from .proton_bridge import (Account, AccountState, Auth, BridgeUnavailable, Holder, KeeperAccess, ProtonBridge, Sync,
                             Vault)
 
 log = logging.getLogger("ashley.mail")
-VAULT_BOUND = b"proton_bridge:vault"
-KEYCHAIN_BOUND = b"proton_bridge:keychain"
-KEEPER_BOUND = b"proton_bridge:keeper"
 
 
 @contextmanager
