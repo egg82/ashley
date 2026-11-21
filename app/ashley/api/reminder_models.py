@@ -2,8 +2,11 @@
 
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
+from ..senses.repeat import MAX_EVERY
+from ..senses.wakes import MAX_BRIEF
+from ..text import NoNul
 from .models import Person
 
 
@@ -15,7 +18,9 @@ class Reminder(BaseModel):
     `undelivered`, fired but no push reached their phone yet (it is tried again for a day, and her words are in
     their conversation history); `failed`, it could not fire. A fired one stays listed until it is delivered or the
     person dismisses it. `on_deposit` is, for a reminder that waits on a deposit instead of a time, the rule in words
-    (it fires on every match until cancelled, and `due_at` is when it was set); None for a timed one."""
+    (it fires on every match until cancelled, and `due_at` is when it was set); None for a timed one. `method` makes a
+    repeating reminder a standing errand: the slug of the household's kind of work (`WorkshopKinds.work_kinds`) whose
+    skill her turn follows each time it fires; None for any other reminder."""
 
     id: int
     person: Person
@@ -26,6 +31,7 @@ class Reminder(BaseModel):
     repeat: Literal["daily", "weekly", "monthly", "yearly"] | None
     every: int | None
     on_deposit: str | None = None
+    method: str | None = None
     state: Literal["scheduled", "sending", "undelivered", "failed"]
 
 
@@ -40,3 +46,27 @@ class ReminderCancelled(BaseModel):
     undelivered or failed, dismissed from the list."""
 
     id: int
+
+
+class ReminderRequest(BaseModel):
+    """A reminder the signed-in person sets for themselves, to reach their phone: `what`, and `local_at`, the first time as
+    the household's wall clock, `YYYY-MM-DDTHH:MM`. With `repeat` it comes round every `every` days, weeks, months or
+    years from `at`; without, it fires once. `method` makes it a standing errand and needs `repeat`: a kind of work
+    the household has with a method."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    what: NoNul = Field(min_length=1, max_length=MAX_BRIEF)
+    local_at: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$")
+    repeat: Literal["daily", "weekly", "monthly", "yearly"] | None = None
+    every: int = Field(default=1, ge=1, le=MAX_EVERY)
+    method: NoNul | None = Field(default=None, max_length=40)
+
+
+class ReminderMethodRequest(BaseModel):
+    """A reminder's `method` as it is to be: a kind of work the household has with a method, for a repeating reminder
+    still to fire, or null to make it an ordinary reminder again. Always sent; null is a choice."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    method: NoNul | None = Field(max_length=40)

@@ -1,10 +1,11 @@
 // The Reminders tab: what she will remind the person of, soonest first, each with when, how it repeats, whom it is
-// for and who set it (a reminder that waits on a deposit says its rule in place of a time), and Cancel, which asks once more before it acts. One that fired and did not reach their phone,
+// for and who set it (a repeating one names her method when it is a standing errand, and can be given or lose it), a form to set one (a reminder that waits on a deposit says its rule in place of a time), and Cancel, which asks once more before it acts. One that fired and did not reach their phone,
 // or could not fire, stays here, marked, until they dismiss it.
 import { useState } from 'preact/hooks';
 import type { Reminder } from '../../api/types';
 import { hour, locale } from '../../household/format';
 import { person } from '../../session/session';
+import { MethodForm, NewReminder, label } from './RemindersForms';
 import { cancel, loadReminders, reminders, remindersState } from './reminders';
 
 const UNIT: Record<NonNullable<Reminder['repeat']>, [string, string]> = {
@@ -69,7 +70,7 @@ function Row({ r }: { r: Reminder }) {
       <span class="rem-when">{r.on_deposit ? 'On money moving' : when(r.local_at)}</span>
       <span class="rem-what">{r.what}</span>
       <span class="pill">{repeats(r)}</span>
-      <span class="meta rem-whose">{r.on_deposit ? `${r.on_deposit} · ` : ''}{whose(r, person.value?.id)}</span>
+      <span class="meta rem-whose">{r.method ? `Standing errand: ${label(r.method)} · ` : ''}{r.on_deposit ? `${r.on_deposit} · ` : ''}{whose(r, person.value?.id)}</span>
       {fired ? <Fired r={r} /> : <Asking r={r} />}
     </div>
   );
@@ -79,6 +80,7 @@ function Asking({ r }: { r: Reminder }) {
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [methoding, setMethoding] = useState(false);
   const go = async () => {
     setBusy(true);
     const outcome = await cancel(r.id);
@@ -89,6 +91,9 @@ function Asking({ r }: { r: Reminder }) {
   return (
     <>
       <span class="rem-acts">
+        {r.repeat && !asking && (
+          <button class="btn sm ghost" type="button" onClick={() => setMethoding(!methoding)}>{r.method ? 'Method' : 'Make errand'}</button>
+        )}
         {asking ? (
           <>
             <button class="btn sm" type="button" disabled={busy} onClick={() => void go()}>
@@ -101,7 +106,15 @@ function Asking({ r }: { r: Reminder }) {
         )}
       </span>
       {failed && <span class="err" role="alert">Couldn't cancel it just now. Try again.</span>}
+      {methoding && <MethodForm r={r} onDone={() => setMethoding(false)} />}
     </>
+  );
+}
+
+function Setting() {
+  const [open, setOpen] = useState(false);
+  return open ? <NewReminder onDone={() => setOpen(false)} /> : (
+    <div><button class="btn sm" type="button" onClick={() => setOpen(true)}>Set a reminder</button></div>
   );
 }
 
@@ -120,18 +133,22 @@ export function RemindersList() {
   }
   if (!reminders.value.length) {
     return (
-      <div class="mem-empty">
-        <div class="mem-down-says">
-          <b>No reminders set.</b>
-          <span class="meta">Ask her to remind you of something, and it shows up here until it fires.</span>
+      <>
+        <div class="mem-empty">
+          <div class="mem-down-says">
+            <b>No reminders set.</b>
+            <span class="meta">Ask her to remind you of something, and it shows up here until it fires.</span>
+          </div>
         </div>
-      </div>
+        <Setting />
+      </>
     );
   }
   return (
     <>
       <div class="sec-title"><b>She will remind you</b><span class="label">soonest first</span></div>
       <div class="rows">{reminders.value.map((r) => <Row key={r.id} r={r} />)}</div>
+      <Setting />
     </>
   );
 }

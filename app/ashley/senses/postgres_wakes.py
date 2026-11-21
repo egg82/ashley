@@ -174,14 +174,14 @@ class PostgresWakes(Wakes):
     async def edit(self, household_id: int, person_id: int, wake_id: int, changed: Reminder) -> bool:
         _checked(changed)
         return await self._count(
-            "UPDATE wakes SET brief = %s, route = %s, route_device_id = %s, tools = %s, taint = COALESCE(%s, taint), "
+            "UPDATE wakes SET brief = %s, route = %s, route_device_id = %s, tools = %s, method = %s, taint = COALESCE(%s, taint), "
             "made_conversation_id = COALESCE(%s, made_conversation_id), made_turn_id = COALESCE(%s, made_turn_id), "
             "due_at = CASE WHEN trigger = 'event' THEN due_at ELSE %s END, "
             "at = CASE WHEN trigger = 'event' THEN at ELSE %s END, "
             "repeat = CASE WHEN trigger = 'event' THEN NULL ELSE %s::jsonb END "
             "WHERE id = %s AND household_id = %s AND kind = 'reminder' AND settled_at IS NULL "
             "AND (person_id = %s OR made_by = %s)",
-            (changed.brief, changed.route, changed.device_id, _tools(changed), changed.taint, *_made_in(changed), changed.due_at, changed.due_at, _repeat(changed), wake_id,
+            (changed.brief, changed.route, changed.device_id, _tools(changed), changed.method, changed.taint, *_made_in(changed), changed.due_at, changed.due_at, _repeat(changed), wake_id,
              household_id, person_id, person_id)) == 1
 
     async def follow_up(self, household_id: int, wake_id: int, due_at: datetime, plan: str) -> int | None:

@@ -21,6 +21,8 @@ import type {
   LexiconWords,
   MoveRequest,
   RememberRequest,
+  Reminder,
+  ReminderRequest,
   RememberResponse,
   RunApplied,
   RunRequest,
@@ -96,6 +98,21 @@ export async function forgetVoiceprints(): Promise<VoiceForgotten> {
 /** The signed-in person's reminders still to fire, for them or set by them, soonest first. */
 export async function getReminders(): Promise<Ok<'/api/reminders'>> {
   return answer(await fetch('/api/reminders'), 200, 'GET /api/reminders');
+}
+
+/** Sets a reminder for the signed-in person; with `method` and a repeat it is a standing errand. 422 when refused. */
+export async function createReminder(body: ReminderRequest): Promise<Reminder> {
+  const response = await fetch('/api/reminders', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  return answer(response, 201, 'POST /api/reminders');
+}
+
+/** Sets reminder `id`'s method, the household's kind of work that makes it a standing errand, or clears it (null).
+ * 422 when it does not repeat or the household has no such kind with a method; 404 when it is not theirs or has fired. */
+export async function setReminderMethod(id: number, method: string | null): Promise<Reminder> {
+  const response = await fetch(`/api/reminders/${id}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method }) });
+  return answer(response, 200, 'PATCH /api/reminders/{id}');
 }
 
 /** The signed-in person's open errands and benches, those waiting on them first. */
