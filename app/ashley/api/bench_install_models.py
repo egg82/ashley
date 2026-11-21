@@ -81,7 +81,7 @@ class PieceAutomation(BaseModel):
     install_proposal: InstallProposal | None
     last_install: InstallState | None
     unanswered_events: list[str]
-    shadow: ShadowState | None
+    shadow_run: ShadowState | None
 
 
 def shadow_of(run: ShadowRun | None) -> ShadowState | None:
@@ -98,13 +98,13 @@ def automation_of(proposal: Proposal | None, last: InstallRecord | None, links: 
     shown = None if proposal is None else InstallProposal(
         seq=proposal.seq, piece_version=proposal.proposed.version, enabled=proposal.proposed.enabled,
         turn_off=proposal.proposed.turn_off, shadow=proposal.proposed.shadow)
-    shadow = shadow_of(run)
+    shadow_run = shadow_of(run)
     if last is None:
-        return PieceAutomation(install_proposal=shown, last_install=None, unanswered_events=[], shadow=shadow)
+        return PieceAutomation(install_proposal=shown, last_install=None, unanswered_events=[], shadow_run=shadow_run)
     began = last.started
     state = InstallState(seq=began.seq, action=began.action, automation_id=began.automation_id, enabled=began.enabled,
                          turn_off=began.turn_off, started_at=last.started_at, install_ending=last.ending,
                          install_note=last.note, finished_at=last.finished_at)
     sends = began.wake_events if began.action == "install" and last.ending == "done" else ()
     return PieceAutomation(install_proposal=shown, last_install=state, unanswered_events=list(links.unanswered(sends)),
-                           shadow=shadow)
+                           shadow_run=shadow_run)

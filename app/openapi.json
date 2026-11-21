@@ -14686,7 +14686,7 @@
             "type": "array",
             "title": "Unanswered Events"
           },
-          "shadow": {
+          "shadow_run": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ShadowState"
@@ -14702,7 +14702,7 @@
           "install_proposal",
           "last_install",
           "unanswered_events",
-          "shadow"
+          "shadow_run"
         ],
         "title": "PieceAutomation",
         "description": "An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the\npiece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece\nnever installed). `unanswered_events` are the wake events the installed automation sends that no wake rule on an\nopen bench of the household answers: Home Assistant sends them and nothing happens (empty when it is not installed,\nsends none, or every one has a rule)."

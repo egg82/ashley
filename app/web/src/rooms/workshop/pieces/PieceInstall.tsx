@@ -85,7 +85,7 @@ export function InstallStrip({ piece, closed }: { piece: BenchPiece; closed: boo
   };
   const proposal = shown?.install_proposal;
   const last = shown?.last_install;
-  const shadow = shown?.shadow;
+  const shadow = shown?.shadow_run;
   return (
     <section class="prun pinstall" aria-label={`Installing ${piece.title}`} aria-busy={busy}>
       {proposal && !closed && <Proposal piece={piece} proposal={proposal} busy={busy} go={go} />}
