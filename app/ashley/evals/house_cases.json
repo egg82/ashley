@@ -10,7 +10,7 @@
     {"id": "act-lamp-on", "ask": "turn on the book nook lamp", "channel": "voice", "expect": "action",
      "tools": ["house_do"], "target": "book nook"},
     {"id": "act-shopping-add", "ask": "add paper towels to the shopping list", "channel": "chat", "expect": "action",
-     "tools": ["house_do"], "target": "paper towels"},
+     "tools": ["house_do", "todo_change"], "target": "paper towels"},
     {"id": "unknown-porch-light", "ask": "is the porch light on", "channel": "chat", "expect": "unknown_name"},
     {"id": "unknown-garage-door", "ask": "is the garage door open", "channel": "voice", "expect": "unknown_name"},
     {"id": "unknown-sauna", "ask": "how hot is the sauna", "channel": "chat", "expect": "unknown_name"}
