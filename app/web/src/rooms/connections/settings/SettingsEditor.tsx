@@ -1,8 +1,7 @@
-// A connection's settings: the switch per port every switchable kind has, and Home Assistant's own. Opened at
-// `/connections/<id>/settings`, so a reload or a shared link lands here. Saving replaces the whole of them.
+// A connection's settings, edited in its opened row: the switch per port every switchable kind has, and Home Assistant's
+// own. Saving replaces the whole of them.
 import { useEffect } from 'preact/hooks';
 import { locale } from '../../../household/format';
-import { held, kinds } from '../connections';
 import { HaSettings } from './HaSettings';
 import { PortsSection } from './PortsSection';
 import { dirty, discard, loadHouse, loadSettings, loaded, said, save, saving, settings } from './state';
@@ -62,7 +61,7 @@ function Body({ id }: { id: number }) {
   }
 }
 
-export function SettingsPage({ id }: { id: number }) {
+export function SettingsEditor({ id }: { id: number }) {
   useEffect(() => {
     void loadSettings(id);
   }, [id]);
@@ -70,17 +69,5 @@ export function SettingsPage({ id }: { id: number }) {
   useEffect(() => {
     if (readable) void loadHouse(id);
   }, [id, readable]);
-  const connection = held.value.find((c) => c.id === id);
-  const kind = kinds.value.find((k) => k.name === (connection?.kind ?? settings.value?.kind));
-  const title = connection?.label || kind?.title || 'Connection';
-  return (
-    <>
-      <div class="set-head">
-        <h1>{title} settings</h1>
-        <span class="set-dock" data-dock />
-        <a class="btn sm ghost cn-back" href="/connections">Connections</a>
-      </div>
-      <div class="cn-body"><Body id={id} /></div>
-    </>
-  );
+  return <div class="rr-edit"><Body id={id} /></div>;
 }

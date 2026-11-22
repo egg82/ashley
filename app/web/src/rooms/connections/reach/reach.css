@@ -114,7 +114,7 @@
 .rr-item:first-child { border-top: 0; }
 .rr-item dt { padding-top: 3px; }
 .rr-item dd { margin: 0; min-width: 0; display: grid; gap: 6px; justify-items: start; }
-.rr-item dd > .rr-boxes, .rr-item dd > .rr-settings { justify-self: stretch; }
+.rr-item dd > .rr-boxes { justify-self: stretch; }
 .rr-mono { font: 12.5px/1.4 var(--f-mono); overflow-wrap: anywhere; }
 .rr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .rr-chip { padding: 2px 9px; border-radius: 11px; border: 1px solid var(--line-hi); font-size: 12px; color: var(--text-2); }
@@ -129,12 +129,8 @@
 .rr-switch input:checked::after { transform: translateX(12px); background: var(--ink-0); }
 .rr-switch input:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
 .rr-switch input:disabled { opacity: .5; cursor: default; }
-.rr-settings { display: grid; gap: 10px; justify-items: start; }
-.rr-set-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; width: 100%; }
-.rr-set-rows li { display: grid; gap: 2px; padding-left: 10px; border-left: 2px solid var(--line-hi); }
-.rr-set-rows li.judging { border-left-color: var(--blue); }
-.rr-set-title { font-weight: 500; }
-.rr-set-rows li > .unk { justify-self: start; }
+.rr-settings { display: grid; gap: 10px; }
+.rr-edit { display: grid; gap: 10px; }
 .rr-history { list-style: none; margin: 4px 0 0; padding: 0 0 0 14px; border-left: 1px solid var(--line-hi); display: grid; gap: 6px; font-size: 13px; width: 100%; }
 .rr-actions { padding: 0 2px; }
 .rr-remove { display: grid; gap: 10px; padding: 16px; border: 1px solid rgba(255,93,108,.5); border-radius: var(--r-3); background: color-mix(in srgb, var(--red) 8%, var(--ink-1)); }

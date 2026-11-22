@@ -6,7 +6,7 @@ import { useLocation } from 'preact-iso';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { person } from '../../session/session';
 import { dockIn } from '../../shell/her/dock';
-import { CATALOGUE_PATH, isCataloguePath, settingsOf } from '../../shell/rooms';
+import { CATALOGUE_PATH, isCataloguePath } from '../../shell/rooms';
 import { loadAccounts, leaveRoom, loadState, outcomeOf, said } from './accounts';
 import { connectionsState, held, kinds, loadConnections } from './connections';
 import { connectOutcomeOf } from './connectOutcome';
@@ -27,7 +27,6 @@ import { removing } from './reach/state';
 import { hasTalk, TalkGroup } from './reach/TalkGroup';
 import { Down, Empty } from './reach/Unknown';
 import { needOf } from './reach/needs.ts';
-import { SettingsPage } from './settings/SettingsPage';
 
 const SYNC_POLL_MS = 10_000;
 
@@ -103,7 +102,6 @@ export function ConnectionsRoom() {
   const accountsState = loadState.value;
   const state = connectionsState.value;
   const { path } = useLocation();
-  const settingsId = settingsOf(path);
   const here = useRef<HTMLDivElement>(null);
   const failed = accountsState === 'unreachable' || accountsState === 'failed' || state === 'unreachable' || state === 'failed';
   const unreachable = accountsState === 'unreachable' || state === 'unreachable';
@@ -114,7 +112,6 @@ export function ConnectionsRoom() {
     if (room && !room.classList.contains('leaving')) dockIn(room, false);
   }, [accountsState, state]);
   if (isCataloguePath(path)) return <div class="set cn" ref={here}><CataloguePage /></div>;
-  if (settingsId !== null) return <div class="set cn" ref={here}><SettingsPage id={settingsId} /></div>;
   return (
     <div class={`set cn rr-room${removing.value !== null ? ' removing' : ''}`} ref={here}>
       <div class="set-head">
