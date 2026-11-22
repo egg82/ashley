@@ -11,13 +11,15 @@ A key or a name the code does not have is an error that names it. Section and ex
 source can only be checked against what a turn offers, so `finish` fails the run naming any the turns never met.
 `core`, when present, names the tool sources a turn offers from its first step, the rest loading on demand with
 `use_tools` (`ashley.channels.on_demand`): `{"name": "core-a", "core": ["everyday", "reminders"]}`. An empty list offers
-the loader alone; no `core` offers every source. Its names are checked as `sources` are.
+the loader alone; `"core": "all"` offers every source; no `core` leaves the turn on the deployed default
+(`ashley.channels.on_demand.core_for`). Its names are checked as `sources` are.
 `install` makes the variant the one every turn of the process applies (`ashley.channels.cut`)."""
 
 import hashlib
 import json
 import sys
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -79,6 +81,10 @@ def _names(data: dict[str, object], key: str, known: frozenset[str] | None) -> f
     return names
 
 
+def _core(data: dict[str, object]) -> frozenset[str] | Literal["all"]:
+    return cut.ALL if data["core"] == cut.ALL else _names(data, "core", None)
+
+
 def parse(text: str) -> Variant:
     """The variant `text` describes. Raises ValueError for text that is not JSON, a key not in `FIELDS`, a missing
     `name`, a name that is not a string, and any section or example the code does not have."""
@@ -96,7 +102,7 @@ def parse(text: str) -> Variant:
         raise ValueError("a variant has a `name`")
     shape = cut.Cut(_names(data, "sections", known_sections()), _names(data, "examples", known_examples()),
                     _names(data, "tools", None), _names(data, "sources", None),
-                    _names(data, "core", None) if "core" in data else None)
+                    _core(data) if "core" in data else None)
     canonical = json.dumps(data, sort_keys=True, separators=(",", ":"))
     return Variant(name.strip(), hashlib.sha256(canonical.encode()).hexdigest()[:8], shape)
 

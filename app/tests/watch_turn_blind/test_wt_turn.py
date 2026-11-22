@@ -17,6 +17,9 @@ from watch_turn_blind_support import LABEL, ReadsAndChanges, Rig, messages_text,
 ENDED = re.compile(r"ended|no longer watch", re.I)
 
 
+pytestmark = pytest.mark.usefixtures("every_group")
+
+
 async def told(r: Rig, world: World, watch_id: int, status: str = "done", seq: int = 2,
                ends: str | None = None) -> str:
     """Wake the watch, run the sweep and return the text her model was sent for it."""

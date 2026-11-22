@@ -13,6 +13,9 @@ from taint_fields_blind_support import (BIG, CHANGE, GHOST, INSIDE, NARROWED, OU
 from taint_fields_blind_world_support import DONE, World, calls, results_sent, world
 
 
+pytestmark = pytest.mark.usefixtures("every_group")
+
+
 async def turn(w: World, *rounds: str | tuple[str, ...], taint: Origin | None = None) -> list[str | None]:
     """A person's turn whose model asks for each of `rounds` (one name, or a tuple of names for one round) and then
     answers; `Checkpoint.tainted` as stored at each model step."""

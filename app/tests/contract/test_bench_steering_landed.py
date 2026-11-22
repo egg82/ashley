@@ -26,6 +26,9 @@ from test_reply_follows_page import Shop
 SAID = f"Alana just said: {SECOND}"
 
 
+pytestmark = pytest.mark.usefixtures("every_group")
+
+
 @pytest.fixture
 def shop(world: World) -> Generator[Shop]:
     fake = Shop()

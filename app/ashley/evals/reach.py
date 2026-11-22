@@ -14,7 +14,7 @@ their service, as the person asked as; the turns are marked `Inbound.eval`, so t
 person's list and no last word. Run under `--variant` with a group cut, the cases that
 need it fail: that is the regression on-demand tools must not cause.
 
-Under a variant with a `core`, a group she has not loaded is not offered: the loader (`use_tools`) is neither a group nor
+Under a variant with a `core`, and on a text turn without one, a group she has not loaded is not offered: the loader (`use_tools`) is neither a group nor
 a tool she called, so it is never `extra` and a no-tool ask that only calls it passes, but its steps count and the groups
 she loaded are reported (`loaded`).
 

@@ -14,6 +14,9 @@ from owed_blind_support import (ALANA, HOME, HOUSE, MARK, NOTHING_OWED, SAM, SEA
                                 inbound, owed_of, reply, speak)
 
 
+pytestmark = pytest.mark.usefixtures("every_group")
+
+
 def test_a_kept_owed_stores_one_errand_for_the_person_turn(world: World, capsys: pytest.CaptureFixture[str]) -> None:
     world.tools.unreachable = (HOUSE,)
     world.say(reply(HOUSE))

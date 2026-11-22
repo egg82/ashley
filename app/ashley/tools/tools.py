@@ -38,7 +38,8 @@ class Catalogue:
     sources that answered with a tool, in source order (`composite.CompositeTools`), empty for one that is not a
     Composite. `owners` is the key of the source that offered each tool, by tool name, for a Composite's; empty
     otherwise and for a tool a wrapper added. `guidance` is the instructions each source of a Composite gave, by key, in
-    source order: `instructions` is these joined; empty otherwise."""
+    source order: `instructions` is these joined; empty otherwise. `core` is the keys of the sources offered from the
+    first step when the rest load on demand (`channels.on_demand.Loading`); None when every source is offered."""
 
     specs: tuple[ToolSpec, ...]
     instructions: str | None
@@ -47,6 +48,7 @@ class Catalogue:
     sources: tuple[str, ...] = ()
     owners: Mapping[str, str] = field(default_factory=dict[str, str])
     guidance: Mapping[str, str] = field(default_factory=dict[str, str])
+    core: frozenset[str] | None = None
 
 
 class Tools(Service):

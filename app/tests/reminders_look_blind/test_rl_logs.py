@@ -21,7 +21,7 @@ from reminders_look_blind_support import ACCOUNT, AMOUNT_FORMS, CENTS, DAY, LAND
 from respond_support import ALANA, Fakes, wired as wired
 
 
-pytestmark = pytest.mark.usefixtures("sure_ledger_wired")
+pytestmark = pytest.mark.usefixtures("sure_ledger_wired", "every_group")
 
 REPLY = Reply(spoken="Move it.", text="Move it.")
 SENTINELS = (PAYEE, ACCOUNT, *AMOUNT_FORMS)

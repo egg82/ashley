@@ -2,12 +2,16 @@
 its first model step finds the checkpoint's `tainted` as the dead runner saved it, a taint never clears, and a read that
 had no result when the runner died taints when the next runner runs it. Real Conversations and `InFlight`."""
 
+import pytest
 from ashley.channels import resume
 from ashley.inference.model import ToolResult
 from contract.conversations_support import run
 from dataclasses import replace
 from taint_fields_blind_support import CHANGE, INSIDE, OUTSIDE, OUTSIDE_TOO
 from taint_fields_blind_world_support import DONE, asking, calls, world
+
+
+pytestmark = pytest.mark.usefixtures("every_group")
 
 
 def test_a_tainted_turn_resumes_tainted(db_url: str) -> None:

@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 import pytest
 from ashley import services
+from ashley.channels import cut
 from ashley.channels.respond import respond
 from ashley.channels.model import Inbound
 from ashley.errands.config import CONFIG
@@ -62,10 +63,12 @@ def logged(capsys: pytest.CaptureFixture[str]) -> Logged:
 
 
 @pytest.fixture
-def tools(wired: Fakes) -> OutTools:
+def tools(wired: Fakes) -> Generator[OutTools]:
+    cut.install(cut.Cut(core=cut.ALL))
     made = OutTools()
     services.register(Tools, made)
-    return made
+    yield made
+    cut.install(cut.NO_CUT)
 
 
 @pytest.fixture

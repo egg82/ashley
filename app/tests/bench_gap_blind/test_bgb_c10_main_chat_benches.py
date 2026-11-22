@@ -30,6 +30,9 @@ CHAT = replace(inbound("Yes, go", thread="person:1:web", speaker_id=ALANA.id, ki
 DM = replace(CHAT, thread="discord:dm:1", channel="discord", on_page=False, opens_benches=False)
 
 
+pytestmark = pytest.mark.usefixtures("every_group")
+
+
 def bench(bid: int, owner: Owner, closed: bool = False) -> Bench:
     return Bench(bid, owner.household_id, owner.person_id, TITLES[bid], EPOCH, EPOCH if closed else None, work="3d")
 

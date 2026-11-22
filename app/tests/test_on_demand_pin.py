@@ -1,5 +1,5 @@
-"""With no cut a turn offers every tool and every source's instructions on its first step, as before tools could be
-loaded on demand: the first step's prompt is pinned by hash, so a change that alters it fails here."""
+"""A turn under the cut `core: all` offers every tool and every source's instructions on its first step, as before tools
+could be loaded on demand: the first step's prompt is pinned by hash, so a change that alters it fails here."""
 
 import asyncio
 from collections.abc import Generator
@@ -28,7 +28,7 @@ def seams() -> Generator[None]:
     services.register(Presence, FakePresence())
     services.register(Conversations, FakeConversations())
     services.register(InFlight, InFlight.null())
-    cut.install(cut.NO_CUT)
+    cut.install(cut.Cut(core=cut.ALL))
     yield
     cut.install(cut.NO_CUT)
     for interface in (People, Presence, Conversations, InFlight):
@@ -44,7 +44,7 @@ def first_step(monkeypatch: pytest.MonkeyPatch) -> Prompt:
     return Prompt(prompted.system, (Message("person", "hello"),), prompted.catalogue.specs, "auto")
 
 
-def test_with_no_cut_the_first_step_offers_every_tool_and_every_sources_instructions(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_with_core_all_the_first_step_offers_every_tool_and_every_sources_instructions(monkeypatch: pytest.MonkeyPatch) -> None:
     prompt = first_step(monkeypatch)
     assert [s.name for s in prompt.tools] == ["lights", "weather", "remind", "reminders", "mail_search", "mail_send",
                                               "money_accounts"]

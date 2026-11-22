@@ -14,6 +14,7 @@ import pytest
 from anthropic import Omit
 from anthropic.types import MessageParam, MessageTokensCount, OutputConfigParam, TextBlockParam, ToolParam
 from ashley import services
+from ashley.channels import cut
 from ashley.channels.respond import respond
 from ashley.conversations.inflight import InFlight
 from ashley.conversations.model import Kind
@@ -150,6 +151,7 @@ def test_the_counted_route_is_the_first_anthropic_one_and_names_a_first_that_is_
 
 @pytest.fixture
 def turn() -> Generator[FakeInference]:
+    cut.install(cut.Cut(core=cut.ALL))
     inference = FakeInference()
     services.register(People, FakePeople())
     services.register(Presence, FakePresence())
@@ -158,6 +160,7 @@ def turn() -> Generator[FakeInference]:
     services.register(Tools, FakeTools((LIGHTS, LOCK)))
     services.register(Inference, inference)
     yield inference
+    cut.install(cut.NO_CUT)
     for interface in (People, Presence, Conversations, InFlight, Tools, Inference):
         services.unregister(interface)
 
