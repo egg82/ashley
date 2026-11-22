@@ -132,3 +132,9 @@ def test_a_turn_the_server_started_that_fails_still_ends_idle(wired: Fakes, live
     with pytest.raises(RespondUnavailable):
         asyncio.run(respond(started_by_the_server()))
     assert [s for _, s, _ in states(live)] == ["thinking", "idle"]
+
+
+def test_an_evaluation_turn_tells_no_screen(wired: Fakes, live: FakeLive) -> None:
+    wired.inference.script = [REPLY]
+    asyncio.run(respond(web(eval=True)))
+    assert live.published == []

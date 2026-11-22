@@ -98,7 +98,9 @@ class Inbound:
     `place` is where a shared device is, None for a personal channel. `channel` is the kind of channel it arrived on,
     recorded on a conversation it starts. `text` is what was said, in real spellings,
     non-empty. `remembers` is whether a conversation this message starts is remembered (the device's `remembers`); a
-    conversation continued from the thread keeps the value it started with. `heard_as` is the person a voice match
+    conversation continued from the thread keeps the value it started with. `eval` says the message is an evaluation's:
+    the conversation it starts is never remembered and is left out of the person's conversation list and of when they
+    last spoke, and the turn tells no open screen and owes and tells no errand (`Conversations.start`). `heard_as` is the person a voice match
     names, set only by a voice channel: a hint the speaker step weighs after `speaker_id` (`speaker.who`). `later` is
     whether the channel takes replies said after the response, so a "let me check" can go out first; `later_by` is how
     such a reply reaches it: queued in the `Outbox` for the thread (`outbox`), or only stored as her turn, which an
@@ -165,6 +167,7 @@ class Inbound:
     place: str | None
     channel: Channel
     remembers: bool = True
+    eval: bool = False
     heard_as: int | None = None
     later: bool = False
     later_by: Literal["outbox", "turn"] = "outbox"

@@ -12,7 +12,7 @@ class Raced(Exception):
 
 async def carried(conn: Connection, policy: Policy, household_id: int, thread: str, kind: Kind,
                   people: list[int], remembered: bool, channel: Channel | None,
-                  place: str | None) -> tuple[Conversation, bool]:
+                  place: str | None, eval: bool) -> tuple[Conversation, bool]:
     """The conversation for the next turn on `thread`, and whether it was started now. Raises Raced."""
     cur = await conn.execute(
         "SELECT household_id, conversation_id FROM conversation_threads WHERE thread = %s FOR UPDATE", (thread,)
@@ -23,7 +23,7 @@ async def carried(conn: Connection, policy: Policy, household_id: int, thread: s
         last = await read_conversation(conn, policy, row[1], "FOR SHARE")
         if last is not None and last.state != "closed":
             return last, False
-    made = await insert_conversation(conn, household_id, kind, people, remembered, channel, place, thread)
+    made = await insert_conversation(conn, household_id, kind, people, remembered, channel, place, thread, eval)
     if row is None:
         await _point_new(conn, thread, made)
     else:

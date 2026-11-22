@@ -196,3 +196,9 @@ def test_results_are_not_marked_told_when_her_turn_was_not_stored(wired: Fakes, 
     wired.conversations.failing_ashley = True
     run(wired, PLAIN)
     assert errands.told_ids == []
+
+
+def test_an_evaluation_turn_owes_no_errand_and_tells_none_done(wired: Fakes, errands: FakeErrands) -> None:
+    errands.waiting = (DONE,)
+    run(wired, OWING, known(eval=True))
+    assert errands.owed == [] and errands.asked == [] and errands.told_ids == []

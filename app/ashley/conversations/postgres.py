@@ -30,13 +30,13 @@ class PostgresConversations(Conversations):
 
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         if kind not in KINDS:
             raise ValueError(f"unknown conversation kind: {kind!r}")
         people = sorted(set(participants))
         with translated():
             async with self._database.connection() as conn:
-                made = await insert_conversation(conn, household_id, kind, people, remembered, channel, place)
+                made = await insert_conversation(conn, household_id, kind, people, remembered, channel, place, eval=eval)
         logs.info(log, "conversation.started", conversation=made.id, kind=kind, participants=len(people))
         return made
 
@@ -50,7 +50,7 @@ class PostgresConversations(Conversations):
 
     async def for_thread(self, household_id: int, thread: str, kind: Kind, participants: Iterable[int],
                          remembered: bool = True, channel: Channel | None = None,
-                         place: str | None = None) -> Conversation:
+                         place: str | None = None, eval: bool = False) -> Conversation:
         if not thread.strip():
             raise ValueError("a thread is named")
         if kind not in KINDS:
@@ -61,7 +61,7 @@ class PostgresConversations(Conversations):
                 with translated():
                     async with self._database.connection() as conn:
                         found, started = await carried(conn, self._policy, household_id, thread, kind, people,
-                                                       remembered, channel, place)
+                                                       remembered, channel, place, eval)
             except Raced:
                 continue
             if started:

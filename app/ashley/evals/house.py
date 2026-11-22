@@ -84,9 +84,9 @@ def inbound(case: dict[str, Any], seat: Seat) -> Inbound:
     thread = f"house-eval-{uuid.uuid4()}"
     if case["channel"] == "voice":
         return Inbound(seat.household_id, thread, case["ask"], "command", "spoken", "present", None, True, "kitchen",
-                       "voice", remembers=False, taint=None)
+                       "voice", remembers=False, eval=True, taint=None)
     return Inbound(seat.household_id, thread, case["ask"], "chat", "text", "owner", seat.person_id, False, None, "web",
-                   remembers=False, taint=None)
+                   remembers=False, eval=True, taint=None)
 
 
 def is_expected_write(case: dict[str, Any], name: str, arguments: str) -> bool:

@@ -69,7 +69,8 @@ _HERS: LiteralString = (
     "WHERE o.household_id = w.household_id AND o.kind = 'house' AND o.who = w.who AND o.id <> w.id")
 _SAID_BEFORE = (
     "SELECT (SELECT max(t.at) FROM turns t WHERE t.household_id = w.household_id AND t.author = 'person' "
-    "AND t.speaker_id = %(person)s), "
+    "AND t.speaker_id = %(person)s "
+    "AND NOT EXISTS (SELECT 1 FROM conversations c WHERE c.id = t.conversation_id AND c.eval)), "
     "(" + _HERS + " AND o.event = w.event), "
     "(" + _HERS + " AND a.text <> %(quiet)s) "
     "FROM wakes w WHERE w.id = %(wake)s AND w.kind = 'house'")

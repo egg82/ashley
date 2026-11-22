@@ -263,3 +263,8 @@ def test_every_group_a_case_names_is_a_source_a_turn_builds() -> None:
 def test_a_case_that_is_not_well_formed_is_refused(broken: list[dict[str, object]]) -> None:
     with pytest.raises(ValueError):
         reach.validate(broken)
+
+
+def test_the_ask_is_an_evaluation_and_never_remembered() -> None:
+    ask = reach.inbound({"ask": "what is on my list"}, SEAT)
+    assert ask.eval and not ask.remembers

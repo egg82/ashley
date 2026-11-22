@@ -59,7 +59,7 @@ async def owe(source: str, speaker: Person, conversation_id: int, turn_id: int) 
 async def untold(inbound: Inbound, speaker: Person | None) -> tuple[Done, ...]:
     """The speaker's finished errands this reply may carry (`Errands.untold`, at most `tell_max`); nothing for an
     unknown speaker, an unprompted turn, or a store out of reach (logged `respond.errands_unavailable`)."""
-    if speaker is None or inbound.unprompted:
+    if speaker is None or inbound.unprompted or inbound.eval:
         return ()
     try:
         return await services.get(Errands).untold(speaker.id, CONFIG.tell_max, inbound.audience == "owner")

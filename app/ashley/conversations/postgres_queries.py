@@ -115,12 +115,13 @@ async def _stored_once(conn: Connection, household_id: int, turn: NewTurn) -> Tu
 
 async def insert_conversation(conn: Connection, household_id: int, kind: Kind, people: list[int],
                               remembered: bool, channel: Channel | None, place: str | None,
-                              thread: str | None = None) -> Conversation:
-    """A new conversation with `people` (distinct) and no turns, state `open`, started on `thread` if it has one."""
+                              thread: str | None = None, eval: bool = False) -> Conversation:
+    """A new conversation with `people` (distinct) and no turns, state `open`, started on `thread` if it has one. An
+    `eval` one is never remembered."""
     cur = await conn.execute(
-        "INSERT INTO conversations (household_id, kind, remembered, channel, place, thread) "
-        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, household_id, kind, started_at, last_activity_at",
-        (household_id, kind, remembered, channel, place, thread),
+        "INSERT INTO conversations (household_id, kind, remembered, channel, place, thread, eval) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, household_id, kind, started_at, last_activity_at",
+        (household_id, kind, remembered and not eval, channel, place, thread, eval),
     )
     row = await cur.fetchone()
     assert row is not None

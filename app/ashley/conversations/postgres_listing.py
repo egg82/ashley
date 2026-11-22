@@ -19,7 +19,7 @@ _LISTED = f"""
     SELECT c.id, c.kind, c.started_at, c.last_activity_at, c.channel, c.place,
            (SELECT count(*) FROM turns t WHERE {_SHOWN}), clock_timestamp()
     FROM conversations c
-    WHERE c.household_id = %(household)s
+    WHERE c.household_id = %(household)s AND NOT c.eval
       AND EXISTS (SELECT 1 FROM conversation_participants cp
                   WHERE cp.conversation_id = c.id AND cp.person_id = %(person)s)
       AND EXISTS (SELECT 1 FROM turns t WHERE {_SHOWN})

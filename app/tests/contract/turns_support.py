@@ -126,12 +126,12 @@ class FakeConversations(Conversations):
 
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         raise AssertionError("respond starts conversations through for_thread")
 
     async def for_thread(self, household_id: int, thread: str, kind: Kind, participants: Iterable[int],
                          remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         self.thread_calls.append(ThreadCall(household_id, thread, kind, tuple(participants)))
         if self.error:
             raise self.error

@@ -54,11 +54,13 @@ class Conversations(Service):
     @abstractmethod
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         """Start a conversation with no turns, now. `participants` may be empty (a shared device with no speaker
         known yet) and may repeat an id. `remembered` is whether the memory write job may write it, fixed for the
         conversation's life; the caller takes it from the device that opens it. `channel` and `place` are where it started
-        (None when unknown, as for rows from before they were recorded), written now and never changed. Returns it as stored: state `open`,
+        (None when unknown, as for rows from before they were recorded), written now and never changed. `eval` marks the
+        conversation as an evaluation's: it is never remembered whatever `remembered` says, and no list of a person's
+        conversations or read of when they last spoke counts it. Returns it as stored: state `open`,
         `last_activity_at == started_at`. Raises ValueError (before touching the database) for a kind outside `Kind`; UnknownHousehold; UnknownPerson
         when any participant is not in that household. Nothing is written when it raises. Logs
         `conversation.started` with its id, kind and participant count."""
@@ -80,11 +82,11 @@ class Conversations(Service):
     @abstractmethod
     async def for_thread(self, household_id: int, thread: str, kind: Kind, participants: Iterable[int],
                          remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         """The conversation `thread` is carrying, for the next turn on it. `thread` is a channel's own key for where a
         message came from (`device:7`, a Discord channel id), namespaced by the channel; several threads may carry one
         conversation. Returns the conversation the thread last carried when it is not closed by the database's clock,
-        as `get` would read it (`participants`, `kind`, `remembered`, `channel` and `place` ignored: it keeps the value it started with); otherwise starts one as
+        as `get` would read it (`participants`, `kind`, `remembered`, `channel`, `place` and `eval` ignored: it keeps the value it started with); otherwise starts one as
         `start` does, points the thread at it, and returns it with no turns. A thread last carrying another household's conversation is treated
         as carrying none. Two calls racing on one thread return the same conversation: the check and the write are one
         transaction. Raises what `start` raises, ValueError for an empty `thread`, and nothing is written when it
@@ -148,7 +150,7 @@ class NullConversations(Conversations):
 
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         raise ConversationsUnavailable("Conversations is not wired")
 
     async def add_turn(self, conversation_id: int, turn: NewTurn) -> Turn:
@@ -156,7 +158,7 @@ class NullConversations(Conversations):
 
     async def for_thread(self, household_id: int, thread: str, kind: Kind, participants: Iterable[int],
                          remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         raise ConversationsUnavailable("Conversations is not wired")
 
     async def get(self, conversation_id: int) -> Conversation | None:
