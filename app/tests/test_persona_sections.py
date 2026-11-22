@@ -21,7 +21,8 @@ CONTEXT = Context(NOW, HOME, ALANA, frozenset({1}), "kitchen", "Tool guidance.",
 
 
 def unmarked(text: str) -> str:
-    return "\n".join(line for line in text.split("\n") if not line.startswith(sections.MARKER_PREFIX)).strip()
+    markers = (sections.MARKER_PREFIX, sections.EXAMPLE_PREFIX)
+    return "\n".join(line for line in text.split("\n") if not line.startswith(markers)).strip()
 
 
 def by_id() -> dict[str, sections.Section]:
@@ -97,3 +98,32 @@ MARK = '<!-- section id=a override=allowed label="A" -->'
 def test_a_malformed_file_is_refused(text: str) -> None:
     with pytest.raises(ValueError):
         sections.parse(text)
+
+
+def test_every_example_is_named_and_marked_out_of_the_text() -> None:
+    ids = sections.example_ids(SHIPPED)
+    assert "presidents" in ids and len(ids) == len(set(ids)) > 10
+    assert sections.EXAMPLE_PREFIX not in sections.render(SHIPPED, {}) + by_id()["examples"].body
+
+
+def test_leaving_an_example_out_drops_its_item_and_nothing_else() -> None:
+    whole = sections.render(SHIPPED, {})
+    got = sections.render(SHIPPED, {}, {"presidents"})
+    assert "List every US president" not in got and "incumbent" not in got
+    assert got.replace("\n\n", "\n") != whole.replace("\n\n", "\n")
+    item = '- "List every US president." "All forty seven is a lot for one sitting. Washington, Lincoln, and the current\n  incumbent, if you want the highlights."\n'
+    assert item in whole and whole.replace(item, "", 1) == got
+    assert sections.render(SHIPPED, {}, {"presidents", "pla"}).count("\n- ") == whole.count("\n- ") - 2
+
+
+def test_an_example_that_is_not_named_is_refused_by_name() -> None:
+    with pytest.raises(ValueError, match="no such example: presidnts"):
+        sections.render(SHIPPED, {}, {"presidents", "presidnts"})
+
+
+def test_a_malformed_or_repeated_example_marker_is_refused() -> None:
+    body = '<!-- section id=a override=allowed label="A" -->\n'
+    with pytest.raises(ValueError, match="not an example marker"):
+        sections.parse(body + "<!-- example id=Bad -->\n- x")
+    with pytest.raises(ValueError, match="marked twice"):
+        sections.parse(body + "<!-- example id=x -->\n- x\n<!-- example id=x -->\n- y")
