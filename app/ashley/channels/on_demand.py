@@ -8,7 +8,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from .. import logs
 from ..inference.model import Entry, Tier, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
@@ -49,6 +49,37 @@ def loaded(entries: Sequence[Entry]) -> frozenset[str]:
             groups.update(g for r in entry.results if not r.is_error and r.call_id in asked
                           for g in named(asked[r.call_id].arguments))
     return frozenset(groups)
+
+
+def free(asked: ToolCalls, entries: Sequence[Entry], tools: Sequence[ToolSpec]) -> int:
+    """1 when `asked` is a round of calls to the loader alone and it is one of the first as many such rounds as the
+    turn has groups to load (the loader's enum in `tools`, counted from the turn's own `entries`, so a resumed turn
+    counts the same); such a round is not one of the turn's `max_tool_rounds`. Else 0."""
+    if not asked.calls or any(c.name != LOADER for c in asked.calls):
+        return 0
+    made = sum(isinstance(e, ToolCalls) and all(c.name == LOADER for c in e.calls) for e in entries)
+    return int(made < sum(len(_groups(s)) for s in tools if s.name == LOADER))
+
+
+class _Items(BaseModel):
+    enum: list[str]
+
+
+class _Groups(BaseModel):
+    items: _Items
+
+
+class _Properties(BaseModel):
+    groups: _Groups
+
+
+class _Schema(BaseModel):
+    properties: _Properties
+
+
+def _groups(spec: ToolSpec) -> list[str]:
+    """The group keys the loader `spec` offers: the enum of its `groups` argument (see `_spec`)."""
+    return _Schema.model_validate(spec.parameters).properties.groups.items.enum
 
 
 def named(arguments: Mapping[str, object]) -> list[str]:

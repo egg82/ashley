@@ -11,11 +11,11 @@ from typing import Literal
 from .. import logs, services
 from ..conversations.model import Kind
 from ..inference.inference import Inference, InferenceRefused, InferenceRejected, InferenceUnavailable
-from ..inference.model import (Entry, Message, Prompt, SystemPrompt, Task, ToolCalls, ToolChoice, ToolResult,
+from ..inference.model import (Entry, Prompt, SystemPrompt, Task, ToolCalls, ToolChoice, ToolResult,
                               ToolResults, ToolSpec)
 from ..inference.reply import Reply
 from ..tools.tools import Catalogue, Tools, ToolsUnavailable
-from . import aside, cut, cutoff, ending, hand_off, loop_limits, refused, reshorten, taint, tool_round, unsaid, windows as window
+from . import aside, cut, cutoff, ending, hand_off, loop_limits, on_demand, refused, reshorten, steering, taint, tool_round, unsaid, windows as window
 from .escalation import Escalating, Escalation, Trigger
 from .limits import Limits
 from .model import Medium
@@ -35,7 +35,7 @@ that was not the answer asked once to say where things stand (`unsaid.STAND`); `
 
 @dataclass(frozen=True)
 class Answer:
-    """Her reply, the rounds of tool calls it took, how many calls those rounds made, how many steps were asked
+    """Her reply, the rounds of tool calls it took (not the loader's own, `on_demand.free`), how many calls those rounds made, how many steps were asked
     again with the act note (`unsaid.acting`) because a reply said it was not the answer, and the entries the reply followed.
     `changes`: how many of those calls were to a tool whose spec does not read. `closed`: how the turn ended."""
 
@@ -135,7 +135,9 @@ async def answer(kind: Task, system: Mapping[str, SystemPrompt], history: tuple[
                  arrive: Arrive | None = None, medium: Medium = "text",
                  escalation: Escalation | None = None) -> Answer | Held:
     """Step the model with tool choice `auto` and run each round of `ToolCalls` it asks for, at most
-    `limits.max_tool_rounds` rounds, then step once more with tool choice `none`. Every one of `tools` is offered on
+    `limits.max_tool_rounds` rounds, then step once more with tool choice `none`. A round of calls to the loader alone
+    (`on_demand.LOADER`) is not counted, up to as many such rounds as the loader has groups to offer
+    (`on_demand.free`); `Answer.rounds`, `Held.rounds` and the logs count the rounds that were. Every one of `tools` is offered on
     every step. A reply under `auto` whose `answers` is false, while tools are offered, is not the answer: with `hold`,
     the first such reply is returned as `Held`, for the caller to deliver and `resume`; otherwise it is dropped and the
     step asked again once under `auto` with the act note (`unsaid.acting`). Each call is run by `source`, the locator's `Tools` when None.
@@ -210,8 +212,8 @@ async def resumed(progress: Progress, kind: Kind, system: Mapping[str, SystemPro
         results = await tool_round.run(progress.asked, limits.max_tool_result_chars, running, reading,
                                        tool_round.reads_made(entries, reading), conversation_id,
                                        taint.specs_outside(offered), steps, dict(progress.done))
+        start += 1 - on_demand.free(progress.asked, entries, offered)
         entries += [progress.asked, results]
-        start += 1
     got = await _turn(kind, system, entries, offered, _pace(limits, started, clock, medium, True), conversation_id, False,
                       running, start, False, progress.calls, steps, arrive, escalation)
     assert isinstance(got, Answer)
@@ -320,7 +322,7 @@ async def _loop(kind: Task, system: Mapping[str, SystemPrompt], entries: list[En
             nothing += 1
             got = await unsaid.asked_again(_step, kind, system, tools, entries, nothing, pace.medium, conversation_id)
         if isinstance(got, Reply):
-            back = await _handed(steps, entries, got, rounds, calls, choice)
+            back = await steering.handed(steps, entries, got, rounds, calls, choice)
             if back is None:
                 return Answer(got, rounds, calls, required, tuple(entries), tool_round.changes_in(entries, reading),
                               _closed(stood, late))
@@ -329,9 +331,9 @@ async def _loop(kind: Task, system: Mapping[str, SystemPrompt], entries: list[En
         if choice == "none":
             break
         calls += len(got.calls)
-        held = await _round(got, entries, rounds, calls, (reading, tools, source), (hold, pace, steps), conversation_id)
-        if held is not None:
+        if isinstance(held := await _round(got, entries, rounds, calls, (reading, tools, source), (hold, pace, steps), conversation_id), Held):
             return held
+        rounds = held
     raise InferenceUnavailable("the model asked for tools under tool choice none")
 
 
@@ -343,18 +345,6 @@ async def _held_mid_step(step: asyncio.Future[Reply | ToolCalls], entries: list[
     if line is None or await loop_limits.ends_within(step, pace.left(pace.limits.hold_after_s)):
         return None
     return Held(aside.holding(line), tuple(entries), rounds, calls, "aside_budget", stepping=Stepping(step, choice, late))
-
-
-async def _handed(steps: Steps, entries: list[Entry], reply: Reply, rounds: int, calls: int, choice: ToolChoice) -> int | None:
-    """None when nothing was said to the turn since it last asked; else its draft `reply` and what was said are added to
-    `entries` and the round to go on from is returned."""
-    draft = (*entries, Message("ashley", reply.text))
-    ahead = rounds if choice == "none" else rounds + 1
-    said = await steps.steer(draft, ahead, calls)
-    if not said:
-        return None
-    entries += [draft[-1], *said]
-    return ahead - 1
 
 
 def _closed(stood: bool, late: bool) -> Closed:
@@ -376,20 +366,22 @@ def _moved_to(moved: Arrived, hold: bool, pace: _Pace, kind: Task,
 
 async def _round(asked: ToolCalls, entries: list[Entry], rounds: int, calls: int,
                  using: tuple[set[str], tuple[ToolSpec, ...], Tools], timing: tuple[bool, _Pace, Steps],
-                 conversation_id: int | None) -> Held | None:
+                 conversation_id: int | None) -> Held | int:
     """One round of `asked` run and its results added to `entries`, the work done recorded; `Held` by `aside_budget` when
-    the budget passes while its calls run, which carries them as `running`."""
+    the budget passes while its calls run, which carries them as `running`. Else the number of the round that counted
+    (`rounds`, or one less for a round of loading, `on_demand.free`)."""
     (reading, tools, source), (hold, pace, steps) = using, timing
     made = tool_round.reads_made(entries, reading)
+    free = on_demand.free(asked, entries, tools)
     await steps.asked(tuple(entries), asked, rounds, calls)
     running = asyncio.ensure_future(tool_round.run(asked, pace.limits.max_tool_result_chars, source, reading, made,
                                                    conversation_id, taint.specs_outside(tools), steps))
     line = aside.latest((*entries, asked)) if hold else None
     if line is not None and not await loop_limits.ends_within(running, pace.left(pace.limits.hold_after_s)):
-        return Held(aside.holding(line), (*entries, asked), rounds + 1, calls, "aside_budget", running)
+        return Held(aside.holding(line), (*entries, asked), rounds + 1 - free, calls, "aside_budget", running)
     entries += [asked, await running]
     await steps.worked(pace.ms() / 1000)
-    return None
+    return rounds - free
 
 
 async def _step(kind: Task, prompt: Prompt, conversation_id: int | None) -> Reply | ToolCalls:
