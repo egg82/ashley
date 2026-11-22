@@ -21,7 +21,9 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
+
+from pydantic import TypeAdapter, ValidationError
 
 from .. import logs, services
 from ..channels import turn_tools
@@ -39,6 +41,7 @@ log = logging.getLogger("ashley.evals")
 CASES = Path(__file__).parent / "reach_cases.json"
 READS = Path(__file__).parent / "house_reads.json"
 CASE_KEYS = {"id", "ask", "groups", "tools"}
+_NAMES = TypeAdapter(list[str])
 
 
 @dataclass(frozen=True)
@@ -61,12 +64,11 @@ class RunResult:
 
 
 def _names(case: dict[str, Any], key: str) -> list[str]:
-    got = case[key]
-    if not isinstance(got, list):
-        raise ValueError(f"reach case {case['id']!r}: {key} is a list of distinct names")
-    listed = cast(list[object], got)
-    names = [n for n in listed if isinstance(n, str) and n.strip()]
-    if len(names) != len(listed) or len(set(names)) != len(names):
+    try:
+        names = _NAMES.validate_python(case[key])
+    except ValidationError as e:
+        raise ValueError(f"reach case {case['id']!r}: {key} is a list of distinct names") from e
+    if not all(n.strip() for n in names) or len(set(names)) != len(names):
         raise ValueError(f"reach case {case['id']!r}: {key} is a list of distinct names")
     return names
 
