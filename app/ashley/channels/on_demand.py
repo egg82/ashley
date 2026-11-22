@@ -8,6 +8,8 @@ import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
+from pydantic import TypeAdapter, ValidationError
+
 from .. import logs
 from ..inference.model import Entry, Tier, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ..tools.action_judge import Vetting
@@ -20,6 +22,7 @@ log = logging.getLogger("ashley.tools")
 LOADER = "use_tools"
 """The loader tool's name. A catalogue holding it is one whose groups load on demand."""
 FIELD = "groups"
+_NAMES = TypeAdapter(list[str])
 
 
 def eligible(inbound: Inbound) -> bool:
@@ -49,9 +52,11 @@ def loaded(entries: Sequence[Entry]) -> frozenset[str]:
 
 
 def named(arguments: Mapping[str, object]) -> list[str]:
-    """The group keys a call to the loader names: the strings of its `groups` list, none for any other shape."""
-    got = arguments.get(FIELD)
-    return [g for g in got if isinstance(g, str)] if isinstance(got, list) else []
+    """The group keys a call to the loader names: the strings of its `groups` list, none for any other shape (a list holding anything else is none too)."""
+    try:
+        return _NAMES.validate_python(arguments.get(FIELD))
+    except ValidationError:
+        return []
 
 
 class Loading(Tools):

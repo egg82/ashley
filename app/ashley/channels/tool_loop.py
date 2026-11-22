@@ -90,8 +90,7 @@ class Held:
 class Arrived:
     """What a turn is offered from its next step on, once its page has moved to a bench or she has asked for more of
     her tools (`channels.on_demand`): those `tools`, this `system` and, when given, these `limits` and conversation
-    `kind` in place of the turn's (a bench's talk has room to work, and its own model). `page` is false for tools
-    asked for: the turn stays as it was, escalation included."""
+    `kind` in place of the turn's (a bench's talk has room to work, and its own model). `page` is false for tools asked for: the turn stays as it was."""
 
     tools: tuple[ToolSpec, ...]
     system: Mapping[str, SystemPrompt]
@@ -159,8 +158,7 @@ async def answer(kind: Task, system: Mapping[str, SystemPrompt], history: tuple[
     `answers` is false is never the answer: it takes a window when one is left, else it is asked once more with
     `unsaid.STAND` and that reply is the answer (`respond.stood`). Progress is recorded through `steps`. `arrive`
     (when given) is asked before each step with the entries so far, and says whether the turn's page moved to a bench or
-    tools she asked for are due; if so, the next steps are offered its `tools`, with `aside` added as the others', and its
-    `system`.
+    tools she asked for are due; if so, the next steps are offered its `tools` (with `aside` added) and `system`.
 
     With an `escalation` (`channels.escalation`), a turn that reaches `max_tool_rounds` or `deadline_s` with no answer,
     or whose reply sets `Reply.escalate`, goes on once on the stronger route from its entries in place of closing here

@@ -58,7 +58,7 @@ class Handing(Work):
         return (Message("person", "and the porch too"),) if len(self.handed) == 1 else ()
 
 
-async def _no_move(system: Mapping[str, SystemPrompt]) -> Arrived | None:
+async def _no_move(system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> Arrived | None:
     return None
 
 
