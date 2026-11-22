@@ -125,10 +125,10 @@ async def shown_on(w: World, now: datetime) -> dict[str, str | None]:
 
 
 @sync
-async def test_a_camera_goes_on_the_kiosk_when_someone_is_home_and_on_the_page_of_someone_away(db_url: str) -> None:
+async def test_a_camera_goes_on_the_kiosk_when_someone_is_home_on_the_page_of_someone_away_and_on_the_askers_page(db_url: str) -> None:
     async with world(db_url) as w:
-        assert screens_of(await call(tools(w), screen_feed_specs.SHOW, camera=PORCH)) == 2
-        assert await shown_on(w, START) == {"ann": None, "bea": PORCH, "kiosk": PORCH}
+        assert screens_of(await call(tools(w), screen_feed_specs.SHOW, camera=PORCH)) == 3
+        assert await shown_on(w, START) == {"ann": PORCH, "bea": PORCH, "kiosk": PORCH}
         assert w.live.published == [FeedChanged(Shown(w.home, None))]
         assert w.house.reads > 0 and w.house.offers == []   # her side only ever signals: no offer comes from a tool
 
@@ -158,8 +158,21 @@ async def test_nobody_looking_shows_nothing_and_announces_nothing(db_url: str) -
         for name, who in (("ann", w.ann), ("bea", w.bea)):
             await w.screens.person_visible(who, w.tokens[name], False)
         await w.screens.device_visible(w.kiosk, w.tokens["kiosk"], False)
-        assert screens_of(await call(tools(w), screen_feed_specs.SHOW, camera=PORCH)) == 0
+        nobody = await call(tools(w), screen_feed_specs.SHOW, camera=PORCH)
+        assert nobody.is_error and nobody.content.startswith("no_one_looking")
         assert w.live.published == []
+
+
+@sync
+async def test_a_person_at_home_who_asks_on_their_own_page_gets_it_there_and_a_hidden_page_gets_the_refusal(db_url: str) -> None:
+    async with world(db_url) as w:
+        w.presence.answer = frozenset({w.ann, w.bea})
+        await w.screens.device_visible(w.kiosk, w.tokens["kiosk"], False)
+        assert screens_of(await call(tools(w), screen_feed_specs.SHOW, camera=PORCH)) == 1
+        assert await shown_on(w, START) == {"ann": PORCH, "bea": None, "kiosk": None}
+        await w.screens.person_visible(w.ann, w.tokens["ann"], False)
+        hidden = await call(tools(w, START + timedelta(seconds=1)), screen_feed_specs.SHOW, camera=HALL)
+        assert hidden.is_error and hidden.content.startswith("no_one_looking")
 
 
 @sync
@@ -177,7 +190,7 @@ async def test_what_a_screen_shows_is_the_records_so_another_instance_clears_it(
     async with world(db_url) as w:
         await call(tools(w), screen_feed_specs.SHOW, camera=PORCH)
         w.live.published.clear()
-        assert screens_of(await call(tools(w), screen_feed_specs.CLEAR)) == 2
+        assert screens_of(await call(tools(w), screen_feed_specs.CLEAR)) == 3
         assert await shown_on(w, START) == {"ann": None, "bea": None, "kiosk": None}
         assert w.live.published == [FeedChanged(Shown(w.home, None))]
         assert screens_of(await call(tools(w), screen_feed_specs.CLEAR)) == 0

@@ -10,13 +10,15 @@ INSTRUCTIONS = ("screen_show_camera puts a camera's live video on the screens so
                 "It slides in, plays without sound, leaves by itself after a short while and can be swiped away. Use it "
                 "when seeing the camera matters now, say so in a line, and never for a look you only need yourself: "
                 "camera_look is that. screen_clear_camera takes it off every screen. A camera that is not one you may look "
-                "through, or gives no live video, is refused.")
+                "through, or gives no live video, is refused, and so is a show that no screen in reach is open and in the "
+                "foreground to receive: say nobody saw it.")
 
 
 def specs() -> tuple[ToolSpec, ...]:
     return (
         ToolSpec(SHOW, "Put the camera's live video on the screens that are open and in the foreground. Returns how many "
-                 "screens it went to; none when nobody is looking.",
+                 "screens it went to; a refusal, `no_one_looking`, when no screen in reach is open and in the "
+                 "foreground: nobody saw it, so say so.",
                  {"type": "object", "required": ["camera"], "properties": {
                      "camera": {"type": "string", "description": "the camera, by the id cameras gives"}}},
                  outside=False, tier="judged"),
