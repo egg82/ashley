@@ -1,9 +1,10 @@
-"""What makes the house eval safe and measurable: `GuardedTools`, which lets only the tools on the read allow-list
-(`house_reads.json`) reach the house and answers every other call as done without reaching it, and `RecordingInference`, which
-notes each model step of a reply so the harness can count rounds and see whether the step limit was reached."""
+"""What makes the house eval safe and measurable: `GuardedTools`, which lets a call reach its service only when the spec a
+catalogue offered for it says it only reads (`ToolSpec.reads`) and answers every other call as done without reaching it, and
+`RecordingInference`, which notes each model step of a reply so the harness can count rounds and see whether the step limit
+was reached."""
 
 import json
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TypeVar
 
@@ -23,7 +24,7 @@ DONE = json.dumps({"done": True, "changed": [{"state": "as asked"}]})
 
 @dataclass(frozen=True)
 class Attempt:
-    """A call kept from the house because its tool is not on the allow-list: the tool and the arguments she gave."""
+    """A call kept from the house because its spec does not say it only reads: the tool and the arguments she gave."""
 
     name: str
     arguments: str
@@ -31,18 +32,21 @@ class Attempt:
 
 @dataclass
 class GuardedTools(Tools):
-    """`inner`'s catalogue unchanged, so she sees every tool she would, but `call` runs only a name in `reads`.
-    Anything else is noted in `refused`, whatever the case expects, and answered with `DONE`, the shape of
+    """`inner`'s catalogue unchanged, so she sees every tool she would, but `call` runs only a name in `reads`: the names
+    whose spec said it only reads, noted from every catalogue asked for (a group loaded later through `use_tools` appears
+    in a later one). Anything else is noted in `refused`, whatever the case expects, and answered with `DONE`, the shape of
     `house_do`'s result for an action that changed nothing visible, so she takes the action as done and does not retry it
     until the step limit."""
 
     inner: Tools
-    reads: Collection[str]
+    reads: set[str] = field(default_factory=set[str])
     refused: list[Attempt] = field(default_factory=list[Attempt])
     ran: list[str] = field(default_factory=list[str])
 
     async def catalogue(self) -> Catalogue:
-        return await self.inner.catalogue()
+        got = await self.inner.catalogue()
+        self.reads.update(s.name for s in got.specs if s.reads)
+        return got
 
     async def call(self, call: ToolCall) -> ToolResult:
         if call.name not in self.reads:

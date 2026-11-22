@@ -1,9 +1,0 @@
-{
-  "read": [
-    "house_ask",
-    "house_find",
-    "house_history",
-    "house_state",
-    "look_up"
-  ]
-}

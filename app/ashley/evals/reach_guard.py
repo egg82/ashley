@@ -4,7 +4,7 @@ source at once, so a call reaches the service behind it only when the spec a cat
 is noted in `refused` and answered as done. It also keeps which source offered each tool (`offered`), so a call can be
 scored by its group whatever the run's variant cuts from what the model sees."""
 
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from ..inference.model import Tier, ToolCall
@@ -30,7 +30,7 @@ class ReachGuard(GuardedTools):
     """`GuardedTools` over a turn's tools, noting into `notes`, that lets through the names `notes.reads` holds. The
     tier, vetting and shown line of a call are the turn's own, so a held change is held as it is in the app."""
 
-    reads: Collection[str] = field(init=False)
+    reads: set[str] = field(init=False)
     notes: Notes = field(default_factory=Notes)
 
     def __post_init__(self) -> None:
@@ -40,7 +40,6 @@ class ReachGuard(GuardedTools):
     async def catalogue(self) -> Catalogue:
         got = await super().catalogue()
         self.notes.offered.update({s.name: got.owners.get(s.name, UNOWNED) for s in got.specs})
-        self.notes.reads.update(s.name for s in got.specs if s.reads)
         return got
 
     async def tier(self, call: ToolCall) -> Tier | None:

@@ -26,13 +26,13 @@ sections, persona examples, tools and tool sources left out, or a `core` of sour
 demand by `use_tools`, named in JSON); the report and `--json` name it and a hash of its JSON, and an unknown name fails the run.
 
 `python -m ashley.evals house [--runs N] [--case ID] [--json PATH]`: how she uses the house's tools, through her real turn
-loop with the live model and Home Assistant, every call that is not a read refused before it reaches the house. Needs a
+loop with the live model and Home Assistant, every call whose spec does not say it only reads refused before it reaches the house. Needs a
 scratch DATABASE_URL (it adds a household and conversations), CONNECTIONS_KEY, EVAL_HA_URL and EVAL_HA_TOKEN (sealed as that
 household's `home_assistant` connection, replacing the one it holds) and the model keys.
 
 `python -m ashley.evals reach [--rescore PATH | --runs N] [--case ID] [--json PATH] [--household N --person N]`: which tool groups she reaches for,
-over `reach_cases.json`, through her real turn loop with the live model and every tool a web chat offers; every call not
-on the read allow-list is answered as done and kept from its service. A group is only offered when the household has it
+over `reach_cases.json`, through her real turn loop with the live model and every tool a web chat offers; every call whose
+spec does not say it only reads is answered as done and kept from its service. A group is only offered when the household has it
 connected, so for the full tool set name a household that has (`--household` with `--person`), on a scratch copy of the
 database (it adds conversations); with neither it is the eval's own household. Needs the model keys. `--rescore` takes a
 saved `--json` run and scores it against today's cases, with no model call and no database.
