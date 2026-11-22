@@ -17,6 +17,7 @@ from ashley.connections.settings_write import RETAIN_DAYS, VersionConflict
 from ashley.connections.settings_write_postgres import PostgresSettingsWriter
 from ashley.db.migrate import alembic_config
 from ashley.db.pool import PoolDatabase
+from ashley.herdr.kind import HERDR
 from ashley.home_assistant.kind import HOME_ASSISTANT
 from ashley.wiring import CONNECTION_KINDS
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template, scalar
@@ -198,12 +199,19 @@ def test_another_household_reads_and_writes_nothing_of_it(db_url: str) -> None:
     run(db_url, scenario)
 
 
-def test_a_person_s_own_connection_takes_no_settings(db_url: str) -> None:
+def test_a_person_s_own_connection_takes_their_settings_and_another_person_s_takes_none(db_url: str) -> None:
+    """The store lets the connection's own person write; the route refuses a switchable kind's person connection
+    (`test_connection_settings_routes.py`, the Google case)."""
     home, person = household(db_url)
-    cid = connection(db_url, home, person=person)
+    other = int(scalar(db_url, "INSERT INTO people (household_id, name) VALUES (%s, 'B') RETURNING id", (home,)))
+    cid = connection(db_url, home, kind="herdr", person=person)
+    values = {"look_cameras": ["webcam.1_0abc_1234_1_2"]}
 
     async def scenario(reader: PostgresSettingsReader, writer: PostgresSettingsWriter) -> None:
-        assert await writer.put(HOME_ASSISTANT, cid, home, person, 0, {"reads": ["script.a"]}) is None
+        assert await writer.put(HERDR, cid, home, other, 0, values) is None
+        assert (await reader.stored(cid, home)).version == 0
+        got = await writer.put(HERDR, cid, home, person, 0, values)
+        assert got is not None and got.values == values and got.version == 1
 
     run(db_url, scenario)
 
