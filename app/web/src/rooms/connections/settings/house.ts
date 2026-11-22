@@ -65,7 +65,7 @@ export function calendarLines(house: House, stored: readonly string[]): ListLine
   return entityLines(house, 'calendar', stored);
 }
 
-/** One line per camera of `domain` the service has (Home Assistant's `camera`, Bambuddy's `printer`), plus any stored one it no longer has; `only` is true for one she may look through. */
+/** One line per camera of `domain` the service has (Home Assistant's `camera`, Bambuddy's `printer`, a bridge's `webcam`), plus any stored one it no longer has; `only` is true for one she may look through. */
 export function cameraLines(house: House, stored: readonly string[], domain: string): ListLine[] {
   return entityLines(house, domain, stored);
 }

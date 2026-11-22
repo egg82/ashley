@@ -69,13 +69,16 @@ def _unavailable() -> JSONResponse:
 
 
 async def _held(signed_in: Person, connection_id: int) -> tuple[Connection, ConnectionKind] | None:
-    """The household's connection `connection_id` when the person sees it and its kind has settings. Raises
-    ConnectionsUnavailable."""
+    """The connection `connection_id` when the person sees it and its kind has settings. A person's own connection has
+    them only where its kind is not `switchable`: a switchable kind's page is the household's (its port switches), so on a
+    person's own connection of one it is not there. Raises ConnectionsUnavailable."""
     person = signed_in.person
     found = await services.get(Connections).of_household(person.household_id, person.id)
-    held = next((c for c in found if c.id == connection_id and c.person_id is None), None)
+    held = next((c for c in found if c.id == connection_id), None)
     kind = None if held is None else services.get(ConnectionKinds).get(held.kind)
-    return None if held is None or kind is None or not kind.configurable else (held, kind)
+    if held is None or kind is None or not kind.configurable or (held.person_id is not None and kind.switchable):
+        return None
+    return held, kind
 
 
 def _field(field: Field) -> SettingField:

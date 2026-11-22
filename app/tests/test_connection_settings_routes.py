@@ -118,6 +118,21 @@ def test_a_connection_of_another_household_or_a_kind_with_no_settings_is_404(cli
     assert client.get(settings_url(0)).status_code == 404
 
 
+def test_a_person_s_own_connection_with_settings_is_theirs_to_read_and_write_and_no_other_person_s(
+        client: TestClient, home: People) -> None:
+    mine = add(client, home, "herdr", person=home.alana)
+    got = client.get(settings_url(mine))
+    assert got.status_code == 200 and [s["key"] for s in got.json()["settings"]] == ["look_cameras"]
+    ids = ["webcam.1_0abc_1234_1_2"]
+    wrote = put(client, mine, 0, [{"key": "look_cameras", "ids": ids}])
+    assert wrote.status_code == 200 and wrote.json()["values"] == [{"key": "look_cameras", "ids": ids, "per_action": []}]
+    assert put(client, mine, 1, [{"key": "look_cameras", "ids": ["not an id"]}]).status_code == 422
+    as_(client, home.sam_token)
+    for tail in ("settings", "settings/history", "catalogue"):
+        assert client.get(settings_url(mine, tail)).status_code == 404, tail
+    assert put(client, mine, 1, []).status_code == 404
+
+
 def test_the_history_lists_each_key_changed_newest_first_and_pages(client: TestClient, home: People) -> None:
     cid = add(client, home)
     put(client, cid, 0, [{"key": "reads", "ids": ["script.a"]}])

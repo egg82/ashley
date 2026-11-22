@@ -6,7 +6,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from .model import (BridgeFailed, Gpu, MachineReport, OutFile, Screen, Session, SessionList, Status, UsbDevice,
+from .model import (BridgeCamera, BridgeFailed, Gpu, MachineReport, OutFile, Screen, Session, SessionList, Status, UsbDevice,
                     Whoami)
 
 
@@ -82,6 +82,15 @@ class UploadedBody(BaseModel):
     bytes: int
 
 
+class CameraBody(BaseModel):
+    id: str
+    name: str
+
+
+class CamerasBody(BaseModel):
+    cameras: list[CameraBody]
+
+
 class OutFileBody(BaseModel):
     name: str
     bytes: int
@@ -128,6 +137,10 @@ def sessions(raw: bytes) -> SessionList:
 def screen(raw: bytes) -> Screen:
     b = body_as(ScreenBody, raw)
     return Screen(b.text, b.truncated, b.revision)
+
+
+def cameras(raw: bytes) -> tuple[BridgeCamera, ...]:
+    return tuple(BridgeCamera(c.id, c.name) for c in body_as(CamerasBody, raw).cameras)
 
 
 def outputs(raw: bytes) -> tuple[OutFile, ...]:

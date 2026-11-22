@@ -222,7 +222,7 @@ Her camera tools use `ashley.cameras.cameras.Cameras`, never Home Assistant: neu
 `Camera`, `Still`, `Roster`). Home Assistant's `camera` entities are the first adapter (`ashley.home_assistant.cameras.HaCameras`),
 behind `ashley.cameras.routed.RoutedCameras`, the Calendars' shape. The still comes from HA's camera proxy over the house
 connection (`House.snapshot`, the only code that reads `/api/camera_proxy`). Bambuddy's printer cameras and a bench machine's
-webcam are later sources; detector events, live video and a bench watch are later slices.
+webcam (`ashley.herdr.cameras.HerdrCameras`) are further sources; live video and a bench watch are later slices.
 
 - **The `camera` port is `combine`**: every serving, switched-on connection's cameras are listed, each naming its `source`; a
   source that fails is `unread`, not an empty roster. Home Assistant's kind declares it, so it has a switch.
@@ -230,6 +230,14 @@ webcam are later sources; detector events, live video and a bench watch are late
   by a person through the connections room's settings route, never by her tools). Empty for a new household. The adapter lists
   only the named cameras and looks through only those: a camera not named is neither in `cameras` nor reachable by `camera_look`
   (the router finds the camera among the listed ones first).
+- **A bench machine's webcams come from its herdr bridge** (`GET /v1/cameras`, a still from `GET /v1/cameras/:id/still`, bridge
+  0.6.0). The herdr kind declares `camera` and carries `look_cameras` (an `EntityList` of `webcam`, the bridge's cameras as
+  its catalogue); a camera's id is `webcam.<connection id>_<bridge id>`, so two machines with the same camera in the same USB
+  port stay two. A bridge older than 0.6.0 answers 404, which is no cameras. A bridge gives no feed, recordings or detector. A
+  herdr connection is a person's own, but the camera port is the household's: it reads every person's connections
+  (`ports.opened_all(everyone=True)`, each opened as its own person), so a camera its owner names in `look_cameras` is looked
+  through in any chat of the household. The owner's per-camera switch is the consent. A person's own connection has a settings
+  page only where its kind is not `switchable`.
 - **Some cameras give no still on demand.** HA's proxy answers 404, 500 or 503 for a camera with no image to give now (the
   status codes are unverified against a live Nest camera), and so does a camera whose `camera/capabilities` (WebSocket)
   list `frontend_stream_types` as `web_rtc` alone, which the proxy answers with a placeholder image, never asked

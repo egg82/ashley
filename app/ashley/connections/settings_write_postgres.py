@@ -15,7 +15,7 @@ from .settings_write import RETAIN_DAYS, SettingsWriter, VersionConflict
 
 log = logging.getLogger("ashley.connections")
 
-LOCK = "SELECT 1 FROM connections WHERE id = %(id)s AND household_id = %(household)s AND person_id IS NULL FOR UPDATE"
+LOCK = "SELECT 1 FROM connections WHERE id = %(id)s AND household_id = %(household)s AND (person_id IS NULL OR person_id = %(person)s) FOR UPDATE"
 CURRENT = "SELECT version, values FROM connection_settings WHERE connection_id = %(id)s FOR UPDATE"
 INSERT = ("INSERT INTO connection_settings (connection_id, household_id, values, version, updated_at, updated_by) "
           "VALUES (%(id)s, %(household)s, %(values)s, 1, now(), %(person)s) RETURNING version, values, updated_at, updated_by")

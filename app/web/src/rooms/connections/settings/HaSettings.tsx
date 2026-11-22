@@ -1,6 +1,6 @@
 // A service's settings in the words of what she does. Home Assistant's: why they exist, then lists, look-ups, the things
 // that need the person's word, the calendars the hallway screen shows and the cameras she may look through; a kind that
-// declares only the cameras (Bambuddy) gets that section alone. Each section edits the stored settings through the draft; the page saves them whole.
+// declares only the cameras (Bambuddy, a herdr bridge) gets that section alone. Each section edits the stored settings through the draft; the page saves them whole.
 import { Why } from './Why';
 import { CalendarsSection } from './CalendarsSection';
 import { CamerasSection } from './CamerasSection';

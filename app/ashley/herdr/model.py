@@ -7,7 +7,7 @@ from ..connections import address
 
 Reason = Literal["bad_request", "bad_token", "wrong_person", "dir_not_allowed", "not_found", "busy", "blocked",
                  "unknown_state", "person_typing", "label_taken", "herdr_unavailable", "unconfirmed", "pin_mismatch",
-                 "bad_path", "too_many", "too_large", "unexpected"]
+                 "bad_path", "too_many", "too_large", "camera_busy", "camera_failed", "ffmpeg_missing", "unexpected"]
 """Why a call failed. The bridge's own codes (`bridge/herdr/README.md`), and three of this side's: `herdr_unavailable`
 is also the answer when nothing reached the bridge (down, unreachable, no TLS); `pin_mismatch`, what answered is not
 the certificate pinned, and nothing was sent to it; `unexpected`, what answered is not the bridge's API, or an error
@@ -107,6 +107,15 @@ class MachineReport:
     busy: bool | None
     tools: tuple[str, ...]
     usb: tuple[UsbDevice, ...] | None
+
+
+@dataclass(frozen=True)
+class BridgeCamera:
+    """A webcam of the bridge's machine: `id` is the bridge's (stable while the camera stays in the same USB port, never
+    a serial number) and `name` the device's own product string, text from outside."""
+
+    id: str
+    name: str
 
 
 @dataclass(frozen=True)

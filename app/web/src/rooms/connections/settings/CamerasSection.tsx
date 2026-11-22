@@ -1,5 +1,5 @@
 // "Cameras she may look through": one switch per camera, on when she may list it and take a still from it when asked. Off for every
-// camera until a person turns it on. Home Assistant's and Bambuddy's connections both carry the setting; the kind says which
+// camera until a person turns it on. Home Assistant's, Bambuddy's and a herdr bridge's connections all carry the setting; the kind says which
 // domain of its catalogue holds the cameras.
 import type { House } from './house';
 import { cameraLines } from './house';

@@ -10,6 +10,7 @@ VISIBLE = "household_id = %(household)s AND (person_id IS NULL OR person_id = %(
 GRANT_VALUES = "%(access)s::bytea, now() + %(expires_in)s::double precision * interval '1 second', %(scopes)s::text[]"
 
 LIST = f"SELECT {COLUMNS} FROM connections WHERE {VISIBLE} ORDER BY kind, label, id"
+LIST_EVERYONE = f"SELECT {COLUMNS} FROM connections WHERE household_id = %(household)s ORDER BY kind, label, id"
 HOUSEHOLDS_OF_KINDS = "SELECT DISTINCT household_id FROM connections WHERE kind = ANY(%(kinds)s) ORDER BY household_id"
 OPEN = f"SELECT {COLUMNS}, secret FROM connections WHERE id = %(id)s AND {VISIBLE}"
 IDENTITY = f"SELECT kind, person_id FROM connections WHERE id = %(id)s AND {VISIBLE} FOR UPDATE"

@@ -56,6 +56,12 @@ class Connections(Service):
         ConnectionsUnavailable."""
         raise ConnectionsUnavailable("connections are not wired")
 
+    async def of_everyone(self, household_id: int) -> tuple[Connection, ...]:
+        """Every connection of the household, the household's and each person's, by kind, then label, then id. For a port
+        the household looks through as a whole (cameras); open one with `opened` as its own `person_id`. Raises
+        ConnectionsUnavailable."""
+        raise ConnectionsUnavailable("connections are not wired")
+
     @abstractmethod
     async def opened(self, connection_id: int, household_id: int, person_id: int | None = None) -> Opened | None:
         """That one connection with its secret, when it is visible to `person_id` (the household's, or theirs); None

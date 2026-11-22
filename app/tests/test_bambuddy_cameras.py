@@ -87,7 +87,7 @@ def cameras() -> RoutedCameras:
 
 def test_the_kind_serves_cameras_beside_printing_and_stock_and_offers_its_printers_for_the_setting() -> None:
     assert BAMBUDDY.ports == {"printing", "stock", "camera"}
-    assert [k.name for k in services.get(ConnectionKinds).of_port("camera")] == ["home_assistant", "bambuddy"]
+    assert [k.name for k in services.get(ConnectionKinds).of_port("camera")] == ["home_assistant", "bambuddy", "herdr"]
     (setting,) = BAMBUDDY.settings
     assert setting.key == "look_cameras" and setting.decides == "read" and setting.field == EntityList(("printer",))
 
