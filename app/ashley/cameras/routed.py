@@ -1,6 +1,6 @@
-"""The Cameras port wired: every connection serving `camera` (`ashley.connections.ports.opened_all`, which honours the
-household's switches) is read by the adapter of its kind, and what they hold is combined, each camera labelled with its
-source. A connection of a kind with no adapter is skipped; a source that fails is `unread`, so one service being down never
+"""The Cameras port wired: every connection serving `camera`, the household's and each person's
+(`ashley.connections.ports.opened_all`, which honours the household's switches), is read by the adapter of its kind, and
+what they hold is combined, each camera labelled with its source. A connection of a kind with no adapter is skipped; a source that fails is `unread`, so one service being down never
 hides the others, nor reads as having no camera."""
 
 import logging
@@ -27,7 +27,7 @@ class RoutedCameras(Cameras):
 
     async def _serving(self, household_id: int) -> list[Opened]:
         try:
-            found = await ports.opened_all(services.get(Connections), "camera", household_id)
+            found = await ports.opened_all(services.get(Connections), "camera", household_id, everyone=True)
         except ConnectionsUnavailable as e:
             raise CamerasUnavailable from e
         return [o for o in found if o.connection.kind in self._adapters]

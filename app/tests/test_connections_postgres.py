@@ -199,3 +199,19 @@ def test_a_seed_for_no_such_household_writes_nothing(db_url: str) -> None:
 
     asyncio.run(scenario())
     assert scalar(db_url, "SELECT count(*) FROM connections") == 0
+
+
+def test_everyone_lists_the_households_and_each_persons_own_but_never_another_households(db_url: str) -> None:
+    one, alana, two, kim = homes(db_url)
+
+    async def scenario() -> None:
+        async with connections_on(db_url) as connections:
+            house = await connections.add(one, "sure", "", BASE, SECRET, alana)
+            own = await connections.add(one, "herdr", "bench", f"https://b.test:7843#sha256={'0' * 64}", SECRET, alana)
+            await connections.add(two, "herdr", "theirs", f"https://t.test:7843#sha256={'0' * 64}", SECRET, kim)
+            assert {c.id for c in await connections.of_everyone(one)} == {house.id, own.id}
+            assert [c.id for c in await connections.of_household(one)] == [house.id]
+            opened = await connections.opened(own.id, one, own.person_id)
+            assert opened is not None and opened.secret == SECRET
+
+    asyncio.run(scenario())

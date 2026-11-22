@@ -79,7 +79,7 @@ export function ManagePanel({ c, kind }: { c: HouseholdConnection; kind: Connect
         <Access c={c} />
         {c.resources.length > 0 && <Item term="Mailboxes"><Resources c={c} /></Item>}
       </dl>
-      {kind.has_settings && !c.personal && (
+      {kind.has_settings && (!c.personal || !kind.holders.includes('household')) && (
         <section class="rr-settings" aria-label="Settings">
           <h3 class="label">Settings</h3>
           <SettingsEditor id={c.id} />

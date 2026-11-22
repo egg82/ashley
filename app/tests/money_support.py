@@ -190,6 +190,10 @@ class HeldConnections(Connections):
         return tuple(o.connection for (h, _), o in self.held.items()
                      if h == household_id and o.connection.person_id in (None, person_id))
 
+    async def of_everyone(self, household_id: int) -> tuple[Connection, ...]:
+        self._up()
+        return tuple(o.connection for (h, _), o in self.held.items() if h == household_id)
+
     async def households_of_kinds(self, kinds: Collection[str]) -> tuple[int, ...]:
         self._up()
         return tuple(sorted({h for (h, _), o in self.held.items() if o.connection.kind in kinds}))

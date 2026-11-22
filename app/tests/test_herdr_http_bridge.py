@@ -16,11 +16,14 @@ from ashley.herdr.bridge import Bridge, NullBridge
 from ashley.herdr.config import load
 from ashley.herdr.http_bridge import HttpBridge
 from ashley.herdr.kind import HERDR
-from ashley.herdr.model import Access, BridgeFailed
+from ashley.herdr.model import Access, BridgeCamera, BridgeFailed
 from ashley.herdr.transport import ClientCertificate
 from ashley.herdr.wire import sessions
-from herdr_bridge.runner import HerdrMissing, HerdrTimeout, Outcome
+from herdr_bridge.cameras import Cameras
+from herdr_bridge.machine import Roots
+from herdr_bridge.runner import Captured, HerdrMissing, HerdrTimeout, Outcome
 
+from test_herdr_bridge_cameras import JPEG, Ffmpeg, node
 from herdr_bridge_support import (PERSON, THROWAWAY, TOKEN, FakeHerdr, Issued, Served, ca_with_client, listing, ok,
                                   serving)
 
@@ -238,11 +241,32 @@ def test_an_answer_that_never_comes_is_unconfirmed_for_a_change_and_unavailable_
             herdr.release.set()
 
 
+def test_the_cameras_are_listed_and_a_still_comes_back_as_the_bridge_took_it(world: World, tmp_path: Path) -> None:
+    node(tmp_path / "sys", 0, "1-2", 0, "Test Cam A")
+    ffmpeg = Ffmpeg(Captured(0, JPEG, ""))
+    world.served.bridge.api.cameras = Cameras(Roots(tmp_path / "p", tmp_path / "sys"), ffmpeg)
+    assert run(world.bridge().cameras(world.access())) == (BridgeCamera("0abc_1234_1_2", "Test Cam A"),)
+    assert run(world.bridge().camera_still(world.access(), "0abc_1234_1_2", 1024)) == JPEG
+    assert refused(world.bridge().camera_still(world.access(), "0abc_1234_1_2", 4)) == "too_large"
+    assert refused(world.bridge().camera_still(world.access(), "0abc_1234_9_9", 1024)) == "not_found"
+    assert len(ffmpeg.asked) == 2
+
+
+def test_a_busy_camera_and_a_wrong_token_are_named(world: World, tmp_path: Path) -> None:
+    node(tmp_path / "sys", 0, "1-2", 0, "Test Cam A")
+    ffmpeg = Ffmpeg(Captured(1, b"", "Device or resource busy"))
+    world.served.bridge.api.cameras = Cameras(Roots(tmp_path / "p", tmp_path / "sys"), ffmpeg)
+    assert refused(world.bridge().camera_still(world.access(), "0abc_1234_1_2", 1024)) == "camera_busy"
+    ffmpeg.answer = Captured(0, JPEG, "")
+    assert refused(world.bridge().camera_still(world.access(token="wrong"), "0abc_1234_1_2", 1024)) == "bad_token"
+
+
 def test_the_null_bridge_fails_every_call() -> None:
     null = NullBridge()
     access = Access("https://x:1", "0" * 64, "t", 1)
     for call in (null.whoami(access), null.sessions(access), null.read(access, THROWAWAY, 1),
-                 null.prompt(access, THROWAWAY, "x"), null.start(access, "/d", "l", None), null.close(access, THROWAWAY)):
+                 null.prompt(access, THROWAWAY, "x"), null.start(access, "/d", "l", None), null.close(access, THROWAWAY),
+                 null.cameras(access), null.camera_still(access, "0abc_1234_1", 10)):
         assert refused(call) == "herdr_unavailable"
 
 
