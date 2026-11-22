@@ -1,6 +1,6 @@
 """The house eval against the live model and the live house: how she uses the house's tools. Each case in
 `house_cases.json` is asked through her real turn loop (`channels.respond`), `runs` times, with every tool call that
-is not on the read allow-list (`house_reads.json`) kept from Home Assistant and answered as done, whatever the case
+whose spec does not say it only reads kept from Home Assistant and answered as done, whatever the case
 expects (`house_guard.GuardedTools`). A case expects `read_only` (any refused call fails it), `action` (a call to one of
 its `tools` whose arguments name its `target` passes; the call is still kept from the house, and reported as one she would have
 made) or `unknown_name` (a thing the house does not have: any refused call fails it; whether she said so is not graded,
@@ -36,7 +36,6 @@ from .house_readonly import ReadOnlyHomes
 log = logging.getLogger("ashley.evals")
 
 CASES = Path(__file__).parent / "house_cases.json"
-READS = Path(__file__).parent / "house_reads.json"
 
 
 @dataclass(frozen=True)
@@ -78,10 +77,6 @@ class RunResult:
 
 def load() -> list[dict[str, Any]]:
     return json.loads(CASES.read_text())["cases"]
-
-
-def reads() -> frozenset[str]:
-    return frozenset(json.loads(READS.read_text())["read"])
 
 
 def inbound(case: dict[str, Any], seat: Seat) -> Inbound:
@@ -159,7 +154,7 @@ async def run(runs: int, only: str | None, seat: Seat, ledger: Ledger) -> dict[s
     if not cases:
         raise ValueError(f"no house case {only!r}")
     real_everyday, real_inference, real_homes = services.get(Everyday), services.get(Inference), services.get(Homes)
-    guard = GuardedTools(await real_everyday.of(seat.household_id), reads())
+    guard = GuardedTools(await real_everyday.of(seat.household_id))
     recorder = RecordingInference(real_inference)
     services.register(Everyday, _Guarded(guard))
     services.register(Homes, ReadOnlyHomes(real_homes, guard.refused))

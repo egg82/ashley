@@ -1,4 +1,4 @@
-"""The house eval against fakes: the guard refuses every tool off the read allow-list (and, empty, reads too), each
+"""The house eval against fakes: the guard runs a call only when a catalogue offered its spec as a read, each
 expectation grades as it says, and steps, the step limit, repeats and the JSON come out right."""
 
 import asyncio
@@ -19,7 +19,6 @@ from ashley.home_assistant.homes import Home, Homes
 from ashley.inference.inference import Inference
 from ashley.inference.model import ToolCall, ToolCalls, ToolSpec
 from ashley.inference.reply import Reply
-from ashley.tools import house_state
 from ashley.tools.tools import Tools
 from pydantic import BaseModel
 from house_double_support import MemoryHouse, state
@@ -38,32 +37,42 @@ def tool(name: str, arguments: dict[str, object] | None = None) -> ToolCall:
     return ToolCall("c", name, arguments or {})
 
 
-def test_a_write_tool_is_answered_as_done_and_never_reaches_the_inner_tools() -> None:
-    inner = FakeTools()
-    guard = GuardedTools(inner, house.reads())
+def spec(name: str, reads: bool = False) -> ToolSpec:
+    return ToolSpec(name, "", {"type": "object"}, reads=reads)
+
+
+def guarded(*specs: ToolSpec) -> tuple[GuardedTools, FakeTools]:
+    inner = FakeTools(specs=specs)
+    guard = GuardedTools(inner)
+    asyncio.run(guard.catalogue())
+    return guard, inner
+
+
+def test_a_read_whose_spec_says_it_reads_runs_though_no_list_names_it() -> None:
+    guard, inner = guarded(spec("todo_lists", True), spec("house_do"))
+    got = asyncio.run(guard.call(tool("todo_lists")))
+    assert not got.is_error and [c.name for c in inner.called] == ["todo_lists"] and guard.refused == []
+
+
+def test_a_change_is_answered_as_done_and_never_reaches_the_inner_tools() -> None:
+    guard, inner = guarded(spec("todo_lists", True), spec("house_do"))
     got = asyncio.run(guard.call(tool("house_do", {"action": "light.turn_on", "name": "Lamp"})))
     assert not got.is_error and json.loads(got.content)["done"] is True and inner.called == []
     assert [a.name for a in guard.refused] == ["house_do"]
 
 
-def test_every_state_changing_tool_the_house_offers_is_off_the_allow_list() -> None:
-    reads = house.reads()
-    for name in ("house_do", "house_change", "house_confirm"):
-        assert name not in reads, name
+def test_a_name_no_catalogue_offered_is_kept_from_the_inner_tools() -> None:
+    guard, inner = guarded(spec("house_ask", True))
+    asyncio.run(guard.call(tool("made_up")))
+    assert inner.called == [] and [a.name for a in guard.refused] == ["made_up"]
 
 
-def test_a_read_tool_on_the_allow_list_runs() -> None:
-    inner = FakeTools()
-    guard = GuardedTools(inner, house.reads())
-    got = asyncio.run(guard.call(tool("house_ask")))
-    assert not got.is_error and [c.name for c in inner.called] == ["house_ask"] and guard.refused == []
-
-
-def test_an_empty_allow_list_keeps_reads_from_the_house_too() -> None:
-    inner = FakeTools()
-    guard = GuardedTools(inner, frozenset())
-    got = asyncio.run(guard.call(tool("house_ask")))
-    assert not got.is_error and inner.called == [] and len(guard.refused) == 1
+def test_a_read_first_offered_by_a_later_catalogue_runs() -> None:
+    guard, inner = guarded(spec("lights"))
+    inner.specs = (spec("lights"), spec("loaded_read", True))
+    asyncio.run(guard.catalogue())
+    asyncio.run(guard.call(tool("loaded_read")))
+    assert [c.name for c in inner.called] == ["loaded_read"] and guard.refused == []
 
 
 def test_the_house_under_her_per_turn_tools_reads_through_and_keeps_every_change_from_the_real_one() -> None:
@@ -101,14 +110,6 @@ class AnyHome(Homes):
 
     async def check(self, base_url: str, token: str) -> None:
         raise NotImplementedError
-
-
-def test_the_allow_list_is_not_empty() -> None:
-    assert len(house.reads()) > 0
-
-
-def test_her_house_state_read_is_on_the_allow_list() -> None:
-    assert house_state.NAME in house.reads()
 
 
 def run_case(wired: Fakes, case_id: str, script: Sequence[ToolCalls | BaseModel | Exception], runs: int = 1) -> list[house.RunResult]:
