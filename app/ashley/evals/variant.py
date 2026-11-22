@@ -15,7 +15,8 @@ import hashlib
 import json
 import sys
 from dataclasses import dataclass
-from typing import cast
+
+from pydantic import TypeAdapter, ValidationError
 
 from ..channels import cut
 from ..persona import prose, sections
@@ -23,6 +24,8 @@ from ..persona import prose, sections
 FIELDS = ("name", "sections", "examples", "tools", "sources")
 OTHER_PARTS = ("kind", "tools", "profile", "standing")
 STDIN = "-"
+_OBJECT = TypeAdapter(dict[str, object])
+_NAMES = TypeAdapter(list[str])
 
 
 @dataclass(frozen=True)
@@ -60,10 +63,13 @@ def known_examples() -> frozenset[str]:
 
 
 def _names(data: dict[str, object], key: str, known: frozenset[str] | None) -> frozenset[str]:
-    got = data.get(key, [])
-    if not isinstance(got, list) or not all(isinstance(n, str) and n for n in cast(list[object], got)):
+    try:
+        listed = _NAMES.validate_python(data.get(key, []))
+    except ValidationError as e:
+        raise ValueError(f"variant {key!r} is a list of names") from e
+    if not all(listed):
         raise ValueError(f"variant {key!r} is a list of names")
-    names = frozenset(cast(list[str], got))
+    names = frozenset(listed)
     if known is not None and names - known:
         raise ValueError(f"variant {key!r} names {', '.join(sorted(names - known))}, which the prompt does not have; "
                          f"it has {', '.join(sorted(known))}")
@@ -74,12 +80,11 @@ def parse(text: str) -> Variant:
     """The variant `text` describes. Raises ValueError for text that is not JSON, a key not in `FIELDS`, a missing
     `name`, a name that is not a string, and any section or example the code does not have."""
     try:
-        loaded: object = json.loads(text)
+        data = _OBJECT.validate_python(json.loads(text))
     except json.JSONDecodeError as e:
         raise ValueError(f"the variant is not JSON: {e.msg}") from e
-    if not isinstance(loaded, dict):
-        raise ValueError("a variant is one JSON object")
-    data = cast(dict[str, object], loaded)
+    except ValidationError as e:
+        raise ValueError("a variant is one JSON object") from e
     stray = sorted(set(data) - set(FIELDS))
     if stray:
         raise ValueError(f"variant has no key {', '.join(map(repr, stray))}; its keys are {', '.join(FIELDS)}")
