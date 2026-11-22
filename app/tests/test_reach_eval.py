@@ -1,0 +1,164 @@
+"""The reach eval against fakes: no call off the read allow-list reaches any source of a turn, a run is scored by the
+groups she called, the case file is valid and covers the groups, and a variant's cut is what the run's model sees."""
+
+import asyncio
+import json
+from collections.abc import Sequence
+
+import pytest
+from ashley import services
+from ashley.channels import cut, turn_tools
+from ashley.connections.connections import Connections
+from ashley.evals import reach, reach_report, variant
+from ashley.evals.house import Billed, Seat
+from ashley.inference.inference import Inference
+from ashley.evals.reach_guard import Notes, ReachGuard
+from ashley.inference.model import ToolCall, ToolCalls, ToolSpec
+from ashley.inference.reply import Reply
+from ashley.tools.composite import CompositeTools
+from pydantic import BaseModel
+from money_support import HeldConnections
+from respond_support import ALANA, HOME, Fakes, FakeTools, calls, wired as wired
+
+SEAT = Seat(HOME.id, ALANA.id)
+ANSWER = Reply(spoken="s", text="t")
+READS = reach.reads()
+
+
+async def no_ledger(conversation_id: int, task: str) -> list[Billed]:
+    return [Billed(100, "fake", "m"), Billed(120, "fake", "m")]
+
+
+def source(*names: str) -> FakeTools:
+    return FakeTools(specs=tuple(ToolSpec(n, "", {"type": "object"}) for n in names))
+
+
+def test_no_tool_of_any_source_of_a_turn_reaches_its_source_unless_it_is_a_listed_read() -> None:
+    reading = sorted(READS)[0]
+    sources = {"everyday": source("house_do", reading), "money": source("money_categorise", "money_note"),
+               "mail": source("mail_send", "mail_draft"), "reminders": source("remind", "remind_on_money"),
+               "print_queue": source("print_queue"), "code": source("run_code")}
+    guard = ReachGuard(CompositeTools(sources), READS, notes=Notes())
+    names = [s.name for s in asyncio.run(guard.catalogue()).specs]
+    assert len(names) == 10 and reading in names
+    for name in names:
+        got = asyncio.run(guard.call(ToolCall("c", name, {})))
+        assert not got.is_error
+    reached = [c.name for s in sources.values() for c in s.called]
+    assert reached == [reading]
+    assert sorted(a.name for a in guard.notes.refused) == sorted(n for n in names if n != reading)
+    assert guard.notes.offered["money_note"] == "money" and guard.notes.offered["run_code"] == "code"
+
+
+def test_the_allow_list_holds_no_tool_that_changes_anything() -> None:
+    assert READS and not {n for n in READS if "do" in n.split("_") or "change" in n or "send" in n or "categorise" in n}
+
+
+def run_case(wired: Fakes, case_id: str, script: Sequence[ToolCalls | BaseModel | Exception], runs: int = 1) -> list[reach.RunResult]:
+    wired.tools.specs = (ToolSpec("lights", "", {"type": "object"}), ToolSpec("house_ask", "", {"type": "object"}, reads=True))
+    wired.inference.script = list(script)
+    return asyncio.run(reach.run(runs, case_id, SEAT, no_ledger))[case_id]
+
+
+def test_a_write_the_model_asks_for_is_scored_by_its_group_and_never_reaches_the_source(wired: Fakes) -> None:
+    [got] = run_case(wired, "everyday-light-state", [calls("lights"), ANSWER])
+    assert got.passed and got.groups == ("everyday",) and got.extra == () and got.refused == ("lights",)
+    assert wired.tools.called == []
+
+
+def test_a_listed_read_reaches_the_source(wired: Fakes) -> None:
+    [got] = run_case(wired, "everyday-light-state", [calls("house_ask"), ANSWER])
+    assert got.passed and got.refused == () and [c.name for c in wired.tools.called] == ["house_ask"]
+
+
+def test_an_ask_that_needs_no_tool_fails_on_a_call_and_names_the_group_it_reached_for(wired: Fakes) -> None:
+    [clean] = run_case(wired, "none-joke", [ANSWER])
+    assert clean.passed and clean.tools == () and clean.extra == ()
+    [reached] = run_case(wired, "none-joke", [calls("lights"), ANSWER])
+    assert not reached.passed and reached.extra == ("everyday",)
+
+
+def test_a_case_without_its_group_fails_naming_what_is_missing_and_what_no_catalogue_held(wired: Fakes) -> None:
+    [got] = run_case(wired, "money-balance", [calls("lights"), ANSWER])
+    assert not got.passed and got.missing == ("money",) and got.extra == ("everyday",)
+    assert got.unoffered == ("money",)
+
+
+def test_a_named_tool_must_be_called_and_its_group_is_wanted_not_extra() -> None:
+    case = {"id": "x", "ask": "a", "groups": [], "tools": ["remind_on_money"]}
+    offered = {"remind_on_money": "reminders", "remind": "reminders", "lights": "everyday"}
+    assert reach.score(case, ["remind"], offered) == (False, ("remind_on_money",), ())
+    assert reach.score(case, ["remind", "remind_on_money", "lights"], offered) == (True, (), ("everyday",))
+
+
+def test_steps_tokens_and_models_come_from_the_run(wired: Fakes) -> None:
+    [got] = run_case(wired, "calendar-next", [calls("lights"), calls("lights", prefix="d"), ANSWER])
+    assert got.steps == 2 and got.tokens == (100, 120) and got.models == ("fake/m",) and not got.limit_hit and got.repeats == 0
+
+
+def test_the_services_and_the_turn_tools_are_restored_after_a_run(wired: Fakes) -> None:
+    before = turn_tools.for_turn
+    run_case(wired, "none-joke", [ANSWER])
+    assert turn_tools.for_turn is before and services.get(Inference) is wired.inference
+
+
+def test_an_unknown_case_raises(wired: Fakes) -> None:
+    with pytest.raises(ValueError):
+        asyncio.run(reach.run(1, "nope", SEAT, no_ledger))
+
+
+def test_a_variant_that_cuts_a_group_takes_its_tools_from_the_model_and_the_case_fails(wired: Fakes) -> None:
+    variant.install(variant.parse('{"name": "no-everyday", "sources": ["everyday"]}'))
+    try:
+        [got] = run_case(wired, "everyday-light-state", [ANSWER])
+    finally:
+        variant.install(None)
+    assert not got.passed and got.missing == ("everyday",) and got.tools == ()
+    assert "lights" not in {t.name for p in wired.inference.prompts for t in p.tools}
+    assert cut.active() == cut.NO_CUT
+
+
+def test_the_report_and_json_agree_and_carry_the_variant(wired: Fakes) -> None:
+    results = {"none-joke": run_case(wired, "none-joke", [calls("lights"), ANSWER]),
+               "everyday-light-state": run_case(wired, "everyday-light-state", [calls("lights"), ANSWER])}
+    data = json.loads(reach_report.to_json(results, "v@1"))
+    assert data["variant"] == "v@1" and data["total"]["runs"] == 2 and data["total"]["passes"] == 1
+    assert data["total"]["false_positives"] == 1 and data["total"]["no_tool_runs"] == 1
+    assert data["total"]["extra"] == {"everyday": 1} and data["cases"][0]["runs"][0]["tokens"] == [100, 120]
+    assert data["cases"][0]["summary"]["tokens_first_median"] == 100
+    text = reach_report.render(results, "v@1")
+    assert "variant: v@1" in text and "TOTAL" in text and "1/1 no-tool runs called a tool" in text
+
+
+def test_the_case_file_is_valid_and_covers_the_groups_with_no_tool_asks() -> None:
+    cases = reach.load()
+    by_group: dict[str, int] = {}
+    for c in cases:
+        for g in c["groups"]:
+            by_group[g] = by_group.get(g, 0) + 1
+    main = ("everyday", "reminders", "money", "mail", "watches", "printing", "print_queue", "stock", "calendar", "todo",
+            "camera", "code_host", "claude_code", "screen", "browser", "house_change", "devices", "code")
+    assert all(by_group.get(g, 0) >= 2 for g in main), by_group
+    assert sum(not c["groups"] and not c["tools"] for c in cases) >= 5
+
+
+def test_every_group_a_case_names_is_a_source_a_turn_builds() -> None:
+    services.register(Connections, HeldConnections())
+    try:
+        built = set(turn_tools.sources(reach.inbound({"ask": "x"}, SEAT), None, 1, None, (1, 1)))
+    finally:
+        services.unregister(Connections)
+    known = built | {"everyday", "readers", "mail", "code", "browser"}
+    named = {g for c in reach.load() for g in c["groups"]}
+    assert named <= known, named - known
+
+
+@pytest.mark.parametrize("broken", [
+    [{"id": "a", "ask": "x", "groups": []}],
+    [{"id": "a", "ask": " ", "groups": [], "tools": []}],
+    [{"id": "a", "ask": "x", "groups": "money", "tools": []}],
+    [{"id": "a", "ask": "x", "groups": ["m", "m"], "tools": []}],
+    [{"id": "a", "ask": "x", "groups": [], "tools": []}, {"id": "a", "ask": "y", "groups": [], "tools": []}]])
+def test_a_case_that_is_not_well_formed_is_refused(broken: list[dict[str, object]]) -> None:
+    with pytest.raises(ValueError):
+        reach.validate(broken)

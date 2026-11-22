@@ -21,7 +21,7 @@ and a model key.
 person's words and a call's view) against the one each case expects: how often it says `run` where `ask` was expected and
 the reverse. Measures and never gates. Needs DATABASE_URL, for the spend ledger, and a model key.
 
-`--variant PATH` on `house` and `prompt-sizes` (`-` reads stdin) runs the turn with a prompt variant (`variant`: stable-prompt
+`--variant PATH` on `house`, `reach` and `prompt-sizes` (`-` reads stdin) runs the turn with a prompt variant (`variant`: stable-prompt
 sections, persona examples, tools and tool sources left out, named in JSON); the report and `--json` name it and a hash of
 its JSON, and an unknown name fails the run.
 
@@ -29,6 +29,12 @@ its JSON, and an unknown name fails the run.
 loop with the live model and Home Assistant, every call that is not a read refused before it reaches the house. Needs a
 scratch DATABASE_URL (it adds a household and conversations), CONNECTIONS_KEY, EVAL_HA_URL and EVAL_HA_TOKEN (sealed as that
 household's `home_assistant` connection, replacing the one it holds) and the model keys.
+
+`python -m ashley.evals reach [--runs N] [--case ID] [--json PATH] [--household N --person N]`: which tool groups she reaches for,
+over `reach_cases.json`, through her real turn loop with the live model and every tool a web chat offers; every call not
+on the read allow-list is answered as done and kept from its service. A group is only offered when the household has it
+connected, so for the full tool set name a household that has (`--household` with `--person`), on a scratch copy of the
+database (it adds conversations); with neither it is the eval's own household. Needs the model keys.
 
 `python -m ashley.evals bench-act [--runs N] [--case ID] [--scripted] [--clock work|age] [--windows N] [--hold S] [--no-now]`:
 what she does on a bench, through her real turn loop with a captured bench, her real bench and move_page tools, and a fake
@@ -71,7 +77,7 @@ from ..inference.inference import InferenceError
 from ..inference.routes import PinError, Routes, only
 from ..settings import Settings, from_env
 from . import (action_judge, bench_act, bench_replay, bench_replay_run, house, house_live, house_report, memory_recall_hybrid,
-               memory_write, outside_ask, prompt_sizes_live, reply_owed, reply_remember, variant, watch_tools)
+               memory_write, outside_ask, prompt_sizes_live, reach, reach_report, reply_owed, reply_remember, variant, watch_tools)
 
 log = logging.getLogger("ashley.evals")
 
@@ -108,6 +114,13 @@ def parser() -> argparse.ArgumentParser:
     h.add_argument("--case", help="only the case with this id")
     h.add_argument("--json", metavar="PATH", help="also write every run as JSON here, to diff against another run")
     h.add_argument("--variant", metavar="PATH", help="a prompt variant (JSON) to run under; - reads it from stdin")
+    r = sub.add_parser("reach", help="which tool groups she reaches for over reach_cases.json, no call reaching its service")
+    r.add_argument("--runs", type=int, default=2, help="runs per case")
+    r.add_argument("--case", help="only the case with this id")
+    r.add_argument("--json", metavar="PATH", help="also write every run as JSON here, to diff against another run")
+    r.add_argument("--variant", metavar="PATH", help="a prompt variant (JSON) to run under; - reads it from stdin")
+    r.add_argument("--household", type=int, help="ask as a person of this household, not the eval's own")
+    r.add_argument("--person", type=int, help="the person of --household who asks")
     w = sub.add_parser("watch-tools", help="how she uses watch, unwatch and watches over watch_tools_cases.json")
     w.add_argument("--runs", type=int, default=2, help="runs per case")
     w.add_argument("--case", help="only the case with this id")
@@ -192,6 +205,23 @@ async def _house(settings: Settings, args: argparse.Namespace) -> str:
     return house_report.render(results, variant.label(args.variant))
 
 
+async def _reach(settings: Settings, args: argparse.Namespace) -> str:
+    closers = wiring.wire(settings)
+    database = services.get(Database)
+    await database.open()
+    try:
+        seat = house.Seat(args.household, args.person) if args.household else house_live.seat(settings.database_url)
+        await asyncio.gather(*wiring.warmups(settings))
+        results = await reach.run(args.runs, args.case, seat, house_live.ledger(database))
+    finally:
+        for close in closers:
+            await close()
+        await database.close()
+    if args.json:
+        Path(args.json).write_text(reach_report.to_json(results, variant.label(args.variant)) + "\n")
+    return reach_report.render(results, variant.label(args.variant))
+
+
 async def _prompt_sizes(settings: Settings, args: argparse.Namespace) -> str:
     seen: list[Routes] = []
     closers = wiring.wire(settings, prompt_sizes_live.keeping(seen))
@@ -265,6 +295,8 @@ async def _run(settings: Settings, args: argparse.Namespace) -> str:
         return await _reply(settings, args)
     if args.eval == "house":
         return await _house(settings, args)
+    if args.eval == "reach":
+        return await _reach(settings, args)
     if args.eval == "watch-tools":
         return await _watch_tools(settings, args)
     if args.eval == "prompt-sizes":
@@ -283,8 +315,11 @@ def main(argv: list[str]) -> int:
         print(e, file=sys.stderr)
         return 2
     variant.install(args.variant)
-    if args.eval in ("memory-write", "reply-remember", "reply-owed", "outside-ask", "action-judge", "house", "watch-tools", "bench-act", "bench-replay") and args.runs < 1:
+    if args.eval in ("memory-write", "reply-remember", "reply-owed", "outside-ask", "action-judge", "house", "reach", "watch-tools", "bench-act", "bench-replay") and args.runs < 1:
         print("--runs is at least 1", file=sys.stderr)
+        return 2
+    if args.eval == "reach" and bool(args.household) != bool(args.person):
+        print("--household and --person go together", file=sys.stderr)
         return 2
     if args.eval == "bench-replay" and args.snapshot is None:
         print("bench-replay needs the directory of a snapshot (bench-replay-capture writes one)", file=sys.stderr)
