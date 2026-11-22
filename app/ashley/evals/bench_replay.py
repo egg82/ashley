@@ -23,7 +23,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -172,7 +172,7 @@ async def _ask(ask: Said, bench: _Bench, options: Options) -> str | None:
     inbound = (on_bench(bench.household, bench.person, bench.bench, ask.text) if unseen is None
                else bench_react_turn.inbound(unseen, ZoneInfo(bench.zone)))
     try:
-        out = await respond(inbound)
+        out = await respond(replace(inbound, eval=True))
     except RespondError as e:
         return type(e).__name__
     finally:

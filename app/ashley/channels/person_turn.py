@@ -46,4 +46,4 @@ async def holding(conversation: Conversation, said: Turn) -> Conversation:
 async def carrying(inbound: Inbound, participants: list[int]) -> Conversation:
     return await services.get(Conversations).for_thread(
         inbound.household_id, inbound.thread, inbound.kind, participants, remembered=inbound.remembers,
-        channel=inbound.channel, place=inbound.place)
+        channel=inbound.channel, place=inbound.place, eval=inbound.eval)

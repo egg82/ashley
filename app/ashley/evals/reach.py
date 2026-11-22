@@ -10,7 +10,8 @@ held in the run is in `unoffered`: a typo in the case, or something the househol
 
 Nothing a call would change reaches outside: `reach_guard.ReachGuard` answers every call whose spec does not say it only
 reads (`ToolSpec.reads`) as done, for every source of the turn, and those it kept are in `refused`. The reads reach
-their service, so the household asked as must be a scratch copy's. Run under `--variant` with a group cut, the cases that
+their service, as the person asked as; the turns are marked `Inbound.eval`, so they leave no conversation in that
+person's list and no last word. Run under `--variant` with a group cut, the cases that
 need it fail: that is the regression on-demand tools must not cause.
 
 Under a variant with a `core`, a group she has not loaded is not offered: the loader (`use_tools`) is neither a group nor
@@ -123,7 +124,7 @@ def load() -> list[dict[str, Any]]:
 def inbound(case: dict[str, Any], seat: Seat) -> Inbound:
     """The ask as the owner's web chat sends it, offering the benches and page tools that chat offers."""
     return Inbound(seat.household_id, f"reach-eval-{uuid.uuid4()}", case["ask"], "chat", "text", "owner", seat.person_id,
-                   False, None, "web", remembers=False, opens_benches=True, on_page=True, taint=None)
+                   False, None, "web", remembers=False, eval=True, opens_benches=True, on_page=True, taint=None)
 
 
 def needed(case: dict[str, Any], offered: dict[str, str]) -> set[str]:

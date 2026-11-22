@@ -21,10 +21,10 @@ class Showing:
 
     def __init__(self, inbound: Inbound, turn: str | None = None) -> None:
         self._owner_only = inbound.audience == "owner"
-        self._shown = shown_for(self._owner_only, inbound.household_id, inbound.speaker_id)
+        self._shown = None if inbound.eval else shown_for(self._owner_only, inbound.household_id, inbound.speaker_id)
         self._thread = inbound.thread
         self._screen = (Shown(inbound.household_id, None, inbound.device_id)
-                        if inbound.device_id is not None and not self._owner_only else None)
+                        if inbound.device_id is not None and not self._owner_only and not inbound.eval else None)
         self._turn = turn or secrets.token_hex(6)
         self._told = time.monotonic()
 

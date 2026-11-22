@@ -196,7 +196,7 @@ async def answer_said(inbound: Inbound, who: speaker.Who, conversation: Conversa
         return Outbound(conversation.id, inbound.medium, "", follows=True)
     source.recording(work)
     turn = _Turn(inbound, conversation.id, said.id, who, remembered, carried, started, showing, phone, offered, work,
-                 source, None if catalogue is None else catalogue.unreachable, away)
+                 source, None if catalogue is None or inbound.eval else catalogue.unreachable, away)
     try:
         return await _answered(turn, system, messages, catalogue.specs if catalogue is not None else ())
     except Exception as e:

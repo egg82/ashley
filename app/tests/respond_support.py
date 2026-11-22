@@ -70,7 +70,7 @@ class FakeConversations(Conversations):
 
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,
-                    place: str | None = None) -> Conversation:
+                    place: str | None = None, eval: bool = False) -> Conversation:
         cid = next(self._ids)
         made = Conversation(cid, household_id, kind, frozenset(participants), EPOCH, EPOCH, "open", ())
         self.convs[cid] = made
@@ -101,7 +101,7 @@ class FakeConversations(Conversations):
 
     async def for_thread(self, household_id: int, thread: str, kind: Kind, participants: Iterable[int],
                          remembered: bool = True, channel: Channel | None = None,
-                         place: str | None = None) -> Conversation:
+                         place: str | None = None, eval: bool = False) -> Conversation:
         people = tuple(participants)
         self.calls.append(("for_thread", (household_id, thread, kind, people)))
         if thread not in self.threads:

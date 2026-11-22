@@ -83,7 +83,7 @@ def passes(case: dict[str, Any], calls: list[ToolCall]) -> bool:
 
 def inbound(text: str, seat: Seat, thread: str) -> Inbound:
     return Inbound(seat.household_id, thread, text, "chat", "text", "owner", seat.person_id, False, None, "web",
-                   remembers=False, taint=None)
+                   remembers=False, eval=True, taint=None)
 
 
 async def one(case: dict[str, Any], seat: Seat, recorder: RecordingInference) -> RunResult:
