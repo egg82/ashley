@@ -23,7 +23,6 @@ from respond_support import ALANA, HOME, Fakes, FakeTools, calls, wired as wired
 
 SEAT = Seat(HOME.id, ALANA.id)
 ANSWER = Reply(spoken="s", text="t")
-READS = reach.reads()
 
 
 async def no_ledger(conversation_id: int, task: str) -> list[Billed]:
@@ -34,25 +33,43 @@ def source(*names: str) -> FakeTools:
     return FakeTools(specs=tuple(ToolSpec(n, "", {"type": "object"}) for n in names))
 
 
-def test_no_tool_of_any_source_of_a_turn_reaches_its_source_unless_it_is_a_listed_read() -> None:
-    reading = sorted(READS)[0]
-    sources = {"everyday": source("house_do", reading), "money": source("money_categorise", "money_note"),
-               "mail": source("mail_send", "mail_draft"), "reminders": source("remind", "remind_on_money"),
-               "print_queue": source("print_queue"), "code": source("run_code")}
-    guard = ReachGuard(CompositeTools(sources), READS, notes=Notes())
+def spec(name: str, reads: bool = False) -> ToolSpec:
+    return ToolSpec(name, "", {"type": "object"}, reads=reads)
+
+
+def test_a_call_reaches_its_source_only_when_its_spec_says_it_reads() -> None:
+    sources = {"everyday": FakeTools(specs=(spec("house_do"), spec("house_state", True))),
+               "money": FakeTools(specs=(spec("money_categorise"), spec("money_balances", True))),
+               "mail": source("mail_send", "mail_draft"), "code": source("run_code")}
+    guard = ReachGuard(CompositeTools(sources), notes=Notes())
     names = [s.name for s in asyncio.run(guard.catalogue()).specs]
-    assert len(names) == 10 and reading in names
+    assert len(names) == 7
     for name in names:
         got = asyncio.run(guard.call(ToolCall("c", name, {})))
         assert not got.is_error
-    reached = [c.name for s in sources.values() for c in s.called]
-    assert reached == [reading]
-    assert sorted(a.name for a in guard.notes.refused) == sorted(n for n in names if n != reading)
-    assert guard.notes.offered["money_note"] == "money" and guard.notes.offered["run_code"] == "code"
+    reached = sorted(c.name for s in sources.values() for c in s.called)
+    assert reached == ["house_state", "money_balances"]
+    assert sorted(a.name for a in guard.notes.refused) == sorted(n for n in names if n not in reached)
+    assert guard.notes.offered["money_categorise"] == "money" and guard.notes.offered["run_code"] == "code"
 
 
-def test_the_allow_list_holds_no_tool_that_changes_anything() -> None:
-    assert READS and not {n for n in READS if "do" in n.split("_") or "change" in n or "send" in n or "categorise" in n}
+def test_a_name_no_catalogue_offered_is_kept_from_its_source_whatever_it_is_called() -> None:
+    inner = FakeTools(specs=(spec("house_state", True),))
+    guard = ReachGuard(inner, notes=Notes())
+    asyncio.run(guard.catalogue())
+    asyncio.run(guard.call(ToolCall("c", "made_up", {})))
+    assert inner.called == [] and [a.name for a in guard.notes.refused] == ["made_up"]
+
+
+def test_a_read_first_offered_by_a_later_catalogue_reaches_its_source() -> None:
+    inner = FakeTools(specs=(spec("lights"),))
+    guard = ReachGuard(inner, notes=Notes())
+    asyncio.run(guard.catalogue())
+    inner.specs = (spec("lights"), spec("loaded_read", True))
+    asyncio.run(guard.catalogue())
+    asyncio.run(guard.call(ToolCall("c", "loaded_read", {})))
+    asyncio.run(guard.call(ToolCall("d", "lights", {})))
+    assert [c.name for c in inner.called] == ["loaded_read"] and [a.name for a in guard.notes.refused] == ["lights"]
 
 
 def run_case(wired: Fakes, case_id: str, script: Sequence[ToolCalls | BaseModel | Exception], runs: int = 1) -> list[reach.RunResult]:
@@ -67,7 +84,7 @@ def test_a_write_the_model_asks_for_is_scored_by_its_group_and_never_reaches_the
     assert wired.tools.called == []
 
 
-def test_a_listed_read_reaches_the_source(wired: Fakes) -> None:
+def test_a_read_reaches_the_source(wired: Fakes) -> None:
     [got] = run_case(wired, "everyday-light-state", [calls("house_ask"), ANSWER])
     assert got.passed and got.refused == () and [c.name for c in wired.tools.called] == ["house_ask"]
 

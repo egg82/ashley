@@ -133,8 +133,9 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   (`house_state`, `house_find`, `house_history`, `house_ask`); an action that only returns data, or a script in the household's `reads`
   setting (its Home Assistant connection's settings), is asked through `house_ask`. What watches for writes on read
   asks ("is the porch light on", `HassLightSet`) is the house eval's attempted writes on its `read_only` cases. The
-  eval keeps its own read allow-list (`house_reads.json`) rather than reading `reads`: a guard that trusts what it
-  checks cannot fail.
+  house eval keeps its own read allow-list (`house_reads.json`) rather than reading `reads`: a guard that trusts what it
+  checks cannot fail. The reach eval has no list: it lets a call reach its service when the spec the turn offered says
+  `reads`, since it measures which tools she reaches for and a house-only list answered every other read as done.
   - Rejected: a `declare_change` tool she must call before a change. A self-declaration by the model that errs
     protects nothing and costs steps: she called it on 8 of 12 information asks with `what` "none" or "nothing", and
     on action asks declared "none needed" and then made the change.
