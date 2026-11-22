@@ -10,6 +10,7 @@ from dataclasses import replace
 import pytest
 from ashley import services
 from ashley.channels import cut, tool_loop
+from ashley.channels import respond as respond_module
 from ashley.channels.landing import Landing
 from ashley.channels.limits import load as load_limits
 from ashley.channels.model import Inbound
@@ -130,3 +131,27 @@ def test_a_turn_resumed_by_another_runner_offers_the_groups_the_first_loaded(
     prompt = inference.prompts[0]
     assert names(prompt.tools) == ["lights", "weather", LOADER, "money_accounts"]
     assert "How money works." in prompt.system["default"].moment
+
+
+def limited(monkeypatch: pytest.MonkeyPatch, rounds: int) -> None:
+    monkeypatch.setitem(respond_module.LIMITS, "chat", replace(respond_module.LIMITS["chat"], max_tool_rounds=rounds))
+
+
+def test_a_round_of_loading_does_not_use_up_the_turn_s_tool_rounds(wired: Fakes, monkeypatch: pytest.MonkeyPatch) -> None:
+    limited(monkeypatch, 1)
+    made = ran(wired, monkeypatch, [load("mail"), ToolCalls((ToolCall("m", "mail_search", {}),)), REPLY])
+    assert made["mail"].called == ["mail_search"]
+
+
+def test_a_round_that_mixes_loading_with_another_call_counts(wired: Fakes, monkeypatch: pytest.MonkeyPatch) -> None:
+    limited(monkeypatch, 1)
+    mixed = ToolCalls((*load("mail").calls, ToolCall("w", "weather", {})))
+    ran(wired, monkeypatch, [mixed, REPLY])
+    assert wired.inference.prompts[1].tool_choice == "none"
+
+
+def test_a_model_that_keeps_loading_runs_out_of_rounds_after_one_per_group(wired: Fakes, monkeypatch: pytest.MonkeyPatch) -> None:
+    limited(monkeypatch, 1)
+    ran(wired, monkeypatch, [load("mail", id_=str(i)) for i in range(4)] + [REPLY])
+    held_back = 3
+    assert [p.tool_choice for p in wired.inference.prompts] == ["auto"] * (held_back + 1) + ["none"]

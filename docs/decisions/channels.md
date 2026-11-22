@@ -149,7 +149,7 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   - Rejected: words in the person's message, or a pattern over tool names; HA's annotations already say.
   - Under an eval's cut with a `core` (`channels.cut`), the turn is offered the core sources and one loader tool,
     `use_tools`; the groups she names are offered from her next step on, with their instructions, and the set is read
-    from the turn's own entries, so a resumed turn rebuilds it. The loader proxies what `for_turn` built (after its
+    from the turn's own entries, so a resumed turn rebuilds it. A round of loader calls alone does not count toward `max_tool_rounds`, for as many such rounds as the loader has groups (she can name a group already loaded, so the count of groups is the bound), and `rounds` everywhere is the rounds that counted. The loader proxies what `for_turn` built (after its
     narrowing) and is how a group reaches her, never a route to a source. Nothing sets a `core` outside the evals yet.
 - **What she always knows about a household is its profile** (who lives there, pronouns, pets, how calendars and
   lists are named), a column set by the admin CLI, until standing facts in memory replace it. None of it is in the
