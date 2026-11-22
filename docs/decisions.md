@@ -83,6 +83,7 @@ mention of `decisions.md`: the title is an entry below, or a `###` heading or bo
 
 - [Search: SearXNG for the web, Photon for places](decisions/tools.md): Tools is a Composite over its sources; she never reads search results, a sub-agent does, called as one tool, `look_up`.
 - [For code and the cluster she is a front for Claude Code](decisions/tools.md): she reaches the talking person's own Claude Code sessions through a bridge that narrows herdr.
+- [Text turns load tool groups on demand](decisions/tools.md): a text turn starts with only the loader and names the groups it needs; a spoken turn is offered every group.
 
 ## Outside words
 
