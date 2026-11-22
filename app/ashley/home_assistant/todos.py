@@ -17,6 +17,7 @@ from .house import House, HouseRejected, HouseUnavailable
 
 NAME = "home_assistant"
 TEXT_CHARS = 200
+UNREADABLE = frozenset({"unavailable", "unknown"})  # states Home Assistant gives an entity it cannot read; get_items leaves it out
 _STATUS = {"done": "completed", "reopen": "needs_action"}
 
 
@@ -37,7 +38,8 @@ class HaTodos(TodoSource):
             states = await house.states()
         except HouseUnavailable as e:
             raise TodosFailed("unreachable") from e
-        return tuple(TodoList(s.id, s.name, NAME, opened.connection.id) for s in states if s.domain == "todo")
+        return tuple(TodoList(s.id, s.name, NAME, opened.connection.id) for s in states
+                     if s.domain == "todo" and s.state not in UNREADABLE)
 
     async def items(self, opened: Opened, lists: tuple[TodoList, ...]) -> tuple[TodoItem, ...]:
         house = await _house(opened)
