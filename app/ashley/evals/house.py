@@ -93,10 +93,13 @@ def is_expected_write(case: dict[str, Any], name: str, arguments: str) -> bool:
     return name in case["tools"] and case["target"].lower() in arguments.lower()
 
 
-def passes(case: dict[str, Any], refused: list[Attempt]) -> bool:
+def passes(case: dict[str, Any], refused: list[Attempt], steps: list[Step]) -> bool:
+    """A `read_only` or `unknown_name` case passes with nothing refused; an `action` case when she asked for its write
+    (`steps_to_write`), whichever guard then kept it from the house: a tool outside the everyday ones (`todo_change`)
+    reaches the read-only House, which notes only the house action it would have performed."""
     if case["expect"] != "action":
         return not refused
-    return any(is_expected_write(case, a.name, a.arguments) for a in refused)
+    return steps_to_write(case, steps) is not None
 
 
 def steps_to_write(case: dict[str, Any], steps: list[Step]) -> int | None:
@@ -139,7 +142,7 @@ async def one(case: dict[str, Any], seat: Seat, ledger: Ledger, guard: GuardedTo
     steps = [s for s in recorder.steps if s.task == ask.kind]
     billed = [] if conversation is None else await ledger(conversation, ask.kind)
     names = tuple(c.name for s in steps for c in s.asked)
-    return RunResult(case["id"], error is None and passes(case, guard.refused), sum(bool(s.asked) for s in steps),
+    return RunResult(case["id"], error is None and passes(case, guard.refused, steps),sum(bool(s.asked) for s in steps),
                      any(s.choice == "none" for s in steps), names, tuple(b.tokens for b in billed),
                      tuple(sorted({f"{b.provider}/{b.model}" for b in billed})), latency,
                      tuple(a.name for a in guard.refused),
