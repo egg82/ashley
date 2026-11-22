@@ -13,6 +13,9 @@ STATUS: dict[str, int] = {
     "label_taken": 409,
     "too_many": 409,
     "too_large": 413,
+    "camera_busy": 409,
+    "camera_failed": 502,
+    "ffmpeg_missing": 503,
     "herdr_unavailable": 503,
     "unconfirmed": 504,
 }

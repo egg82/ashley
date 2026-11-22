@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from . import __version__
 from .auth import Auth
+from .cameras import CAMERA_ID, Cameras
 from .errors import BridgeError
 from .files import Files, Limits
 from .herdr import Herdr
@@ -49,9 +50,10 @@ class Response:
 
 class Api:
     def __init__(self, auth: Auth, sessions: Sessions, herdr: Herdr, log: Log, limits: Limits = Limits(),
-                 machine: Machine | None = None) -> None:
+                 machine: Machine | None = None, cameras: Cameras | None = None) -> None:
         self.auth = auth
         self.machine = machine or Machine()
+        self.cameras = cameras or Cameras()
         self.sessions = sessions
         self.files = Files(sessions, limits)
         self.limits = limits
@@ -84,6 +86,11 @@ class Api:
             return "whoami", None, lambda: self.whoami(person)
         if key == ("GET", "/v1/machine"):
             return "machine", None, self.machine_report
+        if key == ("GET", "/v1/cameras"):
+            return "cameras", None, self.cameras.list
+        still = re.fullmatch(r"/v1/cameras/(" + CAMERA_ID + ")/still", req.path)
+        if still is not None and req.method == "GET":
+            return "camera_still", None, lambda: self.cameras.still(still[1])
         if key == ("GET", "/v1/sessions"):
             return "list", None, self.listing
         if key == ("POST", "/v1/sessions"):
