@@ -13,9 +13,11 @@ from .. import logs, services
 from ..conversations.conversations import Conversations
 from ..conversations.inflight import InFlight, InFlightUnavailable
 from ..conversations.model import unhanded
-from ..inference.model import Message
+from ..inference.model import Entry, Message, ToolChoice
+from ..inference.reply import Reply
 from ..people.people import People
 from .model import Inbound
+from .steps import Steps
 
 log = logging.getLogger("ashley.channels")
 
@@ -47,3 +49,15 @@ async def hand(inbound: Inbound, conversation_id: int, said_id: int, handed: Col
     names: dict[int | None, str] = {} if household is None else {p.id: p.name for p in household.people}
     logs.info(log, "respond.steered", conversation=conversation_id, messages=len(fresh))
     return [(t.id, Message("person", f"{names.get(t.speaker_id, 'They')} just said: {t.text}")) for t in fresh]
+
+
+async def handed(steps: Steps, entries: list[Entry], reply: Reply, rounds: int, calls: int, choice: ToolChoice) -> int | None:
+    """None when nothing was said to the turn since it last asked; else its draft `reply` and what was said are added to
+    `entries` and the round to go on from is returned."""
+    draft = (*entries, Message("ashley", reply.text))
+    ahead = rounds if choice == "none" else rounds + 1
+    said = await steps.steer(draft, ahead, calls)
+    if not said:
+        return None
+    entries += [draft[-1], *said]
+    return ahead - 1
