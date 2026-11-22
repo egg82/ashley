@@ -2,7 +2,9 @@
 through her real turn loop (`channels.respond`, a chat on the web channel, with every tool a turn there offers), `runs`
 times, and names the tool `groups` (the sources `prompt-sizes` reports: `reminders`, `money`, `mail`...) and the
 `tools` a correct answer calls; a case naming neither is an ask that needs no tool, and passes only when she calls none.
-A run passes when every named group has a call in it and every named tool was called. The groups and tools she called
+A run passes when every named group has a call in it and every named tool was called, and, for a case with `any_of`, when
+one of its alternatives (each a list of group or tool names) was reached whole: an ask more than one route answers
+correctly, such as a reader's delegation or the same sources read directly. `why` says why a case reads as it does. The groups and tools she called
 beyond those are reported as `extra`, which is how a no-tool ask that reaches for one shows. A group or tool no catalogue
 held in the run is in `unoffered`: a typo in the case, or something the household does not have.
 
@@ -19,6 +21,7 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -41,6 +44,7 @@ log = logging.getLogger("ashley.evals")
 CASES = Path(__file__).parent / "reach_cases.json"
 READS = Path(__file__).parent / "house_reads.json"
 CASE_KEYS = {"id", "ask", "groups", "tools"}
+OPTIONAL_KEYS = {"any_of", "why"}
 _NAMES = TypeAdapter(list[str])
 
 
@@ -73,21 +77,38 @@ def _names(case: dict[str, Any], key: str) -> list[str]:
     return names
 
 
+def alternatives(case: dict[str, Any]) -> list[list[str]]:
+    """The case's `any_of`: two or more distinct alternatives, each a list of distinct names; none when it has no `any_of`."""
+    if "any_of" not in case:
+        return []
+    try:
+        found = TypeAdapter(list[list[str]]).validate_python(case["any_of"])
+    except ValidationError as e:
+        raise ValueError(f"reach case {case['id']!r}: any_of is a list of lists of names") from e
+    if len(found) < 2 or any(not a or len(set(a)) != len(a) or not all(n.strip() for n in a) for a in found) \
+            or len({tuple(a) for a in found}) != len(found):
+        raise ValueError(f"reach case {case['id']!r}: any_of is two or more distinct lists of distinct names")
+    return found
+
+
 def validate(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """`cases` when each has exactly `id`, `ask`, `groups` and `tools` and the ids are distinct. Raises ValueError naming
-    the case that is not."""
+    """`cases` when each has `id`, `ask`, `groups` and `tools`, may have `any_of` (two or more alternatives, each a list of
+    distinct names) and `why` (text), and the ids are distinct. Raises ValueError naming the case that is not."""
     seen: set[str] = set()
     for case in cases:
         name = case.get("id")
         if not isinstance(name, str) or not name or name in seen:
             raise ValueError(f"reach case id {name!r} is missing or repeated")
         seen.add(name)
-        if set(case) != CASE_KEYS:
-            raise ValueError(f"reach case {name!r} has exactly {sorted(CASE_KEYS)}")
+        if not CASE_KEYS <= set(case) <= CASE_KEYS | OPTIONAL_KEYS:
+            raise ValueError(f"reach case {name!r} has {sorted(CASE_KEYS)} and may have {sorted(OPTIONAL_KEYS)}")
+        if "why" in case and not (isinstance(case["why"], str) and case["why"].strip()):
+            raise ValueError(f"reach case {name!r} has a why that is text")
         if not isinstance(case["ask"], str) or not case["ask"].strip():
             raise ValueError(f"reach case {name!r} has an ask")
         _names(case, "groups")
         _names(case, "tools")
+        alternatives(case)
     return cases
 
 
@@ -106,8 +127,17 @@ def inbound(case: dict[str, Any], seat: Seat) -> Inbound:
 
 
 def needed(case: dict[str, Any], offered: dict[str, str]) -> set[str]:
-    """The groups the case wants: its own and those that offered its tools."""
-    return {*case["groups"], *(offered[t] for t in case["tools"] if t in offered)}
+    """The groups the case wants: its own, those that offered its tools and those named by any `any_of` alternative."""
+    names = [*case["tools"], *(n for a in alternatives(case) for n in a)]
+    return {*case["groups"], *(offered.get(n, n) for n in names)}
+
+
+def lacking(case: dict[str, Any], tools: Sequence[str], groups: Sequence[str]) -> list[str]:
+    """What a run that called `tools`, reaching `groups`, still lacks of the case: its groups and tools not reached and,
+    when no `any_of` alternative was reached whole, the names the nearest alternative lacks."""
+    missing = [g for g in case["groups"] if g not in groups] + [t for t in case["tools"] if t not in tools]
+    options = [[n for n in a if n not in groups and n not in tools] for a in alternatives(case)]
+    return missing + (min(options, key=len) if options and all(options) else [])
 
 
 def score(case: dict[str, Any], called: list[str], offered: dict[str, str]) -> tuple[bool, tuple[str, ...], tuple[str, ...]]:
@@ -115,7 +145,7 @@ def score(case: dict[str, Any], called: list[str], offered: dict[str, str]) -> t
     that no call reached, `extra` the groups called that it did not want, in the order first called. A case wanting
     nothing passes only with no call."""
     groups = list(dict.fromkeys(offered.get(n, UNOWNED) for n in called))
-    missing = [g for g in case["groups"] if g not in groups] + [t for t in case["tools"] if t not in called]
+    missing = lacking(case, called, groups)
     wanted = needed(case, offered)
     extra = tuple(g for g in groups if g not in wanted)
     return (not called if not wanted and not case["tools"] else not missing), tuple(missing), extra
