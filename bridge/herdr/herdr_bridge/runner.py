@@ -25,6 +25,18 @@ class Runner(Protocol):
     def run(self, args: Sequence[str], timeout_s: float) -> Outcome: ...
 
 
+@dataclass(frozen=True)
+class Captured:
+    code: int
+    data: bytes
+    err: str
+
+
+class Capturer(Protocol):
+    def capture(self, args: Sequence[str], timeout_s: float) -> Captured:
+        """Run with `args` and return what the program wrote to stdout, as bytes. Raises HerdrMissing, HerdrTimeout."""
+
+
 class SubprocessRunner:
     def __init__(self, binary: str) -> None:
         self.binary = binary
@@ -39,3 +51,17 @@ class SubprocessRunner:
         except OSError as e:
             raise HerdrMissing(self.binary) from e
         return Outcome(done.returncode, done.stdout, done.stderr)
+
+
+class SubprocessCapturer:
+    def __init__(self, binary: str) -> None:
+        self.binary = binary
+
+    def capture(self, args: Sequence[str], timeout_s: float) -> Captured:
+        try:
+            done = subprocess.run([self.binary, *args], capture_output=True, timeout=timeout_s, stdin=subprocess.DEVNULL)
+        except subprocess.TimeoutExpired as e:
+            raise HerdrTimeout(self.binary) from e
+        except OSError as e:
+            raise HerdrMissing(self.binary) from e
+        return Captured(done.returncode, done.stdout, done.stderr.decode(errors="replace"))
