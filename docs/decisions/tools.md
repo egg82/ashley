@@ -256,3 +256,14 @@ close, nothing else. A session she handed work to going `blocked` or finishing i
   one, and the transcript already records the time.
 - Rejected: her own coding agent on the API. A worse Claude Code, paid per token from API credits instead of the
   person's Claude Code subscription.
+
+## Text turns load tool groups on demand
+
+A text turn starts with only the loader, `use_tools`, and a one-line summary of each tool group. She names the groups a question needs, and their tools are offered from her next step. A spoken turn is offered every group from its first step. The default per medium is data (`app/ashley/channels/on_demand.json`).
+
+- **Why text loads on demand:** measured on the reach and house evals in #145, on the turns Gemini answered. Reach passed 89% against 87% with every group offered, house passed 20/22 for both, and the median billed input per turn fell from 74.5k to 29.0k.
+- **Why spoken keeps every group:** loading costs one more round, about 4 s more median latency on turns that use tools. That is easy to sit through in a chat and long when waiting for her to speak.
+- **A round that only calls the loader is free,** up to one per group it offers (`ashley.channels.on_demand.free`), so loading doesn't use up the turn's tool rounds.
+- **Not eligible:** a turn already narrowed to named tools, a bench's turn, an errand or standing-method check, a moved turn, or a turn that begins with her camera look. Those are offered what they hold.
+- **Rejected: a light core** of a few everyday groups. It passed reach as often as the empty core but saved about 12% of input against about 50%.
+- **Evals:** a variant's `core` overrides the default. `"core": "all"` offers every group, and no `core` means the deployed default.
