@@ -19,7 +19,7 @@ from ashley.channels.respond import respond
 from ashley.inference.inference import Inference
 from ashley.inference.model import Message, SystemPrompt, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ashley.inference.reply import Reply
-from on_demand_support import Group, offer, sources
+from on_demand_support import GROUPS, Group, offer, sources
 from respond_support import ALANA, FakeInference, Fakes, inbound, wired as wired
 
 REPLY = Reply(spoken="Done.", text="Done.")
@@ -155,3 +155,16 @@ def test_a_model_that_keeps_loading_runs_out_of_rounds_after_one_per_group(wired
     ran(wired, monkeypatch, [load("mail", id_=str(i)) for i in range(4)] + [REPLY])
     held_back = 3
     assert [p.tool_choice for p in wired.inference.prompts] == ["auto"] * (held_back + 1) + ["none"]
+
+
+def test_under_an_empty_core_every_group_is_held_back_and_the_loader_and_owed_say_a_held_back_group_is_not_out_of_reach(
+        wired: Fakes, monkeypatch: pytest.MonkeyPatch) -> None:
+    cut.install(cut.Cut(core=frozenset()))
+    ran(wired, monkeypatch, [REPLY])
+    loader = wired.inference.prompts[0].tools[-1]
+    assert loader.name == LOADER and names(wired.inference.prompts[0].tools) == [LOADER]
+    for key in GROUPS:
+        assert f"- {key}:" in loader.description
+    assert "not out of reach" in loader.description
+    owed = Reply.model_fields["owed"].description or ""
+    assert "use_tools" in owed and "not been offered yet" in owed

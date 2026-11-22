@@ -5,7 +5,7 @@
 from collections.abc import Mapping
 
 SUMMARY: Mapping[str, str] = {
-    "everyday": "the house's lights and devices, search and places, and what she remembers",
+    "everyday": "the house's lights, devices and lists, search and places, and what she remembers",
     "readers": "send readers to look several things up at once",
     "errand": "set when she looks again at an errand",
     "method": "a standing errand's method",

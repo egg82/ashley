@@ -138,7 +138,8 @@ class Loading(Tools):
 def _spec(groups: tuple[str, ...]) -> ToolSpec:
     lines = "\n".join(f"- {g}: {tool_groups.summary(g)}" for g in groups)
     return ToolSpec(LOADER, "Offer more of your tools. You have a few now; name the groups you need and they are "
-                    f"offered from your next step on. The groups:\n{lines}",
+                    "offered from your next step on. A group not offered yet is not out of reach: name it here and "
+                    f"use it. The groups:\n{lines}",
                     {"type": "object", "properties": {FIELD: {"type": "array", "minItems": 1,
                                                               "items": {"type": "string", "enum": list(groups)}}},
                      "required": [FIELD]}, reads=True, outside=False)
