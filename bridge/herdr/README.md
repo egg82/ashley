@@ -6,6 +6,7 @@ sends a prompt to one that is ready, starts a new one in an allowed directory, a
 a session's `in/` folder and hand back the files the session left in `out/`, and nothing else of the session's directory.
 It cannot send keys, type into a pane, or run a command. It also reports what the machine can do (`GET /v1/machine`):
 the facts Ashley picks a machine by, each read live from a fixed source.
+It lists the machine's USB webcams and takes one still from one when asked (`GET /v1/cameras`).
 
 One bridge serves one person, and runs on one machine: with several machines, run one bridge on each and add each as its own
 connection (up to four, each under a label that names the machine, which is what Ashley calls it). The first call that reaches it names the person, and any other person is refused with
@@ -87,6 +88,8 @@ bytes; an error is `{"error": <code>}`.
 |---|---|---|
 | `GET /v1/whoami` | | `bridge_version`, `herdr_version`, `person`, `capabilities` (`files` from 0.2.0, `machine` from 0.5.0; absent before) |
 | `GET /v1/machine` | | the machine report (see Machine report) |
+| `GET /v1/cameras` | | `cameras`: `id` and `name` of each USB webcam (see Cameras) |
+| `GET /v1/cameras/{id}/still` | | one JPEG frame from that camera, `application/octet-stream` |
 | `GET /v1/sessions` | | `sessions` (`id`, `label`, `dir`, `status`, `seq`, `last_typed_at`), `last_typed_at`, `roots` (the absolute paths a start may name) |
 | `GET /v1/sessions/{id}/read` | `lines` 1 to 400, default 120 | `text`, `truncated`, `revision` |
 | `POST /v1/sessions/{id}/prompt` | `{"text"}`, 1 to 8000 characters | `{"submitted": true}` |
@@ -112,10 +115,23 @@ ISO time you last typed into the session, and the list's own `last_typed_at` the
 | `label_taken` | 409 | a live agent already has that name |
 | `too_many` | 409 | `in/` already holds `max_files` files, or `out/` holds more than that |
 | `too_large` | 413 | a file over `max_file_bytes`, by its `Content-Length` or as it arrives (or the file asked for) |
+| `camera_busy` | 409 | another program holds the camera |
+| `camera_failed` | 502 | `ffmpeg` failed, timed out or gave no frame |
+| `ffmpeg_missing` | 503 | `ffmpeg` is not installed on the machine |
 | `herdr_unavailable` | 503 | herdr is not running or answered an error |
 | `unconfirmed` | 504 | a change may or may not have happened: a prompt or close that timed out, or a started session that never reported a state (its tab is closed again) |
 
 A `label` is a herdr agent name: a lowercase letter, then up to 31 of `a-z`, `0-9`, `_`, `-`.
+
+### Cameras
+
+`GET /v1/cameras` lists the machine's USB webcams from `/sys/class/video4linux`, read live. A camera shows the kernel
+two nodes, one for video and one for metadata; the video node is the one whose `index` file reads 0, and only it is listed.
+A camera's `id` is its USB `vendor:product` and the sysfs path of its port (`046d_0825_3_3`): it stays the same across a
+reboot with the camera in the same socket and is never a serial number. `name` is the device's own product string cut to
+printable ASCII. A still is one `ffmpeg` run (`-f v4l2 -i /dev/videoN -frames:v 1`, JPEG to stdout) with fixed arguments, a
+10 second limit and a 4 MiB cap; the id is looked up in the listing and never used as a path. A still needs `ffmpeg` on the
+machine's `PATH` and a camera no other program is using. The bridge takes a picture only when asked.
 
 ### Machine report
 
@@ -193,14 +209,14 @@ list are read. Typing into a session herdr does not list is not seen.
 
 ## Upgrading
 
-0.5.0 adds `GET /v1/machine` and `bench_tools` in the settings file, which is optional: a file without it gets the default
-list. Nothing about the other calls changed. A bridge older than 0.5.0 answers `not_found` to the machine report, and Ashley
-shows that machine without one. From a checkout of this repository at the new version:
+0.6.0 adds `GET /v1/cameras` and its stills; nothing else changed, and the settings file is the same. A bridge older than
+0.6.0 answers `not_found` to the camera calls, and Ashley shows that machine with no cameras. (0.5.0 added `GET /v1/machine`
+and the optional `bench_tools` setting.) From a checkout of this repository at the new version:
 
 ```bash
 ~/.local/share/ashley-herdr-bridge/venv/bin/pip install --upgrade ./bridge/herdr
 systemctl --user restart ashley-herdr-bridge
-~/.local/share/ashley-herdr-bridge/venv/bin/pip show ashley-herdr-bridge | grep '^Version'   # 0.5.0
+~/.local/share/ashley-herdr-bridge/venv/bin/pip show ashley-herdr-bridge | grep '^Version'   # 0.6.0
 journalctl --user -u ashley-herdr-bridge -n 3                                                  # call=serve status=listening
 ```
 
@@ -211,4 +227,4 @@ change (a machine that runs its own herdr keeps its one-unit install). Prompts s
 
 One logfmt line per call to the journal: `call`, `session` (the first 8 hex digits of a sha256 of the session id),
 `status`, `ms`, `bytes`, and `error` when refused. Never prompt text, screen text, file names, paths, labels, the token
-or the person id. The machine report is `machine`. A file call is `upload`, `outputs` or `download`, and its `bytes` is the file's size.
+or the person id. The machine report is `machine`, the camera list `cameras` and a camera's still `camera_still`. A file call is `upload`, `outputs` or `download`, and its `bytes` is the file's size.
