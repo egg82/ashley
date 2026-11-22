@@ -1,7 +1,8 @@
 """The house eval's second guard, under the per-turn tools: `ReadOnlyHomes` hands every household a Home whose House reads
 from the real one and keeps every change from it. A change (an action, a config, a record) is noted in `refused` as an
 `Attempt` named `house:<what>` and answered as made, so `house_change` cannot reach a house the eval is pointed at, whatever
-the case expects; `house_do` and the other everyday tools are `GuardedTools`' to keep."""
+the case expects. An action the house lists with `response == "only"` returns data and changes nothing, so it reaches the
+real house and gives back its answer (`todo.get_items`); the catalogue is read per call, so it is never stale; `house_do` and the other everyday tools are `GuardedTools`' to keep."""
 
 from collections.abc import Mapping
 from dataclasses import replace
@@ -58,6 +59,8 @@ class ReadOnlyHouse(House):
         return await self._inner.diagnostics(integration_id)
 
     async def perform(self, action: str, ids: tuple[str, ...], data: Mapping[str, Any]) -> Performed:
+        if any(a.name == action and a.response == "only" for a in await self._inner.actions()):
+            return await self._inner.perform(action, ids, data)
         self._kept(f"perform:{action}")
         return Performed()
 

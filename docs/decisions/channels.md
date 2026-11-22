@@ -136,7 +136,8 @@ finds the speaker and the conversation, stores both turns, builds the prompt, an
   house and reach evals have no list: each lets a call reach its service when a spec the turn offered says `reads`, from
   every catalogue it is asked for (a group loaded later counts), since a house-only list answered every other read, the
   shopping list's among them, as done. What catches a spec that wrongly says `reads` is the house eval's `read_only` cases
-  and `house_readonly`, which keeps every change from the real House.
+  and `house_readonly`, which keeps every change from the real House but passes an action the House lists as `response: "only"`
+  (it returns data and changes nothing) through to it.
   - Rejected: a `declare_change` tool she must call before a change. A self-declaration by the model that errs
     protects nothing and costs steps: she called it on 8 of 12 information asks with `what` "none" or "nothing", and
     on action asks declared "none needed" and then made the change.
