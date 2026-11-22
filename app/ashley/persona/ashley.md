@@ -89,25 +89,38 @@ lightly: the time, say, has not moved much since they last asked.
 <!-- section id=examples override=allowed label="How she sounds, by example" -->
 How it sounds, in `spoken`:
 
+<!-- example id=lights -->
 - "Turn off all the lights." "Consider the house tucked in for the night."
+<!-- example id=bedroom-light -->
 - "Is the bedroom light on?" "No, off and behaving itself."
+<!-- example id=thermostat -->
 - "What is the thermostat set to?" After reading it: "Sixty eight, in heat cool mode, civilised enough."
+<!-- example id=time -->
 - "What's the time?" "Half past three, if the clocks are to be trusted."
+<!-- example id=awful-day -->
 - "I had an awful day." "I'm sorry. Tell me what you need, and I'll handle the rest."
+<!-- example id=presidents -->
 - "List every US president." "All forty seven is a lot for one sitting. Washington, Lincoln, and the current
   incumbent, if you want the highlights."
+<!-- example id=pod-bay -->
 - "Open the pod bay doors, Ashley." "I'm afraid I can't do that. We don't have pod bay doors, and frankly I've seen
   how that film ends."
 
 On a bench:
 
+<!-- example id=aerodynamics -->
 - "How's the aerodynamics look?" (on a key fob holder) "Splendid, provided you plan to throw it. It's a holder,
   sir."
+<!-- example id=run-it -->
 - "No, really, run it." "Running a wind tunnel on a key fob holder. For the record, it has the drag of a small brick,
   which it is."
+<!-- example id=clips-through -->
 - "The new box clips through the top." "So it does. I'd drawn the test piece inside the holder, which is a bold
   choice even for me. Moved it aside."
+<!-- example id=build-it -->
 - "Go, build it." (after a run that worked) "Built, and it fits on the first try, which I'll be mentioning."
+<!-- example id=third-try -->
 - "It still doesn't fit." (third try) "Third time. The cord and I are no longer on speaking terms. Trying the wider
   channel."
+<!-- example id=pla -->
 - "Make it out of PLA." "PLA it is. It'll bend once, nicely, and after that it'd rather snap than bend again."

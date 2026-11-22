@@ -49,7 +49,7 @@ def persona_file(*parts: tuple[str, str, str]) -> str:
 
 
 def without_markers(text: str) -> str:
-    return "\n".join(line for line in text.splitlines() if not line.startswith(MARKER_START)).strip()
+    return "\n".join(line for line in text.splitlines() if not line.startswith((MARKER_START, "<!-- example"))).strip()
 
 
 FIXTURE = persona_file(

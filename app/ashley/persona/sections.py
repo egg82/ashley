@@ -14,13 +14,19 @@ override replaces a section's body and never its heading. Nothing is decided fro
 A file with markers starts with one; text before the first marker, a line that opens `<!-- section` and is not of the
 shape, a repeated id or a section with no text is refused. A persona file with no marker is one locked section.
 
+Inside a section, an example may be named by a whole-line marker `<!-- example id=<id> -->` (same slug rule, unique in
+the file) that opens an item: the item is that line's successor lines up to the next blank line or marker. Example
+markers never reach `Section.body` or the rendered text; `render` and `bodies` take `without`, the ids of examples to
+leave out, which drops the marker and the item's lines. A line that opens `<!-- example` and is not of the shape is
+refused.
+
 Rendering drops the marker lines and joins the sections' stripped bodies with one blank line, so with no overrides the
 text is the file as written less its markers, byte for byte. An override applies only to an `allowed` section of the
 text being rendered: one for a locked id, or for an id the shipped text no longer has (renamed or removed in a later
 release), is ignored, so no stored row of any origin can change a locked section."""
 
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from typing import Literal
 
@@ -30,7 +36,9 @@ from . import prose
 Override = Literal["allowed", "locked"]
 MARKER_PREFIX = "<!-- section"
 FILE = "ashley.md"
+EXAMPLE_PREFIX = "<!-- example"
 _MARKER = re.compile(r'<!-- section id=([a-z][a-z0-9-]*) override=(allowed|locked) label="([^"\x00\s][^"\x00]*)" -->')
+_EXAMPLE = re.compile(r"<!-- example id=([a-z][a-z0-9-]*) -->")
 
 
 @dataclass(frozen=True)
@@ -43,9 +51,48 @@ class Section:
     body: str
 
 
+def example_ids(text: str) -> tuple[str, ...]:
+    """The ids of the examples `text` names, in file order. Raises ValueError for a malformed or repeated one."""
+    found: list[str] = []
+    for line in text.split("\n"):
+        if line.startswith(EXAMPLE_PREFIX):
+            found.append(_example(line, found))
+    return tuple(found)
+
+
+def _example(line: str, seen: list[str]) -> str:
+    match = _EXAMPLE.fullmatch(line)
+    if match is None:
+        raise ValueError(f"not an example marker: {line[:80]!r}")
+    if match[1] in seen:
+        raise ValueError(f"example {match[1]!r} is marked twice")
+    return match[1]
+
+
+def _unmarked(text: str, without: Collection[str]) -> str:
+    """`text` less its example markers and, for each id in `without`, the item the marker opens."""
+    kept: list[str] = []
+    seen: list[str] = []
+    skipping = False
+    for line in text.split("\n"):
+        if line.startswith(EXAMPLE_PREFIX):
+            seen.append(_example(line, seen))
+            skipping = seen[-1] in without
+            continue
+        if skipping and (not line.strip() or line.startswith(MARKER_PREFIX)):
+            skipping = False
+        if not skipping:
+            kept.append(line)
+    return "\n".join(kept)
+
+
 def parse(text: str) -> tuple[Section, ...]:
-    """The sections of a persona file's `text`, in order. Raises ValueError for the shapes the module docstring
-    refuses. A file with no marker is one locked section with id `all`."""
+    """The sections of a persona file's `text`, in order, example markers dropped. Raises ValueError for the shapes
+    the module docstring refuses. A file with no marker is one locked section with id `all`."""
+    return _parsed(_unmarked(text, ()))
+
+
+def _parsed(text: str) -> tuple[Section, ...]:
     lines = text.strip().split("\n")
     if not any(line.startswith(MARKER_PREFIX) for line in lines):
         return (Section("all", "all", "locked", text.strip()),)
@@ -76,16 +123,20 @@ def _stripped(section: Section) -> Section:
     return Section(section.id, section.label, section.override, section.body.strip())
 
 
-def render(text: str, overrides: Mapping[str, str]) -> str:
+def render(text: str, overrides: Mapping[str, str], without: Collection[str] = ()) -> str:
     """`text` with each `allowed` section's body replaced by `overrides[id]` (stripped) when present, marker lines
-    dropped, sections joined by one blank line. Overrides for other ids are ignored. Deterministic. Raises ValueError
-    as `parse` does."""
-    return "\n\n".join(body for _, body in bodies(text, overrides))
+    dropped, sections joined by one blank line. Overrides for other ids are ignored. `without` are example ids left
+    out of the shipped text; an overridden section has none of them. Deterministic. Raises ValueError as `parse` does,
+    and for an id in `without` that `text` does not name."""
+    return "\n\n".join(body for _, body in bodies(text, overrides, without))
 
 
-def bodies(text: str, overrides: Mapping[str, str]) -> tuple[tuple[str, str], ...]:
+def bodies(text: str, overrides: Mapping[str, str], without: Collection[str] = ()) -> tuple[tuple[str, str], ...]:
     """`render`'s sections as `(id, body)` pairs in file order, each body as `render` joins it."""
-    return tuple((s.id, _body(s, overrides)) for s in parse(text))
+    unknown = sorted(set(without) - set(example_ids(text)))
+    if unknown:
+        raise ValueError(f"no such example: {', '.join(unknown)}")
+    return tuple((s.id, _body(s, overrides)) for s in _parsed(_unmarked(text, without)))
 
 
 def _body(section: Section, overrides: Mapping[str, str]) -> str:
