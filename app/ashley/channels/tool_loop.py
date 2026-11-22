@@ -15,7 +15,7 @@ from ..inference.model import (Entry, Message, Prompt, SystemPrompt, Task, ToolC
                               ToolResults, ToolSpec)
 from ..inference.reply import Reply
 from ..tools.tools import Catalogue, Tools, ToolsUnavailable
-from . import aside, cutoff, ending, hand_off, loop_limits, refused, reshorten, taint, tool_round, unsaid, windows as window
+from . import aside, cut, cutoff, ending, hand_off, loop_limits, refused, reshorten, taint, tool_round, unsaid, windows as window
 from .escalation import Escalating, Escalation, Trigger
 from .limits import Limits
 from .model import Medium
@@ -118,9 +118,10 @@ class Progress:
 
 
 async def offered(source: Tools) -> Catalogue | None:
-    """What `source` offers now; None when it cannot be reached, and the reply goes on without tools."""
+    """What `source` offers now less the tools an eval's cut leaves out (`cut.thinned`); None when it cannot be reached,
+    and the reply goes on without tools."""
     try:
-        return await source.catalogue()
+        return cut.thinned(await source.catalogue())
     except ToolsUnavailable:
         return None
 

@@ -21,6 +21,10 @@ and a model key.
 person's words and a call's view) against the one each case expects: how often it says `run` where `ask` was expected and
 the reverse. Measures and never gates. Needs DATABASE_URL, for the spend ledger, and a model key.
 
+`--variant PATH` on `house` and `prompt-sizes` (`-` reads stdin) runs the turn with a prompt variant (`variant`: stable-prompt
+sections, persona examples, tools and tool sources left out, named in JSON); the report and `--json` name it and a hash of
+its JSON, and an unknown name fails the run.
+
 `python -m ashley.evals house [--runs N] [--case ID] [--json PATH]`: how she uses the house's tools, through her real turn
 loop with the live model and Home Assistant, every call that is not a read refused before it reaches the house. Needs a
 scratch DATABASE_URL (it adds a household and conversations), CONNECTIONS_KEY, EVAL_HA_URL and EVAL_HA_TOKEN (sealed as that
@@ -67,7 +71,7 @@ from ..inference.inference import InferenceError
 from ..inference.routes import PinError, Routes, only
 from ..settings import Settings, from_env
 from . import (action_judge, bench_act, bench_replay, bench_replay_run, house, house_live, house_report, memory_recall_hybrid,
-               memory_write, outside_ask, prompt_sizes_live, reply_owed, reply_remember, watch_tools)
+               memory_write, outside_ask, prompt_sizes_live, reply_owed, reply_remember, variant, watch_tools)
 
 log = logging.getLogger("ashley.evals")
 
@@ -103,6 +107,7 @@ def parser() -> argparse.ArgumentParser:
     h.add_argument("--runs", type=int, default=2, help="runs per case")
     h.add_argument("--case", help="only the case with this id")
     h.add_argument("--json", metavar="PATH", help="also write every run as JSON here, to diff against another run")
+    h.add_argument("--variant", metavar="PATH", help="a prompt variant (JSON) to run under; - reads it from stdin")
     w = sub.add_parser("watch-tools", help="how she uses watch, unwatch and watches over watch_tools_cases.json")
     w.add_argument("--runs", type=int, default=2, help="runs per case")
     w.add_argument("--case", help="only the case with this id")
@@ -133,6 +138,7 @@ def parser() -> argparse.ArgumentParser:
     ps.add_argument("--person", type=int, help="the person asking (default: the household's first)")
     ps.add_argument("--ask", default="Hello.", help="what is said, which memory recalls for")
     ps.add_argument("--json", metavar="PATH", help="also write the counts as JSON here")
+    ps.add_argument("--variant", metavar="PATH", help="a prompt variant (JSON) to count under; - reads it from stdin")
     sub.add_parser("memory-recall-hybrid", help="recall over hybrid_cases.json, by full-text and with embeddings")
     return top
 
@@ -182,8 +188,8 @@ async def _house(settings: Settings, args: argparse.Namespace) -> str:
             await close()
         await database.close()
     if args.json:
-        Path(args.json).write_text(house_report.to_json(results) + "\n")
-    return house_report.render(results)
+        Path(args.json).write_text(house_report.to_json(results, variant.label(args.variant)) + "\n")
+    return house_report.render(results, variant.label(args.variant))
 
 
 async def _prompt_sizes(settings: Settings, args: argparse.Namespace) -> str:
@@ -194,7 +200,8 @@ async def _prompt_sizes(settings: Settings, args: argparse.Namespace) -> str:
     try:
         api = await prompt_sizes_live.client(settings)
         try:
-            options = prompt_sizes_live.Options(args.kind, args.channel, args.household, args.person, args.ask)
+            options = prompt_sizes_live.Options(args.kind, args.channel, args.household, args.person, args.ask,
+                                                variant.label(args.variant))
             return await prompt_sizes_live.run(prompt_sizes_live.counting(api.messages), seen[0], options,
                                                Path(args.json) if args.json else None)
         finally:
@@ -267,8 +274,15 @@ async def _run(settings: Settings, args: argparse.Namespace) -> str:
 
 def main(argv: list[str]) -> int:
     """0 done (whatever the pass rate); 1 a model could not be reached or refused, or no such case; 2 usage, a
-    pinned provider the task has no route for, or an unset DATABASE_URL."""
+    pinned provider the task has no route for, an unset DATABASE_URL, or a `--variant` that cannot be read or names
+    what the code does not have."""
     args = parser().parse_args(argv)
+    try:
+        args.variant = variant.read(args.variant) if getattr(args, "variant", None) else None
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 2
+    variant.install(args.variant)
     if args.eval in ("memory-write", "reply-remember", "reply-owed", "outside-ask", "action-judge", "house", "watch-tools", "bench-act", "bench-replay") and args.runs < 1:
         print("--runs is at least 1", file=sys.stderr)
         return 2
@@ -287,6 +301,7 @@ def main(argv: list[str]) -> int:
     logs.setup()
     try:
         print(asyncio.run(_run(settings, args)))
+        variant.finish()
     except PinError as e:
         print(e, file=sys.stderr)
         return 2
