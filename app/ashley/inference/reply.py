@@ -88,7 +88,8 @@ class Reply(BaseModel):
                                   "in it, `search` for looking things up. It is then done once the source answers and "
                                   "you tell them next time. Null for anything else: an ask the unreachable source "
                                   "does not bear on, one that only makes sense right now, a plain statement, "
-                                  "or when every source answered.")
+                                  "a source whose tools you have not been offered yet (name its group in "
+                                  "`use_tools` and do it), or when every source answered.")
     ask: Ask = Field(
         default="none", description="time or date only when what the person asked is just the current time or the "
                                     "current date, however they word it. none for everything else.")
