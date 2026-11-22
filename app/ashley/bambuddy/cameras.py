@@ -5,7 +5,7 @@ stream token minted first (`POST /api/v1/printers/camera/stream-token`); the tok
 logged. A printer's recordings are the timelapses of its print archives (`GET /api/v1/archives/?printer_id=`, those with a
 `timelapse_path`, newest first), and a recording's picture is the middle of three frames Bambuddy cuts from the video
 (`GET /api/v1/archives/:id/timelapse/thumbnails`), taken with no time stated. Bambuddy gives a printer camera no live
-feed this port can pass on (its stream is motion JPEG), so a live look is `NoLiveFeed`. A printer's detector is its print
+feed this port can pass on (its stream is motion JPEG), so a live look is `NoLiveFeed` (the source's default). A printer's detector is its print
 failing: an archive whose `status` is `failed` (Bambuddy's own word, which is the detection's class), at its `completed_at`.
 Each `follow` pass, which the detection singleton makes every `tick_s`, reads the listed printers' archives and tells the
 failures that ended within `detection.json`'s `failure_lookback_s`; the Detections record keeps one told twice from acting twice. Nothing here
@@ -14,15 +14,13 @@ retries."""
 import base64
 import binascii
 import logging
-from collections.abc import AsyncGenerator, AsyncIterator
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from datetime import UTC, datetime, timedelta
 
 from .. import logs
 from ..cameras import looking as look
 from ..cameras.detection_settings import load
-from ..cameras.model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, Detection, DetectionRecorder, LiveConfig, LiveSignal, NoLiveFeed,
-                             NotConnected, Reason, Recording, Still)
+from ..cameras.model import (Camera, CamerasFailed, CamerasUnavailable, Detection, DetectionRecorder, NotConnected, Reason,
+                             Recording, Still)
 from ..cameras.source import CameraSource
 from ..connections.model import Opened
 from . import wire
@@ -101,26 +99,6 @@ class BambuddyCameras(CameraSource):
                 if archive.status == FAILED and at is not None and at >= since:
                     await record(Detection(camera.id, archive.status, at))
         return len(listed)
-
-    async def live_config(self, opened: Opened, camera: Camera) -> LiveConfig:
-        raise NoLiveFeed
-
-    def live(self, opened: Opened, camera: Camera, offer: str) -> AbstractAsyncContextManager[AsyncIterator[LiveSignal]]:
-        return _no_feed()
-
-    async def live_candidate(self, opened: Opened, camera: Camera, session_id: str, candidate: Candidate) -> None:
-        raise NoLiveFeed
-
-
-@asynccontextmanager
-async def _no_feed() -> AsyncGenerator[AsyncIterator[LiveSignal]]:
-    raise NoLiveFeed
-    yield _empty()
-
-
-async def _empty() -> AsyncIterator[LiveSignal]:
-    return
-    yield
 
 
 async def _archives(opened: Opened, camera: Camera) -> list[wire.Archive]:
