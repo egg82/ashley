@@ -30,11 +30,12 @@ loop with the live model and Home Assistant, every call that is not a read refus
 scratch DATABASE_URL (it adds a household and conversations), CONNECTIONS_KEY, EVAL_HA_URL and EVAL_HA_TOKEN (sealed as that
 household's `home_assistant` connection, replacing the one it holds) and the model keys.
 
-`python -m ashley.evals reach [--runs N] [--case ID] [--json PATH] [--household N --person N]`: which tool groups she reaches for,
+`python -m ashley.evals reach [--rescore PATH | --runs N] [--case ID] [--json PATH] [--household N --person N]`: which tool groups she reaches for,
 over `reach_cases.json`, through her real turn loop with the live model and every tool a web chat offers; every call not
 on the read allow-list is answered as done and kept from its service. A group is only offered when the household has it
 connected, so for the full tool set name a household that has (`--household` with `--person`), on a scratch copy of the
-database (it adds conversations); with neither it is the eval's own household. Needs the model keys.
+database (it adds conversations); with neither it is the eval's own household. Needs the model keys. `--rescore` takes a
+saved `--json` run and scores it against today's cases, with no model call and no database.
 
 `python -m ashley.evals bench-act [--runs N] [--case ID] [--scripted] [--clock work|age] [--windows N] [--hold S] [--no-now]`:
 what she does on a bench, through her real turn loop with a captured bench, her real bench and move_page tools, and a fake
@@ -64,6 +65,7 @@ of a scratch DATABASE_URL (it adds a household), ended after each run. Needs the
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import sys
@@ -119,6 +121,7 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--case", help="only the case with this id")
     r.add_argument("--json", metavar="PATH", help="also write every run as JSON here, to diff against another run")
     r.add_argument("--variant", metavar="PATH", help="a prompt variant (JSON) to run under; - reads it from stdin")
+    r.add_argument("--rescore", metavar="PATH", help="score a saved --json run against today's cases, calling no model")
     r.add_argument("--household", type=int, help="ask as a person of this household, not the eval's own")
     r.add_argument("--person", type=int, help="the person of --household who asks")
     w = sub.add_parser("watch-tools", help="how she uses watch, unwatch and watches over watch_tools_cases.json")
@@ -318,6 +321,9 @@ def main(argv: list[str]) -> int:
     if args.eval in ("memory-write", "reply-remember", "reply-owed", "outside-ask", "action-judge", "house", "reach", "watch-tools", "bench-act", "bench-replay") and args.runs < 1:
         print("--runs is at least 1", file=sys.stderr)
         return 2
+    if args.eval == "reach" and args.rescore:
+        print(reach_report.rescore(json.loads(Path(args.rescore).read_text())))
+        return 0
     if args.eval == "reach" and bool(args.household) != bool(args.person):
         print("--household and --person go together", file=sys.stderr)
         return 2

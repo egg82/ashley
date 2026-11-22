@@ -6,7 +6,7 @@ from collections import Counter
 from dataclasses import asdict
 from typing import Any
 
-from .reach import RunResult, load
+from .reach import RunResult, lacking, load
 
 
 def _median(values: list[int]) -> int:
@@ -27,7 +27,7 @@ def summary(runs: list[RunResult]) -> dict[str, Any]:
 
 
 def wants_nothing(case: dict[str, Any]) -> bool:
-    return not case["groups"] and not case["tools"]
+    return not case["groups"] and not case["tools"] and "any_of" not in case
 
 
 def total(results: dict[str, list[RunResult]]) -> dict[str, Any]:
@@ -36,6 +36,23 @@ def total(results: dict[str, list[RunResult]]) -> dict[str, Any]:
     everything = [r for rs in results.values() for r in rs]
     return {**summary(everything), "false_positives": sum(bool(r.tools) for r in everything if r.case_id in nothing),
             "no_tool_runs": sum(r.case_id in nothing for r in everything)}
+
+
+def rescore(saved: dict[str, Any]) -> str:
+    """A saved `--json` run scored again against today's cases, with no model call: a pass per case, then the total beside the
+    saved one. A saved case no longer in the file is skipped. Uses each run's recorded tools and groups reached."""
+    cases = {c["id"]: c for c in load()}
+    rows: list[str] = []
+    passed, runs, was = 0, 0, 0
+    for entry in saved["cases"]:
+        case = cases.get(entry["id"])
+        if case is None:
+            continue
+        ok = [not r["error"] and (not r["tools"] if wants_nothing(case) else not lacking(case, r["tools"], r["groups"]))
+              for r in entry["runs"]]
+        passed, runs, was = passed + sum(ok), runs + len(ok), was + sum(r["passed"] for r in entry["runs"])
+        rows.append(f"{entry['id']:26} {sum(ok)}/{len(ok)}" + ("" if sum(ok) == entry["summary"]["passes"] else f"  (was {entry['summary']['passes']})"))
+    return "\n".join([*rows, f"{'TOTAL':26} {passed}/{runs}  (was {was}/{runs})"])
 
 
 def to_json(results: dict[str, list[RunResult]], variant: str = "none") -> str:

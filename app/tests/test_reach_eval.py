@@ -91,6 +91,32 @@ def test_a_named_tool_must_be_called_and_its_group_is_wanted_not_extra() -> None
     assert reach.score(case, ["remind", "remind_on_money", "lights"], offered) == (True, (), ("everyday",))
 
 
+def test_a_case_with_any_of_passes_on_one_alternative_reached_whole_and_names_what_the_first_nearest_lacks() -> None:
+    case = {"id": "x", "ask": "a", "groups": [], "tools": [], "any_of": [["readers"], ["mail", "calendar"]]}
+    offered = {"send_readers": "readers", "mail_search": "mail", "calendar_events": "calendar", "lights": "everyday"}
+    assert reach.score(case, ["send_readers"], offered) == (True, (), ())
+    assert reach.score(case, ["mail_search", "calendar_events"], offered) == (True, (), ())
+    assert reach.score(case, ["mail_search"], offered) == (False, ("readers",), ())
+    assert reach.score(case, ["lights"], offered) == (False, ("readers",), ("everyday",))
+    assert reach.score(case, [], offered) == (False, ("readers",), ())
+
+
+def test_any_of_names_a_tool_as_well_as_a_group_and_adds_to_the_required() -> None:
+    case = {"id": "x", "ask": "a", "groups": ["todo"], "tools": [], "any_of": [["look_up"], ["house_ask"]]}
+    offered = {"look_up": "everyday", "house_ask": "everyday", "todo_lists": "todo"}
+    assert reach.score(case, ["todo_lists", "house_ask"], offered) == (True, (), ())
+    assert reach.score(case, ["house_ask"], offered) == (False, ("todo",), ())
+
+
+def test_the_saved_baseline_shape_is_scored_again_by_the_case_file() -> None:
+    run = {"tools": ["calendar_events", "todo_lists"], "groups": ["calendar", "todo"], "passed": False, "error": None}
+    saved = {"cases": [{"id": "readers-clash", "summary": {"passes": 0}, "runs": [run]},
+                       {"id": "gone", "summary": {"passes": 0}, "runs": [run]},
+                       {"id": "none-joke", "summary": {"passes": 1}, "runs": [{**run, "tools": [], "groups": [], "passed": True}]}]}
+    text = reach_report.rescore(saved)
+    assert "1/1  (was 0)" in text and "gone" not in text and text.endswith("2/2  (was 1/2)")
+
+
 def test_steps_tokens_and_models_come_from_the_run(wired: Fakes) -> None:
     [got] = run_case(wired, "calendar-next", [calls("lights"), calls("lights", prefix="d"), ANSWER])
     assert got.steps == 2 and got.tokens == (100, 120) and got.models == ("fake/m",) and not got.limit_hit and got.repeats == 0
@@ -158,7 +184,12 @@ def test_every_group_a_case_names_is_a_source_a_turn_builds() -> None:
     [{"id": "a", "ask": " ", "groups": [], "tools": []}],
     [{"id": "a", "ask": "x", "groups": "money", "tools": []}],
     [{"id": "a", "ask": "x", "groups": ["m", "m"], "tools": []}],
-    [{"id": "a", "ask": "x", "groups": [], "tools": []}, {"id": "a", "ask": "y", "groups": [], "tools": []}]])
+    [{"id": "a", "ask": "x", "groups": [], "tools": []}, {"id": "a", "ask": "y", "groups": [], "tools": []}],
+    [{"id": "a", "ask": "x", "groups": [], "tools": [], "any_of": [["m"]]}],
+    [{"id": "a", "ask": "x", "groups": [], "tools": [], "any_of": [["m"], []]}],
+    [{"id": "a", "ask": "x", "groups": [], "tools": [], "any_of": [["m"], ["m"]]}],
+    [{"id": "a", "ask": "x", "groups": [], "tools": [], "why": " "}],
+    [{"id": "a", "ask": "x", "groups": [], "tools": [], "other": 1}]])
 def test_a_case_that_is_not_well_formed_is_refused(broken: list[dict[str, object]]) -> None:
     with pytest.raises(ValueError):
         reach.validate(broken)
