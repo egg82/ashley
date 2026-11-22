@@ -66,7 +66,11 @@ class ScreenFeedTools(Tools):
             await camera_feed.config(self._household, chosen)
         except camera_feed.FeedRefused as e:
             return bench_results.failed(call, started, e.reason, _REFUSED[e.reason])
-        count = await feed.show(self._household, chosen, reach, self._clock())
+        count = await feed.show(self._household, chosen, reach, self._clock(),
+                                self._person if self._device is None else None)
+        if not count:
+            return bench_results.failed(call, started, "no_one_looking", "no screen in reach is open and in the foreground, so "
+                                        "nobody saw it: tell the person it did not show", screens=0)
         return bench_results.ok(call, started, {"screens": count}, outside=False, screens=count)
 
     async def _clear(self, call: ToolCall, started: float) -> ToolResult:

@@ -2,7 +2,7 @@
 (`ashley.live.screens.Screens.show_feed`), so either site can show it, read it back and clear it, and a screen that opens
 later shows nothing it was not shown. She puts it on (`show`) where `ashley.channels.kiosk.announce.chosen` says a reply
 would be heard: the kiosk when its page is in the foreground and someone is home, and the foregrounded web page of each
-person known to be away. It leaves on its own after `feed_s` (`ashley.live.live`), when a person swipes it away
+person known to be away, and on the page of whoever asked on their own page. It leaves on its own after `feed_s` (`ashley.live.live`), when a person swipes it away
 (`dismiss`) or when she takes it down (`clear`). A screen reads its own feed back (`current`) and relays its offer for it
 (`relay`, `candidate`) under the token it opened its live feed with, so a page can only open the feed it is shown.
 Live carries only "something changed" (`ashley.live.events.FeedChanged`)."""
@@ -64,13 +64,15 @@ async def screens_of(household_id: int) -> tuple[int, ...]:
     return tuple(sorted({d.device.id for d in await services.get(Devices).of_household(household_id) if d.form == "other"}))
 
 
-async def show(household_id: int, camera_id: str, reach: tuple[int, ...], now: datetime) -> int:
-    """Put the feed of `camera_id` on the screens `chosen` picks for each device in `reach`; how many screens it went to.
+async def show(household_id: int, camera_id: str, reach: tuple[int, ...], now: datetime, asker: int | None = None) -> int:
+    """Put the feed of `camera_id` on the screens `chosen` picks for each device in `reach`, and on the foreground web page of
+    `asker`, the person who asked on their own page, home or not; how many screens it went to.
     Announces the change on Live when any did. Raises ScreensUnavailable, DevicesUnavailable."""
     found = await services.get(Screens).open_screens(household_id, PRESENT_S)
     home = await services.get(Presence).home(household_id)
     picked = [s for device in reach for s in chosen(household_id, device, found, home)]
-    people = tuple(sorted({s.person_id for s in picked if s.person_id is not None}))
+    asking = [] if asker is None else [asker]
+    people = tuple(sorted({s.person_id for s in picked if s.person_id is not None}.union(asking)))
     devices = tuple(sorted({s.device_id for s in picked if s.device_id is not None}))
     count = await services.get(Screens).show_feed(household_id, camera_id, now + timedelta(seconds=FEED_S), people, devices,
                                                   PRESENT_S)
