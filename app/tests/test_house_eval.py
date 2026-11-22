@@ -11,7 +11,7 @@ from ashley import services
 from ashley.channels.respond import LIMITS
 from ashley.evals import house, house_live, house_report
 from ashley.evals.house import Billed, Seat
-from ashley.evals.house_guard import Attempt, GuardedTools
+from ashley.evals.house_guard import Attempt, GuardedTools, Step
 from ashley.evals.house_readonly import ReadOnlyHomes, ReadOnlyHouse
 from ashley.connections.model import Connection
 from ashley.home_assistant.client import HomeAssistant
@@ -146,6 +146,15 @@ def test_an_action_case_passes_on_the_named_tool_and_target_and_the_call_is_stil
     [got] = run_case(wired, "act-shopping-add", [ToolCalls((right,)), ANSWER])
     assert got.passed and got.refused == ("house_do",)
     assert wired.tools.called == []
+
+
+def test_an_action_case_passes_on_its_write_kept_by_the_read_only_house_not_the_everyday_guard() -> None:
+    [case] = [c for c in house.load() if c["id"] == "act-shopping-add"]
+    asked = Step("chat", "auto", None, (ToolCall("a", "todo_change", {"list": "todo.shopping", "op": "add", "item": "Paper towels"}),))
+    kept = [Attempt("house:perform:todo.add_item", "")]
+    assert house.passes(case, kept, [asked])
+    other = Step("chat", "auto", None, (ToolCall("a", "todo_change", {"list": "todo.shopping", "op": "add", "item": "bread"}),))
+    assert not house.passes(case, kept, [other])
 
 
 def test_an_action_case_fails_without_the_call_or_on_another_target(wired: Fakes) -> None:
