@@ -4,8 +4,11 @@ the row holds an address and one secret and the fingerprint is neither typed apa
 `most` of them, one per machine, each named by its label (`ashley.herdr.machines`)."""
 
 from .. import services
-from ..connections.kinds import ConnectionKind, Refusal
+from ..connections.kinds import CatalogueUnavailable, ConnectionKind, Refusal
+from ..connections.model import Catalogued, CatalogueEntity, Opened
+from ..connections.settings import EntityList, Setting
 from .bridge import Bridge
+from .cameras import DOMAIN, LOOK_CAMERAS, camera_id
 from .model import Access, BridgeFailed, Reason
 
 _REFUSED: dict[Reason, Refusal] = {"bad_token": "key_refused", "wrong_person": "key_refused",
@@ -20,16 +23,35 @@ async def _check(base: str, token: str, person_id: int) -> Refusal | None:
     return None
 
 
+async def _catalogue(opened: Opened) -> Catalogued:
+    """The webcams the bridge lists, as the cameras a person may let her look through; none from a bridge too old to list
+    them."""
+    c = opened.connection
+    if c.person_id is None:
+        raise CatalogueUnavailable("a bridge is a person's own")
+    try:
+        found = await services.get(Bridge).cameras(Access.of(c.base_url, opened.secret, c.person_id))
+    except BridgeFailed as e:
+        if e.reason == "not_found":
+            return Catalogued((), ())
+        raise CatalogueUnavailable("the bridge did not answer") from e
+    return Catalogued(tuple(CatalogueEntity(camera_id(c.id, b.id), b.name, DOMAIN, None) for b in found), ())
+
+
+SETTINGS = (Setting(LOOK_CAMERAS, EntityList((DOMAIN,)), "read"),)
+
 HERDR = ConnectionKind(
     name="herdr", title="Claude Code", what="your sessions",
     blurb="Let her see and drive your Claude Code sessions through the bridge you run beside your herdr: list them, "
           "read a screen, send a prompt to one that is ready, and start or close one. Only in a chat that is yours "
-          "alone.",
+          "alone. The bridge also lists the machine’s webcams; the ones you turn on in its settings she looks "
+          "through when anyone at home asks.",
     connected="Connected. She can reach your Claude Code sessions in your own chat.",
     removed="Removed. She can’t reach your Claude Code sessions now.",
     holders=frozenset({"person"}), schemes=frozenset({"https"}), address_placeholder="https://host:7843#sha256=<fingerprint>",
     secret_field="token", secret_label="Token, printed once when you set the bridge up", secret_noun="token",
-    check=_check, pinned=True, ports=frozenset({"herdr"}), most=4, takes_description=True,
+    check=_check, pinned=True, ports=frozenset({"herdr", "camera"}), most=4, takes_description=True,
+    settings=SETTINGS, catalogue=_catalogue,
     refusals={"bad_url": "the address is the bridge’s https address followed by #sha256= and the fingerprint it "
                          "printed, 64 hex digits",
               "key_refused": "the bridge turned that token away, or serves another person; set it up again to get "

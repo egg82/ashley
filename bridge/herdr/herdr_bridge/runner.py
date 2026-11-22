@@ -35,6 +35,7 @@ class Captured:
 class Capturer(Protocol):
     def capture(self, args: Sequence[str], timeout_s: float) -> Captured:
         """Run with `args` and return what the program wrote to stdout, as bytes. Raises HerdrMissing, HerdrTimeout."""
+        ...
 
 
 class SubprocessRunner:

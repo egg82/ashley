@@ -51,6 +51,12 @@ class PostgresConnections(Connections):
                 rows = await cur.fetchall()
         return tuple(connection_of(r) for r in rows)
 
+    async def of_everyone(self, household_id: int) -> tuple[Connection, ...]:
+        with translated():
+            async with self._database.connection() as conn:
+                rows = await (await conn.execute(queries.LIST_EVERYONE, {"household": household_id})).fetchall()
+        return tuple(connection_of(r) for r in rows)
+
     async def households_of_kinds(self, kinds: Collection[str]) -> tuple[int, ...]:
         with translated():
             async with self._database.connection() as conn:

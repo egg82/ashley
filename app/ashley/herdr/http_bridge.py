@@ -13,15 +13,16 @@ from typing import TypeVar, get_args
 from .. import logs
 from .bridge import Bridge
 from .config import HerdrConfig
-from .model import Access, BridgeFailed, MachineReport, OutFile, Reason, Screen, Session, SessionList, Whoami
+from .model import Access, BridgeCamera, BridgeFailed, MachineReport, OutFile, Reason, Screen, Session, SessionList, Whoami
 from .transport import ClientCertificate, Request, exchange
-from .wire import (ClosedBody, SessionBody, SubmittedBody, UploadedBody, body_as, machine, outputs, screen, session,
-                   sessions, whoami)
+from .wire import (ClosedBody, SessionBody, SubmittedBody, UploadedBody, body_as, cameras, machine, outputs, screen,
+                   session, sessions, whoami)
 
 log = logging.getLogger("ashley.herdr")
 SESSION_ID = re.compile(r"[0-9a-fA-F-]{36}")
 ERROR_ROOM = 4096  # a refusal's JSON is read in full even when the file limit asked for is smaller
 FILE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}")
+CAMERA_ID = re.compile(r"[0-9a-f]{4}_[0-9a-f]{4}_[0-9_]+")
 T = TypeVar("T")
 
 
@@ -74,6 +75,18 @@ class HttpBridge(Bridge):
 
     async def machine(self, access: Access) -> MachineReport:
         return await self._call("machine", access, Request("GET", "/v1/machine"), machine)
+
+    async def cameras(self, access: Access) -> tuple[BridgeCamera, ...]:
+        return await self._call("cameras", access, Request("GET", "/v1/cameras"), cameras)
+
+    async def camera_still(self, access: Access, camera_id: str, max_bytes: int) -> bytes:
+        if CAMERA_ID.fullmatch(camera_id) is None:
+            raise BridgeFailed("not_found")
+        request = Request("GET", f"/v1/cameras/{camera_id}/still", binary=True)
+        data = await self._call("camera_still", access, request, bytes, max_bytes=max(max_bytes, ERROR_ROOM))
+        if len(data) > max_bytes:
+            raise BridgeFailed("too_large")
+        return data
 
     async def sessions(self, access: Access) -> SessionList:
         return await self._call("sessions", access, Request("GET", "/v1/sessions"), sessions)

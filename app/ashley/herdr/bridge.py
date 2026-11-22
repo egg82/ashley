@@ -4,7 +4,7 @@ and closed, and the files moved through a session's `in/` and `out/`. Each call 
 from abc import abstractmethod
 
 from ..services import Service
-from .model import Access, BridgeFailed, MachineReport, OutFile, Screen, Session, SessionList, Whoami
+from .model import Access, BridgeCamera, BridgeFailed, MachineReport, OutFile, Screen, Session, SessionList, Whoami
 
 
 class Bridge(Service):
@@ -19,6 +19,16 @@ class Bridge(Service):
     async def machine(self, access: Access) -> MachineReport:
         """What the bridge's machine can do now. `not_found` from a bridge older than the report (`Whoami.capabilities`
         lacks `machine`), which is also what a bridge stand-in that reports none answers."""
+        raise BridgeFailed("not_found")
+
+    async def cameras(self, access: Access) -> tuple[BridgeCamera, ...]:
+        """The webcams of the bridge's machine. `not_found` from a bridge older than 0.6.0, which has none to list."""
+        raise BridgeFailed("not_found")
+
+    async def camera_still(self, access: Access, camera_id: str, max_bytes: int) -> bytes:
+        """One JPEG frame from the camera `camera_id` (as `cameras` listed it). `not_found` for a camera the bridge does
+        not list now; `camera_busy` (another program holds it), `camera_failed`, `ffmpeg_missing` and `too_large` (a frame
+        over `max_bytes`) mean no picture was taken."""
         raise BridgeFailed("not_found")
 
     @abstractmethod
@@ -66,6 +76,12 @@ class NullBridge(Bridge):
         raise BridgeFailed("herdr_unavailable")
 
     async def machine(self, access: Access) -> MachineReport:
+        raise BridgeFailed("herdr_unavailable")
+
+    async def cameras(self, access: Access) -> tuple[BridgeCamera, ...]:
+        raise BridgeFailed("herdr_unavailable")
+
+    async def camera_still(self, access: Access, camera_id: str, max_bytes: int) -> bytes:
         raise BridgeFailed("herdr_unavailable")
 
     async def sessions(self, access: Access) -> SessionList:
