@@ -18,21 +18,19 @@ from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from datetime import UTC, datetime, timedelta
 
-from .. import logs, services
+from .. import logs
+from ..cameras import looking as look
 from ..cameras.detection_settings import load
 from ..cameras.model import (Camera, CamerasFailed, CamerasUnavailable, Candidate, Detection, DetectionRecorder, LiveConfig, LiveSignal, NoLiveFeed,
                              NotConnected, Reason, Recording, Still)
 from ..cameras.source import CameraSource
-from ..connections.connections import ConnectionsUnavailable
 from ..connections.model import Opened
-from ..connections.settings import SettingValue
-from ..connections.settings_read import SettingsReader
 from . import wire
 from .client import Reason as BambuddyReason
 from .read import Reader
 
 NAME = "bambuddy"
-LOOK_CAMERAS = "look_cameras"
+LOOK_CAMERAS = look.LOOK_CAMERAS
 DOMAIN = "printer"
 ARCHIVES_SEEN = 50
 FRAMES = 3
@@ -57,7 +55,7 @@ def _printer_of(camera: Camera) -> int:
 
 class BambuddyCameras(CameraSource):
     async def cameras(self, opened: Opened) -> tuple[Camera, ...]:
-        allowed = await _allowed(opened)
+        allowed = await look.allowed(opened)
         listed = await _READER.get(opened, "/api/v1/printers/", {}, wire.Printers)
         if listed is None:
             raise CamerasFailed("unrecognised")
@@ -140,17 +138,3 @@ async def _timelapses(opened: Opened, camera: Camera) -> list[wire.Archive]:
 def _ended(archive: wire.Archive) -> datetime | None:
     at = archive.completed_at
     return None if at is None else at.replace(tzinfo=UTC) if at.tzinfo is None else at.astimezone(UTC)
-
-
-async def _allowed(opened: Opened) -> frozenset[str]:
-    """The cameras this connection's `look_cameras` names; none when it is unset or of the wrong shape. Raises
-    CamerasFailed when the settings cannot be read."""
-    try:
-        stored = await services.get(SettingsReader).stored(opened.connection.id, opened.connection.household_id)
-    except ConnectionsUnavailable as e:
-        raise CamerasFailed("unreachable") from e
-    return _ids(stored.values.get(LOOK_CAMERAS))
-
-
-def _ids(value: SettingValue | None) -> frozenset[str]:
-    return frozenset(value) if isinstance(value, list) else frozenset()
