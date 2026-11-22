@@ -2,19 +2,22 @@
 `detection` wake, then told on a screen's thread with her look at the recording the detector captured as the picture in
 her first step, and said where the screens are. A class outside the list, a camera off the list and a detection told
 twice make no second turn; a recording that has not appeared leaves the wake due until the wait is over and then she is
-told she could not see; every person of the household in their quiet hours holds it; no log names a camera or a title.
+told she could not see; every person of the household in their quiet hours holds a failure but not a ring; no log names a camera or a title.
 Home Assistant, the house's recordings, Postgres and the real turn loop are real; the model is scripted."""
 
 import asyncio
+import json
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, replace
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from files_support import sync
 from ashley import services
+from ashley.cameras import detection_settings
 from ashley.cameras.detection_settings import DetectionSettings, load
 from ashley.cameras.model import Detection
 from ashley.channels.kiosk import detected
@@ -195,20 +198,28 @@ async def test_recordings_unreadable_at_the_event_mean_no_recording_is_ever_take
 
 
 @sync
-async def test_every_person_in_their_quiet_hours_holds_it_and_one_awake_person_does_not(db_url: str) -> None:
+async def test_every_person_in_their_quiet_hours_holds_a_failure_and_one_awake_person_does_not(db_url: str) -> None:
+    asleep = QuietHours(9, 11, "UTC")
+    failing = replace(SPEAKING, speak_on=frozenset({"ring", "failed"}), look_now_on=frozenset({"failed"}))
+    async with spoken(db_url, (asleep,)) as s:
+        await detected.act(s.w.home, Detection(PORCH, "failed", SEEN), failing, SEEN)
+        s.model.script = [SAYS]
+        assert await runner.sweep() == 1 and await s.outcome() == "turn" and await s.outbox() == 0
+    async with spoken(db_url, (asleep, None)) as s:
+        await detected.act(s.w.home, Detection(PORCH, "failed", SEEN), failing, SEEN)
+        s.model.script = [SAYS]
+        assert await runner.sweep() == 1 and await s.outbox() == 1
+
+
+@sync
+async def test_a_ring_is_said_even_when_every_person_is_in_their_quiet_hours(db_url: str) -> None:
     asleep = QuietHours(9, 11, "UTC")
     async with spoken(db_url, (asleep,)) as s:
         s.recording(PORCH, "old")
         await detected.act(s.w.home, Detection(PORCH, "ring", SEEN), SPEAKING, SEEN)
         s.recording(PORCH, "new")
         s.model.script = [SAYS]
-        assert await runner.sweep() == 1 and await s.outcome() == "turn" and await s.outbox() == 0
-    async with spoken(db_url, (asleep, None)) as s:
-        s.recording(PORCH, "old")
-        await detected.act(s.w.home, Detection(PORCH, "ring", SEEN), SPEAKING, SEEN)
-        s.recording(PORCH, "new")
-        s.model.script = [SAYS]
-        assert await runner.sweep() == 1 and await s.outbox() == 1
+        assert await runner.sweep() == 1 and await s.outcome() == "turn" and await s.outbox() == 1
 
 
 @sync
@@ -235,6 +246,21 @@ async def test_a_wake_past_its_use_expires_untold_and_the_inbound_names_no_perso
         assert await runner.sweep() == 1 and await s.outcome() == "expired" and s.model.prompts == []
 
 
-def test_the_shipped_settings_speak_on_a_ring() -> None:
+def test_the_shipped_settings_speak_on_a_ring_in_quiet_hours_and_not_on_a_failure() -> None:
     got = load()
     assert "ring" in got.speak_on and got.look_wait_s > 0
+    assert got.speak_in_quiet_on == frozenset({"ring"})
+
+
+@pytest.mark.parametrize("bad", ["ring", [""], [3], None])
+def test_a_bad_speak_in_quiet_on_is_refused(bad: object, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = json.loads(detection_settings.FILE.read_text())
+    monkeypatch.setattr(detection_settings, "FILE", tmp_path / "d.json")
+    (tmp_path / "d.json").write_text(json.dumps(raw))
+    assert detection_settings.load().speak_in_quiet_on == frozenset({"ring"})
+    (tmp_path / "d.json").write_text(json.dumps({**raw, "speak_in_quiet_on": bad}))
+    with pytest.raises(ValueError):
+        detection_settings.load()
+    (tmp_path / "d.json").write_text(json.dumps({k: v for k, v in raw.items() if k != "speak_in_quiet_on"}))
+    with pytest.raises(ValueError):
+        detection_settings.load()

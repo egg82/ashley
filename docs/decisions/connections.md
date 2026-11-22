@@ -276,7 +276,8 @@ webcam are later sources; detector events, live video and a bench watch are late
   household's, addressed to no one (`speaker_id` None, as tending her Discord home channel is), on the thread of a screen of the
   household (the one whose page is in the foreground, else the first), so its reply is queued in the outbox and
   `kiosk.announce` plays it where people are. Initiative decides whether it goes out: the turn has no moment, so on her `says`
-  alone, and not while every person of the household is within their own quiet hours at the event's time. The picture is in
+  alone, and not while every person of the household is within their own quiet hours at the event's time, except a class in
+  `speak_in_quiet_on` (a ring: a doorbell at night is fine; a printer's failure stays held). The picture is in
   the turn as her look: the recording that appeared after the event is the camera's newest one whose id was not known when
   it was heard (no title is read; unreadable recordings at the event mean none is ever taken), and the turn begins with
   `camera_look`'s own call and result for it (`Inbound.seen`, `channels.seen`), so it is prepared, kept as a look on no

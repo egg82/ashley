@@ -13,7 +13,8 @@ she could not see; the same when the recordings were unreadable at the event. Wh
 by a title. Her tools are `camera_look` alone, since her look is in the turn as a call of it.
 
 Whether it goes out is Initiative's: the turn has no moment, so it goes out on her `says`, and nothing goes out while every
-person of the household is within their own quiet hours at the event's time (`Inbound.quiet`); a household with no people is
+person of the household is within their own quiet hours at the event's time (`Inbound.quiet`), except for a class in
+`detection.json`'s `speak_in_quiet_on` (a ring), which is never held and does not ask People; a household with no people is
 never quiet. A wake past `max_age_s`, with the camera gone from the household's list or its connection, or with no screen
 to say it on, is settled without a turn. The wake's id is the turn's `source`, so a wake handed in twice is one turn.
 
@@ -22,7 +23,6 @@ Logs `detection_wake.done` with the wake id, the class, whether she began with a
 
 import logging
 import time
-from datetime import datetime
 
 from ... import logs, services
 from ...cameras.cameras import Cameras
@@ -43,6 +43,7 @@ from .reminder_device import fits
 log = logging.getLogger("ashley.channels.wake")
 WAIT_S = load().look_wait_s
 NOW = load().look_now_on
+ALWAYS = load().speak_in_quiet_on
 
 
 class Waiting(Exception):
@@ -91,7 +92,7 @@ async def fired(wake_id: int, wake: DetectionWake, age_s: float) -> Outcome:
     if device is None:
         return "cancelled"
     try:
-        await respond(inbound(wake_id, wake, device, title, seen, await _quiet(wake.household_id, wake.at)))
+        await respond(inbound(wake_id, wake, device, title, seen, await _quiet(wake)))
     except RespondRefused:
         logs.warning(log, "detection_wake.refused", wake=wake_id)
         return "failed"
@@ -146,7 +147,10 @@ async def _screen(household_id: int) -> Device | None:
     return next((d for d in screens if d.id in visible), screens[0])
 
 
-async def _quiet(household_id: int, at: datetime) -> bool:
-    """Whether every person of the household is within their own quiet hours at `at`. Raises PeopleUnavailable."""
-    found = await services.get(People).household(household_id)
-    return found is not None and bool(found.people) and all(held(p, at) for p in found.people)
+async def _quiet(wake: DetectionWake) -> bool:
+    """Whether the wake is held: every person of the household within their own quiet hours at its time, unless its class
+    is in `speak_in_quiet_on`. Raises PeopleUnavailable."""
+    if wake.kind in ALWAYS:
+        return False
+    found = await services.get(People).household(wake.household_id)
+    return found is not None and bool(found.people) and all(held(p, wake.at) for p in found.people)
