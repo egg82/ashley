@@ -2,11 +2,11 @@
 which connections are asked."""
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
-from contextlib import AbstractAsyncContextManager
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
 from ..connections.model import Opened
-from .model import Camera, Candidate, DetectionRecorder, LiveConfig, LiveSignal, Recording, Still
+from .model import Camera, Candidate, DetectionRecorder, LiveConfig, LiveSignal, NoLiveFeed, Recording, Still
 
 
 class CameraSource(ABC):
@@ -40,15 +40,27 @@ class CameraSource(ABC):
         """Stop following the household's detectors. Raises CamerasFailed."""
         return None
 
-    @abstractmethod
     async def live_config(self, opened: Opened, camera: Camera) -> LiveConfig:
-        """What a browser needs to open a live feed of `camera`. Raises CamerasFailed, NoLiveFeed."""
+        """What a browser needs to open a live feed of `camera`. A source with no feed raises NoLiveFeed, as this does.
+        Raises CamerasFailed, NoLiveFeed."""
+        raise NoLiveFeed
 
-    @abstractmethod
     def live(self, opened: Opened, camera: Camera, offer: str) -> AbstractAsyncContextManager[AsyncIterator[LiveSignal]]:
         """Pass the browser's `offer` (SDP) to `camera` and yield what the service sends back until the feed is closed.
-        The service keeps the feed only while this is open. Raises CamerasFailed, NoLiveFeed on entering."""
+        The service keeps the feed only while this is open. Raises CamerasFailed, NoLiveFeed on entering (here, always)."""
+        return _no_feed()
 
-    @abstractmethod
     async def live_candidate(self, opened: Opened, camera: Camera, session_id: str, candidate: Candidate) -> None:
         """Hand the browser's `candidate` for the feed `session_id` to the service. Raises CamerasFailed, NoLiveFeed."""
+        raise NoLiveFeed
+
+
+@asynccontextmanager
+async def _no_feed() -> AsyncGenerator[AsyncIterator[LiveSignal]]:
+    raise NoLiveFeed
+    yield _empty()
+
+
+async def _empty() -> AsyncIterator[LiveSignal]:
+    return
+    yield
