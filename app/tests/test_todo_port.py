@@ -146,6 +146,21 @@ def test_a_house_that_refuses_the_change_is_an_error_result(house: MemoryHouse) 
     assert run(CHANGE, {"list": GROCERY, "op": "add", "item": "x"}).content.startswith("refused")
 
 
+@pytest.mark.parametrize("value", ["unavailable", "unknown"])
+def test_a_list_the_house_cannot_read_is_not_offered_or_asked_for(house: MemoryHouse, value: str) -> None:
+    house.things.append(state("todo.zz_gone", "Gone", value))
+    got = body(run(LISTS, {}))
+    assert [entry["id"] for entry in got["lists"]] == [GROCERY, CHORES]
+    assert [entry["summary"] for entry in got["items"]] == ["Oat milk", "Water ferns"] and "unread" not in got
+    assert house.done[0][3] == (GROCERY, CHORES)
+
+
+def test_an_available_list_missing_from_the_response_is_still_unread(house: MemoryHouse) -> None:
+    house.returns["todo.get_items"] = {GROCERY: house.returns["todo.get_items"][GROCERY]}
+    got = body(run(LISTS, {}))
+    assert got["unread"] == [NAME] and got["items"] == []
+
+
 @pytest.mark.parametrize("fault", ["down", "refused", "malformed"])
 def test_a_house_that_cannot_say_is_unread_not_empty(house: MemoryHouse, fault: str) -> None:
     house.refuse = "no" if fault == "refused" else None
