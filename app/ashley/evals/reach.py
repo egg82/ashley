@@ -8,8 +8,8 @@ correctly, such as a reader's delegation or the same sources read directly. `why
 beyond those are reported as `extra`, which is how a no-tool ask that reaches for one shows. A group or tool no catalogue
 held in the run is in `unoffered`: a typo in the case, or something the household does not have.
 
-Nothing a call would change reaches outside: `reach_guard.ReachGuard` answers every call not on the read allow-list
-(`house_reads.json`) as done, for every source of the turn, and those it kept are in `refused`. Reads on the list reach
+Nothing a call would change reaches outside: `reach_guard.ReachGuard` answers every call whose spec does not say it only
+reads (`ToolSpec.reads`) as done, for every source of the turn, and those it kept are in `refused`. The reads reach
 their service, so the household asked as must be a scratch copy's. Run under `--variant` with a group cut, the cases that
 need it fail: that is the regression on-demand tools must not cause.
 
@@ -46,7 +46,6 @@ from .reach_guard import Notes, ReachGuard
 log = logging.getLogger("ashley.evals")
 
 CASES = Path(__file__).parent / "reach_cases.json"
-READS = Path(__file__).parent / "house_reads.json"
 CASE_KEYS = {"id", "ask", "groups", "tools"}
 OPTIONAL_KEYS = {"any_of", "why"}
 _NAMES = TypeAdapter(list[str])
@@ -119,10 +118,6 @@ def validate(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def load() -> list[dict[str, Any]]:
     return validate(json.loads(CASES.read_text())["cases"])
-
-
-def reads() -> frozenset[str]:
-    return frozenset(json.loads(READS.read_text())["read"])
 
 
 def inbound(case: dict[str, Any], seat: Seat) -> Inbound:
@@ -200,11 +195,11 @@ async def run(runs: int, only: str | None, seat: Seat, ledger: Ledger) -> dict[s
     if not cases:
         raise ValueError(f"no reach case {only!r}")
     real_for_turn, real_inference = turn_tools.for_turn, services.get(Inference)
-    notes, allowed = Notes(), reads()
+    notes = Notes()
     recorder = RecordingInference(real_inference)
 
     def guarded(*args: Any, **kwargs: Any) -> Tools:
-        return ReachGuard(real_for_turn(*args, **kwargs), allowed, notes=notes)
+        return ReachGuard(real_for_turn(*args, **kwargs), notes=notes)
 
     turn_tools.for_turn = guarded
     services.register(Inference, recorder)
