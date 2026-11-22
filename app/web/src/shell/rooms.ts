@@ -61,12 +61,6 @@ export function benchOf(path: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-/** The connection whose settings a path names (`/connections/<id>/settings`), or null. */
-export function settingsOf(path: string): number | null {
-  const m = /^\/connections\/(\d+)\/settings\/?$/.exec(path);
-  return m ? Number(m[1]) : null;
-}
-
 /** The model catalogue page, which the connections room holds for an admin. */
 export const CATALOGUE_PATH = '/connections/catalogue';
 

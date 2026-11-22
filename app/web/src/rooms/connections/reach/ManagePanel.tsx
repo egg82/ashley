@@ -1,4 +1,4 @@
-// The opened row: what the connection is and holds, who holds it and whether that can move, what it reaches, its settings,
+// The opened row: what the connection is and holds, who holds it and whether that can move, what it reaches, its settings edited in place,
 // and the actions on it. Removing opens its own confirmation in place of the actions.
 import type { ComponentChildren } from 'preact';
 import type { ConnectionKindInfo, HouseholdConnection } from '../../../api/types';
@@ -12,7 +12,8 @@ import { scopeLabel } from './needs.ts';
 import { RemoveConfirm } from './RemoveConfirm';
 import { Resources } from './Resources';
 import { hostOf, holderOf } from './sentence.ts';
-import { SettingsDigest } from './SettingsDigest';
+import { SettingsEditor } from '../settings/SettingsEditor';
+import { SettingsHistory } from './SettingsHistory';
 import { removing, startRemoving } from './state';
 
 function Item({ term, children }: { term: string; children: ComponentChildren }) {
@@ -77,8 +78,14 @@ export function ManagePanel({ c, kind }: { c: HouseholdConnection; kind: Connect
         <Held c={c} kind={kind} />
         <Access c={c} />
         {c.resources.length > 0 && <Item term="Mailboxes"><Resources c={c} /></Item>}
-        {kind.has_settings && !c.personal && <Item term="Settings"><SettingsDigest id={c.id} /></Item>}
       </dl>
+      {kind.has_settings && !c.personal && (
+        <section class="rr-settings" aria-label="Settings">
+          <h3 class="label">Settings</h3>
+          <SettingsEditor id={c.id} />
+          <SettingsHistory id={c.id} />
+        </section>
+      )}
       {removing.value === c.id ? <RemoveConfirm c={c} kind={kind} /> : <Actions c={c} kind={kind} />}
     </div>
   );
