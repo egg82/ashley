@@ -26,7 +26,7 @@ from ..channels import tool_loop
 from ..channels.limits import Kind, Limits
 from ..channels.tool_loop import Answer, Arrived, Held, Progress
 from ..inference.inference import Inference, InferenceUnavailable
-from ..inference.model import Message, SystemPrompt, ToolCall, ToolResult, ToolSpec
+from ..inference.model import Entry, Message, SystemPrompt, ToolCall, ToolResult, ToolSpec
 from ..people.model import Household, Person
 from ..persona import persona
 from ..tools import bench_run
@@ -168,7 +168,7 @@ async def _resumed(case: dict[str, Any], options: Options, source: Recorded, clo
 def _arrival(source: Recorded, options: Options) -> tool_loop.Arrive:
     state = {"done": False}
 
-    async def arrive(system: Mapping[str, SystemPrompt]) -> Arrived | None:
+    async def arrive(system: Mapping[str, SystemPrompt], _: tuple[Entry, ...]) -> Arrived | None:
         if source.moved_to is None or state["done"]:
             return None
         state["done"] = True

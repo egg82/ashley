@@ -9,6 +9,9 @@ code main runs (`--variant PATH` of `python -m ashley.evals house` and `prompt-s
 ids (`ashley.persona.sections`), `tools` tool names and `sources` the tool sources' keys as `prompt-sizes` groups them.
 A key or a name the code does not have is an error that names it. Section and example names are checked here; a tool or
 source can only be checked against what a turn offers, so `finish` fails the run naming any the turns never met.
+`core`, when present, names the tool sources a turn offers from its first step, the rest loading on demand with
+`use_tools` (`ashley.channels.on_demand`): `{"name": "core-a", "core": ["everyday", "reminders"]}`. An empty list offers
+the loader alone; no `core` offers every source. Its names are checked as `sources` are.
 `install` makes the variant the one every turn of the process applies (`ashley.channels.cut`)."""
 
 import hashlib
@@ -21,7 +24,7 @@ from pydantic import TypeAdapter, ValidationError
 from ..channels import cut
 from ..persona import prose, sections
 
-FIELDS = ("name", "sections", "examples", "tools", "sources")
+FIELDS = ("name", "sections", "examples", "tools", "sources", "core")
 OTHER_PARTS = ("kind", "tools", "profile", "standing")
 STDIN = "-"
 _OBJECT = TypeAdapter(dict[str, object])
@@ -92,7 +95,8 @@ def parse(text: str) -> Variant:
     if not isinstance(name, str) or not name.strip():
         raise ValueError("a variant has a `name`")
     shape = cut.Cut(_names(data, "sections", known_sections()), _names(data, "examples", known_examples()),
-                    _names(data, "tools", None), _names(data, "sources", None))
+                    _names(data, "tools", None), _names(data, "sources", None),
+                    _names(data, "core", None) if "core" in data else None)
     canonical = json.dumps(data, sort_keys=True, separators=(",", ":"))
     return Variant(name.strip(), hashlib.sha256(canonical.encode()).hexdigest()[:8], shape)
 

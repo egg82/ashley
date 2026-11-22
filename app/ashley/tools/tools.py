@@ -37,7 +37,8 @@ class Catalogue:
     moment (a bench's pieces), for the `moment` layer of the system prompt, never `stable`; None when it has none. `sources` is the keys of the
     sources that answered with a tool, in source order (`composite.CompositeTools`), empty for one that is not a
     Composite. `owners` is the key of the source that offered each tool, by tool name, for a Composite's; empty
-    otherwise and for a tool a wrapper added."""
+    otherwise and for a tool a wrapper added. `guidance` is the instructions each source of a Composite gave, by key, in
+    source order: `instructions` is these joined; empty otherwise."""
 
     specs: tuple[ToolSpec, ...]
     instructions: str | None
@@ -45,6 +46,7 @@ class Catalogue:
     now: str | None = None
     sources: tuple[str, ...] = ()
     owners: Mapping[str, str] = field(default_factory=dict[str, str])
+    guidance: Mapping[str, str] = field(default_factory=dict[str, str])
 
 
 class Tools(Service):

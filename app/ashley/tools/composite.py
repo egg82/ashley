@@ -54,12 +54,13 @@ class CompositeTools(Tools):
                 routes[spec.name] = self._sources[key]
                 specs.append(spec)
         self._routes = routes
-        texts = [c.instructions.strip() for _, c in reached if c.instructions and c.instructions.strip()]
+        guidance = {key: c.instructions.strip() for key, c in reached if c.instructions and c.instructions.strip()}
+        texts = list(guidance.values())
         inner = tuple(key for _, c in reached for key in c.unreachable)
         now = [c.now.strip() for _, c in reached if c.now and c.now.strip()]
         sources = tuple(key for key, c in reached if c.specs)
         return Catalogue(tuple(specs), "\n\n".join(texts) or None, unreachable + inner, "\n\n".join(now) or None,
-                         sources, owner)
+                         sources, owner, guidance)
 
     async def call(self, call: ToolCall) -> ToolResult:
         started = time.monotonic()

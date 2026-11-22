@@ -1,5 +1,5 @@
 """The tool loop of one reply (`respond` steps 3 and 5): the catalogue on offer, then model steps and tool calls until
-she answers. Every tool is offered from the first step."""
+she answers. Every tool is offered from the first step unless a cut loads them on demand (`channels.on_demand`)."""
 
 import asyncio
 import logging
@@ -88,18 +88,21 @@ class Held:
 
 @dataclass(frozen=True)
 class Arrived:
-    """What a turn is offered from its next step on, once its page has moved to a bench: those `tools`, this
-    `system` and, when given, these `limits` and conversation `kind` in place of the turn's (a bench's talk has room to
-    work, and its own model)."""
+    """What a turn is offered from its next step on, once its page has moved to a bench or she has asked for more of
+    her tools (`channels.on_demand`): those `tools`, this `system` and, when given, these `limits` and conversation
+    `kind` in place of the turn's (a bench's talk has room to work, and its own model). `page` is false for tools
+    asked for: the turn stays as it was, escalation included."""
 
     tools: tuple[ToolSpec, ...]
     system: Mapping[str, SystemPrompt]
     limits: Limits | None = None
     kind: Kind | None = None
+    page: bool = True
 
 
-Arrive = Callable[[Mapping[str, SystemPrompt]], Awaitable[Arrived | None]]
-"""Asked after each round of tool calls with the system prompt then in force; an `Arrived` when the turn's page moved."""
+Arrive = Callable[[Mapping[str, SystemPrompt], tuple[Entry, ...]], Awaitable[Arrived | None]]
+"""Asked before each step with the system prompt then in force and the turn's entries so far; an `Arrived` when what the
+turn offers changed: its page moved, or the tools she asked for are not yet offered."""
 
 
 @dataclass(frozen=True)
@@ -154,9 +157,10 @@ async def answer(kind: Task, system: Mapping[str, SystemPrompt], history: tuple[
     (`Limits.windows`, counted by `steps.windows`): its pace starts again, `steps.windowed` records it, logged
     `respond.window` with the conversation, the windows taken, the rounds made and duration_ms. A closing reply whose
     `answers` is false is never the answer: it takes a window when one is left, else it is asked once more with
-    `unsaid.STAND` and that reply is the answer (`respond.stood`). Progress is recorded through `steps`. After each round, `arrive`
-    (when given) says whether the turn's page moved to a bench; if so, the next steps are offered its `tools`, with
-    `aside` added as the others', and its `system`.
+    `unsaid.STAND` and that reply is the answer (`respond.stood`). Progress is recorded through `steps`. `arrive`
+    (when given) is asked before each step with the entries so far, and says whether the turn's page moved to a bench or
+    tools she asked for are due; if so, the next steps are offered its `tools`, with `aside` added as the others', and its
+    `system`.
 
     With an `escalation` (`channels.escalation`), a turn that reaches `max_tool_rounds` or `deadline_s` with no answer,
     or whose reply sets `Reply.escalate`, goes on once on the stronger route from its entries in place of closing here
@@ -266,11 +270,11 @@ async def _loop(kind: Task, system: Mapping[str, SystemPrompt], entries: list[En
     pending = stepping
     while True:
         rounds += 1
-        moved = await _arrived(arrive, system)
+        moved = await _arrived(arrive, system, entries)
         if pending is None:
             entries += await steps.steer(tuple(entries), rounds, calls)
         if moved is not None:
-            system, escalation = moved.system, None
+            system, escalation = moved.system, escalation if not moved.page else None
             pace, kind, tools, source = _moved_to(moved, hold, pace, kind, source)
             reading |= {t.name for t in tools if t.reads}
         if rounds > pace.limits.max_tool_rounds:
@@ -359,8 +363,8 @@ def _closed(stood: bool, late: bool) -> Closed:
     return "stood" if stood else "answer" if not late else "deadline"
 
 
-async def _arrived(arrive: Arrive | None, system: Mapping[str, SystemPrompt]) -> Arrived | None:
-    return None if arrive is None else await arrive(system)
+async def _arrived(arrive: Arrive | None, system: Mapping[str, SystemPrompt], entries: list[Entry]) -> Arrived | None:
+    return None if arrive is None else await arrive(system, tuple(entries))
 
 
 def _moved_to(moved: Arrived, hold: bool, pace: _Pace, kind: Task,

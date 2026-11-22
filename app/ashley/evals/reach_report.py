@@ -14,11 +14,12 @@ def _median(values: list[int]) -> int:
 
 
 def summary(runs: list[RunResult]) -> dict[str, Any]:
-    """Passes, how often each extra group was called, steps, limit hits, the median of each run's first and of every step's input
+    """Passes, how often each extra group was called and each group loaded, steps, limit hits, the median of each run's first and of every step's input
     tokens, errors and the names no catalogue held."""
     steps = [t for r in runs for t in r.tokens]
     return {"passes": sum(r.passed for r in runs), "runs": len(runs), "steps": [r.steps for r in runs],
             "extra": dict(Counter(g for r in runs for g in r.extra)),
+            "loaded": dict(Counter(g for r in runs for g in r.loaded)),
             "missing": dict(Counter(m for r in runs for m in r.missing)),
             "unoffered": sorted({u for r in runs for u in r.unoffered}),
             "limit_hit": sum(r.limit_hit for r in runs), "refused": sum(len(r.refused) for r in runs),
@@ -64,18 +65,20 @@ def to_json(results: dict[str, list[RunResult]], variant: str = "none") -> str:
 def render(results: dict[str, list[RunResult]], variant: str = "none") -> str:
     """The prompt `variant`'s label, one row per case, a total row, then each run's tool sequence, extra groups and input
     tokens per step."""
-    head = f"{'case':26} {'pass':>5} {'steps':>8} {'first':>7} {'step':>7}  extra"
+    head = f"{'case':26} {'pass':>5} {'steps':>8} {'first':>7} {'step':>7}  {'extra':22} loaded"
     rows = [f"variant: {variant}", head]
     for cid, rs in results.items():
         s = summary(rs)
         rows.append(f"{cid:26} {s['passes']}/{s['runs']:<3} {','.join(map(str, s['steps'])):>8} "
-                    f"{s['tokens_first_median']:>7} {s['tokens_step_median']:>7}  {','.join(s['extra']) or '-'}")
+                    f"{s['tokens_first_median']:>7} {s['tokens_step_median']:>7}  {','.join(s['extra']) or '-':22} "
+                    f"{','.join(s['loaded']) or '-'}")
     t = total(results)
     rows.append(f"{'TOTAL':26} {t['passes']}/{t['runs']:<3} {'':>8} {t['tokens_first_median']:>7} {t['tokens_step_median']:>7}  "
                 f"{sum(t['extra'].values())} extra, {t['false_positives']}/{t['no_tool_runs']} no-tool runs called a tool")
     for cid, rs in results.items():
         for i, r in enumerate(rs, 1):
             rows.append(f"  {cid}#{i}: {'>'.join(r.tools) or '-'} | tokens {list(r.tokens)}"
+                        + (f" | loaded {list(r.loaded)}" if r.loaded else "")
                         + (f" | missing {list(r.missing)}" if r.missing else "")
                         + (f" | unoffered {list(r.unoffered)}" if r.unoffered else "")
                         + (f" | {r.error}" if r.error else ""))

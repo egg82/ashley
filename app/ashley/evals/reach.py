@@ -13,6 +13,10 @@ Nothing a call would change reaches outside: `reach_guard.ReachGuard` answers ev
 their service, so the household asked as must be a scratch copy's. Run under `--variant` with a group cut, the cases that
 need it fail: that is the regression on-demand tools must not cause.
 
+Under a variant with a `core`, a group she has not loaded is not offered: the loader (`use_tools`) is neither a group nor
+a tool she called, so it is never `extra` and a no-tool ask that only calls it passes, but its steps count and the groups
+she loaded are reported (`loaded`).
+
 Per run: steps (rounds of tool calls), whether the step limit was reached, the tool names in order, her main calls' input
 tokens per step from the spend ledger and the models that answered. Logs `eval.reach` once per run of the eval: cases,
 runs, passes, extra groups called and duration_ms. Never a case's ask or reply, or a tool's arguments or results."""
@@ -29,7 +33,7 @@ from typing import Any
 from pydantic import TypeAdapter, ValidationError
 
 from .. import logs, services
-from ..channels import turn_tools
+from ..channels import on_demand, turn_tools
 from ..channels.model import Inbound
 from ..channels.respond import respond
 from ..inference.inference import Inference
@@ -56,6 +60,7 @@ class RunResult:
     limit_hit: bool
     tools: tuple[str, ...]
     groups: tuple[str, ...]
+    loaded: tuple[str, ...]
     missing: tuple[str, ...]
     extra: tuple[str, ...]
     unoffered: tuple[str, ...]
@@ -156,6 +161,13 @@ def unoffered(case: dict[str, Any], offered: dict[str, str]) -> tuple[str, ...]:
     return tuple([g for g in case["groups"] if g not in held] + [t for t in case["tools"] if t not in offered])
 
 
+def loaded_groups(steps: Sequence[Step], offered: set[str]) -> tuple[str, ...]:
+    """The groups she asked the loader for, in the order first asked, that the turn's tools held. The loader is neither
+    a group nor a tool call of the case: it is how a group reaches her."""
+    asked = [g for s in steps for c in s.asked if c.name == on_demand.LOADER for g in on_demand.named(c.arguments)]
+    return tuple(g for g in dict.fromkeys(asked) if g in offered)
+
+
 async def one(case: dict[str, Any], seat: Seat, ledger: Ledger, notes: Notes, recorder: RecordingInference) -> RunResult:
     """One ask. A turn that raises is a failed run naming the exception type."""
     notes.refused.clear()
@@ -170,11 +182,12 @@ async def one(case: dict[str, Any], seat: Seat, ledger: Ledger, notes: Notes, re
     latency = int((time.perf_counter() - started) * 1000)
     steps: list[Step] = [s for s in recorder.steps if s.task == ask.kind]
     billed = [] if conversation is None else await ledger(conversation, ask.kind)
-    called = [c.name for s in steps for c in s.asked]
+    called = [c.name for s in steps for c in s.asked if c.name != on_demand.LOADER]
     passed, missing, extra = score(case, called, notes.offered)
+    loaded = loaded_groups(steps, set(notes.offered.values()))
     return RunResult(case["id"], error is None and passed, sum(bool(s.asked) for s in steps),
                      any(s.choice == "none" for s in steps), tuple(called),
-                     tuple(dict.fromkeys(notes.offered.get(n, UNOWNED) for n in called)), missing, extra,
+                     tuple(dict.fromkeys(notes.offered.get(n, UNOWNED) for n in called)), loaded, missing, extra,
                      unoffered(case, notes.offered), tuple(b.tokens for b in billed),
                      tuple(sorted({f"{b.provider}/{b.model}" for b in billed})), latency,
                      tuple(a.name for a in notes.refused), repeats(steps), error)

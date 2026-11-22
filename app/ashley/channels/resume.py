@@ -20,7 +20,7 @@ from collections.abc import Awaitable, Callable, Mapping
 
 from .. import logs, services
 from ..conversations.inflight import InFlight, InFlightUnavailable, Orphan
-from ..inference.model import SystemPrompt
+from ..inference.model import Entry, SystemPrompt
 from ..inference.reply import Reply
 from ..live.events import FailedWhy
 from ..people.model import Person
@@ -118,8 +118,8 @@ async def _finished(work: Saved) -> None:
         catalogue = await tool_loop.offered(landing)
         speaker = await _speaker(saved)
 
-        async def arrive(system: Mapping[str, SystemPrompt]) -> tool_loop.Arrived | None:
-            return await continued.arrived(landing, speaker, saved.said_id, showing, work, system)
+        async def arrive(system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> tool_loop.Arrived | None:
+            return await continued.arrived(landing, speaker, saved.said_id, showing, work, system, entries)
 
         specs = catalogue.specs if catalogue is not None else ()
         answer = await work.guarded(tool_loop.resumed(

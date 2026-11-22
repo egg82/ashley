@@ -8,6 +8,7 @@ from collections.abc import Sequence
 import pytest
 from ashley import services
 from ashley.channels import cut, turn_tools
+from ashley.channels.on_demand import LOADER
 from ashley.connections.connections import Connections
 from ashley.evals import reach, reach_report, variant
 from ashley.evals.house import Billed, Seat
@@ -120,6 +121,58 @@ def test_the_saved_baseline_shape_is_scored_again_by_the_case_file() -> None:
 def test_steps_tokens_and_models_come_from_the_run(wired: Fakes) -> None:
     [got] = run_case(wired, "calendar-next", [calls("lights"), calls("lights", prefix="d"), ANSWER])
     assert got.steps == 2 and got.tokens == (100, 120) and got.models == ("fake/m",) and not got.limit_hit and got.repeats == 0
+
+
+def load(*groups: str) -> ToolCalls:
+    return ToolCalls((ToolCall("u", LOADER, {"groups": list(groups)}),))
+
+
+def with_core(*core: str) -> None:
+    variant.install(variant.parse(json.dumps({"name": "core", "core": list(core)})))
+
+
+def test_the_loader_is_neither_a_group_nor_a_tool_call_but_its_step_counts_and_its_groups_are_reported(
+        wired: Fakes) -> None:
+    with_core("everyday")
+    try:
+        [got] = run_case(wired, "none-joke", [load("devices"), ANSWER])
+    finally:
+        variant.install(None)
+    assert got.passed and got.tools == () and got.groups == () and got.extra == ()
+    assert got.steps == 1 and got.loaded == ("devices",)
+
+
+def test_a_group_outside_the_core_is_offered_to_the_model_only_after_it_is_loaded(wired: Fakes) -> None:
+    with_core("everyday")
+    try:
+        [got] = run_case(wired, "devices-count", [load("devices"), calls("household_devices"), ANSWER])
+    finally:
+        variant.install(None)
+    offered = [{t.name for t in p.tools} for p in wired.inference.prompts]
+    assert "household_devices" not in offered[0] and LOADER in offered[0]
+    assert "household_devices" in offered[1] and "household_devices" in offered[2]
+    assert got.passed and got.tools == ("household_devices",) and got.loaded == ("devices",) and got.steps == 2
+
+
+def test_a_group_no_turn_held_is_not_reported_loaded(wired: Fakes) -> None:
+    with_core("everyday")
+    try:
+        [got] = run_case(wired, "none-joke", [load("nothing"), ANSWER])
+    finally:
+        variant.install(None)
+    assert got.loaded == () and got.passed
+
+
+def test_a_run_that_loaded_is_rescored_like_one_that_did_not_and_the_report_names_what_loaded(wired: Fakes) -> None:
+    with_core("everyday")
+    try:
+        results = {"none-joke": run_case(wired, "none-joke", [load("devices"), ANSWER])}
+    finally:
+        variant.install(None)
+    saved = json.loads(reach_report.to_json(results, "core@1"))
+    assert saved["cases"][0]["runs"][0]["loaded"] == ["devices"] and saved["cases"][0]["summary"]["loaded"] == {"devices": 1}
+    assert reach_report.rescore(saved).endswith("1/1  (was 1/1)")
+    assert "devices" in reach_report.render(results, "core@1").splitlines()[2]
 
 
 def test_the_services_and_the_turn_tools_are_restored_after_a_run(wired: Fakes) -> None:
