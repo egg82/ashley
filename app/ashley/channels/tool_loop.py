@@ -1,5 +1,5 @@
 """The tool loop of one reply (`respond` steps 3 and 5): the catalogue on offer, then model steps and tool calls until
-she answers. Every tool is offered from the first step unless a cut loads them on demand (`channels.on_demand`)."""
+she answers. Every tool is offered from the first step unless the turn loads them on demand (`channels.on_demand`)."""
 
 import asyncio
 import logging
@@ -120,10 +120,10 @@ class Progress:
 
 
 async def offered(source: Tools) -> Catalogue | None:
-    """What `source` offers now less the tools an eval's cut leaves out (`cut.thinned`); None when it cannot be reached,
+    """What `source` offers now less the groups it loads on demand (`on_demand.thinned`) and the tools an eval's cut leaves out (`cut.thinned`); None when it cannot be reached,
     and the reply goes on without tools."""
     try:
-        return cut.thinned(await source.catalogue())
+        return cut.thinned(on_demand.thinned(await source.catalogue()))
     except ToolsUnavailable:
         return None
 

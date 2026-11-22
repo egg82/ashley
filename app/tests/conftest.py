@@ -10,6 +10,7 @@ from hypothesis import HealthCheck, find, settings
 from hypothesis import strategies as st
 
 from ashley import main, services
+from ashley.channels import cut
 from ashley.connections.kinds import ConnectionKinds
 from ashley.ledger.ledger import Ledger
 from ashley.settings import Settings
@@ -67,6 +68,15 @@ def package_tree() -> dict[Path, Parsed]:
 def deployed_tree() -> dict[Path, Parsed]:
     """The bridge and the keeper, which run outside the app."""
     return parse_tree([BRIDGE, KEEPER])
+
+
+@pytest.fixture
+def every_group() -> Generator[None]:
+    """A turn offered every tool group from its first step, for a test of what a turn does with its tools rather than of
+    loading them on demand: text turns otherwise begin with the loader alone (`channels.on_demand`)."""
+    cut.install(cut.Cut(core=cut.ALL))
+    yield
+    cut.install(cut.NO_CUT)
 
 
 @pytest.fixture(autouse=True)

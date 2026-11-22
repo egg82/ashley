@@ -23,7 +23,7 @@ the reverse. Measures and never gates. Needs DATABASE_URL, for the spend ledger,
 
 `--variant PATH` on `house`, `reach` and `prompt-sizes` (`-` reads stdin) runs the turn with a prompt variant (`variant`: stable-prompt
 sections, persona examples, tools and tool sources left out, or a `core` of sources offered first with the rest loaded on
-demand by `use_tools`, named in JSON); the report and `--json` name it and a hash of its JSON, and an unknown name fails the run.
+demand by `use_tools`, or `"core": "all"` for every source, which a text turn otherwise does not get; named in JSON); the report and `--json` name it and a hash of its JSON, and an unknown name fails the run.
 
 `python -m ashley.evals house [--runs N] [--case ID] [--json PATH]`: how she uses the house's tools, through her real turn
 loop with the live model and Home Assistant, every call whose spec does not say it only reads refused before it reaches the house. Needs a

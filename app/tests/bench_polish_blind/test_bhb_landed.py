@@ -12,6 +12,9 @@ from bhb_support import World, finished, hang, kill_the_turn, move_to, pods, rep
 from contract.conversations_support import run, scalar
 
 
+pytestmark = pytest.mark.usefixtures("every_group")
+
+
 def chat_thread(world: World) -> str:
     return world.chat_say("x").thread
 

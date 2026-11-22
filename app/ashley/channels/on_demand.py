@@ -1,12 +1,16 @@
-"""Tools offered on demand. A turn under a cut with a `core` (`cut.Cut.core`) is offered the sources named there from
-its first step, and the rest of what `turn_tools.for_turn` built for it only after she asks for them by name with
-`use_tools`, from her next step on. `Loading` wraps the turn's tools and adds that tool: it can offer only the sources
-the turn's tools already hold (a narrowing has cut the rest), and the groups loaded so far are read from the turn's own
-entries (`loaded`), so a turn another runner resumes offers what it had. `cut.thinned` makes the offer."""
+"""Tools offered on demand. A turn has a core (`core_for`): the sources it is offered from its first step, the rest of
+what `turn_tools.for_turn` built for it only after she asks for them by name with `use_tools`, from her next step on.
+By default the core is the data in `on_demand.json` by `Inbound.medium`; an eval's cut (`cut.Cut.core`) overrides it.
+`Loading` wraps the turn's tools and adds that tool: it can offer only the sources the turn's tools already hold (a
+narrowing has cut the rest), and the groups loaded so far are read from the turn's own entries (`loaded`), so a turn
+another runner resumes offers what it had. `thinned` makes the offer."""
 
+import json
 import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
+from functools import cache
+from importlib import resources
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
@@ -14,8 +18,8 @@ from .. import logs
 from ..inference.model import Entry, Tier, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ..tools.action_judge import Vetting
 from ..tools.tools import Catalogue, Tools, ToolsUnavailable
-from . import tool_groups
-from .model import Inbound
+from . import cut, tool_groups
+from .model import Inbound, Medium
 
 log = logging.getLogger("ashley.tools")
 
@@ -23,12 +27,58 @@ LOADER = "use_tools"
 """The loader tool's name. A catalogue holding it is one whose groups load on demand."""
 FIELD = "groups"
 _NAMES = TypeAdapter(list[str])
+_OBJECT = TypeAdapter(dict[str, object])
+_MEDIA: tuple[Medium, ...] = ("text", "spoken")
+
+
+def parse(data: object) -> dict[Medium, frozenset[str] | None]:
+    """The default core per medium from `on_demand.json`'s parsed content: an object with exactly `text` and `spoken`,
+    each a list of source keys offered from the first step (empty for none) or null for every source. Raises ValueError
+    otherwise."""
+    try:
+        named = _OBJECT.validate_python(data)
+    except ValidationError as e:
+        raise ValueError(f"on_demand.json has exactly {', '.join(_MEDIA)}") from e
+    if set(named) != set(_MEDIA):
+        raise ValueError(f"on_demand.json has exactly {', '.join(_MEDIA)}")
+    cores: dict[Medium, frozenset[str] | None] = {}
+    for medium in _MEDIA:
+        value = named[medium]
+        if value is None:
+            cores[medium] = None
+            continue
+        try:
+            keys = _NAMES.validate_python(value)
+        except ValidationError as e:
+            raise ValueError(f"on_demand.json {medium!r} is null or a list of source keys") from e
+        if not all(keys):
+            raise ValueError(f"on_demand.json {medium!r} is null or a list of source keys")
+        cores[medium] = frozenset(keys)
+    return cores
+
+
+@cache
+def defaults() -> dict[Medium, frozenset[str] | None]:
+    """`parse` of the `on_demand.json` shipped beside this module."""
+    return parse(json.loads(resources.files("ashley.channels").joinpath("on_demand.json").read_text()))
+
+
+def core_for(inbound: Inbound) -> frozenset[str] | None:
+    """The sources the turn is offered from its first step, the rest loading on demand; None when it is offered every
+    source: an `eligible` turn's installed eval cut (`cut.Cut.core`), else the default for its medium (`defaults`)."""
+    if not eligible(inbound):
+        return None
+    asked = cut.active().core
+    if asked is None:
+        return defaults()[inbound.medium]
+    return None if isinstance(asked, str) else asked
 
 
 def eligible(inbound: Inbound) -> bool:
     """Whether the turn's tools load on demand: not a turn already narrowed to named tools, not a bench's, and not a
-    check of an errand or a standing method, whose tools sit beside the rest."""
-    return (inbound.tools_only is None and inbound.errand is None and inbound.method is None
+    check of an errand or a standing method, whose tools sit beside the rest, and not a turn that begins with her look
+    at a camera (`channels.seen`), which holds a call to a tool the turn must offer."""
+    return (inbound.tools_only is None and inbound.seen is None and inbound.errand is None and inbound.method is None
             and inbound.bench_id is None and inbound.moved_to is None)
 
 
@@ -59,6 +109,24 @@ def free(asked: ToolCalls, entries: Sequence[Entry], tools: Sequence[ToolSpec]) 
         return 0
     made = sum(isinstance(e, ToolCalls) and all(c.name == LOADER for c in e.calls) for e in entries)
     return int(made < sum(len(_groups(s)) for s in tools if s.name == LOADER))
+
+
+def thinned(catalogue: Catalogue, loaded: frozenset[str] = frozenset()) -> Catalogue:
+    """A catalogue that holds the loader and a `core` less the sources outside the core that are not `loaded`, with their
+    instructions, the loader and the loaded sources' tools last. Any other catalogue as it is."""
+    core = catalogue.core
+    if core is None or not any(s.name == LOADER for s in catalogue.specs):
+        return catalogue
+    owners = catalogue.owners
+    cut.met(k for k in core if k in owners.values())
+    hidden = set(held_back(catalogue, core)) - loaded
+    now = tuple(s for s in catalogue.specs if s.name != LOADER and owners.get(s.name) not in loaded | hidden)
+    after = tuple(s for s in catalogue.specs if owners.get(s.name) in loaded)
+    loader = tuple(s for s in catalogue.specs if s.name == LOADER)
+    guidance = {k: v for k, v in catalogue.guidance.items() if k not in hidden}
+    return replace(catalogue, specs=(*now, *loader, *after), sources=tuple(k for k in catalogue.sources if k not in hidden),
+                   owners={n: k for n, k in owners.items() if k not in hidden}, guidance=guidance,
+                   instructions=("\n\n".join(guidance.values()) or None) if catalogue.guidance else catalogue.instructions)
 
 
 class _Items(BaseModel):
@@ -100,7 +168,7 @@ class Loading(Tools):
     async def catalogue(self) -> Catalogue:
         got = await self._source.catalogue()
         groups = held_back(got, self._core)
-        return got if not groups else replace(got, specs=(*got.specs, _spec(groups)))
+        return got if not groups else replace(got, specs=(*got.specs, _spec(groups)), core=self._core)
 
     async def call(self, call: ToolCall) -> ToolResult:
         """The source's answer; `use_tools` is this class's own: it offers groups the turn holds and reaches no source.

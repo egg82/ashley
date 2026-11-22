@@ -154,11 +154,11 @@ class Landing(Tools):
         return got
 
     def _built(self) -> Tools:
-        """What `turn_tools.for_turn` offers the turn as it is now, with the loader tool (`on_demand`) when the cut in
-        force has a `core` and the turn is one whose tools load on demand."""
+        """What `turn_tools.for_turn` offers the turn as it is now, with the loader tool (`on_demand`) when the turn has a
+        core (`on_demand.core_for`)."""
         tools = turn_tools.for_turn(self._inbound, self._said, self._arrival, self.results)
-        core = cut.active().core
-        return tools if core is None or not on_demand.eligible(self._inbound) else on_demand.Loading(tools, core)
+        core = on_demand.core_for(self._inbound)
+        return tools if core is None else on_demand.Loading(tools, core)
 
     async def arrived(self, system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> Arrived | None:
         """Asked before each step: when the page is on a bench this has not yet guided, the tools that bench offers and
@@ -193,7 +193,7 @@ class Landing(Tools):
         self._loaded = groups
         guidance = "\n\n".join(text for key, text in full.guidance.items() if key in groups)
         base = {k: replace(v, moment=f"{v.moment}\n\n{guidance}") for k, v in self._base.items()} if guidance else self._base
-        self._arrived = Arrived(cut.thinned(full, groups).specs, base, page=False)
+        self._arrived = Arrived(cut.thinned(on_demand.thinned(full, groups)).specs, base, page=False)
         return self._arrived
 
     async def _guidance(self) -> str:
