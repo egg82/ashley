@@ -11,7 +11,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
 from ..conversations.model import AgreedCall, Fact, Kind, Receipts
-from ..inference.model import SystemPrompt, Tier, ToolCall, ToolResult, ToolSpec
+from ..inference.model import Entry, SystemPrompt, Tier, ToolCall, ToolResult, ToolSpec
 from ..inference.reply import Reply
 from ..tools.action_judge import Vetting
 from ..tools.arrival import Arrival
@@ -19,7 +19,7 @@ from ..tools import outside_config
 from ..tools.outside import Outside
 from ..tools.results import Results, bound
 from ..tools.tools import Catalogue, Tools, ToolsUnavailable
-from . import bench_facts, escalation, judge_words, standing, turn_tools
+from . import bench_facts, cut, escalation, judge_words, on_demand, standing, turn_tools
 from .limits import Limits
 from .model import Inbound
 from .tool_loop import NO_STEPS, Arrived, Steps
@@ -58,7 +58,7 @@ class Landing(Tools):
         self._said = said
         self._arrival = Arrival(inbound.moved_to)
         self.results = Results()
-        self.inner = turn_tools.for_turn(inbound, said, self._arrival, self.results)
+        self.inner = self._built()
         config = outside_config.load()
         words = judge_words.reader(inbound, said[0], config.words_turns, config.words_chars)
         self._outside = Outside(_Current(self), standing.of(inbound), said, tainted=tainted or inbound.taint, config=config,
@@ -66,6 +66,8 @@ class Landing(Tools):
         self._receipts: Receipts | None = None
         self._facts: tuple[Fact, ...] | None = None
         self._arrived: Arrived | None = None
+        self._base: Mapping[str, SystemPrompt] | None = None
+        self._loaded: frozenset[str] = frozenset()
         self._guided: int | None = None
         self._steps: Steps = NO_STEPS
 
@@ -147,16 +149,27 @@ class Landing(Tools):
         if bench != self._inbound.moved_to:
             self._inbound = replace(self._inbound, moved_to=bench)
             if bench is not None:
-                self.inner = turn_tools.for_turn(self._inbound, self._said, self._arrival, self.results)
+                self.inner = self._built()
             await self._steps.arrived(self._inbound)
         return got
 
-    async def arrived(self, system: Mapping[str, SystemPrompt]) -> Arrived | None:
+    def _built(self) -> Tools:
+        """What `turn_tools.for_turn` offers the turn as it is now, with the loader tool (`on_demand`) when the cut in
+        force has a `core` and the turn is one whose tools load on demand."""
+        tools = turn_tools.for_turn(self._inbound, self._said, self._arrival, self.results)
+        core = cut.active().core
+        return tools if core is None or not on_demand.eligible(self._inbound) else on_demand.Loading(tools, core)
+
+    async def arrived(self, system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> Arrived | None:
         """Asked before each step: when the page is on a bench this has not yet guided, the tools that bench offers and
-        `system` with how to work there; None otherwise. A runner that resumes a moved turn starts unguided, so the
-        saved `system` is guided on its first step."""
+        `system` with how to work there; before it is, the groups of tools `entries` show she asked for when they are
+        not yet offered, with their instructions added to `system` (`on_demand`); None otherwise. A runner that resumes
+        a moved turn starts unguided, so the saved `system` is guided on its first step, and one that resumes a turn
+        that loaded groups offers them on its first."""
         bench = self._arrival.bench
-        if bench is None or bench == self._guided:
+        if bench is None:
+            return await self._loading(system, entries)
+        if bench == self._guided:
             return None
         self._guided = bench
         try:
@@ -166,6 +179,21 @@ class Landing(Tools):
         guidance = await self._guidance()
         moved = {k: replace(v, moment=f"{v.moment}\n\n{guidance}") for k, v in system.items()}
         self._arrived = Arrived(specs, moved, self.limits, self.kind)
+        return self._arrived
+
+    async def _loading(self, system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> Arrived | None:
+        groups = on_demand.loaded(entries)
+        self._base = self._base or system
+        if groups == self._loaded:
+            return None
+        try:
+            full = await self._outside.catalogue()
+        except ToolsUnavailable:
+            return None
+        self._loaded = groups
+        guidance = "\n\n".join(text for key, text in full.guidance.items() if key in groups)
+        base = {k: replace(v, moment=f"{v.moment}\n\n{guidance}") for k, v in self._base.items()} if guidance else self._base
+        self._arrived = Arrived(cut.thinned(full, groups).specs, base, page=False)
         return self._arrived
 
     async def _guidance(self) -> str:

@@ -154,7 +154,7 @@ def test_a_turn_past_its_deadline_before_any_call_has_nothing_to_escalate_from(w
 def test_a_turn_whose_page_moved_to_a_bench_no_longer_escalates(world: World) -> None:
     arrived = [Arrived(TOOLS, SYSTEM, LIMITS, "brainstorm")]
 
-    async def arrive(_: object) -> Arrived | None:
+    async def arrive(_: object, __: object) -> Arrived | None:
         return arrived.pop() if len(world.inference.asked) == 1 and arrived else None
 
     world.inference.script = [looks(0), looks(1), looks(2)]
@@ -163,6 +163,20 @@ def test_a_turn_whose_page_moved_to_a_bench_no_longer_escalates(world: World) ->
     got = settle(answer("chat", SYSTEM, HISTORY, TOOLS, LIMITS, 7, hold=False, source=tools, started=START,
                         clock=tools.clock, arrive=arrive, escalation=ESCALATION))
     assert isinstance(got, Answer) and tasks(world) == ["chat", "brainstorm", "brainstorm", "brainstorm"]
+
+
+def test_a_turn_offered_tools_it_asked_for_still_escalates(world: World) -> None:
+    arrived = [Arrived(TOOLS, SYSTEM, page=False)]
+
+    async def arrive(_: object, __: object) -> Arrived | None:
+        return arrived.pop() if len(world.inference.asked) == 1 and arrived else None
+
+    world.inference.script = [looks(i) for i in range(5)]
+    world.inference.then = FINAL
+    tools = sayings(1, world)
+    got = settle(answer("chat", SYSTEM, HISTORY, TOOLS, LIMITS, 7, hold=False, source=tools, started=START,
+                        clock=tools.clock, arrive=arrive, escalation=ESCALATION))
+    assert isinstance(got, Answer) and tasks(world) == ["chat"] * 3 + ["escalated"] * 3
 
 
 def test_without_an_escalation_a_reply_setting_escalate_is_an_ordinary_reply(world: World) -> None:

@@ -25,7 +25,7 @@ OWN = {
     "bench_install_state", "bench_run", "bench_last_run", "run_code", "house_do", "house_change", "house_confirm",
     "claude_prompt", "bench_add", "bench_edit", "bench_remove", "unwatch", "watches", "arm_reminder", "mail_boxes",
     "mail_labels", "mail_draft", "mail_label", "mail_send", "printing_ams", "printing_queue", "printing_upload",
-    "todo_change", "browser_act", "screen_show_camera", "screen_clear_camera",
+    "todo_change", "browser_act", "screen_show_camera", "screen_clear_camera", "use_tools",
 }
 
 

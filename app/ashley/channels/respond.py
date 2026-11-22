@@ -249,8 +249,9 @@ class _Turn:
         return answering.Going(self.landing, self.conversation_id, system, tools, self.inbound.holds, self.started,
                                self.arrive, self.inbound.medium, self.landing.escalation)
 
-    async def arrive(self, system: Mapping[str, SystemPrompt]) -> tool_loop.Arrived | None:
-        return await continued.arrived(self.landing, self.who.speaker, self.said_id, self.showing, self.work, system)
+    async def arrive(self, system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> tool_loop.Arrived | None:
+        return await continued.arrived(self.landing, self.who.speaker, self.said_id, self.showing, self.work, system,
+                                       entries)
 
 
 async def _said_held(turn: _Turn, reply: Reply) -> None:

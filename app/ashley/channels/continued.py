@@ -18,7 +18,7 @@ from dataclasses import replace
 from .. import logs, services
 from ..conversations.conversations import ConversationError, Conversations
 from ..conversations.model import NewTurn
-from ..inference.model import SystemPrompt
+from ..inference.model import Entry, SystemPrompt
 from ..people.model import Person
 from ..workshop.model import Owner, thread_of
 from ..workshop.workshop import BenchNotFound, Workshop, WorkshopUnavailable
@@ -49,12 +49,12 @@ async def carried(inbound: Inbound, speaker: Person | None, chat_said: int, show
 
 
 async def arrived(landing: Landing, speaker: Person | None, chat_said: int, showing: Showing, steps: Steps,
-                  system: Mapping[str, SystemPrompt]) -> Arrived | None:
+                  system: Mapping[str, SystemPrompt], entries: tuple[Entry, ...]) -> Arrived | None:
     """Before each step of the turn answering `chat_said`, whichever runner has it: the screens told she is still
     working if it has been a while, and once the page has landed on a bench the ask carried there and recorded with
     the turn (`Steps.carried`), so the bench shows it and her work from then on. What `landing.arrived` gives."""
     showing.still_working()
-    moved = await landing.arrived(system)
+    moved = await landing.arrived(system, entries)
     if moved is not None:
         got = await carried(landing.inbound, speaker, chat_said, showing)
         if got is not None:
