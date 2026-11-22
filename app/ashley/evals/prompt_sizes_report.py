@@ -10,7 +10,7 @@ from .prompt_sizes import Part, Sizes
 class Meta:
     """What was measured: the conversation `kind` and `channel`, the route counted (`provider`, `model`), the route
     the turn tries first when that is not the one counted (`first`, `provider/model`, else empty) and the characters
-    of the ask the turn recalled for."""
+    of the ask the turn recalled for. `variant` is the prompt variant's label (`evals.variant`), `none` for no cut."""
 
     kind: str
     channel: str
@@ -18,6 +18,7 @@ class Meta:
     model: str
     first: str
     ask_chars: int
+    variant: str = "none"
 
 
 def _row(label: str, part: Part, indent: int = 2) -> str:
@@ -29,6 +30,7 @@ def render(sizes: Sizes, meta: Meta) -> str:
     the whole request."""
     note = f" (first route {meta.first})" if meta.first else ""
     lines = [f"prompt sizes: kind={meta.kind} channel={meta.channel} counted on {meta.provider}/{meta.model}{note}",
+             f"variant: {meta.variant}",
              f"{'part':<46} {'chars':>8} {'tokens':>8}", "stable"]
     lines += [_row(p.name, p) for p in sizes.stable]
     lines += [f"  {'(blank lines between sections)':<44} {sizes.joins:>8} {'':>8}", _row("stable, counted whole", sizes.stable_whole),

@@ -34,7 +34,9 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
     at this moment (`Catalogue.now`), in the `moment` layer. `overrides` is the household's text for the persona's
     overridable sections by section id (`ashley.skills.persona.bodies`), applied by `sections.render`, which ignores
     any id that is not an `allowed` section; empty, the persona is the shipped text. Every reply carries
-    both a `spoken` and a `text` field whichever medium delivers it, so the medium is not a fact here."""
+    both a `spoken` and a `text` field whichever medium delivers it, so the medium is not a fact here. `left_out` are
+    the stable parts (`stable_parts` names) the prompt leaves out and `examples_out` the persona's examples left out of
+    the shipped text (`sections.render`); both are for measuring a cut (`ashley.evals.variant`) and empty in a turn."""
 
     now: datetime
     household: Household
@@ -54,6 +56,8 @@ the tool sources that did not answer when others did (`Catalogue.unreachable`), 
     while_away: tuple[str, ...] = ()
     tools_now: str | None = None
     overrides: Mapping[str, str] = NO_OVERRIDES
+    left_out: frozenset[str] = frozenset()
+    examples_out: frozenset[str] = frozenset()
 
 
 def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
@@ -86,14 +90,16 @@ def system(kind: Kind, context: Context) -> Mapping[str, SystemPrompt]:
 def stable_parts(kind: Kind, context: Context) -> Mapping[str, tuple[tuple[str, str], ...]]:
     """What `system` joins by a blank line into each variant's `stable`, as `(id, text)` pairs in order: one
     `persona.<section id>` per section of the persona (`sections.bodies`), `kind` (the kind's rules), `tools`,
-    `profile` and `standing`, the last three only when `system` has text for them. Raises ValueError as `system` does."""
+    `profile` and `standing`, the last three only when `system` has text for them, less `context.left_out`. Raises
+    ValueError as `system` does, and for a `context.examples_out` id the persona does not name."""
     facts.check(context.household, context.speaker, context.home, context.now)
     if context.phone and context.speaker is None:
         raise ValueError("only a known speaker has a phone")
     after = (("tools", facts.tools(context.tool_instructions, context.tools_reachable, context.tools_unreachable)),
              ("profile", facts.profile(context.household)),
              ("standing", facts.standing(context.standing, context.now)))
-    return {variant: _assemble(variant, kind, context.overrides, context.household, after)
+    return {variant: tuple((id, text) for id, text in _assemble(variant, kind, context, after)
+                           if id not in context.left_out)
             for variant in prose.variants()}
 
 
@@ -101,10 +107,11 @@ def _join(parts: list[str | None]) -> str:
     return "\n\n".join(part for part in parts if part)
 
 
-def _assemble(variant: str, kind: Kind, overrides: Mapping[str, str], household: Household,
+def _assemble(variant: str, kind: Kind, context: Context,
               after: tuple[tuple[str, str | None], ...]) -> tuple[tuple[str, str], ...]:
     who, rules = prose.read(variant, sections.FILE), prose.read(variant, f"kinds/{kind}.md")
     if who is None or rules is None:
         raise ValueError(f"no persona text for kind {kind!r} in variant {variant!r}")
-    found = [(f"persona.{id}", facts.in_units(body, household)) for id, body in sections.bodies(who, overrides)]
+    found = [(f"persona.{id}", facts.in_units(body, context.household))
+             for id, body in sections.bodies(who, context.overrides, context.examples_out)]
     return tuple((id, text) for id, text in (*found, ("kind", rules), *after) if text)

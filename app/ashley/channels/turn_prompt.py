@@ -3,14 +3,14 @@ a phone, the carried turns, what she did while away and the system prompt built 
 
 import asyncio
 from collections.abc import Awaitable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ..conversations.model import Carried
 from ..errands.model import Done
 from ..inference.model import SystemPrompt
 from ..persona import persona
 from ..tools.tools import Catalogue, Tools
-from . import aloud, owed, prompt, recall, taste, to_phone, tool_loop
+from . import aloud, cut, owed, prompt, recall, taste, to_phone, tool_loop
 from .model import Inbound
 from .speaker import Who
 
@@ -36,7 +36,8 @@ async def nothing_carried() -> Carried:
 
 async def build(inbound: Inbound, who: Who, source: Tools, carried: Awaitable[Carried]) -> Prompted:
     """The turn's tools (`tool_loop.offered` of `source`), memory, phone reach, `carried` and owed errand results read
-    together, then the system prompt for each variant (`prompt.system`) with the household's persona overrides."""
+    together, then the system prompt for each variant (`prompt.system`) with the household's persona overrides, less
+    what an eval's cut leaves out (`cut.active`; nothing in a turn)."""
     taste_read = asyncio.create_task(taste.overrides(inbound.household_id))
     catalogue, remembered, phone, page_open, got, away = await asyncio.gather(
         tool_loop.offered(source), recall.remembered(inbound, who), to_phone.reachable(inbound, who.speaker),
@@ -46,4 +47,5 @@ async def build(inbound: Inbound, who: Who, source: Tools, carried: Awaitable[Ca
                              aloud=aloud.offered(inbound), overhears=inbound.overhears,
                              said_before=prompt.said_before(got.relevant, who.household),
                              while_away=owed.lines(away, who.household), overrides=await taste_read)
+    context = replace(context, left_out=cut.active().sections, examples_out=cut.active().examples)
     return Prompted(catalogue, remembered, phone, got, away, context, persona.system(inbound.kind, context))

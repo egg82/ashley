@@ -35,19 +35,19 @@ def total(results: dict[str, list[RunResult]]) -> dict[str, Any]:
             "steps_to_write": _median(wrote)}
 
 
-def to_json(results: dict[str, list[RunResult]]) -> str:
-    """Every run of every case, a summary per case and the total."""
+def to_json(results: dict[str, list[RunResult]], variant: str = "none") -> str:
+    """The prompt `variant`'s label, every run of every case, a summary per case and the total."""
     expects = {c["id"]: (c["channel"], c["expect"]) for c in load()}
     cases = [{"id": cid, "channel": expects[cid][0], "expect": expects[cid][1], "summary": summary(rs),
               "runs": [asdict(r) for r in rs]} for cid, rs in results.items()]
-    return json.dumps({"total": total(results), "cases": cases}, indent=2)
+    return json.dumps({"variant": variant, "total": total(results), "cases": cases}, indent=2)
 
 
-def render(results: dict[str, list[RunResult]]) -> str:
-    """One row per case, a total row, then each run's tool sequence and input tokens per step."""
+def render(results: dict[str, list[RunResult]], variant: str = "none") -> str:
+    """The prompt `variant`'s label, one row per case, a total row, then each run's tool sequence and input tokens per step."""
     expects = {c["id"]: (c["channel"], c["expect"]) for c in load()}
     head = f"{'case':22} {'ch':5} {'expect':12} {'pass':>5} {'steps':>8} {'limit':>5} {'refused':>7} {'write':>7} {'repeat':>6} {'ms':>6}"
-    rows = [head]
+    rows = [f"variant: {variant}", head]
     for cid, rs in results.items():
         s = summary(rs)
         rows.append(f"{cid:22} {expects[cid][0]:5} {expects[cid][1]:12} {s['passes']}/{s['runs']:<3} "

@@ -114,6 +114,7 @@ class Options:
     household_id: int
     person_id: int | None
     ask: str
+    variant: str = "none"
 
 
 async def _person(options: Options) -> int:
@@ -140,7 +141,7 @@ async def run(count: Count, routes: Routes, options: Options, json_path: Path | 
     offered = aside.offered(specs) if ask.holds and specs else specs
     sizes = await measure(count, route.model, persona.stable_parts(ask.kind, prompted.context)[variant],
                           prompted.system[variant], offered, owners, anthropic_wire.reply_schema(Reply))
-    meta = Meta(options.kind, options.channel, route.provider, route.model, first, len(options.ask))
+    meta = Meta(options.kind, options.channel, route.provider, route.model, first, len(options.ask), options.variant)
     logs.info(log, "eval.prompt_sizes", kind=options.kind, channel=options.channel, model=route.model, tools=len(offered),
               tokens=sizes.whole, counts=sizes.calls, duration_ms=int((time.perf_counter() - started) * 1000))
     return _written(sizes, meta, json_path)
