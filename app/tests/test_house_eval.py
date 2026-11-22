@@ -16,6 +16,7 @@ from ashley.evals.house_readonly import ReadOnlyHomes, ReadOnlyHouse
 from ashley.connections.model import Connection
 from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes
+from ashley.home_assistant.house import ActionInfo, Performed
 from ashley.inference.inference import Inference
 from ashley.inference.model import ToolCall, ToolCalls, ToolSpec
 from ashley.inference.reply import Reply
@@ -92,6 +93,20 @@ def test_the_house_under_her_per_turn_tools_reads_through_and_keeps_every_change
     assert [a.name for a in refused] == ["house:perform:light.turn_on", "house:write:automation", "house:delete:automation",
                                          "house:create:area", "house:update:entity", "house:delete:device"]
     assert inner.done == []
+
+
+def test_a_response_only_action_reaches_the_inner_house_and_an_ordinary_one_is_refused() -> None:
+    inner = MemoryHouse(catalogue=[ActionInfo("todo.get_items", "", {}, "only"), ActionInfo("light.turn_on", "", {}, "none")],
+                        returns={"todo.get_items": {"items": ["milk"]}})
+    refused: list[Attempt] = []
+    guarded = ReadOnlyHouse(inner, refused)
+
+    async def go() -> tuple[Performed, Performed]:
+        return await guarded.perform("todo.get_items", ("todo.list",), {}), await guarded.perform("light.turn_on", ("light.hall",), {})
+    read, change = asyncio.run(go())
+    assert read.response == {"items": ["milk"]} and change == Performed()
+    assert [a.name for a in refused] == ["house:perform:light.turn_on"]
+    assert [d[2] for d in inner.done] == ["todo.get_items"]
 
 
 def test_every_household_gets_the_read_only_house_for_the_run() -> None:
