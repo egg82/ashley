@@ -31,7 +31,7 @@ ENV: dict[str, tuple[str, str]] = {
     "PUBLIC_URL": (D, "names this deployment to browsers and sign-in providers"),
     "OPERATOR_NAME": (D, "names who runs this deployment, for its legal pages"),
     "OPERATOR_CONTACT": (D, "names who runs this deployment, for its legal pages"),
-    "ANDROID_KEY_SHA256": (D, "names the signing key of this deployment's Android app, which its site vouches for"),
+    "ANDROID_KEY_SHA256": (D, "names the key of the Android app this deployment's site vouches for, when not the published APK's"),
     "OIDC_ISSUER": (D, "the web sign-in client, needed before anyone can sign in"),
     "OIDC_CLIENT_ID": (D, "the web sign-in client"),
     "OIDC_CLIENT_SECRET": (D, "the web sign-in client"),

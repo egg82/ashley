@@ -1,6 +1,6 @@
 """`/.well-known/assetlinks.json` vouches for her Android app: answered in place as `application/json` with the package
-the shell is built as and the fingerprint the setting gives, 404 when no fingerprint is set, and a malformed
-fingerprint refused at start."""
+the shell is built as and the fingerprint the setting gives, the published APK's release key when none is set, and a
+malformed fingerprint refused at start."""
 
 import re
 from pathlib import Path
@@ -13,6 +13,7 @@ from ashley.settings import Settings, from_env
 from ashley.web import assetlinks
 
 FINGERPRINT = ":".join(f"{b:02X}" for b in range(32))
+RELEASE_KEY = "79:1C:06:CC:3E:95:50:2F:DC:25:9A:39:0D:F0:03:10:02:09:20:85:EA:5D:30:65:08:55:9C:8A:D7:2A:01:53"
 GRADLE = Path(__file__).resolve().parents[2] / "android" / "app" / "build.gradle"
 
 
@@ -31,8 +32,10 @@ def test_set_it_names_the_package_and_fingerprint_as_json_in_place() -> None:
                                       "sha256_cert_fingerprints": [FINGERPRINT]}}]
 
 
-def test_unset_it_is_404() -> None:
-    assert client().get("/.well-known/assetlinks.json").status_code == 404
+def test_unset_it_names_the_published_apks_release_key() -> None:
+    got = client().get("/.well-known/assetlinks.json")
+    assert got.status_code == 200 and got.json()[0]["target"]["sha256_cert_fingerprints"] == [RELEASE_KEY]
+    assert from_env({"DATABASE_URL": "x", "ANDROID_KEY_SHA256": " "}).android_key_sha256 == RELEASE_KEY
 
 
 def test_the_package_is_the_one_the_shell_is_built_as() -> None:
@@ -45,7 +48,7 @@ def test_the_env_fingerprint_is_read_in_upper_case() -> None:
     assert got.android_key_sha256 == FINGERPRINT
 
 
-@pytest.mark.parametrize("bad", [FINGERPRINT[:-3], FINGERPRINT + ":00", FINGERPRINT.replace(":", ""),
+@pytest.mark.parametrize("bad", ["", FINGERPRINT[:-3], FINGERPRINT + ":00", FINGERPRINT.replace(":", ""),
                                  "ZZ" + FINGERPRINT[2:], FINGERPRINT.lower()])
 def test_a_malformed_fingerprint_is_refused(bad: str) -> None:
     with pytest.raises(ValueError, match="ANDROID_KEY_SHA256"):
