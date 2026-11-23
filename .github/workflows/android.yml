@@ -1,12 +1,12 @@
-# Her Android app (android/), a Trusted Web Activity over her page.
-# - debug-apk, on a pull request that touches android/: proves the shell builds and its manifest names the site it is
-#   given (a made-up host).
-# - release-apk, run by hand: a signed release for one deployment. The run asks for that deployment's PUBLIC_URL, so no
-#   host is in the tree, and for the version. The deployment's signing key comes from the Actions secrets
-#   ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. The job fails unless
-#   the signer matches the Actions variable ANDROID_KEY_SHA256, the same fingerprint the deployment's ANDROID_KEY_SHA256
-#   puts in /.well-known/assetlinks.json. The APK is a short-lived workflow artifact, never a release: it names the
-#   deployment's host, and this repository is public.
+# Her Android app (android/), a Trusted Web Activity over her page. The APK names no site: the person types her address
+# on first run, so one APK serves every deployment and is published as a GitHub release.
+# - debug-apk, on a pull request that touches android/: proves the shell builds, its manifest names no site and it still
+#   declares the library's ManageDataLauncherActivity (without it the app crashes at start).
+# - release-apk, run by hand with the version: signs the APK with the project's release key from the Actions secrets
+#   ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD, fails unless the signer
+#   is the Actions variable ANDROID_KEY_SHA256 (the fingerprint the app's ANDROID_KEY_SHA256 defaults to, so a
+#   deployment's /.well-known/assetlinks.json vouches for this APK with no setting), and publishes the release
+#   android-v<version> carrying ashley-<version>.apk.
 
 name: Android
 
@@ -17,10 +17,6 @@ on:
       - .github/workflows/android.yml
   workflow_dispatch:
     inputs:
-      url:
-        description: "The deployment's PUBLIC_URL (https://...): the site the app opens"
-        required: true
-        type: string
       version:
         description: "The app's version, MAJOR.MINOR.PATCH; each release must be higher than the one installed"
         required: true
@@ -38,8 +34,6 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    env:
-      HOST: ashley.example.test
     steps:
       - uses: actions/checkout@v4
       # AGP 9.5 needs JDK 17 and build-tools 36.0.0 at least; the platform is the compileSdk in android/app/build.gradle.
@@ -53,16 +47,17 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
       - name: Build
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug -PashleyHost="$HOST"
-      - name: Check the manifest names the site and declares the data activity
+        run: ./gradlew --no-daemon assembleDebug
+      - name: Check the manifest names no site and declares the data activity
         run: |
           apk=$(ls android/app/build/outputs/apk/debug/*.apk)
           badging=$("$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk")
           echo "$badging" | grep -E "^(package|application-label|launchable-activity)"
           xmltree=$("$ANDROID_HOME/build-tools/36.0.0/aapt2" dump xmltree --file AndroidManifest.xml "$apk")
-          echo "$xmltree" | grep -F "https://$HOST/"
-          echo "$xmltree" | grep -F "ManageDataLauncherActivity"
+          ! echo "$xmltree" | grep -F "https://" || { echo "the manifest names a site"; exit 1; }
+          echo "$xmltree" | grep -F '"com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"'
           echo "$badging" | grep -F "package: name='io.github.egg82.ashley'"
+          echo "$badging" | grep -F "launchable-activity: name='io.github.egg82.ashley.SiteLauncherActivity'"
           echo "$badging" | grep -F "application-label:'Ashley'"
       - uses: actions/upload-artifact@v4
         with:
@@ -75,21 +70,19 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    permissions:
+      contents: write
     env:
       BT: build-tools/36.0.0
-      URL: ${{ inputs.url }}
       VERSION: ${{ inputs.version }}
     steps:
-      - name: Read the site and version
+      - name: Read the version
         id: input
         run: |
-          [[ "$URL" =~ ^https://([a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?)/?$ ]] || { echo "url must be https://<host> with no path, as PUBLIC_URL is"; exit 1; }
-          host=${BASH_REMATCH[1]}
           [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "version must be MAJOR.MINOR.PATCH"; exit 1; }
           (( BASH_REMATCH[2] < 100 && BASH_REMATCH[3] < 100 )) || { echo "MINOR and PATCH must be under 100"; exit 1; }
           code=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))
           (( code > 0 )) || { echo "version must be above 0.0.0"; exit 1; }
-          echo "host=$host" >> "$GITHUB_OUTPUT"
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "versionName=$VERSION versionCode=$code"
       - uses: actions/checkout@v4
@@ -104,9 +97,8 @@ jobs:
       - name: Build the unsigned release APK
         working-directory: android
         env:
-          HOST: ${{ steps.input.outputs.host }}
           CODE: ${{ steps.input.outputs.code }}
-        run: ./gradlew --no-daemon assembleRelease -PashleyHost="$HOST" -PashleyVersionName="$VERSION" -PashleyVersionCode="$CODE"
+        run: ./gradlew --no-daemon assembleRelease -PashleyVersionName="$VERSION" -PashleyVersionCode="$CODE"
       - name: Align and sign
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -124,23 +116,32 @@ jobs:
       - name: Delete the keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/release.p12"
-      - name: Check the signer is the deployment's key and the manifest names its site
+      - name: Check there is one APK, signed by the release key, naming no site
         env:
           KEY_SHA256: ${{ vars.ANDROID_KEY_SHA256 }}
-          HOST: ${{ steps.input.outputs.host }}
         run: |
-          apk=$(ls dist/*.apk)
+          apks=(dist/*.apk)
+          [ "${#apks[@]}" = 1 ] && [ "${apks[0]}" = "dist/ashley-$VERSION.apk" ] || { echo "dist holds ${apks[*]}"; exit 1; }
+          apk=${apks[0]}
           want=$(printf '%s' "$KEY_SHA256" | tr -d ':' | tr 'A-F' 'a-f')
           [ -n "$want" ] || { echo "the ANDROID_KEY_SHA256 variable is not set"; exit 1; }
           got=$("$ANDROID_HOME/$BT/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
           [ "$got" = "$want" ] || { echo "signer $got is not ANDROID_KEY_SHA256"; exit 1; }
           echo "signer matches ANDROID_KEY_SHA256"
-          "$ANDROID_HOME/$BT/aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -F "https://$HOST/" > /dev/null \
-            || { echo "the manifest does not name https://$HOST/"; exit 1; }
-          echo "manifest names the site"
+          ! "$ANDROID_HOME/$BT/aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -F "https://" \
+            || { echo "the manifest names a site"; exit 1; }
+          echo "manifest names no site"
       - uses: actions/upload-artifact@v4
         with:
           name: ashley-release-apk
           path: dist/*.apk
           if-no-files-found: error
-          retention-days: 3
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEY_SHA256: ${{ vars.ANDROID_KEY_SHA256 }}
+        run: |
+          notes="Install ashley-$VERSION.apk, then type the address you open her page at. Her site vouches for this APK"
+          notes+=" with no setting: it is signed by the key whose SHA-256 fingerprint is $KEY_SHA256, the default of ANDROID_KEY_SHA256."
+          gh release create "android-v$VERSION" "dist/ashley-$VERSION.apk" --target "$GITHUB_SHA" \
+            --title "Android app $VERSION" --notes "$notes"
