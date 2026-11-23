@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ashley</string>
+    <string name="first_run_title">Where do you reach her?</string>
+    <string name="first_run_explain">Type the address you open her page at in a browser, such as https://ashley.example.com.</string>
+    <string name="first_run_hint">https://ashley.example.com</string>
+    <string name="first_run_prefix" translatable="false">https://</string>
+    <string name="first_run_error">That needs to be https:// and a host name, with nothing after it.</string>
+    <string name="first_run_open">Open</string>
+    <string name="first_run_change">To use a different address later, reinstall the app.</string>
 </resources>

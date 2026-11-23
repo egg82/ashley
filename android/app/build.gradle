@@ -2,10 +2,6 @@ plugins {
     id 'com.android.application'
 }
 
-// The site the app opens: the host of the deployment's PUBLIC_URL, e.g. `-PashleyHost=ashley.example.com`. Each
-// deployment builds its own APK, so the host is never in the tree.
-def ashleyHost = findProperty('ashleyHost') ?: { throw new GradleException('pass -PashleyHost=<the host of PUBLIC_URL>') }()
-
 android {
     namespace = 'io.github.egg82.ashley'
     compileSdk = 36
@@ -19,7 +15,6 @@ android {
         // A release build passes both from the tag (.github/workflows/android.yml); other builds keep these.
         versionCode = (findProperty('ashleyVersionCode') ?: '1') as int
         versionName = findProperty('ashleyVersionName') ?: '0.1.0'
-        manifestPlaceholders = [ashleyHost: ashleyHost]
     }
 }
 

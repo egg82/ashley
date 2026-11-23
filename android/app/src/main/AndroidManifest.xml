@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- The APK names no site: the person types it on first run (FirstRunActivity) and the app keeps it. -->
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:manageSpaceActivity="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
+        android:manageSpaceActivity="io.github.egg82.ashley.SiteDataActivity"
         android:supportsRtl="true">
 
-        <!-- Opens the site in a Trusted Web Activity; a phone with no TWA browser gets a Custom Tab (the library's
+        <!-- Opens the saved site in a Trusted Web Activity; a phone with no TWA browser gets a Custom Tab (the library's
              default fallback). -->
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:name=".SiteLauncherActivity"
             android:exported="true">
-            <meta-data
-                android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                android:value="https://${ashleyHost}/" />
             <meta-data
                 android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
                 android:resource="@color/theme" />
@@ -32,21 +30,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="${ashleyHost}" />
-            </intent-filter>
         </activity>
 
-        <!-- LauncherActivity enables this on every launch (its site-settings shortcut), so it must be declared: without
-             it the app crashes at start ("Component class ... does not exist"). Also the system's "Manage space"
-             screen for the app, which opens the site's data in the browser. -->
-        <activity android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity">
-            <meta-data
-                android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
-                android:value="https://${ashleyHost}/" />
-        </activity>
+        <activity
+            android:name=".FirstRunActivity"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- LauncherActivity enables this class by name on every launch (its site-settings shortcut), so it must be
+             declared: without it the app crashes at start ("Component class ... does not exist"). -->
+        <activity android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity" />
+
+        <!-- The system's "Manage space" screen for the app: the browser's data for the saved site. -->
+        <activity android:name=".SiteDataActivity" />
     </application>
 </manifest>
