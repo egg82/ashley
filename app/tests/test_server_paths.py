@@ -32,7 +32,7 @@ def test_every_listed_server_path_has_a_route() -> None:
 
 @pytest.mark.parametrize(("path", "served"), [
     ("/api", True), ("/api/health", True), ("/api/connections/oauth/google/callback", True),
-    ("/privacy", True), ("/terms", True),
+    ("/privacy", True), ("/terms", True), ("/.well-known/assetlinks.json", True), ("/.well-known/other", False),
     ("/", False), ("/memory", False), ("/apis", False), ("/api.js", False), ("/privacy/more", False),
     ("/index.html", False),
 ])

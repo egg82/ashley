@@ -23,6 +23,15 @@ subject, or a pair that is not one P-256 pair, the push routes answer 503, the s
   a browser hands over, and no redirect is followed. A service answering 404 or 410 forgets that browser; any other
   failure keeps it.
 - On iPhone, web push works only for the app added to the Home Screen; the devices room says so.
+- **Her Android app is a Trusted Web Activity over her page** (`android/`, a plain Gradle project on
+  `androidbrowserhelper`, as Ostmere's), so the phone's browser draws the page and keeps its service worker and web push;
+  the shell adds no push code. Each deployment builds its own APK with `-PashleyHost=<the host of PUBLIC_URL>`, and its
+  site vouches for the app at `/.well-known/assetlinks.json` (`ashley.web.assetlinks`) with the signing key's
+  fingerprint, `ANDROID_KEY_SHA256` (an env var: it names this deployment's app). Unset, that route is 404 and the app
+  opens as a Custom Tab with a browser bar, as it does on a phone with no TWA-capable browser. The signing key lives in
+  the secret store with an offline copy the owner holds, never in git: losing it ends updates for every installed copy.
+  Rejected: a WebView shell (its own cookies and service worker, no browser push), native FCM (Google services in the
+  app and a second sender beside Web Push).
 - **A woken turn routes itself: a sense is an input.** She works out where a thing goes by its type and urgency, and
   may decide to route it nowhere. So a turn she was woken
   for (`Inbound.unprompted`) on a thread other than the person's phone thread is offered the same `Reply.to_phone`,

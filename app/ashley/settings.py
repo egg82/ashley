@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 
 DNS_LABEL = re.compile(r"[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?")
 DNS_NAME = re.compile(r"[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?")
+FINGERPRINT = re.compile(r"[0-9A-F]{2}(:[0-9A-F]{2}){31}")
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,8 @@ class Settings:
     Google answers 503.
     `operator_name` (who runs the deployment and for whom: `Sam Doe for the Doe household`) and `operator_contact` (an
     email address) fill the public privacy and terms pages; unset, they name the deployment's operator generically.
+    `android_key_sha256` is the SHA-256 fingerprint of the key her Android app is signed with (`AB:CD:...`, 32 bytes,
+    ValueError otherwise), which `/.well-known/assetlinks.json` names (`ashley.web.assetlinks`); unset, that route is 404.
     `vapid_subject` (`mailto:...`) is the contact in her Web Push identity; unset, the push routes answer 503 and
     nothing is pushed. `vapid_public_key` and `vapid_private_key` seed the identity's key pair, the deployment secret
     `vapid` (`ashley.wiring_secrets`): with neither set and `connections_key` set, a pair is generated once.
@@ -142,6 +145,7 @@ class Settings:
     public_url: str = ""
     operator_name: str = ""
     operator_contact: str = ""
+    android_key_sha256: str = ""
     searxng_url: str = ""
     vapid_public_key: str = ""
     vapid_private_key: str = ""
@@ -193,6 +197,8 @@ class Settings:
     def __post_init__(self) -> None:
         if self.failback not in ("on", "off"):
             raise ValueError("FAILBACK must be on or off")
+        if self.android_key_sha256 and not FINGERPRINT.fullmatch(self.android_key_sha256):
+            raise ValueError("ANDROID_KEY_SHA256 is 32 hex bytes joined by colons")
         oidc = (self.oidc_issuer, self.oidc_client_id, self.oidc_client_secret)
         if any(oidc) and not all(oidc):
             raise ValueError("OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET must be set together")
@@ -275,6 +281,7 @@ def from_env(env: Mapping[str, str] = os.environ) -> Settings:
                     public_url=env.get("PUBLIC_URL", "").rstrip("/"),
                     operator_name=env.get("OPERATOR_NAME", "").strip(),
                     operator_contact=env.get("OPERATOR_CONTACT", "").strip(),
+                    android_key_sha256=env.get("ANDROID_KEY_SHA256", "").strip().upper(),
                     searxng_url=env.get("SEARXNG_URL", "").strip().rstrip("/"),
                     vapid_public_key=env.get("VAPID_PUBLIC_KEY", "").strip(),
                     vapid_private_key=env.get("VAPID_PRIVATE_KEY", "").strip(),
