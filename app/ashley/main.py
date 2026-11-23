@@ -14,7 +14,7 @@ from .api import (accounts, admin_gate, bench_choices, bench_files, bench_jobs, 
 from .api.access import AccessLog
 from .api.contract import operation_id
 from .db.database import Database
-from .web import legal
+from .web import assetlinks, legal
 from .web.static import mount_client
 
 
@@ -22,7 +22,7 @@ ROUTED = (health, ready, messages, wakes, voice_clips, voice_turns, signin, memo
            accounts, connections, connection_oauth, connection_holders, connection_settings, mail_bridge,
            mail_bridge_login, devices, device_controls, spend, spend_routes, model_catalogue, lexicon, household,
            people, persona, chat, history, live, push, screens, kiosk, screen_feed, spoken, benches, bench_talk, bench_runs,
-           bench_choices, bench_jobs, bench_files, claude_screen, files, look, skills, work, legal)
+           bench_choices, bench_jobs, bench_files, claude_screen, files, look, skills, work, legal, assetlinks)
 """Every route module, included in this order (an earlier path wins a clash)."""
 
 

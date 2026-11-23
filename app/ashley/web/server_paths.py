@@ -6,7 +6,7 @@
 PREFIXES = ("/api",)
 """Served by the app at the path itself and at every path under it."""
 
-EXACT = ("/privacy", "/terms")
+EXACT = ("/privacy", "/terms", "/.well-known/assetlinks.json")
 """Served by the app at exactly this path."""
 
 
