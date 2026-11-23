@@ -1,0 +1,56 @@
+# Her Android app (android/): a debug APK of the Trusted Web Activity, built when android/ changes, to prove the shell
+# builds and its manifest names the site it is given. The host is a made-up one: each deployment builds its own APK
+# with `-PashleyHost=<the host of PUBLIC_URL>`. There is no release job yet; a signed release needs the deployment's
+# signing key, which never enters the repo.
+
+name: Android
+
+on:
+  pull_request:
+    paths:
+      - android/**
+      - .github/workflows/android.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      HOST: ashley.example.test
+    steps:
+      - uses: actions/checkout@v4
+      # AGP 9.5 needs JDK 17 and build-tools 36.0.0 at least; the platform is the compileSdk in android/app/build.gradle.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install the pinned SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - name: Build
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug -PashleyHost="$HOST"
+      - name: Check the manifest names the site and declares the data activity
+        run: |
+          apk=$(ls android/app/build/outputs/apk/debug/*.apk)
+          badging=$("$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk")
+          echo "$badging" | grep -E "^(package|application-label|launchable-activity)"
+          xmltree=$("$ANDROID_HOME/build-tools/36.0.0/aapt2" dump xmltree --file AndroidManifest.xml "$apk")
+          echo "$xmltree" | grep -F "https://$HOST/"
+          echo "$xmltree" | grep -F "ManageDataLauncherActivity"
+          echo "$badging" | grep -F "package: name='io.github.egg82.ashley'"
+          echo "$badging" | grep -F "application-label:'Ashley'"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ashley-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
