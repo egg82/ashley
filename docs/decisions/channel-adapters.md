@@ -25,16 +25,19 @@ subject, or a pair that is not one P-256 pair, the push routes answer 503, the s
 - On iPhone, web push works only for the app added to the Home Screen; the devices room says so.
 - **Her Android app is a Trusted Web Activity over her page** (`android/`, a plain Gradle project on
   `androidbrowserhelper`, as Ostmere's), so the phone's browser draws the page and keeps its service worker and web push;
-  the shell adds no push code. Each deployment builds its own APK with `-PashleyHost=<the host of PUBLIC_URL>`, and its
-  site vouches for the app at `/.well-known/assetlinks.json` (`ashley.web.assetlinks`) with the signing key's
-  fingerprint, `ANDROID_KEY_SHA256` (an env var: it names this deployment's app). Unset, that route is 404 and the app
-  opens as a Custom Tab with a browser bar, as it does on a phone with no TWA-capable browser. The signing key lives in
-  the secret store with an offline copy the owner holds, never in git: losing it ends updates for every installed copy.
-  A release is built by hand in GitHub Actions (`.github/workflows/android.yml`, `release-apk`): the run asks for the
-  deployment's `PUBLIC_URL` and the version, signs with the key held in Actions secrets, and fails unless the signer is
-  the repository variable `ANDROID_KEY_SHA256`. The APK names the deployment's host, so it is a short-lived workflow
-  artifact, never a public release. Rejected: a WebView shell (its own cookies and service worker, no browser push), native FCM (Google services in the
-  app and a second sender beside Web Push).
+  the shell adds no push code. **One APK serves every deployment:** it names no site, and asks for her address on first
+  run and keeps it (changing it means reinstalling the app). Only the site vouches for the app, at
+  `/.well-known/assetlinks.json` (`ashley.web.assetlinks`), with the signing key's fingerprint `ANDROID_KEY_SHA256`. That
+  defaults to the project's release key (`ashley.settings.RELEASE_KEY_SHA256`, public: it is the published APK's
+  identity, not household data), so a deployment on the published APK sets nothing; one that signs its own build sets
+  its key's. An app signed by any other key opens as a Custom Tab with a browser bar, as it does on a phone with no
+  TWA-capable browser. The release key lives in the secret store with an offline copy the owner holds, never in git:
+  losing it ends updates for every installed copy. A release is built by hand in GitHub Actions
+  (`.github/workflows/android.yml`, `release-apk`): the run takes the version, signs with the key held in Actions
+  secrets, fails unless the signer is the repository variable `ANDROID_KEY_SHA256`, and publishes the GitHub release
+  `android-v<version>` with the one APK. Rejected: an APK built per deployment with its host (no public release, and a
+  build for every household); a WebView shell (its own cookies and service worker, no browser push); native FCM (Google
+  services in the app and a second sender beside Web Push).
 - **A woken turn routes itself: a sense is an input.** She works out where a thing goes by its type and urgency, and
   may decide to route it nowhere. So a turn she was woken
   for (`Inbound.unprompted`) on a thread other than the person's phone thread is offered the same `Reply.to_phone`,

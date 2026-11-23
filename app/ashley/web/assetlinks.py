@@ -1,7 +1,8 @@
 """`/.well-known/assetlinks.json`, the Digital Asset Links statement that lets her Android app (`android/`) open this
 site as a Trusted Web Activity, with no browser bar. It names the app's package and the SHA-256 fingerprint of the key
-the app is signed with, the `android_key_sha256` setting. Unset, the route is 404 and the app still opens the site, as a
-Custom Tab with a bar. Answered in place: a redirect fails the browser's check."""
+the app is signed with, the `android_key_sha256` setting, which defaults to the key of the APK published on GitHub. An
+app signed by another key still opens the site, as a Custom Tab with a bar. Answered in place: a redirect fails the
+browser's check."""
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
@@ -22,7 +23,5 @@ def statement(fingerprint: str) -> list[dict[str, object]]:
 @router.get("/.well-known/assetlinks.json")
 async def get_assetlinks(request: Request) -> Response:
     fingerprint: str = request.app.state.settings.android_key_sha256
-    if not fingerprint:
-        return Response(status_code=404)
     return JSONResponse(statement(fingerprint), media_type="application/json",
                         headers={"Cache-Control": "public, no-cache"})
