@@ -30,7 +30,10 @@ subject, or a pair that is not one P-256 pair, the push routes answer 503, the s
   fingerprint, `ANDROID_KEY_SHA256` (an env var: it names this deployment's app). Unset, that route is 404 and the app
   opens as a Custom Tab with a browser bar, as it does on a phone with no TWA-capable browser. The signing key lives in
   the secret store with an offline copy the owner holds, never in git: losing it ends updates for every installed copy.
-  Rejected: a WebView shell (its own cookies and service worker, no browser push), native FCM (Google services in the
+  A release is built by hand in GitHub Actions (`.github/workflows/android.yml`, `release-apk`): the run asks for the
+  deployment's `PUBLIC_URL` and the version, signs with the key held in Actions secrets, and fails unless the signer is
+  the repository variable `ANDROID_KEY_SHA256`. The APK names the deployment's host, so it is a short-lived workflow
+  artifact, never a public release. Rejected: a WebView shell (its own cookies and service worker, no browser push), native FCM (Google services in the
   app and a second sender beside Web Push).
 - **A woken turn routes itself: a sense is an input.** She works out where a thing goes by its type and urgency, and
   may decide to route it nowhere. So a turn she was woken
