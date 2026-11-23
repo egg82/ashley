@@ -20,6 +20,9 @@ png mark.svg 512 "$out/icon-512.png"
 png mark.svg 192 "$out/icon-192.png"
 png mark.svg 180 "$out/apple-touch-icon.png"
 png "$work/maskable.svg" 512 "$out/icon-maskable-512.png"
+# The Android app's adaptive icon: a launcher shows only the central 66 of its 108 units, so the mark shrinks further.
+sed 's/id="mark" transform="scale(1)"/id="mark" transform="scale(.6)"/' mark.svg > "$work/adaptive.svg"
+png "$work/adaptive.svg" 512 ../../../android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
 png favicon.svg 32 "$work/favicon-32.png"
 convert "$work/favicon-32.png" "$out/favicon.ico"
 ls -l "$out"
