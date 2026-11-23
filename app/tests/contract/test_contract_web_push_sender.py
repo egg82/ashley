@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from web_push_support import MARK, settings
 
-TTL, TIMEOUT = 4321, 0.4
+TTL, URGENCY, TIMEOUT = 4321, "high", 0.4
 NOTIFICATION = Notification("Ashley", "Here is the link " + MARK, "/")
 
 
@@ -98,7 +98,7 @@ def sender() -> WebPushSender:
     given = settings()
     identity = push_config.vapid(given.vapid_public_key, given.vapid_private_key, given.vapid_subject)
     assert identity is not None
-    return WebPushSender(identity, TTL, TIMEOUT)
+    return WebPushSender(identity, TTL, URGENCY, TIMEOUT)
 
 
 def send(to: Browser) -> Sent:
@@ -112,11 +112,12 @@ def test_an_accepted_push_is_ok_and_reaches_the_endpoint_once(service: Service) 
     assert path == f"/push/{MARK}"
 
 
-def test_the_message_is_encrypted_and_carries_the_ttl_and_a_vapid_signature(service: Service) -> None:
+def test_the_message_is_encrypted_and_carries_the_ttl_urgency_and_a_vapid_signature(service: Service) -> None:
     send(real_browser(service.url))
     ((_, headers, body),) = service.seen
     assert headers["content-encoding"] == "aes128gcm"
     assert headers["ttl"] == str(TTL)
+    assert headers["urgency"] == URGENCY
     scheme, _, token = headers["authorization"].partition(" ")
     assert scheme.lower() in ("vapid", "webpush") and token.count(".") == 2
     assert body and MARK.encode() not in body and b"Ashley" not in body
