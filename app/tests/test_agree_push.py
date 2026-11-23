@@ -55,7 +55,7 @@ def test_the_payload_a_browser_receives_names_the_proposal(monkeypatch: pytest.M
     got: list[Sent] = []
 
     async def scenario() -> None:
-        got.append(await WebPushSender(identity, 600, 2).send(browser(1), Notification("Ashley", "hi", "/", 41)))
+        got.append(await WebPushSender(identity, 600, "high", 2).send(browser(1), Notification("Ashley", "hi", "/", 41)))
 
     run(scenario())
     assert got == [Sent("ok", 201)]

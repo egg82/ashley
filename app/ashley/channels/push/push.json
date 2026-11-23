@@ -4,6 +4,7 @@
   "held_title": "Ashley is waiting for your OK",
   "body_chars": 400,
   "ttl_s": 43200,
+  "urgency": "high",
   "timeout_s": 10,
   "hosts": ["fcm.googleapis.com"],
   "domains": [".push.services.mozilla.com", ".push.apple.com", ".notify.windows.com"]

@@ -154,7 +154,7 @@ async def _push(subject: str) -> None:
     if identity is None:
         return
     config = push_config.load()
-    sender = WebPushSender(identity, config.ttl_s, config.timeout_s)
+    sender = WebPushSender(identity, config.ttl_s, config.urgency, config.timeout_s)
     drain = partial(push_later.drain, sender, config, outbox.load().poll_s, asyncio.sleep)
     await services.get(Lease).run(push_later.NAME, drain)
 

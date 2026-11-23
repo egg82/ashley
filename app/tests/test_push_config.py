@@ -2,6 +2,8 @@
 accepted only on a browser's own push service; the sender maps a push service's answer to `ok`, `gone` (404, 410) or
 `failed`."""
 
+import json
+
 import pytest
 import requests
 from ashley.channels.push import config as push_config, sender as sender_module
@@ -15,6 +17,16 @@ CONFIG = push_config.load()
 
 def parts(public: str = "", private: str = "", subject: str = "mailto:admin@example.test") -> tuple[str, str, str]:
     return public, private, subject
+
+
+def test_her_pushes_are_sent_high_urgency_so_an_idle_phone_gets_them_now() -> None:
+    assert CONFIG.urgency == "high"
+
+
+def test_an_urgency_outside_rfc_8030s_four_is_refused() -> None:
+    raw = json.loads(push_config.FILE.read_text(encoding="utf-8"))
+    with pytest.raises(ValueError, match="urgency"):
+        push_config.parse({**raw, "urgency": "urgent"})
 
 
 def test_one_pair_with_a_subject_is_her_identity() -> None:
@@ -79,7 +91,7 @@ def test_the_sender_maps_what_the_push_service_answered(monkeypatch: pytest.Monk
     got: list[Sent] = []
 
     async def scenario() -> None:
-        got.append(await WebPushSender(identity, 600, 2).send(browser(1), Notification("Ashley", "hi", "/")))
+        got.append(await WebPushSender(identity, 600, "high", 2).send(browser(1), Notification("Ashley", "hi", "/")))
 
     run(scenario())
     assert got == [sent]
@@ -87,5 +99,6 @@ def test_the_sender_maps_what_the_push_service_answered(monkeypatch: pytest.Monk
     assert call["info"] == {"endpoint": browser(1).endpoint, "keys": {"p256dh": browser(1).p256dh,
                                                                        "auth": browser(1).auth}}
     assert call["data"] == '{"title": "Ashley", "body": "hi", "url": "/", "agree": null}' and call["ttl"] == 600
+    assert call["headers"] == {"Urgency": "high"}
     session = call["requests_session"]
     assert isinstance(session, requests.Session) and session.max_redirects == 0

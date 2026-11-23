@@ -43,13 +43,14 @@ class Sender(ABC):
 
 
 class WebPushSender(Sender):
-    """pywebpush, run off the event loop since it blocks. A push service answers for itself, so a redirect is never
+    """pywebpush, run off the event loop since it blocks. Each push carries `ttl_s` and the `Urgency` header `urgency`. A push service answers for itself, so a redirect is never
     followed: an endpoint cannot hand the request on to another address."""
 
-    def __init__(self, vapid: Vapid, ttl_s: int, timeout_s: float) -> None:
+    def __init__(self, vapid: Vapid, ttl_s: int, urgency: str, timeout_s: float) -> None:
         self._key = Vapid01.from_string(vapid.private_key)
         self._claims: dict[str, str | int] = {"sub": vapid.subject}
         self._ttl_s = ttl_s
+        self._headers: dict[str, str | int | float] = {"Urgency": urgency}
         self._timeout_s = timeout_s
 
     async def send(self, browser: Browser, notification: Notification) -> Sent:
@@ -63,7 +64,7 @@ class WebPushSender(Sender):
                 session.max_redirects = 0
                 webpush({"endpoint": browser.endpoint, "keys": {"p256dh": browser.p256dh, "auth": browser.auth}},
                         data=data, vapid_private_key=self._key, vapid_claims=dict(self._claims), ttl=self._ttl_s,
-                        timeout=self._timeout_s, requests_session=session)
+                        headers=dict(self._headers), timeout=self._timeout_s, requests_session=session)
         except WebPushException as e:
             status = e.response.status_code if e.response is not None else None
             return Sent("gone", status) if status in (404, 410) else Sent("failed", status)

@@ -3,8 +3,9 @@
 A notification's title is `title` and its body the reply's text cut to `body_chars`; one that carries only receipts
 (a spoken turn's, which the speaker's phone shows) has `done_title` or, when a call waits, `held_title`, and the
 headlines for a body; a push service holds one for an
-offline browser at most `ttl_s`, and a send waits at most `timeout_s`. The server POSTs to whatever endpoint a browser
-subscribes, so only the browsers' own push services are accepted: an https URL on the default port, with no user info,
+offline browser at most `ttl_s` and is told its `urgency` (RFC 8030's `very-low`, `low`, `normal` or `high`, which
+decides whether it may hold one for an idle phone), and a send waits at most `timeout_s`. The server POSTs to whatever
+endpoint a browser subscribes, so only the browsers' own push services are accepted: an https URL on the default port, with no user info,
 whose host is one of `hosts` or ends with one of `domains`."""
 
 import base64
@@ -21,6 +22,7 @@ from ... import services
 from ...connections.deployment_secrets import DeploymentSecrets
 
 FILE = Path(__file__).with_name("push.json")
+URGENCIES = ("very-low", "low", "normal", "high")
 
 
 @dataclass(frozen=True)
@@ -30,6 +32,7 @@ class Config:
     held_title: str
     body_chars: int
     ttl_s: int
+    urgency: str
     timeout_s: float
     hosts: tuple[str, ...]
     domains: tuple[str, ...]
@@ -39,6 +42,8 @@ class Config:
             raise ValueError("push.json needs a title and positive limits")
         if not self.hosts or not all(d.startswith(".") for d in self.domains):
             raise ValueError("push.json needs hosts, and each domain starts with a dot")
+        if self.urgency not in URGENCIES:
+            raise ValueError(f"push.json urgency is one of {URGENCIES}")
 
 
 def parse(raw: dict[str, Any]) -> Config:
@@ -46,7 +51,8 @@ def parse(raw: dict[str, Any]) -> Config:
     expected = {f.name for f in fields(Config)}
     if set(raw) != expected:
         raise ValueError(f"push.json keys: missing {sorted(expected - set(raw))}, unknown {sorted(set(raw) - expected)}")
-    return Config(str(raw["title"]), str(raw["done_title"]), str(raw["held_title"]), int(raw["body_chars"]), int(raw["ttl_s"]), float(raw["timeout_s"]),
+    return Config(str(raw["title"]), str(raw["done_title"]), str(raw["held_title"]), int(raw["body_chars"]), int(raw["ttl_s"]), str(raw["urgency"]),
+                  float(raw["timeout_s"]),
                   tuple(map(str, raw["hosts"])), tuple(map(str, raw["domains"])))
 
 
