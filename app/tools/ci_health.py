@@ -9,7 +9,8 @@ Two numbers, from the pull-request runs of the last --days:
           concluded `failure`: a run cancelled by a newer push or a label is not one), with the failing test ids from
           that attempt's log. A rerun that passed is a flaky test, or a test that depends on the runner.
 Over budget, or any rerun: one open issue per kind (labels ci-health-budget, ci-health-reruns) is created or its body
-replaced, never duplicated. Otherwise one logfmt line, exit 0. A forge error exits 1 with its message.
+replaced, never duplicated; a night that shows the problem gone closes its issue. Always one logfmt line, exit 0. A
+forge error exits 1 with its message.
 
 Standard library only, no import from the app: `.github/workflows/ci-health.yml` runs it nightly. Everything that speaks
 to the forge is `GitHub` below (the `gh` CLI, which needs GH_TOKEN with actions: read and issues: write). A run that did
@@ -52,6 +53,7 @@ class Forge(Protocol):
     def open_issue(self, kind: str) -> int | None: ...
     def create_issue(self, kind: str, title: str, body: str) -> int: ...
     def update_issue(self, number: int, title: str, body: str) -> None: ...
+    def close_issue(self, number: int, comment: str) -> None: ...
 
 
 Gh = Callable[[list[str]], str]
@@ -109,6 +111,9 @@ class GitHub:
     def update_issue(self, number: int, title: str, body: str) -> None:
         self.gh(["issue", "edit", str(number), "-R", self.repo, "--title", title, "--body", body])
 
+    def close_issue(self, number: int, comment: str) -> None:
+        self.gh(["issue", "close", str(number), "-R", self.repo, "--comment", comment])
+
 
 def failing_tests(log: str) -> list[str]:
     """The test ids a job's log names: pytest's `FAILED <id>` and `ERROR <id>` lines (a teardown failure, the per-test
@@ -162,6 +167,15 @@ def upsert(forge: Forge, kind: str, body: str, dry: bool) -> str:
     return f"updated #{number}"
 
 
+def settle(forge: Forge, kind: str, comment: str, dry: bool) -> str:
+    """Close the kind's open issue once tonight shows no problem, so a cleared problem's body never reads as current."""
+    number = None if dry else forge.open_issue(kind)
+    if number is None:
+        return ""
+    forge.close_issue(number, comment)
+    return f"closed #{number}"
+
+
 def run(forge: Forge, budget: float, days: int, workflow: str, test_jobs: re.Pattern[str], dry: bool,
         now: datetime) -> int:
     runs = forge.pr_runs(now - timedelta(days=days), workflow)
@@ -169,8 +183,14 @@ def run(forge: Forge, budget: float, days: int, workflow: str, test_jobs: re.Pat
     actions: list[str] = []
     if stats is not None and stats[0] > budget:
         actions.append("budget " + upsert(forge, "budget", budget_body(stats, budget, days, runs), dry))
+    elif stats is not None and (done := settle(forge, "budget", f"Median back to {stats[0]:.1f} min, within the "
+                                                                f"{budget:g} min budget.", dry)):
+        actions.append("budget " + done)   # no passing run leaves it open: an unknown median is not under budget
     if found:
         actions.append("reruns " + upsert(forge, "reruns", rerun_body(found, days), dry))
+    elif runs and (done := settle(forge, "reruns", f"No pull-request run of the last {days} days passed only on a "
+                                                   "rerun.", dry)):
+        actions.append("reruns " + done)   # no runs at all closes nothing: an empty window proves nothing
     median, worst = (f"{stats[0]:.1f}", f"{stats[1]:.1f}") if stats else ("unknown", "unknown")
     print(f"event=ci_health days={days} pr_runs={sum(r.conclusion == 'success' for r in runs)} median_min={median} "
           f"worst_min={worst} budget_min={budget:g} reruns_passed={len(found)} issues={';'.join(actions) or 'none'}")

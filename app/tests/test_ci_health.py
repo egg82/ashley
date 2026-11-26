@@ -1,7 +1,8 @@
 """The nightly CI readout (tools/ci_health.py) over one real day of pull-request runs (`ci_health_captured/`, captured
 from `gh` with only the fields it reads): it names the tests whose first attempt failed in runs that passed on rerun,
 reads a test failed at teardown from its ERROR line, says so when a rerun's log names no test, compares the day's wall
-clock with the budget, and keeps one issue per problem, updating an open one rather than opening another."""
+clock with the budget, and keeps one issue per problem, updating an open one rather than opening another and closing
+it on a night that shows the problem gone, though never on a night with no runs to judge."""
 import json
 import re
 import statistics
@@ -43,8 +44,9 @@ class FakeGh:
         raise AssertionError(f"not captured: {path}")
 
 
-def readout(gh: FakeGh, budget: float, capsys: pytest.CaptureFixture[str], dry: bool = False) -> str:
-    assert ci_health.run(ci_health.GitHub("OWNER/NAME", gh), budget, 1, "CI", TESTS, dry, NOW) == 0
+def readout(gh: FakeGh, budget: float, capsys: pytest.CaptureFixture[str], dry: bool = False,
+            workflow: str = "CI") -> str:
+    assert ci_health.run(ci_health.GitHub("OWNER/NAME", gh), budget, 1, workflow, TESTS, dry, NOW) == 0
     return capsys.readouterr().out
 
 
@@ -107,6 +109,19 @@ def test_a_test_failed_at_teardown_is_named_from_its_error_line() -> None:
     assert "tests/lexicon_household/test_lh_routes.py::test_a_household_at_the_limit_may_replace_but_not_add" in ids
     assert "tests/workshop_blind/test_route_contract.py::test_signed_out_is_401_on_every_route[GET-/api/benches-None]" \
         in ids
+
+
+def test_a_night_with_the_problems_gone_closes_their_open_issues(capsys: pytest.CaptureFixture[str]) -> None:
+    gh = FakeGh([r for r in DAY["runs"] if r["run_attempt"] == 1], {"budget": 41, "reruns": 41})
+    out = readout(gh, 60, capsys)
+    assert [a[:3] for a in gh.writes] == [["issue", "close", "41"]] * 2, gh.writes
+    assert "issues=budget closed #41;reruns closed #41" in out, out
+
+
+def test_a_window_with_no_runs_closes_nothing(capsys: pytest.CaptureFixture[str]) -> None:
+    gh = FakeGh(DAY["runs"], {"budget": 41, "reruns": 41})
+    out = readout(gh, 60, capsys, workflow="Not a workflow")
+    assert gh.writes == [] and "pr_runs=0" in out and "issues=none" in out, out
 
 
 def test_a_dry_run_reports_but_writes_nothing(capsys: pytest.CaptureFixture[str]) -> None:
