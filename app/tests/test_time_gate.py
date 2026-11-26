@@ -69,11 +69,11 @@ def pytest_run(tmp_path: Path, body: str, *args: str) -> subprocess.CompletedPro
 
 
 SLOW_CASES = {
-    "a wait in the body": "import time\n\ndef test_slow():\n    time.sleep(0.8)\n",
-    "a slow fixture": "import time, pytest\n\n@pytest.fixture\ndef slow():\n    time.sleep(0.8)\n\ndef test_slow(slow):\n    pass\n",
-    "a slow teardown": "import time, pytest\n\n@pytest.fixture\ndef slow():\n    yield\n    time.sleep(0.8)\n\ndef test_slow(slow):\n    pass\n",
+    "a wait in the body": "import time\n\ndef test_slow():\n    time.sleep(0.5)\n",
+    "a slow fixture": "import time, pytest\n\n@pytest.fixture\ndef slow():\n    time.sleep(0.5)\n\ndef test_slow(slow):\n    pass\n",
+    "a slow teardown": "import time, pytest\n\n@pytest.fixture\ndef slow():\n    yield\n    time.sleep(0.5)\n\ndef test_slow(slow):\n    pass\n",
     "phases each under the ceiling and over it together": ("import time, pytest\n\n@pytest.fixture\ndef slow():\n"
-        "    time.sleep(0.25)\n    yield\n    time.sleep(0.25)\n\ndef test_slow(slow):\n    time.sleep(0.25)\n"),
+        "    time.sleep(0.15)\n    yield\n    time.sleep(0.15)\n\ndef test_slow(slow):\n    time.sleep(0.15)\n"),
 }
 
 
@@ -88,7 +88,7 @@ def test_a_real_run_fails_a_slow_test(tmp_path: Path, body: str) -> None:
 ONCE_SLOW = ("import os, time, pytest\n\n@pytest.fixture\ndef made():\n    box = []\n    yield box\n"
              "    box.append('torn down')\n\n@pytest.mark.parametrize('n', [1])\ndef test_once(made, n):\n"
              "    assert made == [] and n == 1\n    if not os.path.exists('ran'):\n        open('ran', 'w').close()\n"
-             "        time.sleep(0.8)\n")
+             "        time.sleep(0.5)\n")
 
 
 @pytest.mark.parametrize("args", [(), ("-p", "xdist", "-n", "1")], ids=["in process", "under xdist"])
@@ -120,8 +120,8 @@ def test_a_shared_fixture_is_charged_by_name_not_to_the_test_that_reached_it(tmp
 
 
 def test_a_slow_test_after_a_shared_fixture_is_still_charged(tmp_path: Path) -> None:
-    body = ("import time, pytest\n\n@pytest.fixture(scope='session')\ndef tree():\n    time.sleep(0.3)\n\n"
-            "def test_first(tree):\n    pass\n\ndef test_slow(tree):\n    time.sleep(0.8)\n")
+    body = ("import time, pytest\n\n@pytest.fixture(scope='session')\ndef tree():\n    time.sleep(0.1)\n\n"
+            "def test_first(tree):\n    pass\n\ndef test_slow(tree):\n    time.sleep(0.5)\n")
     run = pytest_run(tmp_path, body)
     assert run.returncode == 1 and "test_slow took" in run.stdout and "test_first took" not in run.stdout, run.stdout
 
