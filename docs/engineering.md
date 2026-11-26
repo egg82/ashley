@@ -93,8 +93,10 @@ only the first): name a test helper `<suite>_support.py` after its suite.
 and starts no single heading or bold lead in `docs/decisions/`, or when the index and those files' `##` headings disagree.
 
 **Scope and test budget.** Ashley is one app with an HTTP API, a client and a few pods, tested by about 20,000 tests.
-A pull request's checks take about 5 minutes of wall clock, and the `tests` job's `timeout-minutes` in `ci.yml` is
-each shard's budget: a shard that outgrows it is a defect to fix, never a timeout to raise. Measure against the outside
+A pull request's checks have a budget of 5 minutes of wall clock, and the `tests` job's `timeout-minutes` in `ci.yml` is
+each shard's: a shard that outgrows it is a defect to fix, never a timeout to raise. Each night
+`.github/workflows/ci-health.yml` (`tools/ci_health.py`) compares the last week's pull-request runs with that budget
+and lists every run that passed only on a rerun after a test failed, keeping one open issue for each. Measure against the outside
 figure, a unit test in milliseconds and 0.05 s at most (PaperMC's whole CI, compile included, runs about 7,500 tests in
 under 7 minutes), never against this suite's own past.
 
