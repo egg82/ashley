@@ -1,7 +1,7 @@
 """The nightly CI readout (tools/ci_health.py) over one real day of pull-request runs (`ci_health_captured/`, captured
 from `gh` with only the fields it reads): it names the tests whose first attempt failed in runs that passed on rerun,
-says so when a rerun's log names no test, compares the day's wall clock with the budget, and keeps one issue per
-problem, updating an open one rather than opening another."""
+reads a test failed at teardown from its ERROR line, says so when a rerun's log names no test, compares the day's wall
+clock with the budget, and keeps one issue per problem, updating an open one rather than opening another."""
 import json
 import re
 import statistics
@@ -96,6 +96,17 @@ def test_a_day_with_no_rerun_and_under_budget_writes_nothing(capsys: pytest.Capt
     gh = FakeGh([r for r in DAY["runs"] if r["run_attempt"] == 1])
     out = readout(gh, 60, capsys)
     assert gh.writes == [] and "reruns_passed=0" in out and "issues=none" in out, out
+
+
+def test_a_test_failed_at_teardown_is_named_from_its_error_line() -> None:
+    """pytest reports a teardown failure, the per-test time ceiling's among them, as ERROR and never FAILED: a real
+    shard's summary where the ceiling failed nine tests and nothing else did."""
+    log = (Path(__file__).parent / "ci_health_captured" / "time-gate-errors.log").read_text()
+    ids = ci_health.failing_tests(log)
+    assert len(ids) == 9 and "FAILED" not in log, ids
+    assert "tests/lexicon_household/test_lh_routes.py::test_a_household_at_the_limit_may_replace_but_not_add" in ids
+    assert "tests/workshop_blind/test_route_contract.py::test_signed_out_is_401_on_every_route[GET-/api/benches-None]" \
+        in ids
 
 
 def test_a_dry_run_reports_but_writes_nothing(capsys: pytest.CaptureFixture[str]) -> None:
