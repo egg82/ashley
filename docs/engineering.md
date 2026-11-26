@@ -107,8 +107,10 @@ snapshot assertions. One-off scripts get none.
 Each test gets a wall-clock ceiling in CI over its setup, call and teardown (`tests/time_gate.py`, `TEST_CEILING_S`,
 judged only where `TIME_GATE=1`, since a busy workstation's load is not the code's). A fixture shared across tests is
 timed by name against its own ceiling, since under xdist which test reaches it first is chance. What the gate excuses
-today is `tests/time_gate_held.py`, which may only shrink. Each shard's log ends with the gate's margin, every test
-over half the ceiling by the gate's own measure; a test there is one to speed up before it fails a run. Time never
+today is `tests/time_gate_held.py`, which may only shrink. A test that passes over the ceiling runs once more straight away
+and fails only if it is over again, since a runner slowing a whole shard at once is not the code. Each shard's log ends
+with the gate's margin, every test over half the ceiling by the gate's own measure and every test that passed only when
+timed again; a test there is one to speed up before it fails a run. Time never
 comes from the wall in a test: a timeout, lease
 or retry takes an injected value (the lease runs on `tests/virtual_time.py`'s jumping loop against `tests/etcd_fake.py`), and a dependency that is down fails at once (`contract_support.down_database` is the
 real pool over a closed port with 0.1 s timeouts). Each shard runs two xdist workers on its four vCPUs, leaving the

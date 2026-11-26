@@ -1,6 +1,7 @@
 """The per-test wall-clock ceiling (tests/time_gate.py) can fail: the verdict functions say so on both sides of their
 ceilings, the hook is armed in this run, and real pytest runs go red on a test that waits, a slow fixture and a slow
-teardown, name a slow shared fixture rather than the test that happened to reach it, and pass a fast test."""
+teardown, name a slow shared fixture rather than the test that happened to reach it, and pass a fast test. A test over
+the ceiling once is timed again straight away, and passes with a note if it comes in under; a failing test is not rerun."""
 
 import gc
 import os
@@ -56,14 +57,14 @@ def test_a_held_entry_excuses_only_itself() -> None:
     assert time_gate.too_slow("tests/x.py::not_held", 99.0)
 
 
-def pytest_run(tmp_path: Path, body: str) -> subprocess.CompletedProcess[str]:
+def pytest_run(tmp_path: Path, body: str, *args: str) -> subprocess.CompletedProcess[str]:
     tmp_path.mkdir(exist_ok=True)
     (tmp_path / "test_probe.py").write_text(body)
     # No plugin autoload: loading xdist, hypothesis and timeout is most of a child session's start.
     env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": str(TESTS), "TEST_CEILING_S": "0.4", "TEST_SHARED_CEILING_S": "0.6",
            "TIME_GATE": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
     return subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "time_gate", "-p", "no:cacheprovider", "--rootdir", str(tmp_path), str(tmp_path)],
+        [sys.executable, "-m", "pytest", "-q", "-p", "time_gate", "-p", "no:cacheprovider", "--rootdir", str(tmp_path), *args, str(tmp_path)],
         capture_output=True, text=True, env=env, cwd=tmp_path, check=False)
 
 
@@ -80,6 +81,32 @@ SLOW_CASES = {
 def test_a_real_run_fails_a_slow_test(tmp_path: Path, body: str) -> None:
     run = pytest_run(tmp_path, body)
     assert run.returncode == 1 and "per-test ceiling" in run.stdout and "test_slow took" in run.stdout, run.stdout
+    assert "timed again" in run.stdout, "failed on its first sample, without timing it again"
+
+
+# Timed again, the test must get a fixture set up afresh, not the first run's torn-down one, and keep its parameter.
+ONCE_SLOW = ("import os, time, pytest\n\n@pytest.fixture\ndef made():\n    box = []\n    yield box\n"
+             "    box.append('torn down')\n\n@pytest.mark.parametrize('n', [1])\ndef test_once(made, n):\n"
+             "    assert made == [] and n == 1\n    if not os.path.exists('ran'):\n        open('ran', 'w').close()\n"
+             "        time.sleep(0.8)\n")
+
+
+@pytest.mark.parametrize("args", [(), ("-p", "xdist", "-n", "1")], ids=["in process", "under xdist"])
+def test_a_test_over_the_ceiling_once_and_under_it_timed_again_passes_and_is_named(tmp_path: Path,
+                                                                                  args: tuple[str, ...]) -> None:
+    run = pytest_run(tmp_path, ONCE_SLOW, *args)
+    assert run.returncode == 0 and "1 passed" in run.stdout, run.stdout
+    margin = run.stdout.split("time gate margin", 1)[-1]
+    assert "timed again: test_probe.py::test_once[1]" in margin, run.stdout
+    assert "1 tests over the ceiling once and under it timed again" in margin, run.stdout
+
+
+def test_a_failing_test_and_a_fast_one_run_once(tmp_path: Path) -> None:
+    body = ("import time\n\ndef test_fails():\n    open('fails', 'a').write('x')\n    time.sleep(0.5)\n    assert False\n\n"
+            "def test_fast():\n    open('fast', 'a').write('x')\n")
+    run = pytest_run(tmp_path, body)
+    assert run.returncode == 1 and "1 failed, 1 passed" in run.stdout, run.stdout
+    assert (tmp_path / "fails").read_text() == "x" and (tmp_path / "fast").read_text() == "x"
 
 
 def test_a_shared_fixture_is_charged_by_name_not_to_the_test_that_reached_it(tmp_path: Path) -> None:
