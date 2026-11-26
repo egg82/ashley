@@ -88,9 +88,11 @@ class GitHub:
 
     def failed_jobs(self, run: Run, attempt: int, name: re.Pattern[str]) -> list[FailedJob]:
         jobs = self.lines(f"actions/runs/{run.id}/attempts/{attempt}/jobs", jq=".jobs[]")
-        return [FailedJob(j["name"], j["html_url"],
-                          self.gh(["api", "--allow-escape-sequences", f"repos/{self.repo}/actions/jobs/{j['id']}/logs"]))
+        return [FailedJob(j["name"], j["html_url"], self.log(j["id"]))
                 for j in jobs if j["conclusion"] == "failure" and name.search(j["name"])]
+
+    def log(self, job_id: int) -> str:
+        return self.gh(["api", "--allow-escape-sequences", f"repos/{self.repo}/actions/jobs/{job_id}/logs"])
 
     def open_issue(self, kind: str) -> int | None:
         found = json.loads(self.gh(["issue", "list", "-R", self.repo, "--label", LABEL.format(kind), "--state", "open",
@@ -109,9 +111,10 @@ class GitHub:
 
 
 def failing_tests(log: str) -> list[str]:
-    """The test ids a job's log names: pytest's `FAILED <id>` lines, else, for a test killed by pytest-timeout (which
-    prints no summary), the last test frame in the stack it dumps after its banner."""
-    found = list(dict.fromkeys(re.findall(r"\bFAILED (\S+::\S+)", log)))
+    """The test ids a job's log names: pytest's `FAILED <id>` and `ERROR <id>` lines (a teardown failure, the per-test
+    time ceiling's among them, is an ERROR), else, for a test killed by pytest-timeout (which prints no summary), the
+    last test frame in the stack it dumps after its banner."""
+    found = list(dict.fromkeys(re.findall(r"\b(?:FAILED|ERROR) (\S+::\S+)", log)))
     if found or "Timeout +" not in log:
         return found
     frames = re.findall(r'/(tests/[\w/.-]+\.py)", line \d+, in (test_\w+)', log.split("Timeout +", 1)[1])
