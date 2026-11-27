@@ -13,7 +13,9 @@ An empty transcript ends the run quietly: run end and nothing else. What she hea
 nothing played and the conversation not continued, so a false wake records one utterance and no more. A pending reply (no words: her answer comes through
 the outbox from the runner that finishes her turn) ends it after intent end, with nothing played. A failure sends an error event (`code`, `message`)
 and run end: `stt-provider-unavailable` when no transcription route answered, `intent-failed` when her reply was refused
-or unavailable, `tts-failed` when the clip could not be stored. Once there is a transcript, her voice's route is warmed
+or unavailable, `tts-failed` when the clip could not be stored. At the wake, while the person is still talking, the
+model her reply will ask has her turn's tools, stable prompt and reply schema read into its prompt cache
+(`Pipeline.warm`, `first_step.warm`), so her reply reads them rather than writing them. Once there is a transcript, her voice's route is warmed
 (`Inference.warm`) while the reply is made, so the clip's fetch finds a connection open. Before she is asked, the
 voice's speaker step (`identify.Identify`) names who spoke, as the Inbound's `heard_as`, or no one.
 
@@ -23,7 +25,8 @@ Open screens are told through `Mark`: listening to the transcript, speaking from
 
 Logs `voice.run` once per run: device, outcome (`ok`, `room_speaker`, `empty`, `silent`, `pending`, `aborted`, the
 failure's reason, or `error` after `voice.run_error` with the traceback), `says` (`reply`, `offer` or `none`, once she
-answered), `ask` (`none`, `time` or `date`: the fixed ask the reply names, counted only), clip id, `stt_provider` and `stt_model` (the route
+answered), `ask` (`none`, `time` or `date`: the fixed ask the reply names, counted only), `primed` (where the warm-up stood as she
+was asked: `ready`, `running` or `none`), clip id, `stt_provider` and `stt_model` (the route
 that transcribed), and `wake_to_stt_end_ms` (speech plus the end-of-speech wait), `stt_ms` (end of speech to transcript) and `respond_ms`, each present only once reached. The clip
 route logs `voice.clip` with the TTS route and timings. Never audio or text."""
 
@@ -68,7 +71,8 @@ _MESSAGES = {
 class Pipeline:
     """What every run shares: where clip URLs point (`clip_base_url`, no trailing slash), the end-of-speech timings,
     the turn loop, the room-speaker player (None for none), a fresh VAD per run, the
-    voice match's policy (`voice.json`'s `speaker`) and how long a reply is estimated to play."""
+    voice match's policy (`voice.json`'s `speaker`), how long a reply is estimated to play, and the warm-up of the turn
+    loop's model for a wake's turn (`first_step.warm`; True when her prompt was cached)."""
 
     clip_base_url: str
     end_of_speech: EndOfSpeech
@@ -77,6 +81,7 @@ class Pipeline:
     detector: Callable[[], Detector]
     speaker: MatchPolicy
     playback: Playback
+    warm: Callable[[Inbound], Awaitable[bool]]
 
 
 class Run:
@@ -95,6 +100,8 @@ class Run:
         self._says: dict[str, str] = {}
         self._clip: int | None = None
         self._warming: asyncio.Task[None] | None = None
+        self._primed: dict[str, str] = {}
+        self._priming: asyncio.Future[bool] | None = None
         self._identify = Identify(satellite.device, pipeline.speaker)
         self._mark = Mark(satellite.device.household_id, pipeline.playback)
 
@@ -107,6 +114,7 @@ class Run:
     async def go(self) -> None:
         outcome = "aborted"
         self._mark.listening()
+        self._priming = _kept(self._pipeline.warm(self._inbound(".", None)))
         try:
             outcome = await self._carry()
         except Exception:
@@ -116,7 +124,7 @@ class Run:
             self._mark.heard()
             self._identify.close()
             logs.info(log, "voice.run", device=self._satellite.device.id, outcome=outcome, clip=self._clip, **self._stt,
-                      **self._says, **self._ms)
+                      **self._says, **self._primed, **self._ms)
 
     async def _carry(self) -> str:
         self._send(Event.VOICE_ASSISTANT_RUN_START)
@@ -140,6 +148,7 @@ class Run:
         self._send(Event.VOICE_ASSISTANT_INTENT_START)
         self._warming = asyncio.create_task(services.get(Inference).warm("speak"))
         heard_as = await self._identify.speaker()
+        self._primed = {"primed": _primed(self._priming)}
         started = time.perf_counter()
         try:
             out = await self._pipeline.respond(self._inbound(text, heard_as))
@@ -220,6 +229,25 @@ class Run:
 
     def _send(self, event: Event, data: dict[str, str] | None = None) -> None:
         self._link.send_event(event, data)
+
+
+_kept_tasks: set[asyncio.Future[bool]] = set()
+
+
+def _kept(work: Awaitable[bool]) -> asyncio.Future[bool]:
+    """`work` run on its own until it ends, even past the run that started it (asyncio holds tasks only weakly)."""
+    task = asyncio.ensure_future(work)
+    _kept_tasks.add(task)
+    task.add_done_callback(_kept_tasks.discard)
+    return task
+
+
+def _primed(priming: asyncio.Future[bool] | None) -> str:
+    """Where the wake's warm-up stood as she was asked: `ready` (her prompt is in the model's cache), `running`, or
+    `none` (nothing was cached: no provider with a prompt cache, or it failed)."""
+    if priming is None or not priming.done():
+        return "running"
+    return "ready" if not priming.cancelled() and priming.result() else "none"
 
 
 def _ms_since(start: float, end: float | None = None) -> int:

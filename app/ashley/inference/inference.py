@@ -188,6 +188,16 @@ class Inference(Service):
         if task not in ("speak", "embed", "voiceprint"):
             raise ValueError(f"only speak, embed and voiceprint are warmed: {task!r}")
 
+    async def prime(self, task: Task, prompt: Prompt, output: type[BaseModel], *, household_id: int) -> bool:
+        """Have the route a `step` of `task` for `household_id` would try first now read `prompt`'s cached prefix (its
+        tools, the stable part of the route's system prompt, and `output`'s schema) into its provider's prompt cache
+        (`Provider.prime`), so a step soon after with the same prefix reads it instead of writing it; `prompt.messages`
+        are not sent. True when a call was made and answered. A call made is billed like any other: one spend row and
+        one `inference.call` with `primed` true. A failure is recorded and never rests the provider, and a provider
+        with no prompt cache sends and bills nothing. Best effort: never raises, except ValueError (before anything)
+        for an unknown task or one in `model.TOOLLESS` with tools. This default primes nothing."""
+        return False
+
 
 class NullInference(Inference):
     """Answers nothing: what an unwired process sees. Every call raises InferenceUnavailable, so a missing

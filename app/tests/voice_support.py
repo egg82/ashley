@@ -158,6 +158,16 @@ class FakeTurnLoop:
     follows: bool = False
     says: Says = "reply"
     ask: Ask = "none"
+    warmed: list[Inbound] = field(default_factory=list[Inbound])
+    warms: bool = True
+    warmed_gate: asyncio.Event | None = None
+
+    async def warm(self, inbound: Inbound) -> bool:
+        """`Pipeline.warm`: records the Inbound, answers `warms` once `warmed_gate` is set (at once when None)."""
+        self.warmed.append(inbound)
+        if self.warmed_gate is not None:
+            await self.warmed_gate.wait()
+        return self.warms
 
     async def __call__(self, inbound: Inbound) -> Outbound:
         self.asked.append(inbound)
@@ -185,7 +195,7 @@ def pipeline(loop: FakeTurnLoop, speaker: FakeSpeaker | None = None,
     """Speech for 3 frames then quiet, unless `probabilities` says otherwise."""
     script = [SPEECH] * 3 if probabilities is None else probabilities
     return Pipeline("https://ashley.test", TIMINGS, loop, speaker, lambda: Scripted(script), policy,
-                    Playback(0.0, 1000.0))
+                    Playback(0.0, 1000.0), loop.warm)
 
 
 async def settle() -> None:

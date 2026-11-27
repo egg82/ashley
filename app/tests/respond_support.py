@@ -155,11 +155,17 @@ class FakeTools(Tools):
 @dataclass
 class FakeInference(Inference):
     """Answers each step from `script`, in order: a ToolCalls, a reply (a Reply, or another model re-read as the step's
-    `output`), or an exception to raise. `tasks` and `prompts` are what each step was asked."""
+    `output`), or an exception to raise. `tasks` and `prompts` are what each step was asked; `primed` what each `prime`
+    was asked, as (task, prompt, household id)."""
 
     script: list[ToolCalls | BaseModel | Exception] = field(default_factory=list[ToolCalls | BaseModel | Exception])
     prompts: list[Prompt] = field(default_factory=list[Prompt])
     tasks: list[Task] = field(default_factory=list[Task])
+    primed: list[tuple[Task, Prompt, int]] = field(default_factory=list[tuple[Task, Prompt, int]])
+
+    async def prime(self, task: Task, prompt: Prompt, output: type[BaseModel], *, household_id: int) -> bool:
+        self.primed.append((task, prompt, household_id))
+        return True
 
     async def generate(self, task: Task, prompt: Prompt, output: type[T], *, conversation_id: int | None = None) -> T:
         raise AssertionError("respond steps, it never generates")

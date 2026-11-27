@@ -244,6 +244,17 @@ class AnthropicProvider(Provider):
         text = "".join(block.text for block in response.content if block.type == "text")
         return _decode(text, output, usage)
 
+    async def prime(self, model: str, params: Mapping[str, object], system: SystemPrompt, tools: tuple[ToolSpec, ...],
+                    output: type[BaseModel], timeout_s: float) -> Usage | None:
+        """One token asked after a one-character message, with `complete`'s tools, system prompt and output config, so
+        its first two cache breakpoints are written. The message carries no breakpoint of its own."""
+        wire_tools = anthropic_wire.tools(tools)
+        response = await _sent(lambda: self._client.messages.create(
+            model=model, max_tokens=1, timeout=timeout_s, output_config=_output_config(output, params),
+            system=anthropic_wire.system(system), messages=[{"role": "user", "content": "."}],
+            tools=wire_tools if tools else anthropic.omit))
+        return self._billed(response, model, wire_tools, system, [])
+
     def _billed(self, response: AnthropicMessage, model: str, wire_tools: list[ToolParam], system: SystemPrompt,
                 turns: list[MessageParam]) -> Usage:
         """The response's usage, logged `inference.cache_layers` with a hash of each cached layer."""

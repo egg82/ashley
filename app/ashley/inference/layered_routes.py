@@ -62,6 +62,10 @@ class LayeredRoutes(HouseholdRoutes):
         household = await self._household_of(conversation_id)
         return self._deployment if household is None else self._layered.get(household, self._deployment)
 
+    async def for_household(self, household_id: int) -> Routes:
+        await self._refresh()
+        return self._layered.get(household_id, self._deployment)
+
     async def choices(self, household_id: int) -> tuple[TaskChoices, ...]:
         chosen = await self._reads.of_household(household_id)
         wired = set(self._wired())

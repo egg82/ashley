@@ -67,6 +67,10 @@ class HouseholdRoutes(Service):
         Never raises; a read that fails is logged `inference.choices_unreadable`."""
 
     @abstractmethod
+    async def for_household(self, household_id: int) -> Routes:
+        """`for_call` for a call serving `household_id` that has no conversation yet."""
+
+    @abstractmethod
     async def choices(self, household_id: int) -> tuple[TaskChoices, ...]:
         """For `household_id`'s room: every task it may choose for, in `Task` order, then `action_judge`, shown so a
         person can see which model judges. Read from the store, not the cache, so a choice just written is shown.
@@ -84,6 +88,9 @@ class NullHouseholdRoutes(HouseholdRoutes):
     router is never given this; the room's reads raise RoutesUnavailable and every choice is refused."""
 
     async def for_call(self, conversation_id: int | None) -> Routes:
+        raise RoutesUnavailable("HouseholdRoutes is not wired")
+
+    async def for_household(self, household_id: int) -> Routes:
         raise RoutesUnavailable("HouseholdRoutes is not wired")
 
     async def choices(self, household_id: int) -> tuple[TaskChoices, ...]:

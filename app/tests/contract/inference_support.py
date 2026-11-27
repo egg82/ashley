@@ -82,10 +82,27 @@ class Asked:
     tool_choice: ToolChoice = "auto"
 
 
-class FakeProvider(Provider):
-    """Plays its script one step per call (the last step repeats once it runs out), moving the clock as the step says."""
+@dataclass(frozen=True)
+class Primed:
+    """One `Provider.prime` call as received."""
 
-    def __init__(self, name: str, script: Iterable[Step] = (), clock: Clock | None = None) -> None:
+    model: str
+    params: Mapping[str, object]
+    system: SystemPrompt
+    tools: tuple[ToolSpec, ...]
+    output: type[BaseModel]
+    timeout_s: float
+
+
+class FakeProvider(Provider):
+    """Plays its script one step per call (the last step repeats once it runs out), moving the clock as the step says.
+    `prime_script` does the same for `prime`: a Step is billed (its error raised), None is a provider with no prompt
+    cache, any other exception escapes; with no script `prime` is the base default."""
+
+    def __init__(self, name: str, script: Iterable[Step] = (), clock: Clock | None = None,
+                 prime_script: Iterable[Step | Exception | None] | None = None) -> None:
+        self._prime_script = None if prime_script is None else list(prime_script)
+        self.primed: list[Primed] = []
         self._name = name
         self._script = list(script) or [ok()]
         self._clock = clock
@@ -114,6 +131,23 @@ class FakeProvider(Provider):
             raise step.error
         assert step.usage is not None, "a returned reply carries the usage the provider reported"
         return Completion(output.model_validate(step.data), step.usage)
+
+
+    async def prime(self, model: str, params: Mapping[str, object], system: SystemPrompt, tools: tuple[ToolSpec, ...],
+                    output: type[BaseModel], timeout_s: float) -> Usage | None:
+        if self._prime_script is None:
+            return await super().prime(model, params, system, tools, output, timeout_s)
+        self.primed.append(Primed(model, params, system, tools, output, timeout_s))
+        step = self._prime_script[min(len(self.primed), len(self._prime_script)) - 1]
+        if isinstance(step, Exception):
+            raise step
+        if step is None:
+            return None
+        if self._clock is not None:
+            self._clock.advance(step.seconds)
+        if step.error is not None:
+            raise step.error
+        return step.usage
 
 
 class FakeLedger(SpendLedger):

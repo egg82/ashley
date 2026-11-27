@@ -252,6 +252,16 @@ interface (Wyoming for faster-whisper). The pipeline is the voice channel adapte
   inside the noise, so neither a tool-using sub-agent nor tools offered on demand is a latency fix: each adds a model
   round (about 1 s) when a tool is needed. Both stay token levers ([#145](https://github.com/egg82/ashley/issues/145)). Dropping the JSON schema changed nothing, nor did a
   spoken-only schema (half the output tokens, no faster). `effort: low` stays: without it a reply ran to 300 tokens and 2.4 s.
+- **The wake warms her reply's prompt cache.** Wakes are minutes or days apart, so the reply call always found the
+  cache cold: every real wake's first call wrote about 14k tokens and read none, and on the real command prompt a cold
+  call's first token came at 3.2 s against 0.7 to 1.0 s warm. So at the wake, while the person is still talking, the
+  run builds her turn's first step as `respond` would (`first_step.built`, the prompt-sizes eval's builder too) and has
+  the model it will ask read the tools, the stable prompt and the reply schema (`Inference.prime`, one token billed
+  like any call). The warm-up is built with no voice match; tools key on the channel, not the match, and the stable
+  prompt moves only by standing facts the matched speaker may see, so a match costs at most that part.
+  `voice.run`'s `primed` says whether it was `ready` when she was asked. Rejected: Anthropic's one-hour cache TTL
+  (wakes are often further apart, and it costs twice a five-minute write), and streaming `spoken` into speech first
+  (measured: `spoken` closes a median 0.3 s before the reply ends, a seventh of what the cold cache cost).
 - **Rejected: HA's Assist pipeline pointed at her.** Text-only input rules out voice identification, and
   continuing a conversation hinges on HA's heuristics (a reply ending in "?").
 
