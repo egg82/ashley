@@ -1,6 +1,6 @@
-"""The prompt-sizes eval wired as the app is: her real turn's system prompt and tools (`channels.turn_prompt.build`
-over `Landing`, the tools as `tool_loop.answer` offers them) for a household's speaker, counted with the Anthropic key
-the app uses (the deployment's provider-key connection, else the env's). Reads only: no turn is stored."""
+"""The prompt-sizes eval wired as the app is: her real turn's system prompt and tools (`channels.first_step.built`)
+for a household's speaker, counted with the Anthropic key the app uses (the deployment's provider-key connection, else
+the env's). Reads only: no turn is stored."""
 
 import logging
 import time
@@ -15,9 +15,7 @@ from anthropic import AsyncAnthropic, Omit, omit
 from anthropic.types import MessageParam, MessageTokensCount, OutputConfigParam, TextBlockParam, ToolParam
 
 from .. import logs, services
-from ..channels import aside, speaker, turn_prompt
-from ..channels.landing import Landing
-from ..channels.limits import load as load_limits
+from ..channels import first_step
 from ..channels.model import Inbound, Kind
 from ..connections.connections import Connections
 from ..inference import anthropic_wire
@@ -132,13 +130,10 @@ async def run(count: Count, routes: Routes, options: Options, json_path: Path | 
     started = time.perf_counter()
     route, first = counted_route(routes, options.kind)
     ask = inbound(options.kind, options.channel, options.household_id, await _person(options), options.ask)
-    who = await speaker.who(ask)
-
-    prompted = await turn_prompt.build(ask, who, Landing(ask, (0, 0), load_limits()), turn_prompt.nothing_carried())
+    step = await first_step.built(ask)
+    prompted, offered = step.prompted, step.tools
     variant = route.variant if route.variant in prompted.system else "default"
-    catalogue = prompted.catalogue or Catalogue((), None)
-    specs, owners = catalogue.specs, catalogue.owners
-    offered = aside.offered(specs) if ask.holds and specs else specs
+    owners = (prompted.catalogue or Catalogue((), None)).owners
     sizes = await measure(count, route.model, persona.stable_parts(ask.kind, prompted.context)[variant],
                           prompted.system[variant], offered, owners, anthropic_wire.reply_schema(Reply))
     meta = Meta(options.kind, options.channel, route.provider, route.model, first, len(options.ask), options.variant)

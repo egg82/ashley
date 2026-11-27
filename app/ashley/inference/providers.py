@@ -37,7 +37,7 @@ arrive with no tools offered or under `none` fail `invalid_output`. History in e
 
 import json
 import logging
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Mapping
 from importlib import resources
 from typing import Literal, TypeVar
 
@@ -45,7 +45,7 @@ import anthropic
 import openai
 from anthropic import AsyncAnthropic
 from anthropic.types import Message as AnthropicMessage
-from anthropic.types import OutputConfigParam
+from anthropic.types import MessageParam, OutputConfigParam, ToolParam
 from openai import AsyncOpenAI, Omit, omit
 from openai.types import CompletionUsage, ReasoningEffort
 from openai.types.chat import ChatCompletion
@@ -195,6 +195,22 @@ def _responses_unfinished(response: Response, usage: Usage | None) -> ProviderFa
     return None
 
 
+async def _sent(request: Callable[[], Awaitable[object]]) -> AnthropicMessage:
+    """The Messages API's answer to the request `request` builds and sends, every way either can fail as a
+    ProviderFailed."""
+    try:
+        response = _untrusted(await request())
+    except anthropic.APIStatusError as e:
+        raise ProviderFailed(status_failure(e.status_code), _status_reason(e)) from e
+    except anthropic.APIConnectionError as e:
+        raise ProviderFailed("unavailable", type(e).__name__) from e
+    except Exception as e:
+        raise ProviderFailed("error", type(e).__name__) from e
+    if not isinstance(response, AnthropicMessage):
+        raise ProviderFailed("error", f"unexpected response body: {type(response).__name__}")
+    return response
+
+
 class AnthropicProvider(Provider):
     def __init__(self, name: str, client: AsyncAnthropic) -> None:
         self._name = name
@@ -210,30 +226,15 @@ class AnthropicProvider(Provider):
     async def complete(self, model: str, params: Mapping[str, object], system: SystemPrompt, messages: tuple[Entry, ...],
                        tools: tuple[ToolSpec, ...], tool_choice: ToolChoice, output: type[T],
                        timeout_s: float) -> Completion[T] | ToolUse:
-        config = _output_config(output, params)
         turns = anthropic_wire.cache_tail(anthropic_wire.messages(messages))
         wire_tools = anthropic_wire.tools(tools)
-        try:
-            sent = anthropic_wire.with_moment(turns, system.moment)
-            response = _untrusted(await self._client.messages.create(
-                model=model, max_tokens=_int_param(params, "max_tokens"), timeout=timeout_s, output_config=config,
-                system=anthropic_wire.system(system),
-                messages=sent,
-                tools=wire_tools if tools else anthropic.omit,
-                tool_choice=anthropic_wire.tool_choice(tool_choice) if tools else anthropic.omit))
-        except anthropic.APIStatusError as e:
-            raise ProviderFailed(status_failure(e.status_code), _status_reason(e)) from e
-        except anthropic.APIConnectionError as e:
-            raise ProviderFailed("unavailable", type(e).__name__) from e
-        except Exception as e:
-            raise ProviderFailed("error", type(e).__name__) from e
-        if not isinstance(response, AnthropicMessage):
-            raise ProviderFailed("error", f"unexpected response body: {type(response).__name__}")
-        usage = Usage(response.usage.input_tokens, response.usage.output_tokens,
-                      response.usage.cache_read_input_tokens or 0, response.usage.cache_creation_input_tokens or 0)
-        logs.info(log, "inference.cache_layers", provider=self._name, model=model, turns=len(turns),
-                  cache_read=usage.cache_read_tokens, cache_write=usage.cache_write_tokens,
-                  **anthropic_wire.layer_hashes(wire_tools, system.stable, turns))
+        response = await _sent(lambda: self._client.messages.create(
+            model=model, max_tokens=_int_param(params, "max_tokens"), timeout=timeout_s,
+            output_config=_output_config(output, params), system=anthropic_wire.system(system),
+            messages=anthropic_wire.with_moment(turns, system.moment),
+            tools=wire_tools if tools else anthropic.omit,
+            tool_choice=anthropic_wire.tool_choice(tool_choice) if tools else anthropic.omit))
+        usage = self._billed(response, model, wire_tools, system, turns)
         if response.stop_reason == "refusal":
             raise ProviderRefused("the model refused", usage)
         if response.stop_reason == "max_tokens":
@@ -242,6 +243,16 @@ class AnthropicProvider(Provider):
             return _tool_use(anthropic_wire.calls(response), tools, tool_choice, usage)
         text = "".join(block.text for block in response.content if block.type == "text")
         return _decode(text, output, usage)
+
+    def _billed(self, response: AnthropicMessage, model: str, wire_tools: list[ToolParam], system: SystemPrompt,
+                turns: list[MessageParam]) -> Usage:
+        """The response's usage, logged `inference.cache_layers` with a hash of each cached layer."""
+        usage = Usage(response.usage.input_tokens, response.usage.output_tokens,
+                      response.usage.cache_read_input_tokens or 0, response.usage.cache_creation_input_tokens or 0)
+        logs.info(log, "inference.cache_layers", provider=self._name, model=model, turns=len(turns),
+                  cache_read=usage.cache_read_tokens, cache_write=usage.cache_write_tokens,
+                  **anthropic_wire.layer_hashes(wire_tools, system.stable, turns))
+        return usage
 
 
 class OpenAICompatibleProvider(Provider, Transcriber):
