@@ -1,6 +1,7 @@
 """The Inference implementation: the task's routes in order, each provider resting after it fails `unavailable`,
 every call recorded in the spend ledger. Contract: `Inference`."""
 
+import logging
 import time
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
@@ -8,6 +9,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
+from .. import logs
 from .catalogue import ModelCatalogue
 from .embed_router import EmbedCalls
 from .embedding import EmbedRole, Embedded, EmbedTask
@@ -28,6 +30,7 @@ from .voiceprint import Voiceprint, VoiceprintTask
 from .voiceprint_router import VoiceprintCalls
 
 T = TypeVar("T", bound=BaseModel)
+log = logging.getLogger("ashley.inference")
 
 
 @dataclass
@@ -96,6 +99,32 @@ class RoutedInference(Inference):
             raise ValueError(f"task {task} offers no tools")
         return await self._walk(task, prompt, output, conversation_id)
 
+    async def prime(self, task: Task, prompt: Prompt, output: type[BaseModel], *, household_id: int) -> bool:
+        _check_task(task)
+        if prompt.tools and task in TOOLLESS:
+            raise ValueError(f"task {task} offers no tools")
+        try:
+            await self._roster.refresh()
+            routes = None if self._households is None else await self._households.for_household(household_id)
+            first = next(iter(self._roster.candidates(task, Provider, routes, bool(prompt.tools))), None)
+            return first is not None and await self._primed(task, *first, prompt, output)
+        except Exception:
+            logs.error(log, "inference.prime_error", exc=True, task=task)
+            return False
+
+    async def _primed(self, task: Task, route: Route, provider: Provider, prompt: Prompt, output: type[BaseModel]) -> bool:
+        started = self._roster.clock()
+        try:
+            usage = await provider.prime(route.model, route.params, prompt.system_for(route.variant), prompt.tools,
+                                         output, route.timeout_s)
+        except ProviderFailed as e:
+            await self._roster.record(task, route, e.failure, e.usage, started, _primed_fields(e.usage), reason=str(e))
+            return False
+        if usage is None:
+            return False
+        await self._roster.record(task, route, "ok", usage, started, _primed_fields(usage))
+        return True
+
     async def generate(self, task: Task, prompt: Prompt, output: type[T], *, conversation_id: int | None = None) -> T:
         _check_task(task)
         if prompt.tools:
@@ -159,6 +188,11 @@ class RoutedInference(Inference):
                                   {"input_tokens": usage and usage.input_tokens,
                                    "output_tokens": usage and usage.output_tokens, "tool_calls": tool_calls},
                                   conversation_id, reason)
+
+
+def _primed_fields(usage: Usage | None) -> dict[str, object]:
+    return {"input_tokens": usage and usage.input_tokens, "output_tokens": usage and usage.output_tokens,
+            "tool_calls": 0, "primed": True}
 
 
 def _check_task(task: Task) -> None:

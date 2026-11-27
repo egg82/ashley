@@ -99,3 +99,11 @@ class Provider(Wired):
         (`Prompt`'s rules). Tool calls sent with no tools offered, or under `none`, fail `invalid_output`.
         Raises ProviderRefused when the model declines, ProviderFailed for every other way it produces nothing usable;
         never anything else."""
+
+    async def prime(self, model: str, params: Mapping[str, object], system: SystemPrompt, tools: tuple[ToolSpec, ...],
+                    output: type[BaseModel], timeout_s: float) -> Usage | None:
+        """Have `model` read the prefix a `complete` with these `tools`, `system` and `output` caches (the tools, the
+        system prompt's stable part and the schema), so such a call soon after reads it instead of writing it. Returns
+        what was billed; None when this provider has no prompt cache to fill, which is this default, and then nothing
+        was sent. Raises ProviderFailed as `complete` does."""
+        return None

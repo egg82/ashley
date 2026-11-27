@@ -10,7 +10,7 @@ from typing import Any
 import httpx2
 
 from . import logs, services
-from .channels import bench_job, errand, outbox, resume
+from .channels import bench_job, errand, first_step, outbox, resume
 from .channels.discord import bot as discord_bot, client as discord_client, config as discord_config
 from .channels.discord.following import follow
 from .channels.discord.postgres_seen import PostgresSeen
@@ -173,7 +173,7 @@ async def _satellites(settings: Settings) -> None:
     """The satellite connections under the lease, each room speaker played on its satellite's household's house."""
     config = voice_config.load()
     pipeline = Pipeline(settings.voice_clip_base_url, config.end_of_speech, respond, play_for, vad.micro_vad,
-                        config.speaker, config.playback)
+                        config.speaker, config.playback, first_step.warm)
     key = KeyInForce(lambda: services.get(Connections), settings.esphome_noise_psk)
 
     async def connect(satellite: Satellite) -> EsphomeConnection:
