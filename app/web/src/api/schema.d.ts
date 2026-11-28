@@ -6788,11 +6788,11 @@ export interface components {
         };
         /**
          * TurnUndone
-         * @description The turn's changes are all taken back: `undone`, their `seq`s, newest first.
+         * @description The turn's changes are all taken back: `undone_seqs`, their `seq`s, newest first.
          */
         TurnUndone: {
-            /** Undone */
-            undone: number[];
+            /** Undone Seqs */
+            undone_seqs: number[];
         };
         /**
          * UndoDone

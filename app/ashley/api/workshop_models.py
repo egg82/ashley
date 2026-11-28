@@ -316,9 +316,9 @@ class UndoTurnRequest(BaseModel):
 
 
 class TurnUndone(BaseModel):
-    """The turn's changes are all taken back: `undone`, their `seq`s, newest first."""
+    """The turn's changes are all taken back: `undone_seqs`, their `seq`s, newest first."""
 
-    undone: list[int]
+    undone_seqs: list[int]
 
 
 class TurnRefusal(BaseModel):

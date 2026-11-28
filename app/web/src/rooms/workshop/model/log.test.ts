@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BenchDetail, LoggedCommand } from '../../../api/types';
-import { stampsOf, stepsOf, undoTarget } from './log.ts';
+import { stampsOf, stepsOf, turnUndo, undoTarget } from './log.ts';
 
 const cmd = (seq: number, type: LoggedCommand['type'], author: LoggedCommand['author'], piece: number | null,
              outcome: LoggedCommand['outcome'] = 'accepted'): LoggedCommand =>
@@ -59,4 +59,12 @@ test('the stage log lists only accepted changes an Undo can take back', () => {
 test('the stage log keeps a change an Undo took back, carrying that Undo', () => {
   const undone: LoggedCommand = { ...cmd(2, 'edit', 'person', 1), undone_by: 3 };
   assert.deepEqual(stepsOf([cmd(1, 'add', 'person', 1), undone, cmd(3, 'undo', 'person', 1)]).map((s) => s.rows.map((r) => r.undone_by)), [[3], [null]]);
+});
+
+test('"Undo this turn" is on one of her turns, off when every change of it is already undone, and absent elsewhere', () => {
+  const her = (seq: number, undone: number | null): LoggedCommand => ({ ...inTurn(7, cmd(seq, 'add', 'ashley', seq)), undone_by: undone });
+  assert.deepEqual(turnUndo({ turn: 7, rows: [her(2, null), her(3, 9)] }), { seq: 2, off: null });
+  assert.deepEqual(turnUndo({ turn: 7, rows: [her(2, 8), her(3, 9)] }), { seq: 2, off: 'Already undone' });
+  assert.equal(turnUndo({ turn: null, rows: [cmd(1, 'add', 'person', 1)] }), null);
+  assert.equal(turnUndo({ turn: null, rows: [cmd(1, 'add', 'ashley', 1)] }), null);
 });

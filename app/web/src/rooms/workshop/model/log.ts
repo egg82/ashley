@@ -57,3 +57,10 @@ export function stepsOf(recent: readonly LoggedCommand[]): Step[] {
   }
   return steps.reverse().map((s) => ({ ...s, rows: s.rows.reverse() }));
 }
+
+/** The step's "Undo this turn": only one of her turns has it, naming a command of the turn; `off` says why it can't be pressed. */
+export function turnUndo(step: Step): { seq: number; off: string | null } | null {
+  const first = step.rows[0];
+  if (step.turn === null || !first || first.author !== 'ashley') return null;
+  return { seq: first.seq, off: step.rows.every((c) => c.undone_by !== null) ? 'Already undone' : null };
+}

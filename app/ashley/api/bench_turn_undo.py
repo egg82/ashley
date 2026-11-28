@@ -34,4 +34,4 @@ async def undo_turn(signed_in: Person, bench_id: int, body: UndoTurnRequest) -> 
         refused = TurnRefused(code="refused", reason=done.refused[0][1], detail="nothing was undone",
                               refused=[TurnRefusal(seq=s, reason=r) for s, r in done.refused])
         return JSONResponse(status_code=409, content=refused.model_dump())
-    return TurnUndone(undone=list(done.undone))
+    return TurnUndone(undone_seqs=list(done.undone))

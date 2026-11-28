@@ -3,8 +3,8 @@
 import { signal } from '@preact/signals';
 import type { BenchDetail, LoggedCommand } from '../../../api/types';
 import { moment } from '../../memory/facts';
-import { apply } from '../model/bench';
-import { DID, stepsOf, undoTarget } from '../model/log';
+import { apply, undoWholeTurn } from '../model/bench';
+import { DID, stepsOf, turnUndo, undoTarget, type Step } from '../model/log';
 
 export const logOpen = signal(false);
 
@@ -17,6 +17,15 @@ function Row({ c, title, next }: { c: LoggedCommand; title: string | undefined; 
         ? <button class="btn sm ghost" type="button" onClick={() => void apply({ type: 'undo', seq: c.seq })}>Undo</button>
         : <span class="meta">undone</span>}
     </li>
+  );
+}
+
+function TurnUndo({ step }: { step: Step }) {
+  const turn = turnUndo(step);
+  if (!turn) return null;
+  return (
+    <button class="btn sm ghost" type="button" disabled={turn.off !== null} title={turn.off ?? 'Take back every change of this turn'}
+      onClick={() => void undoWholeTurn(turn.seq)}>{turn.off ?? 'Undo this turn'}</button>
   );
 }
 
@@ -33,6 +42,7 @@ export function StageLog({ bench }: { bench: BenchDetail }) {
         <section key={s.rows[0]!.seq} class="wlog-step">
           <h3 class={s.rows[0]!.author === 'ashley' ? 'her-meta' : 'meta'}>
             {s.rows[0]!.author === 'ashley' ? 'Ashley' : 'You'}{s.turn !== null && ` · ${s.rows.length} ${s.rows.length === 1 ? 'change' : 'changes'} in one turn`}
+            <TurnUndo step={s} />
           </h3>
           <ul>{s.rows.map((c) => <Row key={c.seq} c={c} title={c.piece_id === null ? undefined : titles.get(c.piece_id)} next={c.seq === next} />)}</ul>
         </section>

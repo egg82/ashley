@@ -18,8 +18,9 @@ OWNER = Owner(ALANA.household_id, ALANA.id)
 
 def hers(client: TestClient, bench: int, *made: Any) -> None:
     """Her accepted commands of turn 5, made through the Workshop as her tools make them."""
+    assert client.portal is not None
     for one in made:
-        applied = client.portal.call(services.get(Workshop).apply, OWNER, bench, one)  # type: ignore[union-attr]
+        applied = client.portal.call(services.get(Workshop).apply, OWNER, bench, one)
         assert applied.outcome == "accepted"
 
 
@@ -37,7 +38,7 @@ def test_the_route_undoes_every_command_of_the_turn(signed_in: As, wired: Fakes)
     command(alana, bench, ADD)
     hers(alana, bench, her("a"), her("b"), Edit(replace(HER, turn=5), 2, 1, Text("a2", "")))
     response = alana.post(f"/api/benches/{bench}/undo-turn", json={"seq": 2})
-    assert (response.status_code, response.json()) == (200, {"undone": [4, 3, 2]})
+    assert (response.status_code, response.json()) == (200, {"undone_seqs": [4, 3, 2]})
     assert titles(alana, bench) == ["parts"]
     detail = alana.get(f"/api/benches/{bench}").json()
     assert [c["seq"] for c in detail["recent"] if c["undone_by"] is not None] == [2, 3, 4]

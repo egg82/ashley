@@ -49,6 +49,13 @@ async function answer(url: string, init?: RequestInit): Promise<Response> {
     (window as unknown as { moves: unknown[] }).moves.push(c);
     return json({ piece_id: 'piece_id' in c ? c.piece_id : null, seq: ++seq });
   }
+  if (url === '/api/benches/1/undo-turn' && init?.body) {
+    const { seq: asked } = JSON.parse(String(init.body)) as { seq: number };
+    const turn = bench.recent.find((r) => r.seq === asked)?.by_turn;
+    const taken = bench.recent.filter((r) => turn != null && r.by_turn === turn && r.undone_by === null);
+    bench = { ...bench, recent: bench.recent.map((r) => (taken.includes(r) ? { ...r, undone_by: ++seq } : r)) };
+    return json({ undone_seqs: taken.map((r) => r.seq).reverse() });
+  }
   return json({ detail: 'not in the harness' }, 404);
 }
 
