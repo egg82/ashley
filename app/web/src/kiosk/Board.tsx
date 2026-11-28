@@ -6,10 +6,12 @@ import { drawPart, type PartSources } from '../components/parts/registry';
 import { reduced } from '../shell/motion';
 import type { Layout } from './layout';
 import { NARROW, rowsOf, WIDE } from './rows';
-import { kioskAttention, kioskControls, kioskHome } from './sources';
+import { kioskAttention, kioskControls, kioskHome, kioskPrinter } from './sources';
 import { Talk } from './Talk';
 
-const SOURCES: PartSources = { controls: kioskControls, home: kioskHome, attention: kioskAttention, conversation: () => <Talk /> };
+const SOURCES: PartSources = {
+  controls: kioskControls, home: kioskHome, attention: kioskAttention, printer: kioskPrinter, conversation: () => <Talk />,
+};
 
 function signature(layout: Layout): string {
   return layout.placed.map((p) => `${p.id}:${p.kind}:${p.size}`).join(',');

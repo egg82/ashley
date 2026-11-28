@@ -1,6 +1,6 @@
 // Her room as the Desk with no server behind it, for looking at the columns: `fetch` answers the routes it reads from
 // `fixtures.ts`, and the board's and the house's actions go through the real client. Query: `att` needs (default), zero
-// or unknown for the glance; `controls=fail` and `work=fail` fail those reads; `undo` undone (default), waiting_on_you or
+// or unknown for the glance; `controls=fail`, `work=fail` and `printers=fail` fail those reads; `undo` undone (default), waiting_on_you or
 // gone for what an Undo answers; `click` a selector to click once it has read. Built by
 // `node harness/desk/build.mjs <outdir>`, never into the app's bundle.
 import { render } from 'preact';
@@ -15,7 +15,7 @@ import '../../src/rooms/rooms.css';
 import '../../src/rooms/her/chat.css';
 import '../../src/rooms/her/desk.css';
 import '../../src/kiosk/kiosk.css';
-import { CONTROLS, CONVERSATION, CONVERSATION_ID, glanceOf, WORK } from './fixtures';
+import { CONTROLS, CONVERSATION, CONVERSATION_ID, glanceOf, PRINTERS, WORK } from './fixtures';
 
 const q = new URLSearchParams(location.search);
 let work = WORK;
@@ -49,6 +49,7 @@ async function answer(path: string, init?: RequestInit): Promise<Response> {
   if (path === '/api/work') return q.get('work') === 'fail' ? json({ code: 'unavailable' }, 503) : json({ entries: work });
   if (path === '/api/house/glance') return json(glanceOf(q.get('att') ?? 'needs'));
   if (path === '/api/house/controls') return q.get('controls') === 'fail' ? json({ code: 'unavailable' }, 503) : json({ controls: CONTROLS });
+  if (path === '/api/house/printers') return q.get('printers') === 'fail' ? json({ code: 'unavailable' }, 503) : json({ printers: PRINTERS });
   if (path.startsWith('/api/house/controls/') && method === 'POST') return json({ done: !path.endsWith('all-off') });
   return json({ detail: 'not in the harness' }, 404);
 }

@@ -1,5 +1,5 @@
 // The lines a conversation shows: the stored ones with what only one page knows laid over their end.
-import type { ChatAttachment, ChatConversationTurn, ChatLook, ChatRun, WireAgreed, WireReceipts } from '../../api/types';
+import type { BroughtUp, ChatAttachment, ChatConversationTurn, ChatLook, ChatRun, WireAgreed, WireReceipts } from '../../api/types';
 import { answered, owedAt, stillOn } from './owed.ts';
 
 /** Why a message of the person's got no reply. */
@@ -38,11 +38,13 @@ export interface Line {
   agreed?: WireAgreed;
   /** What the person pasted with this line, shown folded under it. */
   attachment?: ChatAttachment;
+  /** What her tools brought up on this answer, each drawn as a card under her words (`ChatConversationTurn.brought_up`). */
+  broughtUp?: readonly BroughtUp[];
 }
 
 /** A stored turn as the line it shows. */
 export function storedLine(t: ChatConversationTurn): Line {
-  return { key: `t${t.id}`, author: t.author, text: t.text, at: t.at, turn: t.id, follows: t.follows, runs: t.runs, looks: t.looks, working: t.working, continuedOn: t.continued_on ?? undefined, attachment: t.attachment ?? undefined, agree: t.agree ?? undefined, receipts: t.receipts ?? undefined, agreed: t.agreed ?? undefined };
+  return { key: `t${t.id}`, author: t.author, text: t.text, at: t.at, turn: t.id, follows: t.follows, runs: t.runs, looks: t.looks, working: t.working, continuedOn: t.continued_on ?? undefined, attachment: t.attachment ?? undefined, agree: t.agree ?? undefined, receipts: t.receipts ?? undefined, agreed: t.agreed ?? undefined, broughtUp: t.brought_up.length ? t.brought_up : undefined };
 }
 
 /** Whether one of the last `within` lines says what `one` says. */

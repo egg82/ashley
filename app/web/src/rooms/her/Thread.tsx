@@ -1,6 +1,7 @@
 // The conversation's lines, oldest first: the person's on the right in blue, hers on the left in brass, each with
 // who and when. A line of theirs she gave no reply to says why; while she works on one, a line of hers says so. A
-// stored line can be carried to Memory, or kept with its "Remember" action; Memory shows what became of it.
+// stored line can be carried to Memory, or kept with its "Remember" action; Memory shows what became of it. What her tools
+// brought up hangs under her words as cards, folded to chips once a later line exists.
 import { useCallback, useRef } from 'preact/hooks';
 import { flyInto, ghostOf } from '../../shell/carry';
 import { moment } from '../memory/facts';
@@ -15,6 +16,7 @@ import { RunDetails } from './RunDetails';
 import { AgreeButton } from './AgreeButton';
 import { Agreed, Held } from './Receipts';
 import { Facts } from './Facts';
+import { Brought } from './Brought';
 import { canKeep, keep } from './remember';
 import { VoiceMark } from '../../speech/VoiceMark';
 
@@ -40,7 +42,7 @@ function ContinuedOn({ bench, title, turn }: { bench: number; title: string; tur
   );
 }
 
-function Said({ line, name, conversation }: { line: Line; name: string; conversation: number | null }) {
+function Said({ line, name, conversation, later }: { line: Line; name: string; conversation: number | null; later: boolean }) {
   const hers = line.author === 'ashley';
   const row = useRef<HTMLDivElement>(null);
   const turn = line.turn;
@@ -67,6 +69,7 @@ function Said({ line, name, conversation }: { line: Line; name: string; conversa
         {hers && turn !== undefined && <VoiceMark turn={turn} />}
         {hers && line.receipts && <Held receipts={line.receipts} agree={line.agree} />}
         {hers && line.receipts && <Facts receipts={line.receipts} />}
+        {hers && line.broughtUp && <Brought items={line.broughtUp} folded={later} />}
         {hers && !line.receipts && line.agree !== undefined && <AgreeButton proposal={line.agree} />}
         {!hers && line.agreed && <Agreed agreed={line.agreed} />}
         {line.attachment && <Paste attachment={line.attachment} />}
@@ -99,9 +102,9 @@ export function Thread({ lines, name, thinking, conversation }: {
   if (!lines.length && !thinking) return null;
   return (
     <>
-      {lines.map((l) => l.author === 'household'
+      {lines.map((l, i) => l.author === 'household'
         ? <HouseholdLine key={l.key} id={l.turn} text={l.text} at={l.at} />
-        : <Said key={l.key} line={l} name={name} conversation={conversation} />)}
+        : <Said key={l.key} line={l} name={name} conversation={conversation} later={i < lines.length - 1} />)}
       {thinking && <Thinking />}
     </>
   );
