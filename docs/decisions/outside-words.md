@@ -452,8 +452,9 @@ turns did; the board's "On her own" lane reads it.
   `todo_change`, each for the person the action was for. Only that person, in its household, can take it; any other
   action id is 404.
 - **A delete's undo waits on a yes.** `irreversible.json` covers every delete, so `house_change` proposes it as it
-  proposes any delete she is asked for: a code-written turn of the person's (`undo.json`'s `turn` and the action's
-  summary) is stored on their web thread, the proposal is made in that turn, and the route answers `waiting_on_you`
+  proposes any delete she is asked for: a household's line (`author` `household`, `undo.json`'s `turn` and the action's
+  summary, private to the person), never a turn of the person's, is stored on their web thread; the proposal is made in
+  that turn and is the person's (`made_by`), and the route answers `waiting_on_you`
   with that conversation. Nothing is deleted until they answer yes there and `house_confirm` carries it out; the
   proposal waits in the board's `waiting` lane meanwhile.
 - **A target already gone is `gone`, not an error.** Before calling the tool, a read through the same service checks

@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 import psycopg
 import pytest
 from ashley import logs, services
+from ashley.db.pool import PoolDatabase
 from ashley.api.person import SESSION_COOKIE
 from ashley.api.work_models import WorkItem, WorkResponse
 from ashley.channels.undo_action import CONFIG
@@ -22,12 +23,16 @@ from ashley.connections.settings import SettingValues
 from ashley.connections.settings_read import NullSettingsReader, SettingsReader
 from ashley.home_assistant.homes import Homes
 from ashley.home_assistant.todos import NAME, HaTodos
+from ashley.inference.model import ToolCall
 from ashley.main import create_app
 from ashley.people import admin
+from ashley.senses.postgres_proposals import PostgresProposals
+from ashley.senses.proposals import Proposals
 from ashley.settings import Settings
 from ashley.todos.routed import RoutedTodos
 from ashley.todos.todos import Todos
-from contract.conversations_support import db_url as db_url, migrated_template as migrated_template, scalar
+from ashley.tools.house_change import CONFIRM, HouseChangeTools
+from contract.conversations_support import db_url as db_url, migrated_template as migrated_template, run, scalar
 from fastapi.testclient import TestClient
 from homes_support import AnyHousehold
 from house_double_support import MemoryHouse, state
@@ -143,8 +148,9 @@ def test_undoing_a_thing_she_made_proposes_its_delete_for_their_yes_and_never_de
     row = scalar(world.url, "SELECT payload->'change'->>'op' || ':' || (payload->'change'->>'id') FROM proposals "
                             "WHERE made_by = %s AND conversation_id = %s AND topic = 'house'", (world.alana, conversation))
     assert row == "delete:porch"
-    said = scalar(world.url, "SELECT text FROM turns WHERE conversation_id = %s AND author = 'person'", (conversation,))
-    assert said == f"{CONFIG.turn} {SUMMARY}"
+    said = scalar(world.url, "SELECT json_agg(json_build_array(author, speaker_id, text, visibility, owner_id)) FROM turns "
+                             "WHERE conversation_id = %s", (conversation,))
+    assert said == [["household", None, f"{CONFIG.turn} {SUMMARY}", "private", world.alana]], "never words of the person's"
     item = action(client, made)
     assert not item.can_undo and item.undone is not None and item.undone.how == "waiting_on_you"
     waiting = [i for i in WorkResponse.model_validate(client.get("/api/work").json()).entries if i.kind == "proposal"]
@@ -256,3 +262,34 @@ def test_an_unreachable_house_is_503_and_the_undo_is_offered_again(world: World,
     assert undo(client, made)[0] == 503
     house.down = False
     assert action(client, made).can_undo
+
+
+def test_their_yes_after_the_household_s_line_carries_the_delete_out_through_house_confirm(
+        world: World, client: TestClient, house: MemoryHouse) -> None:
+    made = did(world, "house_delete")
+    conversation = undo(client, made)[1]["conversation_id"]
+    assert isinstance(conversation, int)
+    proposed = int(scalar(world.url, "SELECT turn_id FROM proposals WHERE conversation_id = %s", (conversation,)))
+    assert scalar(world.url, "SELECT author FROM turns WHERE id = %s", (proposed,)) == "household"
+    yes = int(scalar(world.url, "INSERT INTO turns (conversation_id, household_id, author, speaker_id, text, visibility, "
+                                "owner_id) VALUES (%s, %s, 'person', %s, 'yes, delete it', 'private', %s) RETURNING id",
+                     (conversation, world.home, world.alana, world.alana)))
+
+    async def go() -> None:
+        db = PoolDatabase(world.url, connect_timeout_s=5.0)
+        await db.open()
+        services.register(Proposals, PostgresProposals(db))
+        try:
+            assert CONFIRM not in [s.name for s in (await HouseChangeTools(
+                world.home, world.alana, private=True, turn=(conversation, proposed)).catalogue()).specs]
+            sams = HouseChangeTools(world.home, world.sam, private=True, turn=(conversation, yes))
+            assert CONFIRM not in [s.name for s in (await sams.catalogue()).specs], "the proposal is the person's"
+            theirs = HouseChangeTools(world.home, world.alana, private=True, turn=(conversation, yes))
+            assert CONFIRM in [s.name for s in (await theirs.catalogue()).specs]
+            got = await theirs.call(ToolCall("c", CONFIRM, {}))
+            assert not got.is_error, got.content
+        finally:
+            await db.close()
+
+    run(go())
+    assert changes(house) == [("delete", "automation", "porch")] and "porch" not in house.configs_of["automation"]

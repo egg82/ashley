@@ -2,8 +2,9 @@
 she did on her own is one record"): the `outside_actions` row's undo, claimed so it is taken once, carried out through
 her own tool for that change (`ashley.tools.undo_carry`), and kept on the row as how it ended. A row that is not theirs is
 `UndoNotFound`; one with no undo, or whose undo was already taken, is refused before anything is done. What would be
-done is settled by the tool's own checks, never here: a delete is proposed for their yes as shipped, in a code-written
-turn of theirs stored on their web thread, so their yes there is what `house_confirm` answers.
+done is settled by the tool's own checks, never here: a delete is proposed for their yes as shipped, in a turn stored
+on their web thread as the household's line (`author` `household`, never words of theirs), so their yes after it there
+is what `house_confirm` answers.
 
 The claim's lapse and the turn a delete's undo stores are data, `undo.json` beside this module. Logs one `undo.done`
 line per request with the action, the undo's kind and the outcome; never a ref, a summary or a list."""
@@ -30,7 +31,7 @@ Refusal = Literal["no_undo", "already_undone", "failed"]
 @dataclass(frozen=True)
 class UndoConfig:
     """How long a claim on an undo holds before another request may take it (`claim_s`), and the words a delete's undo
-    stores as the person's turn before the action's summary (`turn`)."""
+    stores as the household's line before the action's summary (`turn`)."""
 
     claim_s: float
     turn: str
@@ -127,12 +128,13 @@ async def _taken(inbound: Inbound, found: Recorded) -> Carried:
 
 
 def _opener(inbound: Inbound, found: Recorded) -> Opened:
-    """Stores the person's turn a delete's undo is proposed in, on their web thread: `undo.json`'s `turn` and the
-    action's summary, which code wrote."""
+    """Stores the turn a delete's undo is proposed in, on the person's web thread and private to them: the household's
+    line (`author` `household`, no speaker), `undo.json`'s `turn` and the action's summary, which code wrote. The
+    proposal is still the person's (`made_by`), so only a later turn of theirs agrees to it."""
     async def opened() -> tuple[int, int]:
         who = await speaker.who(inbound)
         text = f"{CONFIG.turn} {found.action.summary}"
-        conversation, said = await person_turn.stored(replace(inbound, text=text), who.speaker)
+        conversation, said = await person_turn.stored(replace(inbound, text=text, author="household"), who.speaker)
         return conversation.id, said.id
     return opened
 

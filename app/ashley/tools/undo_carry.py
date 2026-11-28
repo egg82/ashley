@@ -3,7 +3,7 @@ that tool's own checks (`decisions.md`, "What she did on her own is one record")
 by `irreversible.json` and, as shipped, proposed for their yes rather than made), `cancel_reminder` and `todo_change`.
 Nothing here writes to the house, the reminders or a list itself. Before each, a read through the same service says
 whether the target is still there, so a thing already gone comes back as `gone` and no call is made. A delete is made
-in a person turn the caller opens (`Opened`), as any delete she is asked for is."""
+in a turn the caller stores (`Opened`), and agreed by a later turn of the person's, as any delete she proposes is."""
 
 import json
 from collections.abc import Awaitable, Callable
@@ -27,7 +27,7 @@ from .tools import ToolsUnavailable
 CALL_ID = "undo"
 Outcome = Literal["undone", "waiting_on_you", "gone"]
 Opened = Callable[[], Awaitable[tuple[int, int]]]
-"""Stores the person's turn a delete is proposed in: its conversation and turn ids."""
+"""Stores the turn a delete is proposed in: its conversation and turn ids."""
 _TODO_OP: dict[str, Op] = {"todo_remove": "remove", "todo_reopen": "reopen", "todo_done": "done"}
 
 
@@ -61,7 +61,7 @@ async def carry(undo: Undo, household_id: int, person_id: int, opened: Opened) -
 
 
 async def _house(undo: Undo, household_id: int, person_id: int, opened: Opened) -> Carried:
-    """`house_change` delete of what she created, in a person turn of theirs: the tool judges it as any delete she is
+    """`house_change` delete of what she created, in a turn the caller stores: the tool judges it as any delete she is
     asked for, so as shipped it is proposed, and agreed by their yes in that conversation."""
     home = await services.get(Homes).of(household_id)
     if home is None or undo.within is None:
