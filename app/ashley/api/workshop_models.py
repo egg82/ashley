@@ -181,7 +181,8 @@ class BenchPiece(BaseModel):
 class LoggedCommand(BaseModel):
     """One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a
     person's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it
-    changed (null when refused). Never the text it carried."""
+    changed (null when refused), `undone_by`, the `seq` of the accepted Undo that took it back (null when none has), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
+    and for hers made outside a turn), so her changes group by turn. Never the text it carried."""
 
     seq: int
     at: datetime
@@ -190,6 +191,8 @@ class LoggedCommand(BaseModel):
     type: CommandType
     outcome: Literal["accepted"] | Reason
     piece_id: int | None
+    by_turn: int | None
+    undone_by: int | None
 
 
 class BenchLink(BaseModel):
@@ -301,6 +304,38 @@ class UndoRequest(BaseModel):
 
     type: Literal["undo"]
     seq: int
+
+
+class UndoTurnRequest(BaseModel):
+    """Undo together every change of the turn of hers that made command `seq`, newest first, each judged as an Undo is
+    (`UndoRequest`), all or nothing: when any piece changed since, none is undone and `TurnRefused` says which."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    seq: int
+
+
+class TurnUndone(BaseModel):
+    """The turn's changes are all taken back: `undone_seqs`, their `seq`s, newest first."""
+
+    undone_seqs: list[int]
+
+
+class TurnRefusal(BaseModel):
+    """Command `seq` of the turn could not be undone, for `reason`."""
+
+    seq: int
+    reason: Reason
+
+
+class TurnRefused(BaseModel):
+    """Nothing was undone and nothing logged. `reason` is the first refusal's (`changed_since`: a piece changed after
+    her turn; `nothing_to_undo`: no change of a turn there, or all already undone); `refused` lists every one."""
+
+    code: Literal["refused"]
+    reason: Reason
+    refused: list[TurnRefusal]
+    detail: str
 
 
 class LinkRequest(BaseModel):

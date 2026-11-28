@@ -1,12 +1,13 @@
 // The bench screen with no server behind it, for looking at the canvas: `fetch` answers the bench routes from a fixture
 // (`fixtures.ts`) and applies a person's moves to it, so drags, pins and boxes go through the real client. Query:
-// `n` the bench's size (5, 11, 32), `refuse=1` refuses every move, `add=<ms>` has her add a piece after that long.
+// `n` the bench's size (5, 11, 32), `log=1` the stage log open, `refuse=1` refuses every move, `add=<ms>` has her add a piece after that long.
 // Built by `node harness/build.mjs <outdir>`, never into the app's bundle.
 import { render } from 'preact';
 import { LocationProvider } from 'preact-iso';
 import type { BenchDetail, BenchPiece, CommandRequest } from '../src/api/types';
 import { refresh } from '../src/rooms/workshop/model/bench';
 import { BenchView } from '../src/rooms/workshop/bench/BenchView';
+import { logOpen } from '../src/rooms/workshop/bench/StageLog';
 import '../src/shell/motion';
 import '../src/styles/fonts';
 import '../src/styles/tokens.css';
@@ -22,6 +23,7 @@ const n = Number(q.get('n') ?? 11);
 let bench: BenchDetail = benchOf(n);
 const talk = talkOf(n);
 let seq = 1000;
+logOpen.value = q.get('log') === '1';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
@@ -46,6 +48,13 @@ async function answer(url: string, init?: RequestInit): Promise<Response> {
     if (c.type === 'move') bench = moved(c);
     (window as unknown as { moves: unknown[] }).moves.push(c);
     return json({ piece_id: 'piece_id' in c ? c.piece_id : null, seq: ++seq });
+  }
+  if (url === '/api/benches/1/undo-turn' && init?.body) {
+    const { seq: asked } = JSON.parse(String(init.body)) as { seq: number };
+    const turn = bench.recent.find((r) => r.seq === asked)?.by_turn;
+    const taken = bench.recent.filter((r) => turn != null && r.by_turn === turn && r.undone_by === null);
+    bench = { ...bench, recent: bench.recent.map((r) => (taken.includes(r) ? { ...r, undone_by: ++seq } : r)) };
+    return json({ undone_seqs: taken.map((r) => r.seq).reverse() });
   }
   return json({ detail: 'not in the harness' }, 404);
 }

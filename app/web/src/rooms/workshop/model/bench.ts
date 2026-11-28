@@ -3,6 +3,7 @@
 // also says which commands landed since the one before (`stamps`), so the grid can show each change by piece id.
 import { signal } from '@preact/signals';
 import { ApiError, applyCommand, getBench, runPiece } from '../../../api/client';
+import { undoTurn } from '../../../api/turnUndo';
 import type { BenchDetail, BenchPiece, CommandRequest, RefusalReason } from '../../../api/types';
 import { liveUp, onBenchChanged, onResync } from '../../../session/live';
 import { roomReached } from '../../../shell/her/state';
@@ -101,23 +102,39 @@ function outcomeOf(error: unknown): Outcome {
   return { ok: false, why: unreachable(error) ? 'unreachable' : 'failed' };
 }
 
-async function sent(call: () => Promise<{ piece_id: number | null } | { reason: RefusalReason }>): Promise<Outcome> {
+async function sent(call: () => Promise<{ piece_id: number | null } | { undone_seqs: number[] } | { reason: RefusalReason }>): Promise<Outcome> {
   try {
     const got = await call();
-    return 'reason' in got ? { ok: false, why: got.reason } : { ok: true, piece: got.piece_id };
+    if ('reason' in got) return { ok: false, why: got.reason };
+    return { ok: true, piece: 'piece_id' in got ? got.piece_id : null };
   } catch (error) {
     return outcomeOf(error);
   }
 }
 
-async function send(id: number, command: CommandRequest | Run): Promise<Outcome> {
-  const outcome = await sent(() => 'language' in command
-    ? runPiece(id, { piece_id: command.piece.id, base_version: command.piece.piece_version, run_language: command.language })
-    : applyCommand(id, command));
+function call(id: number, command: CommandRequest | Run | WholeTurn) {
+  if ('language' in command) return runPiece(id, { piece_id: command.piece.id, base_version: command.piece.piece_version, run_language: command.language });
+  if ('turn_of' in command) return undoTurn(id, command.turn_of);
+  return applyCommand(id, command);
+}
+
+async function send(id: number, command: CommandRequest | Run | WholeTurn): Promise<Outcome> {
+  const outcome = await sent(() => call(id, command));
   if (id !== openId) return outcome;
   notice.value = outcome.ok ? null : outcome;
   if (!(!outcome.ok && outcome.why === 'unreachable')) await refresh();
   return outcome;
+}
+
+/** Her whole turn that made command `turn_of`, taken back together. */
+interface WholeTurn {
+  turn_of: number;
+}
+
+/** Takes back the whole turn of hers that made command `seq`, after any command still on its way; all or nothing, and
+ * the bench is read back after. */
+export function undoWholeTurn(seq: number): Promise<Outcome> {
+  return enqueue({ turn_of: seq });
 }
 
 interface Run {
@@ -148,7 +165,7 @@ export function apply(command: CommandRequest): Promise<Outcome> {
   return enqueue(command);
 }
 
-function enqueue(command: CommandRequest | Run): Promise<Outcome> {
+function enqueue(command: CommandRequest | Run | WholeTurn): Promise<Outcome> {
   const id = openId;
   if (id === null) return Promise.resolve({ ok: false, why: 'failed' });
   notice.value = null;

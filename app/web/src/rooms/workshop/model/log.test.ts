@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BenchDetail, LoggedCommand } from '../../../api/types';
-import { stampsOf, undoTarget } from './log.ts';
+import { stampsOf, stepsOf, turnUndo, undoTarget } from './log.ts';
 
 const cmd = (seq: number, type: LoggedCommand['type'], author: LoggedCommand['author'], piece: number | null,
              outcome: LoggedCommand['outcome'] = 'accepted'): LoggedCommand =>
-  ({ seq, at: '2026-10-29T12:00:00Z', author, person_id: author === 'person' ? 1 : null, type, outcome, piece_id: piece });
+  ({ seq, at: '2026-10-29T12:00:00Z', author, person_id: author === 'person' ? 1 : null, type, outcome, piece_id: piece, by_turn: null, undone_by: null });
 const bench = (id: number, recent: LoggedCommand[]): BenchDetail => ({
   bench: { id, title: 'b', opened_at: '2026-10-29T12:00:00Z', closed_at: null, work: null, piece_count: 0, last_changed_at: null, thread: `bench:${id}` }, pieces: [], recent, undo_next: null, shelf: [], links: [],
 });
@@ -41,4 +41,30 @@ test('undo names the command the server walked to, and has none when nothing is 
 test('a rename changes the bench, not a piece, so it stamps none', () => {
   const after = bench(1, [cmd(1, 'rename', 'ashley', null), cmd(2, 'edit', 'ashley', 1)]);
   assert.deepEqual(stampsOf(bench(1, []), after), [{ piece: 1, by: 'ashley', did: 'edit', seq: 2 }]);
+});
+
+const inTurn = (turn: number, c: LoggedCommand): LoggedCommand => ({ ...c, by_turn: turn });
+
+test('the stage log groups neighbouring changes of one of her turns, newest first, and leaves a persons alone', () => {
+  const recent = [cmd(1, 'add', 'person', 1), inTurn(7, cmd(2, 'add', 'ashley', 2)), inTurn(7, cmd(3, 'edit', 'ashley', 2)),
+    cmd(4, 'move', 'person', 1), inTurn(8, cmd(5, 'edit', 'ashley', 1))];
+  assert.deepEqual(stepsOf(recent).map((s) => [s.turn, s.rows.map((r) => r.seq)]), [[8, [5]], [null, [4]], [7, [3, 2]], [null, [1]]]);
+});
+
+test('the stage log lists only accepted changes an Undo can take back', () => {
+  const recent = [cmd(1, 'add', 'person', 1), cmd(2, 'edit', 'person', 1, 'stale_base'), cmd(3, 'cue', 'ashley', 1), cmd(4, 'undo', 'person', 1), cmd(5, 'run', 'person', 1)];
+  assert.deepEqual(stepsOf(recent).map((s) => s.rows.map((r) => r.seq)), [[1]]);
+});
+
+test('the stage log keeps a change an Undo took back, carrying that Undo', () => {
+  const undone: LoggedCommand = { ...cmd(2, 'edit', 'person', 1), undone_by: 3 };
+  assert.deepEqual(stepsOf([cmd(1, 'add', 'person', 1), undone, cmd(3, 'undo', 'person', 1)]).map((s) => s.rows.map((r) => r.undone_by)), [[3], [null]]);
+});
+
+test('"Undo this turn" is on one of her turns, off when every change of it is already undone, and absent elsewhere', () => {
+  const her = (seq: number, undone: number | null): LoggedCommand => ({ ...inTurn(7, cmd(seq, 'add', 'ashley', seq)), undone_by: undone });
+  assert.deepEqual(turnUndo({ turn: 7, rows: [her(2, null), her(3, 9)] }), { seq: 2, off: null });
+  assert.deepEqual(turnUndo({ turn: 7, rows: [her(2, 8), her(3, 9)] }), { seq: 2, off: 'Already undone' });
+  assert.equal(turnUndo({ turn: null, rows: [cmd(1, 'add', 'person', 1)] }), null);
+  assert.equal(turnUndo({ turn: null, rows: [cmd(1, 'add', 'ashley', 1)] }), null);
 });

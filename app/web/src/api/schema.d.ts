@@ -2154,6 +2154,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/benches/{bench_id}/undo-turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo Turn
+         * @description 200 `TurnUndone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `TurnRefused`; 410 `closed`; 503
+         *     `unavailable`. Her turns make no install, so nothing is carried out on the house.
+         */
+        post: operations["undo_turn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/benches/{bench_id}/messages": {
         parameters: {
             query?: never;
@@ -4532,7 +4553,8 @@ export interface components {
          * LoggedCommand
          * @description One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a
          *     person's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it
-         *     changed (null when refused). Never the text it carried.
+         *     changed (null when refused), `undone_by`, the `seq` of the accepted Undo that took it back (null when none has), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
+         *     and for hers made outside a turn), so her changes group by turn. Never the text it carried.
          */
         LoggedCommand: {
             /** Seq */
@@ -4558,6 +4580,10 @@ export interface components {
             outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session" | "bad_link" | "already_linked" | "not_linked");
             /** Piece Id */
             piece_id: number | null;
+            /** By Turn */
+            by_turn: number | null;
+            /** Undone By */
+            undone_by: number | null;
         };
         /**
          * LookPage
@@ -6780,6 +6806,48 @@ export interface components {
             updated_at: string | null;
         };
         /**
+         * TurnRefusal
+         * @description Command `seq` of the turn could not be undone, for `reason`.
+         */
+        TurnRefusal: {
+            /** Seq */
+            seq: number;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session" | "bad_link" | "already_linked" | "not_linked";
+        };
+        /**
+         * TurnRefused
+         * @description Nothing was undone and nothing logged. `reason` is the first refusal's (`changed_since`: a piece changed after
+         *     her turn; `nothing_to_undo`: no change of a turn there, or all already undone); `refused` lists every one.
+         */
+        TurnRefused: {
+            /**
+             * Code
+             * @constant
+             */
+            code: "refused";
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session" | "bad_link" | "already_linked" | "not_linked";
+            /** Refused */
+            refused: components["schemas"]["TurnRefusal"][];
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * TurnUndone
+         * @description The turn's changes are all taken back: `undone_seqs`, their `seq`s, newest first.
+         */
+        TurnUndone: {
+            /** Undone Seqs */
+            undone_seqs: number[];
+        };
+        /**
          * UndoDone
          * @description What the Undo of action `id` did, in the words of `ActionUndone.how`: `undone`, the change was taken back; `waiting_on_you`, taking it back is a
          *     delete, proposed for the person's yes like any delete she proposes, which they give by answering her in
@@ -6810,6 +6878,15 @@ export interface components {
              * @enum {string}
              */
             type: "undo";
+            /** Seq */
+            seq: number;
+        };
+        /**
+         * UndoTurnRequest
+         * @description Undo together every change of the turn of hers that made command `seq`, newest first, each judged as an Undo is
+         *     (`UndoRequest`), all or nothing: when any piece changed since, none is undone and `TurnRefused` says which.
+         */
+        UndoTurnRequest: {
             /** Seq */
             seq: number;
         };
@@ -13463,6 +13540,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommandRefused"];
+                };
+            };
+            /** @description `closed`: the bench is closed and takes no change */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a path or body outside its model gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the workshop could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    undo_turn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bench_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UndoTurnRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnUndone"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: from another site, or not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no bench of this person's has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`: nothing was undone, and every refusal is listed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnRefused"];
                 };
             };
             /** @description `closed`: the bench is closed and takes no change */
