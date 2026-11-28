@@ -17,7 +17,7 @@ export function useShown(bench: number, place: Placement, camera: Camera, focus:
     if (at !== bench) return;
     const { place: p, camera: c } = now.current;
     show(ids, fold, new Set(p.boxes.keys()), {
-      hold: setHeld,
+      hold: (change) => setHeld(change),
       frame(which) {
         const boxes = which === 'whole' ? [GOAL_BOX, ...p.boxes.values()] : which.map((id) => p.boxes.get(id)!);
         c.fly(framing(boxes, c.view, which === 'whole' ? 0 : 1, openingZoom(c.view), CANVAS_INSET));
