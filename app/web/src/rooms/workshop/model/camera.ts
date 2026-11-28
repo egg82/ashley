@@ -84,6 +84,18 @@ export function framing(boxes: readonly Box[], v: View, zMin: number, zCap: numb
   return centring({ x: e.x + e.w / 2, y: e.y + e.h / 2 }, v, inset, z);
 }
 
+/** A page `width` wide whose height grows, from `minH` to `maxH`, to show all of `boxes` inside `inset` at zoom 1 or
+ *  closer: its view and camera. Null when they do not fit at zoom 1 even at `maxH`. */
+export function tallFraming(boxes: readonly Box[], width: number, minH: number, maxH: number, zCap: number, inset: Inset = AROUND): { view: View; cam: Cam } | null {
+  const e = extent(boxes) ?? { x: 0, y: 0, w: 0, h: 0 };
+  const w = width - inset.left - inset.right;
+  const wantH = (z: number) => e.h * z + inset.top + inset.bottom;
+  const z = Math.min(zCap, w / Math.max(1, e.w), (maxH - inset.top - inset.bottom) / Math.max(1, e.h));
+  if (z < 1) return null;
+  const view = { w: width, h: Math.min(maxH, Math.max(minH, Math.ceil(wantH(z)))) };
+  return { view, cam: framing(boxes, view, z, z, inset) };
+}
+
 /** The camera at zoom `z` centring, inside `inset`, the first of `wants` that fits there: a focus change flies to the
  *  focus with its neighbours (and the goal, when the bench opens). When none fits, it keeps `must` (the focus) inside
  *  and leans as far toward the last of `wants` as that allows. */

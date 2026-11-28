@@ -298,7 +298,9 @@
 .col.pieces.dropping { outline: 2px dashed var(--blue-hi); outline-offset: -6px; }
 .col.pieces.dropping .pgrid { opacity: .45; }
 .drop-hint { position: sticky; bottom: 14px; margin: 0 20px 14px; padding: 12px; text-align: center; pointer-events: none; border-radius: var(--r-2); background: var(--ink-3); border: 1px solid var(--blue-hi); color: var(--text); font-weight: 600; }
-.look-page { min-height: 100vh; }
+.look-page { position: relative; width: 100vw; min-height: 100vh; }
+.look-page .bcanvas { position: relative; overflow: hidden; }
+:is(html, body):has(.look-page) { height: auto; overflow: visible; }
 
 /* A clip or audio piece (MediaView.tsx): the player, the file's row, and a line of what her last cue did. */
 .pbody.pmedia { display: grid; gap: 10px; }

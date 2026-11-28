@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { framing, lookAt, onScreen, openingZoom, panBy, toBench, visibleBox, worldTransform, Z_MAX, zoomAt, type Cam } from './camera.ts';
+import { framing, lookAt, onScreen, openingZoom, panBy, tallFraming, toBench, visibleBox, worldTransform, Z_MAX, zoomAt, type Cam } from './camera.ts';
 
 const V = { w: 1200, h: 700 };
 const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-6, `${a} vs ${b}`);
@@ -81,4 +81,14 @@ test('an inset keeps what is framed out from under the toolbar: it is centred in
   const shown = visibleBox(f, V, inset);
   assert.ok(shown.y <= 1e-9 && shown.y + shown.h >= 615 - 1e-9, 'all of it shows below the toolbar');
   near(f.z, (700 - 80) / 615);
+});
+
+test('a tall framing grows the page to the bench, and gives up where the cards would not read', () => {
+  const boxes = [{ x: -400, y: -100, w: 300, h: 200 }, { x: 100, y: 900, w: 300, h: 200 }];
+  const t = tallFraming(boxes, 1280, 800, 2400, 1.2, { top: 32, right: 32, bottom: 32, left: 32 })!;
+  assert.ok(t.view.h > 800 && t.view.h <= 2400);
+  assert.ok(t.cam.z >= 1 && t.cam.z <= 1.2);
+  assert.equal(tallFraming([{ x: 0, y: 0, w: 300, h: 200 }], 1280, 800, 2400, 1, { top: 0, right: 0, bottom: 0, left: 0 })!.view.h, 800, 'a small bench keeps the least height');
+  assert.equal(tallFraming([{ x: 0, y: 0, w: 5000, h: 100 }], 1280, 800, 2400, 1.2), null, 'too wide to read');
+  assert.equal(tallFraming([{ x: 0, y: 0, w: 100, h: 9000 }], 1280, 800, 2400, 1.2), null, 'too tall to read');
 });
