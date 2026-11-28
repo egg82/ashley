@@ -28,8 +28,21 @@ def test_no_module_outside_the_evals_sets_a_cut() -> None:
     files = outside_evals()
     assert len(files) > 100
     assert {p.name for p in files} >= {"turn_prompt.py", "tool_loop.py"}
-    found = {p.relative_to(PKG).as_posix(): setters(p.read_text()) for p in files}
+    texts = {p.relative_to(PKG).as_posix(): p.read_text() for p in files}
+    found = {name: setters(text) for name, text in texts.items() if mentions(text)}
     assert {name: lines for name, lines in found.items() if lines} == {}
+
+
+def mentions(source: str) -> bool:
+    """Whether `source` could reach the setter at all: every form `setters` finds spells both words, so only those files
+    are parsed, which keeps the gate fast as the package grows."""
+    return "cut" in source and "install" in source
+
+
+def test_every_form_the_gate_sees_passes_the_prefilter() -> None:
+    for source in ("from ashley.channels.cut import install\n", "from . import cut\ncut.install(x)\n",
+                   "from .cut import Cut, install as put\n"):
+        assert setters(source) and mentions(source)
 
 
 def test_the_gate_sees_each_way_to_reach_the_setter() -> None:
