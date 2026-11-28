@@ -306,6 +306,38 @@ class UndoRequest(BaseModel):
     seq: int
 
 
+class UndoTurnRequest(BaseModel):
+    """Undo together every change of the turn of hers that made command `seq`, newest first, each judged as an Undo is
+    (`UndoRequest`), all or nothing: when any piece changed since, none is undone and `TurnRefused` says which."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    seq: int
+
+
+class TurnUndone(BaseModel):
+    """The turn's changes are all taken back: `undone`, their `seq`s, newest first."""
+
+    undone: list[int]
+
+
+class TurnRefusal(BaseModel):
+    """Command `seq` of the turn could not be undone, for `reason`."""
+
+    seq: int
+    reason: Reason
+
+
+class TurnRefused(BaseModel):
+    """Nothing was undone and nothing logged. `reason` is the first refusal's (`changed_since`: a piece changed after
+    her turn; `nothing_to_undo`: no change of a turn there, or all already undone); `refused` lists every one."""
+
+    code: Literal["refused"]
+    reason: Reason
+    refused: list[TurnRefusal]
+    detail: str
+
+
 class LinkRequest(BaseModel):
     """Link piece `from_id` to piece `to_id` as `kind`: both on the layout. Refused `no_such_piece` for an end that is
     not, `bad_link` for a piece linked to itself or a kind `link_kinds` does not have, `already_linked` when it is. A

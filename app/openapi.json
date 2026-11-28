@@ -7315,6 +7315,116 @@
         }
       }
     },
+    "/api/benches/{bench_id}/undo-turn": {
+      "post": {
+        "summary": "Undo Turn",
+        "description": "200 `TurnUndone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `TurnRefused`; 410 `closed`; 503\n`unavailable`. Her turns make no install, so nothing is carried out on the house.",
+        "operationId": "undo_turn",
+        "parameters": [
+          {
+            "name": "bench_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bench Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoTurnRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TurnUndone"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the workshop could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: from another site, or not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no bench of this person's has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a path or body outside its model gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`refused`: nothing was undone, and every refusal is listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TurnRefused"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "`closed`: the bench is closed and takes no change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/benches/{bench_id}/messages": {
       "post": {
         "summary": "Send On Bench",
@@ -18879,6 +18989,153 @@
         "title": "TrustSettings",
         "description": "The signed-in person's rows, in the order the page shows them. `revision` counts their writes, 0 for a person\nwho set none, and is what the next write must carry; `updated_at` is their last write, null for none."
       },
+      "TurnRefusal": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "unknown_kind",
+              "bad_title",
+              "too_long",
+              "full",
+              "no_such_piece",
+              "bad_place",
+              "stale_base",
+              "nothing_to_undo",
+              "changed_since",
+              "not_runnable",
+              "bad_automation",
+              "bad_site",
+              "bad_video",
+              "not_installable",
+              "incomplete",
+              "no_proposal",
+              "needs_person",
+              "bad_wake",
+              "not_video",
+              "bad_cue",
+              "bad_reader",
+              "not_reader",
+              "bad_passage",
+              "bad_file",
+              "bad_facts",
+              "bad_controls",
+              "bad_recipe",
+              "already_shown",
+              "required",
+              "confirmed_measurement",
+              "bad_body",
+              "bad_citation",
+              "bad_rows",
+              "bad_session",
+              "bad_link",
+              "already_linked",
+              "not_linked"
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "reason"
+        ],
+        "title": "TurnRefusal",
+        "description": "Command `seq` of the turn could not be undone, for `reason`."
+      },
+      "TurnRefused": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "refused",
+            "title": "Code"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "unknown_kind",
+              "bad_title",
+              "too_long",
+              "full",
+              "no_such_piece",
+              "bad_place",
+              "stale_base",
+              "nothing_to_undo",
+              "changed_since",
+              "not_runnable",
+              "bad_automation",
+              "bad_site",
+              "bad_video",
+              "not_installable",
+              "incomplete",
+              "no_proposal",
+              "needs_person",
+              "bad_wake",
+              "not_video",
+              "bad_cue",
+              "bad_reader",
+              "not_reader",
+              "bad_passage",
+              "bad_file",
+              "bad_facts",
+              "bad_controls",
+              "bad_recipe",
+              "already_shown",
+              "required",
+              "confirmed_measurement",
+              "bad_body",
+              "bad_citation",
+              "bad_rows",
+              "bad_session",
+              "bad_link",
+              "already_linked",
+              "not_linked"
+            ],
+            "title": "Reason"
+          },
+          "refused": {
+            "items": {
+              "$ref": "#/components/schemas/TurnRefusal"
+            },
+            "type": "array",
+            "title": "Refused"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "reason",
+          "refused",
+          "detail"
+        ],
+        "title": "TurnRefused",
+        "description": "Nothing was undone and nothing logged. `reason` is the first refusal's (`changed_since`: a piece changed after\nher turn; `nothing_to_undo`: no change of a turn there, or all already undone); `refused` lists every one."
+      },
+      "TurnUndone": {
+        "properties": {
+          "undone": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Undone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "undone"
+        ],
+        "title": "TurnUndone",
+        "description": "The turn's changes are all taken back: `undone`, their `seq`s, newest first."
+      },
       "UndoDone": {
         "properties": {
           "id": {
@@ -18935,6 +19192,21 @@
         ],
         "title": "UndoRequest",
         "description": "Undo command `seq`, while what it changed has not changed since. Refused `nothing_to_undo` when `seq` is an undo\n(there is no redo) or older than the bench's last `undo_window` commands, and `changed_since` when it was already\nundone. Undoing an install takes it back out of the house before it is answered (`automation.last_install` of the\npiece)."
+      },
+      "UndoTurnRequest": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seq"
+        ],
+        "title": "UndoTurnRequest",
+        "description": "Undo together every change of the turn of hers that made command `seq`, newest first, each judged as an Undo is\n(`UndoRequest`), all or nothing: when any piece changed since, none is undone and `TurnRefused` says which."
       },
       "UnlinkRequest": {
         "properties": {
