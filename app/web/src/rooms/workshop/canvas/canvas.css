@@ -1,0 +1,113 @@
+/* The bench canvas (BenchCanvas.tsx). House tokens only (tokens.css); the piece card inside is workshop.css's. New
+   here, from the redesign's merged prototype: the three line styles, chips, the goal, her lines beside a piece and the
+   feel timings (a focus change 600 ms, a camera move 620 ms, a new piece 320 ms). */
+.col.pieces:has(> .bcanvas) { overflow: hidden; }
+.bcanvas { position: absolute; inset: 0; --glide: 600ms; --land: 320ms;
+  background: radial-gradient(1200px 700px at 50% 45%, var(--ink-2), transparent 70%); }
+.bc-view { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
+.bc-view:active, .bc-view.dragging { cursor: grabbing; }
+.bc-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform var(--t-dock) var(--ease-io), opacity var(--t-panel); }
+.bc-world.still { transition: opacity var(--t-panel); }
+.bc-world.unready { opacity: 0; }
+
+/* lines: one width on screen at any zoom; a new piece's line draws in after it */
+.bc-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.bc-links path { fill: none; stroke-width: 1.4; vector-effect: non-scaling-stroke; transition: d var(--glide) var(--ease-io); }
+.bc-links.live path, .bc-world.still .bc-links path { transition: none; }
+.bc-links .part_of path, .bc-legend .part_of { stroke: var(--text-3); }
+.bc-links .depends_on path, .bc-legend .depends_on { stroke: var(--blue-hi); stroke-dasharray: 5 4; }
+.bc-links .version_of path, .bc-legend .version_of { stroke: var(--t-model); stroke-width: 2; }
+.bc-links .spoke { stroke: var(--line-hi); stroke-dasharray: 1 5; stroke-linecap: round; }
+.bc-links text { font-family: var(--f-mono); fill: var(--text-3); }
+.bc-links .fresh { animation: bc-line-in 420ms var(--ease-out) 440ms both; }
+@keyframes bc-line-in { from { opacity: 0; } }
+
+/* the goal */
+.bc-goal { position: absolute; left: 0; top: 0; display: grid; align-content: center; justify-items: center; gap: 4px; padding: 10px 16px;
+  border: 1px solid var(--brass-dim); border-radius: var(--r-3); background: var(--ink-3); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.bc-goal b { font-family: var(--f-display); font-weight: 600; line-height: 1.15; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bc-goal .meta { transform-origin: 50% 0; }
+
+/* a card on the map: its rect glides between card, chip and ghost; its body keeps its own width inside */
+.bc-card { position: absolute; left: 0; top: 0; border-radius: var(--r-2);
+  transition: transform var(--glide) var(--ease-io), width var(--glide) var(--ease-io), height var(--glide) var(--ease-io), opacity var(--t-panel); }
+.bc-card.measuring { visibility: hidden; pointer-events: none; }
+.bc-world.still .bc-card, .bc-card.dragging { transition: none; }
+.bc-card.dragging { z-index: 40; }
+.bc-body { position: absolute; left: 0; top: 0; overflow: hidden; border-radius: var(--r-2); transition: opacity var(--t-chip), visibility 0s; }
+.bc-body > .piece { box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.bc-card.dragging .bc-body > .piece { box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px var(--blue); }
+.bc-body.boxed > .piece { height: 100%; }
+.bc-body.boxed .pmain { overflow: auto; }
+.bc-card.f-chip .bc-body { opacity: 0; visibility: hidden; transition: opacity var(--t-chip), visibility 0s var(--t-chip); }
+.bc-card.f-ghost .bc-body { height: 100%; opacity: .45; }
+.bc-card.focus .bc-body > .piece { border-color: var(--blue); }
+.bc-card.pinned .bc-body > .piece { border-color: var(--line-hi); }
+.bc-card .piece header { cursor: grab; }
+.bc-card.landing { animation: bc-land var(--land) var(--ease-out) both; }
+.bc-card.landing .bc-body > .piece { border-color: var(--brass); }
+@keyframes bc-land { from { opacity: 0; scale: .96; } }
+
+/* a chip: the piece's title, its text held at 12 px on screen (its font size is set per zoom) */
+.bc-chip { position: absolute; inset: 0; display: flex; align-items: center; gap: .6em; padding: 0 .9em; min-width: 0;
+  border: 1px solid var(--line-hi); border-radius: 999px; background: var(--ink-1); color: var(--text); font-family: var(--f-body); font-weight: 500;
+  cursor: pointer; text-align: left; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.bc-chip:hover, .bc-chip:focus-visible { border-color: var(--blue); outline: none; }
+.bc-chip .ptype { width: 1.5em; height: 1.5em; font-size: .75em; border-radius: .33em; }
+.bc-chip-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-card.pinned .bc-chip { border-color: var(--blue); }
+.bc-card { --pc: var(--t-doc); }
+.bc-card[data-family="live"] { --pc: var(--t-capture); }
+.bc-card[data-family="large"] { --pc: var(--t-design); }
+.bc-card[data-family="unknown"] { --pc: var(--text-3); }
+
+/* pinned: the pin hands the piece back to the layout; the corner resizes it */
+.bc-pin { position: absolute; top: -9px; left: -9px; width: 20px; height: 20px; display: grid; place-items: center; padding: 0; z-index: 3;
+  border: 1px solid var(--blue); border-radius: 50%; background: var(--ink-1); color: var(--blue-hi); cursor: pointer;
+  animation: bc-pin-in 160ms var(--ease-spring) both; }
+.bc-pin svg { width: 11px; height: 11px; fill: currentColor; }
+.bc-pin:hover, .bc-pin:focus-visible { background: var(--ink-3); }
+@keyframes bc-pin-in { from { opacity: 0; transform: scale(.4); } }
+.bc-corner { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; z-index: 3; cursor: nwse-resize; touch-action: none;
+  background: linear-gradient(135deg, transparent 50%, var(--line-hi) 50% 60%, transparent 60% 70%, var(--line-hi) 70% 80%, transparent 80%); opacity: 0; transition: opacity var(--t-tap); }
+.bc-card:hover .bc-corner, .bc-card.dragging .bc-corner { opacity: 1; }
+@media (hover: none) { .bc-corner { opacity: 1; } }
+
+/* her line beside a piece, then its badge */
+.bc-says { position: absolute; left: 8px; bottom: calc(100% + 8px); z-index: 4; margin: 0; max-width: 300px; width: max-content; transform-origin: 0 100%;
+  padding: 6px 10px; border: 1px solid var(--line-hi); border-left: 3px solid var(--brass); border-radius: 8px; background: var(--panel);
+  font-size: 13px; line-height: 1.4; color: var(--text); box-shadow: 0 6px 18px rgba(0,0,0,.4); pointer-events: none;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; animation: bc-says-in 240ms var(--ease-out) both; }
+.bc-says b { font: 600 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); margin-right: 6px; }
+@keyframes bc-says-in { from { opacity: 0; translate: 0 8px; } }
+.bc-lines { position: absolute; right: 10px; top: -11px; z-index: 4; transform-origin: 100% 0; }
+.bc-card.f-chip .bc-lines { right: auto; left: calc(100% + 6px); top: 50%; translate: 0 -50%; transform-origin: 0 50%; }
+.bc-badge { white-space: nowrap; height: 22px; padding: 0 9px; border: 1px solid var(--brass-dim); border-radius: 11px; background: var(--ink-1); color: var(--brass);
+  font: 500 12px var(--f-mono); cursor: pointer; animation: bc-says-in 200ms var(--ease-out) both; }
+.bc-badge:hover, .bc-badge:focus-visible, .bc-badge[aria-expanded="true"] { border-color: var(--brass); outline: none; }
+.bc-thread { position: absolute; right: 0; top: calc(100% + 6px); width: 320px; max-height: 280px; overflow: auto; margin: 0; padding: 8px; list-style: none;
+  display: grid; gap: 8px; border: 1px solid var(--line-hi); border-radius: 8px; background: var(--panel); box-shadow: 0 10px 30px rgba(0,0,0,.5); font-size: 13px; }
+.bc-thread li { display: grid; gap: 2px; padding-left: 8px; border-left: 2px solid var(--brass-dim); color: var(--text); overflow-wrap: anywhere; }
+
+/* around the map */
+.bc-ui { position: absolute; z-index: 10; }
+.bc-side { left: 12px; top: 12px; display: grid; gap: 10px; justify-items: start; width: min(360px, calc(100% - 140px)); max-height: calc(100% - 24px); overflow: auto; }
+.bc-side > .piece { width: 100%; }
+.bc-legend { position: static; display: grid; gap: 2px; margin: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: var(--r-1);
+  background: rgba(4,7,12,.92); font: 11px/1.5 var(--f-mono); color: var(--text-3); }
+.bc-legend div { display: flex; align-items: center; gap: 8px; }
+.bc-legend dt, .bc-legend dd { margin: 0; }
+.bc-legend svg { display: block; }
+.bc-legend path { fill: none; stroke-width: 1.4; }
+.bc-zoom { right: 12px; top: 12px; display: flex; gap: 6px; }
+.bc-zoom .btn.sm { min-width: 30px; justify-content: center; background: var(--ink-1); }
+.bc-empty { position: absolute; left: 50%; top: calc(50% + 70px); transform: translateX(-50%); margin: 0; text-align: center; }
+.col.pieces > .wshelf { position: absolute; left: 12px; bottom: 12px; z-index: 10; max-width: min(420px, calc(100% - 24px)); max-height: 60%; overflow: auto; background: var(--ink-1); }
+
+:root[data-motion="reduced"] .bc-world, :root[data-motion="reduced"] .bc-card, :root[data-motion="reduced"] .bc-links path,
+:root[data-motion="reduced"] .bc-body { transition: none; }
+:root[data-motion="reduced"] .bc-card.landing, :root[data-motion="reduced"] .bc-links .fresh, :root[data-motion="reduced"] .bc-pin,
+:root[data-motion="reduced"] .bc-badge { animation: none; }
+:root[data-motion="reduced"] .bc-says { animation: bc-says-fade 240ms linear both; }
+@keyframes bc-says-fade { from { opacity: 0; } }

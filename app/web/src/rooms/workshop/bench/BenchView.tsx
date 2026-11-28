@@ -1,5 +1,5 @@
 // One bench, at `/workshop/<id>`: its bar, a line for a change that didn't go through, and the floor with its talk
-// beside its pieces and their shelf (on a phone one or the other, `?view=talk`). Opened from the benches, the plate grows out of the
+// beside its pieces, drawn as a mindmap (`canvas/BenchCanvas.tsx`), and their shelf (on a phone one or the other, `?view=talk`). Opened from the benches, the plate grows out of the
 // card that was picked (`plate.ts`).
 import { useLocation } from 'preact-iso';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -7,7 +7,7 @@ import { benchState, detail, enterBench, leaveBench, loadBench, notice } from '.
 import { loadRules, rules } from '../model/benches';
 import { enterTalk, leaveTalk } from '../model/talk';
 import { clearMarks } from '../pieces/marks';
-import { PieceGrid } from '../pieces/PieceGrid';
+import { BenchCanvas } from '../canvas/BenchCanvas';
 import { DropFiles } from './Upload';
 import { whyNot } from '../pieces/why';
 import { Away } from './Away';
@@ -75,7 +75,7 @@ export function BenchView({ id }: { id: number }) {
           <div class="floor" data-view={view}>
             <section class="col talk" aria-label="Talk"><BenchTalk thread={bench.bench.thread} closed={bench.bench.closed_at !== null} /></section>
             <DropFiles bench={id} enabled={bench.bench.closed_at === null}>
-              <PieceGrid bench={bench} rules={rules.value} adding={adding} doneAdding={() => setAdding(false)} />
+              <BenchCanvas bench={bench} rules={rules.value} adding={adding} doneAdding={() => setAdding(false)} />
               <Shelf bench={bench} rules={rules.value} />
             </DropFiles>
             <Away bench={bench} showPieces={() => setView('pieces')} />

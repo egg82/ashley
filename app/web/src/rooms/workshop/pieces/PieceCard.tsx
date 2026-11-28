@@ -1,12 +1,11 @@
 // One piece on the bench: a typed tile header (grip, glyph, title, who changed it last), its body through its kind's
 // renderer or, while it is being edited, the editor, a code piece's runs (`PieceRun.tsx`), an automation's install
-// (`PieceInstall.tsx`), and its tools (size, edit,
+// (`PieceInstall.tsx`), and its tools (edit,
 // archive to the bench's shelf, remove). A piece someone just changed
 // says who for a moment, in their colour; her mark sits on it while she is shown changing it.
-import type { BenchPiece, PieceKind, PieceSize, WorkshopKinds } from '../../../api/types';
+import type { BenchPiece, PieceKind, WorkshopKinds } from '../../../api/types';
 import { moment } from '../../memory/facts';
 import { beginDraft, draftOf } from '../model/drafts';
-import { shortOf } from '../model/layout';
 import { herAt, marks, type Mark } from './marks';
 import { PieceEdit } from './PieceEdit';
 import { InstallStrip } from './PieceInstall';
@@ -17,7 +16,6 @@ import { glyphOf, PieceBody } from './renderers';
 export interface PieceActions {
   /** Moves the piece to index `to` of the order shown, keyboard or drop. */
   moveTo(id: number, to: number): void;
-  resize(piece: BenchPiece, size: PieceSize): void;
   remove(piece: BenchPiece): void;
   archive(piece: BenchPiece): void;
   grab(e: PointerEvent, id: number): void;
@@ -29,7 +27,6 @@ interface Props {
   kind: PieceKind | undefined;
   index: number;
   count: number;
-  sizes: readonly PieceSize[];
   titleMax: number;
   closed: boolean;
   rules: WorkshopKinds | null;
@@ -61,15 +58,9 @@ function Grip({ piece, index, count, act }: Pick<Props, 'piece' | 'index' | 'cou
   );
 }
 
-function Tools({ piece, sizes, act, edit }: Pick<Props, 'piece' | 'sizes' | 'act'> & { edit: (() => void) | null }) {
+function Tools({ piece, act, edit }: Pick<Props, 'piece' | 'act'> & { edit: (() => void) | null }) {
   return (
     <footer class="ptools">
-      <div class="seg sizes" role="group" aria-label="Size">
-        {sizes.map((s) => (
-          <button key={s} type="button" aria-pressed={piece.placement.size === s} aria-label={s} title={s}
-            onClick={() => piece.placement.size !== s && act.resize(piece, s)}>{shortOf(s)}</button>
-        ))}
-      </div>
       {edit && <button class="btn sm ghost" type="button" onClick={edit}>Edit</button>}
       <button class="btn sm ghost" type="button" onClick={() => act.archive(piece)}>Archive</button>
       <button class="btn sm ghost" type="button" onClick={() => act.remove(piece)}>Remove</button>

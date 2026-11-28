@@ -67,13 +67,19 @@ export function framing(boxes: readonly Box[], v: View, zMin: number, zCap: numb
   return { x: e.x + e.w / 2, y: e.y + e.h / 2, z: clampZ(Math.min(fit, zCap), zMin) };
 }
 
-/** The camera that shows `want` (framed as `framing` would at zoom `z`) when it fits at `z`, else centres `must`: what a
- *  focus change flies to, the focus and its neighbours, or the focus alone when they are wider than the screen. */
-export function lookAt(want: readonly Box[], must: Box, v: View, z: number): Cam {
-  const e = extent(want) ?? must;
-  const fits = e.w * z <= v.w - 2 * MARGIN && e.h * z <= v.h - 2 * MARGIN;
-  const c = fits ? e : must;
-  return { x: c.x + c.w / 2, y: c.y + c.h / 2, z };
+/** The camera at zoom `z` centred on the first of `wants` that fits on screen at `z`: a focus change flies to the focus
+ *  with its neighbours (and the goal, when the bench opens). When none fits, it keeps `must` (the focus) on screen and
+ *  leans as far toward the last of `wants` as that allows. */
+export function lookAt(wants: readonly (readonly Box[])[], must: Box, v: View, z: number): Cam {
+  const fits = (e: Box) => e.w * z <= v.w - 2 * MARGIN && e.h * z <= v.h - 2 * MARGIN;
+  const boxes = wants.map(extent).filter((e): e is Box => e !== null);
+  const c = boxes.find(fits);
+  if (c) return { x: c.x + c.w / 2, y: c.y + c.h / 2, z };
+  const toward = boxes.at(-1) ?? must;
+  const lean = (from: number, to: number, room: number) => from + Math.max(-room, Math.min(room, to - from));
+  const roomX = Math.max(0, ((v.w - 2 * MARGIN) / z - must.w) / 2);
+  const roomY = Math.max(0, ((v.h - 2 * MARGIN) / z - must.h) / 2);
+  return { x: lean(must.x + must.w / 2, toward.x + toward.w / 2, roomX), y: lean(must.y + must.h / 2, toward.y + toward.h / 2, roomY), z };
 }
 
 /** Whether `box` is drawn inside the viewport (its top `edge` bench units at least). */

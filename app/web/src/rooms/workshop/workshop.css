@@ -174,11 +174,9 @@
 .rfiles summary { cursor: pointer; }
 .rfiles[open] summary { margin-bottom: 4px; }
 /* its tools: shown on hover or focus where there is hover, always on touch */
-.ptools { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-top: 1px solid var(--line); opacity: 0; transition: opacity var(--t-tap); flex-wrap: wrap; }
+.ptools { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 6px 8px; border-top: 1px solid var(--line); opacity: 0; transition: opacity var(--t-tap); flex-wrap: wrap; }
 .piece:hover .ptools, .piece:focus-within .ptools { opacity: 1; }
 @media (hover: none) { .ptools { opacity: 1; } }
-.ptools .sizes { padding: 2px; border-radius: 8px; margin-right: auto; }
-.ptools .sizes button { padding: 3px 7px; font: 600 10.5px/1 var(--f-mono); border-radius: 6px; }
 .ptools .btn.sm { height: 24px; padding: 0 8px; }
 
 /* who just changed it: hers brass, the person's blue; a flash, then a held edge while the tag shows */
