@@ -97,7 +97,7 @@ async def run(runs: int, only: str | None, options: Options = Options()) -> list
 
 async def _graded(case: dict[str, Any], options: Options, live: Inference | None) -> Result:
     metrics = await _one(case, options, live)
-    expect = {**case["expect"], **(case.get("expect_scripted", {}) if options.scripted else {})}
+    expect: dict[str, Any] = {**case["expect"], **(case.get("expect_scripted", {}) if options.scripted else {})}
     return Result(case["id"], passes(expect, metrics), metrics)
 
 
