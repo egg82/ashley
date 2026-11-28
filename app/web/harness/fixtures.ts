@@ -79,7 +79,7 @@ function linksFor(n: number): BenchLink[] {
 function recentOf(last: number): LoggedCommand[] {
   const at = (ago: number) => new Date(Date.now() - ago).toISOString();
   const c = (seq: number, type: LoggedCommand['type'], piece: number, ago: number, turn: number | null): LoggedCommand =>
-    ({ seq, at: at(ago), author: turn === null ? 'person' : 'ashley', person_id: turn === null ? 1 : null, type, outcome: 'accepted', piece_id: piece, by_turn: turn });
+    ({ seq, at: at(ago), author: turn === null ? 'person' : 'ashley', person_id: turn === null ? 1 : null, type, outcome: 'accepted', piece_id: piece, by_turn: turn, undone_by: seq === 4 ? 8 : null });
   return [c(3, 'add', last, 900_000, 41), c(4, 'edit', 1, 880_000, 41), c(5, 'move', 2, 300_000, null), c(6, 'edit', 3, 90_000, 44), c(7, 'add', last, 80_000, 44)];
 }
 

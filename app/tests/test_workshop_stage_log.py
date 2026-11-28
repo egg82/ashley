@@ -21,3 +21,13 @@ def test_a_change_of_hers_carries_the_turn_it_was_made_in_and_a_persons_carries_
     assert applied.outcome == "accepted"
     detail = BenchDetail.model_validate(alana.get(f"/api/benches/{bench}").json())
     assert [(r.author, r.by_turn) for r in detail.recent] == [("person", None), ("ashley", 41)]
+
+
+def test_a_command_an_undo_took_back_carries_the_undos_seq_and_others_none(signed_in: As, wired: Fakes) -> None:
+    alana = signed_in(ALANA)
+    bench = opened(alana).id
+    assert command(alana, bench, ADD)[0] == 200
+    assert command(alana, bench, {"type": "edit", "piece_id": 1, "base_version": 1, "title": "parts", "body": "M4"})[0] == 200
+    assert command(alana, bench, {"type": "undo", "seq": 2})[0] == 200
+    detail = BenchDetail.model_validate(alana.get(f"/api/benches/{bench}").json())
+    assert [(r.seq, r.type, r.undone_by) for r in detail.recent] == [(1, "add", None), (2, "edit", 3), (3, "undo", None)]
