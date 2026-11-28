@@ -1,10 +1,11 @@
 """What her tools bring up beside her words (`ToolResult.shown`): a printers read brings up each printer it returned and
 no other read does; `show_card` brings up a printer the household has, by its id, and refuses anything else with nothing
-brought up; it is offered only while the household has a printing manager, and to a known speaker beside printing."""
+brought up; a person card is the speaker's own and no one else's; the printer is offered only while the household has a
+printing manager, and `show_card` to a known speaker beside printing."""
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from ashley import services
@@ -22,6 +23,7 @@ from ashley.tools.show_card import SHOW, ShowCardTools
 from money_support import HeldConnections
 
 HOME = 10
+SPEAKER = 3
 CONFIG = printing_config.load()
 
 
@@ -73,7 +75,7 @@ def test_a_read_of_anything_else_or_a_failed_read_brings_up_nothing(fake: FakePr
 
 
 def test_show_card_brings_up_a_printer_the_household_has(fake: FakePrinting) -> None:
-    got = run(ShowCardTools(HOME, CONFIG), SHOW, {"kind": "printer", "ref": "02X"})
+    got = run(ShowCardTools(HOME, CONFIG, SPEAKER), SHOW, {"kind": "printer", "ref": "02X"})
     assert not got.is_error and got.shown == (Shown("printer", "02X"),)
 
 
@@ -81,20 +83,38 @@ def test_show_card_brings_up_a_printer_the_household_has(fake: FakePrinting) -> 
                                        {"kind": "printer"}, {"kind": "printer", "ref": 1}])
 def test_show_card_refuses_what_it_cannot_show_and_brings_up_nothing(fake: FakePrinting,
                                                                      arguments: dict[str, object]) -> None:
-    got = run(ShowCardTools(HOME, CONFIG), SHOW, arguments)
+    got = run(ShowCardTools(HOME, CONFIG, SPEAKER), SHOW, arguments)
     assert got.is_error and got.shown == ()
 
 
 def test_show_card_with_printers_that_cannot_be_read_brings_up_nothing(fake: FakePrinting) -> None:
     fake.error = PrintingFailed("unreachable")
-    got = run(ShowCardTools(HOME, CONFIG), SHOW, {"kind": "printer", "ref": "01P"})
+    got = run(ShowCardTools(HOME, CONFIG, SPEAKER), SHOW, {"kind": "printer", "ref": "01P"})
     assert got.is_error and got.shown == ()
 
 
-def test_show_card_is_offered_only_while_the_household_has_a_printing_manager(fake: FakePrinting) -> None:
-    assert [s.name for s in asyncio.run(ShowCardTools(HOME, CONFIG).catalogue()).specs] == [SHOW]
+def kinds_offered() -> list[str]:
+    specs = asyncio.run(ShowCardTools(HOME, CONFIG, SPEAKER).catalogue()).specs
+    assert [s.name for s in specs] == [SHOW]
+    properties = cast(dict[str, dict[str, Any]], specs[0].parameters["properties"])
+    return list(properties["kind"]["enum"])
+
+
+def test_show_card_offers_a_printer_only_while_the_household_has_a_printing_manager(fake: FakePrinting) -> None:
+    assert kinds_offered() == ["person", "printer"]
     fake.error = NotConnected()
-    assert asyncio.run(ShowCardTools(HOME, CONFIG).catalogue()).specs == ()
+    assert kinds_offered() == ["person"]
+
+
+def test_show_card_brings_up_the_speakers_own_person_card(fake: FakePrinting) -> None:
+    got = run(ShowCardTools(HOME, CONFIG, SPEAKER), SHOW, {"kind": "person", "ref": str(SPEAKER)})
+    assert not got.is_error and got.shown == (Shown("person", str(SPEAKER)),)
+
+
+@pytest.mark.parametrize("ref", ["4", "", "03", 3])
+def test_show_card_refuses_another_persons_card(fake: FakePrinting, ref: object) -> None:
+    got = run(ShowCardTools(HOME, CONFIG, SPEAKER), SHOW, {"kind": "person", "ref": ref})
+    assert got.is_error and got.shown == ()
 
 
 def test_a_known_speaker_is_offered_show_card_beside_printing(fake: FakePrinting) -> None:

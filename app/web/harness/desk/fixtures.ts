@@ -62,8 +62,8 @@ export const CONVERSATION = {
     turn(3, 'person', 'Is it going to rain Saturday?', 55),
     turn(4, 'ashley', "Dry until about 4. Everyone's out 9 to 5 tomorrow, so I'd like to turn the heating down 2° while the house is empty.", 58),
     turn(5, 'person', 'How long on the planter?', 59),
-    turn(6, 'ashley', 'About an hour and a half: the shed printer is at layer 212 of 340.', 59, [{ kind: 'printer', ref: '1' }]),
+    turn(6, 'ashley', 'About an hour and a half: the shed printer is at layer 212 of 340.', 59, [{ kind: 'printer', ref: '1' }, { kind: 'person', ref: '1' }]),
     turn(7, 'person', 'And the clips upstairs?', 60),
-    turn(8, 'ashley', 'Paused. Slot 3 ran out of filament, so it needs a new spool before it can go on.', 60, [{ kind: 'printer', ref: '2' }, { kind: 'printer', ref: '9' }]),
+    turn(8, 'ashley', 'Paused. Slot 3 ran out of filament, so it needs a new spool before it can go on.', 60, [{ kind: 'printer', ref: '2' }, { kind: 'printer', ref: '9' }, { kind: 'person', ref: '1' }, { kind: 'person', ref: '2' }]),
   ],
 };

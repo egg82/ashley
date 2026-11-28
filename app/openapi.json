@@ -9946,7 +9946,10 @@
         "properties": {
           "kind": {
             "type": "string",
-            "const": "printer",
+            "enum": [
+              "printer",
+              "person"
+            ],
             "title": "Kind"
           },
           "ref": {
@@ -9960,7 +9963,7 @@
           "ref"
         ],
         "title": "BroughtUp",
-        "description": "One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the\nkind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`)."
+        "description": "One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the\nkind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`; for `person`, the signed-in person's own id)."
       },
       "CatalogueActionInfo": {
         "properties": {

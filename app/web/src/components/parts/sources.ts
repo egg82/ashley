@@ -38,4 +38,7 @@ export interface PersonSource {
   prints: ReadonlySignal<readonly Voiceprint[] | null | undefined>;
   /** Reads both again. */
   read(): Promise<void>;
+  /** Whether `ref`, the person id a card was brought up with, is the one signed in: a card is never drawn from what
+   * someone else's turn showed. */
+  owns(ref: string): boolean;
 }

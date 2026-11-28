@@ -5,7 +5,7 @@ import { ApiError, getFacts } from '../api/client';
 import type { PersonSource } from '../components/parts/sources';
 import { facts } from '../rooms/memory/memory';
 import { loadPrints, prints, printsState } from '../rooms/memory/voice';
-import { load as reloadSession } from './session';
+import { load as reloadSession, person } from './session';
 
 const factsState = signal<'loading' | 'ready' | 'failed'>('loading');
 
@@ -22,6 +22,7 @@ async function readFacts(): Promise<void> {
 export const personSource: PersonSource = {
   facts: computed(() => (factsState.value === 'ready' ? facts.value : factsState.value === 'loading' ? undefined : null)),
   prints: computed(() => (printsState.value === 'ready' ? prints.value : printsState.value === 'loading' ? undefined : null)),
+  owns: (ref) => person.value !== null && String(person.value.id) === ref,
   async read() {
     await Promise.all([readFacts(), loadPrints()]);
   },

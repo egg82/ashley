@@ -16,7 +16,7 @@ const rows = (list: readonly MemoryFact[]) =>
 
 function Unknown({ what, source }: { what: string; source: PersonSource }) {
   return (
-    <div class="k-person-unk" role="alert">
+    <div class="person-card-unk" role="alert">
       <span class="unk">unknown</span>
       <span class="meta">Couldn't read {what} just now.</span>
       <button class="btn sm" type="button" onClick={() => void source.read()}>Try again</button>
@@ -35,7 +35,7 @@ export function PersonFacts({ source }: { source: PersonSource }) {
       {view.fresh.length > 0 && (
         <>
           <div class="sec-title"><b>New this week</b><span class="label">check these first</span></div>
-          <div class="k-person-new">{view.fresh.map((f) => <FactCard key={f.id} fact={f} fresh={corrected.value.has(f.id)} />)}</div>
+          <div class="person-card-new">{view.fresh.map((f) => <FactCard key={f.id} fact={f} fresh={corrected.value.has(f.id)} />)}</div>
         </>
       )}
       {view.yours.length > 0 && (
@@ -77,7 +77,7 @@ export function PersonPrints({ source }: { source: PersonSource }) {
 export function PersonCard({ source }: { source: PersonSource }) {
   const prints = source.prints.value;
   return (
-    <section class="k-person" aria-label="What she knows about you">
+    <section class="person-card" aria-label="What she knows about you">
       <h2 class="label">What she knows about you</h2>
       <PersonFacts source={source} />
       <div class="sec-title">

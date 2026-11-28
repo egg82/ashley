@@ -41,7 +41,10 @@ export const PARTS: Record<PartKind, PartType> = {
       return name ? `Printer · ${name}` : 'Printer';
     },
   },
-  person: { draw: (s) => (s.person ? <Person source={s.person} /> : null) },
+  person: {
+    draw: (s, ref) => (s.person && (ref === undefined || s.person.owns(ref)) ? <Person source={s.person} /> : null),
+    chip: () => 'What she knows about you',
+  },
   conversation: { draw: (s) => s.conversation() },
 };
 

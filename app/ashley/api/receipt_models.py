@@ -85,9 +85,9 @@ def _wire_call(call: AgreedCall) -> WireAgreedCall:
 
 class BroughtUp(BaseModel):
     """One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the
-    kind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`)."""
+    kind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`; for `person`, the signed-in person's own id)."""
 
-    kind: Literal["printer"]
+    kind: Literal["printer", "person"]
     ref: str
 
 

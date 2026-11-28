@@ -167,7 +167,7 @@ test('a brought-up printer folds to a chip named for it, or for its kind when it
 });
 
 function stubPerson(facts: readonly MemoryFact[] | null | undefined, prints: readonly Voiceprint[] | null | undefined): PersonSource {
-  return { facts: signal(facts), prints: signal(prints), read: async () => undefined };
+  return { facts: signal(facts), prints: signal(prints), read: async () => undefined, owns: (ref) => ref === '7' };
 }
 
 const both = (source: PersonSource) => [parts.PersonFacts({ source }), parts.PersonPrints({ source })];
@@ -196,4 +196,12 @@ test('a person card counts the voiceprints and names the device each was taken o
 test('the kiosk has no person source, so a person part draws nothing there', () => {
   const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), printer: stubPrinter([]), conversation: () => 'talk' };
   assert.equal(parts.drawPart('person', sources), null);
+});
+
+test('a person card brought up by a turn draws only for the person it names, and folds to a chip of its own', () => {
+  const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), printer: stubPrinter([]),
+    person: stubPerson([], []), conversation: () => 'talk' };
+  assert.notEqual(parts.drawPart('person', sources, '7'), null);
+  assert.equal(parts.drawPart('person', sources, '8'), null);
+  assert.equal(parts.chipOf('person', sources, '7'), 'What she knows about you');
 });
