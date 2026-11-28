@@ -14,6 +14,7 @@ import { PieceCard, type PieceActions } from '../pieces/PieceCard';
 import { glyphOf } from '../pieces/renderers';
 import { LinesBadge, Says } from './HerLines';
 import { press, sendPlace } from './pinDrag';
+import { hovered, marked, tapped } from '../model/pointing';
 import { dragging } from './state';
 
 const CardBody = memo(PieceCard);
@@ -86,15 +87,17 @@ export function CanvasCard(p: CardProps) {
   };
   const click = (e: MouseEvent) => {
     const t = e.target as Element;
+    tapped.value = id;
     if (!t.closest(CONTROL)) p.focus(id);
   };
-  const cls = ['bc-card', `f-${form}`, p.focused && 'focus', p.pinned && 'pinned', p.landing && 'landing', d && 'dragging', !r && 'measuring'];
+  const cls = ['bc-card', `f-${form}`, p.focused && 'focus', p.pinned && 'pinned', p.landing && 'landing', marked.value === id && 'pointed', d && 'dragging', !r && 'measuring'];
   const bodyW = (box && p.boxed ? box.w : p.width) + (d?.dw ?? 0);
   const bodyH = box && (p.boxed || d?.dh) ? box.h + (d?.dh ?? 0) : undefined;
   return (
     <div class={cls.filter(Boolean).join(' ')} data-card={id} data-family={p.kind?.family ?? 'unknown'}
       style={r ? { transform: `translate(${r.x}px, ${r.y}px)`, width: `${r.w}px`, height: `${r.h}px` } : { width: `${p.width}px` }}
-      onPointerDown={down} onClick={click}>
+      onPointerDown={down} onClick={click} onPointerEnter={(e) => { if (e.pointerType !== 'touch') hovered.value = id; }}
+      onPointerLeave={() => { if (hovered.value === id) hovered.value = null; }}>
       <div class="bc-clip" inert={form === 'chip'}>
         <div class={`bc-body${p.boxed ? ' boxed' : ''}`} data-measure={p.boxed ? undefined : id}
           style={{ width: `${bodyW}px`, height: bodyH === undefined ? undefined : `${bodyH}px` }}>

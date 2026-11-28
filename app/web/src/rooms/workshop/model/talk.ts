@@ -8,7 +8,8 @@ import { onResync, onThreadTurn, onTurnFailed } from '../../../session/live';
 import { herAsked, herHears, herNoReply, herReplied, herRoomLeft, herSaidLater, herState, herWorking } from '../../../shell/her/state';
 import { talk } from '../../../speech/talk';
 import { firstLine } from '../../her/attached';
-import { apply } from './bench';
+import { apply, detail } from './bench';
+import { clearPointing, takePointing } from './pointing';
 import { whyNot } from '../pieces/why';
 import { awaiting, failedLine, line, missedOf, overlaid, type Line, type Overlay } from '../../her/chat';
 import { stillOn } from '../../her/owed';
@@ -98,12 +99,15 @@ export async function sendTalk(text: string, pasted: string | null = null): Prom
     if ('why' in put) return put.why;
     piece = put.piece;
   }
+  const pointing = takePointing(new Set(detail.value?.pieces.map((p) => p.id)));
   const mine = line('person', text);
   overlay.value = { ...overlay.value, failed: null, mine };
   talkSending.value = true;
   herAsked();
   try {
-    const got = await sendOnBench(id, piece === undefined ? { text } : { text, piece_id: piece });
+    const got = await sendOnBench(id, {
+      text, ...(piece !== undefined && { piece_id: piece }), ...(pointing !== null && { pointing }),
+    });
     if (id !== openId) return null;
     overlay.value = { ...overlay.value, hers: { line: { ...line('ashley', got.body), follows: got.follows }, held: got.follows } };
     if (got.body) herReplied();
@@ -138,6 +142,7 @@ export function enterTalk(id: number, benchThread: string): void {
   talkPieceLines.value = [];
   talkSending.value = false;
   benchEarlier.earlierReset();
+  clearPointing();
   unsubscribe = [
     onThreadTurn((t) => t === thread && void load(id, true)),
     onTurnFailed((t, why) => {
@@ -159,5 +164,6 @@ export function leaveTalk(): void {
   unsubscribe.forEach((u) => u());
   unsubscribe = [];
   benchTalking.cancel();
+  clearPointing();
   herRoomLeft();
 }
