@@ -117,7 +117,9 @@ class World:
 
 
 def work_item(state_: str) -> WorkItem:
-    return WorkItem.model_validate({"kind": "errand", "id": 1, "title": "t", "state": state_, "at": "2026-11-01T00:00:00Z"})
+    return WorkItem.model_validate({"kind": "errand", "id": 1, "title": "t", "state": state_,
+                                    "lane": "waiting" if state_ == "waiting_on_you" else "doing",
+                                    "at": "2026-11-01T00:00:00Z"})
 
 
 @pytest.fixture
