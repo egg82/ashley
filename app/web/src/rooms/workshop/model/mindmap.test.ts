@@ -95,8 +95,9 @@ test('growing a bench piece by piece from nothing to 60 keeps every bar at every
 });
 
 test('a fresh layout of a bench reproduces the one grown piece by piece, pins arriving partway', () => {
+  // Seeds 4, 5 and 9 at 60 pieces are ones where a pin ahead of a piece changes its slot unless the layout ignores it.
   for (const n of SIZES) {
-    for (const seed of SEEDS) {
+    for (const seed of [...SEEDS, 4, 5, 9]) {
       const full = makeBench(seed, n);
       const pinned = new Map<number, { x: number; y: number }>();
       let grown: Map<number, Box> | null = null;
