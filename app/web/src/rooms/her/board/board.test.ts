@@ -74,6 +74,16 @@ test('an action offers Undo only while the server says it can be undone and it w
   assert.deepEqual(offers(item({ kind: 'bench', state: 'open' }), null), []);
 });
 
+test('a print she queued offers Cancel while it can be taken back, and reads as cancelled after', () => {
+  const undo = { kind: 'print_cancel' as const, ref: '101', within: null };
+  assert.deepEqual(offers(item({ kind: 'action', id: 6, undo, can_undo: true }), null), [{ kind: 'stop', action: 6 }]);
+  assert.deepEqual(offers(item({ kind: 'action', undo, can_undo: false }), null), []);
+  assert.equal(undoneWord(item({ kind: 'action', undo, undone: { at: 'x', how: 'undone' } })), 'Cancelled');
+  assert.match(undoneWord(item({ kind: 'action', undo, undone: { at: 'x', how: 'gone' } })) ?? '', /Already started/);
+  assert.equal(undoResult('undone', true), 'Cancelled');
+  assert.equal(undoResult('undone'), 'Undone');
+});
+
 test('a taken Undo reads how it stands, and a delete sent to a proposal says it waits on the person', () => {
   assert.equal(undoneWord(item({ kind: 'action' })), null);
   assert.equal(undoneWord(item({ kind: 'action', undone: { at: 'x', how: 'undone' } })), 'Undone');
