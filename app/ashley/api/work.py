@@ -1,9 +1,10 @@
 """The signed-in person's open work (`GET /api/work`): the errands they asked for that have not ended, their open
 benches, the proposals waiting for their OK, the watches she keeps for them and what she did on her own for them, each with where it stands and its lane
-(`work_items`), `DELETE /api/work/watches/{id}`, which ends one of their live watches, and
+(`work_items`), `DELETE /api/work/watches/{id}`, which ends one of their live watches, `POST /api/work/watches/{id}/pause` and `/resume`, which
+hold and release one, and
 `POST /api/work/actions/{id}/undo`, which takes back something she did on her own for them through her own tool for it
 (`channels.undo_action`). A watch or action that is not theirs, is another household's or is unknown is 404 alike, as
-is a watch that has ended. Logs `work.listed` with the household and a count and `work.watch_cancelled` with the watch
+is a watch that has ended. Logs `work.listed` with the household and a count and `work.watch_cancelled`, `work.watch_on_hold` and `work.watch_resumed` with the watch
 id; never what an item says. An undo logs its own `undo.done`."""
 
 import logging
@@ -13,7 +14,7 @@ from fastapi import APIRouter, Path
 from fastapi.responses import JSONResponse
 
 from .. import logs
-from ..channels.board import BoardUnavailable, end_watch
+from ..channels.board import BoardUnavailable, end_watch, hold_watch
 from ..channels.model import Inbound
 from ..channels.undo_action import Refusal, UndoNotFound, UndoRefused, UndoUnavailable, undo
 from ..errands.bench_jobs import JobsUnavailable
@@ -26,7 +27,7 @@ from .models import ErrorResponse
 from .person import Person
 from .work_items import open_work
 from .chat import thread_of
-from .work_models import UndoDone, WatchCancelled, WorkResponse
+from .work_models import UndoDone, WatchCancelled, WatchOnHold, WorkResponse
 
 router = APIRouter()
 log = logging.getLogger("ashley.api")
@@ -67,6 +68,41 @@ async def cancel_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) 
         return JSONResponse(status_code=404, content=ErrorResponse(code="not_found", detail="no such watch").model_dump())
     logs.info(log, "work.watch_cancelled", watch=watch_id)
     return WatchCancelled(id=watch_id)
+
+
+async def _hold(signed_in: Person, watch_id: int, held: bool) -> WatchOnHold | JSONResponse:
+    me = signed_in.person
+    try:
+        found = await hold_watch(me.household_id, me.id, watch_id, held)
+    except BoardUnavailable:
+        return JSONResponse(status_code=503, content=ErrorResponse(
+            code="unavailable", detail="her watches are unavailable right now; try again shortly").model_dump())
+    if not found:
+        return JSONResponse(status_code=404, content=ErrorResponse(code="not_found", detail="no such watch").model_dump())
+    logs.info(log, "work.watch_on_hold" if held else "work.watch_resumed", watch=watch_id)
+    return WatchOnHold(id=watch_id, on_hold=held)
+
+
+_WATCH_HOLD: dict[int | str, dict[str, Any]] = {
+    **_SIGNED_IN,
+    403: {"model": ErrorResponse, "description": "`forbidden`: the request came from another site"},
+    404: {"model": ErrorResponse, "description": "`not_found`: no live watch of yours has that id"},
+    422: {"description": "FastAPI's validation error: an id below 1"}}
+
+
+@router.post("/api/work/watches/{watch_id}/pause", response_model=WatchOnHold, responses=_WATCH_HOLD)
+async def pause_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) -> WatchOnHold | JSONResponse:
+    """200 `WatchOnHold` with `on_hold` true: the watch is not checked and its expiry waits until it is resumed; pausing a
+    paused watch is the same 200. 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`."""
+    return await _hold(signed_in, watch_id, True)
+
+
+@router.post("/api/work/watches/{watch_id}/resume", response_model=WatchOnHold, responses=_WATCH_HOLD)
+async def resume_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) -> WatchOnHold | JSONResponse:
+    """200 `WatchOnHold` with `on_hold` false: the watch is checked again at once, its expiry moved on by the time it was
+    paused, so what changed meanwhile wakes her; resuming a running watch is the same 200. 401 `unauthorized`; 403
+    `forbidden`; 404 `not_found`; 503 `unavailable`."""
+    return await _hold(signed_in, watch_id, False)
 
 
 _UNDO_REFUSED: dict[Refusal, ErrorResponse] = {

@@ -2,7 +2,7 @@
 // can do with it from here. What a pressed action did, or why it did not, shows under the row.
 import { useState } from 'preact/hooks';
 import { agreeTo } from '../../../api/agree';
-import { cancelWatch, undoAction } from '../../../api/board';
+import { cancelWatch, pauseWatch, resumeWatch, undoAction } from '../../../api/board';
 import { ApiError } from '../../../api/client';
 import { readGlance } from '../../../session/house';
 import { load as reloadSession } from '../../../session/session';
@@ -47,6 +47,16 @@ function Action({ offer, act }: { offer: Offer; act: ReturnType<typeof useAct> }
       }, whyNotAgreed)}>{busy ? 'Agreeing…' : 'Agree'}</button>;
     case 'reply':
       return offer.here ? <button class="btn sm ghost" type="button" onClick={focusComposer}>Reply</button> : null;
+    case 'pause':
+      return <button class="btn sm ghost" type="button" disabled={busy} onClick={() => void act.run(async () => {
+        await pauseWatch(offer.watch);
+        return null;
+      })}>{busy ? 'Pausing…' : 'Pause'}</button>;
+    case 'resume':
+      return <button class="btn sm ghost" type="button" disabled={busy} onClick={() => void act.run(async () => {
+        await resumeWatch(offer.watch);
+        return null;
+      })}>{busy ? 'Resuming…' : 'Resume'}</button>;
     case 'cancel':
       return <button class="btn sm ghost" type="button" disabled={busy} onClick={() => void act.run(async () => {
         await cancelWatch(offer.watch);
@@ -63,7 +73,7 @@ function Sub({ item }: { item: WorkItem }) {
   const kind = item.kind === 'action' || item.kind === 'proposal' ? null : KIND_WORD[item.kind];
   return (
     <div class="meta b-sub">
-      {kind && `${kind} · `}{item.state === 'stopped' ? 'Stopped · ' : ''}{moment(item.at)}
+      {kind && `${kind} · `}{item.state === 'stopped' ? 'Stopped · ' : item.state === 'on_hold' ? 'On hold · ' : ''}{moment(item.at)}
       {undone && <span class={`b-undone ${item.undone?.how ?? ''}`}> · {undone}</span>}
     </div>
   );

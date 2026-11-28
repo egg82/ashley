@@ -1,6 +1,6 @@
 // What a board row offers, by the item's kind and state: pure, so it is tested without a page. A proposal is agreed by a
 // tap when it holds calls (`can_tap`), else by answering her in the conversation it was made in; a live watch can be
-// cancelled; something she did on her own can be undone only while the server offers it (`can_undo`).
+// paused or cancelled and an on-hold one resumed or cancelled; something she did on her own can be undone only while the server offers it (`can_undo`).
 import type { ActionUndone, UndoDone, WorkItem } from '../../../api/types';
 
 type UndoHow = ActionUndone['how'];
@@ -8,6 +8,8 @@ type UndoHow = ActionUndone['how'];
 export type Offer =
   | { kind: 'agree'; proposal: number }
   | { kind: 'reply'; here: boolean }
+  | { kind: 'pause'; watch: number }
+  | { kind: 'resume'; watch: number }
   | { kind: 'cancel'; watch: number }
   | { kind: 'undo'; action: number };
 
@@ -18,7 +20,10 @@ export function offers(item: WorkItem, open: number | null): Offer[] {
     if (item.conversation_id != null) return [{ kind: 'reply', here: item.conversation_id === open }];
     return [];
   }
-  if (item.kind === 'watch' && (item.state === 'running' || item.state === 'stopped')) return [{ kind: 'cancel', watch: item.id }];
+  if (item.kind === 'watch' && (item.state === 'running' || item.state === 'stopped')) {
+    return [{ kind: 'pause', watch: item.id }, { kind: 'cancel', watch: item.id }];
+  }
+  if (item.kind === 'watch' && item.state === 'on_hold') return [{ kind: 'resume', watch: item.id }, { kind: 'cancel', watch: item.id }];
   if (item.kind === 'action' && item.can_undo === true && !item.undone) return [{ kind: 'undo', action: item.id }];
   return [];
 }

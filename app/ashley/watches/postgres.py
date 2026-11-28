@@ -48,7 +48,7 @@ _LATER = "UPDATE watches SET next_check_at = now() + make_interval(secs => %s) W
 
 _LOCK = """
 SELECT household_id, person_id, state, series, version, coalesce(last_woke_at, armed_at), failures FROM watches
-WHERE id = %s AND version = %s AND state IN ('armed', 'paused') FOR UPDATE"""
+WHERE id = %s AND version = %s AND state IN ('armed', 'paused') AND held_at IS NULL FOR UPDATE"""
 
 _INSERT = """
 INSERT INTO watches (household_id, person_id, kind, target, label, bench_id, armed_by, track, when_clauses,
@@ -64,13 +64,13 @@ WHERE id = %s"""
 
 _EXPIRE = """
 WITH e AS (UPDATE watches SET state = 'ended', reason = 'expired', ended_at = now()
-           WHERE state <> 'ended' AND expires_at <= now() RETURNING 1),
+           WHERE state <> 'ended' AND held_at IS NULL AND expires_at <= now() RETURNING 1),
 d AS (DELETE FROM watches w WHERE state = 'ended' AND ended_at < now() - make_interval(secs => %s)
       AND NOT EXISTS (SELECT 1 FROM wakes k WHERE k.watch_id = w.id AND k.settled_at IS NULL) RETURNING 1)
 SELECT (SELECT count(*) FROM e), (SELECT count(*) FROM d)"""
 
 _DUE = f"""
-SELECT {rows.COLUMNS} FROM watches w WHERE state <> 'ended' AND expires_at > now() AND next_check_at <= now()
+SELECT {rows.COLUMNS} FROM watches w WHERE state <> 'ended' AND held_at IS NULL AND expires_at > now() AND next_check_at <= now()
 AND NOT EXISTS (SELECT 1 FROM wakes k WHERE k.watch_id = w.id AND k.settled_at IS NULL)
 ORDER BY next_check_at, id LIMIT %s"""
 
@@ -123,6 +123,21 @@ class PostgresWatches(Watches):
                               "WHERE household_id = %s AND person_id = %s AND kind = %s AND target = %s "
                               "AND state <> 'ended' RETURNING id", (household_id, person_id, kind, target))
         return len(got) == 1
+
+    async def hold(self, household_id: int, person_id: int, watch_id: int) -> bool:
+        got = await self._run("UPDATE watches SET held_at = coalesce(held_at, now()) WHERE id = %s AND household_id = %s "
+                              "AND person_id = %s AND state <> 'ended' RETURNING id", (watch_id, household_id, person_id))
+        return len(got) == 1
+
+    async def release(self, household_id: int, person_id: int, watch_id: int) -> bool:
+        got = await self._run("UPDATE watches SET expires_at = expires_at + (now() - held_at), held_at = NULL, "
+                              "next_check_at = now() WHERE id = %s AND household_id = %s AND person_id = %s "
+                              "AND state <> 'ended' AND held_at IS NOT NULL RETURNING id",
+                              (watch_id, household_id, person_id))
+        if got:
+            return True
+        return len(await self._run("SELECT id FROM watches WHERE id = %s AND household_id = %s AND person_id = %s "
+                                   "AND state <> 'ended'", (watch_id, household_id, person_id))) == 1
 
     async def live(self, household_id: int, person_id: int) -> tuple[Watch, ...]:
         got = await self._run(f"SELECT {rows.COLUMNS} FROM watches WHERE household_id = %s AND person_id = %s "

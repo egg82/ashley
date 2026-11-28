@@ -32,6 +32,19 @@ class Watches(Service):
         """End that person's live watch on the target, reason `disarmed`. False, changing nothing, when there is
         none. Raises WatchesUnavailable."""
 
+    async def hold(self, household_id: int, person_id: int, watch_id: int) -> bool:
+        """Pause that person's live watch: it is not checked, and its expiry waits, until `release`. Holding a held
+        watch changes nothing and is True. False, changing nothing, when the id is not a live watch of theirs.
+        Raises WatchesUnavailable. A store that does not hold watches raises it too."""
+        raise WatchesUnavailable("this store does not hold watches")
+
+    async def release(self, household_id: int, person_id: int, watch_id: int) -> bool:
+        """Resume that person's held watch: `expires_at` moves on by the time it was held, and it is checked at once
+        against the baseline it had, so what changed meanwhile wakes her. Releasing a watch that is not held changes
+        nothing and is True. False, changing nothing, when the id is not a live watch of theirs. Raises
+        WatchesUnavailable."""
+        raise WatchesUnavailable("this store does not hold watches")
+
     @abstractmethod
     async def live(self, household_id: int, person_id: int) -> tuple[Watch, ...]:
         """The person's armed and paused watches, soonest expiry first. Raises WatchesUnavailable."""
@@ -42,12 +55,12 @@ class Watches(Service):
 
     @abstractmethod
     async def due(self, limit: int) -> tuple[Watch, ...]:
-        """At most `limit` live, unexpired watches whose `next_check_at` has come and that have no unsettled `wakes`
+        """At most `limit` live, unexpired, unheld watches whose `next_check_at` has come and that have no unsettled `wakes`
         row of their own, the longest due first. Raises WatchesUnavailable."""
 
     @abstractmethod
     async def record(self, watch_id: int, version: int, check: Check) -> bool:
-        """Record one check, only while the watch is live at `version`; False, changing nothing, otherwise.
+        """Record one check, only while the watch is live, not held, at `version`; False, changing nothing, otherwise.
         `Baseline` stores the baseline, `version` + 1. Any check but `Failed` sets failures to 0 and arms a paused
         watch again. A successful read (`Baseline`, `Quiet`, `Woke`) moves a standing watch's `expires_at` to now plus the time it
         was armed for; `Failed` and `Later` do not. `Quiet` ends the watch `until` when `ends`. `Woke`, in one transaction, stores the baseline,
@@ -58,7 +71,7 @@ class Watches(Service):
 
     @abstractmethod
     async def expire(self, keep_s: float) -> Counts:
-        """Live watches past `expires_at` end `expired`. Ended watches older than `keep_s` with no unsettled
+        """Live, unheld watches past `expires_at` end `expired`. Ended watches older than `keep_s` with no unsettled
         `wakes` row are deleted. Raises WatchesUnavailable."""
 
 

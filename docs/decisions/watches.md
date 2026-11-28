@@ -86,6 +86,7 @@ verdicts and keeps no rules. The job judges, and the store stores what it is tol
 |---|---|
 | `arm(arm: Arm) -> Armed` | Stores an `armed` watch with the given kind, target, label, bench, `armed_by`, `track`, `when`, `until`, `tools`, `interval_s`, `expires_at`, `brief`, `standing` and optional `baseline`; returns its id and `new`. A live (armed or paused) watch of the same person, kind and target is updated instead: its `when`, `until`, `tools`, `interval_s`, `expires_at`, `brief`, `standing`, `grant` and bench take the new values, its baseline, `version` and `series` are kept, and `armed_by` becomes `handoff` if either arming was one. Raises ValueError, before writing, for a field in `when` or `until` outside `track`, conditions over their limits, `expires_at` not in the future, or a new watch past the person's `max_live`; WatchesUnavailable. |
 | `disarm(household_id, person_id, kind, target) -> bool` | Ends that person's live watch on the target, reason `disarmed`. False, changing nothing, when there is none. |
+| `hold(household_id, person_id, watch_id) -> bool` and `release(...)` | Pause and resume that person's live watch, as above. False, changing nothing, when the id is not a live watch of theirs. |
 | `live(household_id, person_id) -> tuple[Watch, ...]` | The person's armed and paused watches, soonest expiry first. |
 | `get(watch_id) -> Watch \| None` | One watch in any state, for the turn its wake starts. |
 | `due(limit) -> tuple[Watch, ...]` | At most `limit` live, unexpired watches whose `next_check_at` has come and that have no unsettled `wakes` row of their own, the longest due first. |
@@ -150,8 +151,13 @@ a herdr bridge). Arguments and results are never logged.
 A person sees and ends their own watches from the board: `GET /api/work` lists `Watches.live` as `watch` items (paused
 ones `stopped`), and `DELETE /api/work/watches/{id}` reads the watch with `get`, refuses (404, alike for unknown, another
 person's, another household's or ended) unless it is the signed-in person's and live, then calls `disarm` on its kind
-and target, so it ends `disarmed` exactly as `unwatch` ends it. There is no pause: a pause would be a new watch
-state.
+and target, so it ends `disarmed` exactly as `unwatch` ends it.
+
+A person pauses and resumes their own watch with `POST /api/work/watches/{id}/pause` and `/resume` (`Watches.hold` and
+`release`, 404 alike for the same watches cancel refuses). A pause is `held_at`, kept apart from `state`, which says how
+the reads are going: a held watch is not due, takes no `record` and does not expire, and its board item is `on_hold`. Resume
+moves `expires_at` on by the time held and makes the watch due at once, so what changed while paused wakes her against the
+baseline it had. A paused watch can still be cancelled.
 
 `claude_start` and `claude_prompt` arm through `ashley.tools.claude_watching.watching`: `Watches.arm` with `armed_by`
 `handoff`, the kind's `handoff_until` and `handoff_hours`, and the session's state as the baseline. Their result says
@@ -202,7 +208,7 @@ was), `hours` (24), `max_hours` (168), `handoff_hours` (72), `track` (`status`, 
   `tools` (text array or null), `interval_s` (positive), `expires_at`, `state` (`armed`, `paused`, `ended`), `reason`
   (null exactly when armed; for ended, `until`, `expired` or `disarmed`; for paused, a failure slug), `failures`,
   `version` and `series` (each at least 0), `baseline` (a JSON object, null until the first check), `next_check_at`,
-  `armed_at`, `last_woke_at` and `ended_at`. It has a unique index on `(person_id, kind, target)` where not ended,
+  `armed_at`, `last_woke_at`, `ended_at` and `held_at` (null unless a person paused it). It has a unique index on `(person_id, kind, target)` where not ended,
   and an index on `next_check_at` where not ended.
 - `wakes`: the kind check gains `watch`. New columns: `watch_id` (references `watches`, cascading) and `changes` (a
   JSON object). A check requires that `watch_id` is set exactly for kind `watch`, and that a watch wake has

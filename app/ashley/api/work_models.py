@@ -7,7 +7,7 @@ from pydantic import AwareDatetime, BaseModel
 from .outside_models import ActionCause, ActionUndo
 
 
-WorkState = Literal["running", "waiting_on_you", "open", "done", "stopped"]
+WorkState = Literal["running", "waiting_on_you", "open", "done", "stopped", "on_hold"]
 Lane = Literal["waiting", "doing", "done_untold", "would_like", "on_her_own", "kept_quiet"]
 QuietWhy = Literal["quiet_hours", "not_greeting", "below_threshold", "rolled_silent", "said_none"]
 
@@ -54,7 +54,7 @@ class WorkItem(BaseModel):
     `state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job
     blocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with
     nothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be
-    sent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
+    sent or a watch paused after failing; `on_hold`, a watch the person paused. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
     `would_like` (something she offered unasked), `on_her_own` (every `action`, and only those) or `kept_quiet` (every
     `kept_quiet`, and only that). It follows `state` for
     every other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it
@@ -87,7 +87,7 @@ class WorkItem(BaseModel):
 
 
 class WorkResponse(BaseModel):
-    """The signed-in person's open work, those waiting on them first, then running, open, stopped and done, the most
+    """The signed-in person's open work, those waiting on them first, then running, open, stopped, on hold and done, the most
     recently moved first within each."""
 
     entries: list[WorkItem]
@@ -102,6 +102,14 @@ class UndoDone(BaseModel):
     id: int
     how: Literal["undone", "waiting_on_you", "gone"]
     conversation_id: int | None
+
+
+class WatchOnHold(BaseModel):
+    """The watch `id` is now `on_hold` (paused by the person) or running again
+    (`POST /api/work/watches/{id}/pause` and `/resume`)."""
+
+    id: int
+    on_hold: bool
 
 
 class WatchCancelled(BaseModel):

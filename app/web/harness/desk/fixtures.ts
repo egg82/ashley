@@ -14,6 +14,7 @@ export const WORK: WorkItem[] = [
   { kind: 'watch', id: 40, title: 'Watching for the pump to ship', state: 'running', lane: 'doing', at: at(7), can_tap: false, can_undo: false },
   { kind: 'open_errand', id: 41, title: 'Finding a cheaper internet plan', state: 'running', lane: 'doing', at: at(10, 2), until_local: '2026-11-28T17:00', can_tap: false, can_undo: false },
   { kind: 'watch', id: 42, title: 'Watching the build of the sensor firmware until it passes', state: 'stopped', lane: 'doing', at: at(6, 30), can_tap: false, can_undo: false },
+  { kind: 'watch', id: 43, title: 'Watching the oven temperature while the bread proves', state: 'on_hold', lane: 'doing', at: at(5, 15), can_tap: false, can_undo: false },
   { kind: 'bench', id: 5, title: 'Balcony watering', state: 'open', lane: 'doing', at: at(10, 2), can_tap: false, can_undo: false },
   { kind: 'action', id: 71, title: 'Turned on the porch light', state: 'done', lane: 'on_her_own', at: at(17, 48), cause: { kind: 'watch', id: 40 }, undo: null, can_tap: false, can_undo: false },
   { kind: 'action', id: 72, title: 'Put 4 mm pump tubing (2 m) on the Hardware list', state: 'done', lane: 'on_her_own', at: at(7, 58), cause: { kind: 'bench', id: 5 }, undo: { kind: 'todo_remove', ref: '4 mm pump tubing', within: 'todo.hardware' }, can_tap: false, can_undo: true },
