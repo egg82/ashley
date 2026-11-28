@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Voiceprint(BaseModel):
@@ -23,3 +23,19 @@ class VoiceForgotten(BaseModel):
     none."""
 
     deleted: int
+
+
+class EnrolmentRequest(BaseModel):
+    """Arm a speaker to enrol the signed-in person. There is no person field: it is always the session's. `wakes` is
+    how many of the device's next wakes to enrol from, `enrol_wakes` in the voice config when left out."""
+
+    device_id: int = Field(ge=1)
+    wakes: int | None = Field(default=None, ge=1)
+
+
+class Enrolment(BaseModel):
+    """The armed enrolment: the device, how many of its next wakes will be stored, and when it lapses."""
+
+    device_id: int
+    wakes: int
+    until: datetime

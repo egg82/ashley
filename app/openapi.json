@@ -1017,6 +1017,95 @@
         }
       }
     },
+    "/api/memory/voice/enrolments": {
+      "post": {
+        "summary": "Arm Enrolment",
+        "description": "201 `Enrolment`, the device armed for the signed-in person (replacing any enrolment it already had); 401\n`unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `refused`; 503 `unavailable`.",
+        "operationId": "arm_enrolment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrolmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Enrolment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site or was not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no unrevoked device of your household has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`refused`: the device is not a voice satellite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a body outside the request model gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/outside-actions": {
       "get": {
         "summary": "List Outside Actions",
@@ -11366,6 +11455,58 @@
         ],
         "title": "EditPieceRequest",
         "description": "Replace piece `piece_id`'s title and body, based on its `base_version`; refused `stale_base` when another change\ncame first, and nothing is merged."
+      },
+      "Enrolment": {
+        "properties": {
+          "device_id": {
+            "type": "integer",
+            "title": "Device Id"
+          },
+          "wakes": {
+            "type": "integer",
+            "title": "Wakes"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device_id",
+          "wakes",
+          "until"
+        ],
+        "title": "Enrolment",
+        "description": "The armed enrolment: the device, how many of its next wakes will be stored, and when it lapses."
+      },
+      "EnrolmentRequest": {
+        "properties": {
+          "device_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Device Id"
+          },
+          "wakes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wakes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device_id"
+        ],
+        "title": "EnrolmentRequest",
+        "description": "Arm a speaker to enrol the signed-in person. There is no person field: it is always the session's. `wakes` is\nhow many of the device's next wakes to enrol from, `enrol_wakes` in the voice config when left out."
       },
       "EntityListField": {
         "properties": {

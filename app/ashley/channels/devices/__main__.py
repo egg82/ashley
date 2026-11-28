@@ -14,9 +14,9 @@ Discord singleton reads the servers for each message, so a change applies at onc
 `house` makes a device the household's Home Assistant, the one device whose token may hand in wakes
 (`/api/wakes`). A satellite, a Discord server or a device that takes controls cannot be the house.
 
-`voice-enrol` arms a satellite to enrol a person of its household from its next N wakes (default 6) within M
-minutes (default `enrol_minutes` in `voice.json`): each of those wakes stores its voiceprint for them and is answered
-as usual. Run it again to replace the enrolment. `voice-forget` deletes every voiceprint of a person, and any
+`voice-enrol` arms a satellite to enrol a person of its household from its next N wakes within M
+minutes (default `enrol_minutes` in `voice.json`, and `enrol_wakes` there for N): each of those wakes stores its
+voiceprint for them and is answered as usual. Run it again to replace the enrolment. `voice-forget` deletes every voiceprint of a person, and any
 enrolment armed for them, and prints how many prints went.
 
 `add --controls` registers a text screen that shows touch controls (the hallway tablet), and `controls DEVICE_ID
@@ -82,7 +82,7 @@ def parser() -> argparse.ArgumentParser:
     enrol = commands.add_parser("voice-enrol", help="enrol a person's voice from a satellite's next wakes")
     enrol.add_argument("device_id", type=int)
     enrol.add_argument("person_id", type=int)
-    enrol.add_argument("--wakes", type=int, default=6, help="how many wakes to enrol from (default 6)")
+    enrol.add_argument("--wakes", type=int, help="how many wakes to enrol from (default `enrol_wakes` in voice.json)")
     enrol.add_argument("--minutes", type=float, help="how long the enrolment lasts (default from voice.json)")
     forget = commands.add_parser("voice-forget", help="delete every voiceprint of a person")
     forget.add_argument("person_id", type=int)
@@ -130,13 +130,15 @@ async def _voice(voices: Voices, args: argparse.Namespace) -> int:
     if args.command == "voice-forget":
         print(f"{await voices.forget(args.person_id)} voiceprints of person {args.person_id} forgotten")
         return 0
-    minutes = voice_config.load().enrol_minutes if args.minutes is None else args.minutes
+    config = voice_config.load()
+    minutes = config.enrol_minutes if args.minutes is None else args.minutes
+    wakes = config.enrol_wakes if args.wakes is None else args.wakes
     try:
-        await voices.arm(args.device_id, args.person_id, args.wakes, datetime.now(UTC) + timedelta(minutes=minutes))
+        await voices.arm(args.device_id, args.person_id, wakes, datetime.now(UTC) + timedelta(minutes=minutes))
     except UnknownEnrolee:
         print(f"no unrevoked device {args.device_id} with person {args.person_id} in its household", file=sys.stderr)
         return 1
-    print(f"device {args.device_id} enrols person {args.person_id} from its next {args.wakes} wakes "
+    print(f"device {args.device_id} enrols person {args.person_id} from its next {wakes} wakes "
           f"within {minutes:g} minutes")
     return 0
 
@@ -206,7 +208,8 @@ def main(argv: list[str]) -> int:
     if args.command == "discord" and min(args.guild_id, args.home_channel_id) <= 0:
         print("GUILD_ID and HOME_CHANNEL_ID must be Discord ids", file=sys.stderr)
         return 2
-    if args.command == "voice-enrol" and (args.wakes < 1 or (args.minutes is not None and args.minutes <= 0)):
+    if args.command == "voice-enrol" and (args.wakes is not None and args.wakes < 1
+                                         or args.minutes is not None and args.minutes <= 0):
         print("--wakes and --minutes must be positive", file=sys.stderr)
         return 2
     logs.setup()

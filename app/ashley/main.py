@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from . import logs, services, settings as settings_module, wiring, wiring_singletons
 from .api import (accounts, admin_gate, bench_choices, bench_files, bench_jobs, bench_runs, bench_talk, benches, chat, claude_screen, connection_holders, connection_oauth, connection_settings, connections, device_controls, devices, files, health, history, household, house, kiosk, lexicon, look, mail_bridge, mail_bridge_login,
                   kiosk_device, live, memory, messages, model_catalogue, outside_actions, people, person, persona, push, ready, reminders, screen_feed, screens, signin, skills, spend, spend_routes, spoken,
-                  trust, validation, voice_clips, voice_turns, wakes, work)
+                  trust, validation, voice_clips, voice_enrol, voice_turns, wakes, work)
 from .api.access import AccessLog
 from .api.contract import operation_id
 from .db.database import Database
@@ -18,7 +18,7 @@ from .web import assetlinks, legal
 from .web.static import mount_client
 
 
-ROUTED = (health, ready, messages, wakes, voice_clips, voice_turns, signin, memory, outside_actions, reminders,
+ROUTED = (health, ready, messages, wakes, voice_clips, voice_turns, signin, memory, voice_enrol, outside_actions, reminders,
            accounts, connections, connection_oauth, connection_holders, connection_settings, mail_bridge,
            mail_bridge_login, devices, device_controls, spend, spend_routes, model_catalogue, lexicon, household,
            people, persona, chat, history, live, push, screens, house, kiosk, screen_feed, spoken, benches, bench_talk, bench_runs,
