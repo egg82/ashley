@@ -66,10 +66,28 @@ test('a heading is a bold paragraph', () => {
   assert.deepEqual(first('## Plan'), { kind: 'p', children: [{ kind: 'strong', children: [{ kind: 'text', value: 'Plan' }] }] });
 });
 
-test('a table is its source text', () => {
-  assert.deepEqual(kids('| a | **b** |\n|---|---|'), [
-    { kind: 'text', value: '| a | **b** |' }, { kind: 'br' }, { kind: 'text', value: '|---|---|' },
+const t = (v: string): Inline[] => [{ kind: 'text', value: v }];
+
+test('a table has a header, per-column alignment from its delimiter row, and body rows of inline nodes', () => {
+  const b = first('| a | **b** | c |\n|:--|:-:|--:|\n| 1 | `x` \\| y | 3 |\n| 4 |\n| 5 | 6 | 7 | 8 |\nafter');
+  assert.deepEqual(b, {
+    kind: 'table', align: ['left', 'center', 'right'],
+    head: [t('a'), [{ kind: 'strong', children: t('b') }], t('c')],
+    rows: [[t('1'), [{ kind: 'code', value: 'x' }, { kind: 'text', value: ' | y' }], t('3')], [t('4'), [], []], [t('5'), t('6'), t('7')]],
+  });
+  assert.deepEqual(parse('| a |\n|---|\n| 1 |\nafter')[1], { kind: 'p', children: t('after') });
+});
+
+test('a column with a bare delimiter has no alignment', () => {
+  const b = first('a | b\n--|--\n1 | 2');
+  assert.deepEqual(b.kind === 'table' ? b.align : null, [null, null]);
+});
+
+test('pipes with no delimiter row, or a delimiter of another width, stay a paragraph of source text', () => {
+  assert.deepEqual(kids('| a | **b** |\n| c | d |'), [
+    { kind: 'text', value: '| a | **b** |' }, { kind: 'br' }, { kind: 'text', value: '| c | d |' },
   ]);
+  assert.equal(first('| a | b |\n|---|').kind, 'p');
 });
 
 test('a fenced block is code, marks inside untouched, and an unclosed fence runs to the end', () => {

@@ -1,4 +1,4 @@
-// Her short Markdown as a tree: paragraphs, bullet and numbered lists, fenced code, and inline bold, italic, code and
+// Her short Markdown as a tree: paragraphs, bullet and numbered lists, tables, fenced code, and inline bold, italic, code and
 // links. Raw HTML is plain text; a link keeps its target only for http, https and mailto, or for one of the rooms' own
 // paths (`app`, opened in place), else it is its label.
 import { isRoomPath } from '../../shell/rooms.ts';
@@ -13,12 +13,16 @@ export type Inline =
 export type Block =
   | { kind: 'p'; children: Inline[] }
   | { kind: 'list'; ordered: boolean; items: Inline[][] }
-  | { kind: 'code'; value: string; language: string | null };
+  | { kind: 'code'; value: string; language: string | null }
+  | { kind: 'table'; align: Align[]; head: Inline[][]; rows: Inline[][][] };
+
+export type Align = 'left' | 'center' | 'right' | null;
 
 const SAFE = new Set(['http:', 'https:', 'mailto:']);
 const BULLET = /^\s*[-*+]\s+(.*)$/;
 const NUMBER = /^\s*\d+[.)]\s+(.*)$/;
 const HEADING = /^\s{0,3}#{1,6}\s+(.*)$/;
+const DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const FENCE = /^\s{0,3}(```|~~~)\s*([^\s`]*)/;
 
 function safeHref(target: string): string | null {
@@ -103,6 +107,32 @@ function fenced(lines: string[], from: number, mark: string, language: string): 
   return { block: { kind: 'code', value: lines.slice(from + 1, end).join('\n'), language: language || null }, end };
 }
 
+function cells(line: string): string[] {
+  const body = line.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '');
+  return body.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'));
+}
+
+function alignment(cell: string): Align {
+  const [l, r] = [cell.startsWith(':'), cell.endsWith(':')];
+  return l && r ? 'center' : r ? 'right' : l ? 'left' : null;
+}
+
+/** A GFM table starting at `from`: a header row, then a delimiter row of the same width, then body rows to the first line without a pipe. */
+function tableAt(lines: string[], from: number): { block: Block; end: number } | null {
+  const [head, delim] = [lines[from]!, lines[from + 1]];
+  if (!head.includes('|') || delim === undefined || !delim.includes('-') || !DELIMITER.test(delim)) return null;
+  const names = cells(head);
+  const marks = cells(delim);
+  if (names.length !== marks.length) return null;
+  let end = from + 2;
+  const rows: Inline[][][] = [];
+  for (; end < lines.length && lines[end]!.trim() && lines[end]!.includes('|'); end++) {
+    const row = cells(lines[end]!);
+    rows.push(names.map((_, c) => inline(row[c] ?? '')));
+  }
+  return { block: { kind: 'table', align: marks.map(alignment), head: names.map((c) => inline(c)), rows }, end: end - 1 };
+}
+
 export function parse(source: string): Block[] {
   const blocks: Block[] = [];
   const lines = source.replace(/\r\n?/g, '\n').split('\n');
@@ -120,6 +150,13 @@ export function parse(source: string): Block[] {
     const heading = HEADING.exec(line);
     const row = line.trimStart().startsWith('|');
     if (!item && !(list && /^\s+\S/.test(line))) list = null;
+    const tbl = !item && !list && !heading && !fence ? tableAt(lines, i) : null;
+    if (tbl) {
+      endPara();
+      blocks.push(tbl.block);
+      i = tbl.end;
+      continue;
+    }
     if (!line.trim() || fence || item || heading || table !== row) endPara();
     if (fence) {
       const { block, end } = fenced(lines, i, fence[1]!, fence[2]!);

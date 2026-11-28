@@ -88,7 +88,7 @@
 .clamp-more { position: absolute; left: 14px; bottom: 8px; z-index: 1; }
 .clamp.open .clamp-more { position: static; margin: 0 14px 10px; }
 .pbody.md p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.pbody.md p + p, .pbody.md p + .md-list, .pbody.md .md-list + p, .pbody.md .md-pre + p { margin-top: 8px; }
+.pbody.md p + p, .pbody.md p + .md-scroll, .pbody.md .md-scroll + p, .pbody.md p + .md-list, .pbody.md .md-list + p, .pbody.md .md-pre + p { margin-top: 8px; }
 .pbody .md-list { color: var(--text); margin: 4px 0 0; }
 .pbody code { font: 12px/1.5 var(--f-mono); }
 .pbody.plain { display: grid; gap: 8px; justify-items: start; }

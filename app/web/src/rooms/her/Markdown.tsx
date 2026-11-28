@@ -20,10 +20,23 @@ function inlines(nodes: readonly Inline[]): ComponentChildren {
   });
 }
 
+function Table({ t }: { t: Extract<Block, { kind: 'table' }> }) {
+  const style = (i: number) => (t.align[i] ? { textAlign: t.align[i] } : undefined);
+  return (
+    <div class="md-scroll">
+      <table class="md-table">
+        <thead><tr>{t.head.map((c, i) => <th style={style(i)}>{inlines(c)}</th>)}</tr></thead>
+        <tbody>{t.rows.map((r) => <tr>{r.map((c, i) => <td style={style(i)}>{inlines(c)}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
 function block(b: Block) {
   switch (b.kind) {
     case 'p': return <p>{inlines(b.children)}</p>;
     case 'code': return <CodeBlock class="md-pre" code={b.value} language={b.language} />;
+    case 'table': return <Table t={b} />;
     case 'list': {
       const items = b.items.map((i) => <li>{inlines(i)}</li>);
       return b.ordered ? <ol class="md-list">{items}</ol> : <ul class="md-list">{items}</ul>;
