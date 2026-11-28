@@ -62,6 +62,17 @@ class LiveCue(BaseModel):
     seconds: float | None
 
 
+class LiveShow(BaseModel):
+    """She moved the view of this person's bench `bench_id` to the pieces `piece_ids` (the whole bench when empty): `fold`
+    puts them away as chips, otherwise they come into view in full. Heard only by the screens open now; each screen's
+    camera is its own afterwards."""
+
+    type: Literal["show"]
+    bench_id: int
+    piece_ids: list[int]
+    fold: bool
+
+
 class LivePage(BaseModel):
     """She moved this person's page to `room`, and to bench `bench_id` in the workshop when it is set: each of their
     open pages flies there, or, while the person is in the middle of something, offers to follow her."""
@@ -104,7 +115,7 @@ class LiveResync(BaseModel):
     type: Literal["resync"]
 
 
-class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LivePage | LiveScreen | LiveAnnounce | LiveFeed | LiveResync, Field(discriminator="type")]]):
+class LiveEvent(RootModel[Annotated[LiveState | LiveTurn | LiveFailed | LiveBench | LiveCue | LiveShow | LivePage | LiveScreen | LiveAnnounce | LiveFeed | LiveResync, Field(discriminator="type")]]):
     """One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`."""
 
 

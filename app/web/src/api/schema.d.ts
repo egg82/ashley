@@ -4409,7 +4409,7 @@ export interface components {
          * LiveEvent
          * @description One event on `GET /api/live`, the JSON of one `data:` line, told apart by `type`.
          */
-        LiveEvent: components["schemas"]["LiveState"] | components["schemas"]["LiveTurn"] | components["schemas"]["LiveFailed"] | components["schemas"]["LiveBench"] | components["schemas"]["LiveCue"] | components["schemas"]["LivePage"] | components["schemas"]["LiveScreen"] | components["schemas"]["LiveAnnounce"] | components["schemas"]["LiveFeed"] | components["schemas"]["LiveResync"];
+        LiveEvent: components["schemas"]["LiveState"] | components["schemas"]["LiveTurn"] | components["schemas"]["LiveFailed"] | components["schemas"]["LiveBench"] | components["schemas"]["LiveCue"] | components["schemas"]["LiveShow"] | components["schemas"]["LivePage"] | components["schemas"]["LiveScreen"] | components["schemas"]["LiveAnnounce"] | components["schemas"]["LiveFeed"] | components["schemas"]["LiveResync"];
         /**
          * LiveFailed
          * @description A turn on `thread`, one of this person's own, ended with no reply after its request had returned pending (an
@@ -4490,6 +4490,25 @@ export interface components {
             device_id: number;
             /** Seq */
             seq: number;
+        };
+        /**
+         * LiveShow
+         * @description She moved the view of this person's bench `bench_id` to the pieces `piece_ids` (the whole bench when empty): `fold`
+         *     puts them away as chips, otherwise they come into view in full. Heard only by the screens open now; each screen's
+         *     camera is its own afterwards.
+         */
+        LiveShow: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "show";
+            /** Bench Id */
+            bench_id: number;
+            /** Piece Ids */
+            piece_ids: number[];
+            /** Fold */
+            fold: boolean;
         };
         /**
          * LiveState

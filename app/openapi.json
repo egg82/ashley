@@ -13316,6 +13316,9 @@
             "$ref": "#/components/schemas/LiveCue"
           },
           {
+            "$ref": "#/components/schemas/LiveShow"
+          },
+          {
             "$ref": "#/components/schemas/LivePage"
           },
           {
@@ -13344,6 +13347,7 @@
             "page": "#/components/schemas/LivePage",
             "resync": "#/components/schemas/LiveResync",
             "screen": "#/components/schemas/LiveScreen",
+            "show": "#/components/schemas/LiveShow",
             "state": "#/components/schemas/LiveState",
             "turn": "#/components/schemas/LiveTurn"
           }
@@ -13474,6 +13478,39 @@
         ],
         "title": "LiveScreen",
         "description": "Command `seq` changed the screen of device `device_id`, one of the household's: a tablet showing that screen reads\nits layout back, and the Devices room its buttons."
+      },
+      "LiveShow": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "show",
+            "title": "Type"
+          },
+          "bench_id": {
+            "type": "integer",
+            "title": "Bench Id"
+          },
+          "piece_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Piece Ids"
+          },
+          "fold": {
+            "type": "boolean",
+            "title": "Fold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "bench_id",
+          "piece_ids",
+          "fold"
+        ],
+        "title": "LiveShow",
+        "description": "She moved the view of this person's bench `bench_id` to the pieces `piece_ids` (the whole bench when empty): `fold`\nputs them away as chips, otherwise they come into view in full. Heard only by the screens open now; each screen's\ncamera is its own afterwards."
       },
       "LiveState": {
         "properties": {

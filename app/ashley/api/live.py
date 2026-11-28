@@ -21,12 +21,12 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from .. import logs, services
 from ..live import live as live_config
-from ..live.events import (Announced, BenchChanged, BenchCued, Event, FeedChanged, HerState, PageMoved, ScreenChanged, TurnFailed, Viewer,
+from ..live.events import (Announced, BenchChanged, BenchCued, BenchShown, Event, FeedChanged, HerState, PageMoved, ScreenChanged, TurnFailed, Viewer,
                            Watcher)
 from ..live.fanout import Resync, Subscription
 from ..live.live import Live, LiveUnavailable
 from ..live.screens import Screens, ScreensUnavailable
-from .live_models import (LiveAnnounce, LiveBench, LiveCue, LiveEvent, LiveFailed, LiveFeed, LivePage, LiveResync, LiveScreen, LiveState,
+from .live_models import (LiveAnnounce, LiveBench, LiveCue, LiveEvent, LiveFailed, LiveFeed, LivePage, LiveResync, LiveScreen, LiveShow, LiveState,
                           LiveTurn)
 from .models import ErrorResponse
 from .person import Person
@@ -110,6 +110,8 @@ def wire(got: Event | Resync) -> LiveEvent:
     if isinstance(got, BenchCued):
         return LiveEvent(LiveCue(type="cue", bench_id=got.bench_id, piece_id=got.piece_id, action=got.action,
                                  seconds=got.seconds))
+    if isinstance(got, BenchShown):
+        return LiveEvent(LiveShow(type="show", bench_id=got.bench_id, piece_ids=list(got.piece_ids), fold=got.fold))
     if isinstance(got, ScreenChanged):
         return LiveEvent(LiveScreen(type="screen", device_id=got.device_id, seq=got.seq))
     if isinstance(got, PageMoved):

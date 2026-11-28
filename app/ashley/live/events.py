@@ -127,6 +127,22 @@ class BenchCued:
 
 
 @dataclass(frozen=True)
+class BenchShown:
+    """She moved the view of bench `bench_id` to `piece_ids` (the whole bench when empty): `fold` puts them away as chips,
+    otherwise they are brought into view in full. Shown to the bench's owner alone, to the screens open now: it is no
+    change of the bench, nothing keeps it for a screen that opens later, and a person's own pan or zoom after it is theirs."""
+
+    shown: Shown
+    bench_id: int
+    piece_ids: tuple[int, ...]
+    fold: bool
+
+    def __post_init__(self) -> None:
+        if self.shown.person_id is None:
+            raise ValueError("a bench's view is moved on its owner's screens only")
+
+
+@dataclass(frozen=True)
 class PageMoved:
     """She moved the person's page to `room`, and within the workshop to bench `bench_id` when it is set. Shown to that
     person's own screens alone, each of which decides for itself whether to follow now."""
@@ -185,7 +201,7 @@ class FeedChanged:
             raise ValueError("a feed's change is shown to the whole household")
 
 
-Event = HerState | ThreadTurn | TurnFailed | BenchChanged | BenchCued | PageMoved | ScreenChanged | Announced | FeedChanged
+Event = HerState | ThreadTurn | TurnFailed | BenchChanged | BenchCued | BenchShown | PageMoved | ScreenChanged | Announced | FeedChanged
 Watcher = Viewer | DeviceViewer
 
 
@@ -222,6 +238,9 @@ def encode(event: Event) -> str:
     if isinstance(event, BenchCued):
         return json.dumps({**base, "type": "cue", "bench_id": event.bench_id, "piece_id": event.piece_id,
                            "action": event.action, "seconds": event.seconds})
+    if isinstance(event, BenchShown):
+        return json.dumps({**base, "type": "show", "bench_id": event.bench_id, "piece_ids": list(event.piece_ids),
+                           "fold": event.fold})
     if isinstance(event, ScreenChanged):
         return json.dumps({**base, "type": "screen", "screen": event.device_id, "seq": event.seq})
     if isinstance(event, PageMoved):
@@ -253,6 +272,8 @@ def decode(payload: str) -> Event | None:
         if raw["type"] == "cue" and raw["action"] in get_args(CueName):
             return BenchCued(shown, int(raw["bench_id"]), int(raw["piece_id"]), raw["action"],
                              None if raw["seconds"] is None else float(raw["seconds"]))
+        if raw["type"] == "show" and isinstance(raw["fold"], bool):
+            return BenchShown(shown, int(raw["bench_id"]), tuple(int(i) for i in raw["piece_ids"]), raw["fold"])
         if raw["type"] == "screen":
             return ScreenChanged(shown, int(raw["screen"]), int(raw["seq"]))
         if raw["type"] == "announce":
