@@ -16,6 +16,7 @@ import {
 import { kioskVoiceUrl, transcribeKiosk } from '../api/speech';
 import type { KioskControl, KioskDevice, KioskGlance } from '../api/types';
 import type { MarkState } from '../components/AshleyMark';
+import { pressWith } from '../components/parts/press';
 import type { ControlState } from '../components/parts/sources';
 import { writing } from '../household/format';
 import type { Line, Missed } from '../rooms/her/chat';
@@ -51,7 +52,6 @@ export const mark = computed<MarkState>(() =>
   sounding.value ? 'speaking' : own.value === 'idle' ? liveMark.value : own.value);
 
 const SPEAKING_MS = 2500;
-const CONTROL_SHOWN_MS = 2500;
 
 let localKey = 0;
 
@@ -245,26 +245,5 @@ export const talking = talk(
   heard,
 );
 
-function setControl(name: string, state: ControlState | null): void {
-  const next = { ...controlStates.value };
-  if (state === null) delete next[name];
-  else next[name] = state;
-  controlStates.value = next;
-}
-
 /** Carries out control `name`, showing it running, then done or failed for a moment, and reads the controls again for the light's new state. */
-export async function press(name: string): Promise<void> {
-  setControl(name, 'running');
-  let shown: ControlState;
-  try {
-    shown = (await runKioskControl(name)) ? 'done' : 'failed';
-    await loadControls();
-  } catch (error) {
-    if (unpairedBy(error)) return;
-    shown = error instanceof ApiError && error.status === 429 ? 'busy' : 'failed';
-  }
-  setControl(name, shown);
-  setTimeout(() => {
-    if (controlStates.value[name] === shown) setControl(name, null);
-  }, CONTROL_SHOWN_MS);
-}
+export const press = pressWith({ states: controlStates, run: runKioskControl, reread: loadControls, handled: unpairedBy });
