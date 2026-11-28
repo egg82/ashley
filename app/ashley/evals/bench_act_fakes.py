@@ -1,11 +1,11 @@
 """What the bench-act eval stands on: a Workshop serving the captured bench (`bench_act_capture.json`), her real bench
 and move_page tools reading from it, `Recorded` in front of them so a change is noted and never applied and `bench_run`
-answers with the captured run, an inference that moves a fake clock and can fail at a step, and a `Recorder` of the
+answers with the captured run (`bench_last_run` reads it back), an inference that moves a fake clock and can fail at a step, and a `Recorder` of the
 turn's progress for the resume cases."""
 
 import json
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TypeVar
 
 from pydantic import BaseModel
@@ -13,19 +13,23 @@ from pydantic import BaseModel
 from ..channels.tool_loop import Steps
 from ..inference.inference import Inference, InferenceUnavailable
 from ..inference.model import Entry, Prompt, Task, ToolCall, ToolCalls, ToolResult, ToolSpec
+from ..tools import bench_capture
 from ..tools.bench_capture import OUTSIDE_KINDS, Capture
-from ..tools.bench_run import RUN
+from ..tools.bench_run import LAST, RUN
 from ..tools.move_page import NAME as MOVE
 from ..tools.tools import Catalogue, Tools
+from ..workshop.model import Piece, Place, Text
 from .house_guard import RecordingInference
 
 T = TypeVar("T", bound=BaseModel)
-READS = ("bench_read", "bench_read_piece", "bench_shelf")
+ADD = "bench_add"
+READS = ("bench_read", "bench_read_piece", "bench_shelf", LAST)
 
 
 @dataclass
 class Recorded(Tools):
-    """`inner` for reads. A change is noted in `changes` and answered done; `bench_run` answers with the captured run;
+    """`inner` for reads. A change is noted in `changes` and answered done; `bench_add` answers as the real tool does
+    and the piece it made is on the bench from then on, at version 1; `bench_run` answers with the captured run;
     `move_page` notes where the page went. An outside-kind piece read whole is answered from the capture, outside."""
 
     inner: Tools
@@ -39,6 +43,8 @@ class Recorded(Tools):
 
     async def call(self, call: ToolCall) -> ToolResult:
         self.calls.append(call)
+        if call.name == LAST:
+            return ToolResult(call.id, self._last_run(call))
         if call.name in READS and not self._outside_read(call):
             return await self.inner.call(call)
         if call.name in READS:
@@ -49,12 +55,31 @@ class Recorded(Tools):
         if call.name == MOVE:
             self.moved_to = _bench_of(call)
         self.changes.append(call)
+        if call.name == ADD:
+            return ToolResult(call.id, json.dumps(self._added(call)))
         return ToolResult(call.id, json.dumps({"ok": True, "recorded": True}))
 
     def _outside_read(self, call: ToolCall) -> bool:
         wanted = call.arguments.get("piece_id")
         return call.name == "bench_read_piece" and any(
             p.id == wanted and p.kind in OUTSIDE_KINDS for p in self.capture.pieces)
+
+    def _added(self, call: ToolCall) -> dict[str, object]:
+        """The piece `call` adds, put on the captured bench the reads serve, and what `bench_add` answers for it."""
+        made = max((p.id for p in self.capture.pieces), default=0) + 1
+        args = call.arguments
+        text = Text(str(args.get("title", "")), str(args.get("body", "")))
+        piece = Piece(made, str(args.get("kind", "note")), text, 1, Place(len(self.capture.pieces), "medium"), made)
+        self.capture = replace(self.capture, pieces=(*self.capture.pieces, piece))
+        bench_capture.install(self.capture)
+        return {"seq": made, "piece_id": made, "version": 1}
+
+    def _last_run(self, call: ToolCall) -> str:
+        """What `bench_last_run` answers: the captured run when the piece was run in this turn, else no run."""
+        piece = call.arguments.get("piece_id")
+        if not any(c.name == RUN and c.arguments.get("piece_id") == piece for c in self.calls):
+            return json.dumps({"piece_id": piece, "run": None})
+        return json.dumps({"piece_id": piece, **json.loads(self.capture.run_result)})
 
     def calls_named(self, name: str) -> int:
         return sum(c.name == name for c in self.calls)

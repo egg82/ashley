@@ -5,7 +5,8 @@
 and a fake clock moves per model step so the deadline, holds and resumes are exercised. A case expects, in `expect`:
 `bench_run_min`, `model_changes_min` (changes on the model piece), `changes_min`/`changes_max` (changes on the bench,
 `move_page` apart), `closed`, `answers`, `no_deadline_close`, `windows_taken`, `rounds_after_resume_min` (model steps under tool choice auto after the resume), `held_max`,
-`moved_to`, `no_taint_before_outside_read`. Live it measures and never gates; `--scripted` swaps the model for a scripted
+`moved_to`, `no_taint_before_outside_read`; `expect_scripted` adds to `expect` in a scripted run only, for what the script
+makes happen and a live model may rightly not (finishing before the deadline needs no window). Live it measures and never gates; `--scripted` swaps the model for a scripted
 policy that checks the harness and the loop's mechanics only.
 
 `--clock age`, `--windows 0`, `--hold 6`, `--no-now` reproduce the behaviour before the bench-gap fixes where the
@@ -96,7 +97,8 @@ async def run(runs: int, only: str | None, options: Options = Options()) -> list
 
 async def _graded(case: dict[str, Any], options: Options, live: Inference | None) -> Result:
     metrics = await _one(case, options, live)
-    return Result(case["id"], passes(case["expect"], metrics), metrics)
+    expect: dict[str, Any] = {**case["expect"], **(case.get("expect_scripted", {}) if options.scripted else {})}
+    return Result(case["id"], passes(expect, metrics), metrics)
 
 
 async def _one(case: dict[str, Any], options: Options, live: Inference | None) -> dict[str, object]:
@@ -140,17 +142,22 @@ async def _play(case: dict[str, Any], options: Options, source: Recorded, clock:
     steps, held = Recorder(), 0
     after: int | None = None
     limits = _limits(kind, options)
-    arrive = _arrival(source, options)
+    arrival = _Arrival(source, options)
+    arrive = arrival.arrive
     began = clock()
     try:
         got = await tool_loop.answer(kind, system, history, catalogue.specs, limits, 1, True, source, began, clock,
                                      steps, arrive)
         while isinstance(got, Held):
             held += 1
-            got = await tool_loop.resume(got, kind, system, catalogue.specs, limits, 1, source, began, clock, steps, arrive)
+            now = arrival.current(catalogue.specs, system, kind, limits)
+            got = await tool_loop.resume(got, now.kind or kind, now.system, now.tools, now.limits or limits, 1, source, began,
+                                         clock, steps, arrive)
     except InferenceUnavailable:
         before = len(steps_taken.steps)
-        got = await _resumed(case, options, source, clock, steps, kind, system, catalogue.specs, limits, arrive)
+        now = arrival.current(catalogue.specs, system, kind, limits)
+        got = await _resumed(case, options, source, clock, steps, now.kind or kind, now.system, now.tools,
+                             now.limits or limits, arrive)
         after = sum(s.choice == "auto" for s in steps_taken.steps[before:])
     return _metrics(got, after, source, steps, held, clock() - began)
 
@@ -165,19 +172,28 @@ async def _resumed(case: dict[str, Any], options: Options, source: Recorded, clo
                                    arrive)
 
 
-def _arrival(source: Recorded, options: Options) -> tool_loop.Arrive:
-    state = {"done": False}
+class _Arrival:
+    """What a moved page is offered, once: `arrive` for the loop to ask, `current` for a resume, as production's
+    `Landing.current` gives it."""
 
-    async def arrive(system: Mapping[str, SystemPrompt], _: tuple[Entry, ...]) -> Arrived | None:
-        if source.moved_to is None or state["done"]:
+    def __init__(self, source: Recorded, options: Options) -> None:
+        self._source, self._options = source, options
+        self._arrived: Arrived | None = None
+
+    async def arrive(self, system: Mapping[str, SystemPrompt], _: tuple[Entry, ...]) -> Arrived | None:
+        if self._source.moved_to is None or self._arrived is not None:
             return None
-        state["done"] = True
-        bench = _bench_source(source.capture)
-        source.inner = bench
+        bench = _bench_source(self._source.capture)
+        self._source.inner = bench
         got = await bench.catalogue()
-        return Arrived(got.specs, _moved(system, got, options), _limits("brainstorm", options), "brainstorm")
+        self._arrived = Arrived(got.specs, _moved(system, got, self._options), _limits("brainstorm", self._options),
+                                "brainstorm")
+        return self._arrived
 
-    return arrive
+    def current(self, tools: tuple[ToolSpec, ...], system: Mapping[str, SystemPrompt], kind: Kind,
+                limits: Limits) -> Arrived:
+        """What the turn is offered now: what the move gave it, else the turn's own."""
+        return self._arrived or Arrived(tools, system, limits, kind)
 
 
 def _metrics(got: Answer | Held, after: int | None, source: Recorded, steps: Recorder, held: int,
