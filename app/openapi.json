@@ -5395,7 +5395,7 @@
     "/api/house/controls": {
       "get": {
         "summary": "House Controls Listed",
-        "description": "200 `HouseControlList`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;\n503 `unavailable`.",
+        "description": "200 `KioskControls`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;\n503 `unavailable`.",
         "operationId": "house_controls_listed",
         "responses": {
           "200": {
@@ -5403,7 +5403,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HouseControlList"
+                  "$ref": "#/components/schemas/KioskControls"
                 }
               }
             }
@@ -5434,7 +5434,7 @@
     "/api/house/controls/{name}": {
       "post": {
         "summary": "House Control Pressed",
-        "description": "200 `HouseControlPressed`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;\n429 `rate_limited`; 503 `unavailable`.",
+        "description": "200 `KioskControlDone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;\n429 `rate_limited`; 503 `unavailable`.",
         "operationId": "house_control_pressed",
         "parameters": [
           {
@@ -5454,7 +5454,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HouseControlPressed"
+                  "$ref": "#/components/schemas/KioskControlDone"
                 }
               }
             }
@@ -11620,68 +11620,6 @@
         ],
         "title": "HouseAttention",
         "description": "What needs the person, each null when it cannot be read today and never false for that: `waiting_on_you` is how\nmany of their open works only they can move (`GET /api/work`); `printer_faults` how many printers report a fault, null\ntoo when the household has no printing manager; `house_unreadable` whether the house did not answer, null when the\nhousehold has no house."
-      },
-      "HouseControl": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label"
-          },
-          "on": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "On"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "label",
-          "on"
-        ],
-        "title": "HouseControl",
-        "description": "One light or scene the household's catalogue has: `name` is its stable key, `label` what its button says. `on` is\nwhether a light is on now; null for a scene, and for a light the house could not say."
-      },
-      "HouseControlList": {
-        "properties": {
-          "controls": {
-            "items": {
-              "$ref": "#/components/schemas/HouseControl"
-            },
-            "type": "array",
-            "title": "Controls"
-          }
-        },
-        "type": "object",
-        "required": [
-          "controls"
-        ],
-        "title": "HouseControlList",
-        "description": "The household's lights and scenes a person may press, by entity id; empty when the house lists none."
-      },
-      "HouseControlPressed": {
-        "properties": {
-          "done": {
-            "type": "boolean",
-            "title": "Done"
-          }
-        },
-        "type": "object",
-        "required": [
-          "done"
-        ],
-        "title": "HouseControlPressed",
-        "description": "Whether her tool reported the press carried out (`done`); false when the tool or the house refused it."
       },
       "HouseGlance": {
         "properties": {

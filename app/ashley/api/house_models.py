@@ -3,27 +3,6 @@
 from pydantic import BaseModel
 
 
-class HouseControl(BaseModel):
-    """One light or scene the household's catalogue has: `name` is its stable key, `label` what its button says. `on` is
-    whether a light is on now; null for a scene, and for a light the house could not say."""
-
-    name: str
-    label: str
-    on: bool | None
-
-
-class HouseControlList(BaseModel):
-    """The household's lights and scenes a person may press, by entity id; empty when the house lists none."""
-
-    controls: list[HouseControl]
-
-
-class HouseControlPressed(BaseModel):
-    """Whether her tool reported the press carried out (`done`); false when the tool or the house refused it."""
-
-    done: bool
-
-
 class HouseAttention(BaseModel):
     """What needs the person, each null when it cannot be read today and never false for that: `waiting_on_you` is how
     many of their open works only they can move (`GET /api/work`); `printer_faults` how many printers report a fault, null
