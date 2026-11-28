@@ -21,10 +21,12 @@ export function Goal({ title, count, z }: { title: string; count: number; z: num
 }
 
 /** What the camera keeps clear when it frames something: the toolbar's strip along the top (12 px down, a 30 px row,
- *  a margin under it), and a margin on the other sides. */
-export const CANVAS_INSET: Inset = { top: 58, right: 24, bottom: 24, left: 24 };
+ *  a margin under it), the talk's band along the foot (`TALK_H`), and a margin on the other sides. */
+export const CANVAS_INSET: Inset = { top: 58, right: 24, bottom: 76, left: 24 };
 /** The toolbar's strip, which her lines treat as taken. */
 export const TOOLBAR_H = 48;
+/** The band along the foot that the voice bar, the ribbon and the shelf sit in, which her lines treat as taken. */
+export const TALK_H = 68;
 
 export function Toolbar({ step, whole }: { step: (dir: 1 | -1) => void; whole: () => void }) {
   const [key, setKey] = useState(false);

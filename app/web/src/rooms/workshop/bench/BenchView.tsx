@@ -1,7 +1,6 @@
-// One bench, at `/workshop/<id>`: its bar, a line for a change that didn't go through, and the floor with its talk
-// beside its pieces, drawn as a mindmap (`canvas/BenchCanvas.tsx`), and their shelf (on a phone one or the other, `?view=talk`). Opened from the benches, the plate grows out of the
-// card that was picked (`plate.ts`).
-import { useLocation } from 'preact-iso';
+// One bench, at `/workshop/<id>`: its bar, a line for a change that didn't go through, and the floor: its pieces drawn as
+// a mindmap (`canvas/BenchCanvas.tsx`) that takes dropped files, their shelf, and the talk over the canvas's foot
+// (`BenchTalk.tsx`). Opened from the benches, the plate grows out of the card that was picked (`plate.ts`).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { benchState, detail, enterBench, leaveBench, loadBench, notice } from '../model/bench';
 import { loadRules, rules } from '../model/benches';
@@ -11,9 +10,8 @@ import { BenchCanvas } from '../canvas/BenchCanvas';
 import { DropFiles } from './Upload';
 import { whyNot } from '../pieces/why';
 import { Away } from './Away';
-import { BenchBar, type View } from './BenchBar';
+import { BenchBar } from './BenchBar';
 import { BenchTalk } from './BenchTalk';
-import { Method } from './Method';
 import { growFromCard } from './plate';
 import { Shelf } from './Shelf';
 
@@ -55,9 +53,6 @@ function useBench(id: number): void {
 
 export function BenchView({ id }: { id: number }) {
   useBench(id);
-  const { query, path, route } = useLocation();
-  const view: View = query.view === 'talk' ? 'talk' : 'pieces';
-  const setView = (v: View) => route(v === 'talk' ? `${path}?view=talk` : path, true);
   const [adding, setAdding] = useState(false);
   const plate = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => growFromCard(plate.current, id), [id]);
@@ -67,18 +62,15 @@ export function BenchView({ id }: { id: number }) {
     <div class="bench wb" ref={plate}>
       {!bench || benchState.value === 'missing' ? <Down /> : (
         <>
-          <BenchBar bench={bench} rules={rules.value} view={view} setView={setView} add={() => { setAdding(true); setView('pieces'); }} />
-          <div class="ws-sub">
-            <Method bench={bench} rules={rules.value} />
-            {said && !said.ok && said.why !== 'stale_base' && <p class="ws-notice" role="status">{whyNot(said.why)}</p>}
-          </div>
-          <div class="floor" data-view={view}>
-            <section class="col talk" aria-label="Talk"><BenchTalk thread={bench.bench.thread} closed={bench.bench.closed_at !== null} /></section>
+          <BenchBar bench={bench} rules={rules.value} add={() => setAdding(true)} />
+          {said && !said.ok && said.why !== 'stale_base' && <p class="ws-notice" role="status">{whyNot(said.why)}</p>}
+          <div class="floor">
             <DropFiles bench={id} enabled={bench.bench.closed_at === null}>
               <BenchCanvas bench={bench} rules={rules.value} adding={adding} doneAdding={() => setAdding(false)} />
               <Shelf bench={bench} rules={rules.value} />
             </DropFiles>
-            <Away bench={bench} showPieces={() => setView('pieces')} />
+            <BenchTalk bench={bench} />
+            <Away bench={bench} />
           </div>
         </>
       )}

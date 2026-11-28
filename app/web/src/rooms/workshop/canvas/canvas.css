@@ -103,7 +103,8 @@
 .bc-zoom { right: 12px; top: 12px; display: flex; gap: 6px; }
 .bc-zoom .btn.sm { min-width: 30px; justify-content: center; background: var(--ink-1); }
 .bc-empty { position: absolute; left: 50%; top: calc(50% + 70px); transform: translateX(-50%); margin: 0; text-align: center; }
-.col.pieces > .wshelf { position: absolute; left: 12px; bottom: 12px; z-index: 10; max-width: min(420px, calc(100% - 24px)); max-height: 60%; overflow: auto; background: var(--ink-1); }
+.col.pieces > .wshelf { position: absolute; right: 12px; bottom: 18px; margin: 0; z-index: 34; max-width: min(420px, calc(100% - 24px)); max-height: 60%; overflow: auto; background: var(--ink-1); }
+@media (max-width: 1199px) { .col.pieces > .wshelf { bottom: 72px; } }
 
 :root[data-motion="reduced"] .bc-world, :root[data-motion="reduced"] .bc-card, :root[data-motion="reduced"] .bc-links path,
 :root[data-motion="reduced"] .bc-clip { transition: none; }

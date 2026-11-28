@@ -22,7 +22,7 @@ function OpenForm() {
     setFailed(false);
     const bench = await open(text);
     setBusy(false);
-    if (bench) route(`/workshop/${bench.id}?view=talk`);
+    if (bench) route(`/workshop/${bench.id}`);
     else setFailed(true);
   };
   // Enter sends and Shift+Enter breaks the line, as in the chat.
