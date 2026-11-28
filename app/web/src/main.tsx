@@ -10,6 +10,7 @@ import './shell/shell.css';
 import './signin/signin.css';
 import './rooms/rooms.css';
 import './rooms/memory/memory.css';
+import './components/parts/person.css';
 import './rooms/devices/devices.css';
 import './rooms/devices/plan.css';
 import './rooms/devices/controls.css';

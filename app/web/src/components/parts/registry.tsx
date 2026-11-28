@@ -7,9 +7,10 @@ import { Clock } from './Clock';
 import { Controls } from './Controls';
 import { Home } from './Home';
 import type { PartKind } from './kinds';
+import { Person } from './Person';
 import { Printer } from './Printer';
 import { printerView } from './printerView';
-import type { AttentionSource, ControlsSource, HomeSource, PrinterSource } from './sources';
+import type { AttentionSource, ControlsSource, HomeSource, PersonSource, PrinterSource } from './sources';
 
 /** What a shell hands the parts it draws. The conversation is each shell's own surface, so it supplies it. */
 export interface PartSources {
@@ -17,6 +18,8 @@ export interface PartSources {
   home: HomeSource;
   attention: AttentionSource;
   printer: PrinterSource;
+  /** Only a signed-in person's screens have one; the kiosk draws no person part. */
+  person?: PersonSource;
   conversation: () => ComponentChildren;
 }
 
@@ -38,6 +41,7 @@ export const PARTS: Record<PartKind, PartType> = {
       return name ? `Printer · ${name}` : 'Printer';
     },
   },
+  person: { draw: (s) => (s.person ? <Person source={s.person} /> : null) },
   conversation: { draw: (s) => s.conversation() },
 };
 
