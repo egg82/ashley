@@ -36,7 +36,7 @@ def inbound_for(signed_in: Person, bench_id: int, body: ChatRequest, pasted: Pie
     `pasted` piece and the `pointed` one are told to her with the message, in its `note`, which is never stored."""
     who = signed_in.person
     got = on_bench(who.household_id, who.id, bench_id, body.text)
-    notes = []
+    notes: list[str] = []
     if pasted is not None:
         notes.append(f'[They pasted a long text with this message. It is on the bench now as piece {pasted.id}, '
                      f'"{pasted.text.title}"; read it with bench_read_piece.]')
