@@ -1,7 +1,7 @@
 // Made-up benches for looking at the bench canvas without a server: 5, 11 or 32 pieces of mixed kinds, links of every
 // kind, a pin and a box, and her lines on some pieces (one just said, the rest older). The numbers and words are
 // invented; only their shape is the API's.
-import type { BenchDetail, BenchLink, BenchPiece, ChatConversation, WorkshopKinds } from '../src/api/types';
+import type { BenchDetail, BenchLink, BenchPiece, ChatConversation, LoggedCommand, WorkshopKinds } from '../src/api/types';
 
 export const KINDS: WorkshopKinds = {
   kinds: [
@@ -75,6 +75,14 @@ function linksFor(n: number): BenchLink[] {
   return out;
 }
 
+/** A short log: her first turn made two changes, the person moved a piece, her second turn edited one. */
+function recentOf(last: number): LoggedCommand[] {
+  const at = (ago: number) => new Date(Date.now() - ago).toISOString();
+  const c = (seq: number, type: LoggedCommand['type'], piece: number, ago: number, turn: number | null): LoggedCommand =>
+    ({ seq, at: at(ago), author: turn === null ? 'person' : 'ashley', person_id: turn === null ? 1 : null, type, outcome: 'accepted', piece_id: piece, by_turn: turn });
+  return [c(3, 'add', last, 900_000, 41), c(4, 'edit', 1, 880_000, 41), c(5, 'move', 2, 300_000, null), c(6, 'edit', 3, 90_000, 44), c(7, 'add', last, 80_000, 44)];
+}
+
 export function benchOf(n: number): BenchDetail {
   const pieces = seedsFor(n).map((s, i) => piece(i + 1, s, i, (n - i) * 7));
   // A pin, and a box (a resize pins too), where the 11 and 32 benches have the pieces for them.
@@ -83,7 +91,7 @@ export function benchOf(n: number): BenchDetail {
   return {
     bench: { id: 1, title: 'Balcony watering', opened_at: new Date(Date.now() - 86_400_000).toISOString(), closed_at: null, work: null,
       piece_count: pieces.length, last_changed_at: new Date().toISOString(), thread: 'bench-1' },
-    pieces, recent: [], undo_next: null, shelf: [], links: linksFor(n),
+    pieces, recent: recentOf(Math.min(n, 5)), undo_next: n >= 3 ? 7 : null, shelf: [], links: linksFor(n),
   } as BenchDetail;
 }
 
