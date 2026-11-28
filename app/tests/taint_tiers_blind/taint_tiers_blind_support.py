@@ -349,6 +349,9 @@ class Memory(Proposals):
                                ttl_s: float) -> Proposal[P]:
         raise ProposalRefused("none")
 
+    async def of(self, made_by: int) -> tuple[Proposal[Payload], ...]:
+        raise AssertionError("not used")
+
     async def find[P: Payload](self, proposal_id: int, topic: Topic[P]) -> Proposal[P] | None:
         raise AssertionError("not used")
 

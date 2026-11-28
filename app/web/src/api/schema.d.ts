@@ -2453,6 +2453,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/work/watches/{watch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Watch
+         * @description 200 `WatchCancelled`, the watch ended as disarmed; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503
+         *     `unavailable`.
+         */
+        delete: operations["cancel_watch"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6503,6 +6524,14 @@ export interface components {
             title: string | null;
         };
         /**
+         * WatchCancelled
+         * @description The watch `id` was ended by the person (`DELETE /api/work/watches/{id}`).
+         */
+        WatchCancelled: {
+            /** Id */
+            id: number;
+        };
+        /**
          * WireAgreed
          * @description What became of a held proposal the person agreed to, shown beside their agreeing turn and never as her words:
          *     `carried`, each held call in the order it was held, or `interrupted` true with none when the run stopped partway, so any of
@@ -6581,23 +6610,31 @@ export interface components {
         };
         /**
          * WorkItem
-         * @description One thing the signed-in person asked her to do or make that has not ended: a `kind` of `errand` (asked once, held
-         *     until its source answers), `open_errand` (carried out over checks), `standing_errand` (done each time its
-         *     rule comes round, never finished) or `bench` (an open bench), `id` that record's own
-         *     id (a bench's id is the workshop's `/workshop/{id}`), `title` what it is (the person's own words, shown only to them).
+         * @description One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of
+         *     `errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`
+         *     (done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps) or
+         *     `proposal` (something she proposed that nobody has agreed to). `id` is that record's own id (a bench's id is the
+         *     workshop's `/workshop/{id}`, a watch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one
+         *     `POST /api/chat/agree` takes), `title` what it is (the person's own words, shown only to them; a proposal's is
+         *     written by code from what it would do).
          *     `state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job
-         *     blocked on them or on their machine, a check whose words have not reached them); `open`, a bench with nothing in
-         *     flight; `done`, finished with its result not yet told; `stopped`, an errand's check that could not be sent. `at`
-         *     is when it last moved: a bench's last change (else when it opened), an errand's next check due or a one-shot's asking,
-         *     or finishing when `done`. `until_local` is when an `open_errand` ends, as the household's wall clock
-         *     (`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included.
+         *     blocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with
+         *     nothing in flight; `done`, finished with its result not yet told; `stopped`, an errand's check that could not be
+         *     sent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
+         *     `would_like` (something she offered unasked). It follows `state`, and nothing yet marks a proposal as offered
+         *     unasked, so no item is `would_like`. `at` is when it last moved: a bench's last change (else when it opened),
+         *     an errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was
+         *     armed), a proposal's making. `until_local` is when an `open_errand` ends, as the household's wall clock
+         *     (`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a
+         *     proposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a
+         *     proposal of held calls); a proposal without it is agreed by answering her in that conversation.
          */
         WorkItem: {
             /**
              * Kind
              * @enum {string}
              */
-            kind: "errand" | "open_errand" | "standing_errand" | "bench";
+            kind: "errand" | "open_errand" | "standing_errand" | "bench" | "watch" | "proposal";
             /** Id */
             id: number;
             /** Title */
@@ -6608,12 +6645,24 @@ export interface components {
              */
             state: "running" | "waiting_on_you" | "open" | "done" | "stopped";
             /**
+             * Lane
+             * @enum {string}
+             */
+            lane: "waiting" | "doing" | "done_untold" | "would_like";
+            /**
              * At
              * Format: date-time
              */
             at: string;
             /** Until Local */
             until_local?: string | null;
+            /** Conversation Id */
+            conversation_id?: number | null;
+            /**
+             * Can Tap
+             * @default false
+             */
+            can_tap: boolean;
         };
         /**
          * WorkKind
@@ -14050,6 +14099,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description `unavailable`: a store holding part of it could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancel_watch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watch_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchCancelled"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no live watch of yours has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: an id below 1 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description `unavailable`: a store holding part of it could not be reached */
             503: {

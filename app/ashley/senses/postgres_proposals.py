@@ -7,7 +7,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from ..db.database import Database, DatabaseUnavailable
-from .proposal_payloads import OUTSIDE, Payload, Topic, check, encode
+from .proposal_payloads import OUTSIDE, TOPICS, Payload, Topic, check, encode
 from .proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
 
 
@@ -56,6 +56,17 @@ class PostgresProposals(Proposals):
         if await self._one("DELETE FROM proposals WHERE id = %s RETURNING id", (proposal_id,)) is None:
             raise ProposalRefused("none")
         return proposal
+
+    async def of(self, made_by: int) -> tuple[Proposal[Payload], ...]:
+        topics = {t.name: t for t in TOPICS}
+        try:
+            async with self._database.connection() as conn:
+                cur = await conn.execute("SELECT id, household_id, made_by, conversation_id, turn_id, created_at, payload, topic "
+                                         "FROM proposals WHERE made_by = %s ORDER BY id DESC", (made_by,))
+                rows = await cur.fetchall()
+        except (DatabaseUnavailable, psycopg.Error) as e:
+            raise ProposalsUnavailable("database unavailable") from e
+        return tuple(_read(r, topics[r[7]]) for r in rows)
 
     async def find[P: Payload](self, proposal_id: int, topic: Topic[P]) -> Proposal[P] | None:
         return await self._by_id(proposal_id, topic)

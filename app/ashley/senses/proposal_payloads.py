@@ -215,3 +215,4 @@ def _reminder_from_json(raw: Mapping[str, Any]) -> Reminder:
 REMINDERS = Topic[ReminderPayload]("reminder", _decode_reminders)
 HOUSE = Topic[HouseChange]("house", _decode_house)
 OUTSIDE = Topic[HeldCalls]("outside", _decode_outside, "person")
+TOPICS: tuple[Topic[Any], ...] = (REMINDERS, HOUSE, OUTSIDE)

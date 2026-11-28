@@ -18,7 +18,7 @@ export function where(item: Pick<WorkItem, 'kind' | 'id'>): string | null {
   return null;
 }
 
-export const KIND_WORD: Record<WorkItem['kind'], string> = { errand: 'Errand', open_errand: 'Errand, ongoing', standing_errand: 'Errand, standing', bench: 'Bench' };
+export const KIND_WORD: Record<WorkItem['kind'], string> = { errand: 'Errand', open_errand: 'Errand, ongoing', standing_errand: 'Errand, standing', bench: 'Bench', watch: 'Watch', proposal: 'Waiting for your OK' };
 
 /** The rows in the order the server sent them, with how many wait on the person (what the closed list says). */
 export function waiting(items: readonly WorkItem[]): number {

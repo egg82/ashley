@@ -222,6 +222,15 @@ answer as `result`, the ask's visibility, the ask's speaker as asker), so the as
 `untold` and `told` and no second path exists. Nothing is held when the turn has no known speaker or an errand already
 exists for it; the outbox logs `outbox.stale_dropped` with `held` 1 or 0.
 
+**The board's read model is `GET /api/work`**, one list in which each item says where it belongs (`WorkItem.lane`):
+`waiting` (a proposal, a bench or check that needs the person), `doing` (errands in her hands, standing errands, benches
+at work, live watches), `done_untold` (`Errands.held`'s `done` ones) and `would_like`, which nothing produces yet, since
+nothing in a stored proposal says she offered it unasked rather than answered a request, and a lane is never guessed
+from her words. A lane follows the item's `state`. Proposals and watches come from `Proposals.of` and `Watches.live`
+(`ashley.channels.board`, mapped by `ashley.api.work_pending`), each system's own read; the board holds no table of its own. Where she told an errand's
+result is not recorded: `held` returns only errands not yet told, so a `told_where` would be empty on every item the
+list shows, and it waits for a list of what was told.
+
 **Memory and Errands work together without sharing a table.** Memory holds what stays true; an errand holds what she
 owed and how it went. Her turn telling the result is an ordinary turn, so anything lasting in it reaches Memory
 through the write job.
