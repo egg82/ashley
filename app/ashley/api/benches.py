@@ -137,7 +137,8 @@ def _pointer(piece: Piece, view: BenchView) -> PiecePointer | None:
 
 def _logged(row: Logged) -> LoggedCommand:
     return LoggedCommand(seq=row.seq, at=row.at, author=row.by.author, person_id=row.by.person_id,
-                         type=type_of(row.command), outcome=row.outcome, piece_id=row.piece_id)
+                         type=type_of(row.command), outcome=row.outcome, piece_id=row.piece_id,
+                         by_turn=row.by.turn)
 
 
 async def _work_kinds(household_id: int) -> list[WorkKind]:
