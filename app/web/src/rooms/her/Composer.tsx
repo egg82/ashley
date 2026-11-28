@@ -18,10 +18,11 @@ const WORDLESS = 'I pasted this.';
 
 /** `thread` is the thread it sends on; `send` takes the trimmed text and the paste held with it, and answers why it was
  * not sent, when it was not; `talking` is the talk button's microphone; `ask` is the placeholder and label;
- * `attachMax` the longest paste it takes. */
-export function Composer({ thread, disabled, send, talking, ask = 'Ask Ashley', attachMax = ATTACH_MAX }: {
+ * `attachMax` the longest paste it takes; `voice` false leaves out the talk button and its line, for a layout
+ * that draws its own. */
+export function Composer({ thread, disabled, send, talking, ask = 'Ask Ashley', attachMax = ATTACH_MAX, voice = true }: {
   thread: string; disabled: boolean; send: (text: string, pasted: string | null) => Promise<string | null>; talking: Talk;
-  ask?: string; attachMax?: number;
+  ask?: string; attachMax?: number; voice?: boolean;
 }) {
   const value = unsentOn(thread);
   const setValue = (text: string) => typedOn(thread, text);
@@ -42,7 +43,7 @@ export function Composer({ thread, disabled, send, talking, ask = 'Ask Ashley', 
   }, [value]);
   return (
     <>
-      <TalkLine talk={talking} held={held} />
+      {voice && <TalkLine talk={talking} held={held} />}
       {limit.note && <p class={`compose-note${limit.over ? ' over' : ''}`} role={limit.over ? 'alert' : undefined}>{limit.note}</p>}
       {pasteOver && (
         <p class="compose-note over" role="alert">
@@ -76,7 +77,7 @@ export function Composer({ thread, disabled, send, talking, ask = 'Ask Ashley', 
           });
         }}
       >
-        <TalkButton talk={talking} disabled={disabled} onHeld={setHeld} />
+        {voice && <TalkButton talk={talking} disabled={disabled} onHeld={setHeld} />}
         <textarea
           ref={input}
           rows={1}
