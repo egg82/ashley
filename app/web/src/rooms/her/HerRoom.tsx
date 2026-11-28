@@ -1,20 +1,29 @@
-// Her room, at the centre of the field: her mark and state on top, the open conversation on the person's web thread
-// below it, and the composer at the foot. Who hears it sits beside it on wide screens. Scrolling up past the
-// open conversation reads the person's earlier ones in above it, read only, under a divider each.
+// Her room, at the centre of the field, laid out as the Desk: the board on the left, the conversation in the middle and
+// the house on the right on wide screens, a fixed grid; below that width the board and the house fold into toggles above
+// the conversation. The conversation is her mark and state on top, the open conversation on the person's web thread
+// below it, and the composer at the foot. Scrolling up past the open conversation reads the person's earlier ones in
+// above it, read only, under a divider each.
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
+import { Vis } from '../../components/FactParts';
+import { useMedia } from '../../components/useMedia';
+import { watchHouse } from '../../session/house';
 import { person } from '../../session/session';
 import { herState, herWord } from '../../shell/her/state';
 import {
   conversationId, enterRoom, leaveRoom, lines, loadChat, loadState, send, sending, startedAt, talking, threadThinking,
 } from './chat';
 import { Composer } from './Composer';
-import { ConvoRail } from './ConvoRail';
+import { Board } from './board/Board';
+import { Folds } from './desk/Folds';
+import { House } from './desk/House';
 import { watchWork } from './work';
-import { WorkFold } from './WorkList';
 import { Divider, Earlier } from './Earlier';
 import { chatEarlier, earlierReset } from './past';
 import { Thread } from './Thread';
 import { useEarlier } from './useEarlier';
+
+/** Wide enough for the Desk's three columns. */
+const DESK_WIDE = '(min-width: 1200px)';
 
 function Down({ failed }: { failed: boolean }) {
   return (
@@ -30,8 +39,10 @@ export function HerRoom() {
     earlierReset();
     enterRoom();
     const stopWork = watchWork();
+    const stopHouse = watchHouse();
     return () => {
       stopWork();
+      stopHouse();
       leaveRoom();
     };
   }, []);
@@ -49,14 +60,17 @@ export function HerRoom() {
   const ready = state === 'ready';
   const began = startedAt.value ?? shown[0]?.at;
   const { before, reading, more, nearTop } = useEarlier(chatEarlier, thread, open, ready);
+  const wide = useMedia(DESK_WIDE);
   return (
-    <>
+    <div class={`desk${wide ? ' wide' : ''}`}>
+      {wide && <aside class="desk-col desk-board" aria-label="Board"><Board open={open} /></aside>}
       <div class="her-room">
         <div class="chat-her">
           <span class="chat-dock" data-dock />
           <span class={`her-word${her === 'unreachable' ? ' unreachable' : ''}`}>{herWord.value}</span>
+          <Vis v="private" />
         </div>
-        <WorkFold />
+        {!wide && <Folds open={open} />}
         <div class="thread" ref={thread} aria-live="polite" onScroll={nearTop}>
           {state === 'loading' && <p class="chat-quiet meta">Reading…</p>}
           {(state === 'unreachable' || state === 'failed') && <Down failed={state === 'failed'} />}
@@ -70,7 +84,7 @@ export function HerRoom() {
         <Composer thread={`person:${person.value?.id ?? 0}:web`} disabled={sending.value || state !== 'ready'} send={send}
           talking={talking} />
       </div>
-      <ConvoRail />
-    </>
+      {wide && <aside class="desk-col desk-house" aria-label="House"><House /></aside>}
+    </div>
   );
 }
