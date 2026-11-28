@@ -1,7 +1,9 @@
 // The kiosk's data sources for the shared parts, backed by its signals and its cookie routes.
-import { computed } from '@preact/signals';
-import type { ControlsSource, HomeSource } from '../components/parts/sources';
+import { computed, signal } from '@preact/signals';
+import type { AttentionSource, ControlsSource, HomeSource } from '../components/parts/sources';
 import { controls, controlStates, glance, press } from './state';
 
 export const kioskControls: ControlsSource = { controls, states: controlStates, press };
 export const kioskHome: HomeSource = { home: computed(() => glance.value?.home) };
+/** What needs a person is theirs, and the device's routes read none of it, so a kiosk shows it as unknown. */
+export const kioskAttention: AttentionSource = { attention: signal(null) };
