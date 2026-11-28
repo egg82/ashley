@@ -2,10 +2,10 @@
 // the house on the right on wide screens, a fixed grid; below that width the board and the house fold into toggles above
 // the conversation. The conversation is her mark and state on top, the open conversation on the person's web thread
 // below it, and the composer at the foot. Scrolling up past the open conversation reads the person's earlier ones in
-// above it, read only, under a divider each.
+// above it, read only, under a divider each. At phone width the same parts are laid out as the Pocket (`desk/Pocket.tsx`).
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { Vis } from '../../components/FactParts';
-import { useMedia } from '../../components/useMedia';
+import { PHONE, useMedia } from '../../components/useMedia';
 import { watchHouse } from '../../session/house';
 import { person } from '../../session/session';
 import { herState, herWord } from '../../shell/her/state';
@@ -16,6 +16,7 @@ import { Composer } from './Composer';
 import { Board } from './board/Board';
 import { Folds } from './desk/Folds';
 import { House } from './desk/House';
+import { Pocket } from './desk/Pocket';
 import { watchWork } from './work';
 import { Divider, Earlier } from './Earlier';
 import { chatEarlier, earlierReset } from './past';
@@ -61,6 +62,20 @@ export function HerRoom() {
   const began = startedAt.value ?? shown[0]?.at;
   const { before, reading, more, nearTop } = useEarlier(chatEarlier, thread, open, ready);
   const wide = useMedia(DESK_WIDE);
+  const phone = useMedia(PHONE);
+  const pane = (
+    <div class="thread" ref={thread} aria-live="polite" onScroll={nearTop}>
+      {state === 'loading' && <p class="chat-quiet meta">Reading…</p>}
+      {(state === 'unreachable' || state === 'failed') && <Down failed={state === 'failed'} />}
+      {ready && <Earlier open={open} more={more} />}
+      {ready && before > 0 && began && <Divider at={began} channel="web" place={null} />}
+      {ready && <Thread lines={shown} name={person.value?.name ?? ''} thinking={thinking} conversation={open} />}
+      {ready && reading !== 'loading' && before === 0 && !shown.length && !thinking && (
+        <p class="chat-quiet meta">Nothing yet. Whatever you say to her, here or anywhere else, shows up here.</p>
+      )}
+    </div>
+  );
+  const composer = { thread: `person:${person.value?.id ?? 0}:web`, disabled: sending.value || state !== 'ready', send, talking };
   return (
     <div class={`desk${wide ? ' wide' : ''}`}>
       {wide && <aside class="desk-col desk-board" aria-label="Board"><Board open={open} /></aside>}
@@ -70,19 +85,13 @@ export function HerRoom() {
           <span class={`her-word${her === 'unreachable' ? ' unreachable' : ''}`}>{herWord.value}</span>
           <Vis v="private" />
         </div>
-        {!wide && <Folds open={open} />}
-        <div class="thread" ref={thread} aria-live="polite" onScroll={nearTop}>
-          {state === 'loading' && <p class="chat-quiet meta">Reading…</p>}
-          {(state === 'unreachable' || state === 'failed') && <Down failed={state === 'failed'} />}
-          {ready && <Earlier open={open} more={more} />}
-          {ready && before > 0 && began && <Divider at={began} channel="web" place={null} />}
-          {ready && <Thread lines={shown} name={person.value?.name ?? ''} thinking={thinking} conversation={open} />}
-          {ready && reading !== 'loading' && before === 0 && !shown.length && !thinking && (
-            <p class="chat-quiet meta">Nothing yet. Whatever you say to her, here or anywhere else, shows up here.</p>
-          )}
-        </div>
-        <Composer thread={`person:${person.value?.id ?? 0}:web`} disabled={sending.value || state !== 'ready'} send={send}
-          talking={talking} />
+        {phone ? <Pocket open={open} thread={pane} composer={composer} /> : (
+          <>
+            {!wide && <Folds open={open} />}
+            {pane}
+            <Composer {...composer} />
+          </>
+        )}
       </div>
       {wide && <aside class="desk-col desk-house" aria-label="House"><House /></aside>}
     </div>
