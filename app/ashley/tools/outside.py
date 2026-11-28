@@ -3,7 +3,8 @@ before it does anything consequential the person did not ask for"). Reads run. O
 by a read whose result can carry text written outside the household, a call that is not a read goes by its tier
 (`Tools.tier`, else `ToolSpec.tier`): `runs` runs and is recorded, `judged` asks the `ActionJudge`, and an `ask` (or a call
 that cannot be recorded) is held in the person's `OUTSIDE` proposal and not run. An `asks` change is held so in every
-turn, tainted or not, shown by the line its source writes (`Tools.shown`). A tool that takes a person's agreement
+turn, tainted or not, shown by the line its source writes (`Tools.shown`), and so is a change the source rates `asks`
+in a turn no person's message started (`trusting.Trusting`: the person's setting). A tool that takes a person's agreement
 (`ToolSpec.agrees`) is refused. A person's later, untainted turn agrees with `carry_out`, which runs the stored calls
 through the source with the arguments that were stored. A change that ran in a turn no person's message started
 (`Standing.unasked`: a wake, a reminder or errand round, a watch, a bench's reaction) is recorded too, tainted or not,
@@ -142,7 +143,7 @@ class Outside(Tools):
                 if isinstance(cleared, ToolResult):
                     return cleared
                 sorted_ = cleared
-        elif spec is not None and not spec.reads and spec.tier == "asks":
+        elif spec is not None and not spec.reads and await self._asks(call, spec):
             return await self._hold(call)
         with tainted.bound(self._tainted, self._turn):
             got = await self._source.call(call)
@@ -152,6 +153,13 @@ class Outside(Tools):
         elif self._unasked_change(spec) and not got.is_error:
             await self._done(call, spec, _Cleared("runs"), got)
         return await self._recorded(call.name, got, got.taints(spec is None or spec.outside))
+
+    async def _asks(self, call: ToolCall, spec: ToolSpec) -> bool:
+        """Whether a change of an untainted turn is held: its spec is `asks`, or in a turn no person's message started
+        the source rates the call `asks` (the person's own setting, `trusting.Trusting`)."""
+        if spec.tier == "asks":
+            return True
+        return self._standing is not None and self._standing.unasked and await self._source.tier(call) == "asks"
 
     def _unasked_change(self, spec: ToolSpec | None) -> bool:
         """Whether a call of an untainted turn is a change no one asked for: the turn was started by no person's message
@@ -163,8 +171,11 @@ class Outside(Tools):
         """What code shows beside her reply (`conversations.model.Receipts`): the changes the action judge let run this
         turn, from the record and from memory for one that could not be recorded, then each call held in the turn's
         proposal in full. A `runs`-tier change is recorded but not shown. None when the turn is neither tainted nor
-        offered an `asks` change, or showed and held nothing. Counts `held` and keeps the proposal's id (`agree`)."""
-        if self._tainted is None and not any(s.tier == "asks" for s in (self._specs or {}).values()):
+        offered an `asks` change, or showed and held nothing; an untainted turn no person's message started is read for
+        what it held, since its person's setting may hold any change. Counts `held` and keeps the proposal's id (`agree`)."""
+        offers_asks = any(s.tier == "asks" for s in (self._specs or {}).values())
+        unasked = self._standing is not None and self._standing.unasked
+        if self._tainted is None and not offers_asks and not unasked:
             return None
         found = await self._held_proposal()
         calls = () if found is None else found.payload.calls
