@@ -7,7 +7,7 @@ const cmd = (seq: number, type: LoggedCommand['type'], author: LoggedCommand['au
              outcome: LoggedCommand['outcome'] = 'accepted'): LoggedCommand =>
   ({ seq, at: '2026-10-29T12:00:00Z', author, person_id: author === 'person' ? 1 : null, type, outcome, piece_id: piece });
 const bench = (id: number, recent: LoggedCommand[]): BenchDetail => ({
-  bench: { id, title: 'b', opened_at: '2026-10-29T12:00:00Z', closed_at: null, work: null, piece_count: 0, last_changed_at: null, thread: `bench:${id}` }, pieces: [], recent, undo_next: null, shelf: [],
+  bench: { id, title: 'b', opened_at: '2026-10-29T12:00:00Z', closed_at: null, work: null, piece_count: 0, last_changed_at: null, thread: `bench:${id}` }, pieces: [], recent, undo_next: null, shelf: [], links: [],
 });
 
 test('a first read has no stamps', () => {

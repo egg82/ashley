@@ -13,6 +13,7 @@ from typing import Literal
 
 from ..services import Service
 from .commands import Command, Effect, Reason, ScreenCommand, ShownRow
+from .links import PieceLink
 from .model import Author, Bench, By, Change, Owner, Piece
 from .proposals import Proposal
 from .reactions import Unseen
@@ -88,7 +89,9 @@ class BenchView:
     (`proposals.pending`). `pointers` holds the highlight of each reader piece that has one, by piece id, whether or not
     the piece has changed since (`Pointer.version`). `frames` holds the measure of each site address recorded on the
     bench (`record_site_frame`), by address. `surfaced` holds every (piece id, choice row by name and value) an accepted
-    `Surfaced` named, however old (`surfacing.unshown` reads it)."""
+    `Surfaced` named, however old (`surfacing.unshown` reads it). `links` is its links whose two ends are both on the
+    layout, by from, kind and to (`links.visible`): one with an end removed or shelved is kept and shows again when the
+    piece is back."""
 
     bench: Bench
     pieces: tuple[Piece, ...]
@@ -100,6 +103,7 @@ class BenchView:
     pointers: Mapping[int, Pointer] = field(default_factory=lambda: dict[int, Pointer]())
     frames: Mapping[str, SiteFrame] = field(default_factory=lambda: dict[str, SiteFrame]())
     surfaced: frozenset[tuple[int, ShownRow]] = frozenset()
+    links: tuple[PieceLink, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -206,8 +210,8 @@ class Workshop(Service):
 
     @abstractmethod
     async def read(self, owner: Owner, bench_id: int) -> BenchView:
-        """Bench `bench_id`, open or closed, with its pieces, its shelf, its latest `recent_commands` commands and each
-        piece's `changes`. Raises BenchNotFound; WorkshopUnavailable. Reads only."""
+        """Bench `bench_id`, open or closed, with its pieces, its shelf, its latest `recent_commands` commands, each
+        piece's `changes` and the links between its pieces on the layout. Raises BenchNotFound; WorkshopUnavailable. Reads only."""
 
     @abstractmethod
     async def apply(self, owner: Owner, bench_id: int, command: Command) -> Applied:
@@ -233,7 +237,8 @@ class Workshop(Service):
     @abstractmethod
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:
         """Every command of bench `bench_id`, in `seq` order from 1: replayed from empty through `decide` with the
-        service's rules, it reproduces `read`'s pieces and shelf and each row's outcome. Raises BenchNotFound;
+        service's rules, it reproduces `read`'s pieces, shelf and links (those of the replayed state with both ends on
+        the layout) and each row's outcome. Raises BenchNotFound;
         WorkshopUnavailable. Reads only."""
 
     @abstractmethod

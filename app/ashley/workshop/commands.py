@@ -7,6 +7,7 @@ What an accepted command did is its Effect, which is what Undo inverts."""
 from dataclasses import dataclass
 from typing import Literal
 
+from .links import Link as Link, Linked as Linked, Unlink as Unlink, Unlinked as Unlinked
 from .model import By, Piece, Place, Size, Text
 from .reader import Passage
 from .reasons import REASONS as REASONS, Reason as Reason
@@ -174,11 +175,12 @@ class Rename:
     title: str
 
 
-Command = Add | Remove | Move | Edit | Run | Propose | Install | Archive | Restore | Undo | Rename | Cue | Point | Surfaced
+Command = (Add | Remove | Move | Edit | Run | Propose | Install | Archive | Restore | Undo | Rename | Cue | Point | Surfaced
+           | Link | Unlink)
 ScreenCommand = Add | Remove | Move | Edit | Undo
 """The Commands a device's screen takes (`Workshop.apply_screen`): the others are a bench's alone."""
 CommandType = Literal["add", "remove", "move", "edit", "run", "propose", "install", "archive", "restore", "undo",
-                      "rename", "cue", "point", "surfaced"]
+                      "rename", "cue", "point", "surfaced", "link", "unlink"]
 
 
 def type_of(command: Command) -> CommandType:
@@ -208,6 +210,10 @@ def type_of(command: Command) -> CommandType:
         return "point"
     if isinstance(command, Surfaced):
         return "surfaced"
+    if isinstance(command, Link):
+        return "link"
+    if isinstance(command, Unlink):
+        return "unlink"
     return "undo"
 
 
@@ -341,12 +347,15 @@ class Renamed:
 
 
 Effect = (Added | Removed | Edited | Moved | Ran | Cued | Pointed | Shown | Proposed | Installed | Uninstalled | Archived
-          | Restored | Renamed)
+          | Restored | Renamed | Linked | Unlinked)
 
 def piece_of(effect: Effect) -> int | None:
-    """The id of the piece `effect` changed, None for a `Renamed`, which changed the bench."""
+    """The id of the piece `effect` changed, None for a `Renamed`, which changed the bench; for a `Linked` or `Unlinked`,
+    the link's `from_id`, the piece it was made from (which it changes nothing of)."""
     if isinstance(effect, Renamed):
         return None
+    if isinstance(effect, (Linked, Unlinked)):
+        return effect.link.from_id
     if isinstance(effect, (Added, Removed, Archived, Restored)):
         return effect.piece.id
     return effect.piece_id

@@ -15,12 +15,12 @@ from ..workshop.commands import ShownRow
 from ..workshop.model import Piece
 from ..workshop.rules import Rules
 from ..workshop.workshop import BenchView
-from .bench_view import last_changed_by, piece
+from .bench_view import last_changed_by, links_from, piece
 
 
 def now(view: BenchView, rules: Rules, body_chars: int) -> str:
-    """`view`'s bench and one line of JSON per piece in order: id, kind, title, version, order, size, who last changed it
-    and the first `body_chars` of its body with the body's whole length; id, kind and version alone for an outside piece.
+    """`view`'s bench and one line of JSON per piece in order: id, kind, title, version, order, size, who last changed it,
+    the first `body_chars` of its body with the body's whole length and the links made from it; id, kind and version alone for an outside piece.
     Then every open row (`open_rows`), however far into its piece, so a later turn carries what is still to settle, and
     for each outside facts piece with unconfirmed rows only its id and how many (`outside_open`)."""
     head = f'# The bench as it stood when this turn began\n\nBench {view.bench.id}, "{view.bench.title}".'
@@ -73,4 +73,4 @@ def _line(view: BenchView, p: Piece, rules: Rules, body_chars: int) -> dict[str,
         return {"id": p.id, "kind": p.kind, "version": p.version}
     shown = piece(p, rules, body_chars)
     keep = ("id", "kind", "title", "version", "order", "size", "body", "body_chars", "body_cut")
-    return {**{k: shown[k] for k in keep}, "last_changed_by": last_changed_by(view, p)}
+    return {**{k: shown[k] for k in keep}, "last_changed_by": last_changed_by(view, p), **links_from(view, p)}

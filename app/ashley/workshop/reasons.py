@@ -7,20 +7,24 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
                  "not_installable", "incomplete", "no_proposal", "needs_person", "bad_wake", "not_video", "bad_cue",
                  "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_facts", "bad_controls",
                  "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body", "bad_citation", "bad_rows",
-                 "bad_session"]
+                 "bad_session", "bad_link", "already_linked", "not_linked"]
 """Why a command was refused:
 - `unknown_kind`: an Add of a kind `kinds.json` does not have.
 - `bad_title`: a title (a piece's, or a Rename's) empty, only whitespace, or longer than `title_max_chars`.
 - `too_long`: a body longer than its kind's `max_chars`.
 - `full`: an Add, a Restore, or an Undo that would bring a piece back, on a bench already holding `max_pieces`.
 - `no_such_piece`: a Remove, Move, Edit, Run or Archive of a piece not on the bench's layout (a shelved piece is not),
-  or a Restore of one not on its shelf.
+  or a Restore of one not on its shelf, or a Link or Unlink with an end not on the layout.
 - `bad_place`: a Move to an order past the last piece's.
 - `stale_base`: an Edit, Run, Propose or Point whose `base_version` is not the piece's current version, or an Install whose
   proposal was of an earlier version.
 - `nothing_to_undo`: an Undo naming a command that was refused, is an Undo, a Run or a Propose, is not earlier than
   it, is older than the last `undo_window` commands, or does not exist.
-- `changed_since`: an Undo whose command's piece has been changed by a later command, or (for a Remove) is back.
+- `changed_since`: an Undo whose command's piece has been changed by a later command, or (for a Remove) is back; for a
+  Link or Unlink, whose link a later command made or took away.
+- `bad_link`: a Link or Unlink of a piece to itself, or of a kind `workshop.json`'s `link_kinds` does not have.
+- `already_linked`: a Link of two pieces already linked so.
+- `not_linked`: an Unlink of a link the bench does not hold.
 - `not_runnable`: a Run of a piece whose kind's format is not `code`.
 - `bad_automation`: an Add or Edit of an automation piece whose body is not empty and not an automation config
   (`workshop.automation_config`).
@@ -68,4 +72,4 @@ REASONS: tuple[Reason, ...] = ("unknown_kind", "bad_title", "too_long", "full", 
                                "bad_site", "bad_video", "not_installable", "incomplete", "no_proposal", "needs_person",
                                "bad_wake", "not_video", "bad_cue", "bad_reader", "not_reader", "bad_passage", "bad_file", "bad_facts",
                                "bad_controls", "bad_recipe", "already_shown", "required", "confirmed_measurement", "bad_body",
-                               "bad_citation", "bad_rows", "bad_session")
+                               "bad_citation", "bad_rows", "bad_session", "bad_link", "already_linked", "not_linked")

@@ -17,9 +17,10 @@ from ..live.events import BenchChanged, BenchCued, Event, ScreenChanged, Shown
 from ..live.live import Live
 from ..text import has_nul
 from . import postgres_frames as frames
+from . import postgres_links
 from . import postgres_reactions as reactions
 from . import postgres_rows as rows
-from .commands import (Add, Added, Archived, Command, Cued, Edit, Install, Propose, Removed, Rename, Renamed, Restored, Run,
+from .commands import (Add, Added, Archived, Command, Cued, Edit, Install, Link, Propose, Removed, Rename, Restored, Run, Unlink,
                        ScreenCommand, piece_of, type_of)
 from .decide import Accepted, Decision
 from .model import Bench, By, Owner
@@ -69,6 +70,8 @@ def _text_of(command: Command) -> str:
         return command.automation_id
     if isinstance(command, Rename):
         return command.title
+    if isinstance(command, (Link, Unlink)):
+        return command.kind
     return f"{command.text.title}{command.text.body}" if isinstance(command, Edit) else ""
 
 
@@ -168,7 +171,9 @@ class PostgresWorkshop(Workshop):
                 pointers = await rows.pointers(conn, bench_id)
                 measured = await frames.site_frames(conn, bench_id)
                 shown = await rows.surfaced(conn, bench_id)
-        return BenchView(found[0], pieces, tuple(recent), changed, undo_next, shelf, proposals, pointers, measured, shown)
+                links = await postgres_links.visible(conn, bench_id)
+        return BenchView(found[0], pieces, tuple(recent), changed, undo_next, shelf, proposals, pointers, measured, shown,
+                         links)
 
     async def record_site_frame(self, household_id: int, bench_id: int, url: str, frame: SiteFrame) -> None:
         if has_nul(url) or has_nul(frame.title):
@@ -276,11 +281,12 @@ class PostgresWorkshop(Workshop):
         kind = None
         if isinstance(decision, Accepted):
             effect = decision.effect
-            if isinstance(effect, Renamed):
+            target = piece_of(effect)
+            if target is None:
                 whole = None
             else:
                 whole = (effect.piece if isinstance(effect, (Added, Removed, Archived, Restored))
-                         else decision.state.piece(effect.piece_id))
+                         else decision.state.piece(target))
             kind = None if whole is None else whole.kind
         elif isinstance(command, Add) and command.kind in rules.kinds:
             kind = command.kind

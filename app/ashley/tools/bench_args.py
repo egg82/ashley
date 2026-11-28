@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from typing import Any, get_args
 
 from ..inference.model import ToolSpec
-from ..workshop.commands import Add, Archive, Command, Cue, CueAction, Edit, Move, Remove, Rename, Restore, Undo
+from ..workshop.commands import Add, Archive, Command, Cue, CueAction, Edit, Link, Move, Remove, Rename, Restore, Undo, Unlink
+from ..workshop.json_shape import list_of, object_of
 from ..workshop.model import HER, SIZES, Place, Size, Text
 from .tainted import her
 
@@ -96,6 +97,28 @@ def whole_turn_of(args: Mapping[str, object]) -> bool:
     return value
 
 
+@dataclass(frozen=True)
+class NewLink:
+    """A link `bench_add` makes from the piece it adds: of `kind` to piece `to_id`."""
+
+    kind: str
+    to_id: int
+
+
+def new_links_of(args: Mapping[str, object]) -> tuple[NewLink, ...]:
+    """The optional `links` of `bench_add`, each `{"kind", "to"}`; none when absent. Raises BadArguments."""
+    items = list_of(args.get("links", []))
+    if items is None:
+        raise BadArguments("links is a list of {kind, to}")
+    found: list[NewLink] = []
+    for item in items:
+        entry = object_of(item)
+        if entry is None or set(entry) != {"kind", "to"}:
+            raise BadArguments("each of links is exactly {kind, to}")
+        found.append(NewLink(_str(entry, "kind"), _int(entry, "to")))
+    return tuple(found)
+
+
 def _add(args: Mapping[str, object]) -> Command:
     return Add(her(), _str(args, "kind"), Text(_str(args, "title"), _str(args, "body")), _size(args, "medium"))
 
@@ -129,6 +152,13 @@ def _undo(args: Mapping[str, object]) -> Command:
 
 def _rename(args: Mapping[str, object]) -> Command:
     return Rename(HER, _str(args, "title"))
+
+
+def _link(args: Mapping[str, object]) -> Command:
+    unlink = args.get("unlink", False)
+    if not isinstance(unlink, bool):
+        raise BadArguments("unlink is true or false")
+    return (Unlink if unlink else Link)(HER, _int(args, "from_id"), _str(args, "kind"), _int(args, "to_id"))
 
 
 def _cue(args: Mapping[str, object]) -> Command:
@@ -173,5 +203,6 @@ def _size(args: Mapping[str, object], default: Size | None) -> Size:
 
 
 _BUILDERS = {"bench_add": _add, "bench_edit": _edit, "bench_move": _move, "bench_remove": _remove,
-             "bench_archive": _archive, "bench_restore": _restore, "bench_undo": _undo, "bench_rename": _rename, "bench_cue": _cue}
+             "bench_archive": _archive, "bench_restore": _restore, "bench_undo": _undo, "bench_rename": _rename, "bench_cue": _cue,
+             "bench_link": _link}
 COMMAND_TOOLS: tuple[str, ...] = tuple(_BUILDERS)

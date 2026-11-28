@@ -38,7 +38,7 @@ interface Props {
   act: PieceActions;
 }
 
-const MARK: Record<Mark['did'], string> = { add: 'added this', edit: 'changed this', move: 'moved this', remove: 'removed this', run: 'ran this', propose: 'proposed installing this', install: 'installed this', archive: 'archived this', restore: 'restored this', point: 'pointed at this', undo: 'undid a change here' };
+const MARK: Record<Mark['did'], string> = { add: 'added this', edit: 'changed this', move: 'moved this', remove: 'removed this', run: 'ran this', propose: 'proposed installing this', install: 'installed this', archive: 'archived this', restore: 'restored this', point: 'pointed at this', undo: 'undid a change here', link: 'linked this', unlink: 'unlinked this' };
 
 function Who({ piece, mark }: { piece: BenchPiece; mark: Mark | undefined }) {
   if (mark) return <span class={`pill who-tag ${mark.by === 'ashley' ? 'her' : 'you'}`}>{mark.by === 'ashley' ? 'Ashley' : 'You'}<span class="pwhen"> {MARK[mark.did]}</span></span>;

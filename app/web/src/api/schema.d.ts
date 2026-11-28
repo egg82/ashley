@@ -2582,7 +2582,8 @@ export interface components {
          * @description A bench as a screen shows it: the bench, its pieces in order, and its latest commands, oldest first.
          *     `undo_next` is the `seq` an Undo should name now (one of `recent`'s), null when there is nothing to undo. `shelf`
          *     is its archived pieces, the most recently archived first: off the layout, not counted toward `max_pieces`, each
-         *     kept whole with its last run, to restore.
+         *     kept whole with its last run, to restore. `links` is the links between pieces on the layout, by from, kind and to;
+         *     a link with an end removed or shelved is kept and listed again once that piece is back.
          */
         BenchDetail: {
             bench: components["schemas"]["BenchSummary"];
@@ -2594,6 +2595,20 @@ export interface components {
             undo_next: number | null;
             /** Shelf */
             shelf: components["schemas"]["BenchPiece"][];
+            /** Links */
+            links: components["schemas"]["BenchLink"][];
+        };
+        /**
+         * BenchLink
+         * @description Piece `from_id` is `kind` (one of `WorkshopKinds.link_kinds`) of piece `to_id`.
+         */
+        BenchLink: {
+            /** From Id */
+            from_id: number;
+            /** Kind */
+            kind: string;
+            /** To Id */
+            to_id: number;
         };
         /**
          * BenchList
@@ -2958,8 +2973,8 @@ export interface components {
         };
         /**
          * CommandApplied
-         * @description The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece), null for a
-         *     change of the bench itself (an undo of a rename).
+         * @description The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece; for a link or
+         *     an unlink, its `from_id`), null for a change of the bench itself (an undo of a rename).
          */
         CommandApplied: {
             /** Seq */
@@ -2982,7 +2997,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session";
+            reason: "unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session" | "bad_link" | "already_linked" | "not_linked";
             /** Seq */
             seq: number;
             /** Detail */
@@ -2992,7 +3007,7 @@ export interface components {
          * CommandRequest
          * @description One change to a bench, told apart by `type`.
          */
-        CommandRequest: components["schemas"]["AddPieceRequest"] | components["schemas"]["RemovePieceRequest"] | components["schemas"]["MovePieceRequest"] | components["schemas"]["EditPieceRequest"] | components["schemas"]["ArchivePieceRequest"] | components["schemas"]["RestorePieceRequest"] | components["schemas"]["InstallPieceRequest"] | components["schemas"]["UndoRequest"] | components["schemas"]["ClearHighlightRequest"];
+        CommandRequest: components["schemas"]["AddPieceRequest"] | components["schemas"]["RemovePieceRequest"] | components["schemas"]["MovePieceRequest"] | components["schemas"]["EditPieceRequest"] | components["schemas"]["ArchivePieceRequest"] | components["schemas"]["RestorePieceRequest"] | components["schemas"]["InstallPieceRequest"] | components["schemas"]["UndoRequest"] | components["schemas"]["ClearHighlightRequest"] | components["schemas"]["LinkRequest"] | components["schemas"]["UnlinkRequest"];
         /**
          * ConnectionCatalogue
          * @description What the connection's service has now for a setting to pick from, read live at `read_at`, narrowed to `domains`
@@ -3979,6 +3994,36 @@ export interface components {
             limit: number;
         };
         /**
+         * LinkKind
+         * @description One kind of link between two pieces, from `workshop.json`'s `link_kinds`: a piece `from_id` is `name` (`part_of`,
+         *     `depends_on`, `version_of`) of piece `to_id`. `label` is what a screen calls it.
+         */
+        LinkKind: {
+            /** Name */
+            name: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * LinkRequest
+         * @description Link piece `from_id` to piece `to_id` as `kind`: both on the layout. Refused `no_such_piece` for an end that is
+         *     not, `bad_link` for a piece linked to itself or a kind `link_kinds` does not have, `already_linked` when it is. A
+         *     link changes neither piece: not its version, nor what it last changed by.
+         */
+        LinkRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "link";
+            /** From Id */
+            from_id: number;
+            /** Kind */
+            kind: string;
+            /** To Id */
+            to_id: number;
+        };
+        /**
          * LinkStartResponse
          * @description Where to send this browser to link a Discord account: Discord's authorization page, which returns it to
          *     `/connections?link=<outcome>`. Good for one link, within sign-in's `pending_minutes`.
@@ -4243,9 +4288,9 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "add" | "remove" | "move" | "edit" | "run" | "propose" | "install" | "archive" | "restore" | "undo" | "rename" | "cue" | "point" | "surfaced";
+            type: "add" | "remove" | "move" | "edit" | "run" | "propose" | "install" | "archive" | "restore" | "undo" | "rename" | "cue" | "point" | "surfaced" | "link" | "unlink";
             /** Outcome */
-            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session");
+            outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session" | "bad_link" | "already_linked" | "not_linked");
             /** Piece Id */
             piece_id: number | null;
         };
@@ -6354,6 +6399,24 @@ export interface components {
             seq: number;
         };
         /**
+         * UnlinkRequest
+         * @description Take away the link of `kind` from piece `from_id` to piece `to_id`; refused as a link is, and `not_linked` when
+         *     there is no such link.
+         */
+        UnlinkRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "unlink";
+            /** From Id */
+            from_id: number;
+            /** Kind */
+            kind: string;
+            /** To Id */
+            to_id: number;
+        };
+        /**
          * VaultWrite
          * @description A write-back: the vault and keychain (base64) the keeper read at `generation`, from the pod of `epoch`.
          */
@@ -6588,12 +6651,15 @@ export interface components {
          * WorkshopKinds
          * @description What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take
          *     (`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench
-         *     holds and the longest title of a bench or a piece; and the languages a code piece can be run in
-         *     (`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`).
+         *     holds and the longest title of a bench or a piece; the languages a code piece can be run in
+         *     (`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the
+         *     kinds of link between pieces (`link_kinds`).
          */
         WorkshopKinds: {
             /** Kinds */
             kinds: components["schemas"]["PieceKind"][];
+            /** Link Kinds */
+            link_kinds: components["schemas"]["LinkKind"][];
             /** Sizes */
             sizes: ("small" | "medium" | "large" | "full")[];
             /** Max Pieces */

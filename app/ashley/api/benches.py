@@ -44,8 +44,9 @@ from .bench_run_models import piece_run_of
 from .models import ErrorResponse
 from .person import Person
 from .skill_models import WorkKind
-from .workshop_models import (BenchDetail, BenchList, BenchPiece, BenchRequest, BenchSummary, CommandApplied,
-                              CommandRefused, AddPieceRequest, CommandRequest, LoggedCommand, PieceKind, PiecePlace, WorkshopKinds)
+from .workshop_models import (BenchDetail, BenchLink, BenchList, BenchPiece, BenchRequest, BenchSummary, CommandApplied,
+                              CommandRefused, AddPieceRequest, CommandRequest, LinkKind, LoggedCommand, PieceKind, PiecePlace,
+                              WorkshopKinds)
 
 router = APIRouter()
 RULES = workshop_rules.load()
@@ -152,7 +153,8 @@ async def kinds_of(household_id: int) -> WorkshopKinds:
     """The piece kinds and limits of the household's benches."""
     kinds = [PieceKind(name=k.name, family=k.family, label=k.label, max_chars=k.max_chars, format=k.format,
                        language=k.language) for k in RULES.kinds.values()]
-    return WorkshopKinds(kinds=kinds, sizes=list(SIZES), max_pieces=RULES.max_pieces,
+    link_kinds = [LinkKind(name=n, label=label) for n, label in RULES.link_kinds.items()]
+    return WorkshopKinds(kinds=kinds, link_kinds=link_kinds, sizes=list(SIZES), max_pieces=RULES.max_pieces,
                          title_max_chars=RULES.title_max_chars, run_languages=list(services.get(Sandbox).languages()),
                          run_max_chars=RUNS.max_script_chars,
                          work_kinds=await _work_kinds(household_id))
@@ -219,7 +221,8 @@ async def detail_of(owner: Owner, bench_id: int, key: bytes, origin: str | None 
     links = await links_of(owner)
     return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.pieces],
                        recent=[_logged(r) for r in view.recent], undo_next=view.undo_next,
-                       shelf=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.shelf])
+                       shelf=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.shelf],
+                       links=[BenchLink(from_id=k.from_id, kind=k.kind, to_id=k.to_id) for k in view.links])
 
 
 @router.post("/api/benches/{bench_id}/close", response_model=BenchSummary, responses={**WRITE_ERRORS, **BENCH_ERRORS})

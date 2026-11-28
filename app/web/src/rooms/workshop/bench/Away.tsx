@@ -5,7 +5,7 @@ import { reduced } from '../../../shell/motion';
 import { away } from '../pieces/marks';
 import { pieceEl } from '../pieces/PieceGrid';
 
-const DID = { add: 'added', edit: 'changed', move: 'moved', remove: 'removed', run: 'ran', propose: 'proposed installing', install: 'installed', archive: 'archived', restore: 'restored', point: 'pointed at', undo: 'undid a change to' } as const;
+const DID = { add: 'added', edit: 'changed', move: 'moved', remove: 'removed', run: 'ran', propose: 'proposed installing', install: 'installed', archive: 'archived', restore: 'restored', point: 'pointed at', undo: 'undid a change to', link: 'linked', unlink: 'unlinked' } as const;
 
 export function Away({ bench, showPieces }: { bench: BenchDetail; showPieces: () => void }) {
   const there = away.value;

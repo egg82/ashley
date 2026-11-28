@@ -17,8 +17,8 @@ from ..inference.model import ToolCall, ToolResult
 from ..workshop import rules as workshop_rules
 from ..workshop import reader as workshop_reader
 from ..workshop.bench_file import needs_bytes
-from ..workshop.commands import Add, Command, Edit, Point, type_of
-from ..workshop.model import HER, Owner, Piece, Text
+from ..workshop.commands import Add, Command, Edit, Link, Point, type_of
+from ..workshop.model import HER, By, Owner, Piece, Text
 from ..workshop.rules import Rules
 from ..workshop.workshop import Applied, BenchClosed, BenchNotFound, Workshop, WorkshopUnavailable
 from ..files import config as files_config
@@ -28,8 +28,8 @@ from ..tidy.tidy import Tidy
 from ..files.store import StoreUnavailable
 from . import bench_config, bench_file_text, bench_lead, bench_now, bench_page, bench_results, bench_view
 from .tainted import her
-from .bench_args import (COMMAND_TOOLS, BadArguments, check_names, command_of, offset_of, piece_id_of,
-                         quote_of, replacement_of, seq_of, whole_turn_of)
+from .bench_args import (COMMAND_TOOLS, BadArguments, NewLink, check_names, command_of, new_links_of, offset_of,
+                         piece_id_of, quote_of, replacement_of, seq_of, whole_turn_of)
 from .bench_citations import Citations, PeopleTurns
 from .bench_config import BenchToolsConfig
 from .bench_reference import References, Refused, Said
@@ -201,6 +201,7 @@ class BenchTools(Tools):
     async def _command(self, call: ToolCall, started: float) -> ToolResult:
         command = command_of(call.name, await self._references.resolve(call.name, call.arguments))
         kind = type_of(command)
+        links = new_links_of(call.arguments) if isinstance(command, Add) else ()
         if isinstance(command, Add) and needs_bytes(self._rules, command.kind):
             return bench_results.failed(call, started, "bad_file", bench_results.HINTS["bad_file"], bench=self._bench,
                                         command=kind)
@@ -215,18 +216,35 @@ class BenchTools(Tools):
                 command=kind)
         if isinstance(command, (Add, Edit)):
             await self._citations.check(command)
-        return await self._apply(call, started, command)
+        return await self._apply(call, started, command, links=links)
 
-    async def _apply(self, call: ToolCall, started: float, command: Command, whole: bool = True) -> ToolResult:
-        """Apply `command`; `whole` is whether what it wrote was a whole body she composed, to edit again as such."""
+    async def _apply(self, call: ToolCall, started: float, command: Command, whole: bool = True,
+                     links: tuple[NewLink, ...] = ()) -> ToolResult:
+        """Apply `command`; `whole` is whether what it wrote was a whole body she composed, to edit again as such;
+        `links` are those an accepted Add makes from its new piece (`_linked`)."""
         kind = type_of(command)
         command = replace(command, by=replace(command.by, turn=self._turn_id))
         applied = await services.get(Workshop).apply(self._owner, self._bench, command)
         if applied.outcome != "accepted":
             return bench_results.failed(call, started, applied.outcome, bench_results.HINTS[applied.outcome],
                                         bench=self._bench, command=kind, seq=applied.seq)
-        return bench_results.ok(call, started, self._wrote(command, applied, whole), bench=self._bench, command=kind,
-                                seq=applied.seq, piece=applied.piece_id)
+        body = self._wrote(command, applied, whole)
+        if links and applied.piece_id is not None:
+            body["links"] = await self._linked(applied.piece_id, links, command.by)
+        return bench_results.ok(call, started, body, bench=self._bench, command=kind, seq=applied.seq,
+                                piece=applied.piece_id)
+
+    async def _linked(self, from_id: int, links: tuple[NewLink, ...], by: By) -> list[dict[str, object]]:
+        """Each link `bench_add` asked for, made from its new piece `from_id` by a Link of its own right after the Add,
+        `by` as the Add was (so in the same turn): its `seq`, or the refusal with its hint. A refused link leaves the
+        piece added."""
+        made: list[dict[str, object]] = []
+        for k in links:
+            applied = await services.get(Workshop).apply(self._owner, self._bench, Link(by, from_id, k.kind, k.to_id))
+            outcome = ({"seq": applied.seq} if applied.outcome == "accepted"
+                       else {"refused": applied.outcome, "hint": bench_results.HINTS[applied.outcome]})
+            made.append({"kind": k.kind, "to": k.to_id, **outcome})
+        return made
 
     async def _undo_turn(self, call: ToolCall, started: float) -> ToolResult:
         done = await services.get(Workshop).undo_turn(self._owner, self._bench, replace(her(), turn=self._turn_id),

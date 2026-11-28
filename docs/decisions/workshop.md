@@ -38,7 +38,7 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   `recent`. None of it is stored twice. Rejected: a counter or timestamp column on the bench, which a command could
   forget to keep.
 - **Every change is a Command** (`ashley.workshop.commands`): add, remove, move, edit, run, propose, install, archive,
-  restore, undo, rename, cue, point and surfaced (the choice rows shown to the person, `decisions.md`, "Each choice she
+  restore, undo, rename, cue, point, link, unlink and surfaced (the choice rows shown to the person, `decisions.md`, "Each choice she
   sets is shown to the person once"),
   frozen records in one
   closed union, each naming who made it, the person or her. One pure function, `ashley.workshop.decide.decide`, judges a
@@ -92,6 +92,24 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   `shelved`. Remove stays for what is not wanted at all. Rejected: a Restore naming its order and size, which a Move
   after it already does, as its own undoable step; removing straight off the shelf, which would need a Remove whose
   undo returns to the shelf; nothing asks for it yet, so a shelved piece is restored, then removed.
+- **Pieces are linked by Commands** (`ashley.workshop.links`): `Link` and `Unlink` name a from piece, a kind and a to
+  piece, read in that order (a step `part_of` its plan, a script `depends_on` its config, a draft `version_of` the one
+  it replaces). The kinds are data, `link_kinds` in `workshop.json`, served beside the piece kinds at
+  `GET /api/workshop/kinds`. `decide` refuses an end not on the layout, a shelved one included (`no_such_piece`), a
+  piece linked to itself or an unknown kind (`bad_link`), a link the bench already holds (`already_linked`) and an
+  unlink of one it does not (`not_linked`). Their effects, `Linked` and `Unlinked`, undo each other through the
+  ordinary undo rules, a later link or unlink of the same link being what makes one `changed_since`. A link is not a
+  change of either piece: it leaves their version and `changed_by` alone, so it never makes an edit stale, an undo of a
+  piece's change never waits on one, and an undone Add or Remove is undone however the piece is linked. The links are
+  rows of `bench_links` (keyed by bench, from, kind and to, with the `seq` that made each) written in the command's
+  transaction, and `BenchState.links` holds the same set, so replay from empty rebuilds them. Removing, archiving or
+  shelving a piece keeps its rows; a read (`BenchDetail.links`, her `bench_read`) shows only links whose two ends are
+  both on the layout, so undoing a Remove or restoring a piece brings its links back with no command of their own, and
+  undoing a link reaches it while an end is away. Her `bench_add` takes `links` (kind and to; she cannot know the new
+  id beforehand), each made as its own Link right after the Add, and `bench_link` links or unlinks pieces already there;
+  both carry her `By.turn`, so "undo that" takes a turn's links back with its pieces. A screen takes no link. Rejected:
+  links as a field of the piece's text set by Edit, which would bump its version and make a stale link refuse an edit;
+  deleting a removed piece's links, which would leave its undo bringing it back unlinked.
 - **Layout is an order plus a size class** (`ashley.workshop.model.Place`): the pieces hold orders 0 to n-1, and each
   has `small`, `medium`, `large` or `full`, a share of the row the client maps to its grid. A move names the new order
   and size and the others shift, so every screen computes the same arrangement and animates from the old one by piece
@@ -151,7 +169,7 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   `read_body_chars` with `body_cut` saying so, and the latest commands by seq), `bench_read_piece` (one piece, a
   window of at most `piece_chars` from an `offset`), `bench_add`, `bench_edit` (with the version she read),
   `bench_replace`, `bench_move`, `bench_remove`, `bench_archive`, `bench_shelf` (the shelf's ids, kinds, titles and
-  versions; `bench_read` says how many it holds as `shelved`), `bench_restore` and `bench_undo`.
+  versions; `bench_read` says how many it holds as `shelved`), `bench_restore`, `bench_undo` and `bench_link`.
   She arranges what she adds in the turn she adds it (order by how a reader takes the pieces, size by what each is),
   tidies a bench that has grown untidy once, and leaves a tidy one alone. `bench_read` gives each piece
   `last_changed_by` (`you` or `person`, from the command it last changed by), and her guidance has her fit her pieces
