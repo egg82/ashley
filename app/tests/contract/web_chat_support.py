@@ -41,6 +41,8 @@ class FakeSessions(Sessions):
     def __init__(self, *people: Person) -> None:
         self.by_token = {f"t-{p.id}": SignedIn(100 + p.id, p) for p in people}
         self.down = False
+        self.counted: list[int] = []   # the people `allow` counted
+        self.over = False              # `allow` says no
 
     async def find(self, token: str) -> SignedIn | None:
         if self.down:
@@ -67,6 +69,12 @@ class FakeSessions(Sessions):
 
     async def take_link(self, state: str) -> LinkPending | None:
         raise AssertionError("not used")
+
+    async def allow(self, household_id: int, person_id: int) -> bool:
+        if self.down:
+            raise SessionsUnavailable("down")
+        self.counted.append(person_id)
+        return not self.over
 
 
 @dataclass

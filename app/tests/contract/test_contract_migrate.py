@@ -63,6 +63,7 @@ NOT_HOUSEHOLD_DATA = {
     "alembic_version": "the migration tool's own",
     "inference_calls": "the deployment's API spend: kinds, models and tokens, nothing said or known about anyone",
     "discord_seen": "which Discord messages were claimed for a reply: Discord's ids and a time, nothing said",
+    "person_requests": "how many requests each person made in a window: a person id, a time and a count, nothing said",
     "device_requests": "how many requests each device made in a window: a device id, a time and a count, nothing said",
     "signin_pending": "a sign-in in flight: hashed state, a PKCE verifier, a nonce and a path, before anyone is known",
     "signin_unmapped": "OIDC accounts refused because no person has them, so no household either",

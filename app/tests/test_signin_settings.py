@@ -39,10 +39,11 @@ def test_the_shipped_policy_loads() -> None:
 
 @pytest.mark.parametrize("change", [
     {"session_days": None}, {"extra": 1}, {"idle_days": 40}, {"touch_minutes": 0}, {"max_pending": True},
-    {"pending_minutes": 1.5}, {"touch_minutes": 7 * 1440}])
+    {"pending_minutes": 1.5}, {"touch_minutes": 7 * 1440}, {"press_max": 0}])
 def test_a_bad_policy_is_refused(change: dict[str, Any]) -> None:
     raw: dict[str, Any] = {"session_days": 30, "idle_days": 7, "touch_minutes": 10, "pending_minutes": 10,
-                           "max_pending": 1000, "unmapped_retention_days": 30}
+                           "max_pending": 1000, "unmapped_retention_days": 30, "press_window_seconds": 60,
+                           "press_max": 30}
     assert policy.parse(raw) is not None
     raw.update(change)
     raw = {k: v for k, v in raw.items() if v is not None}

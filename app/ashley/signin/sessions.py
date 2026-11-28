@@ -67,6 +67,12 @@ class Sessions(Service):
         """The link stored under `state`, removed so it can be taken once; None when there is none or it is past the
         policy's `pending_minutes`. Raises SessionsUnavailable."""
 
+    @abstractmethod
+    async def allow(self, household_id: int, person_id: int) -> bool:
+        """Count one request by the person that makes her act and say whether it is within their rate (the policy's
+        `press_max` in each fixed window of `press_window_seconds`), shared by every pod on either site. Over the rate it is
+        False and still counted. Raises SessionsUnavailable."""
+
 
 class NullSessions(Sessions):
     """Signs no one in: what an unwired process sees. Every call raises SessionsUnavailable, so a missing registration
@@ -94,4 +100,7 @@ class NullSessions(Sessions):
         raise SessionsUnavailable("Sessions is not wired")
 
     async def take_link(self, state: str) -> LinkPending | None:
+        raise SessionsUnavailable("Sessions is not wired")
+
+    async def allow(self, household_id: int, person_id: int) -> bool:
         raise SessionsUnavailable("Sessions is not wired")
