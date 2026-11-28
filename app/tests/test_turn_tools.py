@@ -119,8 +119,8 @@ def test_a_turn_whose_fields_call_for_nothing_gets_its_households_everyday_tools
     assert isinstance(got, HouseholdTools) and names(got) == list(everyday.names)
 
 
-def test_a_turn_whose_channel_names_the_speaker_adds_only_reminders_the_households_devices_screens_and_house_changes(everyday: Fixed) -> None:
-    assert set(sources(replace(WEB, opens_benches=False))) == {"reminders", "devices", "house_change", "screen"}
+def test_a_turn_whose_channel_names_the_speaker_adds_only_reminders_the_households_devices_screens_house_changes_and_find(everyday: Fixed) -> None:
+    assert set(sources(replace(WEB, opens_benches=False))) == {"reminders", "devices", "house_change", "screen", "find"}
 
 
 def test_a_device_s_own_thread_offers_its_screen_whoever_speaks_and_a_voice_turn_with_no_device_none(everyday: Fixed) -> None:
@@ -133,8 +133,8 @@ def test_a_bench_turn_offers_the_shared_tools_then_that_benchs(everyday: Fixed) 
     assert got[:2] == ["HassTurnOn", "look_up"] and "bench_edit" in got and "open_bench" not in got
 
 
-def test_her_web_chat_offers_opening_a_bench_the_households_devices_and_no_bench_tools(everyday: Fixed) -> None:
-    assert names(for_turn(WEB)) == ["HassTurnOn", "look_up", "open_bench", "household_devices", "send_readers"]
+def test_her_web_chat_offers_opening_a_bench_the_households_devices_find_and_no_bench_tools(everyday: Fixed) -> None:
+    assert names(for_turn(WEB)) == ["HassTurnOn", "look_up", "open_bench", "household_devices", "find", "send_readers"]
 
 
 def test_the_speakers_code_host_is_a_source_only_where_connections_open_and_the_reply_reaches_them_alone(

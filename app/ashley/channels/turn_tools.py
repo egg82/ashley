@@ -7,6 +7,7 @@ from functools import partial
 
 from .. import services
 from ..connections.connections import Connections
+from ..conversations.model import Hearer
 from ..runs.sandbox import Sandbox
 from ..codehost import config as codehost_config
 from ..tools.arrival import Arrival
@@ -59,6 +60,7 @@ from . import said_links
 from .audience import owner_alone, use_of
 from .limits import load as load_limits, smallest_result_chars
 from .devices_tool import DeviceTools
+from .find_tool import FindTools
 from .screen_feed_tools import ScreenFeedTools
 from .screen_tools import ScreenTools
 from .model import Inbound
@@ -89,7 +91,7 @@ def for_turn(inbound: Inbound, said: tuple[int, int] | None = None, arrival: Arr
     arranging the household's screens (`screen`; the thread's own screen alone on a device's thread); where the reply reaches the speaker alone
     (`audience.owner_alone`) and connections can be opened, their household's finances (`money`), the print queue (`print_queue`, and on a bench `print_upload`), the speaker's own code host (`code_host`) Claude Code sessions (`claude_code`) and watches on what they connected (`watches`), each an
     empty catalogue until they connect one; with a known speaker,
-    reading the mailboxes the resource gate allows the turn (`mail`, `ConnectionResources.usable`: any turn, speaker or not), setting reminders (`reminders`), reading the household's devices (`devices`), and listing and cancelling theirs only where the reply reaches them alone; with
+    searching what the household keeps for the turn's hearer (`find`), reading the mailboxes the resource gate allows the turn (`mail`, `ConnectionResources.usable`: any turn, speaker or not), setting reminders (`reminders`), reading the household's devices (`devices`), and listing and cancelling theirs only where the reply reaches them alone; with
     `said` (the conversation id and the person turn's id), a browser she drives (`browser`, offered only where one is wired), and with a `Sandbox` that runs some language, running code
     (`code`), recorded against that turn, whoever spoke, but on a bench with a known speaker running its code pieces
     instead (`bench_run`), recorded against the bench and the turn: code on a bench is a piece, never a loose run, and past
@@ -236,6 +238,7 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
     found["reminders"] = ReminderTools(household, person, private=owner_alone(inbound), turn=turn, usable=usable,
                                        routable=partial(reminder_device.takes, household))
     found["devices"] = DeviceTools(household)
+    found["find"] = FindTools(Hearer(household, person, owner_alone(inbound)))
     found.update(_screen(inbound))
     found["house_change"] = HouseChangeTools(household, person, private=owner_alone(inbound), turn=turn)
     return found

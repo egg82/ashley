@@ -21,10 +21,10 @@ PKG = ROOT / "ashley"  # the package directory (its name is the import root)
 # Top-level module or subpackage -> those it may import. Seed with --write, then
 # cut edges deliberately.
 ALLOWED: dict[str, set[str]] = {
-    "api": {"channels", "connections", "conversations", "db", "errands", "files", "herdr", "inference", "live", "logs", "looks", "mail", "memory", "people",
+    "api": {"channels", "connections", "conversations", "db", "errands", "files", "find", "herdr", "inference", "live", "logs", "looks", "mail", "memory", "people",
             "persona", "runs", "senses", "services", "settings", "signin", "skills", "text", "trust", "workshop"},
-    "channels": {"stamp", "cameras", "codehost", "connections", "conversations", "db", "errands", "inference", "initiative", "live", "logs", "memory",
-                 "people", "persona", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "undo",
+    "channels": {"stamp", "cameras", "codehost", "connections", "conversations", "db", "errands", "find", "inference", "initiative", "live", "logs", "memory",
+                 "people", "persona", "receipts", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "undo",
                  "watches", "workshop"},
     "codehost": {"connections", "logs", "services"},
     "connections": {"db", "logs", "services"},
@@ -32,6 +32,7 @@ ALLOWED: dict[str, set[str]] = {
     "inference": {"connections", "db", "logs", "receipts", "services", "text", "undo"},
     "errands": {"db", "hearing", "services"},
     "files": {"connections", "db", "logs", "services"},
+    "find": {"conversations", "ledger", "logs", "memory", "printing", "services"},
     "live": {"db", "logs", "services"},
     "db": {"logs", "services", "settings"},
     "hearing": set[str](),

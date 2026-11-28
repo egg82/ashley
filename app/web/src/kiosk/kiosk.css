@@ -133,3 +133,8 @@
 .k-printer-meta { margin: 0; font-variant-numeric: tabular-nums; }
 .k-printer-faults { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; color: var(--warn); }
 .k-printer-faults li::before { content: "! "; font-weight: 600; }
+
+/* the fact part: a fact her reply cited, its words and the day she learned it. Unknown is .unk. */
+.k-fact { display: grid; gap: 6px; align-content: start; }
+.k-fact .label, .k-fact .meta, .k-fact-text { margin: 0; }
+.k-fact-text { color: var(--text); overflow-wrap: anywhere; }
