@@ -14,6 +14,7 @@ import { QuietPanel } from './QuietPanel';
 import { SayLine } from './SayLine';
 import { SaveBar } from './SaveBar';
 import { Sentence } from './Sentence';
+import { TrustPanel } from './TrustPanel';
 import { Where } from './Where';
 
 function Down() {
@@ -47,6 +48,7 @@ function Cards() {
         <div class="hh-o3"><SayLine /></div>
         <div class="hh-o6"><Lexicon /></div>
         <div class="hh-o8"><QuietPanel /></div>
+        <div class="hh-o9"><TrustPanel /></div>
         {person.value?.admin && <div class="hh-o7"><PeoplePanel /></div>}
       </div>
     </div>
