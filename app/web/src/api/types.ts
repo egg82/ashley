@@ -154,3 +154,5 @@ export type ModelCatalogueProvider = components['schemas']['ModelCatalogueProvid
 export type ModelCatalogueModelsResponse = components['schemas']['ModelCatalogueModelsResponse'];
 export type ModelCatalogueModel = components['schemas']['ModelCatalogueModel'];
 export type ModelCatalogueFields = components['schemas']['ModelCatalogueFields'];
+export type TrustSettings = components['schemas']['TrustSettings'];
+export type TrustRow = components['schemas']['TrustRow'];

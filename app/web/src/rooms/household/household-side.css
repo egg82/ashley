@@ -58,3 +58,13 @@
 .hh-last { flex-basis: 100%; padding-left: 38px; }
 .hh-people .ph, .hh-lex .ph { justify-content: space-between; }
 
+
+/* what she may just do: a kind, its two choices, and why a locked one cannot change */
+.hh-trustp .dc-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.hh-trustp .meta { white-space: normal; overflow-wrap: anywhere; }
+.hh-trust-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.hh-trust-what { overflow-wrap: anywhere; }
+.hh-trust-pick { display: flex; gap: 6px; }
+.hh-trust-why { grid-column: 1 / -1; }
+.hh-trustp .dc-note { margin-top: 2px; }
+@media (max-width: 520px) { .hh-trust-row { grid-template-columns: minmax(0, 1fr); } }
