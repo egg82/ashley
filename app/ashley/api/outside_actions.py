@@ -1,6 +1,7 @@
 """What she did on her own for the signed-in person (`decisions.md`, "A turn that has read outside words asks before it
-does anything consequential the person did not ask for"): `GET /api/outside-actions` lists the changes made with no OK,
-newest first, from `outside_actions`. Only the person's own rows are served: a summary is written for the person alone.
+does anything consequential the person did not ask for", "What she did on her own is one record"):
+`GET /api/outside-actions` lists the changes made with no OK, each with its cause and undo, newest first, from
+`outside_actions`. Only the person's own rows are served: a summary is written for the person alone.
 Logs `outside_actions.listed` with the household and a count; never a summary."""
 
 import logging
@@ -10,9 +11,9 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from .. import logs, services
-from ..senses.outside_record import OutsideRecord, OutsideRecordUnavailable
+from ..senses.outside_record import OutsideRecord, OutsideRecordUnavailable, Recorded
 from .models import ErrorResponse
-from .outside_models import OutsideAction, OutsideActionsResponse
+from .outside_models import ActionCause, ActionUndo, OutsideAction, OutsideActionsResponse
 from .person import Person
 
 router = APIRouter()
@@ -33,6 +34,12 @@ async def list_outside_actions(signed_in: Person, limit: Annotated[int, Query(ge
         return JSONResponse(status_code=503, content=ErrorResponse(
             code="unavailable", detail="what she did on her own is unavailable right now; try again shortly").model_dump())
     logs.info(log, "outside_actions.listed", household=me.household_id, count=len(found))
-    return OutsideActionsResponse(outside_actions=[
-        OutsideAction(id=r.id, label=r.action.label or None, summary=r.action.summary, tier="runs" if r.action.tier == "runs" else "judged",
-                      explanation=r.action.explanation or None, at=r.action.at) for r in found])
+    return OutsideActionsResponse(outside_actions=[_served(r) for r in found])
+
+
+def _served(r: Recorded) -> OutsideAction:
+    a = r.action
+    cause = None if a.cause is None else ActionCause(kind=a.cause.kind, id=a.cause.id)
+    undo = None if a.undo is None else ActionUndo(kind=a.undo.kind, ref=a.undo.ref, within=a.undo.within)
+    return OutsideAction(id=r.id, label=a.label or None, summary=a.summary, tier="runs" if a.tier == "runs" else "judged",
+                         explanation=a.explanation or None, at=a.at, cause=cause, undo=undo)

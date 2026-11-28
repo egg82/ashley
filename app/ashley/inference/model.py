@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ..undo import Undo
 from .embedding import EmbedTask
 from .image import ImageTask
 from .speech import SpeechTask
@@ -133,13 +134,16 @@ class ToolResult:
     """What one call returned, as text the model reads (usually JSON). `is_error` marks a call that failed, so the
     model can say so rather than read the error as data. `images` are pictures the model sees with the text, in order;
     a provider whose tool results are text alone sends them in a user message right after the results. `outside`
-    narrows the tool's `ToolSpec.outside` for this result: None leaves the spec's say, a boolean replaces it."""
+    narrows the tool's `ToolSpec.outside` for this result: None leaves the spec's say, a boolean replaces it. `undo` is
+    how the change the call made is taken back, set by a tool whose change has an inverse; None for every other result.
+    It is code's alone: the model never reads it."""
 
     call_id: str
     content: str
     is_error: bool = False
     images: tuple[Image, ...] = ()
     outside: bool | None = None
+    undo: Undo | None = None
 
     def taints(self, spec_outside: bool) -> bool:
         """Whether this result can carry text written outside the household: `outside` when set, else `spec_outside`."""

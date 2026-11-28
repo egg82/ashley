@@ -103,3 +103,16 @@ def test_signed_out_is_401_and_no_log_line_carries_a_summary(db_url: str, homes:
     assert "Bluebird" not in out and "Autosave" not in out
     client.cookies.clear()
     assert client.get("/api/outside-actions").status_code == 401
+
+
+def test_a_change_made_on_her_own_is_served_with_its_cause_and_undo_and_an_older_one_with_neither(
+        db_url: str, homes: Homes, client: TestClient) -> None:
+    did(db_url, homes.home, homes.alana, "light", minutes_ago=10)
+    did(db_url, homes.home, homes.alana, "remind", minutes_ago=1)
+    with psycopg.connect(db_url) as conn:
+        conn.execute("UPDATE outside_actions SET cause_kind = 'standing_errand', cause_id = 55, undo_kind = 'todo_remove', "
+                     "undo_ref = 'Lemons', undo_within = 'todo.grocery' WHERE tool = 'remind'")
+    got = client.get("/api/outside-actions").json()["outside_actions"]
+    assert [(a["cause"], a["undo"]) for a in got] == [
+        ({"kind": "standing_errand", "id": 55}, {"kind": "todo_remove", "ref": "Lemons", "within": "todo.grocery"}),
+        (None, None)]

@@ -4,17 +4,20 @@ chat, as the house's own reads and list changes are. A household with no to-do s
 and results are never logged; `tools.call` carries the tool, outcome and row count."""
 
 import time
+from dataclasses import replace
 
 from .. import services
 from ..inference.model import ToolCall, ToolResult
-from ..todos.model import NoSuchList, NotConnected, TodosFailed, TodosUnavailable
+from ..todos.model import NoSuchList, NotConnected, Op, TodosFailed, TodosUnavailable
 from ..todos.todos import Todos
+from ..undo import Undo, UndoKind
 from . import bench_results, todo_render
 from .todo_specs import CHANGE, INSTRUCTIONS, ITEMS_MAX, LISTS, edit, lists_query, specs
 from .tools import Catalogue, Tools, ToolsUnavailable
 
 _UNAVAILABLE = "the household's connections cannot be read"
 _NOT_CONNECTED = "the household has no to-do list connected, or has switched to-do lists off"
+_INVERSE: dict[Op, UndoKind] = {"add": "todo_remove", "done": "todo_reopen", "reopen": "todo_done"}
 
 
 class TodoTools(Tools):
@@ -69,4 +72,6 @@ class TodoTools(Tools):
                                         "list is not a list of the household; todo_lists lists them")
         except TodosFailed as e:
             return bench_results.failed(call, started, e.reason, "the service did not make the change")
-        return bench_results.ok(call, started, {"done": True, "op": made.change.op}, outside=False, rows=1)
+        result = bench_results.ok(call, started, {"done": True, "op": made.change.op}, outside=False, rows=1)
+        inverse = _INVERSE.get(made.change.op)
+        return result if inverse is None else replace(result, undo=Undo(inverse, made.change.item, made.list))

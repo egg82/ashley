@@ -182,7 +182,8 @@ change is seen by the person without anyone reading a log, whether or not her re
 recorded but not shown: they run by a fixed tier, so there is no sorting to get wrong, and the change is visible where
 it was made. What is shown is `Turn.receipts`, never her words ("What the person sees", below).
 
-The Memory room's "On her own" tab lists the signed-in person's own rows, tier b and c alike, newest first
+Changes of turns no person's message started are recorded here too, each row with its cause and undo ("What she did
+on her own is one record", below). The Memory room's "On her own" tab lists the signed-in person's own rows, tier b and c alike, newest first
 (`GET /api/outside-actions`, `ashley.api.outside_actions`). Only theirs: a summary is shown on the page only where the
 person was alone, so another member of the household is never served it. Rejected: a household-wide list, for that
 reason; a room of its own, since the page answers "what does she know and do for me" beside facts and reminders.
@@ -419,3 +420,37 @@ turn and on a bench or kiosk read). A reply with held receipts is queued with `O
   so a turn is the only place a call can run. The tap is a turn with a different front.
 - **Rejected: showing the Agree button from a pending proposal alone.** A notification for an unrelated reply would then
   offer to agree to what it does not show. The id travels with the reply that shows the receipt.
+
+## What she did on her own is one record
+
+`outside_actions` holds every change she made that nobody asked for in that turn: what a tainted turn's tier or judge let
+run ("What ran on its own is recorded", above), and every change of a turn no person's message started, tainted or not.
+That a turn was started by no person's message is `Inbound.unprompted`, read by `ashley.channels.standing` into
+`Standing.unasked`, never anything said: a household event's wake, a reminder firing, an errand's check, a standing
+errand's round, a watch's wake, a bench's reaction. A person's own untainted turn records nothing: they asked, and her
+reply is where they see it. Fits into the outside record, which already kept, pruned and served per person what tainted
+turns did; the board's "On her own" lane reads it.
+
+- **One writer.** `ashley.tools.outside_done.record`, called by `Outside` after a change that ran without error, writes
+  the row and logs `outside.recorded` (conversation, turn, tool, tier, the cause's kind and id, the undo's kind). A
+  change of an untainted turn is tier `runs`. A read, a failed call and a held call are not recorded.
+- **The cause is the record that started the turn** (`ashley.senses.outside_record.Cause`, columns `cause_kind` and
+  `cause_id`), set on `Inbound.cause` by the code that builds each unprompted turn and kept in its checkpoint: `wake`
+  (a `wakes` row), `reminder`, `open_errand` or `standing_errand` (the occurrence's wake id, as `/api/work` lists it),
+  `watch` (the watch's id), `bench` (the bench's id), or `turn` for a person's own tainted turn (its turn id). The board
+  shows a row's cause by linking to that record, so nobody writes words for it.
+- **The undo is the inverse the tool knows when it makes the change** (`ashley.undo.Undo` on `ToolResult.undo`, columns
+  `undo_kind`, `undo_ref` and `undo_within`): `house_change` making something that was not there (an area, floor or
+  label, a helper written with no id, an automation or script whose id the house did not have) carries `house_delete`;
+  `remind` carries `reminder_cancel`; `todo_change` add, done and reopen carry `todo_remove`, `todo_reopen` and
+  `todo_done`. Every other change has none, and the board offers no Undo for it: a send, a delete, a mail move, a
+  replaced config, an updated record or a changed reminder, whose inverse needs the state before, which is not kept.
+  The record keeps what taking it back needs; carrying it out is a person's route of its own.
+- A row kept before causes and undos, or naming a kind this release does not know, reads back with neither. Rows are
+  kept and pruned with the rest of the table (`actions_keep_s`). `GET /api/outside-actions` serves both as
+  `OutsideAction.cause` and `OutsideAction.undo`.
+- **Rejected: a store of its own for unasked actions.** It would copy the keep-and-prune and the per-person read.
+- **Rejected: an undo worked out from the result's text, or a cause written as words.** Behaviour keys on fields; the
+  tool sets the inverse where it has the ids, and the turn's builder sets the cause where it has the record.
+- **Not done: keeping a replaced config or a record's fields before an update** so they could be undone. Every such
+  change would cost a read of the house; revisit if the board shows people wanting Undo on them.

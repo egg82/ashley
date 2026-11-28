@@ -23,6 +23,7 @@ from ashley.senses.repeat import Repeat
 from ashley.senses.wakes import Wakes
 from ashley.tools.reminders import ReminderTools
 from ashley.tools.tools import Tools
+from ashley.undo import Undo
 from contract.conversations_support import db_url as db_url, household, migrated_template as migrated_template
 from contract.conversations_support import blank_ts, person, run
 from test_reminder_turn import Home
@@ -192,4 +193,19 @@ def test_a_date_with_no_time_is_nine_in_the_morning_household_time_and_the_spec_
             [s] = await w.wakes.reminders(w.home, w.alana)
             assert s.reminder.due_at.astimezone(DENVER).strftime("%Y-%m-%dT%H:%M") == f"{day}T09:00"
             assert s.reminder.repeat == Repeat("monthly", 1, datetime.fromisoformat(f"{day}T09:00"))
+    run(go())
+
+
+def test_a_reminder_she_sets_carries_its_cancel_as_undo_and_a_change_or_cancel_carries_none(db_url: str) -> None:
+    async def go() -> None:
+        async with world(db_url) as w:
+            tools = ReminderTools(w.home, w.alana, private=True)
+            await tools.catalogue()
+            got = await tools.call(ToolCall("c1", "remind", {"for": "Alana", "at": soon(), "what": WHAT}))
+            [mine] = await w.wakes.reminders(w.home, w.alana)
+            assert got.undo == Undo("reminder_cancel", str(mine.id))
+            changed = await tools.call(ToolCall("c2", "change_reminder", {"id": mine.id, "at": soon(4)}))
+            assert not changed.is_error and changed.undo is None, "its inverse needs what it was before, not kept"
+            cancelled = await tools.call(ToolCall("c3", "cancel_reminder", {"id": mine.id}))
+            assert not cancelled.is_error and cancelled.undo is None
     run(go())

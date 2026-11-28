@@ -31,6 +31,7 @@ from ...cameras.model import CamerasFailed, NoSuchCamera, NotConnected
 from ...live.screens import Screens
 from ...people.people import People
 from ...people.quiet import held
+from ...senses.outside_record import Cause
 from ...senses.wakes import DetectionWake, Outcome
 from ...tools.camera_specs import LOOK
 from ..devices import Devices
@@ -73,7 +74,7 @@ def inbound(wake_id: int, wake: DetectionWake, device: Device, title: str | None
                    audience=device.audience, speaker_id=None, shared=True, place=device.place, channel="web",
                    remembers=False, later=True, later_by="outbox", device_id=device.id, source=f"wake:{wake_id}",
                    unprompted=True, author="household", note=note(wake, device, title),
-                   tools_only=(LOOK,), taint=None, quiet=quiet, seen=seen)
+                   tools_only=(LOOK,), taint=None, quiet=quiet, seen=seen, cause=Cause("wake", wake_id))
 
 
 async def fired(wake_id: int, wake: DetectionWake, age_s: float) -> Outcome:

@@ -29,6 +29,7 @@ from zoneinfo import ZoneInfo
 from ...people.model import Person
 from ...people.quiet import held
 from ...senses.deposit_rule import Landed, money
+from ...senses.outside_record import Cause
 from ...senses.repeat import LOCAL_FORMAT
 from ...senses.wakes import Reminder
 from ..model import Device, Inbound
@@ -49,7 +50,8 @@ def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, d
                     tools_only=reminder.tools, reads_only=reminder.tools is None,
                     taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in,
                     errand=wake_id if errand else None, method=reminder.method,
-                    quiet=standing and held(person, reminder.due_at))
+                    quiet=standing and held(person, reminder.due_at),
+                    cause=Cause("open_errand" if errand else "standing_errand" if standing else "reminder", wake_id))
     if device is None:
         return phone
     return moved(phone, reminder.route, device)

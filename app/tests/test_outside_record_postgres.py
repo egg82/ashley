@@ -1,16 +1,27 @@
 """The outside record over a real database: what a turn did on its own reads back by turn, past-limit rows go when the next
 is written and in-limit ones stay, a list a tainted turn wrote counts as outside only within its window, and one household's
-notes are never another's."""
+notes are never another's. A change's cause and undo read back with it, and a row kept before them, or naming a kind this
+release does not know, reads back with neither."""
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import psycopg
+import pytest
 from ashley.db.pool import PoolDatabase
-from ashley.senses.outside_record import DoneAction
+from ashley.senses.outside_record import Cause, DoneAction
 from ashley.senses.postgres_outside_record import PostgresOutsideRecord
+from ashley.undo import Undo
 from contract.conversations_support import db_url as db_url, household, migrated_template as migrated_template
 from contract.conversations_support import person, run, scalar
+
+
+def execute(url: str, query: str, params: tuple[object, ...]) -> None:
+    with psycopg.connect(url) as conn:
+        conn.execute(query.encode(), params)
+
 
 DAY = 86400.0
 
@@ -103,3 +114,61 @@ def test_a_person_reads_back_only_their_own_newest_first_up_to_the_limit(db_url:
             assert await rec.of_person(home, kim, 10) == ()
 
     run(go())
+
+
+def test_a_cause_and_an_undo_read_back_by_turn_and_by_person_and_an_older_row_reads_with_neither(db_url: str) -> None:
+    home, other = household(db_url), household(db_url)
+    alana, sam, kim = person(db_url, home, "Alana"), person(db_url, home, "Sam"), person(db_url, other, "Kim")
+    woke = replace(action(home, alana, 1, "remind"), cause=Cause("standing_errand", 55),
+                   undo=Undo("todo_remove", "Lemons", "todo.grocery"))
+
+    async def go() -> None:
+        async with record(db_url) as rec:
+            await rec.done(woke)
+            await rec.done(replace(action(home, sam, 2, "light"), cause=Cause("watch", 9)))
+            await rec.done(replace(action(other, kim, 3, "light"), cause=Cause("wake", 4)))
+            [got] = await rec.of_turn(40, 1)
+            assert (got.cause, got.undo) == (woke.cause, woke.undo)
+            assert [(r.action.cause, r.action.undo) for r in await rec.of_person(home, alana, 10)] == [(woke.cause, woke.undo)]
+            assert [r.action.cause for r in await rec.of_person(home, sam, 10)] == [Cause("watch", 9)]
+            assert await rec.of_person(other, alana, 10) == ()
+
+    run(go())
+    execute(db_url, "INSERT INTO outside_actions (household_id, person_id, conversation_id, turn_id, tool, summary, tier, "
+                    "decision, at) VALUES (%s, %s, 40, 7, 'old', 'old (x)', 'runs', 'run', now())", (home, alana))
+    execute(db_url, "UPDATE outside_actions SET cause_kind = 'rumour', undo_kind = 'unsend', undo_ref = '1' WHERE tool = 'light' "
+                    "AND household_id = %s", (home,))
+
+    async def older() -> None:
+        async with record(db_url) as rec:
+            [old] = await rec.of_turn(40, 7)
+            assert (old.tool, old.cause, old.undo) == ("old", None, None)
+            [unknown] = await rec.of_person(home, sam, 10)
+            assert (unknown.action.cause, unknown.action.undo) == (None, None), "a kind this release does not know"
+
+    run(older())
+
+
+def test_a_change_made_on_her_own_is_pruned_past_the_limit_like_any_other(db_url: str) -> None:
+    home = household(db_url)
+    alana = person(db_url, home, "Alana")
+    woke = Cause("wake", 4)
+
+    async def go() -> None:
+        async with record(db_url) as rec:
+            await rec.done(replace(action(home, alana, 1, "old", days_ago=91), cause=woke, undo=Undo("reminder_cancel", "8")))
+            await rec.done(replace(action(home, alana, 2, "new"), cause=woke))
+            assert [r.action.tool for r in await rec.of_person(home, alana, 10)] == ["new"]
+
+    run(go())
+
+
+@pytest.mark.parametrize("column, value", [("cause_kind", "wake"), ("cause_id", 3), ("undo_kind", "reminder_cancel"),
+                                           ("undo_ref", "4")])
+def test_half_a_cause_or_half_an_undo_is_refused_by_the_table(db_url: str, column: str, value: object) -> None:
+    home = household(db_url)
+    alana = person(db_url, home, "Alana")
+    insert = ("INSERT INTO outside_actions (household_id, person_id, conversation_id, turn_id, tool, summary, tier, "
+              "decision, at, {}) VALUES (%s, %s, 1, 1, 't', 's', 'runs', 'run', now(), %s)")
+    with pytest.raises(psycopg.errors.CheckViolation):
+        execute(db_url, insert.format(column), (home, alana, value))

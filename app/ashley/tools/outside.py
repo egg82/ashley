@@ -5,10 +5,12 @@ by a read whose result can carry text written outside the household, a call that
 that cannot be recorded) is held in the person's `OUTSIDE` proposal and not run. An `asks` change is held so in every
 turn, tainted or not, shown by the line its source writes (`Tools.shown`). A tool that takes a person's agreement
 (`ToolSpec.agrees`) is refused. A person's later, untainted turn agrees with `carry_out`, which runs the stored calls
-through the source with the arguments that were stored.
+through the source with the arguments that were stored. A change that ran in a turn no person's message started
+(`Standing.unasked`: a wake, a reminder or errand round, a watch, a bench's reaction) is recorded too, tainted or not,
+with the turn's cause.
 
 The first taint is recorded through `Tainting` (a `channels.steps.Steps`) before the tainting result is returned. Logs
-`outside.tainted`, `outside.tier`, `outside.judged`, `outside.held`, `outside.refused`, `outside.unrecorded`, `outside.receipts` and `outside.carried_out` with ids, tool names, tiers, decisions,
+`outside.tainted`, `outside.tier`, `outside.judged`, `outside.held`, `outside.refused`, `outside.recorded`, `outside.unrecorded`, `outside.receipts` and `outside.carried_out` with ids, tool names, tiers, decisions,
 reason enums and counts, never arguments, summaries, explanations or results. The judge's one-sentence explanation is
 stored with a held call and in the record of a change that ran, and is shown to the person beside her reply
 (`receipts`) and to her in what she is handed (`HeldCall.explanation`, `DoneAction.explanation`), never logged."""
@@ -22,12 +24,13 @@ from typing import Any, Protocol
 from .. import logs, services
 from ..receipts import AgreedCall, Receipt, Receipts
 from ..inference.model import Tier, ToolCall, ToolResult, ToolSpec
-from ..senses.outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable
+from ..senses.outside_record import OutsideRecord, OutsideRecordUnavailable
 from ..senses.proposal_payloads import OUTSIDE, HeldCall, HeldCalls
 from ..senses.proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
-from . import outside_config, outside_judging, outside_summary, tainted
+from . import outside_config, outside_done, outside_judging, outside_summary, tainted
 from .action_judge import Verdict
 from .outside_config import OutsideConfig
+from .outside_done import Standing
 from .outside_judging import Judged, Words
 from .tools import Catalogue, Tools, ToolsUnavailable, Unshown
 
@@ -71,18 +74,6 @@ class _Ran:
     held: HeldCall
     spec: ToolSpec | None
     got: ToolResult | None
-
-
-@dataclass(frozen=True)
-class Standing:
-    """Who the turn answers, from the channel's fields: the `speaker_id` of `household_id`, whether the reply reaches them
-    alone (`private`, `channels.audience.owner_alone`), and whether the turn may agree to held calls (`agreeing`: a
-    person's own message whose origin is not tainted)."""
-
-    household_id: int
-    speaker_id: int
-    private: bool
-    agreeing: bool
 
 
 class Outside(Tools):
@@ -156,9 +147,17 @@ class Outside(Tools):
         with tainted.bound(self._tainted, self._turn):
             got = await self._source.call(call)
         if sorted_ is not None and not got.is_error:
-            await self._done(call, spec, sorted_)
+            await self._done(call, spec, sorted_, got)
             got = self._explained(got, sorted_)
+        elif self._unasked_change(spec) and not got.is_error:
+            await self._done(call, spec, _Cleared("runs"), got)
         return await self._recorded(call.name, got, got.taints(spec is None or spec.outside))
+
+    def _unasked_change(self, spec: ToolSpec | None) -> bool:
+        """Whether a call of an untainted turn is a change no one asked for: the turn was started by no person's message
+        (`Standing.unasked`) and the tool is one that changes something."""
+        return (self._tainted is None and self._standing is not None and self._standing.unasked and spec is not None
+                and not spec.reads)
 
     async def receipts(self) -> Receipts | None:
         """What code shows beside her reply (`conversations.model.Receipts`): the changes the action judge let run this
@@ -265,25 +264,13 @@ class Outside(Tools):
             return got
         return replace(got, content=f"{got.content}\n{self._config.why_ran.format(why=cleared.verdict.explanation)}")
 
-    async def _done(self, call: ToolCall, spec: ToolSpec | None, cleared: _Cleared) -> None:
-        """Record the change that ran. One that cannot be stored is still shown beside her reply, from memory."""
-        st, turn = self._standing, self._turn
-        if st is None or turn is None:
+    async def _done(self, call: ToolCall, spec: ToolSpec | None, cleared: _Cleared, got: ToolResult) -> None:
+        if self._standing is None or self._turn is None:
             return
-        named = self._config.summary_arguments.get(call.name, ())
-        label = self._config.unlabelled if spec is None or spec.label is None else spec.label
-        shown = outside_summary.done_summary(label, call.arguments, named) if st.private else label
-        verdict = cleared.verdict
-        action = DoneAction(st.household_id, st.speaker_id, *turn, call.name, shown, cleared.tier,
-                            None if verdict is None else verdict.reason, None if verdict is None else verdict.explanation,
-                            datetime.now(UTC), label)
-        try:
-            await services.get(OutsideRecord).done(action)
-        except OutsideRecordUnavailable:
-            if cleared.tier == "judged":
-                self._unrecorded.append(Receipt(label, shown if st.private else None,
-                                                None if verdict is None else verdict.explanation))
-            logs.warning(log, "outside.unrecorded", conversation=turn[0], turn=turn[1], tool=call.name)
+        unrecorded = await outside_done.record(call, spec, self._standing, self._turn, cleared.tier, cleared.verdict, got,
+                                               self._config)
+        if unrecorded is not None:
+            self._unrecorded.append(unrecorded)
 
     async def _can_carry(self) -> bool:
         st = self._standing
