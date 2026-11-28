@@ -7,17 +7,26 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { signal } from '@preact/signals';
-import { build } from 'esbuild';
+import { build, type Plugin } from 'esbuild';
 import { KINDS } from '../../kiosk/layout.ts';
-import { PART_KINDS } from './kinds.ts';
-import type { HousePrinter } from '../../api/types';
-import type { AttentionSource, ControlsSource, HomeSource, PrinterSource } from './sources.ts';
+import { LAYOUT_KINDS, PART_KINDS } from './kinds.ts';
+import type { HousePrinter, MemoryFact, Voiceprint } from '../../api/types';
+import type { AttentionSource, ControlsSource, HomeSource, PersonSource, PrinterSource } from './sources.ts';
+
+// The fact cards the person part draws import the page's motion module, which reads the browser as it loads.
+const motionStub: Plugin = {
+  name: 'motion-stub',
+  setup(b) {
+    b.onResolve({ filter: /shell\/motion$/ }, () => ({ path: 'motion', namespace: 'stub' }));
+    b.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: 'export const reduced = () => true; export const pause = async () => {};', loader: 'js' }));
+  },
+};
 
 const dir = mkdtempSync(join(tmpdir(), 'parts-'));
 const outfile = join(dir, 'parts.mjs');
 await build({
   stdin: {
-    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx'; export * from './Printer.tsx';",
+    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx'; export * from './Printer.tsx'; export * from './Person.tsx';",
     resolveDir: import.meta.dirname,
     loader: 'ts',
   },
@@ -27,6 +36,7 @@ await build({
   jsx: 'automatic',
   jsxImportSource: 'preact',
   logLevel: 'silent',
+  plugins: [motionStub],
 });
 const parts = await import(pathToFileURL(outfile).href);
 
@@ -48,8 +58,9 @@ function find(node: unknown, pick: (n: Node) => boolean, out: Node[] = []): Node
   return out;
 }
 
-test('every kind the layout accepts has a part, and nothing else does', () => {
-  assert.deepEqual([...KINDS].sort(), [...PART_KINDS].sort());
+test('every kind has a part, and the kiosk layout accepts all but the person\'s', () => {
+  assert.deepEqual([...KINDS].sort(), [...LAYOUT_KINDS].sort());
+  assert.ok(!KINDS.includes('person'));
   assert.deepEqual(Object.keys(parts.PARTS).sort(), [...PART_KINDS].sort());
   for (const kind of PART_KINDS) assert.equal(typeof parts.PARTS[kind].draw, 'function', kind);
 });
@@ -153,4 +164,36 @@ test('a brought-up printer folds to a chip named for it, or for its kind when it
   const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), conversation: () => null };
   assert.equal(parts.chipOf('printer', { ...sources, printer: stubPrinter([RUNNING]) }, '01P'), 'Printer · Workshop P1S');
   assert.equal(parts.chipOf('printer', { ...sources, printer: stubPrinter(null) }, '01P'), 'Printer');
+});
+
+function stubPerson(facts: readonly MemoryFact[] | null | undefined, prints: readonly Voiceprint[] | null | undefined): PersonSource {
+  return { facts: signal(facts), prints: signal(prints), read: async () => undefined };
+}
+
+const both = (source: PersonSource) => [parts.PersonFacts({ source }), parts.PersonPrints({ source })];
+const unknownOf = (tree: unknown) => find(tree, (n) => typeof n.props?.what === 'string').map((n) => n.props?.what);
+
+test('a person card that cannot read facts or prints says unknown, and never that she knows nothing', () => {
+  const unread = both(stubPerson(null, null));
+  assert.deepEqual(unknownOf(unread), ['what she knows', 'your voiceprints']);
+  assert.doesNotMatch(textOf(unread), /doesn't know/);
+  assert.match(textOf(both(stubPerson(undefined, undefined))), /Reading what she knows.*Reading her voiceprints/);
+});
+
+test('a person card with nothing read back says so, apart from unknown', () => {
+  const read = both(stubPerson([], []));
+  const text = textOf(read);
+  assert.deepEqual(unknownOf(read), []);
+  assert.match(text, /doesn't know anything about you yet.*doesn't know your voice/);
+  });
+
+test('a person card counts the voiceprints and names the device each was taken on', () => {
+  const prints = [{ device: 'Kitchen', enrolled_at: '2026-11-01T10:00:00Z' }, { device: 'Den', enrolled_at: '2026-10-01T10:00:00Z' }];
+  assert.match(textOf(parts.PersonCard({ source: stubPerson([], prints) })), /2\s+prints/);
+  assert.match(textOf(parts.PersonPrints({ source: stubPerson([], prints) })), /Taken on\s+Den.*Taken on\s+Kitchen/);
+});
+
+test('the kiosk has no person source, so a person part draws nothing there', () => {
+  const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), printer: stubPrinter([]), conversation: () => 'talk' };
+  assert.equal(parts.drawPart('person', sources), null);
 });

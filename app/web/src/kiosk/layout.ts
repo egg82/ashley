@@ -1,13 +1,13 @@
 // The kiosk's layout as the page trusts it: the server's `KioskLayout` when it is whole, else nothing, and the page
 // shows its fixed arrangement. A half-drawn layout reads as working, so one defect anywhere rejects all of it.
 import type { KioskLayout, PieceSize } from '../api/types';
-import { PART_KINDS } from '../components/parts/kinds.ts';
+import { LAYOUT_KINDS } from '../components/parts/kinds.ts';
 
 export type Layout = KioskLayout;
 
 export const SIZES: readonly PieceSize[] = ['small', 'medium', 'large', 'full'];
 /** The pieces this page can draw. */
-export const KINDS: readonly string[] = PART_KINDS;
+export const KINDS: readonly string[] = LAYOUT_KINDS;
 
 function record(raw: unknown): Record<string, unknown> | null {
   return typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;

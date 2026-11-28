@@ -1,0 +1,10 @@
+/* The person part: what she knows about the person, in a column. The fact cards and rows are the memory room's
+   (`rooms/memory/memory.css`); only the card's own layout is here. */
+.k-person { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.k-person h2 { margin: 0; }
+.k-person .sec-title { margin: 6px 0 0; }
+.k-person-new { display: grid; gap: 12px; }
+.k-person-unk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.k-person .fact.row { grid-template-columns: 22px minmax(0, 1fr) auto; }
+.k-person .fact.row > .meta { grid-column: 2 / -1; white-space: normal; }
+.k-person .fact.rem { grid-template-columns: auto minmax(0, 1fr); }

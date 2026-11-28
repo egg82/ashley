@@ -5,7 +5,7 @@ import { useState } from 'preact/hooks';
 import { moment } from './facts';
 import { forgetPrints, loadPrints, prints, printsState } from './voice';
 
-function Forget() {
+export function Forget() {
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
