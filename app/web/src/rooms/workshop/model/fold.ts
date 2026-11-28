@@ -113,3 +113,14 @@ export function keptWants(kept: ReadonlySet<number>, links: readonly MapLink[], 
   const of = (ids: Iterable<number>) => [...ids].filter((p) => boxes.has(p)).map((p) => boxes.get(p)!);
   return [of(on), of(pair)];
 }
+
+/** What the camera tries to show, in order, when it goes to the focus. A person's focus change (`why` 'person') goes to
+ *  the focused piece and its neighbours, never to her kept set; the bench opening or her turn changing the kept set
+ *  tries the kept pieces first. */
+export function shotWants(why: 'open' | 'turn' | 'person', a: {
+  kept: ReadonlySet<number>; links: readonly MapLink[]; boxes: ReadonlyMap<number, Box>; rank: (id: number) => number;
+  goal: Box; focus: Box; near: readonly Box[];
+}): Box[][] {
+  const together = why === 'person' ? [] : keptWants(a.kept, a.links, a.boxes, a.rank);
+  return [...together, [a.goal, ...a.near], why === 'open' ? [a.goal, a.focus] : [...a.near]];
+}

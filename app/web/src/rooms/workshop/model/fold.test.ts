@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CARD_TEXT_PX, CHIP, CHIP_TEXT_PX, cardsReadable, drawnRect, formsOf, GHOST_H, lift, keptInView, keptWants, minZoom, READ_FLOOR_PX, supersededBy, type FoldInput } from './fold.ts';
+import { CARD_TEXT_PX, CHIP, CHIP_TEXT_PX, cardsReadable, drawnRect, formsOf, GHOST_H, lift, keptInView, keptWants, minZoom, shotWants, READ_FLOOR_PX, supersededBy, type FoldInput } from './fold.ts';
 import { lookAt } from './camera.ts';
 import type { MapLink } from './mindmap.ts';
 
@@ -105,4 +105,19 @@ test('the camera framing a turn\'s kept pieces contains every one of them', () =
   assert.deepEqual(keptWants(new Set(), links, boxes, (p) => p), []);
   const wide = new Map(boxes).set(1, { x: -9000, y: 0, w: 300, h: 200 });
   assert.equal(keptWants(new Set([1, 3, 5]), links, wide, (p) => p)[1]!.length, 2, 'else the newest and its partner');
+});
+
+test('a person\'s focus change frames the focused piece even with kept pieces present; opening and a new turn frame the kept ones', () => {
+  const boxes = new Map([[3, { x: 2000, y: 100, w: 300, h: 200 }], [5, { x: 2400, y: 0, w: 300, h: 200 }], [9, { x: -900, y: 0, w: 300, h: 200 }]]);
+  const links: MapLink[] = [{ from: 5, kind: 'version_of', to: 3 }];
+  const V = { w: 1440, h: 900 };
+  const goal = { x: -1500, y: 0, w: 100, h: 100 };
+  const focus = boxes.get(9)!;
+  const args = { kept: new Set([3, 5]), links, boxes, rank: (p: number) => p, goal, focus, near: [focus] };
+  const sees = (why: 'open' | 'turn' | 'person', b: { x: number; w: number }) => {
+    const cam = lookAt(shotWants(why, args), focus, V, 1);
+    return b.x >= cam.x - V.w / 2 && b.x + b.w <= cam.x + V.w / 2;
+  };
+  assert.ok(sees('person', focus) && !sees('person', boxes.get(5)!));
+  assert.ok(sees('turn', boxes.get(5)!) && sees('open', boxes.get(3)!));
 });
