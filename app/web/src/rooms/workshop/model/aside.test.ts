@@ -71,3 +71,23 @@ test('a line with no clear side folds to its badge, and a badge with none sits i
   assert.equal(shut.kind, 'inside');
   assert.ok(within(shut.box, a));
 });
+
+test('her line goes only where it shows whole on screen, else it is a badge; a badge prefers the screen', () => {
+  const a: Box = { x: 0, y: 0, w: 400, h: 200 };
+  const boxes = new Map([[1, a]]);
+  const want = { id: 1, anchor: a, says: 'hello', badge: '1 line' };
+  const roomy: Box = { x: -1000, y: -1000, w: 3000, h: 3000 };
+  const free = placeAsides([want], boxes, [], 1, roomy).get(1)!;
+  assert.equal(free.kind, 'says');
+  assert.ok(free.box.x >= 400, 'right side, on screen');
+  const rightEdge: Box = { x: -400, y: -300, w: 900, h: 800 };
+  const left = placeAsides([want], boxes, [], 1, rightEdge).get(1)!;
+  assert.equal(left.kind, 'says');
+  assert.ok(left.box.x + left.box.w <= 0 && within(left.box, rightEdge), 'the right side runs off screen, so left');
+  const snug: Box = { x: -10, y: -10, w: 420 + 80, h: 220 };
+  const folded = placeAsides([want], boxes, [], 1, snug).get(1)!;
+  assert.equal(folded.kind, 'badge', 'no side holds the line on screen');
+  assert.ok(within(folded.box, snug), 'the badge fits on screen');
+  const off = placeAsides([want], boxes, [], 1, { x: 5000, y: 5000, w: 10, h: 10 }).get(1)!;
+  assert.equal(off.kind, 'badge', 'a piece off screen still gets its badge beside it');
+});

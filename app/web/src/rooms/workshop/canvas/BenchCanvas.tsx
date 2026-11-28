@@ -7,20 +7,20 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import type { BenchDetail, WorkshopKinds } from '../../../api/types';
 import { redock } from '../../../shell/her/dock';
 import { apply, stamps } from '../model/bench';
-import { framing, onScreen, openingZoom, worldTransform } from '../model/camera';
+import { framing, onScreen, openingZoom, toBench, visibleBox, worldTransform, type Cam, type View } from '../model/camera';
 import { groupDerived } from '../model/derived';
 import { draftsOn } from '../model/drafts';
 import { placeAsides } from '../model/aside';
 import { drawnRect, formsOf, lift, minZoom, supersededBy } from '../model/fold';
 import { badgeText } from '../model/herLines';
 import { fullIndex, inOrder } from '../model/layout';
-import { rootsOf } from '../model/mindmap';
+import { rootsOf, type Box } from '../model/mindmap';
 import { cardWidth, placeOf } from '../model/placing';
 import { AddPiece, Orphan } from '../pieces/AddPiece';
 import { away, herAt, markStamps } from '../pieces/marks';
 import type { PieceActions } from '../pieces/PieceCard';
 import { CanvasCard } from './CanvasCard';
-import { Goal, Legend, Zoom } from './Chrome';
+import { CANVAS_INSET, Goal, Toolbar, TOOLBAR_H } from './Chrome';
 import { useHerLines } from './HerLines';
 import { Links } from './Links';
 import { dragging, pending } from './state';
@@ -37,6 +37,12 @@ function scrolls(t: Element): boolean {
     if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) return true;
   }
   return false;
+}
+
+/** The toolbar's strip along the top of the viewport, in bench units. */
+function toolbarBox(cam: Cam, view: View): Box {
+  const tl = toBench(cam, view, { x: 0, y: 0 });
+  return { x: tl.x, y: tl.y, w: view.w / cam.z, h: TOOLBAR_H / cam.z };
 }
 
 function useActions(bench: { current: BenchDetail }): PieceActions {
@@ -81,7 +87,7 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   const lines = useHerLines(id, place.cardOf, ids);
   const asides = placeAsides([...lines.byPiece].filter(([p]) => rects.has(p)).map(([p, ls]) => ({
     id: p, anchor: rects.get(p)!, says: lines.fresh(p) ? ls[0]!.text : null, badge: badgeText(ls.length),
-  })), place.boxes, [GOAL_BOX], lift(cam.z));
+  })), place.boxes, [GOAL_BOX, toolbarBox(cam, view)], lift(cam.z), visibleBox(cam, view, CANVAS_INSET));
   const act = useActions(latest);
   const order = inOrder(place.cards, null);
   const seen = (p: number) => !!rects.get(p) && onScreen(cam, view, rects.get(p)!);
@@ -89,7 +95,7 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   useEffect(() => { if (away.value && seen(away.value.piece)) away.value = null; }, [cam]);
   useLayoutEffect(() => redock(false), [herAt.value, cam]);
   const orphans = draftsOn(id).filter(([p]) => !bench.pieces.some((x) => x.id === p));
-  const whole = () => camera.fly(framing([GOAL_BOX, ...place.boxes.values()], view, 0, openingZoom(view)));
+  const whole = () => camera.fly(framing([GOAL_BOX, ...place.boxes.values()], view, 0, openingZoom(view), CANVAS_INSET));
   return (
     <div class="bcanvas">
       <div class={`bc-view${dragging.value ? ' dragging' : ''}`} ref={vp}
@@ -108,11 +114,10 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
         </div>
       </div>
       <div class="bc-ui bc-side">
-        <Legend />
         {orphans.map(([p, d]) => <Orphan key={`o${p}`} bench={id} piece={p} draft={d} />)}
         {adding && rules && <AddPiece bench={id} rules={rules} done={doneAdding} />}
       </div>
-      <Zoom step={camera.step} whole={whole} />
+      <Toolbar step={camera.step} whole={whole} />
       {!place.cards.length && !adding && !orphans.length && (
         <p class="bc-empty meta">{closed ? 'Nothing was left on this bench.' : bench.shelf.length ? 'Nothing out on this bench.' : 'Nothing on this bench yet. Add a piece to start.'}</p>
       )}

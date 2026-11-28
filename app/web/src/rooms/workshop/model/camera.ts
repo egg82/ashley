@@ -18,8 +18,24 @@ export interface View {
 export const Z_MAX = 2.4;
 /** Each wheel notch or zoom button press. */
 export const Z_STEP = 1.2;
-/** The space kept around what a framing shows, in screen px. */
+/** Screen px a framing keeps clear on each side of the viewport: a margin, plus whatever the page draws over the canvas
+ *  there (its toolbar). */
+export interface Inset {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
 const MARGIN = 48;
+const AROUND: Inset = { top: MARGIN, right: MARGIN, bottom: MARGIN, left: MARGIN };
+
+/** The width and height left inside `inset`. */
+const room = (v: View, i: Inset) => ({ w: v.w - i.left - i.right, h: v.h - i.top - i.bottom });
+
+/** The camera that draws bench point `c` at the middle of what `inset` leaves, at zoom `z`. */
+function centring(c: Pt, v: View, i: Inset, z: number): Cam {
+  return { x: c.x - (i.left - i.right) / 2 / z, y: c.y - (i.top - i.bottom) / 2 / z, z };
+}
 
 const clampZ = (z: number, zMin: number): number => Math.min(Z_MAX, Math.max(zMin, z));
 
@@ -59,27 +75,37 @@ export function extent(boxes: readonly Box[]): Box | null {
   return { x, y, w: r - x, h: btm - y };
 }
 
-/** The camera that shows all of `boxes` with a margin, as close as `zCap` and no further out than `zMin`; when they do
- *  not fit at `zMin`, it centres them and the rest is a pan away. */
-export function framing(boxes: readonly Box[], v: View, zMin: number, zCap: number): Cam {
+/** The camera that shows all of `boxes` inside `inset`, as close as `zCap` and no further out than `zMin`; when they
+ *  do not fit at `zMin`, it centres them and the rest is a pan away. */
+export function framing(boxes: readonly Box[], v: View, zMin: number, zCap: number, inset: Inset = AROUND): Cam {
   const e = extent(boxes) ?? { x: 0, y: 0, w: 0, h: 0 };
-  const fit = Math.min((v.w - 2 * MARGIN) / Math.max(1, e.w), (v.h - 2 * MARGIN) / Math.max(1, e.h));
-  return { x: e.x + e.w / 2, y: e.y + e.h / 2, z: clampZ(Math.min(fit, zCap), zMin) };
+  const r = room(v, inset);
+  const z = clampZ(Math.min(r.w / Math.max(1, e.w), r.h / Math.max(1, e.h), zCap), zMin);
+  return centring({ x: e.x + e.w / 2, y: e.y + e.h / 2 }, v, inset, z);
 }
 
-/** The camera at zoom `z` centred on the first of `wants` that fits on screen at `z`: a focus change flies to the focus
- *  with its neighbours (and the goal, when the bench opens). When none fits, it keeps `must` (the focus) on screen and
- *  leans as far toward the last of `wants` as that allows. */
-export function lookAt(wants: readonly (readonly Box[])[], must: Box, v: View, z: number): Cam {
-  const fits = (e: Box) => e.w * z <= v.w - 2 * MARGIN && e.h * z <= v.h - 2 * MARGIN;
+/** The camera at zoom `z` centring, inside `inset`, the first of `wants` that fits there: a focus change flies to the
+ *  focus with its neighbours (and the goal, when the bench opens). When none fits, it keeps `must` (the focus) inside
+ *  and leans as far toward the last of `wants` as that allows. */
+export function lookAt(wants: readonly (readonly Box[])[], must: Box, v: View, z: number, inset: Inset = AROUND): Cam {
+  const r = room(v, inset);
+  const fits = (e: Box) => e.w * z <= r.w && e.h * z <= r.h;
   const boxes = wants.map(extent).filter((e): e is Box => e !== null);
   const c = boxes.find(fits);
-  if (c) return { x: c.x + c.w / 2, y: c.y + c.h / 2, z };
+  if (c) return centring({ x: c.x + c.w / 2, y: c.y + c.h / 2 }, v, inset, z);
   const toward = boxes.at(-1) ?? must;
-  const lean = (from: number, to: number, room: number) => from + Math.max(-room, Math.min(room, to - from));
-  const roomX = Math.max(0, ((v.w - 2 * MARGIN) / z - must.w) / 2);
-  const roomY = Math.max(0, ((v.h - 2 * MARGIN) / z - must.h) / 2);
-  return { x: lean(must.x + must.w / 2, toward.x + toward.w / 2, roomX), y: lean(must.y + must.h / 2, toward.y + toward.h / 2, roomY), z };
+  const lean = (from: number, to: number, slack: number) => from + Math.max(-slack, Math.min(slack, to - from));
+  const slackX = Math.max(0, (r.w / z - must.w) / 2);
+  const slackY = Math.max(0, (r.h / z - must.h) / 2);
+  const at = { x: lean(must.x + must.w / 2, toward.x + toward.w / 2, slackX), y: lean(must.y + must.h / 2, toward.y + toward.h / 2, slackY) };
+  return centring(at, v, inset, z);
+}
+
+/** The part of the bench drawn inside `inset`, in bench units. */
+export function visibleBox(cam: Cam, v: View, inset: Inset): Box {
+  const tl = toBench(cam, v, { x: inset.left, y: inset.top });
+  const r = room(v, inset);
+  return { x: tl.x, y: tl.y, w: r.w / cam.z, h: r.h / cam.z };
 }
 
 /** Whether `box` is drawn inside the viewport (its top `edge` bench units at least). */

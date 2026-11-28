@@ -94,7 +94,7 @@
 .bc-ui { position: absolute; z-index: 10; }
 .bc-side { left: 12px; top: 12px; display: grid; gap: 10px; justify-items: start; width: min(360px, calc(100% - 140px)); max-height: calc(100% - 24px); overflow: auto; }
 .bc-side > .piece { width: 100%; }
-.bc-legend { position: static; display: grid; gap: 2px; margin: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: var(--r-1);
+.bc-legend { position: absolute; right: 0; top: calc(100% + 6px); width: max-content; display: grid; gap: 2px; margin: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: var(--r-1);
   background: rgba(4,7,12,.92); font: 11px/1.5 var(--f-mono); color: var(--text-3); }
 .bc-legend div { display: flex; align-items: center; gap: 8px; }
 .bc-legend dt, .bc-legend dd { margin: 0; }
