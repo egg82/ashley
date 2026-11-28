@@ -10,10 +10,12 @@ export const logOpen = signal(false);
 
 function Row({ c, title, next }: { c: LoggedCommand; title: string | undefined; next: boolean }) {
   return (
-    <li class="wlog-row" data-next={next}>
+    <li class="wlog-row" data-next={next} data-undone={c.undone_by !== null}>
       <span><b>{DID[c.type]}</b> {title ?? (c.piece_id === null ? '' : `piece ${c.piece_id}`)}</span>
       <span class="meta">{moment(c.at)}</span>
-      <button class="btn sm ghost" type="button" onClick={() => void apply({ type: 'undo', seq: c.seq })}>Undo</button>
+      {c.undone_by === null
+        ? <button class="btn sm ghost" type="button" onClick={() => void apply({ type: 'undo', seq: c.seq })}>Undo</button>
+        : <span class="meta">undone</span>}
     </li>
   );
 }
