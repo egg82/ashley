@@ -32,13 +32,14 @@ _READ: dict[int | str, dict[str, Any]] = {
 
 def inbound_for(signed_in: Person, bench_id: int, body: ChatRequest, pasted: Piece | None = None) -> Inbound:
     """The message as the turn loop takes it: on the bench's thread, the owner the speaker and its only audience. A
-    `pasted` piece is told to her with the message, in its `note`, which is never stored."""
+    `pasted` piece, the one the person just put on the bench, is told to her with the message, in its `note`, which is
+    never stored."""
     who = signed_in.person
     got = on_bench(who.household_id, who.id, bench_id, body.text)
     if pasted is None:
         return got
-    note = (f'[They pasted a long text with this message. It is on the bench now as piece {pasted.id}, '
-            f'"{pasted.text.title}"; read it with bench_read_piece.]')
+    note = (f'[They just put this on the bench with this message: piece {pasted.id}, "{pasted.text.title}", '
+            f'kind {pasted.kind}; read it with bench_read_piece or look at it.]')
     return replace(got, note=note)
 
 

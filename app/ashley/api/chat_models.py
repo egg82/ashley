@@ -46,7 +46,8 @@ class KioskMessage(ChatRequest):
 
 
 class BenchMessage(ChatRequest):
-    """A message on a bench's talk: `text` as `ChatRequest`, and `piece_id` when the person just put a paste on the
-    bench as that piece (a document of theirs), which she is told of with the message."""
+    """A message on a bench's talk: `text` as `ChatRequest`, and `piece_id` when the person just put something on the
+    bench as that piece (a paste as a document, a dropped photo or file as an image or file), which she is told of with
+    the message."""
 
     piece_id: int | None = Field(default=None, ge=1)
