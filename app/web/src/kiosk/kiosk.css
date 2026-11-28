@@ -118,3 +118,18 @@
   .k-p[data-size="small"] { grid-column: span 2; }
   .k-p[data-size="medium"], .k-p[data-size="large"] { grid-column: 1 / -1; }
 }
+
+/* the printer part: its name and state, the print with a bar, faults in warn. Unknown is .unk, never idle. */
+.k-printer { display: grid; gap: 8px; align-content: start; }
+.k-printer-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.k-printer-top .label { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-printer-state { font: 12px/1.6 var(--f-mono); color: var(--text-2); }
+.k-printer.printing .k-printer-state { color: var(--ok); }
+.k-printer.failed .k-printer-state, .k-printer.paused .k-printer-state { color: var(--warn); }
+.k-printer.offline .k-printer-state { color: var(--text-3); }
+.k-printer-job { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.k-printer-bar { height: 6px; border-radius: 3px; background: var(--ink-3); overflow: hidden; }
+.k-printer-bar > i { display: block; height: 100%; background: var(--ok); }
+.k-printer-meta { margin: 0; font-variant-numeric: tabular-nums; }
+.k-printer-faults { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; color: var(--warn); }
+.k-printer-faults li::before { content: "! "; font-weight: 600; }
