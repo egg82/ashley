@@ -11,6 +11,15 @@ WorkState = Literal["running", "waiting_on_you", "open", "done", "stopped"]
 Lane = Literal["waiting", "doing", "done_untold", "would_like", "on_her_own"]
 
 
+class ActionUndone(BaseModel):
+    """That an action's Undo was taken: when it was last moved (`at`) and how it stands: `undoing`, being carried out
+    now; `undone`, carried out; `waiting_on_you`, a delete proposed and waiting for the person's yes in the conversation
+    the undo's answer named; `gone`, what it would take back was no longer there, so nothing was done."""
+
+    at: AwareDatetime
+    how: Literal["undoing", "undone", "waiting_on_you", "gone"]
+
+
 class WorkItem(BaseModel):
     """One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of
     `errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`
@@ -33,7 +42,9 @@ class WorkItem(BaseModel):
     proposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a
     proposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started
     the turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is
-    offered), both null for any other kind."""
+    offered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):
+    an `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other
+    kind and for an action never undone."""
 
     kind: Literal["errand", "open_errand", "standing_errand", "bench", "watch", "proposal", "action"]
     id: int
@@ -46,6 +57,8 @@ class WorkItem(BaseModel):
     can_tap: bool = False
     cause: ActionCause | None = None
     undo: ActionUndo | None = None
+    can_undo: bool = False
+    undone: ActionUndone | None = None
 
 
 class WorkResponse(BaseModel):
@@ -53,6 +66,17 @@ class WorkResponse(BaseModel):
     recently moved first within each."""
 
     entries: list[WorkItem]
+
+
+class UndoDone(BaseModel):
+    """What the Undo of action `id` did, in the words of `ActionUndone.how`: `undone`, the change was taken back; `waiting_on_you`, taking it back is a
+    delete, proposed for the person's yes like any delete she proposes, which they give by answering her in
+    `conversation_id` (it waits in the board's `waiting` lane); `gone`, what it would take back was no longer there,
+    so nothing was done. `conversation_id` is null unless `waiting_on_you`."""
+
+    id: int
+    how: Literal["undone", "waiting_on_you", "gone"]
+    conversation_id: int | None
 
 
 class WatchCancelled(BaseModel):
