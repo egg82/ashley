@@ -1,8 +1,10 @@
-"""The print-queue and upload tools as the model sees them, and their arguments checked. `printing_queue` changes the
-household's queue, so it is an `asks` change, held for the person's OK in every turn (`ashley.tools.outside`);
-`printing_upload` adds a file to the household's print library and is `judged`: it starts nothing and a library file is
-deleted in Bambuddy, so a turn that has read outside words has the action judge decide it, where queuing a print is
-always agreed to first. Neither returns text written outside the household."""
+"""The print-queue, cancel and upload tools as the model sees them, and their arguments checked. `printing_queue` puts a
+staged print in the household's queue at tier `asks_if_tainted`: a turn that has read outside words holds it for the
+person's OK without a judge, any other turn queues it, and a turn nobody asked for goes by the person's "what she may
+just do" setting (`trust/kinds.json`, `printing`). What it queued carries its Undo, `printing_cancel` of the entry.
+`printing_cancel` takes a waiting print out of the queue and is `judged`. `printing_upload` adds a file to the
+household's print library and is `judged`: it starts nothing and a library file is deleted in Bambuddy. None returns text
+written outside the household."""
 
 import re
 from typing import Any
@@ -12,6 +14,7 @@ from ..printing.model import Placement, QueueRequest
 from .printing_config import PrintingConfig
 
 QUEUE = "printing_queue"
+CANCEL = "printing_cancel"
 UPLOAD = "printing_upload"
 
 _ID = re.compile(r"^[0-9]{1,12}$")
@@ -22,9 +25,10 @@ QUEUE_INSTRUCTIONS = ("printing_queue puts a library file in a printer's queue, 
                       "printing_printers give. It is never started by you: it waits in Bambuddy, staged, until a person "
                       "starts it at the printer, and only a file that is sliced for the printer can be queued. Say which "
                       "AMS slot should feed each of the file's filaments (from printing_needs and printing_ams) in "
-                      "slots; a filament with no slot is left for Bambuddy to choose. A queued print never happens "
-                      "straight away: it is shown to the person and waits for their OK, so say that it is waiting, not "
-                      "that it is queued.")
+                      "slots; a filament with no slot is left for Bambuddy to choose. Say what you queued and where; "
+                      "when the answer says it is held for the person's OK, say it waits on them instead. "
+                      "printing_cancel takes a queued print out of the queue by the item_id printing_queue gave, while "
+                      "nobody has started it.")
 UPLOAD_INSTRUCTIONS = ("printing_upload puts a bench's STL or 3MF file piece in the print library, and answers with the "
                        "library file's id, which printing_queue takes. Bambuddy queues only a sliced file, so an STL or "
                        "an unsliced 3MF is for the person to slice there first.")
@@ -45,7 +49,15 @@ def queue_spec(config: PrintingConfig) -> ToolSpec:
         "plate": {"type": "integer", "minimum": 1, "description": "the plate of a multi-plate file; omit for Bambuddy's choice"}},
              "required": ["file_id", "printer_id"]}
     return ToolSpec(QUEUE, "Put a library file in a printer's queue, staged: a person starts it from Bambuddy.", queue,
-                    reads=False, outside=False, tier="asks", label="Queued a print in Bambuddy")
+                    reads=False, outside=False, tier="asks_if_tainted", label="Queued a print in Bambuddy")
+
+
+def cancel_spec() -> ToolSpec:
+    cancel = {"type": "object", "properties": {
+        "item_id": {"type": "string", "description": "the queued print, by the item_id printing_queue gave"}},
+              "required": ["item_id"]}
+    return ToolSpec(CANCEL, "Take a print that is waiting in the queue out of it, before anyone starts it.", cancel,
+                    reads=False, outside=False, tier="judged", label="Cancelled a queued print")
 
 
 def upload_spec() -> ToolSpec:
@@ -99,6 +111,12 @@ def _placements(given: object, config: PrintingConfig) -> tuple[Placement, ...] 
 
 def _positive(value: object) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 1 else None
+
+
+def cancel_item(arguments: dict[str, object]) -> str | None:
+    """The queue entry `printing_cancel` names, None when the argument is not an id as `printing_queue` gives it."""
+    item = arguments.get("item_id")
+    return item if isinstance(item, str) and _ID.match(item) else None
 
 
 def upload_piece(arguments: dict[str, object]) -> int | str:

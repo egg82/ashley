@@ -69,9 +69,11 @@ class Message:
     text: str
 
 
-Tier = Literal["runs", "judged", "asks"]
+Tier = Literal["runs", "judged", "asks_if_tainted", "asks"]
 """What a turn does with a change (`ashley.tools.outside`): a tainted turn runs a `runs` one and has the action judge decide
-a `judged` one; an `asks` one is held for the person's OK in every turn, tainted or not, and no judge is asked."""
+a `judged` one; an `asks_if_tainted` one is held for the person's OK in a tainted turn without asking a judge, and runs
+like any other in an untainted one; an `asks` one is held for the person's OK in every turn, tainted or not, and no judge
+is asked."""
 
 
 @dataclass(frozen=True)

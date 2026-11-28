@@ -49,8 +49,9 @@ def test_a_person_who_set_nothing_sees_each_kind_in_force_and_the_locked_rows_wi
     body = read(client)
     assert body.revision == 0 and body.updated_at is None
     assert values(body) == {"house_removals": ("offer", "irreversible"), "house_setup": ("act", None),
-                            "reminders": ("act", None), "lists": ("act", None), "messages": ("act", None),
-                            "money": ("offer", "asks")}
+                            "reminder_cancels": ("offer", None), "reminders": ("act", None),
+                            "list_removals": ("offer", None), "lists": ("act", None), "messages": ("offer", None),
+                            "money": ("offer", "asks"), "printing": ("act", None)}
     assert all(r.label for r in body.rows)
 
 
@@ -106,11 +107,33 @@ def test_a_person_reads_and_writes_only_their_own_rows(client: TestClient, home:
     assert put(client, 0, [{"kind": "lists", "value": "offer"}]).status_code == 200
     as_(client, home.sam_token)
     assert values(read(client))["lists"] == ("act", None) and read(client).revision == 0
-    assert put(client, 0, [{"kind": "messages", "value": "offer"}]).status_code == 200
+    assert put(client, 0, [{"kind": "printing", "value": "offer"}]).status_code == 200
     assert stored(db_url) == [(home.household, home.alana, "lists", "offer"),
-                              (home.household, home.sam, "messages", "offer")]
+                              (home.household, home.sam, "printing", "offer")]
     as_(client, home.alana_token)
-    assert values(read(client))["messages"] == ("act", None)
+    assert values(read(client))["printing"] == ("act", None)
+
+
+def test_choices_saved_before_the_defaults_changed_still_win_and_an_act_against_one_is_stored(
+        client: TestClient, home: Home, db_url: str) -> None:
+    with psycopg.connect(db_url, autocommit=True) as conn:
+        conn.execute("INSERT INTO trust_revisions (household_id, person_id, version) VALUES (%s, %s, 2)",
+                     (home.household, home.alana))
+        for kind in ("lists", "messages", "reminders"):
+            conn.execute("INSERT INTO trust_settings (household_id, person_id, kind, value) VALUES (%s, %s, %s, 'offer')",
+                         (home.household, home.alana, kind))
+    saved = values(read(client))
+    assert (saved["lists"], saved["messages"], saved["reminders"]) == (("offer", None),) * 3
+    assert (saved["printing"], saved["list_removals"]) == (("act", None), ("offer", None)), "unsaved kinds take defaults"
+    wrote = put(client, 2, [{"kind": "messages", "value": "act"}, {"kind": "list_removals", "value": "act"},
+                            {"kind": "printing", "value": "offer"}])
+    assert wrote.status_code == 200, wrote.text
+    assert stored(db_url) == [(home.household, home.alana, "list_removals", "act"),
+                              (home.household, home.alana, "messages", "act"),
+                              (home.household, home.alana, "printing", "offer")]
+    after = values(read(client))
+    assert (after["messages"], after["list_removals"], after["printing"]) == (("act", None), ("act", None),
+                                                                             ("offer", None))
 
 
 def test_another_households_rows_are_neither_shown_nor_touched(client: TestClient, home: Home, db_url: str) -> None:

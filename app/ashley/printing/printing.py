@@ -1,13 +1,13 @@
 """The Printing service (`ashley.services`): a household's printers, their AMS units, its print library and what a file
-needs, as neutral records (`model`), read from whichever manager runs them. It changes two things: a print put in the
-queue (`queue`, always staged) and a file added to the library (`upload`). Its callers offer queuing only as a change held
-for the person's OK, shown first from `file` and `printers` (`ashley.tools.printing_queue`). Callers import this module and
+needs, as neutral records (`model`), read from whichever manager runs them. It changes three things: a print put in the
+queue (`queue`, always staged), that print taken out again while it waits (`cancel`), and a file added to the library
+(`upload`). What a held print shows the person is read from `file` and `printers` (`ashley.tools.printing_queue`). Callers import this module and
 `model`; the adapter (for Bambuddy, `ashley.bambuddy.printing`) lives with its backend."""
 
 from abc import abstractmethod
 
 from ..services import Service
-from .model import NotConnected, Need, Page, PrintFile, Printer, QueueRequest, Queueing, Uploading
+from .model import Cancelled, NotConnected, Need, Page, PrintFile, Printer, QueueRequest, Queueing, Uploading
 
 
 class Printing(Service):
@@ -45,6 +45,11 @@ class Printing(Service):
         PrintingFailed (`refused` for a key that may not queue), PrintingUnavailable, NotConnected."""
 
     @abstractmethod
+    async def cancel(self, household_id: int, item_id: str) -> Cancelled:
+        """Take the queued print `item_id` (`Queueing.item_id`) out of the queue while it still waits to be started.
+        Raises PrintingFailed (`refused` for a key that may not change the queue), PrintingUnavailable, NotConnected."""
+
+    @abstractmethod
     async def upload(self, household_id: int, name: str, data: bytes) -> Uploading:
         """Add a file to the library under `name`. Raises PrintingFailed (`refused` for a key that may not manage the
         library), PrintingUnavailable, NotConnected."""
@@ -69,6 +74,9 @@ class NullPrinting(Printing):
         raise NotConnected
 
     async def queue(self, household_id: int, request: QueueRequest) -> Queueing:
+        raise NotConnected
+
+    async def cancel(self, household_id: int, item_id: str) -> Cancelled:
         raise NotConnected
 
     async def upload(self, household_id: int, name: str, data: bytes) -> Uploading:

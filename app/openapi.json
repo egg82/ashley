@@ -9384,7 +9384,8 @@
               "reminder_cancel",
               "todo_remove",
               "todo_done",
-              "todo_reopen"
+              "todo_reopen",
+              "print_cancel"
             ],
             "title": "Kind"
           },
@@ -9411,7 +9412,7 @@
           "within"
         ],
         "title": "ActionUndo",
-        "description": "What takes a change back: `kind` is the inverse (`house_delete` the house's `within` kind of thing `ref` she\ncreated; `reminder_cancel` the reminder whose id is `ref`; `todo_remove`, `todo_done` or `todo_reopen` the item `ref`,\nits id or exact text, on the to-do list `within`), `within` None where the kind needs no place."
+        "description": "What takes a change back: `kind` is the inverse (`house_delete` the house's `within` kind of thing `ref` she\ncreated; `reminder_cancel` the reminder whose id is `ref`; `todo_remove`, `todo_done` or `todo_reopen` the item `ref`,\nits id or exact text, on the to-do list `within`; `print_cancel` the queued print whose queue entry is `ref`, which\nthe board shows as Cancel), `within` None where the kind needs no place."
       },
       "ActionUndone": {
         "properties": {

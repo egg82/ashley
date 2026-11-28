@@ -131,6 +131,11 @@ class Queueing:
     position: int | None = None
 
 
+Cancelled = Literal["cancelled", "gone"]
+"""What became of a cancel of a queued print: `cancelled`, it left the queue without printing; `gone`, the manager has no
+such entry waiting (it was started, finished, cancelled already, or removed), so nothing was changed."""
+
+
 Uploaded = Literal["uploaded", "rejected"]
 """What became of an uploaded file: `uploaded`, now in the library (`already_there` when the library already held the same
 file, and `file_id` is that one); `rejected`, the manager would not take it (a type or size it does not accept)."""

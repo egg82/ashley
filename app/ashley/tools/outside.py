@@ -1,10 +1,10 @@
 """A `Tools` for a turn that may have read outside words (`docs/decisions.md`, "A turn that has read outside words asks
 before it does anything consequential the person did not ask for"). Reads run. Once the turn is tainted, by its origin or
 by a read whose result can carry text written outside the household, a call that is not a read goes by its tier
-(`Tools.tier`, else `ToolSpec.tier`): `runs` runs and is recorded, `judged` asks the `ActionJudge`, and an `ask` (or a call
-that cannot be recorded) is held in the person's `OUTSIDE` proposal and not run. An `asks` change is held so in every
-turn, tainted or not, shown by the line its source writes (`Tools.shown`), and so is a change the source rates `asks`
-in a turn no person's message started (`trusting.Trusting`: the person's setting). A tool that takes a person's agreement
+(`Tools.tier`, else `ToolSpec.tier`): `runs` runs and is recorded, `judged` asks the `ActionJudge`, and an `asks` or
+`asks_if_tainted` one (or a call that cannot be recorded) is held in the person's `OUTSIDE` proposal and not run. An
+`asks` change is held so in every turn, tainted or not, shown by the line its source writes (`Tools.shown`), and so is a
+change the source rates `asks` in a turn no person's message started (`trusting.Trusting`: the person's setting). A tool that takes a person's agreement
 (`ToolSpec.agrees`) is refused. A person's later, untainted turn agrees with `carry_out`, which runs the stored calls
 through the source with the arguments that were stored. A change that ran in a turn no person's message started
 (`Standing.unasked`: a wake, a reminder or errand round, a watch, a bench's reaction) is recorded too, tainted or not,
@@ -259,7 +259,7 @@ class Outside(Tools):
         cannot be recorded (no known speaker or turn) is not cleared."""
         tier: Tier = await self._source.tier(call) or (spec.tier if spec is not None else "judged")
         logs.info(log, "outside.tier", conversation=self._conversation(), turn=self._turn_id(), tool=call.name, tier=tier)
-        if self._standing is None or self._turn is None or tier == "asks":
+        if self._standing is None or self._turn is None or tier in ("asks", "asks_if_tainted"):
             return await self._hold(call)
         if tier == "runs":
             return _Cleared(tier)

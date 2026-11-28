@@ -1,9 +1,11 @@
 """Carrying out one `Undo` for a person, through the tool that would make that change if they asked her for it, under
 that tool's own checks (`decisions.md`, "What she did on her own is one record"): `house_change` (so a delete is judged
-by `irreversible.json` and, as shipped, proposed for their yes rather than made), `cancel_reminder` and `todo_change`.
-Nothing here writes to the house, the reminders or a list itself. Before each, a read through the same service says
-whether the target is still there, so a thing already gone comes back as `gone` and no call is made. A delete is made
-in a turn the caller stores (`Opened`), and agreed by a later turn of the person's, as any delete she proposes is."""
+by `irreversible.json` and, as shipped, proposed for their yes rather than made), `cancel_reminder`, `todo_change` and
+`printing_cancel`. Nothing here writes to the house, the reminders, a list or the print queue itself. Before each, a
+read through the same service says whether the target is still there, so a thing already gone comes back as `gone` and
+no call is made; the print manager makes that check itself as it cancels, so a print already started is `gone` there.
+A delete is made in a turn the caller stores (`Opened`), and agreed by a later turn of the person's, as any delete she
+proposes is."""
 
 import json
 from collections.abc import Awaitable, Callable
@@ -18,8 +20,10 @@ from ..senses.wakes import Wakes, WakesUnavailable
 from ..todos.model import NotConnected, Op, TodoItem, TodosUnavailable
 from ..todos.todos import Todos
 from ..undo import Undo
-from . import house_change, reminder_specs, todo_specs
+from . import house_change, printing_queue_specs, reminder_specs, todo_specs
 from .house_change import HouseChangeTools
+from .printing_config import load as printing_config
+from .printing_queue import PrintQueueTools
 from .reminders import ReminderTools
 from .todo_tools import TodoTools
 from .tools import ToolsUnavailable
@@ -55,6 +59,8 @@ async def carry(undo: Undo, household_id: int, person_id: int, opened: Opened) -
             return await _house(undo, household_id, person_id, opened)
         if undo.kind == "reminder_cancel":
             return await _reminder(undo, household_id, person_id)
+        if undo.kind == "print_cancel":
+            return await _print(undo, household_id)
         return await _todo(undo, household_id)
     except (HomesUnavailable, HouseUnavailable, WakesUnavailable, TodosUnavailable, ToolsUnavailable) as e:
         raise UndoUnavailable(type(e).__name__) from e
@@ -97,6 +103,13 @@ async def _reminder(undo: Undo, household_id: int, person_id: int) -> Carried:
     tools = ReminderTools(household_id, person_id, private=True)
     _succeeded(await tools.call(ToolCall(CALL_ID, reminder_specs.CANCEL, {"id": wake_id})))
     return Carried("undone")
+
+
+async def _print(undo: Undo, household_id: int) -> Carried:
+    """`printing_cancel` of the queued print; the manager cancels only one nobody has started, else it is `gone`."""
+    tools = PrintQueueTools(household_id, printing_config())
+    got = _succeeded(await tools.call(ToolCall(CALL_ID, printing_queue_specs.CANCEL, {"item_id": undo.ref})))
+    return Carried("undone") if json.loads(got.content).get("outcome") == "cancelled" else Carried("gone")
 
 
 async def _todo(undo: Undo, household_id: int) -> Carried:

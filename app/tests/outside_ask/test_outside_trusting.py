@@ -1,6 +1,6 @@
 """What she may just do, at the seam (`ashley.tools.trusting`, `ashley.channels.standing.trusting`): in a turn nobody
-asked for, a kind its person set to offer first is held by `Outside`'s one hold path; `act` leaves every kind exactly as
-before; choices that cannot be read are offer first; the setting never lowers a tier, so a tainted turn, an `asks` tool
+asked for, a kind its person set to offer first is held by `Outside`'s one hold path, and so is a kind whose default is
+offer when they stored nothing; `act` leaves every kind exactly as before; choices that cannot be read are offer first; the setting never lowers a tier, so a tainted turn, an `asks` tool
 and an irreversible house change stay held whatever is set; and a person's own turn is not offered back to them."""
 
 import logging
@@ -27,7 +27,7 @@ from ashley.tools.outside import Outside, Standing
 from ashley.tools.outside_config import load as outside_config
 from ashley.tools.tools import Tools
 from ashley.tools.trusting import Trusting
-from ashley.trust.kinds import Value
+from ashley.trust.kinds import Value, load as load_kinds
 from ashley.trust.trust import StoredTrust, Trust, TrustUnavailable
 from house_double_support import MemoryHouse
 from outside_ask_support import CONVERSATION, HOUSEHOLD, SPEAKER, TURN, Fake, Memory, asked, run, said, spec
@@ -42,6 +42,7 @@ CHANGES = ("todo_change", "remind", "change_reminder", "cancel_reminder", "house
            "money_categorise", "house_do")
 ARGUMENTS: dict[str, dict[str, Any]] = {"house_change": {"op": "write", "kind": "automation"}}
 HELD = outside_config().held
+ALL_ACT: dict[str, Value] = {k.kind: "act" for k in load_kinds().kinds if k.floor is None}
 
 
 class Told(Trust):
@@ -134,8 +135,31 @@ def test_offer_holds_an_unasked_change_as_one_proposal_through_outsides_own_path
 @pytest.mark.parametrize(("standing", "tainted"), [(UNASKED, None), (UNASKED, "watch"), (ASKED, None), (ASKED, "watch")])
 def test_act_leaves_every_kind_exactly_as_it_was_without_the_setting(tool: str, standing: Standing,
                                                                      tainted: str | None) -> None:
-    acting = Told({})
+    acting = Told(ALL_ACT)
     assert call_through(tool, standing, acting, tainted) == call_through(tool, standing, None, tainted, trusted=False)
+
+
+@pytest.mark.parametrize(("tool", "arguments"), [("mail_send", {}), ("cancel_reminder", {}),
+                                                ("todo_change", {"op": "remove", "item": "milk"})])
+def test_a_send_a_cancel_and_a_removal_are_offered_first_unasked_when_nothing_is_stored(tool: str,
+                                                                                        arguments: dict[str, Any]) -> None:
+    ARGUMENTS[tool] = arguments
+    try:
+        unset = call_through(tool, UNASKED, Told({}))
+        stored_act = call_through(tool, UNASKED, Told({"messages": "act", "reminder_cancels": "act",
+                                                       "list_removals": "act"}))
+        asked_turn = call_through(tool, ASKED, Told({}))
+    finally:
+        ARGUMENTS.pop(tool)
+    assert unset.ran == [] and unset.held == [tool]
+    assert stored_act.ran == [tool] and stored_act.held == [], "their stored act wins over the default"
+    assert asked_turn.ran == [tool] and asked_turn.held == [], "a person asking is the yes"
+
+
+def test_a_change_with_a_way_back_runs_unasked_when_nothing_is_stored() -> None:
+    for tool in ("todo_change", "remind", "change_reminder", "house_change"):
+        got = call_through(tool, UNASKED, Told({}))
+        assert got.ran == [tool] and got.held == [], tool
 
 
 def test_offer_changes_what_an_unasked_turn_does_control_for_the_act_test() -> None:
@@ -165,8 +189,8 @@ def test_the_choices_are_read_once_a_turn() -> None:
     run(go())
 
 
-@pytest.mark.parametrize("rated", [None, "runs", "judged", "asks"])
-@pytest.mark.parametrize("told", [Told({}), Told({k: "offer" for k in ("lists", "messages", "reminders", "house_setup")}),
+@pytest.mark.parametrize("rated", [None, "runs", "judged", "asks_if_tainted", "asks"])
+@pytest.mark.parametrize("told", [Told(ALL_ACT), Told({k: "offer" for k in ALL_ACT}),
                                   Told({"money": "act", "house_removals": "act"}), Told(None)],
                          ids=["act", "offer", "locked_act", "unreadable"])
 def test_the_setting_only_ever_raises_a_tier(rated: Tier | None, told: Told) -> None:

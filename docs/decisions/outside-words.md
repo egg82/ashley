@@ -114,6 +114,10 @@ that is not a read.
   alarms, garage, gate and door covers, sirens, cameras, automations, scripts, `button.press`, `notify.*`, `homeassistant.*`,
   `house_change`, `bench_propose_install`, the Claude Code tools, `skill_edit`, `skill_rollback`, `change_reminder`,
   `cancel_reminder`, and `default`: any tool or action not listed.
+- **`asks_if_tainted`**: held for the person's OK in a tainted turn with no judge asked, shown as an `asks` call is, and
+  run like any other change in an untainted one, where a person's own message is their yes and a turn nobody asked for
+  goes by their setting ("What she may just do is a person's setting over the floor"). For a change a stranger's words
+  must never start but that has a way back once made: `printing_queue` (`connections.md`, "Queuing a print").
 - **`asks`**: held for the person's OK in every turn, tainted or not, with no judge asked, and shown by the line its
   source writes (`ashley.tools.tools.Tools.shown`; the generic argument summary when it writes none). For a change to
   records the household relies on that no reading of the person's words should make on its own: `money_categorise`
@@ -450,13 +454,14 @@ turns did; the board's "On her own" lane reads it.
   `undo_kind`, `undo_ref` and `undo_within`): `house_change` making something that was not there (an area, floor or
   label, a helper written with no id, an automation or script whose id the house did not have) carries `house_delete`;
   `remind` carries `reminder_cancel`; `todo_change` add, done and reopen carry `todo_remove`, `todo_reopen` and
-  `todo_done`. Every other change has none, and the board offers no Undo for it: a send, a delete, a mail move, a
+  `todo_done`; `printing_queue` carries `print_cancel` of the queue entry, which the board words as Cancel. Every other
+  change has none, and the board offers no Undo for it: a send, a delete, a mail move, a
   replaced config, an updated record or a changed reminder, whose inverse needs the state before, which is not kept.
   The record keeps what taking it back needs; carrying it out is a person's route of its own (below).
 - **Undo goes through her own tool for that change, under its own checks** (`POST /api/work/actions/{id}/undo`,
   `ashley.channels.undo_action`, `ashley.tools.undo_carry`), never a direct call to the house, the reminders or a list:
-  `house_delete` is a `house_change` delete, `reminder_cancel` a `cancel_reminder`, and the to-do kinds a
-  `todo_change`, each for the person the action was for. Only that person, in its household, can take it; any other
+  `house_delete` is a `house_change` delete, `reminder_cancel` a `cancel_reminder`, the to-do kinds a `todo_change`,
+  and `print_cancel` a `printing_cancel`, each for the person the action was for. Only that person, in its household, can take it; any other
   action id is 404.
 - **A delete's undo waits on a yes.** `irreversible.json` covers every delete, so `house_change` proposes it as it
   proposes any delete she is asked for: a household's line (`author` `household`, `undo.json`'s `turn` and the action's
@@ -466,7 +471,8 @@ turns did; the board's "On her own" lane reads it.
   proposal waits in the board's `waiting` lane meanwhile.
 - **A target already gone is `gone`, not an error.** Before calling the tool, a read through the same service checks
   that the thing she made is still there, that the reminder is still to fire, or that the list item is still as her
-  change left it; otherwise no call is made.
+  change left it; otherwise no call is made. Bambuddy makes that check for a print itself, cancelling only an entry
+  still waiting, so one already started is `gone`.
 - **An undo is taken once.** Columns `undone_at`, `undone_by` and `undone_how` keep it on the row. The route claims the
   row (`undoing`) before carrying anything out, so two requests cannot both act; it settles as `undone`,
   `waiting_on_you` or `gone`, and a refusal or an outage gives the claim up, so the Undo is offered again with nothing
@@ -490,19 +496,40 @@ Per person and per kind of action, a person says whether she just does it or off
 more careful than the code: the tiers (`ToolSpec.tier`, `app/ashley/tools/tiers.json`) and
 `app/ashley/home_assistant/irreversible.json` stay the floor, and a kind the floor always holds shows as locked.
 
+**Most of what she does can be stopped or taken back, so she does it, says what she did, and keeps the way back: Cancel
+while it waits, Undo after, the record on the board's "On her own" lane. Asking first is for what cannot be taken back,
+and for what a person sets to "only when I say yes".** So a kind is `act` unset when what it does has a way back, and
+`offer` unset when it destroys or sends something nothing brings back; the floor alone locks.
+
+| Kind | What it covers | Way back, in the code | Unset | Locked |
+|---|---|---|---|---|
+| `house_removals` | `house_change` `delete` | None: `irreversible.json` covers every delete | offer | yes, `irreversible` |
+| `house_setup` | any other `house_change` | What she creates: Undo (`house_delete`). A replaced config or updated record: none kept ("Not done", above), but the thing stays where the person can see it and change it | act | no |
+| `reminder_cancels` | `cancel_reminder` | None: a cancelled reminder stops for good | offer | no |
+| `reminders` | `remind`, `change_reminder` | A new reminder: Undo (`reminder_cancel`). A changed one stays, and can be changed or cancelled | act | no |
+| `list_removals` | `todo_change` `remove` | None: the item is gone | offer | no |
+| `lists` | any other `todo_change` | Undo (`todo_remove`, `todo_reopen`, `todo_done`) | act | no |
+| `messages` | `mail_send` | None: a sent email is out | offer | no |
+| `money` | `money_categorise`, `money_note` | None: a note replaces what was there, Sure locks a set category against its rules, and the household's budgets rest on both (`connections.md`, "Her money is read through a neutral ledger") | offer | yes, `asks` |
+| `printing` | `printing_queue` | Cancel (`print_cancel`) while nobody has started it; it waits staged until someone does | act | no |
+
+`printing_upload` and `printing_cancel` are no kind: an upload starts nothing and is deleted in Bambuddy, so asking
+before it would double the OKs of one print whose queuing is the step the setting governs; a cancel is the way back.
+
 - Fits into: Proposals and `Outside`, with no new tier system. The setting is an in-app setting ("Env var, file,
   connection or setting"): a person's own choice, written only by that person through the web route.
-- **The kinds are data**, `app/ashley/trust/kinds.json` (`ashley.trust.kinds`): each a label and the calls it covers (a
-  tool, narrowed by an argument's values where one tool spans two kinds, as `house_change` with `op` `delete`). A call
-  belongs to the first kind that covers it. The kinds are the changes her unasked turns take today: house setup changes,
-  reminders, list edits and sending mail, plus the two kinds the floor locks. Purchasing is not a kind.
+- **The kinds are data**, `app/ashley/trust/kinds.json` (`ashley.trust.kinds`): each a label, the calls it covers (a
+  tool, narrowed by an argument's values where one tool spans two kinds, as `house_change` with `op` `delete`), and a
+  `default` of `offer` where the table says so. A call belongs to the first kind that covers it. Purchasing is not a
+  kind.
 - **A kind's `floor`** says the code always offers it first whatever is set: `asks` (its tools are `asks` tier, as
   `money_categorise` and `money_note`) or `irreversible` (every change it names is one `irreversible.json` covers).
   `app/tests/test_trust_kinds.py` holds each `floor` to the specs and the patterns, both ways, so a row never shows open
   while the code holds it, or locked while it does not.
-- **Unset is `act`** for an open kind, what she does today without asking, so nothing changes until a person sets
-  `offer`; a locked kind is `offer`. A stored choice is only what differs from unset (`Kinds.checked`), so setting a kind
-  back deletes its row ("An override stores only what a person changed").
+- **Unset is the kind's `default`** (`act` unless it says `offer`); a locked kind is `offer`. A stored choice always wins
+  over the default, and is only what differs from it (`Kinds.checked`), so setting a kind back deletes its row ("An
+  override stores only what a person changed"). Changing a default migrates nothing: a stored row keeps its value. A
+  person who set `act` on a kind whose default later became `offer` stored no row then, so they set it again.
 - **The store** is `trust_revisions` (a version per person), `trust_settings` (household, person, kind, value) and
   `trust_settings_log` (a row per changed kind, pruned past 400 days by the writer), read through `ashley.trust.trust.Trust`
   and written only by `ashley.trust.trust_write.TrustWriter`, which `app/tests/test_settings_boundary.py` lets only

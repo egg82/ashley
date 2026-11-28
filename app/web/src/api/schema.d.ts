@@ -2682,14 +2682,15 @@ export interface components {
          * ActionUndo
          * @description What takes a change back: `kind` is the inverse (`house_delete` the house's `within` kind of thing `ref` she
          *     created; `reminder_cancel` the reminder whose id is `ref`; `todo_remove`, `todo_done` or `todo_reopen` the item `ref`,
-         *     its id or exact text, on the to-do list `within`), `within` None where the kind needs no place.
+         *     its id or exact text, on the to-do list `within`; `print_cancel` the queued print whose queue entry is `ref`, which
+         *     the board shows as Cancel), `within` None where the kind needs no place.
          */
         ActionUndo: {
             /**
              * Kind
              * @enum {string}
              */
-            kind: "house_delete" | "reminder_cancel" | "todo_remove" | "todo_done" | "todo_reopen";
+            kind: "house_delete" | "reminder_cancel" | "todo_remove" | "todo_done" | "todo_reopen" | "print_cancel";
             /** Ref */
             ref: string;
             /** Within */

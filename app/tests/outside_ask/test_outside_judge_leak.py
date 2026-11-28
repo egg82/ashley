@@ -33,7 +33,7 @@ def tier_c() -> tuple[ToolSpec, ...]:
              house_change.CHANGE_SPEC, reminder_specs.change_reminder(), reminder_specs.CANCEL_SPEC,
              bench_media.TRANSCRIBE_SPEC, *mail_change_specs.specs(False), house_act.DO_SPEC,
              *screen_specs.specs(load_screen()), *screen_feed_specs.specs(), *money_specs.specs(money_config.load()), *discord_home_tools.specs(),
-             printing_queue_specs.upload_spec(), browser_session.ACT_SPEC)
+             printing_queue_specs.upload_spec(), printing_queue_specs.cancel_spec(), browser_session.ACT_SPEC)
     return tuple(s for s in every if not s.reads and not s.agrees and s.tier == "judged")
 
 
