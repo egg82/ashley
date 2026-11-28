@@ -21,7 +21,7 @@ from ..skills.skills import Skills, SkillsUnavailable
 from ..workshop import embed, reader
 from ..workshop.bench_file import needs_bytes
 from ..workshop import rules as workshop_rules
-from ..workshop.commands import type_of
+from ..workshop.commands import Undo, type_of
 from ..workshop.install_piece import carry_out
 from ..workshop.installs import InstallRecord, Installs, InstallsUnavailable
 from ..workshop.shadows import ShadowRun, Shadows, ShadowsUnavailable
@@ -135,10 +135,10 @@ def _pointer(piece: Piece, view: BenchView) -> PiecePointer | None:
                         end=found.passage.end)
 
 
-def _logged(row: Logged) -> LoggedCommand:
+def _logged(row: Logged, undone: dict[int, int]) -> LoggedCommand:
     return LoggedCommand(seq=row.seq, at=row.at, author=row.by.author, person_id=row.by.person_id,
                          type=type_of(row.command), outcome=row.outcome, piece_id=row.piece_id,
-                         by_turn=row.by.turn)
+                         by_turn=row.by.turn, undone_by=undone.get(row.seq))
 
 
 async def _work_kinds(household_id: int) -> list[WorkKind]:
@@ -226,8 +226,9 @@ async def detail_of(owner: Owner, bench_id: int, key: bytes, origin: str | None 
     shadows = await services.get(Shadows).of_bench(owner.household_id, bench_id)
     metric = await metric_of(owner.household_id)
     links = await links_of(owner)
+    undone = {r.command.seq: r.seq for r in view.recent if isinstance(r.command, Undo) and r.outcome == "accepted"}
     return BenchDetail(bench=summary(view.bench), pieces=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.pieces],
-                       recent=[_logged(r) for r in view.recent], undo_next=view.undo_next,
+                       recent=[_logged(r, undone) for r in view.recent], undo_next=view.undo_next,
                        shelf=[_piece(p, view, runs.get(p.id), installs, links, key, metric, shadows) for p in view.shelf],
                        links=[BenchLink(from_id=k.from_id, kind=k.kind, to_id=k.to_id) for k in view.links])
 

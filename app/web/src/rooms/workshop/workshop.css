@@ -379,4 +379,5 @@
 .wlog-row:hover { background: var(--ink-2); }
 .wlog-row[data-next="true"] { box-shadow: inset 2px 0 0 var(--brass); }
 .wlog-row .meta { grid-column: 1; }
-.wlog-row .btn { grid-column: 2; grid-row: 1 / span 2; }
+.wlog-row[data-undone="true"] > span:first-child { text-decoration: line-through; color: var(--text-3); }
+.wlog-row .btn, .wlog-row > span:last-child { grid-column: 2; grid-row: 1 / span 2; }

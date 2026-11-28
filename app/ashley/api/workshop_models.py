@@ -181,7 +181,7 @@ class BenchPiece(BaseModel):
 class LoggedCommand(BaseModel):
     """One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a
     person's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it
-    changed (null when refused), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
+    changed (null when refused), `undone_by`, the `seq` of the accepted Undo that took it back (null when none has), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
     and for hers made outside a turn), so her changes group by turn. Never the text it carried."""
 
     seq: int
@@ -192,6 +192,7 @@ class LoggedCommand(BaseModel):
     outcome: Literal["accepted"] | Reason
     piece_id: int | None
     by_turn: int | None
+    undone_by: int | None
 
 
 class BenchLink(BaseModel):

@@ -4510,7 +4510,7 @@ export interface components {
          * LoggedCommand
          * @description One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a
          *     person's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it
-         *     changed (null when refused), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
+         *     changed (null when refused), `undone_by`, the `seq` of the accepted Undo that took it back (null when none has), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
          *     and for hers made outside a turn), so her changes group by turn. Never the text it carried.
          */
         LoggedCommand: {
@@ -4539,6 +4539,8 @@ export interface components {
             piece_id: number | null;
             /** By Turn */
             by_turn: number | null;
+            /** Undone By */
+            undone_by: number | null;
         };
         /**
          * LookPage

@@ -13581,6 +13581,17 @@
               }
             ],
             "title": "By Turn"
+          },
+          "undone_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Undone By"
           }
         },
         "type": "object",
@@ -13592,10 +13603,11 @@
           "type",
           "outcome",
           "piece_id",
-          "by_turn"
+          "by_turn",
+          "undone_by"
         ],
         "title": "LoggedCommand",
-        "description": "One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a\nperson's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it\nchanged (null when refused), and `by_turn`, the person's turn a change of hers was made in (null for a person's change\nand for hers made outside a turn), so her changes group by turn. Never the text it carried."
+        "description": "One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a\nperson's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it\nchanged (null when refused), `undone_by`, the `seq` of the accepted Undo that took it back (null when none has), and `by_turn`, the person's turn a change of hers was made in (null for a person's change\nand for hers made outside a turn), so her changes group by turn. Never the text it carried."
       },
       "LookPage": {
         "properties": {

@@ -5,7 +5,7 @@ import { stampsOf, stepsOf, undoTarget } from './log.ts';
 
 const cmd = (seq: number, type: LoggedCommand['type'], author: LoggedCommand['author'], piece: number | null,
              outcome: LoggedCommand['outcome'] = 'accepted'): LoggedCommand =>
-  ({ seq, at: '2026-10-29T12:00:00Z', author, person_id: author === 'person' ? 1 : null, type, outcome, piece_id: piece, by_turn: null });
+  ({ seq, at: '2026-10-29T12:00:00Z', author, person_id: author === 'person' ? 1 : null, type, outcome, piece_id: piece, by_turn: null, undone_by: null });
 const bench = (id: number, recent: LoggedCommand[]): BenchDetail => ({
   bench: { id, title: 'b', opened_at: '2026-10-29T12:00:00Z', closed_at: null, work: null, piece_count: 0, last_changed_at: null, thread: `bench:${id}` }, pieces: [], recent, undo_next: null, shelf: [], links: [],
 });
@@ -54,4 +54,9 @@ test('the stage log groups neighbouring changes of one of her turns, newest firs
 test('the stage log lists only accepted changes an Undo can take back', () => {
   const recent = [cmd(1, 'add', 'person', 1), cmd(2, 'edit', 'person', 1, 'stale_base'), cmd(3, 'cue', 'ashley', 1), cmd(4, 'undo', 'person', 1), cmd(5, 'run', 'person', 1)];
   assert.deepEqual(stepsOf(recent).map((s) => s.rows.map((r) => r.seq)), [[1]]);
+});
+
+test('the stage log keeps a change an Undo took back, carrying that Undo', () => {
+  const undone: LoggedCommand = { ...cmd(2, 'edit', 'person', 1), undone_by: 3 };
+  assert.deepEqual(stepsOf([cmd(1, 'add', 'person', 1), undone, cmd(3, 'undo', 'person', 1)]).map((s) => s.rows.map((r) => r.undone_by)), [[3], [null]]);
 });
