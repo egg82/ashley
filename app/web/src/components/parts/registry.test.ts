@@ -179,3 +179,8 @@ test('a cited fact folds to a chip of its words, or of its kind when they are un
   assert.equal(parts.chipOf('fact', { ...sources, fact: stubFacts([FACT]) }, '7'), 'Remembered · The spare key is under the blue pot');
   assert.equal(parts.chipOf('fact', { ...sources, fact: stubFacts(null) }, '7'), 'Remembered');
 });
+
+test('a fact card says the day she learned it the way the rest of the app writes a date', () => {
+  assert.match(textOf(parts.FactCard({ source: stubFacts([FACT]), factId: '7' })), /Nov 2(?!\d)/);
+  assert.equal(parts.learnedOn('2025-03-09T12:00:00Z', new Date('2026-11-27T12:00:00Z')), 'Mar 9, 2025');
+});
