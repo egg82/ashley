@@ -73,7 +73,7 @@ function Sub({ item }: { item: WorkItem }) {
   const kind = item.kind === 'action' || item.kind === 'proposal' ? null : KIND_WORD[item.kind];
   return (
     <div class="meta b-sub">
-      {kind && `${kind} · `}{item.state === 'stopped' ? 'Stopped · ' : item.state === 'paused' ? 'Paused · ' : ''}{moment(item.at)}
+      {kind && `${kind} · `}{item.state === 'stopped' ? 'Stopped · ' : item.state === 'on_hold' ? 'On hold · ' : ''}{moment(item.at)}
       {undone && <span class={`b-undone ${item.undone?.how ?? ''}`}> · {undone}</span>}
     </div>
   );

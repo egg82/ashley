@@ -31,9 +31,9 @@ function act(path: string, method: string): Response | null {
   }
   const hold = /^\/api\/work\/watches\/(\d+)\/(pause|resume)$/.exec(path);
   if (hold && method === 'POST') {
-    const state = hold[2] === 'pause' ? 'paused' : 'running';
+    const state = hold[2] === 'pause' ? 'on_hold' : 'running';
     work = work.map((i) => (i.kind === 'watch' && i.id === Number(hold[1]) ? { ...i, state } : i));
-    return json({ id: Number(hold[1]), held: state === 'paused' });
+    return json({ id: Number(hold[1]), on_hold: state === 'on_hold' });
   }
   const undo = /^\/api\/work\/actions\/(\d+)\/undo$/.exec(path);
   if (undo && method === 'POST') {

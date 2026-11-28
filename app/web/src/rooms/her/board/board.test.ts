@@ -46,11 +46,11 @@ test('a tappable proposal offers Agree; any other proposal a reply where it was 
   assert.deepEqual(offers(item({ kind: 'proposal', conversation_id: null }), 3), []);
 });
 
-test('a running or stopped watch offers Pause and Cancel, a paused one Resume and Cancel, a finished one nothing', () => {
+test('a running or stopped watch offers Pause and Cancel, an on-hold one Resume and Cancel, a finished one nothing', () => {
   const pauseAndCancel = [{ kind: 'pause', watch: 9 }, { kind: 'cancel', watch: 9 }];
   assert.deepEqual(offers(item({ kind: 'watch', id: 9, state: 'running' }), null), pauseAndCancel);
   assert.deepEqual(offers(item({ kind: 'watch', id: 9, state: 'stopped' }), null), pauseAndCancel);
-  assert.deepEqual(offers(item({ kind: 'watch', id: 9, state: 'paused' }), null), [{ kind: 'resume', watch: 9 }, { kind: 'cancel', watch: 9 }]);
+  assert.deepEqual(offers(item({ kind: 'watch', id: 9, state: 'on_hold' }), null), [{ kind: 'resume', watch: 9 }, { kind: 'cancel', watch: 9 }]);
   assert.deepEqual(offers(item({ kind: 'watch', state: 'done' }), null), []);
 });
 

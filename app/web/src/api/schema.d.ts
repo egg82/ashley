@@ -2594,7 +2594,7 @@ export interface paths {
         put?: never;
         /**
          * Pause Watch
-         * @description 200 `WatchPaused` with `paused` true: the watch is not checked and its expiry waits until it is resumed; pausing a
+         * @description 200 `WatchOnHold` with `on_hold` true: the watch is not checked and its expiry waits until it is resumed; pausing a
          *     paused watch is the same 200. 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`.
          */
         post: operations["pause_watch"];
@@ -2615,7 +2615,7 @@ export interface paths {
         put?: never;
         /**
          * Resume Watch
-         * @description 200 `WatchPaused` with `paused` false: the watch is checked again at once, its expiry moved on by the time it was
+         * @description 200 `WatchOnHold` with `on_hold` false: the watch is checked again at once, its expiry moved on by the time it was
          *     paused, so what changed meanwhile wakes her; resuming a running watch is the same 200. 401 `unauthorized`; 403
          *     `forbidden`; 404 `not_found`; 503 `unavailable`.
          */
@@ -6969,15 +6969,15 @@ export interface components {
             id: number;
         };
         /**
-         * WatchPaused
-         * @description The watch `id` is now `paused` (by the person) or running again
+         * WatchOnHold
+         * @description The watch `id` is now `on_hold` (paused by the person) or running again
          *     (`POST /api/work/watches/{id}/pause` and `/resume`).
          */
-        WatchPaused: {
+        WatchOnHold: {
             /** Id */
             id: number;
-            /** Paused */
-            paused: boolean;
+            /** On Hold */
+            on_hold: boolean;
         };
         /**
          * WireAgreed
@@ -7070,7 +7070,7 @@ export interface components {
          *     `state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job
          *     blocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with
          *     nothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be
-         *     sent or a watch paused after failing; `paused`, a watch the person paused. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
+         *     sent or a watch paused after failing; `on_hold`, a watch the person paused. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
          *     `would_like` (something she offered unasked), `on_her_own` (every `action`, and only those) or `kept_quiet` (every
          *     `kept_quiet`, and only that). It follows `state` for
          *     every other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it
@@ -7100,7 +7100,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "running" | "waiting_on_you" | "open" | "done" | "stopped" | "paused";
+            state: "running" | "waiting_on_you" | "open" | "done" | "stopped" | "on_hold";
             /**
              * Lane
              * @enum {string}
@@ -7155,7 +7155,7 @@ export interface components {
         };
         /**
          * WorkResponse
-         * @description The signed-in person's open work, those waiting on them first, then running, open, stopped, paused and done, the most
+         * @description The signed-in person's open work, those waiting on them first, then running, open, stopped, on hold and done, the most
          *     recently moved first within each.
          */
         WorkResponse: {
@@ -14959,7 +14959,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WatchPaused"];
+                    "application/json": components["schemas"]["WatchOnHold"];
                 };
             };
             /** @description `unauthorized`: no live session */
@@ -15024,7 +15024,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WatchPaused"];
+                    "application/json": components["schemas"]["WatchOnHold"];
                 };
             };
             /** @description `unauthorized`: no live session */

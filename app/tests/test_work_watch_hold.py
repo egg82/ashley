@@ -1,5 +1,5 @@
 """`POST /api/work/watches/{id}/pause` and `/resume` through the real app: a person pauses and resumes their own live watch
-and the board shows it as paused; a watch that is another person's, another household's or over is 404 and stays as it was."""
+and the board shows it on hold; a watch that is another person's, another household's or over is 404 and stays as it was."""
 
 from fastapi.testclient import TestClient
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template, scalar
@@ -10,20 +10,20 @@ def held(w: World, watch_id: int) -> bool:
     return scalar(w.url, "SELECT held_at IS NOT NULL FROM watches WHERE id = %s", (watch_id,)) is True
 
 
-def test_a_person_pauses_their_watch_the_board_shows_it_paused_and_resume_runs_it_again(world: World, client: TestClient) -> None:
+def test_a_person_pauses_their_watch_the_board_shows_it_on_hold_and_resume_runs_it_again(world: World, client: TestClient) -> None:
     mine = watch(world, world.alana)
     r = client.post(f"/api/work/watches/{mine}/pause")
-    assert (r.status_code, r.json()) == (200, {"id": mine, "paused": True})
+    assert (r.status_code, r.json()) == (200, {"id": mine, "on_hold": True})
     assert held(world, mine)
-    assert [(i.id, i.state, i.lane) for i in listed(client)] == [(mine, "paused", "doing")]
+    assert [(i.id, i.state, i.lane) for i in listed(client)] == [(mine, "on_hold", "doing")]
     assert client.post(f"/api/work/watches/{mine}/pause").status_code == 200
     r = client.post(f"/api/work/watches/{mine}/resume")
-    assert (r.status_code, r.json()) == (200, {"id": mine, "paused": False})
+    assert (r.status_code, r.json()) == (200, {"id": mine, "on_hold": False})
     assert not held(world, mine)
     assert [(i.id, i.state) for i in listed(client)] == [(mine, "running")]
 
 
-def test_a_paused_watch_can_still_be_cancelled(world: World, client: TestClient) -> None:
+def test_an_on_hold_watch_can_still_be_cancelled(world: World, client: TestClient) -> None:
     mine = watch(world, world.alana)
     assert client.post(f"/api/work/watches/{mine}/pause").status_code == 200
     assert client.delete(f"/api/work/watches/{mine}").status_code == 200

@@ -155,7 +155,7 @@ and target, so it ends `disarmed` exactly as `unwatch` ends it.
 
 A person pauses and resumes their own watch with `POST /api/work/watches/{id}/pause` and `/resume` (`Watches.hold` and
 `release`, 404 alike for the same watches cancel refuses). A pause is `held_at`, kept apart from `state`, which says how
-the reads are going: a held watch is not due, takes no `record` and does not expire, and its board item is `paused`. Resume
+the reads are going: a held watch is not due, takes no `record` and does not expire, and its board item is `on_hold`. Resume
 moves `expires_at` on by the time held and makes the watch due at once, so what changed while paused wakes her against the
 baseline it had. A paused watch can still be cancelled.
 

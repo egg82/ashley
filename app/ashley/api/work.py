@@ -4,7 +4,7 @@ benches, the proposals waiting for their OK, the watches she keeps for them and 
 hold and release one, and
 `POST /api/work/actions/{id}/undo`, which takes back something she did on her own for them through her own tool for it
 (`channels.undo_action`). A watch or action that is not theirs, is another household's or is unknown is 404 alike, as
-is a watch that has ended. Logs `work.listed` with the household and a count and `work.watch_cancelled`, `work.watch_paused` and `work.watch_resumed` with the watch
+is a watch that has ended. Logs `work.listed` with the household and a count and `work.watch_cancelled`, `work.watch_on_hold` and `work.watch_resumed` with the watch
 id; never what an item says. An undo logs its own `undo.done`."""
 
 import logging
@@ -27,7 +27,7 @@ from .models import ErrorResponse
 from .person import Person
 from .work_items import open_work
 from .chat import thread_of
-from .work_models import UndoDone, WatchCancelled, WatchPaused, WorkResponse
+from .work_models import UndoDone, WatchCancelled, WatchOnHold, WorkResponse
 
 router = APIRouter()
 log = logging.getLogger("ashley.api")
@@ -70,7 +70,7 @@ async def cancel_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) 
     return WatchCancelled(id=watch_id)
 
 
-async def _hold(signed_in: Person, watch_id: int, held: bool) -> WatchPaused | JSONResponse:
+async def _hold(signed_in: Person, watch_id: int, held: bool) -> WatchOnHold | JSONResponse:
     me = signed_in.person
     try:
         found = await hold_watch(me.household_id, me.id, watch_id, held)
@@ -79,8 +79,8 @@ async def _hold(signed_in: Person, watch_id: int, held: bool) -> WatchPaused | J
             code="unavailable", detail="her watches are unavailable right now; try again shortly").model_dump())
     if not found:
         return JSONResponse(status_code=404, content=ErrorResponse(code="not_found", detail="no such watch").model_dump())
-    logs.info(log, "work.watch_paused" if held else "work.watch_resumed", watch=watch_id)
-    return WatchPaused(id=watch_id, paused=held)
+    logs.info(log, "work.watch_on_hold" if held else "work.watch_resumed", watch=watch_id)
+    return WatchOnHold(id=watch_id, on_hold=held)
 
 
 _WATCH_HOLD: dict[int | str, dict[str, Any]] = {
@@ -90,16 +90,16 @@ _WATCH_HOLD: dict[int | str, dict[str, Any]] = {
     422: {"description": "FastAPI's validation error: an id below 1"}}
 
 
-@router.post("/api/work/watches/{watch_id}/pause", response_model=WatchPaused, responses=_WATCH_HOLD)
-async def pause_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) -> WatchPaused | JSONResponse:
-    """200 `WatchPaused` with `paused` true: the watch is not checked and its expiry waits until it is resumed; pausing a
+@router.post("/api/work/watches/{watch_id}/pause", response_model=WatchOnHold, responses=_WATCH_HOLD)
+async def pause_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) -> WatchOnHold | JSONResponse:
+    """200 `WatchOnHold` with `on_hold` true: the watch is not checked and its expiry waits until it is resumed; pausing a
     paused watch is the same 200. 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`."""
     return await _hold(signed_in, watch_id, True)
 
 
-@router.post("/api/work/watches/{watch_id}/resume", response_model=WatchPaused, responses=_WATCH_HOLD)
-async def resume_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) -> WatchPaused | JSONResponse:
-    """200 `WatchPaused` with `paused` false: the watch is checked again at once, its expiry moved on by the time it was
+@router.post("/api/work/watches/{watch_id}/resume", response_model=WatchOnHold, responses=_WATCH_HOLD)
+async def resume_watch(signed_in: Person, watch_id: Annotated[int, Path(ge=1)]) -> WatchOnHold | JSONResponse:
+    """200 `WatchOnHold` with `on_hold` false: the watch is checked again at once, its expiry moved on by the time it was
     paused, so what changed meanwhile wakes her; resuming a running watch is the same 200. 401 `unauthorized`; 403
     `forbidden`; 404 `not_found`; 503 `unavailable`."""
     return await _hold(signed_in, watch_id, False)

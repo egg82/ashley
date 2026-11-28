@@ -6,7 +6,7 @@ import type { UndoDone } from './types';
 
 type Cancelled = paths['/api/work/watches/{watch_id}']['delete']['responses'][200]['content']['application/json'];
 
-type Paused = paths['/api/work/watches/{watch_id}/pause']['post']['responses'][200]['content']['application/json'];
+type OnHold = paths['/api/work/watches/{watch_id}/pause']['post']['responses'][200]['content']['application/json'];
 
 async function refusedOr<B>(response: Response, route: string): Promise<B> {
   if (response.status === 409) {
@@ -22,12 +22,12 @@ export async function cancelWatch(id: number): Promise<Cancelled> {
 }
 
 /** Pauses watch `id`: it is not checked and does not run out until it is resumed. */
-export async function pauseWatch(id: number): Promise<Paused> {
+export async function pauseWatch(id: number): Promise<OnHold> {
   return answer(await fetch(`/api/work/watches/${id}/pause`, { method: 'POST' }), 200, 'POST /api/work/watches/{id}/pause');
 }
 
-/** Runs the paused watch `id` again. */
-export async function resumeWatch(id: number): Promise<Paused> {
+/** Runs the on-hold watch `id` again. */
+export async function resumeWatch(id: number): Promise<OnHold> {
   return answer(await fetch(`/api/work/watches/${id}/resume`, { method: 'POST' }), 200, 'POST /api/work/watches/{id}/resume');
 }
 
