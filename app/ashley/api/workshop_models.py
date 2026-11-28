@@ -44,13 +44,23 @@ class PieceKind(BaseModel):
     language: str | None
 
 
+class LinkKind(BaseModel):
+    """One kind of link between two pieces, from `workshop.json`'s `link_kinds`: a piece `from_id` is `name` (`part_of`,
+    `depends_on`, `version_of`) of piece `to_id`. `label` is what a screen calls it."""
+
+    name: str
+    label: str
+
+
 class WorkshopKinds(BaseModel):
     """What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take
     (`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench
-    holds and the longest title of a bench or a piece; and the languages a code piece can be run in
-    (`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`)."""
+    holds and the longest title of a bench or a piece; the languages a code piece can be run in
+    (`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the
+    kinds of link between pieces (`link_kinds`)."""
 
     kinds: list[PieceKind]
+    link_kinds: list[LinkKind]
     sizes: list[Size]
     max_pieces: int
     title_max_chars: int
@@ -160,17 +170,27 @@ class LoggedCommand(BaseModel):
     piece_id: int | None
 
 
+class BenchLink(BaseModel):
+    """Piece `from_id` is `kind` (one of `WorkshopKinds.link_kinds`) of piece `to_id`."""
+
+    from_id: int
+    kind: str
+    to_id: int
+
+
 class BenchDetail(BaseModel):
     """A bench as a screen shows it: the bench, its pieces in order, and its latest commands, oldest first.
     `undo_next` is the `seq` an Undo should name now (one of `recent`'s), null when there is nothing to undo. `shelf`
     is its archived pieces, the most recently archived first: off the layout, not counted toward `max_pieces`, each
-    kept whole with its last run, to restore."""
+    kept whole with its last run, to restore. `links` is the links between pieces on the layout, by from, kind and to;
+    a link with an end removed or shelved is kept and listed again once that piece is back."""
 
     bench: BenchSummary
     pieces: list[BenchPiece]
     recent: list[LoggedCommand]
     undo_next: int | None
     shelf: list[BenchPiece]
+    links: list[BenchLink]
 
 
 class AddPieceRequest(BaseModel):
@@ -261,6 +281,31 @@ class UndoRequest(BaseModel):
     seq: int
 
 
+class LinkRequest(BaseModel):
+    """Link piece `from_id` to piece `to_id` as `kind`: both on the layout. Refused `no_such_piece` for an end that is
+    not, `bad_link` for a piece linked to itself or a kind `link_kinds` does not have, `already_linked` when it is. A
+    link changes neither piece: not its version, nor what it last changed by."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["link"]
+    from_id: int
+    kind: NoNul = Field(min_length=1, max_length=64)
+    to_id: int
+
+
+class UnlinkRequest(BaseModel):
+    """Take away the link of `kind` from piece `from_id` to piece `to_id`; refused as a link is, and `not_linked` when
+    there is no such link."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["unlink"]
+    from_id: int
+    kind: NoNul = Field(min_length=1, max_length=64)
+    to_id: int
+
+
 class ClearHighlightRequest(BaseModel):
     """Take the highlight off reader piece `piece_id`, as it is at `base_version` (a `Point` with no passage). Refused
     `not_reader` for any other piece and `stale_base` when it has changed since."""
@@ -274,14 +319,14 @@ class ClearHighlightRequest(BaseModel):
 
 class CommandRequest(RootModel[Annotated[AddPieceRequest | RemovePieceRequest | MovePieceRequest | EditPieceRequest
                                          | ArchivePieceRequest | RestorePieceRequest | InstallPieceRequest
-                                         | UndoRequest | ClearHighlightRequest,
+                                         | UndoRequest | ClearHighlightRequest | LinkRequest | UnlinkRequest,
                                          Field(discriminator="type")]]):
     """One change to a bench, told apart by `type`."""
 
 
 class CommandApplied(BaseModel):
-    """The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece), null for a
-    change of the bench itself (an undo of a rename)."""
+    """The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece; for a link or
+    an unlink, its `from_id`), null for a change of the bench itself (an undo of a rename)."""
 
     seq: int
     piece_id: int | None

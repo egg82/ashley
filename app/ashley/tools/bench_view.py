@@ -15,13 +15,22 @@ from ..workshop.workshop import BenchView, Logged
 def overview(view: BenchView, rules: Rules, body_chars: int, recent: int, zone: tzinfo | None,
              metric: bool = False) -> dict[str, object]:
     """The bench, every piece with its body cut to `body_chars`, its latest `recent` commands oldest first,
-    each with when it was decided (`at`) and each piece with when it last changed (`changed_at`), both stamped in
+    each with when it was decided (`at`) and each piece with when it last changed (`changed_at`) and its links
+    (`links_from`), both times stamped in
     `zone` (left out when `zone` is None); a recipe piece's amounts metric first when `metric`; how many pieces its shelf holds (`bench_shelf` lists them), and the kinds a piece may be, with each one's longest body."""
     return {"bench": view.bench.id, "title": view.bench.title, "closed": view.bench.closed_at is not None,
-            "pieces": [{**piece(p, rules, body_chars, changed_at=changed_at(view, p, zone), metric=metric), "last_changed_by": last_changed_by(view, p)} for p in view.pieces],
+            "pieces": [{**piece(p, rules, body_chars, changed_at=changed_at(view, p, zone), metric=metric), "last_changed_by": last_changed_by(view, p),
+                        **links_from(view, p)} for p in view.pieces],
             "recent": [_logged(row, zone) for row in view.recent[-recent:]], "undo_next": view.undo_next,
             "shelved": len(view.shelf),
             "kinds": {k.name: {"label": k.label, "max_chars": k.max_chars} for k in rules.kinds.values()}}
+
+
+def links_from(view: BenchView, p: Piece) -> dict[str, object]:
+    """`links`, the links made from `p` to other pieces on the layout, each its kind and the piece it goes `to`; nothing
+    when it has none."""
+    made = [{"kind": k.kind, "to": k.to_id} for k in view.links if k.from_id == p.id]
+    return {"links": made} if made else {}
 
 
 def last_changed_by(view: BenchView, p: Piece) -> str:

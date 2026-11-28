@@ -89,7 +89,9 @@ INSTRUCTIONS = (
     "among the others, in the order a reader takes it (the thing itself before what supports it, what a piece depends "
     "on before it), and at a size that fits what it is (a long document or code wide, a note or a link small), so the "
     "bench reads as laid out, not as a heap in the order you made it. Set the size in bench_add and use bench_move "
-    "only when the order is not the end. Pieces whose last_changed_by is person are laid out as they left them: do not move or resize those, and fit "
+    "only when the order is not the end. When a piece you add is part of another, depends on another, or is a new "
+    "version of one, link it in the same turn: links in bench_add, or bench_link for pieces already there. "
+    "Pieces whose last_changed_by is person are laid out as they left them: do not move or resize those, and fit "
     "yours around them. Leave a tidy bench alone; when it has grown untidy (several pieces out of order, or one "
     "crowding the others), put it right once in that turn. Never rearrange for a small edit.")
 
@@ -110,16 +112,20 @@ _SIZE: Mapping[str, object] = {"type": "string", "enum": list(SIZES),
 
 def specs(rules: Rules) -> tuple[ToolSpec, ...]:
     kind: Mapping[str, object] = {"type": "string", "enum": [k.name for k in rules.kinds.values() if k.family != "large"]}
+    link: Mapping[str, object] = {"type": "string", "enum": list(rules.link_kinds)}
+    links: Mapping[str, object] = {
+        "type": "array", "description": "Links from the new piece, made right after it: each piece it is `kind` of",
+        "items": {"type": "object", "properties": {"kind": link, "to": _INT}, "required": ["kind", "to"]}}
     return (
-        ToolSpec("bench_read", "Read this bench: its pieces in order, each with its id, kind, title, version, place "
-                 "and the start of its body, and its latest changes by seq.", _object({}, ()), reads=True, outside=True),
+        ToolSpec("bench_read", "Read this bench: its pieces in order, each with its id, kind, title, version, place, "
+                 "the start of its body and the links made from it, and its latest changes by seq.", _object({}, ()), reads=True, outside=True),
         ToolSpec("bench_read_piece", "Read one piece of this bench, with its version: the window of its body that "
                  "starts at character `offset` (default 0). `body_cut` says more follows; read on from "
                  "`offset` plus the length of `body`.", _object({"piece_id": _INT, "offset": _INT}, ("piece_id",)),
                  reads=True, outside=True),
         ToolSpec("bench_add", "Add a piece at the end of this bench. Returns its id.",
                  _object({"kind": kind, "title": _STR, "body": _STR, "size": _SIZE, "result": _RESULT, "start": _START,
-                          "serves": _SERVES},
+                          "serves": _SERVES, "links": links},
                          ("kind", "title")), outside=False, tier="runs"),
         ToolSpec("bench_edit", "Replace a piece's title and body, based on the version you read whole.",
                  _object({"piece_id": _INT, "base_version": _INT, "title": _STR, "body": _STR, "result": _RESULT,
@@ -144,6 +150,11 @@ def specs(rules: Rules) -> tuple[ToolSpec, ...]:
                  "With `whole_turn` true, undo every change you made in the turn that made that seq, together: if any of them "
                  "cannot be undone (it changed since), none is, and each refusal is named.",
                  _object({"seq": _INT, "whole_turn": {"type": "boolean"}}, ("seq",)), outside=False, tier="runs"),
+        ToolSpec("bench_link", "Link two pieces on the layout: piece `from_id` is `kind` of piece `to_id`, read "
+                 "in that order (a step part_of its plan, a script depends_on its config). With `unlink` true, take that link "
+                 "away. A link changes neither piece and can be undone.",
+                 _object({"from_id": _INT, "kind": link, "to_id": _INT, "unlink": {"type": "boolean"}},
+                         ("from_id", "kind", "to_id")), outside=False, tier="runs"),
         ToolSpec("bench_rename", "Give this bench its name: a few words for what it is for, as you would label a folder. "
                  "The bench's title is the person's list of what they are working on.",
                  _object({"title": _STR}, ("title",)), outside=False, tier="runs"),

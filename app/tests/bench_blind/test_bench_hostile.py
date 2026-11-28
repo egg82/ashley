@@ -23,6 +23,7 @@ GOOD: dict[str, dict[str, object]] = {
     "bench_shelf": {},
     "bench_restore": {"piece_id": 1},
     "bench_undo": {"seq": 1},
+    "bench_link": {"from_id": 1, "kind": "part_of", "to_id": 2},
     "bench_rename": {"title": "t"},
     "bench_cue": {"piece_id": 1, "action": "play"},
     "bench_point": {"piece_id": 1, "quote": "q"},

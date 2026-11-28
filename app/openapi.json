@@ -9020,6 +9020,13 @@
             },
             "type": "array",
             "title": "Shelf"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/BenchLink"
+            },
+            "type": "array",
+            "title": "Links"
           }
         },
         "type": "object",
@@ -9028,10 +9035,35 @@
           "pieces",
           "recent",
           "undo_next",
-          "shelf"
+          "shelf",
+          "links"
         ],
         "title": "BenchDetail",
-        "description": "A bench as a screen shows it: the bench, its pieces in order, and its latest commands, oldest first.\n`undo_next` is the `seq` an Undo should name now (one of `recent`'s), null when there is nothing to undo. `shelf`\nis its archived pieces, the most recently archived first: off the layout, not counted toward `max_pieces`, each\nkept whole with its last run, to restore."
+        "description": "A bench as a screen shows it: the bench, its pieces in order, and its latest commands, oldest first.\n`undo_next` is the `seq` an Undo should name now (one of `recent`'s), null when there is nothing to undo. `shelf`\nis its archived pieces, the most recently archived first: off the layout, not counted toward `max_pieces`, each\nkept whole with its last run, to restore. `links` is the links between pieces on the layout, by from, kind and to;\na link with an end removed or shelved is kept and listed again once that piece is back."
+      },
+      "BenchLink": {
+        "properties": {
+          "from_id": {
+            "type": "integer",
+            "title": "From Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "to_id": {
+            "type": "integer",
+            "title": "To Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_id",
+          "kind",
+          "to_id"
+        ],
+        "title": "BenchLink",
+        "description": "Piece `from_id` is `kind` (one of `WorkshopKinds.link_kinds`) of piece `to_id`."
       },
       "BenchList": {
         "properties": {
@@ -9983,7 +10015,7 @@
           "piece_id"
         ],
         "title": "CommandApplied",
-        "description": "The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece), null for a\nchange of the bench itself (an undo of a rename)."
+        "description": "The command was accepted as `seq`; `piece_id` is the piece it changed (for an add, the new piece; for a link or\nan unlink, its `from_id`), null for a change of the bench itself (an undo of a rename)."
       },
       "CommandRefused": {
         "properties": {
@@ -10028,7 +10060,10 @@
               "bad_body",
               "bad_citation",
               "bad_rows",
-              "bad_session"
+              "bad_session",
+              "bad_link",
+              "already_linked",
+              "not_linked"
             ],
             "title": "Reason"
           },
@@ -10079,6 +10114,12 @@
           },
           {
             "$ref": "#/components/schemas/ClearHighlightRequest"
+          },
+          {
+            "$ref": "#/components/schemas/LinkRequest"
+          },
+          {
+            "$ref": "#/components/schemas/UnlinkRequest"
           }
         ],
         "title": "CommandRequest",
@@ -10091,10 +10132,12 @@
             "clear_point": "#/components/schemas/ClearHighlightRequest",
             "edit": "#/components/schemas/EditPieceRequest",
             "install": "#/components/schemas/InstallPieceRequest",
+            "link": "#/components/schemas/LinkRequest",
             "move": "#/components/schemas/MovePieceRequest",
             "remove": "#/components/schemas/RemovePieceRequest",
             "restore": "#/components/schemas/RestorePieceRequest",
-            "undo": "#/components/schemas/UndoRequest"
+            "undo": "#/components/schemas/UndoRequest",
+            "unlink": "#/components/schemas/UnlinkRequest"
           }
         }
       },
@@ -12245,6 +12288,58 @@
         "title": "LexiconWords",
         "description": "The signed-in person's household's words by `real`, and the most it holds."
       },
+      "LinkKind": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "label"
+        ],
+        "title": "LinkKind",
+        "description": "One kind of link between two pieces, from `workshop.json`'s `link_kinds`: a piece `from_id` is `name` (`part_of`,\n`depends_on`, `version_of`) of piece `to_id`. `label` is what a screen calls it."
+      },
+      "LinkRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "link",
+            "title": "Type"
+          },
+          "from_id": {
+            "type": "integer",
+            "title": "From Id"
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Kind"
+          },
+          "to_id": {
+            "type": "integer",
+            "title": "To Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "from_id",
+          "kind",
+          "to_id"
+        ],
+        "title": "LinkRequest",
+        "description": "Link piece `from_id` to piece `to_id` as `kind`: both on the layout. Refused `no_such_piece` for an end that is\nnot, `bad_link` for a piece linked to itself or a kind `link_kinds` does not have, `already_linked` when it is. A\nlink changes neither piece: not its version, nor what it last changed by."
+      },
       "LinkStartResponse": {
         "properties": {
           "authorize_url": {
@@ -12741,7 +12836,9 @@
               "rename",
               "cue",
               "point",
-              "surfaced"
+              "surfaced",
+              "link",
+              "unlink"
             ],
             "title": "Type"
           },
@@ -12787,7 +12884,10 @@
                   "bad_body",
                   "bad_citation",
                   "bad_rows",
-                  "bad_session"
+                  "bad_session",
+                  "bad_link",
+                  "already_linked",
+                  "not_linked"
                 ]
               }
             ],
@@ -17872,6 +17972,39 @@
         "title": "UndoRequest",
         "description": "Undo command `seq`, while what it changed has not changed since. Refused `nothing_to_undo` when `seq` is an undo\n(there is no redo) or older than the bench's last `undo_window` commands, and `changed_since` when it was already\nundone. Undoing an install takes it back out of the house before it is answered (`automation.last_install` of the\npiece)."
       },
+      "UnlinkRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "unlink",
+            "title": "Type"
+          },
+          "from_id": {
+            "type": "integer",
+            "title": "From Id"
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Kind"
+          },
+          "to_id": {
+            "type": "integer",
+            "title": "To Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "from_id",
+          "kind",
+          "to_id"
+        ],
+        "title": "UnlinkRequest",
+        "description": "Take away the link of `kind` from piece `from_id` to piece `to_id`; refused as a link is, and `not_linked` when\nthere is no such link."
+      },
       "VaultWrite": {
         "properties": {
           "epoch": {
@@ -18374,6 +18507,13 @@
             "type": "array",
             "title": "Kinds"
           },
+          "link_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/LinkKind"
+            },
+            "type": "array",
+            "title": "Link Kinds"
+          },
           "sizes": {
             "items": {
               "type": "string",
@@ -18417,6 +18557,7 @@
         "type": "object",
         "required": [
           "kinds",
+          "link_kinds",
           "sizes",
           "max_pieces",
           "title_max_chars",
@@ -18425,7 +18566,7 @@
           "work_kinds"
         ],
         "title": "WorkshopKinds",
-        "description": "What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take\n(`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench\nholds and the longest title of a bench or a piece; and the languages a code piece can be run in\n(`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`)."
+        "description": "What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take\n(`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench\nholds and the longest title of a bench or a piece; the languages a code piece can be run in\n(`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the\nkinds of link between pieces (`link_kinds`)."
       },
       "Written": {
         "properties": {

@@ -2,5 +2,10 @@
   "max_pieces": 50,
   "title_max_chars": 120,
   "recent_commands": 50,
-  "undo_window": 200
+  "undo_window": 200,
+  "link_kinds": {
+    "part_of": {"label": "Part of"},
+    "depends_on": {"label": "Depends on"},
+    "version_of": {"label": "Version of"}
+  }
 }

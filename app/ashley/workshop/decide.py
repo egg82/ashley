@@ -9,9 +9,10 @@ from types import MappingProxyType
 
 from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, session_piece, shadow,
                stored_file, surfacing, wake_rule)
-from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Move, Moved,
-                       Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored, Run,
-                       Shown, Surfaced, Undo)
+from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Link, Move,
+                       Moved, Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored,
+                       Run, Shown, Surfaced, Undo, Unlink)
+from . import links as link_rules
 from .effects import apply, inverse, shelved, titled
 from .model import By, Piece, Place, Text
 from .rules import BodyFormat, Kind, Rules
@@ -24,7 +25,9 @@ class BenchState:
     `undos` maps the `seq` of every accepted Undo to the `seq` it undid. `decide` reads both only for an Undo, and only
     the entries at or after the `seq` it names that touch that command's piece, and for an Install, the entries of its
     piece from the proposal it names on, so a caller holding the bench elsewhere may pass just those. `shelf` is the archived pieces, the most recently archived first, each at the place it left;
-    it is passed whole. `title` is the bench's title as it stands, which a Rename records as what it replaced."""
+    it is passed whole. `title` is the bench's title as it stands, which a Rename records as what it replaced. `links`
+    is every link the bench holds, those with an end off the layout included (`links`); `decide` reads it for a Link,
+    an Unlink and an Undo of one."""
 
     pieces: tuple[Piece, ...] = ()
     next_seq: int = 1
@@ -32,6 +35,7 @@ class BenchState:
     undos: Mapping[int, int] = field(default_factory=lambda: MappingProxyType({}))
     shelf: tuple[Piece, ...] = ()
     title: str = ""
+    links: link_rules.Links = frozenset()
 
     def piece(self, piece_id: int) -> Piece | None:
         return next((p for p in self.pieces if p.id == piece_id), None)
@@ -109,6 +113,8 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
       and takes the highlight away). Its effect, `Pointed`, changes no piece.
     - Surfaced: `no_such_piece`, then `surfacing.judged`'s (`unknown_kind`, `bad_rows`). Its effect, `Shown`, changes no piece.
     - Rename: `bad_title`. Its effect, `Renamed`, changes no piece.
+    - Link, Unlink: `links.judged`'s (`no_such_piece`, `bad_link`, then `already_linked` or `not_linked`). Its effect,
+      `Linked` or `Unlinked`, changes no piece, not its version or `changed_by`; each undoes the other.
     - Archive: `no_such_piece` (not on the layout), `required`. The piece goes to the front of the shelf, the others move up.
     - Restore: `no_such_piece` (not on the shelf), `full`. The piece goes last, at the size it had.
     - Undo: `nothing_to_undo` (an Undo cannot be undone: there is no redo; nor can a Run, which ran, a Propose, a Cue, a Point or a Surfaced; nor
@@ -121,7 +127,7 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
       old order or last when fewer pieces remain; an Edit restores the earlier text (the version still rises); a Move
       returns the piece to its earlier place (or last); an Archive restores the piece to its old order (or last); a
       Restore archives it again; an Install is taken back by an `Uninstalled` naming it; a Rename by a `Renamed` back to
-      the title it replaced.
+      the title it replaced; a Link by an `Unlinked` and an Unlink by a `Linked`, whether or not its ends are on the layout.
     Add and Edit of a `by_code` kind's piece (`job`) are refused `bad_body` unless the jobs' runner (`By.runner`) made
     them, and its body must be that kind's (`job_body`); so is an Undo of such an Edit by anyone else.
     A large piece's (`image`, `file`) body must be a stored file (`stored_file`), `bad_file` otherwise, and an Edit
@@ -144,7 +150,7 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
     undos = MappingProxyType({**state.undos, seq: command.seq}) if isinstance(command, Undo) else state.undos
     return Accepted(seq, checked, replace(after, pieces=apply(state.pieces, checked, seq),
                                           shelf=shelved(state.shelf, checked, seq), effects=effects, undos=undos,
-                                          title=titled(state.title, checked)))
+                                          title=titled(state.title, checked), links=link_rules.linked(state.links, checked)))
 
 
 def replay(commands: Iterable[Command], rules: Rules, title: str = "") -> list[Decision]:
@@ -168,6 +174,8 @@ def _effect_of(state: BenchState, command: Command, rules: Rules, seq: int) -> E
         return _restore(state, command, rules, seq)
     if isinstance(command, Rename):
         return _rename(state, command, rules)
+    if isinstance(command, (Link, Unlink)):
+        return link_rules.judged(state.pieces, state.links, command, rules.link_kinds)
     if isinstance(command, Install) and command.by.person_id is None:
         return "needs_person"
     piece = state.piece(command.piece_id)
@@ -370,7 +378,8 @@ def _undo(state: BenchState, command: Undo, rules: Rules, seq: int) -> Effect | 
         return "needs_person"
     if isinstance(done, Edited) and not command.by.runner and _by_code(state, done.piece_id, rules):
         return "bad_body"
-    undone = inverse(done, state.pieces, state.shelf, state.title, state.effects, state.undos, command.seq, seq)
+    undone = inverse(done, state.pieces, state.shelf, state.title, state.effects, state.undos, command.seq, seq,
+                     state.links)
     if undone is None:
         return "changed_since"
     if isinstance(undone, (Removed, Archived)) and _last_required(state, undone.piece, rules):

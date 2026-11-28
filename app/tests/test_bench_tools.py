@@ -52,8 +52,8 @@ def test_the_catalogue_offers_her_bench_tools_with_the_rules_kinds() -> None:
     got = asyncio.run(tools().catalogue())
     names = [s.name for s in got.specs]
     assert names == ["bench_read", "bench_read_piece", "bench_add", "bench_edit", "bench_replace", "bench_move",
-                     "bench_remove", "bench_archive", "bench_shelf", "bench_restore", "bench_undo", "bench_rename",
-                     "bench_cue", "bench_point"]
+                     "bench_remove", "bench_archive", "bench_shelf", "bench_restore", "bench_undo", "bench_link",
+                     "bench_rename", "bench_cue", "bench_point"]
     add = next(s for s in got.specs if s.name == "bench_add")
     assert json.loads(json.dumps(add.parameters))["properties"]["kind"]["enum"] == ["note", "document"]
     assert got.instructions is not None and "stale_base" in got.instructions

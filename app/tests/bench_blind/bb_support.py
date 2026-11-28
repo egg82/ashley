@@ -29,7 +29,8 @@ from live_support import FakeLive
 REMINDING = ("remind", "reminders", "cancel_reminder", "change_reminder")
 """The reminder tools a turn with a known speaker is offered where its reply reaches them alone; elsewhere `remind`."""
 BENCH_TOOLS = ("bench_read", "bench_read_piece", "bench_add", "bench_edit", "bench_replace", "bench_move", "bench_remove",
-               "bench_archive", "bench_shelf", "bench_restore", "bench_undo", "bench_rename", "bench_cue", "bench_point")
+               "bench_archive", "bench_shelf", "bench_restore", "bench_undo", "bench_link", "bench_rename", "bench_cue",
+               "bench_point")
 _ids = count(1)
 
 

@@ -7,7 +7,7 @@ from psycopg import AsyncConnection
 from psycopg.types.json import Jsonb
 
 from .codec import decode_command, decode_effect, encode_command, encode_effect
-from .commands import Command, Effect, Pointed, Renamed, Shown, ShownRow, piece_of
+from .commands import Command, Effect, Linked, Pointed, Renamed, Shown, ShownRow, Unlinked, piece_of
 from .decide import Accepted, Decision
 from .model import Bench, By, Change, Owner, Piece, Place, Text
 from .undo_walk import Step
@@ -168,11 +168,18 @@ async def steps(conn: Conn, bench_id: int, latest: int) -> list[Step]:
 
 async def undo_context(conn: Conn, bench_id: int, seq: int) -> tuple[dict[int, Effect], dict[int, int]]:
     """What `decide` reads to judge an Undo of command `seq`: the effects of `seq` and of every accepted command after
-    it on the same piece, and which of those are undos, mapped to what they undid. Empty when `seq` has no effect."""
+    it on the same piece (for a link, the same link), and which of those are undos, mapped to what they undid. Empty when
+    `seq` has no effect."""
     done = await effect_of(conn, bench_id, seq)
     if done is None:
         return {}, {}
-    if isinstance(done, Renamed):
+    if isinstance(done, (Linked, Unlinked)):
+        cur = await conn.execute(
+            "SELECT seq, effect, command FROM bench_commands WHERE bench_id = %s AND seq >= %s AND effect IS NOT NULL "
+            "AND effect->>'type' IN ('linked', 'unlinked') AND (effect->>'from_id')::int = %s AND effect->>'kind' = %s "
+            "AND (effect->>'to_id')::int = %s ORDER BY seq",
+            (bench_id, seq, done.link.from_id, done.link.kind, done.link.to_id))
+    elif isinstance(done, Renamed):
         cur = await conn.execute(
             "SELECT seq, effect, command FROM bench_commands WHERE bench_id = %s AND seq >= %s AND effect IS NOT NULL "
             "AND effect->>'type' = 'renamed' ORDER BY seq", (bench_id, seq))

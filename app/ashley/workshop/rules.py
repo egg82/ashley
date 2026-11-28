@@ -26,7 +26,8 @@ and the bench's limits (`workshop.json`). Both files sit beside this module.
 `workshop.json` has exactly `max_pieces` (how many pieces one bench holds at most), `title_max_chars` (the longest
 title of a bench or a piece), `recent_commands` (how many of the latest commands a bench's read carries) and
 `undo_window` (how many of the latest commands, refusals and Undos among them, an Undo reaches back over), each at
-least 1. `screen.json` has those four and `required` (the kinds a screen always holds one of, a list of names) and
+least 1, and `link_kinds`, the kinds of link between two pieces (`links`), each name mapped to `{"label"}`, what a
+screen calls it (left out: no link is made). `screen.json` has those four limits (a screen's pieces are not linked) and `required` (the kinds a screen always holds one of, a list of names) and
 `one_each` (whether a screen holds at most one piece of a kind), and sets the limits of a device's screen."""
 
 import json
@@ -64,7 +65,7 @@ class Kind:
 class Rules:
     """Everything `decide` checks a command against besides the bench itself. `kinds` by name. `required` names the
     kinds a layout must keep one piece of (a Remove, Archive or Undo that would leave none is refused); `one_each` makes
-    a layout hold at most one piece of a kind."""
+    a layout hold at most one piece of a kind. `link_kinds` maps each kind of link to its label; none, no link is made."""
 
     kinds: Mapping[str, Kind]
     max_pieces: int
@@ -73,6 +74,7 @@ class Rules:
     undo_window: int
     required: frozenset[str] = frozenset()
     one_each: bool = False
+    link_kinds: Mapping[str, str] = MappingProxyType({})
 
     def __post_init__(self) -> None:
         if min(self.max_pieces, self.title_max_chars, self.recent_commands, self.undo_window) < 1:
@@ -131,10 +133,23 @@ def rules_from(kinds: object, limits: object) -> Rules:
     """The rules from parsed `kinds.json` and `workshop.json`. Raises ValueError for a shape outside the docstring's."""
     names = {"max_pieces", "title_max_chars", "recent_commands", "undo_window"}
     top = _object(limits)
-    if set(top) != names or not all(_is_count(top[n]) for n in names):
-        raise ValueError(f"workshop.json has exactly {sorted(names)}, each an integer of at least 1")
+    if not names <= set(top) <= names | {"link_kinds"} or not all(_is_count(top[n]) for n in names):
+        raise ValueError(f"workshop.json has exactly {sorted(names)}, each an integer of at least 1, and may have link_kinds")
     return Rules(_of_family(kinds_from(kinds), screen=False), _int(top["max_pieces"]), _int(top["title_max_chars"]),
-                 _int(top["recent_commands"]), _int(top["undo_window"]))
+                 _int(top["recent_commands"]), _int(top["undo_window"]), link_kinds=_link_kinds(top.get("link_kinds", {})))
+
+
+def _link_kinds(raw: object) -> Mapping[str, str]:
+    """The kinds of link in `workshop.json`'s `link_kinds`, each name to its label. Raises ValueError for another shape."""
+    found: dict[str, str] = {}
+    for name, entry in _object(raw).items():
+        label = _object(entry).get("label")
+        if not _is_name(name) or set(_object(entry)) != {"label"} or not _is_name(label):
+            raise ValueError(f"link kind {name!r} is an object of exactly a non-empty label")
+        found[name] = str(label)
+    if object_of(raw) is None:
+        raise ValueError("workshop.json's link_kinds is an object of kinds")
+    return MappingProxyType(found)
 
 
 def screen_rules_from(kinds: object, limits: object) -> Rules:

@@ -229,8 +229,9 @@ def test_every_reason_the_contract_names_is_reachable_through_a_route() -> None:
     hers = {"confirmed_measurement", "bad_citation"}   # her edits only, never a person's route: test_facts.py, test_choice_rows.py
     recipes = {"bad_recipe"}   # test_workshop_recipe_routes.py's
     surfaced = {"bad_rows"}   # a Surfaced has no route of its own: test_workshop_surfaced.py
+    links = {"bad_link", "already_linked", "not_linked"}   # test_workshop_links_routes.py's
     assert ({why for why, _ in REFUSALS} | {"full", "not_runnable"} | installs | embeds | cues | points | files | screens
-            | hers | recipes | surfaced == set(REASONS))
+            | hers | recipes | surfaced | links == set(REASONS))
 
 
 def test_a_full_bench_is_409_full_at_the_shipped_limit(rig: Rig) -> None:

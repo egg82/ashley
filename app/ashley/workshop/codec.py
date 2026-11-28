@@ -5,8 +5,9 @@ from dataclasses import replace
 from typing import Any, get_args
 
 from .commands import (Add, Added, Archive, Archived, Command, Cue, CueAction, Cued, Edit, Edited, Effect, Install,
-                       Installed, Move, Moved, Point, Pointed, Propose, Proposed, Ran, Remove, Removed, Rename, Renamed, Restore,
-                       Restored, Run, Shown, ShownRow, Surfaced, Undo, Uninstalled, type_of)
+                       Installed, Link, Linked, Move, Moved, Point, Pointed, Propose, Proposed, Ran, Remove, Removed, Rename,
+                       Renamed, Restore, Restored, Run, Shown, ShownRow, Surfaced, Undo, Uninstalled, Unlink, Unlinked, type_of)
+from .links import PieceLink
 from .model import SIZES, By, Piece, Place, Size, Text
 from .reader import Passage
 
@@ -28,6 +29,8 @@ def _encode(command: Command) -> Json:
         return {**out, "seq": command.seq}
     if isinstance(command, Rename):
         return {**out, "title": command.title}
+    if isinstance(command, (Link, Unlink)):
+        return {**out, **_link(command.link)}
     out["piece_id"] = command.piece_id
     if isinstance(command, Cue):
         return {**out, "action": command.action, "seconds": command.seconds}
@@ -86,6 +89,9 @@ def _decode(raw: Json, by: By) -> Command:
         return Undo(by, int(raw["seq"]))
     if kind == "rename":
         return Rename(by, str(raw["title"]))
+    if kind in ("link", "unlink"):
+        link = _link_of(raw)
+        return (Link if kind == "link" else Unlink)(by, link.from_id, link.kind, link.to_id)
     raise ValueError(f"unknown command type {kind!r}")
 
 
@@ -103,6 +109,10 @@ def encode_effect(effect: Effect) -> Json:
         return {"type": "restored", "piece": _piece(effect.piece)}
     if isinstance(effect, Renamed):
         return {"type": "renamed", "before": effect.before, "after": effect.after}
+    if isinstance(effect, Linked):
+        return {"type": "linked", **_link(effect.link)}
+    if isinstance(effect, Unlinked):
+        return {"type": "unlinked", **_link(effect.link)}
     if isinstance(effect, Ran):
         return {"type": "ran", "piece_id": effect.piece_id, "version": effect.version}
     if isinstance(effect, Cued):
@@ -140,6 +150,10 @@ def decode_effect(raw: Json) -> Effect:
         return Restored(_piece_of(raw["piece"]))
     if kind == "renamed":
         return Renamed(str(raw["before"]), str(raw["after"]))
+    if kind == "linked":
+        return Linked(_link_of(raw))
+    if kind == "unlinked":
+        return Unlinked(_link_of(raw))
     if kind == "ran":
         return Ran(int(raw["piece_id"]), int(raw["version"]))
     if kind == "cued":
@@ -190,6 +204,15 @@ def _rows_of(raw: list[Json]) -> tuple[ShownRow, ...]:
 
 def _maybe(raw: object) -> str | None:
     return None if raw is None else str(raw)
+
+
+def _link(link: PieceLink) -> Json:
+    """A link's fields; never `piece_id`, so the log's per-piece queries pass a link's rows by (`postgres_rows`)."""
+    return {"from_id": link.from_id, "kind": link.kind, "to_id": link.to_id}
+
+
+def _link_of(raw: Json) -> PieceLink:
+    return PieceLink(int(raw["from_id"]), str(raw["kind"]), int(raw["to_id"]))
 
 
 def _text(text: Text) -> Json:

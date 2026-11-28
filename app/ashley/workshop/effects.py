@@ -3,16 +3,18 @@
 from collections.abc import Mapping
 from dataclasses import replace
 
-from .commands import (Added, Archived, Cued, Edited, Effect, Installed, Moved, Pointed, Proposed, Ran, Removed, Renamed,
-                       Restored, Shown, Uninstalled, piece_of)
+from . import links as link_rules
+from .commands import (Added, Archived, Cued, Edited, Effect, Installed, Linked, Moved, Pointed, Proposed, Ran, Removed,
+                       Renamed, Restored, Shown, Uninstalled, Unlinked, piece_of)
+from .links import Links
 from .model import Piece, Place
 
 
 def apply(pieces: tuple[Piece, ...], effect: Effect, seq: int) -> tuple[Piece, ...]:
     """`pieces` (in order) after `effect`, made by command `seq`, renumbered so their orders are 0 to n-1 again. A
-    `Ran`, `Cued`, `Pointed`, `Shown`, `Proposed`, `Installed`, `Uninstalled` or `Renamed` leaves them as they are (what an install changes is
+    `Ran`, `Cued`, `Pointed`, `Shown`, `Proposed`, `Installed`, `Uninstalled`, `Renamed`, `Linked` or `Unlinked` leaves them as they are (what an install changes is
     outside the bench); an archive takes the piece out as a removal does, a restore puts it in as an add."""
-    if isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed, Installed, Uninstalled, Renamed)):
+    if isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed, Installed, Uninstalled, Renamed, Linked, Unlinked)):
         return pieces
     if isinstance(effect, (Added, Restored)):
         listed = list(pieces)
@@ -48,26 +50,40 @@ def _changes_nothing(effect: Effect) -> bool:
     return isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed)) or (isinstance(effect, Installed) and effect.shadow)
 
 
+def _target(effect: Effect) -> tuple[object, ...]:
+    """What `effect` changed, as undo tells changes apart: the bench (a rename), a link, or a piece. A link is not a
+    change of either end piece."""
+    if isinstance(effect, Renamed):
+        return ("bench",)
+    if isinstance(effect, (Linked, Unlinked)):
+        return ("link", effect.link)
+    return ("piece", piece_of(effect))
+
+
 def settled(effect: Effect, effects: Mapping[int, Effect], undos: Mapping[int, int], done_seq: int) -> bool:
-    """Whether the piece `effect` (command `done_seq`) changed is as that command left it: every later effect on the
-    piece is a command that a later undo took back, or such an undo. A `Ran`, a `Cued`, a `Pointed`, a `Shown` or a `Proposed` changed nothing, so it
+    """Whether what `effect` (command `done_seq`) changed, its piece, link or the bench's title, is as that command left
+    it: every later effect on it is a command that a later undo took back, or such an undo. A `Ran`, a `Cued`, a `Pointed`, a `Shown` or a `Proposed` changed nothing, so it
     never counts; an `Installed` does, so a change before an install is undone only after the install is, except a shadow
     run's, which changed nothing of the piece."""
     taken_back = set(undos.values())
     return all(s in taken_back or undos.get(s, 0) > done_seq
                for s, e in effects.items()
-               if s > done_seq and not _changes_nothing(e) and piece_of(e) == piece_of(effect))
+               if s > done_seq and not _changes_nothing(e) and _target(e) == _target(effect))
 
 
 def inverse(effect: Effect, pieces: tuple[Piece, ...], shelf: tuple[Piece, ...], title: str,
-            effects: Mapping[int, Effect], undos: Mapping[int, int], done_seq: int, seq: int) -> Effect | None:
-    """The effect that undoes `effect` (what command `done_seq` did) as command `seq`, on `pieces`, `shelf` and bench
+            effects: Mapping[int, Effect], undos: Mapping[int, int], done_seq: int, seq: int,
+            links: Links = frozenset()) -> Effect | None:
+    """The effect that undoes `effect` (what command `done_seq` did) as command `seq`, on `pieces`, `shelf`, `links` and bench
     `title` as they stand, `effects` as done so far and `undos` (undo `seq` to the `seq` it undid); None when the piece has changed
     since (`settled` fails, or a removed piece is back, or `effect` is a `Ran`, `Cued`, `Pointed`, `Shown` or `Proposed`, which nothing undoes). An
     archive is undone by restoring the piece to its old order (or last), a restore by archiving it again, an install
-    by an `Uninstalled` naming it, a rename by renaming the bench back."""
+    by an `Uninstalled` naming it, a rename by renaming the bench back, a link by unlinking and an unlink by linking
+    (`links.inverse`)."""
     if isinstance(effect, (Ran, Cued, Pointed, Shown, Proposed, Uninstalled)):
         return None
+    if isinstance(effect, (Linked, Unlinked)):
+        return link_rules.inverse(effect, links) if settled(effect, effects, undos, done_seq) else None
     if isinstance(effect, Installed) and effect.shadow:
         return Uninstalled(effect.piece_id, done_seq, effect.automation_id)
     if isinstance(effect, Renamed):
