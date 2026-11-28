@@ -232,3 +232,19 @@ A signed-in person reaches the facts that concern them through `/api/memory/fact
   was, so the write job writes those turns when the conversation goes quiet. The eval is
   `python -m ashley.evals reply-remember`, which grades the action and the exact set of ids.
   Rejected: a tool for it, since the decision is the write job's and a tool call would make the reply wait on it.
+
+## Find asks each system and filters nothing itself
+
+- **One search, many indexes.** `GET /api/find` asks every source at once (`ashley.find.find.find`) and returns typed
+  records (`kind`, `ref`, `title`, `when` or `dated`, `confirmed`, `within`) with no model call. Each system keeps its own index;
+  Find adds none. It is the Composite Tools already is: a source that fails or runs out of time is named in
+  `unreachable`, never shown as an empty answer, and the others still answer.
+- **The access rule lives in each source, keyed on the hearer** (`ashley.conversations.model.Hearer`): facts by
+  Memory's own visibility filter; conversations through `Conversations.search`, and only for a named speaker reading
+  alone, since that search returns their own private turns; the print library for any named speaker, as her printing
+  tools are offered; the ledger only for a named speaker reading alone, as her money tools are offered
+  (`ashley.channels.audience.owner_alone`). A person's own session reads alone. A source that does not serve the
+  hearer, or that the household has not connected, is not listed at all.
+- **`confirmed` comes from the record's own fields**, never from its words. None of today's sources holds a guess.
+- Rejected: one search index over everything, which would copy each system's records and its access rule into a
+  second place to drift.
