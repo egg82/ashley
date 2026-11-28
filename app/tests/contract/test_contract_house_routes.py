@@ -6,10 +6,10 @@ from dataclasses import replace
 
 import pytest
 from ashley import logs
-from ashley.api.house_models import HouseControlList, HouseGlance
+from ashley.api.house_models import HouseGlance
+from ashley.api.models import KioskControls
 from ashley.channels.kiosk.controls import ACTIONS
 from ashley.home_assistant import irreversible
-from ashley.home_assistant.house import HouseUnavailable
 from ashley.printing.model import NotConnected, PrintingFailed, PrintingUnavailable
 from ashley.tools.house_act import Rules
 from house_routes_support import OTHER, OTHER_HOME, World, printer, work_item, world as world
@@ -20,7 +20,7 @@ from web_chat_support import error_of
 def listed(world: World, person: int = 1) -> dict[str, str | None]:
     got = world.get("/api/house/controls", person)
     assert got.status_code == 200
-    return {c.name: c.label for c in HouseControlList.model_validate(got.json()).controls}
+    return {c.name: c.label for c in KioskControls.model_validate(got.json()).controls}
 
 
 # ---- GET /api/house/controls ----------------------------------------------------------------------------------------
@@ -39,13 +39,13 @@ def test_every_listed_control_is_an_action_the_kiosk_may_run(world: World) -> No
 def test_a_light_shows_whether_it_is_on_and_a_scene_or_an_unknown_light_shows_null(world: World) -> None:
     world.homes.houses[HOME].things = [t for t in world.homes.houses[HOME].things if t.id != "light.zq_porch_lamp"]
     world.homes.houses[HOME].things[0] = replace(world.homes.houses[HOME].things[0], state="on")
-    got = HouseControlList.model_validate(world.get("/api/house/controls").json())
+    got = KioskControls.model_validate(world.get("/api/house/controls").json())
     assert {c.name: c.on for c in got.controls} == {"light-zq-hall": True, "light-zq-porch-lamp": None, "scene-zq-night": None}
 
 
 def test_a_house_that_cannot_be_read_still_lists_the_controls_with_no_state(world: World) -> None:
     world.homes.down = True
-    got = HouseControlList.model_validate(world.get("/api/house/controls").json())
+    got = KioskControls.model_validate(world.get("/api/house/controls").json())
     assert len(got.controls) == 3 and all(c.on is None for c in got.controls)
 
 

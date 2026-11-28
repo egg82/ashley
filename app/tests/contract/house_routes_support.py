@@ -4,16 +4,18 @@ fixture's app, sessions and presence."""
 
 from collections.abc import Generator
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any
 
+import httpx2
 import pytest
 from ashley import services
 from ashley.api import house_attention
 from ashley.channels.kiosk import house_controls
 from ashley.connections.model import CatalogueEntity
 from ashley.home_assistant import irreversible
+from ashley.home_assistant.client import HomeAssistant
 from ashley.home_assistant.homes import Home, Homes, HomesUnavailable
-from ashley.printing.model import Fault, NotConnected, Page, Printer, PrintingFailed, PrintingUnavailable
+from ashley.printing.model import Fault, NotConnected, Page, Printer
 from ashley.printing.printing import NullPrinting, Printing
 from ashley.senses.outside_record import NullOutsideRecord, OutsideRecord
 from ashley.signin.model import SignedIn
@@ -47,7 +49,7 @@ class FakeHomes(Homes):
         if self.down:
             raise HomesUnavailable("down")
         house = self.houses.get(household_id)
-        return None if house is None else Home(household_id, cast(Any, None), house)
+        return None if house is None else Home(household_id, HomeAssistant(httpx2.AsyncClient()), house)
 
     async def check(self, base_url: str, token: str) -> None:
         raise AssertionError("not used")
@@ -115,8 +117,7 @@ class World:
 
 
 def work_item(state_: str) -> WorkItem:
-    from datetime import UTC, datetime
-    return WorkItem(kind="errand", id=1, title="t", state=cast(Any, state_), at=datetime(2026, 11, 1, tzinfo=UTC))
+    return WorkItem.model_validate({"kind": "errand", "id": 1, "title": "t", "state": state_, "at": "2026-11-01T00:00:00Z"})
 
 
 @pytest.fixture

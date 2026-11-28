@@ -1490,7 +1490,7 @@ export interface paths {
         };
         /**
          * House Controls Listed
-         * @description 200 `HouseControlList`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;
+         * @description 200 `KioskControls`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;
          *     503 `unavailable`.
          */
         get: operations["house_controls_listed"];
@@ -1513,7 +1513,7 @@ export interface paths {
         put?: never;
         /**
          * House Control Pressed
-         * @description 200 `HouseControlPressed`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;
+         * @description 200 `KioskControlDone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;
          *     429 `rate_limited`; 503 `unavailable`.
          */
         post: operations["house_control_pressed"];
@@ -3671,35 +3671,6 @@ export interface components {
             printer_faults: number | null;
             /** House Unreadable */
             house_unreadable: boolean | null;
-        };
-        /**
-         * HouseControl
-         * @description One light or scene the household's catalogue has: `name` is its stable key, `label` what its button says. `on` is
-         *     whether a light is on now; null for a scene, and for a light the house could not say.
-         */
-        HouseControl: {
-            /** Name */
-            name: string;
-            /** Label */
-            label: string;
-            /** On */
-            on: boolean | null;
-        };
-        /**
-         * HouseControlList
-         * @description The household's lights and scenes a person may press, by entity id; empty when the house lists none.
-         */
-        HouseControlList: {
-            /** Controls */
-            controls: components["schemas"]["HouseControl"][];
-        };
-        /**
-         * HouseControlPressed
-         * @description Whether her tool reported the press carried out (`done`); false when the tool or the house refused it.
-         */
-        HouseControlPressed: {
-            /** Done */
-            done: boolean;
         };
         /**
          * HouseGlance
@@ -11512,7 +11483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HouseControlList"];
+                    "application/json": components["schemas"]["KioskControls"];
                 };
             };
             /** @description `unauthorized`: no live session */
@@ -11552,7 +11523,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HouseControlPressed"];
+                    "application/json": components["schemas"]["KioskControlDone"];
                 };
             };
             /** @description `unauthorized`: no live session */

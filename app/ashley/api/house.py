@@ -6,6 +6,8 @@ A press is the person's own act, not hers: it is not an outside action, and the 
 counts against the person's rate (`Sessions.allow`). `GET /api/house/glance` is who is home (`channels.kiosk.glance`) and
 what needs the person (`house_attention`).
 
+The wire shapes are the kiosk's controls' (`KioskControls`, `KioskControlDone`), so one client part reads either.
+
 Logs `kiosk.control` with the person id on a press, `house.refused` with the person id and reason `rate`."""
 
 import logging
@@ -23,8 +25,8 @@ from ..connections.kinds import CatalogueUnavailable
 from ..signin.sessions import Sessions, SessionsUnavailable
 from .benches import owner_of
 from .house_attention import attention
-from .house_models import HouseControl, HouseControlList, HouseControlPressed, HouseGlance
-from .models import ErrorResponse
+from .house_models import HouseGlance
+from .models import ErrorResponse, KioskControl, KioskControlDone, KioskControls
 from .person import Person
 
 router = APIRouter()
@@ -45,9 +47,9 @@ def _unavailable() -> JSONResponse:
         code="unavailable", detail="the house is unavailable right now; try again shortly").model_dump())
 
 
-@router.get("/api/house/controls", response_model=HouseControlList, responses=_READ)
-async def house_controls_listed(signed_in: Person) -> HouseControlList | JSONResponse:
-    """200 `HouseControlList`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;
+@router.get("/api/house/controls", response_model=KioskControls, responses=_READ)
+async def house_controls_listed(signed_in: Person) -> KioskControls | JSONResponse:
+    """200 `KioskControls`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;
     503 `unavailable`."""
     me = signed_in.person
     try:
@@ -55,15 +57,15 @@ async def house_controls_listed(signed_in: Person) -> HouseControlList | JSONRes
     except (ConnectionsUnavailable, CatalogueUnavailable):
         return _unavailable()
     lit = await lights_on(me.household_id, (c.entity_id for c in found if c.action == "light.toggle"))
-    return HouseControlList(controls=[
-        HouseControl(name=c.id, label=c.label, on=lit.get(c.entity_id) if c.action == "light.toggle" else None)
+    return KioskControls(controls=[
+        KioskControl(name=c.id, label=c.label, on=lit.get(c.entity_id) if c.action == "light.toggle" else None)
         for c in found])
 
 
-@router.post("/api/house/controls/{name}", response_model=HouseControlPressed, responses=_PRESS)
+@router.post("/api/house/controls/{name}", response_model=KioskControlDone, responses=_PRESS)
 async def house_control_pressed(signed_in: Person,
-                                name: Annotated[str, Path(pattern=r"^[a-z0-9-]{1,40}$")]) -> HouseControlPressed | JSONResponse:
-    """200 `HouseControlPressed`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;
+                                name: Annotated[str, Path(pattern=r"^[a-z0-9-]{1,40}$")]) -> KioskControlDone | JSONResponse:
+    """200 `KioskControlDone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;
     429 `rate_limited`; 503 `unavailable`."""
     me = signed_in.person
     try:
@@ -81,7 +83,7 @@ async def house_control_pressed(signed_in: Person,
         logs.info(log, "house.refused", person=me.id, reason="rate")
         return JSONResponse(status_code=429, content=ErrorResponse(
             code="rate_limited", detail="too many requests; slow down").model_dump())
-    return HouseControlPressed(done=await controls.run(found, None, me.household_id, me.id))
+    return KioskControlDone(done=await controls.run(found, None, me.household_id, me.id))
 
 
 @router.get("/api/house/glance", response_model=HouseGlance, responses={401: _READ[401]})
