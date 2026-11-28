@@ -1,6 +1,6 @@
 // This screen's clock and date, which the screen keeps itself, written as the household writes them.
 import { useEffect, useState } from 'preact/hooks';
-import { hour, locale } from '../household/format';
+import { hour, locale } from '../../household/format';
 
 function useNow(everyMs: number): Date {
   const [now, setNow] = useState(() => new Date());
