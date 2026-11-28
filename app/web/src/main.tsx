@@ -21,6 +21,7 @@ import './rooms/connections/catalogue/catalogue.css';
 import './rooms/spend/spend.css';
 import './rooms/her/chat.css';
 import './rooms/workshop/workshop.css';
+import './rooms/workshop/canvas/canvas.css';
 import './kiosk/kiosk.css';
 import './speech/announce.css';
 import './camera/camera.css';

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { faults, GOAL, input, lay, makeBench, meanLinkLength, prng, shuffled, worstMove, type Bench } from './mindmap.gen.ts';
-import { foldDistance, GAP, layoutMindmap, type Box, type MapLink, type MapPiece } from './mindmap.ts';
+import { foldDistance, GAP, layoutMindmap, rootsOf, type Box, type MapLink, type MapPiece } from './mindmap.ts';
 
 const MOVE_BAR = 40;
 const SIZES = [30, 45, 60];
@@ -193,4 +193,9 @@ test('the layout of sixty pieces takes well under a second, and the input is not
   assert.ok(performance.now() - t < 500);
   assert.equal(JSON.stringify(input(b, null)), snapshot);
   assert.ok(prng(1)() !== prng(2)());
+});
+
+test('the roots are the pieces with no link to a lower id, which the layout places around the goal', () => {
+  const links: MapLink[] = [{ from: 2, kind: 'part_of', to: 1 }, { from: 3, kind: 'depends_on', to: 4 }, { from: 5, kind: 'part_of', to: 9 }];
+  assert.deepEqual([...rootsOf(new Set([1, 2, 3, 4, 5]), links)], [1, 3, 4, 5]);
 });

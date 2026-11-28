@@ -1,13 +1,6 @@
 // A bench's order on this screen. Pure. Each size class's share of the row (`WorkshopKinds.sizes`: small a quarter,
 // medium a half, large three quarters, full the row) is the grid's, in `workshop.css`.
-import type { BenchPiece, PieceSize } from '../../../api/types';
-
-const SHORT: Record<PieceSize, string> = { small: 'S', medium: 'M', large: 'L', full: 'F' };
-
-/** The one letter a size's control shows. */
-export function shortOf(size: PieceSize): string {
-  return SHORT[size];
-}
+import type { BenchPiece } from '../../../api/types';
 
 /** The pieces in their order. */
 export function ordered(pieces: readonly BenchPiece[]): BenchPiece[] {

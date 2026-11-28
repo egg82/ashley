@@ -1,4 +1,5 @@
-// The bench's pieces laid out by order and size on a four-column grid, animated by piece id whenever the layout
+// The bench's pieces laid out by order and size on a four-column grid, as the page she photographs draws them
+// (`look/LookPage.tsx`; the bench screen draws the mindmap, `canvas/BenchCanvas.tsx`), animated by piece id whenever the layout
 // changes (`flip.ts`), each change marked with who made it (`marks.ts`). Reordering is by drag (`drag.ts`) or the
 // grip's arrow keys; either sends one move.
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -43,7 +44,6 @@ function actions(pieces: readonly BenchPiece[], all: readonly number[], ids: rea
       say(`${piece?.title ?? 'Piece'} moved to ${to + 1} of ${ids.length}`);
       void placeAt(piece, at, piece?.placement.size ?? 'medium').finally(() => (preview.value = null));
     },
-    resize: (piece, size) => void placeAt(piece, piece.placement.order, size),
     remove: (piece) => void apply({ type: 'remove', piece_id: piece.id }),
     archive: (piece) => void apply({ type: 'archive', piece_id: piece.id }),
     grab(e, id) {
@@ -99,7 +99,7 @@ export function PieceGrid({ bench, rules, adding, doneAdding }: Props) {
     <div class="pgrid" ref={grid}>
       {shown.map((p, i) => (
         <PieceCard key={p.id} bench={id} piece={p} kind={kinds.get(p.kind)} index={i} count={shown.length}
-          sizes={rules?.sizes ?? [p.placement.size]} titleMax={rules?.title_max_chars ?? 120}
+          titleMax={rules?.title_max_chars ?? 120}
           closed={closed} rules={rules} derived={grouped.derived.get(p.id) ?? []} act={act} />
       ))}
       {orphans.map(([p, d]) => <Orphan key={`o${p}`} bench={id} piece={p} draft={d} />)}

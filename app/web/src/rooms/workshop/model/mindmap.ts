@@ -122,6 +122,12 @@ function parentsOf(ids: ReadonlySet<number>, links: readonly MapLink[]): Map<num
   return out;
 }
 
+/** The pieces placed around the goal rather than beside another piece: those with no link to a lower id on the bench. */
+export function rootsOf(ids: ReadonlySet<number>, links: readonly MapLink[]): Set<number> {
+  const parents = parentsOf(ids, links);
+  return new Set([...ids].filter((id) => !parents.has(id)));
+}
+
 /** Hops along links, either way, from `focusId` to each piece the links reach. The view draws 0 and 1 in full and folds
  *  the rest to title chips; a piece the focus cannot reach is absent. */
 export function foldDistance(focusId: number, links: readonly MapLink[]): Map<number, number> {

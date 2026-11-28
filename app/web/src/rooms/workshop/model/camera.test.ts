@@ -49,12 +49,16 @@ test('a framing fits everything with a margin, capped, and centres what is too b
   assert.deepEqual(framing(huge, V, 0.5, 1), { x: 50000, y: 50, z: 0.5 });
 });
 
-test('a focus change frames the neighbourhood when it fits, else the focus alone', () => {
+test('a focus change frames the first set that fits, else the focus alone', () => {
   const focus = { x: 0, y: 0, w: 300, h: 200 };
   const near1 = { x: 400, y: 0, w: 300, h: 200 };
-  assert.deepEqual(lookAt([focus, near1], focus, V, 1), { x: 350, y: 100, z: 1 });
   const far = { x: 3000, y: 0, w: 300, h: 200 };
-  assert.deepEqual(lookAt([focus, far], focus, V, 1), { x: 150, y: 100, z: 1 });
+  assert.deepEqual(lookAt([[focus, near1]], focus, V, 1), { x: 350, y: 100, z: 1 });
+  assert.deepEqual(lookAt([[focus, far], [focus, near1]], focus, V, 1), { x: 350, y: 100, z: 1 });
+  const leaned = lookAt([[focus, far]], focus, V, 1);
+  assert.equal(leaned.y, 100);
+  assert.equal(leaned.x, 150 + (1200 - 96 - 300) / 2, 'leans toward the neighbours as far as keeps the focus on screen');
+  assert.ok(leaned.x - (1200 - 96) / 2 <= focus.x + 1e-9, 'the focus still shows');
 });
 
 test('a box is on screen when its header shows', () => {
