@@ -11,6 +11,9 @@ and never act on it unattended, unless the reminder names the tools its turn may
 agreed to: `Inbound.tools_only`), when it carries them out and says what it did. Its conversation is not remembered. A reminder a deposit, a withdrawal, a balance falling
 below or a bill coming due fired carries it (`Reminder.landed`), which she states from its fields. A reminder a tainted turn made starts tainted `inherited`
 (`Reminder.taint`), since its brief was written under outside words. The wake's id is the turn's `source`, so an occurrence handed in twice is one turn.
+Its message is the household's turn (`author` `household`), never the person's words: stored as `shown`, a line code
+writes from the reminder's fields, while what she is to do (`said`) reaches her only as the turn's `note`. The
+`Inbound` still names the person (`speaker_id`), so its audience and tools are theirs.
 
 An errand's occurrence (`Reminder.ends_at`) is one check of it: she is given the ask, what she noted at the check
 before (`Reminder.plan`) and when it ends, and offered `check_again` (`Inbound.errand`) to set the next. It is not
@@ -43,9 +46,10 @@ def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, d
     errand = reminder.ends_at is not None
     standing = reminder.method is not None
     phone = Inbound(household_id=reminder.household_id, thread=f"push:{person.id}",
-                    text=said(reminder, person, made_by, device, zone), kind="chat", medium="text", audience="owner",
+                    text=shown(reminder, person, device), kind="chat", medium="text", audience="owner",
                     speaker_id=person.id, shared=False, place=None, channel="device", remembers=False, later=True,
-                    later_by="turn", source=f"wake:{wake_id}", unprompted=True,
+                    later_by="turn", source=f"wake:{wake_id}", unprompted=True, author="household",
+                    note=said(reminder, person, made_by, device, zone),
                     promised=not _judged(reminder) and not errand and not standing,
                     tools_only=reminder.tools, reads_only=reminder.tools is None,
                     taint=None if reminder.taint is None else "inherited", made_in=reminder.made_in,
@@ -55,6 +59,14 @@ def inbound(wake_id: int, reminder: Reminder, person: Person, made_by: Person, d
     if device is None:
         return phone
     return moved(phone, reminder.route, device)
+
+
+def shown(reminder: Reminder, person: Person, device: Device | None = None) -> str:
+    """The household's turn as the page shows it, from the reminder's fields: what it is for on the person's phone, and
+    only whom it is for on a device others may read."""
+    kind = ("Errand check" if reminder.ends_at is not None
+            else "Standing errand" if reminder.method is not None else "Reminder")
+    return f"{kind}: {reminder.brief}" if device is None else f"{kind} for {person.name}"
 
 
 def _judged(reminder: Reminder) -> bool:

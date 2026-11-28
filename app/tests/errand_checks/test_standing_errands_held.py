@@ -131,9 +131,9 @@ def test_the_same_round_held_twice_is_one_errand(instructed: World) -> None:
         async with stack(world) as s:
             await s.wakes.schedule(standing(s.house, s.alana))
             await runner.sweep()
-            said = int(scalar(world.url, "SELECT id FROM turns WHERE author = 'person' AND source IS NOT NULL"))
+            said = int(scalar(world.url, "SELECT id FROM turns WHERE author = 'household' AND source IS NOT NULL"))
             with psycopg.connect(world.url, autocommit=True) as conn:
-                conn.execute(HOLD, ("again", said))
+                conn.execute(HOLD, {"asker": s.alana, "text": "again", "turn": said})
 
     run(go())
     assert kept(world.url) == [("outbox", "done", FOUND.text)]

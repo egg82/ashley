@@ -42,13 +42,15 @@ class Pushed:
     """A reply to queue for `thread` of `household_id`. `answers` is the person turn the reply answers, set on a held
     answer: should it wait past `stale_s` it is kept for the asker's next reply, not lost. `held` says it is not queued
     at all: `Initiative` kept it quiet, so it is kept for the asker's next reply at once (`answers` is then required),
-    in the transaction that stores her turn."""
+    in the transaction that stores her turn, for `asker` (the turn's person, which a household's turn does not store),
+    or that turn's speaker when None."""
 
     household_id: int
     thread: str
     outbound: Outbound
     answers: int | None = None
     held: bool = False
+    asker: int | None = None
 
     def __post_init__(self) -> None:
         if self.held and self.answers is None:

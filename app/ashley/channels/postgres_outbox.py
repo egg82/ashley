@@ -68,7 +68,7 @@ class PostgresOutbox(Outbox):
                 held = {r[0] for r in rows if r[7] > self._stale_s * 1000 and r[8] is not None and r[5]}
                 for r in rows:
                     if r[0] in held:
-                        await conn.execute(HOLD, (r[5], r[8]))
+                        await conn.execute(HOLD, {"asker": None, "text": r[5], "turn": r[8]})
         except (DatabaseUnavailable, psycopg.Error) as e:
             raise OutboxUnavailable("database unreachable") from e
         fresh = [r for r in rows if r[7] <= self._stale_s * 1000]
@@ -81,7 +81,7 @@ class PostgresOutbox(Outbox):
 
 
 async def _held(conn: Connection, pushed: Pushed) -> None:
-    cur = await conn.execute(HOLD, (pushed.outbound.body, pushed.answers))
+    cur = await conn.execute(HOLD, {"asker": pushed.asker, "text": pushed.outbound.body, "turn": pushed.answers})
     logs.info(log, "outbox.held", conversation=pushed.outbound.conversation_id, turn=pushed.answers,
               held=cur.rowcount)
 
