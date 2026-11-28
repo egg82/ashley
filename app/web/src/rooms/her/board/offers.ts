@@ -1,15 +1,9 @@
 // What a board row offers, by the item's kind and state: pure, so it is tested without a page. A proposal is agreed by a
 // tap when it holds calls (`can_tap`), else by answering her in the conversation it was made in; a live watch can be
 // cancelled; something she did on her own can be undone only while the server offers it (`can_undo`).
-import type { UndoHow } from '../../../api/board';
-import type { WorkItem } from '../../../api/types';
+import type { ActionUndone, UndoDone, WorkItem } from '../../../api/types';
 
-/** `can_undo` and `undone` come with the undo route (#271); until the schema has them, neither is on the wire and no Undo
- * is offered. */
-export type BoardItem = WorkItem & {
-  can_undo?: boolean;
-  undone?: { at: string; how: UndoHow } | null;
-};
+type UndoHow = ActionUndone['how'];
 
 export type Offer =
   | { kind: 'agree'; proposal: number }
@@ -18,7 +12,7 @@ export type Offer =
   | { kind: 'undo'; action: number };
 
 /** The actions row `item` offers; `open` is the conversation open on this screen, where a reply can be typed. */
-export function offers(item: BoardItem, open: number | null): Offer[] {
+export function offers(item: WorkItem, open: number | null): Offer[] {
   if (item.kind === 'proposal') {
     if (item.can_tap) return [{ kind: 'agree', proposal: item.id }];
     if (item.conversation_id != null) return [{ kind: 'reply', here: item.conversation_id === open }];
@@ -37,12 +31,12 @@ const UNDONE: Record<UndoHow, string> = {
 };
 
 /** How a taken Undo stands, in words, or null when it was never taken. */
-export function undoneWord(item: BoardItem): string | null {
+export function undoneWord(item: WorkItem): string | null {
   return item.undone ? UNDONE[item.undone.how] ?? null : null;
 }
 
 /** What an Undo the person just pressed did, in words. */
-export function undoResult(how: Exclude<UndoHow, 'undoing'>): string {
+export function undoResult(how: UndoDone['how']): string {
   if (how === 'waiting_on_you') return 'Taking it back is a delete, so it waits on your yes. Reply to her to agree.';
   return UNDONE[how];
 }

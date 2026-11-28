@@ -10,7 +10,8 @@ import { moment } from '../../memory/facts';
 import { whyNotAgreed } from '../agreeWhy';
 import { loadWork } from '../work';
 import { KIND_WORD, where } from '../workRows';
-import { offers, undoneWord, undoResult, whyNot, type BoardItem, type Offer } from './offers';
+import type { WorkItem } from '../../../api/types';
+import { offers, undoneWord, undoResult, whyNot, type Offer } from './offers';
 
 type Done = { note: string | null; alert: boolean };
 
@@ -57,7 +58,7 @@ function Action({ offer, act }: { offer: Offer; act: ReturnType<typeof useAct> }
   }
 }
 
-function Sub({ item }: { item: BoardItem }) {
+function Sub({ item }: { item: WorkItem }) {
   const undone = undoneWord(item);
   const kind = item.kind === 'action' || item.kind === 'proposal' ? null : KIND_WORD[item.kind];
   return (
@@ -68,7 +69,7 @@ function Sub({ item }: { item: BoardItem }) {
   );
 }
 
-export function BoardRow({ item, cause, open }: { item: BoardItem; cause: string | null; open: number | null }) {
+export function BoardRow({ item, cause, open }: { item: WorkItem; cause: string | null; open: number | null }) {
   const act = useAct();
   const href = where(item);
   const shown = offers(item, open);

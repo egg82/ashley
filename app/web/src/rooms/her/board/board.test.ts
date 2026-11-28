@@ -3,11 +3,11 @@ import { test } from 'node:test';
 import type { WorkItem } from '../../../api/types.ts';
 import { causeLine } from './cause.ts';
 import { laneName, lanes } from './lanes.ts';
-import { offers, undoneWord, undoResult, whyNot, type BoardItem } from './offers.ts';
+import { offers, undoneWord, undoResult, whyNot } from './offers.ts';
 
 let next = 1;
-function item(over: Partial<BoardItem> = {}): BoardItem {
-  return { kind: 'errand', id: next++, title: 'thing', state: 'running', lane: 'doing', at: '2026-11-27T09:00:00Z', can_tap: false, ...over };
+function item(over: Partial<WorkItem> = {}): WorkItem {
+  return { kind: 'errand', id: next++, title: 'thing', state: 'running', lane: 'doing', at: '2026-11-27T09:00:00Z', can_tap: false, can_undo: false, ...over };
 }
 
 test('lanes come in reading order, what waits on the person first, and empty lanes are left out', () => {
@@ -56,7 +56,6 @@ test('an action offers Undo only while the server says it can be undone and it w
   const undo = { kind: 'house_delete' as const, ref: 'x', within: 'automation' };
   assert.deepEqual(offers(item({ kind: 'action', id: 5, undo, can_undo: true }), null), [{ kind: 'undo', action: 5 }]);
   assert.deepEqual(offers(item({ kind: 'action', undo, can_undo: false }), null), []);
-  assert.deepEqual(offers(item({ kind: 'action', undo }), null), [], 'no can_undo on the wire: no Undo');
   assert.deepEqual(offers(item({ kind: 'action', undo, can_undo: true, undone: { at: 'x', how: 'undoing' } }), null), []);
   assert.deepEqual(offers(item({ kind: 'errand' }), null), []);
   assert.deepEqual(offers(item({ kind: 'bench', state: 'open' }), null), []);
