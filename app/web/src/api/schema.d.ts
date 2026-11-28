@@ -4510,7 +4510,8 @@ export interface components {
          * LoggedCommand
          * @description One command of a bench's log: `seq`, when it was decided, who made it (`author`, and `person_id` for a
          *     person's, null for hers), its `type`, `outcome` `accepted` or the refusal's reason, and `piece_id`, the piece it
-         *     changed (null when refused). Never the text it carried.
+         *     changed (null when refused), and `by_turn`, the person's turn a change of hers was made in (null for a person's change
+         *     and for hers made outside a turn), so her changes group by turn. Never the text it carried.
          */
         LoggedCommand: {
             /** Seq */
@@ -4536,6 +4537,8 @@ export interface components {
             outcome: "accepted" | ("unknown_kind" | "bad_title" | "too_long" | "full" | "no_such_piece" | "bad_place" | "stale_base" | "nothing_to_undo" | "changed_since" | "not_runnable" | "bad_automation" | "bad_site" | "bad_video" | "not_installable" | "incomplete" | "no_proposal" | "needs_person" | "bad_wake" | "not_video" | "bad_cue" | "bad_reader" | "not_reader" | "bad_passage" | "bad_file" | "bad_facts" | "bad_controls" | "bad_recipe" | "already_shown" | "required" | "confirmed_measurement" | "bad_body" | "bad_citation" | "bad_rows" | "bad_session" | "bad_link" | "already_linked" | "not_linked");
             /** Piece Id */
             piece_id: number | null;
+            /** By Turn */
+            by_turn: number | null;
         };
         /**
          * LookPage
