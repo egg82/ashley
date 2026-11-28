@@ -27,11 +27,12 @@ export function laneName(lane: string): string {
   return words ? words[0]!.toUpperCase() + words.slice(1) : 'Other';
 }
 
-/** The non-empty lanes, known ones in LANE_ORDER, then any others in the order they first appear. */
-export function lanes(items: readonly WorkItem[]): Lane[] {
+/** The non-empty lanes, known ones in LANE_ORDER, then any others in the order they first appear; `only` keeps just those lanes. */
+export function lanes(items: readonly WorkItem[], only?: readonly string[]): Lane[] {
   const by = new Map<string, WorkItem[]>();
   for (const item of items) {
     const lane = String(item.lane);
+    if (only && !only.includes(lane)) continue;
     by.set(lane, [...(by.get(lane) ?? []), item]);
   }
   const known: readonly string[] = LANE_ORDER;
