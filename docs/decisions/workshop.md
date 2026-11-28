@@ -81,6 +81,11 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
     logged, and every refusal comes back to her by `seq` and reason. Rejected: undoing the commands that can be and
     reporting the rest, which leaves half a turn unwound that the person has not seen; a turn id she types, which
     would be her words, when the turn is read from the stored command.
+  - **Her turn's pieces are read from the command log, never stored.** `Workshop.turn_pieces` takes the person turns of a
+    bench's talk and returns, by `By.turn`, the sorted ids of the pieces their accepted commands touched (both ends of
+    a link). A command since undone still counts, since her line still talks about that piece. The bench's conversation
+    serves them as `pieces` on her answer turn, the one `runs` and `looks` show under, so the mindmap shows her line
+    beside those pieces. No index: the read is bounded by the bench's primary key prefix, as `undo_turn`'s is.
 - **What is not on the layout now but may be wanted again goes on the bench's shelf** (a bench lasts as long as its
   project, so what it holds outgrows `max_pieces`). `Archive` takes a piece off the layout onto the shelf, the pieces
   after it moving up; it no longer counts toward `max_pieces`, keeps its text, version and runs, and takes no edit,

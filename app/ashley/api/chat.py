@@ -6,6 +6,7 @@ both show it. Nothing of the thread waits in the `Outbox`. A pasted block (`Chat
 `Inbound.attachment`, and over the threshold the turn starts `pasted` (`channels.pasted`)."""
 
 import logging
+from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any, Literal
 
@@ -24,7 +25,9 @@ from ..conversations.model import Attachment, Turn
 from ..looks.looks import Look, Looks, LooksUnavailable
 from ..runs.runs import Runs, RunsUnavailable
 from ..signin.model import SignedIn
-from . import chat_looks
+from ..workshop.workshop import WorkshopError
+from . import chat_looks, chat_pieces
+from .chat_pieces import Touched
 from .chat_runs import under_answers
 from .chat_models import ChatAttachment, ChatMessage, ChatRequest
 from .receipt_models import wire_agreed, wire_receipts
@@ -147,11 +150,12 @@ async def conversation(signed_in: Person, request: Request) -> ChatConversation 
                                  await waiting(person.id, person.household_id))
 
 
-async def conversation_on(household_id: int, thread: str, request: Request,
-                          held: tuple[int, int] | None = None) -> ChatConversation | JSONResponse:
+async def conversation_on(household_id: int, thread: str, request: Request, held: tuple[int, int] | None = None,
+                          touched: Touched | None = None) -> ChatConversation | JSONResponse:
     """The open conversation on a web thread of the household, with the code runs and looks under her answers and the
     turns she is still working on, or 503 `unavailable`. The looks' links are minted under the app's link key. `held` is
-    the proposal the person can agree to and the turn it was held in (`channels.agree.waiting`)."""
+    the proposal the person can agree to and the turn it was held in (`channels.agree.waiting`). `touched`, on a bench's
+    talk, reads the pieces the given person turns touched; each shows under the turn of hers that answers it."""
     try:
         found = await services.get(Conversations).on_thread(household_id, thread)
         if found is None or found.state == "closed":
@@ -159,16 +163,18 @@ async def conversation_on(household_id: int, thread: str, request: Request,
         runs = await services.get(Runs).in_conversation(household_id, found.id)
         looked = await _looks(household_id, found.id)
         working = await services.get(InFlight).working(found.id)
-    except (ConversationsUnavailable, RunsUnavailable, InFlightUnavailable):
+        pieces: Mapping[int, tuple[int, ...]] = {} if touched is None else await touched(frozenset(t.id for t in found.turns if t.author != "ashley"))
+    except (ConversationsUnavailable, RunsUnavailable, InFlightUnavailable, WorkshopError):
         return _unavailable()
     shown = under_answers(found.turns, runs)
     seen = chat_looks.under_answers(found.turns, looked, services.get(DeploymentSecrets).link_key().encode())
+    under = chat_pieces.under_answers(found.turns, pieces)
     turns = [ChatConversationTurn(id=t.id, author=t.author, text=t.text, at=t.at, follows=t.follows,
                                   continued_on=t.continued_on, attachment=wire_attachment(t.attachment),
                                   runs=shown.get(t.id, []), looks=seen.get(t.id, []), working=t.id in working,
                                   agree=agree_on(t, held), voiced=t.spoken is not None,
                                   receipts=wire_receipts(t.receipts), 
-                                  agreed=None if t.agreed is None else wire_agreed(t.agreed))
+                                  agreed=None if t.agreed is None else wire_agreed(t.agreed), pieces=under.get(t.id, []))
              for t in unprompted.shown(found.turns)]
     return ChatConversation(thread=thread, conversation_id=found.id, started_at=found.started_at,
                             turns=turns)

@@ -26,6 +26,7 @@ from .decide import Accepted, Decision
 from .model import Bench, By, Owner
 from .postgres_apply import decided
 from .postgres_turn import undo_all
+from .postgres_turn_pieces import pieces_by_turn
 from .postgres_screen import PostgresScreens
 from .proposals import pending
 from . import screen_seed
@@ -188,6 +189,13 @@ class PostgresWorkshop(Workshop):
                 if await rows.bench(conn, owner, bench_id) is None:
                     raise BenchNotFound(str(bench_id))
                 return await rows.logged(conn, bench_id)
+
+    async def turn_pieces(self, owner: Owner, bench_id: int, turns: frozenset[int]) -> dict[int, tuple[int, ...]]:
+        with _translated():
+            async with self._database.connection() as conn:
+                if await rows.bench(conn, owner, bench_id) is None:
+                    raise BenchNotFound(str(bench_id))
+                return await pieces_by_turn(conn, bench_id, turns)
 
     async def unseen(self, pause_s: float, limit: int, listed: int) -> tuple[Unseen, ...]:
         with _translated():

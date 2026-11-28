@@ -235,6 +235,12 @@ class Workshop(Service):
         raises."""
 
     @abstractmethod
+    async def turn_pieces(self, owner: Owner, bench_id: int, turns: frozenset[int]) -> dict[int, tuple[int, ...]]:
+        """For each of `turns` (person turn ids, as `By.turn` holds them) that made accepted commands on the bench, the
+        sorted ids of the pieces they touched, both ends of a link; commands since undone count. A turn with none has
+        no entry. Raises BenchNotFound; WorkshopUnavailable. Reads only."""
+
+    @abstractmethod
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:
         """Every command of bench `bench_id`, in `seq` order from 1: replayed from empty through `decide` with the
         service's rules, it reproduces `read`'s pieces, shelf and links (those of the replayed state with both ends on
@@ -315,6 +321,9 @@ class NullWorkshop(Workshop):
         raise WorkshopUnavailable("no workshop is wired")
 
     async def undo_turn(self, owner: Owner, bench_id: int, by: By, seq: int) -> TurnUndone:
+        raise WorkshopUnavailable("no workshop is wired")
+
+    async def turn_pieces(self, owner: Owner, bench_id: int, turns: frozenset[int]) -> dict[int, tuple[int, ...]]:
         raise WorkshopUnavailable("no workshop is wired")
 
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:

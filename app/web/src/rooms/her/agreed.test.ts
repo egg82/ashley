@@ -32,7 +32,7 @@ test('an interrupted run is its own line and names no call', () => {
 test("the person's agreeing turn carries its outcome to the line it shows, and every other turn carries none", () => {
   const turn: ChatConversationTurn = {
     id: 7, author: 'person', text: 'Agreed.', at: '2026-11-09T12:00:00Z', follows: false, continued_on: null,
-    attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, agreed,
+    attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, agreed, pieces: [],
   };
   assert.deepEqual(storedLine(turn).agreed, agreed);
   assert.equal(storedLine({ ...turn, agreed: null }).agreed, undefined);

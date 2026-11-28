@@ -2810,7 +2810,9 @@ export interface components {
          *     reading can still agree to it; null on every other turn, and on a conversation read for another thread than the
          *     person's own. `voiced` is true on her turn that has a voice stored (`Turn.spoken`). `receipts` is what code
          *     stored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held
-         *     calls a person's agreeing turn carried out, shown beside that turn; null on every other turn.
+         *     calls a person's agreeing turn carried out, shown beside that turn; null on every other turn. `pieces` is, on a bench's
+         *     talk, the sorted ids of the pieces her commands touched in answering the person's message, on her turn that is the
+         *     final answer to it (as `runs` are); empty on every other turn and on every other conversation.
          */
         ChatConversationTurn: {
             /** Id */
@@ -2844,6 +2846,11 @@ export interface components {
             voiced: boolean;
             receipts?: components["schemas"]["WireReceipts"] | null;
             agreed?: components["schemas"]["WireAgreed"] | null;
+            /**
+             * Pieces
+             * @default []
+             */
+            pieces: number[];
         };
         /**
          * ChatLook

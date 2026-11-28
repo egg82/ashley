@@ -82,7 +82,12 @@ async def bench_conversation(signed_in: Person, bench_id: int, request: Request)
     bench = await _owned(signed_in, bench_id)
     if isinstance(bench, JSONResponse):
         return bench
-    return await conversation_on(signed_in.person.household_id, bench.thread, request)
+    owner = owner_of(signed_in)
+
+    async def touched(turns: frozenset[int]) -> dict[int, tuple[int, ...]]:
+        return await services.get(Workshop).turn_pieces(owner, bench.id, turns)
+
+    return await conversation_on(signed_in.person.household_id, bench.thread, request, touched=touched)
 
 
 @router.get("/api/benches/{bench_id}/conversations", response_model=PastHistory, responses={
