@@ -2166,7 +2166,7 @@ export interface paths {
         /**
          * Send On Bench
          * @description 200 `ChatReply`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 410 `closed`; 422 `refused` when she
-         *     declined or `piece_id` or `pointing` is not a piece on the bench; 503 `unavailable`.
+         *     declined or `piece_id` is not a piece on the bench (a `pointing` that is not one is dropped); 503 `unavailable`.
          */
         post: operations["send_on_bench"];
         delete?: never;
