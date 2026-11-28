@@ -7,8 +7,8 @@ speech above `speech_probability`, and the utterance ends after `silence_ms` of 
 regardless `max_utterance_ms` after the wake. `clip_retention_s` is how long a reply's
 clip URL can be fetched. A satellite connection gives up a connect attempt after `connect_timeout_s` and retries after
 a backoff doubling from `reconnect_first_s` to `reconnect_max_s`; the list of satellites is re-read every
-`satellites_poll_s`. `speaker` is the voice match's `heard_as.MatchPolicy`, and `enrol_minutes` how long an enrolment
-the admin CLI arms lasts when it is not told. `playback` estimates how long a reply plays (`Playback`)."""
+`satellites_poll_s`. `speaker` is the voice match's `heard_as.MatchPolicy`; `enrol_minutes` and `enrol_wakes` are how long an enrolment
+lasts and how many wakes it takes when the admin CLI or the enrolment route is not told. `playback` estimates how long a reply plays (`Playback`)."""
 
 import json
 from dataclasses import dataclass, fields
@@ -64,11 +64,12 @@ class Config:
     satellites_poll_s: float
     speaker: MatchPolicy
     enrol_minutes: float
+    enrol_wakes: int
     playback: Playback
 
     def __post_init__(self) -> None:
         if min(self.clip_retention_s, self.connect_timeout_s, self.reconnect_first_s, self.satellites_poll_s,
-               self.enrol_minutes) <= 0:
+               self.enrol_minutes, self.enrol_wakes) <= 0:
             raise ValueError("voice timings must be positive")
         if self.reconnect_max_s < self.reconnect_first_s:
             raise ValueError("reconnect_max_s must be at least reconnect_first_s")

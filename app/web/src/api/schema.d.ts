@@ -384,6 +384,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/memory/voice/enrolments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Arm Enrolment
+         * @description 201 `Enrolment`, the device armed for the signed-in person (replacing any enrolment it already had); 401
+         *     `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `refused`; 503 `unavailable`.
+         */
+        post: operations["arm_enrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/outside-actions": {
         parameters: {
             query?: never;
@@ -3519,6 +3540,32 @@ export interface components {
             title: string;
             /** Body */
             body: string;
+        };
+        /**
+         * Enrolment
+         * @description The armed enrolment: the device, how many of its next wakes will be stored, and when it lapses.
+         */
+        Enrolment: {
+            /** Device Id */
+            device_id: number;
+            /** Wakes */
+            wakes: number;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+        };
+        /**
+         * EnrolmentRequest
+         * @description Arm a speaker to enrol the signed-in person. There is no person field: it is always the session's. `wakes` is
+         *     how many of the device's next wakes to enrol from, `enrol_wakes` in the voice config when left out.
+         */
+        EnrolmentRequest: {
+            /** Device Id */
+            device_id: number;
+            /** Wakes */
+            wakes?: number | null;
         };
         /**
          * EntityListField
@@ -8047,6 +8094,84 @@ export interface operations {
                 };
             };
             /** @description `unavailable`: memory or the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    arm_enrolment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrolmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolment"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site or was not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no unrevoked device of your household has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `refused`: the device is not a voice satellite */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a body outside the request model gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
             503: {
                 headers: {
                     [name: string]: unknown;

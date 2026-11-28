@@ -19,6 +19,7 @@
     "decides": false
   },
   "enrol_minutes": 30,
+  "enrol_wakes": 6,
   "playback": {
     "lead_s": 1.5,
     "words_per_s": 2.6
