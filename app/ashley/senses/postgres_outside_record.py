@@ -1,6 +1,6 @@
 """The outside record in Postgres: `outside_actions`, one row per change she made that nobody asked for in that turn,
-with its cause and undo in plain columns (null on rows kept before them), and `outside_writes`, one row per list entity
-a tainted turn wrote."""
+with its cause and undo in plain columns (null on rows kept before them) and whether that undo was taken (`undone_*`),
+and `outside_writes`, one row per list entity a tainted turn wrote."""
 
 from collections.abc import Sequence
 from datetime import datetime
@@ -10,10 +10,11 @@ import psycopg
 
 from ..db.database import Database, DatabaseUnavailable
 from ..undo import undo_of
-from .outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded, cause_of
+from .outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded, Settled, cause_of, undone_of
 
 _COLUMNS: LiteralString = ("household_id, person_id, conversation_id, turn_id, tool, summary, tier, reason, explanation, at, label, "
             "cause_kind, cause_id, undo_kind, undo_ref, undo_within")
+_KEPT: LiteralString = "id, " + _COLUMNS + ", undone_at, undone_by, undone_how"
 
 
 class PostgresOutsideRecord(OutsideRecord):
@@ -43,9 +44,31 @@ class PostgresOutsideRecord(OutsideRecord):
 
     async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
         rows = await self._rows(
-            "SELECT id, " + _COLUMNS + " FROM outside_actions WHERE household_id = %s AND person_id = %s "
+            "SELECT " + _KEPT + " FROM outside_actions WHERE household_id = %s AND person_id = %s "
             "ORDER BY at DESC, id DESC LIMIT %s", (household_id, person_id, limit))
-        return tuple(Recorded(int(r[0]), _action(r[1:])) for r in rows)
+        return tuple(_recorded(r) for r in rows)
+
+    async def one(self, household_id: int, person_id: int, action_id: int) -> Recorded | None:
+        rows = await self._rows(
+            "SELECT " + _KEPT + " FROM outside_actions WHERE id = %s AND household_id = %s AND person_id = %s",
+            (action_id, household_id, person_id))
+        return _recorded(rows[0]) if rows else None
+
+    async def claim_undo(self, household_id: int, person_id: int, action_id: int, claim_s: float) -> bool:
+        rows = await self._rows(
+            "UPDATE outside_actions SET undone_at = now(), undone_by = %s, undone_how = 'undoing' "
+            "WHERE id = %s AND household_id = %s AND person_id = %s AND undo_kind IS NOT NULL AND (undone_at IS NULL "
+            "OR undone_how = 'undoing' AND undone_at < now() - make_interval(secs => %s)) RETURNING id",
+            (person_id, action_id, household_id, person_id, claim_s))
+        return bool(rows)
+
+    async def settle_undo(self, action_id: int, how: Settled | None) -> None:
+        if how is None:
+            await self._run("UPDATE outside_actions SET undone_at = NULL, undone_by = NULL, undone_how = NULL "
+                            "WHERE id = %s AND undone_how = 'undoing'", (action_id,))
+            return
+        await self._run("UPDATE outside_actions SET undone_at = now(), undone_how = %s "
+                        "WHERE id = %s AND undone_how = 'undoing'", (how, action_id))
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:
         await self._run(
@@ -78,6 +101,11 @@ class PostgresOutsideRecord(OutsideRecord):
 
 def _text(value: Any) -> str | None:
     return None if value is None else str(value)
+
+
+def _recorded(r: tuple[Any, ...]) -> Recorded:
+    """A row of `_KEPT` as `Recorded`."""
+    return Recorded(int(r[0]), _action(r[1:17]), undone_of(r[17], None if r[18] is None else int(r[18]), _text(r[19])))
 
 
 def _action(r: tuple[Any, ...]) -> DoneAction:

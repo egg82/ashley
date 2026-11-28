@@ -4,7 +4,7 @@ list entities `wrote` named."""
 from collections.abc import Sequence
 from datetime import datetime
 
-from ashley.senses.outside_record import DoneAction, OutsideRecord, Recorded
+from ashley.senses.outside_record import DoneAction, OutsideRecord, Recorded, Settled
 
 
 class MemoryRecord(OutsideRecord):
@@ -23,6 +23,15 @@ class MemoryRecord(OutsideRecord):
     async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
         mine = [Recorded(i, a) for i, a in enumerate(self.actions, 1) if (a.household_id, a.person_id) == (household_id, person_id)]
         return tuple(reversed(mine))[:limit]
+
+    async def one(self, household_id: int, person_id: int, action_id: int) -> Recorded | None:
+        return next((r for r in await self.of_person(household_id, person_id, len(self.actions)) if r.id == action_id), None)
+
+    async def claim_undo(self, household_id: int, person_id: int, action_id: int, claim_s: float) -> bool:
+        raise NotImplementedError
+
+    async def settle_undo(self, action_id: int, how: Settled | None) -> None:
+        raise NotImplementedError
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:
         self.writes.add((household_id, entity))
