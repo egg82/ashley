@@ -10,13 +10,13 @@ import { signal } from '@preact/signals';
 import { build } from 'esbuild';
 import { KINDS } from '../../kiosk/layout.ts';
 import { PART_KINDS } from './kinds.ts';
-import type { ControlsSource, HomeSource } from './sources.ts';
+import type { AttentionSource, ControlsSource, HomeSource } from './sources.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'parts-'));
 const outfile = join(dir, 'parts.mjs');
 await build({
   stdin: {
-    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx';",
+    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx';",
     resolveDir: import.meta.dirname,
     loader: 'ts',
   },
@@ -54,7 +54,7 @@ test('every kind the layout accepts has a part, and nothing else does', () => {
 });
 
 test('drawPart draws the conversation for a kind with no part', () => {
-  const sources = { controls: stubControls(), home: stubHome(['Sam']), conversation: () => 'talk' };
+  const sources = { controls: stubControls(), home: stubHome(['Sam']), attention: stubAttention(null), conversation: () => 'talk' };
   assert.equal(parts.drawPart('conversation', sources), 'talk');
   assert.equal(parts.drawPart('nope', sources), 'talk');
 });
@@ -89,6 +89,29 @@ test('controls render from a stub source and a press goes to it', () => {
 test('controls with none set say so', () => {
   const source = { ...stubControls(), controls: signal([]) } as ControlsSource;
   assert.match(textOf(parts.Controls({ source })), /none set/);
+});
+
+test('controls that could not be read say so, and are not called none set', () => {
+  const unread = textOf(parts.Controls({ source: { ...stubControls(), controls: signal(null) } as ControlsSource }));
+  assert.match(unread, /couldn't read/);
+  assert.doesNotMatch(unread, /none set/);
+  const reading = textOf(parts.Controls({ source: { ...stubControls(), controls: signal(undefined) } as ControlsSource }));
+  assert.match(reading, /Reading/);
+  assert.doesNotMatch(reading, /none set/);
+});
+
+function stubAttention(read: AttentionSource['attention']['value']): AttentionSource {
+  return { attention: signal(read) };
+}
+
+test('needs attention shows an unread part as unknown beside its name, and zero as clear', () => {
+  const unread = textOf(parts.Attention({ source: stubAttention({ waiting_on_you: null, printer_faults: 0, house_unreadable: false }) }));
+  assert.match(unread, /Waiting on you.*unknown/);
+  assert.doesNotMatch(unread, /Nothing needs you/);
+  const clear = textOf(parts.Attention({ source: stubAttention({ waiting_on_you: 0, printer_faults: 0, house_unreadable: false }) }));
+  assert.match(clear, /Nothing needs you/);
+  assert.doesNotMatch(clear, /unknown/);
+  assert.match(textOf(parts.Attention({ source: stubAttention(undefined) })), /Reading/);
 });
 
 test('home hands the source\'s names to the list, which says unknown or nobody otherwise', () => {

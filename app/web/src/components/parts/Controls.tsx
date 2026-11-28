@@ -1,17 +1,20 @@
 // Touch controls: one big button each, carried out by her tools. A press shows running, then done or failed for a
-// moment; none set reads as such. A button that toggles a light says whether it is on, or nothing when the house
-// could not say.
+// moment; none set, and controls that could not be read, read as such. A button that toggles a light says whether it
+// is on, or nothing when the house could not say.
 import type { ControlState, ControlsSource } from './sources';
 
 const SHOWN: Record<ControlState, string> = { running: '…', done: 'Done', failed: "Didn't work", busy: 'Too many, wait' };
 
 export function Controls({ source }: { source: ControlsSource }) {
-  const all = source.controls.value;
+  const read = source.controls.value;
+  const all = read ?? [];
   const states = source.states.value;
   return (
     <section class="k-controls" aria-label="Controls">
       <h2 class="label">Controls</h2>
-      {!all.length && <span class="unk">none set</span>}
+      {read === undefined && <span class="meta">Reading…</span>}
+      {read === null && <span class="unk">couldn't read</span>}
+      {read && !read.length && <span class="unk">none set</span>}
       <div class="k-grid">
         {all.map((c) => {
           const state = states[c.name];
