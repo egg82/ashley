@@ -16,6 +16,7 @@ import { BenchTalk } from './BenchTalk';
 import { Method } from './Method';
 import { growFromCard } from './plate';
 import { Shelf } from './Shelf';
+import { StageLog } from './StageLog';
 
 function Down() {
   const state = benchState.value;
@@ -78,6 +79,7 @@ export function BenchView({ id }: { id: number }) {
               <BenchCanvas bench={bench} rules={rules.value} adding={adding} doneAdding={() => setAdding(false)} />
               <Shelf bench={bench} rules={rules.value} />
             </DropFiles>
+            <StageLog bench={bench} />
             <Away bench={bench} showPieces={() => setView('pieces')} />
           </div>
         </>

@@ -2,19 +2,18 @@
 // and its own actions: undo the last change (saying what and whose), add a piece, close the bench; a closed one reopens.
 import { useLocation } from 'preact-iso';
 import { useLayoutEffect, useState } from 'preact/hooks';
-import type { BenchDetail, LoggedCommand, WorkshopKinds } from '../../../api/types';
+import type { BenchDetail, WorkshopKinds } from '../../../api/types';
 import { person } from '../../../session/session';
 import { redock } from '../../../shell/her/dock';
 import { day } from '../../memory/facts';
 import { apply, refresh } from '../model/bench';
 import { close, reopen } from '../model/benches';
-import { undoTarget } from '../model/log';
+import { DID, undoTarget } from '../model/log';
 import { herAt } from '../pieces/marks';
+import { logOpen } from './StageLog';
 import { UploadButton } from './Upload';
 
 export type View = 'talk' | 'pieces';
-
-const DID: Record<LoggedCommand['type'], string> = { add: 'add', edit: 'edit', move: 'move', remove: 'remove', run: 'run', propose: 'proposal', install: 'install', archive: 'archive', restore: 'restore', undo: 'undo', rename: 'rename', cue: 'cue', point: 'point', surfaced: 'choices shown', link: 'link', unlink: 'unlink' };
 
 function Undo({ bench }: { bench: BenchDetail }) {
   const target = undoTarget(bench);
@@ -92,6 +91,7 @@ export function BenchBar({ bench, rules, view, setView, add }: Props) {
       {!closed && (
         <span class="ws-acts">
           <Undo bench={bench} />
+          <button class="btn sm ghost" type="button" aria-pressed={logOpen.value} onClick={() => { logOpen.value = !logOpen.value; }}>Log</button>
           <UploadButton bench={b.id} disabled={!rules || full} />
           <button class="btn sm primary" type="button" disabled={!rules || full} onClick={add}>
             {full ? 'Bench full' : 'Add a piece'}

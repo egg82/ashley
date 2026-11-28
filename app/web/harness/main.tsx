@@ -1,12 +1,13 @@
 // The bench screen with no server behind it, for looking at the canvas: `fetch` answers the bench routes from a fixture
 // (`fixtures.ts`) and applies a person's moves to it, so drags, pins and boxes go through the real client. Query:
-// `n` the bench's size (5, 11, 32), `refuse=1` refuses every move, `add=<ms>` has her add a piece after that long.
+// `n` the bench's size (5, 11, 32), `log=1` the stage log open, `refuse=1` refuses every move, `add=<ms>` has her add a piece after that long.
 // Built by `node harness/build.mjs <outdir>`, never into the app's bundle.
 import { render } from 'preact';
 import { LocationProvider } from 'preact-iso';
 import type { BenchDetail, BenchPiece, CommandRequest } from '../src/api/types';
 import { refresh } from '../src/rooms/workshop/model/bench';
 import { BenchView } from '../src/rooms/workshop/bench/BenchView';
+import { logOpen } from '../src/rooms/workshop/bench/StageLog';
 import '../src/shell/motion';
 import '../src/styles/fonts';
 import '../src/styles/tokens.css';
@@ -22,6 +23,7 @@ const n = Number(q.get('n') ?? 11);
 let bench: BenchDetail = benchOf(n);
 const talk = talkOf(n);
 let seq = 1000;
+logOpen.value = q.get('log') === '1';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 

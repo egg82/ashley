@@ -34,3 +34,26 @@ export function undoTarget(bench: Pick<BenchDetail, 'recent' | 'undo_next'>): { 
   if (bench.undo_next === null) return null;
   return { seq: bench.undo_next, command: bench.recent.find((c) => c.seq === bench.undo_next) ?? null };
 }
+
+export const DID: Record<LoggedCommand['type'], string> = { add: 'add', edit: 'edit', move: 'move', remove: 'remove', run: 'run', propose: 'proposal', install: 'install', archive: 'archive', restore: 'restore', undo: 'undo', rename: 'rename', cue: 'cue', point: 'point', surfaced: 'choices shown', link: 'link', unlink: 'unlink' };
+
+/** What no Undo can take back, or that changes nothing on the bench: it is not listed in the stage log. */
+const NOT_LISTED: ReadonlySet<LoggedCommand['type']> = new Set(['undo', 'run', 'propose', 'cue', 'point', 'surfaced']);
+
+/** A run of the log's changes that go together: the changes of one of her turns (`turn` set), or one change alone. */
+export interface Step {
+  turn: number | null;
+  rows: LoggedCommand[];
+}
+
+/** The accepted, undoable changes of `recent` as steps, newest first; neighbouring changes of the same turn of hers are one step. */
+export function stepsOf(recent: readonly LoggedCommand[]): Step[] {
+  const steps: Step[] = [];
+  for (const c of recent) {
+    if (c.outcome !== 'accepted' || NOT_LISTED.has(c.type)) continue;
+    const last = steps[steps.length - 1];
+    if (c.by_turn !== null && last?.turn === c.by_turn) last.rows.push(c);
+    else steps.push({ turn: c.by_turn, rows: [c] });
+  }
+  return steps.reverse().map((s) => ({ ...s, rows: s.rows.reverse() }));
+}
