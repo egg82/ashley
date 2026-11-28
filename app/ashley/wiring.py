@@ -83,6 +83,10 @@ from .people.postgres_accounts import PostgresAccounts
 from .people.postgres_admins import PostgresAdmins
 from .people.postgres_household_write import PostgresHouseholdWriter
 from .people.postgres import PostgresPeople
+from .trust.postgres import PostgresTrust
+from .trust.postgres_trust_write import PostgresTrustWriter
+from .trust.trust import Trust
+from .trust.trust_write import TrustWriter
 from .home_assistant import adapters as home_assistant_adapters
 from .wiring_cameras import register as register_cameras
 from .senses.calendar import Calendar
@@ -248,6 +252,8 @@ def wire(settings: Settings, narrow: Callable[[Routes], Routes] = without_fallba
     services.register(Admins, PostgresAdmins(services.get(Database)))
     services.register(Accounts, PostgresAccounts(services.get(Database)))
     services.register(HouseholdWriter, PostgresHouseholdWriter(services.get(Database)))
+    services.register(Trust, PostgresTrust(services.get(Database)))
+    services.register(TrustWriter, PostgresTrustWriter(services.get(Database)))
     services.register(Memory, PostgresMemory(services.get(Database)))
     services.register(FactWriter, InferenceFactWriter())
     wire_devices()

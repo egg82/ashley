@@ -8861,6 +8861,122 @@
         }
       }
     },
+    "/api/trust": {
+      "get": {
+        "summary": "Read Trust",
+        "description": "200 `TrustSettings`; 401 `unauthorized`; 503 `unavailable`.",
+        "operationId": "read_trust",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the choices could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Write Trust",
+        "description": "200 `TrustSettings` as stored; 401 `unauthorized`; 403 `forbidden`; 409 `version_conflict`; 422\n`TrustRefused`; 503 `unavailable`.",
+        "operationId": "write_trust",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrustRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the choices could not be read or written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`version_conflict`: the choices changed since the revision sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a kind that is not one, or `act` on a locked kind; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/work": {
       "get": {
         "summary": "List Work",
@@ -18524,6 +18640,161 @@
         ],
         "title": "Transcript",
         "description": "What was heard in one spoken utterance, in real spellings; empty when nothing was said. The page sends it as a\ntyped message, so a spoken turn is a typed one on the same thread."
+      },
+      "TrustChoice": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Kind"
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "act",
+              "offer"
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "value"
+        ],
+        "title": "TrustChoice",
+        "description": "What the person chose for one kind."
+      },
+      "TrustRefused": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "unknown_kind",
+              "locked"
+            ],
+            "title": "Reason"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "reason",
+          "detail"
+        ],
+        "title": "TrustRefused",
+        "description": "Why the choices were not stored; nothing was. `reason`: `unknown_kind`, there is no such kind; `locked`, `act`\nfor a kind the code always offers first. `kind` is the one it concerns."
+      },
+      "TrustRequest": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Revision"
+          },
+          "picks": {
+            "items": {
+              "$ref": "#/components/schemas/TrustChoice"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Picks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "picks"
+        ],
+        "title": "TrustRequest",
+        "description": "The whole of the person's choices, replacing what is stored (a kind left out is `act`, or `offer` where it is\nlocked), and the `revision` they were read at."
+      },
+      "TrustRow": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "act",
+              "offer"
+            ],
+            "title": "Value"
+          },
+          "locked": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "asks",
+                  "irreversible"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "value",
+          "locked"
+        ],
+        "title": "TrustRow",
+        "description": "One kind of action: `value` is what she does in a turn nobody asked for, `act` (just does it) or `offer` (offers\nit first). `locked` is why the code always offers it first, whatever is set (`asks`: its tools always wait for a\nperson's OK; `irreversible`: it cannot be undone), null when the person decides."
+      },
+      "TrustSettings": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/TrustRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "rows",
+          "updated_at"
+        ],
+        "title": "TrustSettings",
+        "description": "The signed-in person's rows, in the order the page shows them. `revision` counts their writes, 0 for a person\nwho set none, and is what the next write must carry; `updated_at` is their last write, null for none."
       },
       "UndoDone": {
         "properties": {

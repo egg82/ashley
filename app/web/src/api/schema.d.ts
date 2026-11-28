@@ -2494,6 +2494,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Trust
+         * @description 200 `TrustSettings`; 401 `unauthorized`; 503 `unavailable`.
+         */
+        get: operations["read_trust"];
+        /**
+         * Write Trust
+         * @description 200 `TrustSettings` as stored; 401 `unauthorized`; 403 `forbidden`; 409 `version_conflict`; 422
+         *     `TrustRefused`; 503 `unavailable`.
+         */
+        put: operations["write_trust"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/work": {
         parameters: {
             query?: never;
@@ -6597,6 +6622,78 @@ export interface components {
         Transcript: {
             /** Text */
             text: string;
+        };
+        /**
+         * TrustChoice
+         * @description What the person chose for one kind.
+         */
+        TrustChoice: {
+            /** Kind */
+            kind: string;
+            /**
+             * Value
+             * @enum {string}
+             */
+            value: "act" | "offer";
+        };
+        /**
+         * TrustRefused
+         * @description Why the choices were not stored; nothing was. `reason`: `unknown_kind`, there is no such kind; `locked`, `act`
+         *     for a kind the code always offers first. `kind` is the one it concerns.
+         */
+        TrustRefused: {
+            /** Kind */
+            kind: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unknown_kind" | "locked";
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * TrustRequest
+         * @description The whole of the person's choices, replacing what is stored (a kind left out is `act`, or `offer` where it is
+         *     locked), and the `revision` they were read at.
+         */
+        TrustRequest: {
+            /** Revision */
+            revision: number;
+            /** Picks */
+            picks: components["schemas"]["TrustChoice"][];
+        };
+        /**
+         * TrustRow
+         * @description One kind of action: `value` is what she does in a turn nobody asked for, `act` (just does it) or `offer` (offers
+         *     it first). `locked` is why the code always offers it first, whatever is set (`asks`: its tools always wait for a
+         *     person's OK; `irreversible`: it cannot be undone), null when the person decides.
+         */
+        TrustRow: {
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /**
+             * Value
+             * @enum {string}
+             */
+            value: "act" | "offer";
+            /** Locked */
+            locked: ("asks" | "irreversible") | null;
+        };
+        /**
+         * TrustSettings
+         * @description The signed-in person's rows, in the order the page shows them. `revision` counts their writes, 0 for a person
+         *     who set none, and is what the next write must carry; `updated_at` is their last write, null for none.
+         */
+        TrustSettings: {
+            /** Revision */
+            revision: number;
+            /** Rows */
+            rows: components["schemas"]["TrustRow"][];
+            /** Updated At */
+            updated_at: string | null;
         };
         /**
          * UndoDone
@@ -14433,6 +14530,113 @@ export interface operations {
                 };
             };
             /** @description `unavailable`: the workshop could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    read_trust: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrustSettings"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the choices could not be read or written */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    write_trust: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrustRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrustSettings"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `version_conflict`: the choices changed since the revision sent */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a kind that is not one, or `act` on a locked kind; nothing was stored. A body outside the request's schema gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrustRefused"];
+                };
+            };
+            /** @description `unavailable`: the choices could not be read or written */
             503: {
                 headers: {
                     [name: string]: unknown;

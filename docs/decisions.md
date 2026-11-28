@@ -90,6 +90,7 @@ mention of `decisions.md`: the title is an entry below, or a `###` heading or bo
 - [A turn that has read outside words asks before it does anything consequential the person did not ask for](decisions/outside-words.md): a turn that has read text written outside the household is tainted, and each change it would make goes by its tier.
 - [A tap agrees to what was held](decisions/outside-words.md): a held receipt and its push notification offer Agree, a person turn carrying `agree: <proposal id>`.
 - [What she did on her own is one record](decisions/outside-words.md): every change of a turn no person's message started, and every change a tainted turn ran, is a row in `outside_actions` with its cause and, where it has an inverse, its undo.
+- [What she may just do is a person's setting over the floor](decisions/outside-words.md): per person and kind of action, she acts or offers first in a turn nobody asked for; the setting only ever makes her more careful than the code's tiers and `irreversible.json`.
 
 ## Workshop
 
