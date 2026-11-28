@@ -4,7 +4,8 @@ A session lasts at most `session_days` from sign-in and ends sooner when unused 
 written at most every `touch_minutes`, so a run of requests costs one write. A sign-in in flight must come back within
 `pending_minutes`, and at most `max_pending` may be in flight at once, which bounds what an anonymous flood of
 sign-in starts can store. An account refused for want of a mapping is listed for the admin for
-`unmapped_retention_days` after its last try."""
+`unmapped_retention_days` after its last try. A person's screen may make her act (`Sessions.allow`) `press_max` times in each
+fixed window of `press_window_seconds`."""
 
 import json
 from dataclasses import dataclass, fields
@@ -22,10 +23,12 @@ class Policy:
     pending_minutes: int
     max_pending: int
     unmapped_retention_days: int
+    press_window_seconds: int
+    press_max: int
 
     def __post_init__(self) -> None:
         if min(self.session_days, self.idle_days, self.touch_minutes, self.pending_minutes, self.max_pending,
-               self.unmapped_retention_days) < 1:
+               self.unmapped_retention_days, self.press_window_seconds, self.press_max) < 1:
             raise ValueError("signin.json values must be at least 1")
         if self.idle_days > self.session_days:
             raise ValueError("idle_days cannot outlast session_days")

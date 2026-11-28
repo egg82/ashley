@@ -144,3 +144,19 @@ class PostgresSessions(Sessions):
                 "created_at >= now() - make_interval(mins => %s)", (sha256(state), self._policy.pending_minutes))
             row = await cur.fetchone()
         return None if row is None or not row[3] else LinkPending(row[0], row[1], row[2])
+
+    async def allow(self, household_id: int, person_id: int) -> bool:
+        window = self._policy.press_window_seconds
+        async with self._conn() as conn:
+            cur = await conn.execute(
+                "WITH w AS (SELECT to_timestamp(floor(extract(epoch FROM now()) / %(s)s) * %(s)s) AS start), "
+                "old AS (DELETE FROM person_requests WHERE person_id = %(p)s "
+                "AND window_start < (SELECT start FROM w)) "
+                "INSERT INTO person_requests (household_id, person_id, window_start, requests) "
+                "SELECT %(h)s, %(p)s, start, 1 FROM w "
+                "ON CONFLICT (person_id, window_start) DO UPDATE SET requests = person_requests.requests + 1 "
+                "RETURNING requests",
+                {"s": window, "p": person_id, "h": household_id})
+            row = await cur.fetchone()
+        assert row is not None
+        return row[0] <= self._policy.press_max

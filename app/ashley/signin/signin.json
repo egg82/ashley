@@ -4,5 +4,7 @@
   "touch_minutes": 10,
   "pending_minutes": 10,
   "max_pending": 1000,
-  "unmapped_retention_days": 30
+  "unmapped_retention_days": 30,
+  "press_window_seconds": 60,
+  "press_max": 30
 }
