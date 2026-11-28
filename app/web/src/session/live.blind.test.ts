@@ -28,7 +28,7 @@ const built = await build({
   } }],
 });
 const code = built.outputFiles[0]!.text;
-const { cueBenchPlayer, onBenchCue } = (await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)) as typeof Live;
+const { cueBenchPlayer, onBenchCue, onBenchShown } = (await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)) as typeof Live;
 
 type Heard = [number, number, Cue, CueBy];
 
@@ -117,4 +117,17 @@ test('an announcement the feed hears goes to the page\'s announcer with its clip
   world.feedHandlers.heard({ type: 'announce', clip: 'tok-a' });
   world.feedHandlers.heard({ type: 'turn', thread: 'person:1:web' });
   assert.deepEqual(world.announced, ['tok-a']);
+});
+
+test('her show of pieces over the feed is heard with the bench, the pieces and the fold, and never replayed to a later listener', () => {
+  const heard: [number, readonly number[], boolean][] = [];
+  const stop = onBenchShown((bench, pieces, fold) => heard.push([bench, pieces, fold]));
+  feedHandlers().heard({ type: 'show', bench_id: 3, piece_ids: [5, 8], fold: true });
+  feedHandlers().heard({ type: 'show', bench_id: 3, piece_ids: [], fold: false });
+  stop();
+  feedHandlers().heard({ type: 'show', bench_id: 3, piece_ids: [5], fold: false });
+  const later: unknown[] = [];
+  onBenchShown((...a) => later.push(a))();
+  assert.deepEqual(heard, [[3, [5, 8], true], [3, [], false]]);
+  assert.deepEqual(later, []);
 });

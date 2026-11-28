@@ -26,6 +26,7 @@ import { Links } from './Links';
 import { dragging, pending } from './state';
 import { useCamera } from './useCamera';
 import { useFocus } from './useFocus';
+import { useShown } from './useShown';
 import { useMeasure } from './useMeasure';
 import { GOAL_BOX, usePlacement } from './usePlacement';
 
@@ -80,9 +81,10 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   const camera = useCamera(vp, minZoom([...place.boxes.values()]), scrolls);
   const { cam, view } = camera;
   const { focus, setFocus, landing } = useFocus(place, camera);
+  const held = useShown(id, place, camera, focus);
   const ids = new Set(place.boxes.keys());
   const superseded = supersededBy(place.links, ids);
-  const forms = formsOf({ ids: [...ids], focus, links: place.links, pinned: place.pinned, superseded, z: cam.z });
+  const forms = formsOf({ ids: [...ids], focus, links: place.links, pinned: new Set([...place.pinned, ...held.full]), superseded, away: held.away, z: cam.z });
   const rects = new Map([...place.boxes].map(([p, b]) => [p, drawnRect(b, forms.get(p)!, cam.z)]));
   const lines = useHerLines(id, place.cardOf, ids);
   const asides = placeAsides([...lines.byPiece].filter(([p]) => rects.has(p)).map(([p, ls]) => ({

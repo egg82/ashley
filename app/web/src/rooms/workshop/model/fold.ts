@@ -42,6 +42,8 @@ export interface FoldInput {
   pinned: ReadonlySet<number>;
   /** Pieces a newer piece on the bench is a version of. */
   superseded: ReadonlySet<number>;
+  /** Pieces she asked to put away: chips whatever else would draw them in full. */
+  away?: ReadonlySet<number>;
   z: number;
 }
 
@@ -51,7 +53,7 @@ export function formsOf(f: FoldInput): Map<number, Form> {
   const hops = f.focus === null ? null : foldDistance(f.focus, f.links);
   const out = new Map<number, Form>();
   for (const id of f.ids) {
-    if (!readable) out.set(id, 'chip');
+    if (!readable || f.away?.has(id)) out.set(id, 'chip');
     else if (id === f.focus) out.set(id, 'card');
     else if (f.superseded.has(id)) out.set(id, 'ghost');
     else if (f.pinned.has(id) || !hops) out.set(id, 'card');

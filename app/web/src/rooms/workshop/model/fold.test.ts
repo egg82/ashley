@@ -72,3 +72,7 @@ test('the camera stops pulling back where the narrowest chip still holds a title
   assert.equal(minZoom([{ w: 100, h: 80 }]), 1, 'never past 1');
   assert.equal(minZoom([]), 0.2);
 });
+
+test('a piece she put away is a chip even as the focus or pinned, and the rest keep their forms', () => {
+  assert.deepEqual(forms({ away: new Set([2, 5]), pinned: new Set([5]) }), { 1: 'card', 2: 'chip', 3: 'card', 4: 'chip', 5: 'chip' });
+});
