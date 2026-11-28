@@ -122,6 +122,7 @@ export type SkillDetail = components['schemas']['SkillDetail'];
 export type SkillVersion = components['schemas']['SkillVersion'];
 export type SkillRefusal = components['schemas']['SkillRefusal'];
 export type BenchDetail = components['schemas']['BenchDetail'];
+export type BenchLink = components['schemas']['BenchLink'];
 export type BenchPiece = components['schemas']['BenchPiece'];
 export type BenchRequest = components['schemas']['BenchRequest'];
 export type LoggedCommand = components['schemas']['LoggedCommand'];
