@@ -5392,6 +5392,165 @@
         }
       }
     },
+    "/api/house/controls": {
+      "get": {
+        "summary": "House Controls Listed",
+        "description": "200 `HouseControlList`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;\n503 `unavailable`.",
+        "operationId": "house_controls_listed",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseControlList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a system it needs could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/house/controls/{name}": {
+      "post": {
+        "summary": "House Control Pressed",
+        "description": "200 `HouseControlPressed`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;\n429 `rate_limited`; 503 `unavailable`.",
+        "operationId": "house_control_pressed",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,40}$",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseControlPressed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a system it needs could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: from another site, or not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the household has no light or scene of that name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a name outside `[a-z0-9-]{1,40}` gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: the person is over their rate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/house/glance": {
+      "get": {
+        "summary": "House Glance",
+        "description": "200 `HouseGlance`; 401 `unauthorized`. A part that cannot be read is null in it.",
+        "operationId": "house_glance",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseGlance"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/kiosk/session": {
       "post": {
         "summary": "Kiosk Pair",
@@ -11416,6 +11575,141 @@
         ],
         "title": "Heartbeat",
         "description": "The pod of `epoch` is alive, with the SHA-256 (hex) of the TLS certificate Bridge serves IMAP and SMTP under."
+      },
+      "HouseAttention": {
+        "properties": {
+          "waiting_on_you": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiting On You"
+          },
+          "printer_faults": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printer Faults"
+          },
+          "house_unreadable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House Unreadable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "waiting_on_you",
+          "printer_faults",
+          "house_unreadable"
+        ],
+        "title": "HouseAttention",
+        "description": "What needs the person, each null when it cannot be read today and never false for that: `waiting_on_you` is how\nmany of their open works only they can move (`GET /api/work`); `printer_faults` how many printers report a fault, null\ntoo when the household has no printing manager; `house_unreadable` whether the house did not answer, null when the\nhousehold has no house."
+      },
+      "HouseControl": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "on"
+        ],
+        "title": "HouseControl",
+        "description": "One light or scene the household's catalogue has: `name` is its stable key, `label` what its button says. `on` is\nwhether a light is on now; null for a scene, and for a light the house could not say."
+      },
+      "HouseControlList": {
+        "properties": {
+          "controls": {
+            "items": {
+              "$ref": "#/components/schemas/HouseControl"
+            },
+            "type": "array",
+            "title": "Controls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "controls"
+        ],
+        "title": "HouseControlList",
+        "description": "The household's lights and scenes a person may press, by entity id; empty when the house lists none."
+      },
+      "HouseControlPressed": {
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "done"
+        ],
+        "title": "HouseControlPressed",
+        "description": "Whether her tool reported the press carried out (`done`); false when the tool or the house refused it."
+      },
+      "HouseGlance": {
+        "properties": {
+          "home": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home"
+          },
+          "needs_attention": {
+            "$ref": "#/components/schemas/HouseAttention"
+          }
+        },
+        "type": "object",
+        "required": [
+          "home",
+          "needs_attention"
+        ],
+        "title": "HouseGlance",
+        "description": "The house at a glance for a signed-in person. `home` is the first names of the household's people who are home:\nempty when everyone known is away, null when it cannot be known."
       },
       "Household": {
         "properties": {

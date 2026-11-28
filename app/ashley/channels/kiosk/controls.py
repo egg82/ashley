@@ -8,8 +8,8 @@ house's catalogue; a household starts with none.
 says; `action` one of `ACTIONS`' keys; `entity_id` a light or scene of the house's catalogue, in the action's domain. At most
 `MAX_CONTROLS` per device.
 
-Logs `kiosk.control` with the device id, the control id and the outcome (`ok` or `error`); never results, which can
-name people and places."""
+Logs `kiosk.control` with the device id (or, for a person's press, the person id), the control id and the outcome (`ok` or
+`error`); never results, which can name people and places."""
 
 import logging
 import re
@@ -83,10 +83,11 @@ def _fresh(label: str, taken: set[str]) -> str:
     return ident
 
 
-async def run(control: Control, device_id: int, household_id: int) -> bool:
-    """Run the control through the device's household's everyday tools; whether the house reported success. Never
-    raises for the tool's failure."""
+async def run(control: Control, device_id: int | None, household_id: int, person_id: int | None = None) -> bool:
+    """Run the control through the household's everyday tools, as the device (`device_id`) or the person (`person_id`)
+    presses it; whether the house reported success. Never raises for the tool's failure."""
     call = ToolCall(f"kiosk-{control.id}", "house_do", {"action": control.action, "ids": [control.entity_id]})
     result = await HouseholdTools(household_id).call(call)
-    logs.info(log, "kiosk.control", device=device_id, control=control.id, outcome="error" if result.is_error else "ok")
+    by = {"device": device_id} if person_id is None else {"person": person_id}
+    logs.info(log, "kiosk.control", **by, control=control.id, outcome="error" if result.is_error else "ok")
     return not result.is_error
