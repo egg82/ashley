@@ -1,8 +1,10 @@
 // Her lines on the pieces (`model/herLines.ts`): her latest line out beside each piece her answer touched, then, after a
-// while, an "N lines" badge on the piece that opens every line of hers about it.
+// while, an "N lines" badge on the piece that opens every line of hers about it. Each sits where `model/aside.ts` found
+// free space, `at` (bench units from the piece's drawn top-left), drawn `k` times its size so it stays readable.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { moment } from '../../memory/facts';
 import { badgeText, isFresh, linesByPiece, nextFold, noteSeen, type HerLine } from '../model/herLines';
+import type { Pt } from '../model/mindmap';
 import { talkPieceLines, talkState } from '../model/talk';
 
 const seenByBench = new Map<number, ReadonlyMap<number, number>>();
@@ -39,17 +41,19 @@ export function useHerLines(bench: number, cardOf: (id: number) => number, prese
   return { byPiece, fresh };
 }
 
-/** Her latest line, out beside the piece above its top edge, `k` times its size so it stays readable. */
-export function Says({ line, k }: { line: HerLine; k: number }) {
+const placedAt = (at: Pt, k: number) => ({ left: `${at.x}px`, top: `${at.y}px`, transform: `scale(${k})` });
+
+/** Her latest line, out beside the piece. */
+export function Says({ line, k, at }: { line: HerLine; k: number; at: Pt }) {
   return (
-    <p class="bc-says" style={{ transform: `scale(${k})` }}>
+    <p class="bc-says" style={placedAt(at, k)}>
       <b>Ashley</b>{line.text}
     </p>
   );
 }
 
 /** The badge on a piece her lines are about, which opens them, latest first. */
-export function LinesBadge({ lines, k }: { lines: readonly HerLine[]; k: number }) {
+export function LinesBadge({ lines, k, at }: { lines: readonly HerLine[]; k: number; at: Pt }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -63,7 +67,7 @@ export function LinesBadge({ lines, k }: { lines: readonly HerLine[]; k: number 
     };
   }, [open]);
   return (
-    <div class="bc-lines" style={{ transform: `scale(${k})` }}>
+    <div class="bc-lines" style={placedAt(at, k)}>
       <button class="bc-badge" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>{badgeText(lines.length)}</button>
       {open && (
         <ol class="bc-thread" aria-label="Her lines about this piece">

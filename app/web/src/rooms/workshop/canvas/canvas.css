@@ -76,14 +76,13 @@
 @media (hover: none) { .bc-corner { opacity: 1; } }
 
 /* her line beside a piece, then its badge */
-.bc-says { position: absolute; left: 8px; bottom: calc(100% + 8px); z-index: 4; margin: 0; max-width: 300px; width: max-content; transform-origin: 0 100%;
+.bc-says { box-sizing: border-box; position: absolute; z-index: 4; margin: 0; max-width: 300px; max-height: 72px; width: max-content; transform-origin: 0 0;
   padding: 6px 10px; border: 1px solid var(--line-hi); border-left: 3px solid var(--brass); border-radius: 8px; background: var(--panel);
   font-size: 13px; line-height: 1.4; color: var(--text); box-shadow: 0 6px 18px rgba(0,0,0,.4); pointer-events: none;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; animation: bc-says-in 240ms var(--ease-out) both; }
 .bc-says b { font: 600 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); margin-right: 6px; }
 @keyframes bc-says-in { from { opacity: 0; translate: 0 8px; } }
-.bc-lines { position: absolute; right: 10px; top: -11px; z-index: 4; transform-origin: 100% 0; }
-.bc-card.f-chip .bc-lines { right: auto; left: calc(100% + 6px); top: 50%; translate: 0 -50%; transform-origin: 0 50%; }
+.bc-lines { position: absolute; z-index: 4; transform-origin: 0 0; }
 .bc-badge { white-space: nowrap; height: 22px; padding: 0 9px; border: 1px solid var(--brass-dim); border-radius: 11px; background: var(--ink-1); color: var(--brass);
   font: 500 12px var(--f-mono); cursor: pointer; animation: bc-says-in 200ms var(--ease-out) both; }
 .bc-badge:hover, .bc-badge:focus-visible, .bc-badge[aria-expanded="true"] { border-color: var(--brass); outline: none; }

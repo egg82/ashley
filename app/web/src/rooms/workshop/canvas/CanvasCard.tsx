@@ -7,6 +7,7 @@
 import { memo } from 'preact/compat';
 import type { BenchPiece, PieceKind, WorkshopKinds } from '../../../api/types';
 import { drawnRect, lift, type Form } from '../model/fold';
+import type { Placed } from '../model/aside';
 import type { HerLine } from '../model/herLines';
 import type { Box } from '../model/mindmap';
 import { PieceCard, type PieceActions } from '../pieces/PieceCard';
@@ -40,7 +41,8 @@ export interface CardProps {
   pinned: boolean;
   landing: boolean;
   lines: readonly HerLine[] | undefined;
-  fresh: boolean;
+  /** Where her line or its badge sits (`model/aside.ts`), in bench units. */
+  aside: Placed | undefined;
   focus(id: number): void;
 }
 
@@ -105,7 +107,9 @@ export function CanvasCard(p: CardProps) {
       {form === 'card' && !p.closed && box && (
         <span class="bc-corner" aria-hidden="true" onPointerDown={(e) => { e.stopPropagation(); press(e, piece, box, p.z, true, () => undefined); }} />
       )}
-      {p.lines?.[0] && (p.fresh ? <Says line={p.lines[0]} k={k} /> : <LinesBadge lines={p.lines} k={k} />)}
+      {p.lines?.[0] && p.aside && r && (p.aside.kind === 'says'
+        ? <Says line={p.lines[0]} k={k} at={{ x: p.aside.box.x - r.x, y: p.aside.box.y - r.y }} />
+        : <LinesBadge lines={p.lines} k={k} at={{ x: p.aside.box.x - r.x, y: p.aside.box.y - r.y }} />)}
     </div>
   );
 }
