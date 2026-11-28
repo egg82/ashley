@@ -7392,7 +7392,7 @@
     "/api/benches/{bench_id}/messages": {
       "post": {
         "summary": "Send On Bench",
-        "description": "200 `ChatReply`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 410 `closed`; 422 `refused` when she\ndeclined or `piece_id` is not a piece on the bench; 503 `unavailable`.",
+        "description": "200 `ChatReply`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 410 `closed`; 422 `refused` when she\ndeclined or `piece_id` is not a piece on the bench (a `pointing` that is not one is dropped); 503 `unavailable`.",
         "operationId": "send_on_bench",
         "parameters": [
           {
@@ -9701,6 +9701,19 @@
               }
             ],
             "title": "Piece Id"
+          },
+          "pointing": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pointing",
+            "description": "The piece under the person's cursor when they sent this, otherwise the last one they tapped: what \"this one\" means. Never stored."
           }
         },
         "additionalProperties": false,

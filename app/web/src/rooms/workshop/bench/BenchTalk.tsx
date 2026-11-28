@@ -1,11 +1,13 @@
 // The bench's talk, beside its pieces: her room's lines and composer on the bench's own thread (`model/talk.ts`).
-import { useLayoutEffect, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { person } from '../../../session/session';
 import { Composer } from '../../her/Composer';
+import { unsentOn } from '../../her/unsent';
 import { Divider, Earlier } from '../../her/Earlier';
 import { Thread } from '../../her/Thread';
 import { useEarlier } from '../../her/useEarlier';
 import { rules } from '../model/benches';
+import { typing } from '../model/pointing';
 import {
   benchEarlier, benchTalking, retryTalk, sendTalk, talkConversation, talkLines, talkSending, talkStartedAt, talkState,
   talkThinking,
@@ -20,6 +22,11 @@ export function BenchTalk({ thread: talkThread, closed }: { thread: string; clos
     const el = thread.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [shown.length, thinking, state]);
+  const typed = unsentOn(talkThread).trim() !== '';
+  useEffect(() => {
+    typing.value = typed;
+    return () => { typing.value = false; };
+  }, [typed]);
   const open = talkConversation.value;
   const { before, reading, more, nearTop } = useEarlier(benchEarlier, thread, open, state === 'ready');
   const began = talkStartedAt.value ?? shown[0]?.at;

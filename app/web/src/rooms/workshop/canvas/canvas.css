@@ -44,6 +44,7 @@
 .bc-card.f-chip .bc-clip { opacity: 0; visibility: hidden; box-shadow: none; transition: opacity var(--t-chip), visibility 0s var(--t-chip); }
 .bc-card.f-ghost .bc-clip { opacity: .45; }
 .bc-card.focus .bc-body > .piece { border-color: var(--blue); }
+.bc-card.pointed .bc-body > .piece { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass); }
 .bc-card.pinned .bc-body > .piece { border-color: var(--line-hi); }
 .bc-card .piece header { cursor: grab; }
 .bc-card.landing { animation: bc-land var(--land) var(--ease-out) both; }
