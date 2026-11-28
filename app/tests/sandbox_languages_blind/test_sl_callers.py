@@ -29,7 +29,7 @@ from sandbox_languages_support import CAD, Recording, Rig, config, container, py
 from sandbox_support import Script, envelope_line
 
 PUBLIC = "https://ashley.test"
-CODE = {"type": "add", "kind": "code", "title": "cube", "body": "box = 1", "size": "medium"}
+CODE = {"type": "add", "kind": "code", "title": "cube", "body": "box = 1"}
 def rows(url: str) -> int:
     return int(scalar(url, "SELECT count(*) FROM code_runs"))
 

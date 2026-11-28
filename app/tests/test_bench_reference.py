@@ -89,7 +89,7 @@ def piece(pid: int, kind: str, body: str) -> Piece:
 def test_a_result_number_fills_a_site_pieces_url(shop: Deciding) -> None:
     got = call(tools(), "bench_add", kind="site", title="TSP", result=1)
     assert not got.is_error, got.content
-    assert shop.seen == [Add(HER, "site", Text("TSP", WIKI), "medium")]
+    assert shop.seen == [Add(HER, "site", Text("TSP", WIKI))]
 
 
 def test_a_result_number_fills_a_video_pieces_body_with_its_start(shop: Deciding) -> None:

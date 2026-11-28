@@ -48,7 +48,7 @@ def reader() -> Generator[None]:
 
 
 def added(client: TestClient, bench: int, kind: str, body: str) -> int:
-    status, got = command(client, bench, {"type": "add", "kind": kind, "title": "t", "body": body, "size": "medium"})
+    status, got = command(client, bench, {"type": "add", "kind": kind, "title": "t", "body": body})
     assert status == 200
     return int(got["piece_id"] or 0)
 

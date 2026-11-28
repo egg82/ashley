@@ -2,13 +2,14 @@
 a body may be, are `decide`'s to judge; this checks only shapes."""
 
 from collections.abc import Mapping
+from dataclasses import replace
 
 from ..tools.bench_args import BadArguments, piece_id_of
 from ..tools.bench_args import command_of as bench_command_of
 from ..tools.tainted import her
 from ..workshop.commands import Add, Edit, Move, Remove, Undo
 from ..workshop.json_shape import list_of, object_of
-from ..workshop.model import Text
+from ..workshop.model import SIZES, Place, Size, Text
 from ..workshop.rules import Rules
 from ..workshop.screen_controls import ACTIONS, Control, encode
 from .kiosk.controls import Wanted, validate
@@ -31,17 +32,15 @@ def add_of(args: Mapping[str, object], rules: Rules) -> Add:
     kind = args.get("kind")
     if not isinstance(kind, str):
         raise BadArguments("kind is a string")
-    made = bench_command_of("bench_add", {"kind": kind, "title": _label(kind, rules), "body": _empty_body(kind, rules),
-                                          "size": args.get("size", "medium")})
+    made = bench_command_of("bench_add", {"kind": kind, "title": _label(kind, rules), "body": _empty_body(kind, rules)})
     assert isinstance(made, Add)
-    return made
+    return replace(made, size=_size(args.get("size", "medium")))
 
 
 def move_of(args: Mapping[str, object]) -> Move:
-    made = bench_command_of("bench_move", {"piece_id": args.get("piece_id"), "order": args.get("order"),
-                                           "size": args.get("size")})
+    made = bench_command_of("bench_move", {"piece_id": args.get("piece_id"), "order": args.get("order")})
     assert isinstance(made, Move)
-    return made
+    return replace(made, place=Place(made.place.order, _size(args.get("size"))))
 
 
 def remove_of(args: Mapping[str, object]) -> Remove:
@@ -74,6 +73,13 @@ def _wanted(item: object) -> Wanted:
     if not isinstance(action, str) or action not in ACTIONS:
         raise BadArguments("action is one of " + ", ".join(ACTIONS))
     return Wanted(ident, label, ACTIONS[action], entity)
+
+
+def _size(value: object) -> Size:
+    for size in SIZES:
+        if value == size:
+            return size
+    raise BadArguments("size is one of " + ", ".join(SIZES))
 
 
 def _label(kind: str, rules: Rules) -> str:

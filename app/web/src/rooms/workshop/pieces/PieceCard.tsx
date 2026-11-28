@@ -77,7 +77,7 @@ export function PieceCard(props: Props) {
   const edit = !closed && kind?.format !== 'reader' && kind?.format !== 'job' && kind?.family !== 'large' ? () => beginDraft(bench, piece) : null;
   const cls = ['piece', draft && 'editing', mark && `mark-${mark.by === 'ashley' ? 'her' : 'you'}`].filter(Boolean).join(' ');
   return (
-    <article class={cls} data-piece={piece.id} data-with={props.derived.map((d) => d.id).join(' ') || undefined} data-family={kind?.family ?? 'unknown'} data-size={piece.placement.size}
+    <article class={cls} data-piece={piece.id} data-with={props.derived.map((d) => d.id).join(' ') || undefined} data-family={kind?.family ?? 'unknown'}
       aria-label={piece.title}>
       <header>
         {!closed && <Grip {...props} />}

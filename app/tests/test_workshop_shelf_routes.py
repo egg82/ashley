@@ -14,12 +14,12 @@ def test_archive_and_restore_arrive_as_the_persons_commands_and_the_read_carries
     alana = signed_in(ALANA)
     bench = opened(alana)
     command(alana, bench.id, ADD)
-    command(alana, bench.id, {**ADD, "title": "tools", "size": "full"})
+    command(alana, bench.id, {**ADD, "title": "tools"})
     assert command(alana, bench.id, {"type": "archive", "piece_id": 2}) == (200, {"seq": 3, "piece_id": 2})
     detail = BenchDetail.model_validate(alana.get(f"/api/benches/{bench.id}").json())
     assert [p.id for p in detail.pieces] == [1] and detail.bench.piece_count == 1
     (shelved,) = detail.shelf
-    assert (shelved.id, shelved.title, shelved.placement.size, shelved.changed_by) == (2, "tools", "full", 3)
+    assert (shelved.id, shelved.title, shelved.changed_by) == (2, "tools", 3)
     assert detail.recent[-1].type == "archive" and detail.undo_next == 3
     assert command(alana, bench.id, {"type": "restore", "piece_id": 2}) == (200, {"seq": 4, "piece_id": 2})
     detail = BenchDetail.model_validate(alana.get(f"/api/benches/{bench.id}").json())

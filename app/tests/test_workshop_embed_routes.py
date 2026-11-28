@@ -12,9 +12,8 @@ from test_workshop_routes import As, command, opened
 from test_workshop_routes import signed_in as signed_in
 
 URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-VIDEO = {"type": "add", "kind": "video", "title": "talk", "body": json.dumps({"url": URL, "start": 42}), "size": "large"}
-SITE = {"type": "add", "kind": "site", "title": "graphs", "body": "https://en.wikipedia.org/wiki/Graph_theory",
-        "size": "full"}
+VIDEO = {"type": "add", "kind": "video", "title": "talk", "body": json.dumps({"url": URL, "start": 42})}
+SITE = {"type": "add", "kind": "site", "title": "graphs", "body": "https://en.wikipedia.org/wiki/Graph_theory"}
 
 
 def read(client: TestClient, bench: int) -> BenchDetail:

@@ -15,7 +15,7 @@ const SLOP = 3;
 /** Sends a move that sets `p` on `piece`, showing it until the server has answered (and the bench has been read back). */
 export function sendPlace(piece: BenchPiece, p: Pending): void {
   setPending(piece.id, p);
-  const placement = { order: piece.placement.order, size: piece.placement.size, ...(p.pin !== undefined && { pin: p.pin }), ...(p.box !== undefined && { box: p.box }) };
+  const placement = { order: piece.placement.order, ...(p.pin !== undefined && { pin: p.pin }), ...(p.box !== undefined && { box: p.box }) };
   void apply({ type: 'move', piece_id: piece.id, placement }).finally(() => {
     if (pending.value.get(piece.id) === p) setPending(piece.id, null);
   });

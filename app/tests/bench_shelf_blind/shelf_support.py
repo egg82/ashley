@@ -77,7 +77,7 @@ def ids(pieces: Iterable[Piece]) -> list[int]:
     return [p.id for p in pieces]
 
 
-def sizes(pieces: Iterable[Piece]) -> list[str]:
+def sizes(pieces: Iterable[Piece]) -> list[Size | None]:
     return [p.place.size for p in pieces]
 
 
@@ -86,7 +86,7 @@ def shape(piece: Piece) -> tuple[int, str, Text, Place]:
     return (piece.id, piece.kind, piece.text, piece.place)
 
 
-def core(piece: Piece) -> tuple[int, str, Text, str]:
+def core(piece: Piece) -> tuple[int, str, Text, Size | None]:
     """A piece by what a round trip through the shelf cannot change: id, kind, words and size (its order and
     `changed_by` move)."""
     return (piece.id, piece.kind, piece.text, piece.place.size)

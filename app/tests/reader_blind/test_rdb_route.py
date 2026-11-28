@@ -41,8 +41,8 @@ def command(rig: Rig, bench: int, payload: Mapping[str, object]) -> tuple[int, d
     return got.status, got.json
 
 
-def add_body(kind: str, title: str, text: str, size: str = "medium") -> dict[str, object]:
-    return {"type": "add", "kind": kind, "title": title, "body": text, "size": size}
+def add_body(kind: str, title: str, text: str) -> dict[str, object]:
+    return {"type": "add", "kind": kind, "title": title, "body": text}
 
 
 def detail(rig: Rig, bench: int) -> BenchDetail:

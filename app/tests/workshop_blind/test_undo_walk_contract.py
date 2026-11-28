@@ -374,7 +374,7 @@ def test_the_bench_read_serves_undo_next_as_the_walk_goes_back(rig: Rig) -> None
     bench = BenchSummary.model_validate(rig.post("/api/benches", {"title": "b"}).json).id
     path = f"/api/benches/{bench}/commands"
     assert detail(rig, bench).undo_next is None
-    rig.post(path, {"type": "add", "kind": "note", "title": "a", "body": "", "size": "small"})
+    rig.post(path, {"type": "add", "kind": "note", "title": "a", "body": ""})
     rig.post(path, {"type": "edit", "piece_id": 1, "base_version": 1, "title": "b", "body": ""})
     assert detail(rig, bench).undo_next == 2
     assert rig.post(path, {"type": "undo", "seq": 2}).status == 200
@@ -387,7 +387,7 @@ def test_the_bench_read_serves_undo_next_as_the_walk_goes_back(rig: Rig) -> None
 def test_a_refused_undo_leaves_undo_next_unchanged(rig: Rig) -> None:
     bench = BenchSummary.model_validate(rig.post("/api/benches", {"title": "b"}).json).id
     path = f"/api/benches/{bench}/commands"
-    rig.post(path, {"type": "add", "kind": "note", "title": "a", "body": "", "size": "small"})
+    rig.post(path, {"type": "add", "kind": "note", "title": "a", "body": ""})
     rig.post(path, {"type": "edit", "piece_id": 1, "base_version": 1, "title": "b", "body": ""})
     assert rig.post(path, {"type": "undo", "seq": 1}).status == 409
     assert detail(rig, bench).undo_next == 2

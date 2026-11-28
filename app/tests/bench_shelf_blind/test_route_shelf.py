@@ -38,8 +38,8 @@ def command(rig: Rig, bench_id: int, body: Mapping[str, object]) -> tuple[int, d
     return got.status, got.json
 
 
-def add_body(title: str = "a", text: str = "", size: str = "small") -> dict[str, object]:
-    return {"type": "add", "kind": "note", "title": title, "body": text, "size": size}
+def add_body(title: str = "a", text: str = "") -> dict[str, object]:
+    return {"type": "add", "kind": "note", "title": title, "body": text}
 
 
 def detail(rig: Rig, bench_id: int) -> BenchDetail:
@@ -59,7 +59,7 @@ def restore_body(piece_id: int) -> dict[str, object]:
 def bench_with(rig: Rig, n: int = 3) -> int:
     b = new_bench(rig)
     for i in range(n):
-        assert command(rig, b, add_body(f"p{i}", f"body{i}", ["small", "medium", "large", "full"][i % 4]))[0] == 200
+        assert command(rig, b, add_body(f"p{i}", f"body{i}"))[0] == 200
     return b
 
 
@@ -77,13 +77,13 @@ def test_archive_then_restore_through_the_commands_route(rig: Rig) -> None:
     assert command(rig, b, archive_body(2)) == (200, {"seq": 4, "piece_id": 2})
     got = detail(rig, b)
     assert [p.id for p in got.pieces] == [1, 3] and [p.placement.order for p in got.pieces] == [0, 1]
-    assert [(p.id, p.title, p.body, p.piece_version, p.placement.size) for p in got.shelf] == [
-        (2, "p1", "body1", 1, "medium")]
+    assert [(p.id, p.title, p.body, p.piece_version) for p in got.shelf] == [
+        (2, "p1", "body1", 1)]
     assert got.shelf[0].changed_by == 4 and got.shelf[0].changed_author == "person"
     assert command(rig, b, restore_body(2)) == (200, {"seq": 5, "piece_id": 2})
     got = detail(rig, b)
-    assert [(p.id, p.placement.order, p.placement.size) for p in got.pieces] == [
-        (1, 0, "small"), (3, 1, "large"), (2, 2, "medium")] and got.shelf == []
+    assert [(p.id, p.placement.order) for p in got.pieces] == [
+        (1, 0), (3, 1), (2, 2)] and got.shelf == []
     assert [(r.seq, r.type, r.outcome, r.piece_id) for r in got.recent][-2:] == [
         (4, "archive", "accepted", 2), (5, "restore", "accepted", 2)]
 
@@ -134,7 +134,7 @@ def test_a_shelved_piece_takes_no_edit_move_or_remove_over_http(rig: Rig) -> Non
     b = bench_with(rig)
     command(rig, b, archive_body(2))
     for body in ({"type": "edit", "piece_id": 2, "base_version": 1, "title": "z", "body": ""},
-                 {"type": "move", "piece_id": 2, "placement": {"order": 0, "size": "small"}},
+                 {"type": "move", "piece_id": 2, "placement": {"order": 0}},
                  {"type": "remove", "piece_id": 2}):
         status, raw = command(rig, b, body)
         assert status == 409 and CommandRefused.model_validate(raw).reason == "no_such_piece"

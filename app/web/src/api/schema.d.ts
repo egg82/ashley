@@ -2687,11 +2687,6 @@ export interface components {
             title: string;
             /** Body */
             body: string;
-            /**
-             * Size
-             * @enum {string}
-             */
-            size: "small" | "medium" | "large" | "full";
         };
         /**
          * AdminRequest
@@ -5338,19 +5333,13 @@ export interface components {
         };
         /**
          * PiecePlace
-         * @description Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), its
-         *     size class, and the `pin` and `box` a person gave it on the bench's map, null until they did; a read always
-         *     carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has
+         * @description Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), and the
+         *     `pin` and `box` a person gave it on the bench's map, null until they did; a read always carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has
          *     it; one outside the bench's bounds is refused `bad_place`.
          */
         PiecePlace: {
             /** Order */
             order: number;
-            /**
-             * Size
-             * @enum {string}
-             */
-            size: "small" | "medium" | "large" | "full";
             pin?: components["schemas"]["PiecePin"] | null;
             box?: components["schemas"]["PieceBox"] | null;
         };
@@ -7057,9 +7046,8 @@ export interface components {
         };
         /**
          * WorkshopKinds
-         * @description What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take
-         *     (`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench
-         *     holds and the longest title of a bench or a piece; the languages a code piece can be run in
+         * @description What a bench allows, so the client hard-codes none of it: the piece kinds, the most pieces a bench holds and
+         *     the longest title of a bench or a piece; the languages a code piece can be run in
          *     (`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the
          *     kinds of link between pieces (`link_kinds`).
          */
@@ -7068,8 +7056,6 @@ export interface components {
             kinds: components["schemas"]["PieceKind"][];
             /** Link Kinds */
             link_kinds: components["schemas"]["LinkKind"][];
-            /** Sizes */
-            sizes: ("small" | "medium" | "large" | "full")[];
             /** Max Pieces */
             max_pieces: number;
             /** Title Max Chars */

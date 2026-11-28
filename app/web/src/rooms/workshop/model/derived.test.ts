@@ -5,7 +5,7 @@ import { fullIndex } from './layout.ts';
 import { groupDerived } from './derived.ts';
 
 const piece = (id: number, recording: number | null = null): BenchPiece =>
-  ({ id, kind: 'note', title: `p${id}`, body: '', piece_version: 1, placement: { order: id, size: 'medium' }, changed_by: id, changed_at: '2026-10-29T12:00:00Z', changed_author: 'person', changed_person_id: 1, last_run: null, automation: null, video: null,
+  ({ id, kind: 'note', title: `p${id}`, body: '', piece_version: 1, placement: { order: id }, changed_by: id, changed_at: '2026-10-29T12:00:00Z', changed_author: 'person', changed_person_id: 1, last_run: null, automation: null, video: null,
     reader: { url: '', title: `t${id}`, paragraphs: ['a'], recording: recording === null ? null : { piece_id: recording, starts: [0] } } as BenchPiece['reader'], pointer: null, file: null, site: null, recipe: null, wake: null });
 
 test('a transcript is shown with the recording it names (a piece derived from another), and takes no card of its own', () => {

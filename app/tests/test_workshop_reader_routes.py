@@ -19,8 +19,8 @@ from test_workshop_routes import signed_in as signed_in
 
 OWNER = Owner(ALANA.household_id, ALANA.id)
 BODY = reader.body_of("https://a.example/graph", "Graph", "one\ntwo words\nthree")
-READER = {"type": "add", "kind": "reader", "title": "graph", "body": BODY, "size": "large"}
-NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"}
+READER = {"type": "add", "kind": "reader", "title": "graph", "body": BODY}
+NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x"}
 
 
 def read(client: TestClient, bench: int) -> BenchDetail:

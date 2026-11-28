@@ -9,9 +9,8 @@ export interface Draft {
   body: string;
   /** The piece's `piece_version` the draft was begun from or last reapplied onto. */
   base: number;
-  /** The piece's kind and size, so a draft whose piece was removed can be added back as it was. */
+  /** The piece's kind, so a draft whose piece was removed can be added back as it was. */
   kind: string;
-  size: BenchPiece['placement']['size'];
 }
 
 const drafts = signal<ReadonlyMap<string, Draft>>(new Map());
@@ -42,7 +41,7 @@ export function draftsOn(bench: number): [number, Draft][] {
 export function beginDraft(bench: number, piece: BenchPiece): void {
   if (draftOf(bench, piece.id)) return;
   put(key(bench, piece.id), {
-    title: piece.title, body: piece.body, base: piece.piece_version, kind: piece.kind, size: piece.placement.size,
+    title: piece.title, body: piece.body, base: piece.piece_version, kind: piece.kind,
   });
 }
 

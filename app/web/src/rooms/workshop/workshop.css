@@ -23,8 +23,6 @@
 .piece header { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600; cursor: grab; user-select: none; touch-action: none; white-space: nowrap; }
 .piece header > :last-child { margin-left: auto; }
 .grip { color: var(--text-3); letter-spacing: -2px; font-size: 12px; }
-.piece.dragging { z-index: 40; box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px var(--blue); }
-.piece.dragging header { cursor: grabbing; }
 
 /* new here: the room's two views */
 .ws { position: absolute; inset: 0; }
@@ -60,9 +58,6 @@
 :root[data-motion="reduced"] .ws-away { animation: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* the grid: four columns, a piece spans its size class's share (`model/layout.ts`) */
-.pgrid { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(150px, auto); gap: 12px; padding: 16px; align-content: start; }
-.pgrid-empty { grid-column: 1 / -1; margin: 40px auto; text-align: center; }
 .piece { --pc: var(--t-doc); }
 .piece[data-family="live"] { --pc: var(--t-capture); }
 .piece[data-family="unknown"] { --pc: var(--text-3); }
@@ -73,7 +68,6 @@
 .ptitle { min-width: 3em; overflow: hidden; text-overflow: ellipsis; }
 .piece.mark-her, .piece.mark-you { z-index: 2; }
 .pwho { font-weight: 400; white-space: nowrap; }
-.piece[data-size="small"] .pwhen { display: none; }
 .pbody .unk { white-space: normal; }
 .piece-dock { width: 22px; height: 22px; flex: none; }
 .pmain { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -193,10 +187,7 @@
 :root[data-motion="reduced"] .who-tag { animation: none; }
 
 /* editing in place, and the conflict: the newer text beside the person's draft */
-.piece[data-size="small"] { grid-column: span 1; } .piece[data-size="medium"] { grid-column: span 2; }
-.piece[data-size="large"] { grid-column: span 3; } .piece[data-size="full"] { grid-column: 1 / -1; }
 .piece.editing { border-color: var(--blue); }
-.piece.editing[data-size="small"] { grid-column: span 2; }
 .pedit { display: grid; gap: 8px; padding: 10px 12px 12px; }
 .pedit-sides { display: grid; gap: 10px; }
 .pedit.conflict .pedit-sides { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -213,7 +204,7 @@
 .pedit-newer .pbody { padding: 0; }
 .pedit-newer-title { font-size: 13px; }
 .pedit-mine { display: grid; gap: 6px; align-content: start; min-width: 0; }
-.pgrid > .piece.editing:has(.conflict) { grid-column: 1 / -1; border-color: var(--brass-dim); }
+.piece.editing:has(.conflict) { border-color: var(--brass-dim); }
 
 /* adding a piece, and a draft whose piece was taken off */
 .piece.adding { border-style: dashed; border-color: var(--line-hi); }
@@ -226,7 +217,6 @@
 .orphan-text { margin: 0; max-height: 200px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: var(--ink-1); font: 12.5px/1.5 var(--f-body); white-space: pre-wrap; color: var(--text-2); }
 
 @media (max-width: 1199px) { .floor { grid-template-columns: 320px minmax(0, 1fr); } }
-@media (max-width: 1023px) { .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pgrid > .piece, .pgrid > .piece.editing[data-size] { grid-column: 1 / -1; } }
 @media (max-width: 760px) {
   .wb { inset: 0; clip-path: none; border-left: 0; border-right: 0; }
   .bar { padding: 10px 14px; gap: 8px; } .bar h1 { font-size: 16px; flex: 1 1 auto; }
@@ -236,7 +226,6 @@
   .floor { grid-template-columns: minmax(0, 1fr); }
   .floor[data-view="talk"] .pieces, .floor[data-view="pieces"] .talk { display: none; }
   .talk { border-right: 0; }
-  .pgrid { grid-template-columns: minmax(0, 1fr); padding: 12px; }
   .pedit.conflict .pedit-sides { grid-template-columns: minmax(0, 1fr); }
   .ws-list { padding: 12px 16px 30px; }
   .ws-notice { margin: 8px 12px 0; }
@@ -296,7 +285,6 @@
 .pfile-name { font-weight: 600; overflow-wrap: anywhere; }
 .col.pieces { position: relative; }
 .col.pieces.dropping { outline: 2px dashed var(--blue-hi); outline-offset: -6px; }
-.col.pieces.dropping .pgrid { opacity: .45; }
 .drop-hint { position: sticky; bottom: 14px; margin: 0 20px 14px; padding: 12px; text-align: center; pointer-events: none; border-radius: var(--r-2); background: var(--ink-3); border: 1px solid var(--blue-hi); color: var(--text); font-weight: 600; }
 .look-page { position: relative; width: 100vw; min-height: 100vh; }
 .look-page .bcanvas { position: relative; overflow: hidden; }

@@ -99,12 +99,12 @@ def command(client: TestClient, bench_id: int, body: Json) -> tuple[int, Json]:
     return response.status_code, response.json()
 
 
-ADD = {"type": "add", "kind": "note", "title": "parts", "body": "M3 screws", "size": "small"}
+ADD = {"type": "add", "kind": "note", "title": "parts", "body": "M3 screws"}
 
 
 def test_the_kinds_are_served_from_the_data_file(wired: Fakes) -> None:
     got = WorkshopKinds.model_validate(unwired_as(ALANA, wired).get("/api/workshop/kinds").json())
-    assert {k.name for k in got.kinds} == set(rules.load().kinds) and got.sizes == ["small", "medium", "large", "full"]
+    assert {k.name for k in got.kinds} == set(rules.load().kinds)
 
 
 def test_each_kind_says_how_its_body_is_written(wired: Fakes) -> None:
@@ -254,12 +254,12 @@ def test_move_remove_and_undo_arrive_as_the_persons_commands(signed_in: As, wire
     bench = opened(alana)
     command(alana, bench.id, ADD)
     command(alana, bench.id, {**ADD, "title": "tools"})
-    moved = {"type": "move", "piece_id": 2, "placement": {"order": 0, "size": "full"}}
+    moved = {"type": "move", "piece_id": 2, "placement": {"order": 0}}
     assert command(alana, bench.id, moved) == (200, {"seq": 3, "piece_id": 2})
     assert command(alana, bench.id, {"type": "remove", "piece_id": 1})[0] == 200
     assert command(alana, bench.id, {"type": "undo", "seq": 4}) == (200, {"seq": 5, "piece_id": 1})
     detail = BenchDetail.model_validate(alana.get(f"/api/benches/{bench.id}").json())
-    assert [(p.id, p.placement.order, p.placement.size) for p in detail.pieces] == [(2, 0, "full"), (1, 1, "small")]
+    assert [(p.id, p.placement.order) for p in detail.pieces] == [(2, 0), (1, 1)]
     assert [r.type for r in detail.recent] == ["add", "add", "move", "remove", "undo"]
     assert detail.undo_next == 3
 

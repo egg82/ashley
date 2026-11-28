@@ -8,11 +8,10 @@ from ..files.config import FilesConfig
 from ..files.intake import Stored, take
 from . import stored_file
 from .commands import Add
-from .model import By, Owner, Size, Text
+from .model import By, Owner, Text
 from .rules import Rules
 from .workshop import Applied, Workshop
 
-SIZES: dict[str, Size] = {"image": "medium", "clip": "medium", "audio": "medium", "file": "small"}
 CONFIG = files_config.load()
 
 
@@ -33,4 +32,4 @@ async def add_file(owner: Owner, bench_id: int, by: By, data: bytes, raw_name: s
     kind = config.piece_kind(stored.media_type)
     body = stored_file.body_of(stored_file.StoredFile(stored.sha256, stored.size, stored.media_type, stored.name))
     title = stored.name[:rules.title_max_chars].strip() or "file"
-    return stored, await services.get(Workshop).apply(owner, bench_id, Add(by, kind, Text(title, body), SIZES[kind]))
+    return stored, await services.get(Workshop).apply(owner, bench_id, Add(by, kind, Text(title, body)))

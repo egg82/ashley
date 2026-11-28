@@ -24,7 +24,7 @@ from respond_support import ALANA, wired as wired
 from test_workshop_routes import As, command, opened
 from test_workshop_routes import signed_in as signed_in
 
-AUTOMATION = {"type": "add", "kind": "automation", "title": "porch", "body": body(), "size": "medium"}
+AUTOMATION = {"type": "add", "kind": "automation", "title": "porch", "body": body()}
 OWNER = Owner(ALANA.household_id, ALANA.id)
 
 
@@ -73,7 +73,7 @@ def test_the_person_installs_her_proposal_and_undoes_it(signed_in: As, house: Fa
 def test_a_note_carries_no_automation_and_cannot_be_installed(signed_in: As, house: FakeHouse) -> None:
     client = signed_in(ALANA)
     bench = opened(client).id
-    command(client, bench, {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"})
+    command(client, bench, {"type": "add", "kind": "note", "title": "n", "body": "x"})
     assert read(client, bench).pieces[0].automation is None
     status, got = command(client, bench, {"type": "install", "piece_id": 1, "proposal": 1})
     assert status == 409 and CommandRefused.model_validate(got).reason == "not_installable"

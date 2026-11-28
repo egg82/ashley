@@ -99,7 +99,6 @@ def test_an_uploaded_image_is_an_image_piece_with_a_link_that_serves_its_bytes_i
     got = detail(client, bench.id)
     (piece,) = got.pieces
     assert (piece.id, piece.kind, piece.title, piece.changed_author) == (applied.piece_id, "image", "cat.png", "person")
-    assert piece.placement.size == "medium"
     assert piece.file is not None
     assert (piece.file.name, piece.file.size_bytes, piece.file.media_type, piece.file.image) == ("cat.png", len(PNG), "image/png", True)
     assert piece.file.url is not None and piece.file.expires_at is not None
@@ -122,7 +121,7 @@ def test_a_pdf_is_a_file_piece_served_as_a_download(box: Box) -> None:
     assert (file.media_type, file.image) == ("application/pdf", False) and file.url is not None
     served = client.get(file.url)
     assert served.content == PDF and served.headers["content-disposition"] == "attachment"
-    assert detail(client, bench.id).pieces[0].kind == "file" and detail(client, bench.id).pieces[0].placement.size == "small"
+    assert detail(client, bench.id).pieces[0].kind == "file"
 
 
 def test_markup_uploaded_is_text_and_downloads_as_text_never_as_a_page(box: Box) -> None:
@@ -172,7 +171,7 @@ def test_an_upload_to_a_full_bench_is_refused_with_the_benchs_reason(box: Box, m
     client = box(ALANA)
     bench = opened(client)
     for n in range(50):
-        assert command(client, bench.id, {"type": "add", "kind": "note", "title": str(n), "body": "", "size": "small"})[0] == 200
+        assert command(client, bench.id, {"type": "add", "kind": "note", "title": str(n), "body": ""})[0] == 200
     status, body = upload(client, bench.id, CSV, "late.csv")
     assert status == 409 and CommandRefused.model_validate(body).reason == "full"
 
@@ -192,7 +191,7 @@ def test_a_page_cannot_make_an_image_or_file_piece_by_writing_its_body(box: Box)
     _, up = upload(client, bench.id, PDF, "plan.pdf")
     piece = CommandApplied.model_validate(up).piece_id or 0
     body = detail(client, bench.id).pieces[0].body
-    status, refused = command(client, bench.id, {"type": "add", "kind": "file", "title": "forged", "body": body, "size": "small"})
+    status, refused = command(client, bench.id, {"type": "add", "kind": "file", "title": "forged", "body": body})
     assert status == 422 and refused["code"] == "refused"
     status, refused = command(client, bench.id, {"type": "edit", "piece_id": piece, "base_version": 1, "title": "plan.pdf", "body": "{}"})
     assert status == 409 and refused["reason"] == "bad_file"

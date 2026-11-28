@@ -14,10 +14,10 @@ from contract.conversations_support import run
 GOOD: dict[str, dict[str, object]] = {
     "bench_read": {},
     "bench_read_piece": {"piece_id": 1},
-    "bench_add": {"kind": "note", "title": "t", "body": "b", "size": "small"},
+    "bench_add": {"kind": "note", "title": "t", "body": "b"},
     "bench_edit": {"piece_id": 1, "base_version": 1, "title": "t", "body": "b"},
     "bench_replace": {"piece_id": 1, "base_version": 1, "old": "b", "new": "c"},
-    "bench_move": {"piece_id": 1, "order": 0, "size": "small"},
+    "bench_move": {"piece_id": 1, "order": 0},
     "bench_remove": {"piece_id": 1},
     "bench_archive": {"piece_id": 1},
     "bench_shelf": {},
@@ -55,8 +55,6 @@ def test_a_missing_argument_is_a_tool_error_and_applies_nothing(db_url: str) -> 
             before = await log(e, e.world.alana, bench)
             for name, good in GOOD.items():
                 for key in good:
-                    if name == "bench_add" and key == "size":
-                        continue  # size is optional
                     args = {k: v for k, v in good.items() if k != key}
                     c = call(name, **args)
                     result = await t.call(c)
@@ -75,11 +73,10 @@ def test_a_wrong_typed_argument_is_a_tool_error_naming_no_value_and_applies_noth
             for name, good in GOOD.items():
                 for key in good:
                     for wrong in WRONG:
-                        if isinstance(wrong, str) and key in ("title", "body", "kind", "size", "quote"):
+                        if isinstance(wrong, str) and key in ("title", "body", "kind", "quote"):
                             continue  # a string where a string belongs: `decide`'s to judge
-                        if name != "bench_add" or key != "size" or wrong is not None:
-                            result = await t.call(call(name, **{**good, key: wrong}))
-                            assert result.is_error, (name, key, wrong, result.content)
+                        result = await t.call(call(name, **{**good, key: wrong}))
+                        assert result.is_error, (name, key, wrong, result.content)
             assert await log(e, e.world.alana, bench) == before
 
     run(scenario())
@@ -118,8 +115,8 @@ def test_nul_and_huge_strings_never_raise_and_are_never_stored(db_url: str) -> N
             t = tools(e, bench)
             await t.call(call("bench_read_piece", piece_id=1))
             for text in ("a\x00b", "\x00", "y" * 2_000_000):
-                for c in (call("bench_add", kind="note", title=text, body="b", size="small"),
-                          call("bench_add", kind="note", title="t", body=text, size="small"),
+                for c in (call("bench_add", kind="note", title=text, body="b"),
+                          call("bench_add", kind="note", title="t", body=text),
                           call("bench_edit", piece_id=1, base_version=1, title=text, body="b"),
                           call("bench_edit", piece_id=1, base_version=1, title="t", body=text)):
                     result = await t.call(c)
@@ -136,8 +133,7 @@ def test_a_huge_or_negative_integer_is_a_tool_error(db_url: str) -> None:
             t = tools(e, bench)
             for n in (-1, 0, 2**63, 2**200, -(2**200)):
                 for c in (call("bench_read_piece", piece_id=n), call("bench_remove", piece_id=n),
-                          call("bench_undo", seq=n), call("bench_move", piece_id=1, order=n if n else -1,
-                                                          size="small")):
+                          call("bench_undo", seq=n), call("bench_move", piece_id=1, order=n if n else -1)):
                     assert (await t.call(c)).is_error, (c.name, n)
             assert await pieces(e, e.world.alana, bench) == [(1, "keep", "keep-body", 1, 0)]
 
@@ -245,12 +241,12 @@ def test_logs_carry_ids_and_outcomes_never_a_title_or_a_body(db_url: str, capsys
             await t.call(call("bench_read"))
             await t.call(call("bench_read_piece", piece_id=1))
             await t.call(call("bench_edit", piece_id=1, base_version=1, title=secret_t, body=secret_n))
-            await t.call(call("bench_add", kind="note", title=secret_t, body=secret_b, size="small"))
-            await t.call(call("bench_add", kind="hologram", title=secret_t, body=secret_b, size="small"))
-            await t.call(call("bench_add", kind="note", title=secret_t, body=secret_b + "\x00", size="small"))
-            await t.call(call("bench_add", kind="note", title=secret_t, body=secret_b * 800, size="small"))
+            await t.call(call("bench_add", kind="note", title=secret_t, body=secret_b))
+            await t.call(call("bench_add", kind="hologram", title=secret_t, body=secret_b))
+            await t.call(call("bench_add", kind="note", title=secret_t, body=secret_b + "\x00"))
+            await t.call(call("bench_add", kind="note", title=secret_t, body=secret_b * 800))
             await t.call(call("bench_edit", piece_id=secret_b, base_version=1, title=secret_t, body=secret_n))
-            await t.call(call("bench_move", piece_id=secret_b, order=0, size="small"))
+            await t.call(call("bench_move", piece_id=secret_b, order=0))
             await t.call(call("bench_edit", piece_id=1, base_version=2, title=secret_t, body=secret_n))
             await t.call(call("bench_nuke"))
             await OpenBenchTools(e.world.alana.household_id, e.world.alana.person_id).call(
@@ -268,18 +264,3 @@ def test_logs_carry_ids_and_outcomes_never_a_title_or_a_body(db_url: str, capsys
     assert len(lines) == 16
     assert any("tool=bench_edit" in ln for ln in lines) and any("tool=open_bench" in ln for ln in lines)
     assert all("outcome=" in ln for ln in lines)
-
-
-@pytest.mark.parametrize("size", ["huge", "", "MEDIUM", "full ", " "])
-def test_a_size_that_is_not_one_of_the_four_is_an_error_and_applies_nothing(db_url: str, size: str) -> None:
-    async def scenario() -> None:
-        async with env(db_url) as e:
-            bench = await seeded(e)
-            t = tools(e, bench)
-            before = await log(e, e.world.alana, bench)
-            assert (await t.call(call("bench_add", kind="note", title="t", body="b", size=size))).is_error
-            assert (await t.call(call("bench_move", piece_id=1, order=0, size=size))).is_error
-            assert [r.outcome for r in await log(e, e.world.alana, bench)][: len(before)] == [r.outcome for r in before]
-            assert await pieces(e, e.world.alana, bench) == [(1, "keep", "keep-body", 1, 0)]
-
-    run(scenario())

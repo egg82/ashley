@@ -33,7 +33,7 @@ def send(rig: Rig, bench: int, body: dict[str, object]) -> tuple[int, dict[str, 
 
 
 def add(text: str, kind: str = KIND) -> dict[str, object]:
-    return {"type": "add", "kind": kind, "title": "m", "body": text, "size": "small"}
+    return {"type": "add", "kind": kind, "title": "m", "body": text}
 
 
 def edit(piece_id: int, version: int, text: str) -> dict[str, object]:

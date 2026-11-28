@@ -22,7 +22,7 @@ def rows(form: str, source: str = "guessed", **cited: object) -> str:
 
 def with_facts(client: TestClient, body: str) -> int:
     bench = opened(client).id
-    added = {"type": "add", "kind": "facts", "title": "Sizes", "body": body, "size": "small"}
+    added = {"type": "add", "kind": "facts", "title": "Sizes", "body": body}
     assert command(client, bench, added)[0] == 200
     return bench
 
@@ -77,7 +77,7 @@ def test_a_value_off_the_options_or_on_a_row_with_none_is_422_and_logs_nothing(s
 def test_no_such_row_piece_or_bench_is_404(signed_in: As) -> None:
     alana = signed_in(ALANA)
     bench = with_facts(alana, rows("flat strap"))
-    assert command(alana, bench, {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"})[0] == 200
+    assert command(alana, bench, {"type": "add", "kind": "note", "title": "n", "body": "x"})[0] == 200
     for status, got in (tap(alana, bench, "round cord", name="shape"), tap(alana, bench, "round cord", piece=2),
                         tap(alana, bench, "round cord", piece=9), tap(alana, bench + 1000, "round cord")):
         assert (status, got["code"]) == (404, "not_found")

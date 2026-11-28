@@ -17,7 +17,7 @@ def command_of(request: Request, person_id: int, bench_id: int) -> Command:
     if isinstance(request, ClearHighlightRequest):
         return Point(by, request.piece_id, request.base_version, None)
     if isinstance(request, AddPieceRequest):
-        return Add(by, request.kind, Text(request.title, request.body), request.size)
+        return Add(by, request.kind, Text(request.title, request.body))
     if isinstance(request, RemovePieceRequest):
         return Remove(by, request.piece_id)
     if isinstance(request, MovePieceRequest):
@@ -38,5 +38,5 @@ def _move(by: By, request: MovePieceRequest) -> Move:
     placement, given = request.placement, request.placement.model_fields_set
     pin = None if placement.pin is None else Pin(placement.pin.x, placement.pin.y)
     box = None if placement.box is None else Box(placement.box.w, placement.box.h)
-    return Move(by, request.piece_id, Place(placement.order, placement.size), pin if "pin" in given else KEEP,
+    return Move(by, request.piece_id, Place(placement.order), pin if "pin" in given else KEEP,
                 box if "box" in given else KEEP)

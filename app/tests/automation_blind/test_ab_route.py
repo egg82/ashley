@@ -21,7 +21,7 @@ from respond_support import ALANA, SAM, wired as wired
 from test_workshop_routes import As, command, opened
 from test_workshop_routes import signed_in as signed_in
 
-ADD = {"type": "add", "kind": "automation", "title": "porch", "body": body(), "size": "medium"}
+ADD = {"type": "add", "kind": "automation", "title": "porch", "body": body()}
 OWNER = Owner(ALANA.household_id, ALANA.id)
 OLD = "automation.old_porch"
 
@@ -105,7 +105,7 @@ def test_refusals_are_409_with_their_reason_and_the_house_is_untouched(signed_in
     client = signed_in(ALANA)
     bench = opened(client).id
     command(client, bench, ADD)
-    command(client, bench, {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"})
+    command(client, bench, {"type": "add", "kind": "note", "title": "n", "body": "x"})
     command(client, bench, {**ADD, "body": body(triggers=[])})
     status, refused = command(client, bench, {**ADD, "body": "{not json"})
     assert status == 409 and CommandRefused.model_validate(refused).reason == "bad_automation"

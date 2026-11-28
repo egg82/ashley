@@ -101,7 +101,7 @@ def test_an_add_the_bench_refuses_for_another_reason_does_not_use_the_allowance(
         async with real(db_url) as r:
             bench = await opened(r)
             tools = lead_tools(r, bench)
-            blank = await tools.call(tc("bench_add", kind="note", title=" \t ", body="b", size="small"))
+            blank = await tools.call(tc("bench_add", kind="note", title=" \t ", body="b"))
             assert blank.is_error and "ask_first" not in blank.content
             got = await adds(tools, CAP + 1)
             assert [x.is_error for x in got] == [False] * CAP + [True]

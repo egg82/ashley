@@ -25,7 +25,7 @@ from ..workshop.commands import type_of
 from ..workshop.install_piece import carry_out
 from ..workshop.installs import InstallRecord, Installs, InstallsUnavailable
 from ..workshop.shadows import ShadowRun, Shadows, ShadowsUnavailable
-from ..workshop.model import SIZES, Bench, Change, Owner, Piece, Place
+from ..workshop.model import Bench, Change, Owner, Piece, Place
 from ..workshop.provisional import provisional_title
 from ..workshop.wake_links import WakeLinks, links_of
 from ..workshop.rules import Kind
@@ -84,7 +84,7 @@ def summary(bench: Bench) -> BenchSummary:
 
 
 def _placement(place: Place) -> PiecePlace:
-    return PiecePlace(order=place.order, size=place.size,
+    return PiecePlace(order=place.order,
                       pin=None if place.pin is None else PiecePin(x=place.pin.x, y=place.pin.y),
                       box=None if place.box is None else PieceBox(w=place.box.w, h=place.box.h))
 
@@ -160,7 +160,7 @@ async def kinds_of(household_id: int) -> WorkshopKinds:
     kinds = [PieceKind(name=k.name, family=k.family, label=k.label, max_chars=k.max_chars, format=k.format,
                        language=k.language) for k in RULES.kinds.values()]
     link_kinds = [LinkKind(name=n, label=label) for n, label in RULES.link_kinds.items()]
-    return WorkshopKinds(kinds=kinds, link_kinds=link_kinds, sizes=list(SIZES), max_pieces=RULES.max_pieces,
+    return WorkshopKinds(kinds=kinds, link_kinds=link_kinds, max_pieces=RULES.max_pieces,
                          title_max_chars=RULES.title_max_chars, run_languages=list(services.get(Sandbox).languages()),
                          run_max_chars=RUNS.max_script_chars,
                          work_kinds=await _work_kinds(household_id))

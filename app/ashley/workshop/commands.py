@@ -16,12 +16,13 @@ from .reasons import REASONS as REASONS, Reason as Reason
 
 @dataclass(frozen=True)
 class Add:
-    """Add a piece of `kind` with `text`, last on the bench, at `size`. Its id is this command's `seq`."""
+    """Add a piece of `kind` with `text`, last on the bench, at `size` when it is a device's screen. Its id is this
+    command's `seq`."""
 
     by: By
     kind: str
     text: Text
-    size: Size
+    size: Size | None = None
 
 
 @dataclass(frozen=True)

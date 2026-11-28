@@ -306,7 +306,7 @@ class Rig:
         return out
 
     def add(self, bench: int, kind: str, body: str) -> int:
-        return int(self.command(bench, {"type": "add", "kind": kind, "title": "t", "body": body, "size": "small"})["piece_id"])
+        return int(self.command(bench, {"type": "add", "kind": kind, "title": "t", "body": body})["piece_id"])
 
     def run_piece(self, bench: int, piece: int, version: int = 1, language: str = CAD) -> dict[str, Any]:
         got = self.client.post(f"/api/benches/{bench}/runs",

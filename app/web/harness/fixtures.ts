@@ -13,7 +13,6 @@ export const KINDS: WorkshopKinds = {
   link_kinds: [
     { name: 'part_of', label: 'part of' }, { name: 'depends_on', label: 'depends on' }, { name: 'version_of', label: 'version of' },
   ] as unknown as WorkshopKinds['link_kinds'],
-  sizes: ['small', 'medium', 'large', 'full'],
   max_pieces: 60,
   title_max_chars: 120,
   run_languages: ['python'],
@@ -55,7 +54,7 @@ function seedsFor(n: number): Seed[] {
 function piece(id: number, s: Seed, order: number, ago: number): BenchPiece {
   const at = new Date(Date.now() - ago * 60_000).toISOString();
   return {
-    id, kind: s.kind, title: s.title, body: s.body, piece_version: 1, placement: { order, size: 'medium', pin: null, box: null },
+    id, kind: s.kind, title: s.title, body: s.body, piece_version: 1, placement: { order, pin: null, box: null },
     changed_by: id, changed_at: at, changed_author: id % 2 ? 'ashley' : 'person', changed_person_id: id % 2 ? null : 1,
     last_run: null, automation: null, video: null, reader: null, pointer: null, file: null, site: null, recipe: null, wake: null,
   } as BenchPiece;

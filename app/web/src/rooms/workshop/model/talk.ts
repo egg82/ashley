@@ -81,7 +81,7 @@ export function retryTalk(): Promise<void> {
 /** The piece a paste becomes on the bench: a large document, titled by its first line. */
 async function putUp(pasted: string, titleMax: number): Promise<{ piece: number } | { why: string }> {
   const title = firstLine(pasted, Math.min(titleMax, PASTE_TITLE)) || 'Pasted text';
-  const got = await apply({ type: 'add', kind: 'document', title, body: pasted, size: 'large' });
+  const got = await apply({ type: 'add', kind: 'document', title, body: pasted });
   if (!got.ok) return { why: whyNot(got.why) };
   return got.piece === null ? { why: whyNot('failed') } : { piece: got.piece };
 }

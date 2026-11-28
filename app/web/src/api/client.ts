@@ -217,7 +217,7 @@ export async function getPast(id: number): Promise<Ok<'/api/chat/conversations/{
   return answer(await fetch(`/api/chat/conversations/${id}`), 200, 'GET /api/chat/conversations/{id}');
 }
 
-/** What a bench allows: the piece kinds, the sizes a piece takes, the most pieces and the longest title. */
+/** What a bench allows: the piece kinds, the most pieces and the longest title. */
 export async function getWorkshopKinds(): Promise<Ok<'/api/workshop/kinds'>> {
   return answer(await fetch('/api/workshop/kinds'), 200, 'GET /api/workshop/kinds');
 }

@@ -30,7 +30,7 @@ def load(path: Path) -> Capture:
     """The capture in the JSON file `path`: a bench, its pieces and the result a run of its model returns."""
     raw: dict[str, Any] = json.loads(path.read_text())
     b = raw["bench"]
-    pieces = tuple(Piece(p["id"], p["kind"], Text(p["title"], p["body"]), p["version"], Place(i, "medium"), p["id"])
+    pieces = tuple(Piece(p["id"], p["kind"], Text(p["title"], p["body"]), p["version"], Place(i), p["id"])
                    for i, p in enumerate(raw["pieces"]))
     return Capture(Bench(b["id"], b["household_id"], b["owner_id"], b["title"], AT, None, len(pieces), AT, "3d"),
                    pieces, json.dumps(raw["run_result"]))

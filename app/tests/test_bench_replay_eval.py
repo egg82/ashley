@@ -47,7 +47,7 @@ class Fixed(Sandbox):
 
 
 def added(seq: int, at: float, kind: str, title: str, body: str, person: bool = False) -> Command:
-    command = {"type": "add", "kind": kind, "title": title, "body": body, "size": "medium"}
+    command = {"type": "add", "kind": kind, "title": title, "body": body}
     piece = {"id": seq, "kind": kind, "title": title, "body": body, "version": 1}
     return Command(seq, at, person, False, command, "accepted", {"type": "added", "piece": piece})
 

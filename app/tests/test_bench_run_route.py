@@ -17,8 +17,8 @@ from respond_support import ALANA, SAM, Fakes, wired as wired
 from test_workshop_routes import As, command, opened
 from test_workshop_routes import signed_in as signed_in
 
-CODE = {"type": "add", "kind": "code", "title": "sum", "body": "print(1+2)", "size": "medium"}
-NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"}
+CODE = {"type": "add", "kind": "code", "title": "sum", "body": "print(1+2)"}
+NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x"}
 
 
 @pytest.fixture

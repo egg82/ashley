@@ -57,7 +57,7 @@ const addAfter = Number(q.get('add') ?? 0);
 if (addAfter) {
   setTimeout(() => {
     const id = Math.max(...bench.pieces.map((p) => p.id)) + 1;
-    const p = { ...bench.pieces[0]!, id, kind: 'note', title: 'Overflow tray', body: 'A tray under each box, 2 cm deep.', changed_by: id, changed_at: new Date().toISOString(), changed_author: 'ashley' as const, placement: { order: bench.pieces.length, size: 'medium' as const, pin: null, box: null } };
+    const p = { ...bench.pieces[0]!, id, kind: 'note', title: 'Overflow tray', body: 'A tray under each box, 2 cm deep.', changed_by: id, changed_at: new Date().toISOString(), changed_author: 'ashley' as const, placement: { order: bench.pieces.length, pin: null, box: null } };
     bench = { ...bench, pieces: [...bench.pieces, p], links: [...bench.links, { from_id: id, kind: 'part_of', to_id: 2 }] };
     void refresh();
   }, addAfter);

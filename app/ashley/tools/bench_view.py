@@ -51,7 +51,7 @@ def piece(p: Piece, rules: Rules, body_chars: int, offset: int = 0, changed_at: 
     body, page = _shown(p, rules, metric)
     body = body if text is None else text
     return {"id": p.id, "kind": p.kind, "title": p.text.title, "version": p.version, "order": p.place.order,
-            "size": p.place.size, "body": body[offset:offset + body_chars], "offset": offset,
+            "body": body[offset:offset + body_chars], "offset": offset,
             "body_chars": len(body), "body_cut": len(body) > offset + body_chars,
             **({} if p.place.pin is None else {"pinned": True}),
             **({} if page is None else {"url": page.url, "page_title": page.title}),
