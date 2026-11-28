@@ -6,7 +6,8 @@
 // full, so do pinned pieces (a person put them there to look at), and the rest fold. A piece a newer one is a version
 // of draws as a faded header (`ghost`) beside it. A chip keeps its title at the floor at any zoom by drawing larger in
 // bench units as the camera pulls back, inside the piece's box, so chips never overlap; the camera never pulls back
-// past the zoom where the narrowest chip would be too narrow to hold a title (`minZoom`).
+// past the zoom where the narrowest chip would be too narrow to hold a title (`minZoom`). Her latest turn keeps the
+// pieces it touched in view together, and both ends of a "version of" link it touched, in full (`keptInView`).
 import { foldDistance, type Box, type MapLink } from './mindmap.ts';
 
 export const READ_FLOOR_PX = 12;
@@ -42,6 +43,8 @@ export interface FoldInput {
   pinned: ReadonlySet<number>;
   /** Pieces a newer piece on the bench is a version of. */
   superseded: ReadonlySet<number>;
+  /** Pieces her latest turn keeps in view (`keptInView`), drawn in full whatever the focus. */
+  kept?: ReadonlySet<number>;
   z: number;
 }
 
@@ -53,6 +56,7 @@ export function formsOf(f: FoldInput): Map<number, Form> {
   for (const id of f.ids) {
     if (!readable) out.set(id, 'chip');
     else if (id === f.focus) out.set(id, 'card');
+    else if (f.kept?.has(id)) out.set(id, 'card');
     else if (f.superseded.has(id)) out.set(id, 'ghost');
     else if (f.pinned.has(id) || !hops) out.set(id, 'card');
     else out.set(id, (hops.get(id) ?? Infinity) <= 1 ? 'card' : 'chip');
@@ -84,4 +88,39 @@ export function supersededBy(links: readonly MapLink[], ids: ReadonlySet<number>
   const out = new Set<number>();
   for (const l of links) if (l.kind === 'version_of' && ids.has(l.from) && ids.has(l.to)) out.add(l.to);
   return out;
+}
+
+/** The pieces her latest turn keeps in full: those it named together (two or more), and for each "version of" link with
+ *  an end among them, both ends. `turn` is that turn's piece ids; only pieces on the bench count. */
+export function keptInView(links: readonly MapLink[], turn: readonly number[], ids: ReadonlySet<number>): Set<number> {
+  const on = turn.filter((p) => ids.has(p));
+  const out = new Set(on.length > 1 ? on : []);
+  for (const l of links) {
+    if (l.kind !== 'version_of' || !ids.has(l.from) || !ids.has(l.to)) continue;
+    if (on.includes(l.from) || on.includes(l.to)) { out.add(l.from); out.add(l.to); }
+  }
+  return out;
+}
+
+/** What the camera should try to show for the pieces `kept` keeps in full, widest first: all of them together, else
+ *  the newest by `rank` with its version partner(s). Empty when nothing is kept. */
+export function keptWants(kept: ReadonlySet<number>, links: readonly MapLink[], boxes: ReadonlyMap<number, Box>, rank: (id: number) => number): Box[][] {
+  const on = [...kept].filter((p) => boxes.has(p));
+  if (!on.length) return [];
+  const newest = on.reduce((a, p) => (rank(p) > rank(a) ? p : a));
+  const pair = new Set([newest]);
+  for (const l of links) if (l.kind === 'version_of' && (l.from === newest || l.to === newest)) { pair.add(l.from); pair.add(l.to); }
+  const of = (ids: Iterable<number>) => [...ids].filter((p) => boxes.has(p)).map((p) => boxes.get(p)!);
+  return [of(on), of(pair)];
+}
+
+/** What the camera tries to show, in order, when it goes to the focus. A person's focus change (`why` 'person') goes to
+ *  the focused piece and its neighbours, never to her kept set; the bench opening or her turn changing the kept set
+ *  tries the kept pieces first. */
+export function shotWants(why: 'open' | 'turn' | 'person', a: {
+  kept: ReadonlySet<number>; links: readonly MapLink[]; boxes: ReadonlyMap<number, Box>; rank: (id: number) => number;
+  goal: Box; focus: Box; near: readonly Box[];
+}): Box[][] {
+  const together = why === 'person' ? [] : keptWants(a.kept, a.links, a.boxes, a.rank);
+  return [...together, [a.goal, ...a.near], why === 'open' ? [a.goal, a.focus] : [...a.near]];
 }

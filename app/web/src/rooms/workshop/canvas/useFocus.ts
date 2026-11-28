@@ -4,6 +4,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { BenchPiece } from '../../../api/types';
 import { lookAt, openingZoom } from '../model/camera';
+import { shotWants } from '../model/fold';
 import { foldDistance } from '../model/mindmap';
 import type { Camera } from './useCamera';
 import { CANVAS_INSET } from './Chrome';
@@ -20,13 +21,16 @@ function latest(cards: readonly BenchPiece[]): number | null {
 /** The camera that shows piece `id` with its neighbours and the goal when they fit, clear of the toolbar, at the zoom it
  *  already has when cards are readable there; else the neighbours alone. When the bench `opening`, it prefers the goal
  *  to the neighbours: the piece and the goal, else the whole piece leaning toward the goal. */
-function shot(id: number, place: Placement, camera: Camera, opening: boolean): Parameters<Camera['fly']>[0] | null {
+function shot(id: number, place: Placement, camera: Camera, why: 'open' | 'turn' | 'person', kept: ReadonlySet<number>): Parameters<Camera['fly']>[0] | null {
   const box = place.boxes.get(id);
   if (!box) return null;
+  const opening = why === 'open';
   const z = camera.cam.z >= 1 && !opening ? camera.cam.z : openingZoom(camera.view);
   const hops = foldDistance(id, place.links);
   const near = [...place.boxes].filter(([p]) => (hops.get(p) ?? Infinity) <= 1).map(([, b]) => b);
-  return lookAt([[GOAL_BOX, ...near], opening ? [GOAL_BOX, box] : near], box, camera.view, z, CANVAS_INSET);
+  const rank = (p: number) => place.cards.find((c) => c.id === p)?.changed_by ?? 0;
+  const wants = shotWants(why, { kept, links: place.links, boxes: place.boxes, rank, goal: GOAL_BOX, focus: box, near });
+  return lookAt(wants, box, camera.view, z, CANVAS_INSET);
 }
 
 export interface Focus {
@@ -35,7 +39,7 @@ export interface Focus {
   landing: ReadonlySet<number>;
 }
 
-export function useFocus(place: Placement, camera: Camera): Focus {
+export function useFocus(place: Placement, camera: Camera, kept: ReadonlySet<number>): Focus {
   const [focus, setFocusState] = useState<number | null>(null);
   const [landing, setLanding] = useState<ReadonlySet<number>>(new Set());
   const known = useRef<Set<number> | null>(null);
@@ -45,7 +49,7 @@ export function useFocus(place: Placement, camera: Camera): Focus {
     if (!laid || known.current) return;
     known.current = new Set(place.boxes.keys());
     setFocusState(shown);
-    const s = shown === null ? null : shot(shown, place, camera, true);
+    const s = shown === null ? null : shot(shown, place, camera, 'open', kept);
     if (s) camera.jump(s);
   }, [laid]);
   useEffect(() => {
@@ -59,9 +63,17 @@ export function useFocus(place: Placement, camera: Camera): Focus {
   const setFocus = (id: number) => {
     if (id === shown && camera.cam.z >= 1) return;
     setFocusState(id);
-    const s = shot(id, place, camera, false);
+    const s = shot(id, place, camera, 'person', kept);
     if (s) camera.fly(s);
   };
+  const keptKey = [...kept].sort().join();
+  const keptWas = useRef(keptKey);
+  useEffect(() => {
+    if (keptKey === keptWas.current) return;
+    keptWas.current = keptKey;
+    const s = known.current && kept.size && shown !== null ? shot(shown, place, camera, 'turn', kept) : null;
+    if (s) camera.fly(s);
+  }, [keptKey]);
   const asked = focusAsk.value;
   useEffect(() => {
     if (asked === null) return;

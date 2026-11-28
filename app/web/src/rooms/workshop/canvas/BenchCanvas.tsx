@@ -11,8 +11,9 @@ import { framing, onScreen, openingZoom, toBench, visibleBox, worldTransform, ty
 import { groupDerived } from '../model/derived';
 import { draftsOn } from '../model/drafts';
 import { placeAsides } from '../model/aside';
-import { drawnRect, formsOf, lift, minZoom, supersededBy } from '../model/fold';
-import { badgeText } from '../model/herLines';
+import { drawnRect, formsOf, keptInView, lift, minZoom, supersededBy } from '../model/fold';
+import { badgeText, type HerLine } from '../model/herLines';
+import { talkPieceLines } from '../model/talk';
 import { fullIndex, inOrder } from '../model/layout';
 import { rootsOf, type Box } from '../model/mindmap';
 import { cardWidth, placeOf } from '../model/placing';
@@ -79,10 +80,12 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   const place = usePlacement(bench, kinds, measured);
   const camera = useCamera(vp, minZoom([...place.boxes.values()]), scrolls);
   const { cam, view } = camera;
-  const { focus, setFocus, landing } = useFocus(place, camera);
   const ids = new Set(place.boxes.keys());
+  const herLast = talkPieceLines.value.reduce<HerLine | null>((a, l) => (!a || l.at > a.at || (l.at === a.at && l.turn > a.turn) ? l : a), null);
+  const kept = keptInView(place.links, herLast?.pieces ?? [], ids);
+  const { focus, setFocus, landing } = useFocus(place, camera, kept);
   const superseded = supersededBy(place.links, ids);
-  const forms = formsOf({ ids: [...ids], focus, links: place.links, pinned: place.pinned, superseded, z: cam.z });
+  const forms = formsOf({ ids: [...ids], focus, links: place.links, pinned: place.pinned, superseded, kept, z: cam.z });
   const rects = new Map([...place.boxes].map(([p, b]) => [p, drawnRect(b, forms.get(p)!, cam.z)]));
   const lines = useHerLines(id, place.cardOf, ids);
   const asides = placeAsides([...lines.byPiece].filter(([p]) => rects.has(p)).map(([p, ls]) => ({
