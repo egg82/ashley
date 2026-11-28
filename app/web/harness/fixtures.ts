@@ -35,7 +35,7 @@ const SEEDS: Seed[] = [
   { kind: 'automation', title: 'Water when dry', body: AUTO },
   { kind: 'note', title: 'Pump bracket v4', body: 'Tab wall 5.0 mm, fillet on the inside corner. Print check passes at 18 g.' },
   { kind: 'note', title: 'Tubing', body: 'On the hardware list: 4 mm, 2 m. Theo says the kitchen drawer is out.' },
-  { kind: 'document', title: 'Measurements', body: '| what | value |\n|---|---|\n| pipe | 4 mm |\n| tab wall | 3.0 mm |\n| sun on rail | ~55 °C |' },
+  { kind: 'document', title: 'Measurements', body: '| what | value | note |\n|---|--:|:--|\n| pipe | 4 mm | **measured** with calipers at the thinnest point of the bend, twice |\n| tab wall | 3.0 mm |\n| sun on rail | ~55 °C |' },
   { kind: 'note', title: 'Wiring', body: 'ESP32 → 10k pull-down → MOSFET → pump. Sensor on GPIO 34.' },
   { kind: 'code', title: 'Calibration script', body: 'readings = [adc.read(0) for _ in range(30)]\nprint(min(readings), max(readings))' },
   { kind: 'note', title: 'Pump datasheet', body: '5 V, 240 mA, 1.2 L/min. Runs dry for 30 s at most.' },

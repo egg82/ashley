@@ -99,6 +99,13 @@
 .m code { font: 12px/1.5 var(--f-mono); }
 .md-pre { margin: 6px 0 0; padding: 8px 10px; overflow-x: auto; border-radius: 8px; background: var(--ink-1); border: 1px solid var(--line); color: var(--text-2); }
 .md-pre code { white-space: pre; }
+/* a table scrolls sideways inside its own box; the box never widens the bubble or the piece */
+.md-scroll { margin: 6px 0 0; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.md-table { border-collapse: collapse; font-size: 12.5px; line-height: 1.5; }
+.md-table th, .md-table td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.md-table th { background: var(--ink-1); color: var(--text-2); font-weight: 600; white-space: nowrap; }
+.md-table tr:last-child td { border-bottom: 0; }
+.md-table td { color: var(--text); }
 .md-link { color: var(--blue-hi); text-decoration: underline; overflow-wrap: anywhere; }
 
 /* a script she ran, under her answer: a closed disclosure line, opening to mono blocks that scroll instead of widening */
