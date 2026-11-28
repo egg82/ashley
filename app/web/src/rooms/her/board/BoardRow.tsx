@@ -55,6 +55,9 @@ function Action({ offer, act }: { offer: Offer; act: ReturnType<typeof useAct> }
     case 'undo':
       return <button class="btn sm ghost" type="button" disabled={busy} onClick={() => void act.run(async () =>
         undoResult((await undoAction(offer.action)).how))}>{busy ? 'Undoing…' : 'Undo'}</button>;
+    case 'stop':
+      return <button class="btn sm ghost" type="button" disabled={busy} onClick={() => void act.run(async () =>
+        undoResult((await undoAction(offer.action)).how, true))}>{busy ? 'Cancelling…' : 'Cancel'}</button>;
   }
 }
 

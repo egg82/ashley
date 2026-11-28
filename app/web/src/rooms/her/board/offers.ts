@@ -1,6 +1,7 @@
 // What a board row offers, by the item's kind and state: pure, so it is tested without a page. A proposal is agreed by a
 // tap when it holds calls (`can_tap`), else by answering her in the conversation it was made in; a live watch can be
-// cancelled; something she did on her own can be undone only while the server offers it (`can_undo`).
+// cancelled; something she did on her own can be undone only while the server offers it (`can_undo`), and a print she
+// queued is offered as Cancel (`stop`), which takes it back the same way while nobody has started it.
 import type { ActionUndone, UndoDone, WorkItem } from '../../../api/types';
 
 type UndoHow = ActionUndone['how'];
@@ -9,7 +10,13 @@ export type Offer =
   | { kind: 'agree'; proposal: number }
   | { kind: 'reply'; here: boolean }
   | { kind: 'cancel'; watch: number }
-  | { kind: 'undo'; action: number };
+  | { kind: 'undo'; action: number }
+  | { kind: 'stop'; action: number };
+
+/** Whether the item's Undo stops something still waiting to happen, which the board words as Cancel. */
+function stops(item: WorkItem): boolean {
+  return item.undo?.kind === 'print_cancel';
+}
 
 /** The actions row `item` offers; `open` is the conversation open on this screen, where a reply can be typed. */
 export function offers(item: WorkItem, open: number | null): Offer[] {
@@ -19,7 +26,7 @@ export function offers(item: WorkItem, open: number | null): Offer[] {
     return [];
   }
   if (item.kind === 'watch' && (item.state === 'running' || item.state === 'stopped')) return [{ kind: 'cancel', watch: item.id }];
-  if (item.kind === 'action' && item.can_undo === true && !item.undone) return [{ kind: 'undo', action: item.id }];
+  if (item.kind === 'action' && item.can_undo === true && !item.undone) return [{ kind: stops(item) ? 'stop' : 'undo', action: item.id }];
   return [];
 }
 
@@ -30,15 +37,22 @@ const UNDONE: Record<UndoHow, string> = {
   gone: 'Already gone, nothing undone',
 };
 
+const STOPPED: Record<UndoHow, string> = {
+  ...UNDONE,
+  undoing: 'Cancelling…',
+  undone: 'Cancelled',
+  gone: 'Already started or gone, nothing cancelled',
+};
+
 /** How a taken Undo stands, in words, or null when it was never taken. */
 export function undoneWord(item: WorkItem): string | null {
-  return item.undone ? UNDONE[item.undone.how] ?? null : null;
+  return item.undone ? (stops(item) ? STOPPED : UNDONE)[item.undone.how] ?? null : null;
 }
 
-/** What an Undo the person just pressed did, in words. */
-export function undoResult(how: UndoDone['how']): string {
+/** What an Undo (or a Cancel, `stop`) the person just pressed did, in words. */
+export function undoResult(how: UndoDone['how'], stop = false): string {
   if (how === 'waiting_on_you') return 'Taking it back is a delete, so it waits on your yes. Reply to her to agree.';
-  return UNDONE[how];
+  return (stop ? STOPPED : UNDONE)[how];
 }
 
 const REFUSED: Record<string, string> = {

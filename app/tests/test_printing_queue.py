@@ -1,5 +1,6 @@
 """`printing_queue` end to end through `PrintQueueTools` and the Bambuddy adapter, against a fake Bambuddy built from its
-OpenAPI document: it is offered as a change (tier `asks`), only to a household with a printing manager; an item is
+OpenAPI document: it is offered as a change (tier `asks_if_tainted`), beside `printing_cancel`, only to a household with a
+printing manager; an item is
 always sent staged (`manual_start`) with the AMS slots she suggests as Bambuddy's global tray ids and the plate she names;
 what Bambuddy turns away comes back as a typed outcome (`not_found`, `rejected`), a key that may not queue as `refused`;
 what the person agrees to is written by code from the manager as it stands and holds no file name."""
@@ -23,6 +24,7 @@ from ashley.tools import printing_config
 from ashley.tools.printing_queue import PrintQueueTools
 from ashley.tools.printing_queue_specs import QUEUE
 from ashley.tools.tools import ToolsUnavailable, Unshown
+from ashley.undo import Undo
 from bambuddy_support import BASE, KEY, FakeBambuddy, held, status
 from mail_bridge_support import logged
 
@@ -60,15 +62,17 @@ def shown(**arguments: object) -> str | None:
 
 
 def test_the_queue_is_a_change_offered_only_where_there_is_a_manager(fake: FakeBambuddy) -> None:
-    (spec,) = asyncio.run(tools().catalogue()).specs
-    assert (spec.name, spec.reads, spec.outside, spec.tier) == (QUEUE, False, False, "asks")
+    spec, cancel = asyncio.run(tools().catalogue()).specs
+    assert (spec.name, spec.reads, spec.outside, spec.tier) == (QUEUE, False, False, "asks_if_tainted")
+    assert (cancel.name, cancel.reads, cancel.outside, cancel.tier) == ("printing_cancel", False, False, "judged")
     assert asyncio.run(tools(HOME + 1).catalogue()).specs == ()
     assert asyncio.run(tools(HOME + 1).call(ToolCall("c", QUEUE, ASK))).content.startswith("not_connected")
 
 
 def test_an_item_goes_in_staged_with_nothing_else_unless_she_names_it(fake: FakeBambuddy) -> None:
-    got = body(queue(**ASK))
-    assert got == {"outcome": "queued", "item_id": "101", "position": 1, "staged": True}
+    done = queue(**ASK)
+    assert body(done) == {"outcome": "queued", "item_id": "101", "position": 1, "staged": True}
+    assert done.undo == Undo("print_cancel", "101"), "what she queued carries the Undo that cancels it"
     assert fake.queued == [{"printer_id": 1, "library_file_id": 2, "manual_start": True}]
 
 
@@ -90,6 +94,7 @@ def test_an_ams_ht_unit_is_addressed_by_its_own_id() -> None:
 
 
 def test_a_file_or_printer_that_is_not_there_is_not_found(fake: FakeBambuddy) -> None:
+    assert queue(file_id="99", printer_id="1").undo is None
     assert body(queue(file_id="99", printer_id="1")) == {"outcome": "not_found"}
     assert body(queue(file_id="2", printer_id="7")) == {"outcome": "not_found"}
     assert body(queue(file_id="2", printer_id="7", slots=[{"need": 1, "unit": 1, "slot": 1}])) == {"outcome": "not_found"}
@@ -122,7 +127,7 @@ def test_a_manager_that_fails_is_an_error_result_that_names_why(fake: FakeBambud
 
 def test_a_key_that_may_not_queue_is_told_so_and_a_link_that_cannot_be_read_is_unavailable(fake: FakeBambuddy) -> None:
     fake.forbidden.add("/api/v1/queue/")
-    assert "may not queue prints" in queue(**ASK).content
+    assert "may not change the print queue" in queue(**ASK).content
     down = held(HOME)
     down.down = True
     services.register(Connections, down)

@@ -1,9 +1,11 @@
 """The kinds of action a person may let her just do or have her offer first, as data in `kinds.json` beside this module
 (`decisions.md`, "What she may just do is a person's setting over the floor"). Each kind has a `label` to show and the
 `calls` it covers: a tool, and when `argument` is given, only a call that gives it (one of `values`, compared in lower
-case, when they are listed). A call belongs to the first kind that covers it. A kind with a `floor` is one the code
-always offers first whatever is set: `asks`, its tools' tier holds them in every turn (`tools/tiers.json`, `ToolSpec.tier`);
-`irreversible`, `home_assistant/irreversible.json` covers every change it names. A test holds each `floor` to the code."""
+case, when they are listed). A call belongs to the first kind that covers it. A kind's `default` is what it is for a person
+who has stored nothing for it: `act` unless the kind says `offer`, which a kind whose changes cannot be taken back says.
+A kind with a `floor` is one the code always offers first whatever is set: `asks`, its tools' tier holds them in every turn
+(`tools/tiers.json`, `ToolSpec.tier`); `irreversible`, `home_assistant/irreversible.json` covers every change it names. A
+test holds each `floor` to the code."""
 
 import json
 from collections.abc import Mapping
@@ -15,7 +17,8 @@ FILE = Path(__file__).with_name("kinds.json")
 Value = Literal["act", "offer"]
 Floor = Literal["asks", "irreversible"]
 DEFAULT: Value = "act"
-"""What a kind with no floor is when its person has set nothing: what she does today without asking."""
+"""What a kind with no floor and no `default` of its own is when its person has set nothing."""
+_VALUES: tuple[Value, ...] = ("act", "offer")
 _FLOORS: tuple[Floor, ...] = ("asks", "irreversible")
 
 
@@ -44,6 +47,7 @@ class Kind:
     label: str
     calls: tuple[Covered, ...]
     floor: Floor | None = None
+    default: Value = DEFAULT
 
 
 class TrustRefused(Exception):
@@ -66,8 +70,8 @@ class Kinds:
 
     def effective(self, stored: Mapping[str, Value]) -> dict[str, Value]:
         """Each kind's value for a person who stored `stored`: `offer` for a kind with a floor whatever they stored,
-        else theirs, else `DEFAULT`."""
-        return {k.kind: "offer" if k.floor is not None else stored.get(k.kind, DEFAULT) for k in self.kinds}
+        else theirs, else the kind's `default`."""
+        return {k.kind: "offer" if k.floor is not None else stored.get(k.kind, k.default) for k in self.kinds}
 
     def checked(self, chosen: Mapping[str, Value]) -> dict[str, Value]:
         """What to store for a person's whole choice `chosen`: only what differs from what the kind is unset, so a
@@ -83,7 +87,7 @@ class Kinds:
                 if value != "offer":
                     raise TrustRefused(name, "locked")
                 continue
-            if value != DEFAULT:
+            if value != kind.default:
                 kept[name] = value
         return kept
 
@@ -95,7 +99,8 @@ def load() -> Kinds:
 
 def parse(raw: object) -> Kinds:
     """Kinds from JSON already parsed. Raises ValueError unless it is `{"kinds": [...]}` of distinct, non-empty kinds,
-    each with a label, at least one call, and a floor of `asks` or `irreversible` when it has one."""
+    each with a label, at least one call, a floor of `asks` or `irreversible` when it has one, and a default of `act` or
+    `offer` only when it has no floor."""
     top = _obj(raw)
     if top is None or set(top) != {"kinds"}:
         raise ValueError("kinds.json is {\"kinds\": [...]}")
@@ -120,9 +125,10 @@ def _listed(value: object) -> list[object]:
 
 def _kind(raw: object) -> Kind:
     got = _obj(raw)
-    if got is None or set(got) - {"kind", "label", "calls", "floor"} or not {"kind", "label", "calls"} <= set(got):
-        raise ValueError("a kind has kind, label, calls and optionally floor")
-    kind, label, floor = got["kind"], got["label"], got.get("floor")
+    allowed = {"kind", "label", "calls", "floor", "default"}
+    if got is None or set(got) - allowed or not {"kind", "label", "calls"} <= set(got):
+        raise ValueError("a kind has kind, label, calls and optionally floor or default")
+    kind, label, floor, default = got["kind"], got["label"], got.get("floor"), got.get("default", DEFAULT)
     if not isinstance(kind, str) or not kind or not isinstance(label, str) or not label:
         raise ValueError("a kind names itself and its label")
     calls = tuple(_covered(c) for c in _listed(got["calls"]))
@@ -131,7 +137,10 @@ def _kind(raw: object) -> Kind:
     named: Floor | None = next((f for f in _FLOORS if f == floor), None)
     if floor is not None and named is None:
         raise ValueError(f"{kind}'s floor is asks or irreversible")
-    return Kind(kind, label, calls, named)
+    unset: Value | None = next((v for v in _VALUES if v == default), None)
+    if unset is None or (floor is not None and "default" in got):
+        raise ValueError(f"{kind}'s default is act or offer, on a kind with no floor")
+    return Kind(kind, label, calls, named, unset)
 
 
 def _covered(raw: object) -> Covered:

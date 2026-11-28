@@ -2,8 +2,8 @@
 units (`GET /api/v1/printers/` then `GET /api/v1/printers/:id/status` for each), which spool the household says sits in
 each slot (`GET /api/v1/spoolman/inventory/slot-assignments/all`), the print library (`GET /api/v1/library/files`) and one
 file's filament needs (`GET /api/v1/library/files/:id/filament-requirements`), turned from `wire`'s shapes into the
-printing records; and its two writes, a print put in the queue staged (`POST /api/v1/queue/`, `queueing`) and a file
-added to the library (`POST /api/v1/library/files`). Every answered call moves the connection's `checked_at`. Nothing outside this module, `wire` and
+printing records; and its writes, a print put in the queue staged (`POST /api/v1/queue/`, `queueing`), that print
+cancelled while it waits (`POST /api/v1/queue/:id/cancel`) and a file added to the library (`POST /api/v1/library/files`). Every answered call moves the connection's `checked_at`. Nothing outside this module, `wire` and
 `colour` knows Bambuddy's field names. A read that cannot say which spool is in a slot (Bambuddy has no Spoolman) logs
 `bambuddy.assignments_skipped` with the connection id and leaves `Slot.spool_id` None."""
 
@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 from .. import logs
 from ..connections.model import Opened
-from ..printing.model import (AmsUnit, Fault, NotConnected, Need, Page, PrintFile, Printer, PrintingFailed,
+from ..printing.model import (AmsUnit, Cancelled, Fault, NotConnected, Need, Page, PrintFile, Printer, PrintingFailed,
                               PrintingUnavailable, QueueRequest, Queueing, Reason, Slot, Uploading)
 from ..printing.printing import Printing
 from . import queueing, wire
@@ -87,6 +87,15 @@ class BambuddyPrinting(Printing):
         if isinstance(put, str):
             return Queueing(put)
         return Queueing("queued", str(put.id), put.position)
+
+    async def cancel(self, household_id: int, item_id: str) -> Cancelled:
+        """Bambuddy cancels only an entry still `pending` (400 otherwise) and answers 404 for one it does not have; both
+        are `gone`."""
+        opened = await _READER.need(household_id)
+        if (number := queueing.number(item_id)) is None:
+            return "gone"
+        done = await _READER.post(opened, f"/api/v1/queue/{number}/cancel", {}, wire.Message)
+        return "gone" if isinstance(done, str) else "cancelled"
 
     async def upload(self, household_id: int, name: str, data: bytes) -> Uploading:
         opened = await _READER.need(household_id)

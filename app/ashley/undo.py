@@ -4,11 +4,12 @@
 from dataclasses import dataclass
 from typing import Literal, get_args
 
-UndoKind = Literal["house_delete", "reminder_cancel", "todo_remove", "todo_done", "todo_reopen"]
+UndoKind = Literal["house_delete", "reminder_cancel", "todo_remove", "todo_done", "todo_reopen", "print_cancel"]
 """The inverse to carry out: `house_delete` deletes the config or record `ref` of the house kind `within` (an
 automation, script or helper she created, or an area, floor or label); `reminder_cancel` cancels the reminder whose
 wake id is `ref`; `todo_remove`, `todo_done` and `todo_reopen` make that change to the item `ref` (its id, else its
-exact text) of the to-do list `within`."""
+exact text) of the to-do list `within`; `print_cancel` takes the queued print `ref` (its queue entry) out of the
+queue while nobody has started it."""
 
 
 @dataclass(frozen=True)

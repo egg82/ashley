@@ -4,11 +4,14 @@
 requirements), the shape its descriptions name. No live response was captured. Printer names, serials and hosts are made up.
 Every request is recorded with its path, query and `X-API-Key` header; one without the key is 401.
 
-The two writes follow the document too: `POST /api/v1/queue/` takes `PrintQueueItemCreate` (a body naming a field the
+The writes follow the document too: `POST /api/v1/queue/` takes `PrintQueueItemCreate` (a body naming a field the
 schema lacks, or a field of the wrong type, is 422) and answers a `PrintQueueItemResponse`; `POST /api/v1/library/files`
 takes the multipart `file` of `Body_upload_file_api_v1_library_files_post` and answers a `FileUploadResponse`, `duplicate_of`
 naming the earlier file when the same bytes came before. The document does not say which files the queue turns away, nor
 which types an upload does; the fake turns away a file in `unsliced` (422) and an upload whose name ends `.exe` (415).
+`POST /api/v1/queue/:id/cancel` is as Bambuddy's source (`backend/app/api/routes/print_queue.py`, `cancel_queue_item`)
+gives it, read 2026-11-27: 404 for an entry it does not have, 400 unless the entry is `pending`, else the entry becomes
+`cancelled` and it answers `{"message"}`. `states` holds each queued entry's status by id.
 
 The camera routes are as its source (`backend/app/api/routes/camera.py`, `archives.py`) and a live read of v1.3.1 give them, with
 Bambuddy's login on: `POST /api/v1/printers/camera/stream-token` answers `{"token"}`, and
@@ -125,6 +128,7 @@ class FakeBambuddy:
     queued: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
     uploaded: list[tuple[str, bytes]] = field(default_factory=list[tuple[str, bytes]])
     unsliced: set[int] = field(default_factory=set[int])
+    states: dict[int, str] = field(default_factory=dict[int, str])
     archives: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
     frames: dict[int, list[bytes]] = field(default_factory=dict[int, list[bytes]])
     dark: set[int] = field(default_factory=set[int])
@@ -180,7 +184,19 @@ class FakeBambuddy:
             return self.enqueue(request)
         if path == "/api/v1/library/files":
             return self.add_file(request)
+        cancel = re.fullmatch(r"/api/v1/queue/(\d+)/cancel", path)
+        if cancel is not None:
+            return self.cancel(int(cancel.group(1)))
         return httpx2.Response(404, json={"detail": "Not Found"})
+
+    def cancel(self, item: int) -> httpx2.Response:
+        state = self.states.get(item)
+        if state is None:
+            return httpx2.Response(404, json={"detail": "Queue item not found"})
+        if state != "pending":
+            return httpx2.Response(400, json={"detail": f"Cannot cancel item with status '{state}'"})
+        self.states[item] = "cancelled"
+        return httpx2.Response(200, json={"message": "Queue item cancelled"})
 
     def enqueue(self, request: httpx2.Request) -> httpx2.Response:
         sent = json.loads(request.content)
@@ -194,6 +210,7 @@ class FakeBambuddy:
         if file in self.unsliced:
             return httpx2.Response(422, json={"detail": "Only sliced files can be queued"})
         self.queued.append(sent)
+        self.states[100 + len(self.queued)] = "pending"
         return httpx2.Response(200, json={**sent, "id": 100 + len(self.queued), "position": len(self.queued),
                                           "status": "pending", "waiting_reason": None, "created_at": "2026-11-20T00:00:00"})
 

@@ -3,11 +3,14 @@
     {"kind": "house_removals", "label": "Delete or remove things from the house's setup",
      "calls": [{"tool": "house_change", "argument": "op", "values": ["delete"]}], "floor": "irreversible"},
     {"kind": "house_setup", "label": "Change how the house is set up", "calls": [{"tool": "house_change"}]},
-    {"kind": "reminders", "label": "Set, change or cancel reminders",
-     "calls": [{"tool": "remind"}, {"tool": "change_reminder"}, {"tool": "cancel_reminder"}]},
-    {"kind": "lists", "label": "Edit to-do lists", "calls": [{"tool": "todo_change"}]},
-    {"kind": "messages", "label": "Send email", "calls": [{"tool": "mail_send"}]},
+    {"kind": "reminder_cancels", "label": "Cancel reminders", "calls": [{"tool": "cancel_reminder"}], "default": "offer"},
+    {"kind": "reminders", "label": "Set or change reminders", "calls": [{"tool": "remind"}, {"tool": "change_reminder"}]},
+    {"kind": "list_removals", "label": "Remove items from to-do lists",
+     "calls": [{"tool": "todo_change", "argument": "op", "values": ["remove"]}], "default": "offer"},
+    {"kind": "lists", "label": "Add, tick off or reopen to-do items", "calls": [{"tool": "todo_change"}]},
+    {"kind": "messages", "label": "Send email", "calls": [{"tool": "mail_send"}], "default": "offer"},
     {"kind": "money", "label": "Categorise or note transactions",
-     "calls": [{"tool": "money_categorise"}, {"tool": "money_note"}], "floor": "asks"}
+     "calls": [{"tool": "money_categorise"}, {"tool": "money_note"}], "floor": "asks"},
+    {"kind": "printing", "label": "Queue prints", "calls": [{"tool": "printing_queue"}]}
   ]
 }

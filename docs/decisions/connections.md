@@ -363,7 +363,8 @@ Ledger's shape (above). Reads came first; the two writes are below.
   else changes: the second adapter adds a router that sends each call to the adapter of the opened connection's kind, as
   `ashley.mail.routed.RoutedMailbox` does. Until then the one adapter serves whatever opens.
 - **Bambuddy is one connection: an address (http or https) and an API key**, sent as `X-API-Key`. The key is made in
-  Bambuddy with permission to read status, the library and the inventory, to queue, and to manage the library (a key
+  Bambuddy with permission to read status, the library and the inventory, to queue (which covers cancelling what it
+  queued), and to manage the library (a key
   without those last two reads and is `refused` on a write), and no permission to control a printer. A
   connection is stored once `GET /api/v1/printers/` answers as a list of printers with it.
 - **What she reads.** Printers with state, the print's name, progress, minutes left, layers and reported problems
@@ -388,11 +389,19 @@ Ledger's shape (above). Reads came first; the two writes are below.
   `PrintingUnavailable` and `StockUnavailable` when the household's link cannot be read, `NotConnected` when it has none.
   A 404 for a library file is `None`, not a failure. Logs carry the path (`bambuddy.get`, `bambuddy.post`,
   `bambuddy.upload`), status and duration, with connection ids and counts, never a key, a name or a spool's text.
-- **Queuing a print is a change at the `asks` tier, held as the person's proposal.** `printing_queue`
-  (`ashley.tools.printing_queue.PrintQueueTools`) is the money changes' shape (above) over `Printing.queue`: not a read,
-  offered where the reply reaches a named person alone, held in every turn without asking the action judge, and sent to
-  Bambuddy only through `carry_out` in their later turn or the Agree tap. Fits into: Proposals and Outside, with no store
-  or confirm tool of its own.
+- **Queuing a print is a change at the `asks_if_tainted` tier, with Cancel as its way back.** `printing_queue`
+  (`ashley.tools.printing_queue.PrintQueueTools`) over `Printing.queue` is not a read and is offered where the reply
+  reaches a named person alone. A person asking for it is their yes, and it queues. A turn that has read outside words
+  holds it as the person's proposal without asking the action judge, sent to Bambuddy only through `carry_out` in their
+  later turn or the Agree tap. A turn nobody asked for goes by the person's `printing` kind ("What she may just do is a
+  person's setting over the floor"), `act` unset. Fits into: Proposals, Outside and the trust seam, with no store or
+  confirm tool of its own.
+  - **Cancel is `printing_cancel`** (`Printing.cancel`, Bambuddy's `POST /api/v1/queue/:id/cancel`), a `judged` change:
+    Bambuddy cancels only an entry still `pending` and answers 400 otherwise, 404 for one it does not have; both are
+    `gone`. A queued print's result carries `print_cancel` of its entry, so one queued on her own shows Cancel on the
+    board until it is taken or nobody can (`outcome` `gone`). Bambuddy's key scope `can_queue` covers cancelling the
+    key's own entries (`QUEUE_UPDATE_OWN`), so the key that queues can cancel. Read from Bambuddy's source on
+    2026-11-27; no cancel was sent to a live Bambuddy.
   - **Every item goes in staged** (`manual_start: true`), whatever she asks: with the printer in LAN-only mode and
     developer mode on, Bambuddy dispatches a queued item to an idle printer whose plate is marked clear, so only a staged
     one waits for a person at the printer (`POST /api/v1/queue/:id/start` from Bambuddy). The model cannot unstage one:
@@ -430,6 +439,7 @@ Ledger's shape (above). Reads came first; the two writes are below.
   Outcomes are `uploaded` and `rejected`, and the tool's own `no_such_piece`, `not_a_model` and `gone` (the store lacks
   the bytes). An STL, or a 3MF with no slice in it, uploads but does not queue: it is for the person to slice in Bambuddy.
 - Rejected: queuing as `judged` or `runs`, which would let a tainted turn start a print the person never saw. Rejected:
+  keeping it `asks` in every turn, which asked "want it printed?" of a person who had just asked for the print. Rejected:
   `add-to-queue` for its batch convenience, which has nowhere to put `manual_start`. Rejected: one tool doing upload and
   queue together, which would hold an upload to the household's library behind the person's OK for nothing.
 - Rejected: one port for printers and stock, which would make a Spoolman adapter implement printer reads it cannot answer.

@@ -119,6 +119,10 @@ class QueueItem(BaseModel):
     position: int | None = None
 
 
+class Message(BaseModel):
+    message: str = ""
+
+
 class Archive(BaseModel):
     id: int
     print_name: str | None = None
