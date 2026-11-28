@@ -61,7 +61,8 @@ class Armed:
 class Watch:
     """One watch. `reason` is None while armed; for a paused watch the failure slug, for an ended one its
     `EndReason`. `baseline` is None until the first check; `version` rises each time a baseline is stored and `series`
-    each time the watch wakes her. `brief`, `standing`, `taint`, `made_in` and `method` are as `Arm` has them."""
+    each time the watch wakes her. `brief`, `standing`, `taint`, `made_in` and `method` are as `Arm` has them. `held_at` is
+    when the person paused it, None while it runs; a held watch is not checked and its expiry waits, whatever its `state`."""
 
     id: int
     household_id: int
@@ -92,6 +93,7 @@ class Watch:
     taint: str | None = None
     made_in: tuple[int, int] | None = None
     method: str | None = None
+    held_at: datetime | None = None
 
 
 @dataclass(frozen=True)

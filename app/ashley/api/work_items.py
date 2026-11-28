@@ -26,8 +26,8 @@ ERRANDS_LISTED = 50
 _CHECK_STATE: dict[CheckState, WorkState] = {"scheduled": "running", "sending": "running", "undelivered": "waiting_on_you",
                                              "failed": "stopped"}
 _LANE: dict[WorkState, Lane] = {"waiting_on_you": "waiting", "running": "doing", "open": "doing", "stopped": "doing",
-                                "done": "done_untold"}
-_RANK = {"waiting_on_you": 0, "running": 1, "open": 2, "stopped": 3, "done": 4}
+                                "paused": "doing", "done": "done_untold"}
+_RANK = {"waiting_on_you": 0, "running": 1, "open": 2, "stopped": 3, "paused": 4, "done": 5}
 
 
 def errand_item(held: Held) -> WorkItem:

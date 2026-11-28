@@ -12,7 +12,7 @@ def proposal_item(p: board.Pending) -> WorkItem:
 
 
 def watch_item(w: board.Kept) -> WorkItem:
-    return WorkItem(kind="watch", id=w.id, title=w.label, state="stopped" if w.paused else "running", lane="doing", at=w.at)
+    return WorkItem(kind="watch", id=w.id, title=w.label, state="paused" if w.held else "stopped" if w.paused else "running", lane="doing", at=w.at)
 
 
 def action_item(d: board.Did) -> WorkItem:

@@ -193,4 +193,6 @@ def _shown(w: Watch, zone: ZoneInfo) -> dict[str, object]:
         shown["method"] = w.method
     if w.state == "paused":
         shown["paused"] = w.reason
+    if w.held_at is not None:
+        shown["held"] = True
     return shown

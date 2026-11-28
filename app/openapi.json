@@ -9164,6 +9164,154 @@
         }
       }
     },
+    "/api/work/watches/{watch_id}/pause": {
+      "post": {
+        "summary": "Pause Watch",
+        "description": "200 `WatchPaused` with `paused` true: the watch is not checked and its expiry waits until it is resumed; pausing a\npaused watch is the same 200. 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`.",
+        "operationId": "pause_watch",
+        "parameters": [
+          {
+            "name": "watch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Watch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchPaused"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a store holding part of it could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no live watch of yours has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FastAPI's validation error: an id below 1"
+          }
+        }
+      }
+    },
+    "/api/work/watches/{watch_id}/resume": {
+      "post": {
+        "summary": "Resume Watch",
+        "description": "200 `WatchPaused` with `paused` false: the watch is checked again at once, its expiry moved on by the time it was\npaused, so what changed meanwhile wakes her; resuming a running watch is the same 200. 401 `unauthorized`; 403\n`forbidden`; 404 `not_found`; 503 `unavailable`.",
+        "operationId": "resume_watch",
+        "parameters": [
+          {
+            "name": "watch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Watch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchPaused"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a store holding part of it could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no live watch of yours has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FastAPI's validation error: an id below 1"
+          }
+        }
+      }
+    },
     "/api/work/actions/{action_id}/undo": {
       "post": {
         "summary": "Undo Action",
@@ -19282,6 +19430,25 @@
         "title": "WatchCancelled",
         "description": "The watch `id` was ended by the person (`DELETE /api/work/watches/{id}`)."
       },
+      "WatchPaused": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "paused": {
+            "type": "boolean",
+            "title": "Paused"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "paused"
+        ],
+        "title": "WatchPaused",
+        "description": "The watch `id` is now `paused` (by the person) or running again\n(`POST /api/work/watches/{id}/pause` and `/resume`)."
+      },
       "WireAgreed": {
         "properties": {
           "carried": {
@@ -19484,7 +19651,8 @@
               "waiting_on_you",
               "open",
               "done",
-              "stopped"
+              "stopped",
+              "paused"
             ],
             "title": "State"
           },
@@ -19588,7 +19756,7 @@
           "at"
         ],
         "title": "WorkItem",
-        "description": "One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of\n`errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`\n(done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps),\n`proposal` (something she proposed that nobody has agreed to), `action` (a change she made for them with no one's\nOK in that turn, kept 90 days) or `kept_quiet` (one item for all she decided not to say on her own for them in the\nlast 7 days, in `kept_quiet`). `id` is that record's own id (a bench's id is the workshop's `/workshop/{id}`, a\nwatch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one `POST /api/chat/agree` takes, an\naction's its `GET /api/outside-actions` id, a `kept_quiet`'s its newest entry's), `title` what it is (the person's own words, shown only to them; a\nproposal's is written by code from what it would do, an action's by code from what it did, a `kept_quiet`'s by code from its count).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with\nnothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be\nsent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or\n`would_like` (something she offered unasked), `on_her_own` (every `action`, and only those) or `kept_quiet` (every\n`kept_quiet`, and only that). It follows `state` for\nevery other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it\nlast moved, or when an action was made: a bench's last change (else when it opened),\nan errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was\narmed), a proposal's making, a `kept_quiet`'s newest entry. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a\nproposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a\nproposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started\nthe turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is\noffered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):\nan `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other\nkind and for an action never undone. `kept_quiet` is the `kept_quiet` item's count and latest entries, null for any\nother kind."
+        "description": "One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of\n`errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`\n(done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps),\n`proposal` (something she proposed that nobody has agreed to), `action` (a change she made for them with no one's\nOK in that turn, kept 90 days) or `kept_quiet` (one item for all she decided not to say on her own for them in the\nlast 7 days, in `kept_quiet`). `id` is that record's own id (a bench's id is the workshop's `/workshop/{id}`, a\nwatch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one `POST /api/chat/agree` takes, an\naction's its `GET /api/outside-actions` id, a `kept_quiet`'s its newest entry's), `title` what it is (the person's own words, shown only to them; a\nproposal's is written by code from what it would do, an action's by code from what it did, a `kept_quiet`'s by code from its count).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with\nnothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be\nsent or a watch paused after failing; `paused`, a watch the person paused. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or\n`would_like` (something she offered unasked), `on_her_own` (every `action`, and only those) or `kept_quiet` (every\n`kept_quiet`, and only that). It follows `state` for\nevery other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it\nlast moved, or when an action was made: a bench's last change (else when it opened),\nan errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was\narmed), a proposal's making, a `kept_quiet`'s newest entry. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a\nproposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a\nproposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started\nthe turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is\noffered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):\nan `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other\nkind and for an action never undone. `kept_quiet` is the `kept_quiet` item's count and latest entries, null for any\nother kind."
       },
       "WorkKind": {
         "properties": {
@@ -19659,7 +19827,7 @@
           "entries"
         ],
         "title": "WorkResponse",
-        "description": "The signed-in person's open work, those waiting on them first, then running, open, stopped and done, the most\nrecently moved first within each."
+        "description": "The signed-in person's open work, those waiting on them first, then running, open, stopped, paused and done, the most\nrecently moved first within each."
       },
       "WorkshopKinds": {
         "properties": {

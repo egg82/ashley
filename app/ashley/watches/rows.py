@@ -14,7 +14,7 @@ from .watches import WatchesUnavailable
 
 COLUMNS = ("id, household_id, person_id, kind, target, label, bench_id, armed_by, track, when_clauses, until_clauses, "
            "tools, interval_s, expires_at, state, reason, failures, version, series, baseline, next_check_at, "
-           "armed_at, last_woke_at, ended_at, brief, standing_s IS NOT NULL, taint, made_conversation_id, made_turn_id, method")
+           "armed_at, last_woke_at, ended_at, brief, standing_s IS NOT NULL, taint, made_conversation_id, made_turn_id, method, held_at")
 
 
 def watch(r: tuple[Any, ...]) -> Watch:
@@ -27,7 +27,7 @@ def watch(r: tuple[Any, ...]) -> Watch:
                      None if r[19] is None else _items(r[19]), r[20], r[21], r[22], r[23],
                      None if r[24] is None else str(r[24]), bool(r[25]),
                      None if r[26] is None else str(r[26]), None if r[28] is None else (int(r[27]), int(r[28])),
-                     None if r[29] is None else str(r[29]))
+                     None if r[29] is None else str(r[29]), r[30])
     except ValueError as e:
         raise WatchesUnavailable("a stored watch could not be read") from e
 

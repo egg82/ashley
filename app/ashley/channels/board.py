@@ -40,12 +40,13 @@ class Pending:
 
 @dataclass(frozen=True)
 class Kept:
-    """A live watch of the person's: `label` as armed, `paused` when it stopped after failing, `at` its last wake (else
-    when it was armed)."""
+    """A live watch of the person's: `label` as armed, `paused` when it stopped after failing, `held` when the person
+    paused it, `at` its last wake (else when it was armed)."""
 
     id: int
     label: str
     paused: bool
+    held: bool
     at: datetime
 
 
@@ -117,7 +118,7 @@ async def kept(household_id: int, person_id: int) -> tuple[Kept, ...]:
         live = await services.get(Watches).live(household_id, person_id)
     except WatchesUnavailable as e:
         raise BoardUnavailable("watches unavailable") from e
-    return tuple(Kept(w.id, w.label, w.state == "paused", w.last_woke_at or w.armed_at) for w in live)
+    return tuple(Kept(w.id, w.label, w.state == "paused", w.held_at is not None, w.last_woke_at or w.armed_at) for w in live)
 
 
 async def end_watch(household_id: int, person_id: int, watch_id: int) -> bool:
@@ -130,6 +131,18 @@ async def end_watch(household_id: int, person_id: int, watch_id: int) -> bool:
         if found is None or found.household_id != household_id or found.person_id != person_id or found.state == "ended":
             return False
         return await watches.disarm(household_id, person_id, found.kind, found.target)
+    except WatchesUnavailable as e:
+        raise BoardUnavailable("watches unavailable") from e
+
+
+async def hold_watch(household_id: int, person_id: int, watch_id: int, held: bool) -> bool:
+    """Whether the person's own live watch `watch_id` is now held (`held`) or running; False, changing nothing, for one
+    that is unknown, another person's or household's, or over: the same watches `end_watch` ends. Raises
+    BoardUnavailable."""
+    watches = services.get(Watches)
+    try:
+        change = watches.hold if held else watches.release
+        return await change(household_id, person_id, watch_id)
     except WatchesUnavailable as e:
         raise BoardUnavailable("watches unavailable") from e
 
