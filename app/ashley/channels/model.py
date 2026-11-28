@@ -7,6 +7,7 @@ from ..conversations.model import Attachment, Channel, Kind, Receipts
 from ..inference.reply import Ask, Says
 from ..initiative.moment import Moment
 from ..initiative.remark import Chance
+from ..senses.outside_record import Cause
 from ..workshop.model import thread_of
 
 Medium = Literal["spoken", "text"]
@@ -154,7 +155,10 @@ class Inbound:
     it (`channels.discord.home`): on a turn that is also `unprompted` and the household's, it offers her the tools that
     change that channel (`tools.discord_home_tools`), and on no other turn. `seen` is a camera's id and the id of one of
     its recordings, as `camera_recordings` gives them (None: the camera's view now), set by the turn a camera's detector starts (`channels.wake.detection_turn`):
-    the turn begins with her having looked at that recording (`channels.seen`), its picture in her first step."""
+    the turn begins with her having looked at that recording (`channels.seen`), its picture in her first step. `cause` is
+    the record that started an `unprompted` turn (its wake, reminder occurrence, watch or bench), set by the code that
+    builds that turn: what she changes in it is recorded as done on her own with that cause (`ashley.tools.outside`).
+    None on every other turn."""
 
     household_id: int
     thread: str
@@ -200,6 +204,7 @@ class Inbound:
     remark: Chance | None = None
     home_channel: int | None = None
     seen: tuple[str, str | None] | None = None
+    cause: Cause | None = None
 
     @property
     def lands_on(self) -> int | None:

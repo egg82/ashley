@@ -24,6 +24,7 @@ from ..inference.model import ToolCall, ToolResult, ToolSpec
 from ..senses.proposal_gate import Refusal
 from ..senses.proposal_payloads import HOUSE, HouseChange
 from ..senses.proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
+from ..undo import Undo
 from . import house_args as args
 from .house_look_config import load as load_look
 from .house_query import Query
@@ -130,8 +131,10 @@ class HouseChangeTools(Tools):
         if not self._irreversible.covers(change.key()):
             if change.op == "perform":
                 raise ValueError("that action does not need the person's OK: house_do runs it")
+            made = await _creates(house, change)
             done = await carry_out(house, change)
-            return _done(call, "ok", started, ToolResult(call.id, _body(True, change, id=done)), op=op, kind=kind)
+            undo = Undo("house_delete", done, change.kind) if made else None
+            return _done(call, "ok", started, ToolResult(call.id, _body(True, change, id=done), undo=undo), op=op, kind=kind)
         return await self._propose(call, started, house, change)
 
     async def _targeted(self, house: House, change: Change, arguments: Mapping[str, object]) -> Change:
@@ -172,6 +175,18 @@ _REFUSALS: dict[Refusal, str] = {
     "none": "there is no proposal of yours to carry out in this conversation; propose it with house_change first",
     "expired": "that proposal has expired; propose it again and ask them",
     "same_turn": "the person has not answered since you proposed it; tell them what you would do and wait for their reply"}
+
+
+async def _creates(house: House, change: Change) -> bool:
+    """Whether `change` makes a thing that was not there, which deleting it takes back: an area, floor or label, a
+    helper written with no id, or an automation or script whose id the house does not have yet. A replaced config or
+    an updated record is not: taking it back needs what it was before, which is not kept."""
+    if change.op == "create":
+        return True
+    config = config_kind(change.kind)
+    if change.op != "write" or config is None:
+        return False
+    return change.id is None or change.id not in {i.id for i in await house.configs(config)}
 
 
 def _body(done: bool, change: Change, **fields: str) -> str:

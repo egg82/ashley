@@ -11,6 +11,7 @@ from typing import Any, get_args
 from ..inference.model import Entry, Image, Message, SystemPrompt, ToolCall, ToolCalls, ToolResult, ToolResults
 from ..initiative.moment import Moment
 from ..initiative.remark import Chance
+from ..senses.outside_record import Cause, cause_of
 from ..tools.action_judge import JudgeUnavailable, Verdict, checked
 from .escalation import Trigger
 from .keep import Act
@@ -155,9 +156,18 @@ def _inbound(raw: dict[str, Any]) -> Inbound:
     moment = fields.pop("moment", None)
     remark = fields.pop("remark", None)
     seen = fields.pop("seen", None)
+    cause = fields.pop("cause", None)
     return Inbound(**fields, taint=origin, made_in=made, moment=None if moment is None else _moment(moment),
                    remark=None if remark is None else _remark(remark),
-                   seen=None if seen is None else (str(seen[0]), None if seen[1] is None else str(seen[1])))
+                   seen=None if seen is None else (str(seen[0]), None if seen[1] is None else str(seen[1])),
+                   cause=None if cause is None else _cause(cause))
+
+
+def _cause(raw: dict[str, Any]) -> Cause:
+    found = cause_of(raw.get("kind"), raw.get("id"))
+    if found is None:
+        raise ValueError("not a cause")
+    return found
 
 
 def _moment(raw: dict[str, Any]) -> Moment:

@@ -7,6 +7,7 @@ one turn."""
 
 from datetime import tzinfo
 
+from ...senses.outside_record import Cause
 from ...stamp import stamp
 from ...workshop.reactions import Done, Unseen
 from ..model import Inbound
@@ -20,7 +21,8 @@ def inbound(unseen: Unseen, zone: tzinfo) -> Inbound:
     return Inbound(household_id=unseen.household_id, thread=f"bench:{unseen.bench_id}", text=said(unseen, zone),
                    kind="brainstorm", medium="text", audience="owner", speaker_id=unseen.owner_id, shared=False,
                    place=None, channel="web", later=True, later_by="turn", bench_id=unseen.bench_id, on_page=True,
-                   source=source_of(unseen), unprompted=True, author="household", note=NOTE, watched=True, taint=None)
+                   source=source_of(unseen), unprompted=True, author="household", note=NOTE, watched=True, taint=None,
+                   cause=Cause("bench", unseen.bench_id))
 
 
 def said(unseen: Unseen, zone: tzinfo) -> str:

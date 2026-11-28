@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 
 from ... import logs, services
 from ...people.quiet import held_now
+from ...senses.outside_record import Cause
 from ...senses.wakes import Outcome, WatchWake
 from ...watches.config import CONFIG
 from ...watches.model import Watch
@@ -71,7 +72,8 @@ def inbound(wake_id: int, watch: Watch, wake: WatchWake, on_bench: bool, detail:
                            source=f"wake:{wake_id}", unprompted=True, author="household", note=note(watch, wake, detail),
                            tools_only=None if watch.armed_by == "handoff" else watch.tools,
                            reads_only=watch.armed_by != "handoff" and watch.tools is None,
-                           taint=_taint(watch), made_in=watch.made_in, quiet=quiet and not on_bench, method=watch.method)
+                           taint=_taint(watch), made_in=watch.made_in, quiet=quiet and not on_bench, method=watch.method,
+                           cause=Cause("watch", watch.id))
     if not on_bench or watch.bench_id is None:
         return phone_thread
     return replace(phone_thread, thread=thread_of(watch.bench_id), kind="brainstorm", channel="web", remembers=True,

@@ -8840,6 +8840,34 @@
         "title": "AccountsResponse",
         "description": "The signed-in person's accounts, oldest first. `discord_linking` is whether linking a Discord account is set up\nhere; false, `start_discord_link` answers 503."
       },
+      "ActionCause": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "wake",
+              "reminder",
+              "open_errand",
+              "standing_errand",
+              "watch",
+              "bench",
+              "turn"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "title": "ActionCause",
+        "description": "What started the turn a change was made in, by the record it names: `wake` (a household event's wake), `reminder`,\n`open_errand` or `standing_errand` (that occurrence's wake id, as `/api/work` lists the errand), `watch` (the watch's\nid), `bench` (the bench whose owner's changes she reacted to, `/workshop/{id}`) or `turn` (the person's own turn,\nwhich read words written outside the household)."
+      },
       "ActionIds": {
         "properties": {
           "action": {
@@ -8884,6 +8912,44 @@
         ],
         "title": "ActionListField",
         "description": "A list of the service's actions, picked from those of `domains`."
+      },
+      "ActionUndo": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "house_delete",
+              "reminder_cancel",
+              "todo_remove",
+              "todo_done",
+              "todo_reopen"
+            ],
+            "title": "Kind"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "within": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "ref",
+          "within"
+        ],
+        "title": "ActionUndo",
+        "description": "What takes a change back: `kind` is the inverse (`house_delete` the house's `within` kind of thing `ref` she\ncreated; `reminder_cancel` the reminder whose id is `ref`; `todo_remove`, `todo_done` or `todo_reopen` the item `ref`,\nits id or exact text, on the to-do list `within`), `within` None where the kind needs no place."
       },
       "AddPieceRequest": {
         "properties": {
@@ -14242,6 +14308,26 @@
             "type": "string",
             "format": "date-time",
             "title": "At"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionCause"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "undo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionUndo"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -14251,10 +14337,12 @@
           "summary",
           "tier",
           "explanation",
-          "at"
+          "at",
+          "cause",
+          "undo"
         ],
         "title": "OutsideAction",
-        "description": "A change she made for the signed-in person with no OK, in a turn that had read words written outside the\nhousehold. `label` is the plain headline the person was shown for it, None for one made before headlines were kept;\n`summary` is code's plain-words account of the change, never her words. `tier`: `runs`, a kind of change that always\nruns on its own; `judged`, one the action judge let run. `explanation` is the judge's reason in words, None for\n`runs` and for a judged one that kept none."
+        "description": "A change she made for the signed-in person with no OK in that turn: in a turn that had read words written outside\nthe household, or in one no person's message started (a wake, a reminder or errand round, a watch, a bench's\nreaction). `label` is the plain headline the person was shown for it, None for one made before headlines were kept;\n`summary` is code's plain-words account of the change, never her words. `tier`: `runs`, a change that ran without\nthe action judge (every change of a turn that read no outside words); `judged`, one the action judge let run.\n`explanation` is the judge's reason in words, None for `runs` and for a judged one that kept none. `cause` is what\nstarted the turn, None for one kept before causes were. `undo` is how it is taken back; None when it has no inverse\n(a send, a delete, a replaced config, a moved mail) or was kept before undos were, and then no Undo is offered."
       },
       "OutsideActionsResponse": {
         "properties": {

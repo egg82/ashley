@@ -17,6 +17,7 @@ from dataclasses import replace
 from ...initiative.moment import Moment, Outcome
 from ...people.model import Person
 from ...people.quiet import held
+from ...senses.outside_record import Cause
 from ...senses.wakes import Route, Wake
 from ...workshop.wake_rule import WakeRule
 from ..model import Device, Inbound
@@ -46,7 +47,7 @@ def inbound(wake_id: int, wake: Wake, rule: WakeRule, person: Person, moment: Mo
                    channel="device", remembers=False, later=True, later_by="outbox", source=f"wake:{wake_id}",
                    unprompted=True, tools_only=rule.tools, author="household",
                    note=note(rule, person, wake, outcome, at, speaker), taint=None, moment=moment,
-                   quiet=held(person, wake.at), method=rule.method)
+                   quiet=held(person, wake.at), method=rule.method, cause=Cause("wake", wake_id))
     if speaker is not None:
         return speakers.moved(phone, person.id, speaker)
     return phone if at is None else replace(moved(phone, *at), later_by="outbox" if announced else "turn")

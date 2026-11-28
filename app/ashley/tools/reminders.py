@@ -9,6 +9,7 @@ are wall-clock times in the household's zone. Logs `tools.call` with the tool, o
 
 import time
 from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -25,6 +26,7 @@ from ..senses.proposal_payloads import REMINDERS, MoneyRule, ReminderChange, Rem
 from ..senses.proposals import Proposal, ProposalRefused, Proposals, ProposalsUnavailable, refusal
 from ..senses.repeat import LOCAL_FORMAT
 from ..senses.wakes import Reminder, Route, Scheduled, Wakes, WakesUnavailable
+from ..undo import Undo
 from . import bench_results, money_rule_args, reminder_shape as shape, reminder_specs as specs, standing_method
 from . import tainted, watch_agreed
 from .bench_args import BadArguments, check_names
@@ -142,8 +144,8 @@ class ReminderTools(Tools):
             made = await services.get(Wakes).schedule(reminder)
         except ValueError as e:
             raise BadArguments("what is 1 to 500 characters") from e
-        return bench_results.ok(call, started, {"id": made, "at": due_at.astimezone(zone).strftime(LOCAL_FORMAT)},
-                                wake=made)
+        return replace(bench_results.ok(call, started, {"id": made, "at": due_at.astimezone(zone).strftime(LOCAL_FORMAT)},
+                                        wake=made), undo=Undo("reminder_cancel", str(made)))
 
     async def _proposed(self, call: ToolCall, started: float, reminder: Reminder, target: int | None,
                         zone: ZoneInfo) -> ToolResult:

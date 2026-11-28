@@ -2490,6 +2490,22 @@ export interface components {
             discord_linking: boolean;
         };
         /**
+         * ActionCause
+         * @description What started the turn a change was made in, by the record it names: `wake` (a household event's wake), `reminder`,
+         *     `open_errand` or `standing_errand` (that occurrence's wake id, as `/api/work` lists the errand), `watch` (the watch's
+         *     id), `bench` (the bench whose owner's changes she reacted to, `/workshop/{id}`) or `turn` (the person's own turn,
+         *     which read words written outside the household).
+         */
+        ActionCause: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "wake" | "reminder" | "open_errand" | "standing_errand" | "watch" | "bench" | "turn";
+            /** Id */
+            id: number;
+        };
+        /**
          * ActionIds
          * @description The `ids` picked for one `action` of an entity-per-action setting.
          */
@@ -2511,6 +2527,23 @@ export interface components {
             type: "action_list";
             /** Domains */
             domains: string[];
+        };
+        /**
+         * ActionUndo
+         * @description What takes a change back: `kind` is the inverse (`house_delete` the house's `within` kind of thing `ref` she
+         *     created; `reminder_cancel` the reminder whose id is `ref`; `todo_remove`, `todo_done` or `todo_reopen` the item `ref`,
+         *     its id or exact text, on the to-do list `within`), `within` None where the kind needs no place.
+         */
+        ActionUndo: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "house_delete" | "reminder_cancel" | "todo_remove" | "todo_done" | "todo_reopen";
+            /** Ref */
+            ref: string;
+            /** Within */
+            within: string | null;
         };
         /**
          * AddPieceRequest
@@ -4742,11 +4775,14 @@ export interface components {
         };
         /**
          * OutsideAction
-         * @description A change she made for the signed-in person with no OK, in a turn that had read words written outside the
-         *     household. `label` is the plain headline the person was shown for it, None for one made before headlines were kept;
-         *     `summary` is code's plain-words account of the change, never her words. `tier`: `runs`, a kind of change that always
-         *     runs on its own; `judged`, one the action judge let run. `explanation` is the judge's reason in words, None for
-         *     `runs` and for a judged one that kept none.
+         * @description A change she made for the signed-in person with no OK in that turn: in a turn that had read words written outside
+         *     the household, or in one no person's message started (a wake, a reminder or errand round, a watch, a bench's
+         *     reaction). `label` is the plain headline the person was shown for it, None for one made before headlines were kept;
+         *     `summary` is code's plain-words account of the change, never her words. `tier`: `runs`, a change that ran without
+         *     the action judge (every change of a turn that read no outside words); `judged`, one the action judge let run.
+         *     `explanation` is the judge's reason in words, None for `runs` and for a judged one that kept none. `cause` is what
+         *     started the turn, None for one kept before causes were. `undo` is how it is taken back; None when it has no inverse
+         *     (a send, a delete, a replaced config, a moved mail) or was kept before undos were, and then no Undo is offered.
          */
         OutsideAction: {
             /** Id */
@@ -4767,6 +4803,8 @@ export interface components {
              * Format: date-time
              */
             at: string;
+            cause: components["schemas"]["ActionCause"] | null;
+            undo: components["schemas"]["ActionUndo"] | null;
         };
         /**
          * OutsideActionsResponse

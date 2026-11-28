@@ -1,6 +1,7 @@
 """`house_change` and `house_confirm`: configuration changes she makes on her own, and the ones `irreversible.json` names
 proposed instead, carried out only by `house_confirm`, offered from a later person turn of the same conversation, by the
-person who proposed, once, before it expires. Turn ids decide, never words."""
+person who proposed, once, before it expires. Turn ids decide, never words. A change that makes a new thing carries
+its delete as its undo; a replaced config or an updated record carries none."""
 
 import json
 from collections.abc import AsyncGenerator
@@ -18,6 +19,7 @@ from ashley.inference.model import ToolCall, ToolResult
 from ashley.senses.postgres_proposals import PostgresProposals
 from ashley.senses.proposals import Proposals
 from ashley.tools.house_change import CHANGE, CONFIRM, HouseChangeTools
+from ashley.undo import Undo
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from contract.conversations_support import household, person, run, scalar
 from house_double_support import MemoryHouse, state
@@ -271,5 +273,26 @@ def test_a_proposal_is_the_speakers_whatever_the_ids_of_the_household(db_url: st
             assert scalar(db_url, "SELECT json_build_array(made_by, household_id) FROM proposals") == [w.alana, w.home]
             assert CONFIRM in await w.offered(w.alana, 1, 6)
             assert not (await w.ask(w.alana, 1, 6, CONFIRM)).is_error
+
+    run(go())
+
+
+def test_a_change_that_makes_a_new_thing_carries_its_delete_as_undo_and_one_that_replaces_or_updates_carries_none(
+        db_url: str) -> None:
+    async def go() -> None:
+        async with world(db_url) as w:
+            new = await w.ask(w.alana, 1, 5, CHANGE, op="write", kind="automation", id="porch", data={"alias": "Porch"})
+            replaced = await w.ask(w.alana, 1, 5, CHANGE, op="write", kind="automation", id="arrive", data={"alias": "A"})
+            helper = await w.ask(w.alana, 1, 5, CHANGE, op="write", kind="helper",
+                                 data={"type": "input_boolean", "name": "Guests"})
+            area = await w.ask(w.alana, 1, 5, CHANGE, op="create", kind="area", data={"name": "Garage"})
+            updated = await w.ask(w.alana, 1, 5, CHANGE, op="update", kind="entity", id="light.hall", data={"aliases": ["f"]})
+            assert not any(r.is_error for r in (new, replaced, helper, area, updated)), "each was made: control"
+            assert new.undo == Undo("house_delete", "porch", "automation")
+            assert helper.undo == Undo("house_delete", "input_boolean:new", "helper")
+            assert area.undo == Undo("house_delete", "area_new", "area")
+            assert replaced.undo is None and updated.undo is None
+            proposed = await w.ask(w.alana, 1, 5, CHANGE, **DELETE)
+            assert body(proposed)["done"] is False and proposed.undo is None
 
     run(go())

@@ -24,6 +24,7 @@ from ashley.todos.todos import Todos
 from ashley.tools import tiers
 from ashley.tools.todo_specs import CHANGE, LISTS
 from ashley.tools.todo_tools import TodoTools
+from ashley.undo import Undo
 from homes_support import AnyHousehold
 from house_double_support import MemoryHouse, state
 from money_support import HeldConnections
@@ -118,6 +119,16 @@ def test_each_change_is_the_service_call_that_makes_it(house: MemoryHouse, op: s
     item = "Lemons" if op == "add" else "u1"
     assert body(run(CHANGE, {"list": GROCERY, "op": op, "item": item})) == {"done": True, "op": op}
     assert house.done[-1][2:] == (action, (GROCERY,), data)
+
+
+@pytest.mark.parametrize("op, undo", [
+    ("add", Undo("todo_remove", "Lemons", GROCERY)), ("done", Undo("todo_reopen", "Lemons", GROCERY)),
+    ("reopen", Undo("todo_done", "Lemons", GROCERY)), ("remove", None)])
+def test_a_change_carries_the_change_that_takes_it_back_and_a_removal_carries_none(house: MemoryHouse, op: str,
+                                                                                    undo: Undo | None) -> None:
+    got = run(CHANGE, {"list": GROCERY, "op": op, "item": "Lemons"})
+    assert not got.is_error and got.undo == undo
+    assert run(CHANGE, {"list": "todo.nope", "op": op, "item": "Lemons"}).undo is None, "a refused change has none"
 
 
 def test_an_added_item_carries_its_due_day_or_moment(house: MemoryHouse) -> None:

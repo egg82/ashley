@@ -8,8 +8,10 @@ from .model import Inbound
 
 def of(inbound: Inbound) -> Standing | None:
     """The speaker's standing; None when the channel names no speaker. The reply is `private` when it reaches the speaker
-    alone (`audience.owner_alone`); the turn is `agreeing` when it is a person's own message with no tainted origin."""
+    alone (`audience.owner_alone`); the turn is `agreeing` when it is a person's own message with no tainted origin, and
+    `unasked` when no person's message started it (`Inbound.unprompted`), with the record that did as its `cause`."""
     if inbound.speaker_id is None:
         return None
     return Standing(inbound.household_id, inbound.speaker_id, owner_alone(inbound),
-                    inbound.author == "person" and inbound.taint is None)
+                    inbound.author == "person" and inbound.taint is None, inbound.unprompted,
+                    inbound.cause if inbound.unprompted else None)
