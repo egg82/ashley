@@ -50,3 +50,5 @@ class BenchMessage(ChatRequest):
     bench as that piece (a document of theirs), which she is told of with the message."""
 
     piece_id: int | None = Field(default=None, ge=1)
+    pointing: int | None = Field(default=None, ge=1, description="The piece under the person's cursor when they sent "
+                                 "this, otherwise the last one they tapped: what \"this one\" means. Never stored.")

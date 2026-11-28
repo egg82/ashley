@@ -30,16 +30,20 @@ _READ: dict[int | str, dict[str, Any]] = {
           "validation error instead, which is not this schema"}}
 
 
-def inbound_for(signed_in: Person, bench_id: int, body: ChatRequest, pasted: Piece | None = None) -> Inbound:
+def inbound_for(signed_in: Person, bench_id: int, body: ChatRequest, pasted: Piece | None = None,
+                pointed: Piece | None = None) -> Inbound:
     """The message as the turn loop takes it: on the bench's thread, the owner the speaker and its only audience. A
-    `pasted` piece is told to her with the message, in its `note`, which is never stored."""
+    `pasted` piece and the `pointed` one are told to her with the message, in its `note`, which is never stored."""
     who = signed_in.person
     got = on_bench(who.household_id, who.id, bench_id, body.text)
-    if pasted is None:
-        return got
-    note = (f'[They pasted a long text with this message. It is on the bench now as piece {pasted.id}, '
-            f'"{pasted.text.title}"; read it with bench_read_piece.]')
-    return replace(got, note=note)
+    notes = []
+    if pasted is not None:
+        notes.append(f'[They pasted a long text with this message. It is on the bench now as piece {pasted.id}, '
+                     f'"{pasted.text.title}"; read it with bench_read_piece.]')
+    if pointed is not None:
+        notes.append(f'[They are pointing at piece {pointed.id}, "{pointed.text.title}", as they send this: '
+                     f'"this one" means it.]')
+    return replace(got, note=" ".join(notes)) if notes else got
 
 
 async def _owned(signed_in: Person, bench_id: int) -> Bench | JSONResponse:
@@ -61,19 +65,20 @@ async def _read(signed_in: Person, bench_id: int) -> BenchView | JSONResponse:
     410: {"model": ErrorResponse, "description": "`closed`: the bench is closed"}})
 async def send_on_bench(signed_in: Person, bench_id: int, body: BenchMessage) -> ChatReply | JSONResponse:
     """200 `ChatReply`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 410 `closed`; 422 `refused` when she
-    declined or `piece_id` is not a piece on the bench; 503 `unavailable`."""
+    declined or `piece_id` or `pointing` is not a piece on the bench; 503 `unavailable`."""
     view = await _read(signed_in, bench_id)
     if isinstance(view, JSONResponse):
         return view
     if view.bench.closed_at is not None:
         return JSONResponse(status_code=410, content=ErrorResponse(code="closed", detail="the bench is closed").model_dump())
-    pasted = None
-    if body.piece_id is not None:
-        pasted = next((p for p in view.pieces if p.id == body.piece_id), None)
-        if pasted is None:
+    on_this_bench = {p.id: p for p in view.pieces}
+    for named in (body.piece_id, body.pointing):
+        if named is not None and named not in on_this_bench:
             return JSONResponse(status_code=422, content=ErrorResponse(
                 code="refused", detail="that piece is not on this bench").model_dump())
-    return await answer(inbound_for(signed_in, bench_id, body, pasted))
+    pasted = on_this_bench[body.piece_id] if body.piece_id is not None else None
+    pointed = on_this_bench[body.pointing] if body.pointing is not None else None
+    return await answer(inbound_for(signed_in, bench_id, body, pasted, pointed))
 
 
 @router.get("/api/benches/{bench_id}/conversation", response_model=ChatConversation, responses=_READ)

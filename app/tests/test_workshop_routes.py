@@ -229,6 +229,36 @@ def test_a_message_naming_a_piece_not_on_the_bench_is_refused_before_anything_is
     assert wired.conversations.calls == []
 
 
+def _asked_after_pointing(alana: TestClient, wired: Fakes, bench_id: int, extra: dict[str, Any]) -> tuple[int, str]:
+    wired.inference.script = [Reply(spoken="ok", text="ok")]
+    response = alana.post(f"/api/benches/{bench_id}/messages", json={"text": "make it shorter", **extra})
+    return response.status_code, asked_last(wired.inference.prompts[0]).text if wired.inference.prompts else ""
+
+
+def test_a_pointed_piece_on_the_bench_reaches_her_note_and_is_not_stored(signed_in: As, wired: Fakes) -> None:
+    alana = signed_in(ALANA)
+    bench = opened(alana)
+    _, applied = command(alana, bench.id, {**ADD, "title": "Brief"})
+    piece = CommandApplied.model_validate(applied).piece_id
+    status, asked = _asked_after_pointing(alana, wired, bench.id, {"pointing": piece})
+    assert status == 200 and f"pointing at piece {piece}" in asked and "Brief" in asked
+    assert [t.text for t in wired.conversations.added if t.author == "person"] == ["make it shorter"]
+
+
+def test_a_pointed_piece_from_another_bench_is_refused_and_no_pointing_adds_no_note(signed_in: As,
+                                                                                  wired: Fakes) -> None:
+    alana = signed_in(ALANA)
+    bench = opened(alana)
+    other = opened(alana)
+    assert command(alana, bench.id, {**ADD, "title": "Here"})[0] == 200
+    for title in ("One", "Elsewhere"):
+        assert command(alana, other.id, {**ADD, "title": title})[0] == 200
+    refused, _ = _asked_after_pointing(alana, wired, bench.id, {"pointing": 2})
+    assert refused == 422 and wired.conversations.calls == []
+    status, asked = _asked_after_pointing(alana, wired, bench.id, {})
+    assert status == 200 and "pointing" not in asked
+
+
 def test_a_bench_message_takes_no_attachment_since_its_paste_is_a_piece(signed_in: As, wired: Fakes) -> None:
     alana = signed_in(ALANA)
     bench = opened(alana)
