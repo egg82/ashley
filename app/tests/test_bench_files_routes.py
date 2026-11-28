@@ -24,6 +24,7 @@ from ashley.files.intake import key_of
 from ashley.files.memory import MemoryStore
 from ashley.files.store import ObjectStore
 from ashley.inference.inference import Inference
+from ashley.inference.reply import Reply
 from ashley.main import create_app
 from ashley.people.model import Person
 from ashley.people.people import People
@@ -34,7 +35,7 @@ from ashley.workshop.workshop import Workshop
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from respond_support import ALANA, SAM, Fakes, wired as wired
+from respond_support import ALANA, SAM, Fakes, asked_last, wired as wired
 from starlette.requests import Request
 from test_workshop_routes import PUBLIC, command, opened, seeded
 
@@ -88,6 +89,19 @@ def file_of(client: TestClient, bench: int, piece: int) -> PieceFile:
     found = next(p for p in detail(client, bench).pieces if p.id == piece)
     assert found.file is not None
     return found.file
+
+
+def test_a_message_naming_an_uploaded_file_piece_tells_her_its_kind_without_storing_the_note(box: Box, wired: Fakes) -> None:
+    client = box(ALANA)
+    bench = opened(client)
+    status, body = upload(client, bench.id, PNG, "cat.png", "image/png")
+    piece = CommandApplied.model_validate(body).piece_id
+    wired.inference.script = [Reply(spoken="ok", text="ok")]
+    response = client.post(f"/api/benches/{bench.id}/messages", json={"text": "what is this?", "piece_id": piece})
+    assert status == 200 and response.status_code == 200
+    asked = asked_last(wired.inference.prompts[0]).text
+    assert asked.startswith("Alana: what is this?") and f"piece {piece}" in asked and "kind image" in asked
+    assert [t.text for t in wired.conversations.added if t.author == "person"] == ["what is this?"]
 
 
 def test_an_uploaded_image_is_an_image_piece_with_a_link_that_serves_its_bytes_in_place(box: Box) -> None:
