@@ -25,6 +25,9 @@ talking with nothing guessed. She keeps no passwords of her own.
   `Devices.allow` so every pod on both sites shares it): over it is 429 `rate_limited`. The numbers are
   `app/ashley/channels/device_rate.json`. Every refusal is one `api.device_refused` log line with the device id and
   its reason, never the token.
+- **A person's screen has a rate limit for what makes her house act**, kept the same way (`person_requests`, counted by
+  `Sessions.allow`, numbers in `app/ashley/signin/signin.json`): each press of a house control counts, reads never do.
+  Over it is 429 `rate_limited` and one `house.refused` line with the person id.
 - **Every device carries every tool**; scoping is decided per device when one should not.
 - **An OIDC account maps to a person by its `sub`, which the admin maps after its first sign-in.** The
   provider's `sub` can be a hash of its user id, so nobody knows it beforehand. A sign-in by an account no person has is refused

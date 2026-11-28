@@ -1481,6 +1481,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/house/controls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * House Controls Listed
+         * @description 200 `HouseControlList`, the household's lights and scenes, each light with whether it is on; 401 `unauthorized`;
+         *     503 `unavailable`.
+         */
+        get: operations["house_controls_listed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/house/controls/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * House Control Pressed
+         * @description 200 `HouseControlPressed`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 422 FastAPI's validation error;
+         *     429 `rate_limited`; 503 `unavailable`.
+         */
+        post: operations["house_control_pressed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/house/glance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * House Glance
+         * @description 200 `HouseGlance`; 401 `unauthorized`. A part that cannot be read is null in it.
+         */
+        get: operations["house_glance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiosk/session": {
         parameters: {
             query?: never;
@@ -3594,6 +3656,60 @@ export interface components {
             epoch: number;
             /** Certificate Sha256 */
             certificate_sha256?: string | null;
+        };
+        /**
+         * HouseAttention
+         * @description What needs the person, each null when it cannot be read today and never false for that: `waiting_on_you` is how
+         *     many of their open works only they can move (`GET /api/work`); `printer_faults` how many printers report a fault, null
+         *     too when the household has no printing manager; `house_unreadable` whether the house did not answer, null when the
+         *     household has no house.
+         */
+        HouseAttention: {
+            /** Waiting On You */
+            waiting_on_you: number | null;
+            /** Printer Faults */
+            printer_faults: number | null;
+            /** House Unreadable */
+            house_unreadable: boolean | null;
+        };
+        /**
+         * HouseControl
+         * @description One light or scene the household's catalogue has: `name` is its stable key, `label` what its button says. `on` is
+         *     whether a light is on now; null for a scene, and for a light the house could not say.
+         */
+        HouseControl: {
+            /** Name */
+            name: string;
+            /** Label */
+            label: string;
+            /** On */
+            on: boolean | null;
+        };
+        /**
+         * HouseControlList
+         * @description The household's lights and scenes a person may press, by entity id; empty when the house lists none.
+         */
+        HouseControlList: {
+            /** Controls */
+            controls: components["schemas"]["HouseControl"][];
+        };
+        /**
+         * HouseControlPressed
+         * @description Whether her tool reported the press carried out (`done`); false when the tool or the house refused it.
+         */
+        HouseControlPressed: {
+            /** Done */
+            done: boolean;
+        };
+        /**
+         * HouseGlance
+         * @description The house at a glance for a signed-in person. `home` is the first names of the household's people who are home:
+         *     empty when everyone known is away, null when it cannot be known.
+         */
+        HouseGlance: {
+            /** Home */
+            home: string[] | null;
+            needs_attention: components["schemas"]["HouseAttention"];
         };
         /**
          * Household
@@ -11372,6 +11488,149 @@ export interface operations {
             };
             /** @description `unavailable`: the record of open screens could not be reached */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    house_controls_listed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseControlList"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: a system it needs could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    house_control_pressed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseControlPressed"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: from another site, or not JSON */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: the household has no light or scene of that name */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a name outside `[a-z0-9-]{1,40}` gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `rate_limited`: the person is over their rate */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: a system it needs could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    house_glance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseGlance"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

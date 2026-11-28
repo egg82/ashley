@@ -57,6 +57,15 @@ the entity's own name, and plain strings drop it from Assist.
   `assist_satellite.announce` is excluded because her route to the rooms is the outbox. The scripts that only look something up
   are the household's `reads` setting ("A connection has settings its person sets"); an action the house says only returns data is a read too. The kiosk's controls run `house_do`
   by code and name none of the excluded.
+- **A person can press the house's lights and scenes from any signed-in screen, judged as a kiosk press is.** `GET
+  /api/house/controls` lists the household's catalogue's lights and scenes (`channels.kiosk.house_controls`, limited to what the
+  kiosk's `ACTIONS` allow, each named by its entity id), and `POST /api/house/controls/{name}` presses one by that name alone through
+  the kiosk's `controls.run`, `house_do` and `house_act.run`, so `irreversible.json`, the exclusions and the unknown-thing
+  checks apply inside the tool and a body can change nothing. It is the person's own act, so it is not an outside action and the
+  `kiosk.control` line names the person; each press counts against the person's rate (`people.md`). Anything beyond lights and
+  scenes still goes through her. `GET /api/house/glance` is who is home (the kiosk's glance) and what needs the person (their
+  waiting-on-you count from `/api/work`, printers reporting a fault, whether the house answers); a part that cannot be read today is
+  null, never zero or false.
 - **She reads the house's state through `house_state`, answered in code** (`house_query` narrows like a map, `house_render` caps it): one
   `GET /api/states` plus the registries per call, nothing cached on a pod. Every list holds every child; an answer over
   `house_state.json`'s cap shows names or counts instead, with `complete` false and `narrow_by`. `name` matches the entities'
