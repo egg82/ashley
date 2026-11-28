@@ -6,7 +6,8 @@ import { BoardRow } from './BoardRow';
 import { causeLine } from './cause';
 import { lanes } from './lanes';
 
-export function Board({ open }: { open: number | null }) {
+/** `only` limits the board to those lanes; without it every lane shows. */
+export function Board({ open, only }: { open: number | null; only?: readonly string[] }) {
   const state = workState.value;
   const items = work.value;
   if (state === 'loading' && !items.length) return <p class="meta b-quiet">Reading…</p>;
@@ -22,7 +23,7 @@ export function Board({ open }: { open: number | null }) {
   return (
     <div class="board">
       {(state === 'unreachable' || state === 'failed') && <p class="meta b-stale" role="status">Couldn't read it again. This is how it last stood.</p>}
-      {lanes(items).map((l) => (
+      {lanes(items, only).map((l) => (
         <section key={l.lane} class="b-lane" data-lane={l.lane} aria-label={l.name}>
           <h2 class="label b-lh">{l.name} <span class="b-count">· {l.items.length}</span></h2>
           <ul class="b-rows">
