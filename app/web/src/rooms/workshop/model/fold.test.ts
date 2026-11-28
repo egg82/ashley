@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CARD_TEXT_PX, CHIP, CHIP_TEXT_PX, cardsReadable, drawnRect, formsOf, GHOST_H, lift, minZoom, READ_FLOOR_PX, supersededBy, type FoldInput } from './fold.ts';
+import { CARD_TEXT_PX, CHIP, CHIP_TEXT_PX, cardsReadable, drawnRect, formsOf, GHOST_H, lift, keptInView, minZoom, READ_FLOOR_PX, supersededBy, type FoldInput } from './fold.ts';
 import type { MapLink } from './mindmap.ts';
 
 // 1 - 2 - 3 - 4, and 5 on its own.
@@ -71,4 +71,22 @@ test('the camera stops pulling back where the narrowest chip still holds a title
   }
   assert.equal(minZoom([{ w: 100, h: 80 }]), 1, 'never past 1');
   assert.equal(minZoom([]), 0.2);
+});
+
+test('a touched version keeps its other end in full, not as a ghost or chip', () => {
+  const links: MapLink[] = [...LINKS, { from: 5, kind: 'version_of', to: 1 }];
+  const ids = new Set([1, 2, 3, 4, 5]);
+  const old = supersededBy(links, ids);
+  const at = (turn: number[]) => forms({ links, superseded: old, focus: 4, kept: keptInView(links, turn, ids) });
+  assert.equal(at([])[1], 'ghost');
+  assert.deepEqual([at([5])[1], at([5])[5]], ['card', 'card'], 'one end touched, both in full');
+  assert.deepEqual([at([1])[1], at([1])[5]], ['card', 'card']);
+});
+
+test('pieces named together in a turn stay in full; one alone, or off the bench, adds nothing', () => {
+  const ids = new Set([1, 2, 3, 4, 5]);
+  assert.deepEqual([...keptInView(LINKS, [4, 5], ids)].sort(), [4, 5]);
+  assert.deepEqual(forms({ kept: keptInView(LINKS, [4, 5], ids) })[5], 'card');
+  assert.equal(keptInView(LINKS, [4], ids).size, 0);
+  assert.equal(keptInView(LINKS, [4, 9], ids).size, 0);
 });
