@@ -2,17 +2,9 @@
 // `agree.ts`.
 import { answer, ApiError } from './client';
 import type { paths } from './schema';
+import type { UndoDone } from './types';
 
 type Cancelled = paths['/api/work/watches/{watch_id}']['delete']['responses'][200]['content']['application/json'];
-
-/** How an Undo stands, in `UndoDone.how` / `ActionUndone.how` of the undo route (#271). Declared here until that route is in
- * the generated schema. */
-export type UndoHow = 'undoing' | 'undone' | 'waiting_on_you' | 'gone';
-export interface UndoDone {
-  id: number;
-  how: Exclude<UndoHow, 'undoing'>;
-  conversation_id: number | null;
-}
 
 async function refusedOr<B>(response: Response, route: string): Promise<B> {
   if (response.status === 409) {
