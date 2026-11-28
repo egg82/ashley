@@ -37,7 +37,7 @@ class World:
             "private" if heard == "private" else "shared", None if owner is None else owner.id))
         return turn.id
 
-    async def found(self, query: str = WORD, **params: object) -> PastMatches:
+    async def found(self, query: str = WORD, **params: str | int) -> PastMatches:
         got = await self.client.get("/api/chat/search", params={"q": query, **params})
         assert got.status_code == 200, got.text
         return PastMatches.model_validate(got.json())
