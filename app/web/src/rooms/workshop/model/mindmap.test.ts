@@ -94,6 +94,26 @@ test('growing a bench piece by piece from nothing to 60 keeps every bar at every
   assert.ok(pinned.size === 3);
 });
 
+test('a fresh layout of a bench reproduces the one grown piece by piece, pins arriving partway', () => {
+  for (const n of SIZES) {
+    for (const seed of SEEDS) {
+      const full = makeBench(seed, n);
+      const pinned = new Map<number, { x: number; y: number }>();
+      let grown: Map<number, Box> | null = null;
+      for (let k = 1; k <= n; k++) {
+        const ids = new Set(full.pieces.slice(0, k).map((p) => p.id));
+        const pieces = full.pieces.slice(0, k).map((p) => ({ ...p, pin: pinned.get(p.id) ?? null }));
+        grown = lay({ pieces, links: full.links.filter((l) => ids.has(l.from) && ids.has(l.to)) }, grown);
+        const added = full.pieces[k - 1]!;
+        if (added.pin) pinned.set(added.id, { x: grown.get(added.id)!.x, y: grown.get(added.id)!.y });
+      }
+      const final = { pieces: full.pieces.map((p) => ({ ...p, pin: pinned.get(p.id) ?? null })), links: full.links };
+      assert.ok(pinned.size >= 1);
+      assert.ok(sameBoxes(new Map([...grown!].sort((a, b) => a[0] - b[0])), new Map([...lay(final)].sort((a, b) => a[0] - b[0]))), `${n}/${seed}`);
+    }
+  }
+});
+
 test('a bench that grows while pieces are resized still has no overlap, moving only the pieces that now collide', () => {
   const b = makeBench(5, 30);
   const before = lay(b);
