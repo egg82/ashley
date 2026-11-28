@@ -35,13 +35,14 @@
 .bc-card.measuring { visibility: hidden; pointer-events: none; }
 .bc-world.still .bc-card, .bc-card.dragging { transition: none; }
 .bc-card.dragging { z-index: 40; }
-.bc-body { position: absolute; left: 0; top: 0; overflow: hidden; border-radius: var(--r-2); transition: opacity var(--t-chip), visibility 0s; }
-.bc-body > .piece { box-shadow: 0 8px 24px rgba(0,0,0,.35); }
-.bc-card.dragging .bc-body > .piece { box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px var(--blue); }
+/* the clip is the drawn rect; the body inside keeps its natural height, which is what is measured */
+.bc-clip { position: absolute; inset: 0; overflow: hidden; border-radius: var(--r-2); box-shadow: 0 8px 24px rgba(0,0,0,.35); transition: opacity var(--t-chip), visibility 0s; }
+.bc-body { position: absolute; left: 0; top: 0; }
+.bc-card.dragging .bc-clip { box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px var(--blue); }
 .bc-body.boxed > .piece { height: 100%; }
 .bc-body.boxed .pmain { overflow: auto; }
-.bc-card.f-chip .bc-body { opacity: 0; visibility: hidden; transition: opacity var(--t-chip), visibility 0s var(--t-chip); }
-.bc-card.f-ghost .bc-body { height: 100%; opacity: .45; }
+.bc-card.f-chip .bc-clip { opacity: 0; visibility: hidden; box-shadow: none; transition: opacity var(--t-chip), visibility 0s var(--t-chip); }
+.bc-card.f-ghost .bc-clip { opacity: .45; }
 .bc-card.focus .bc-body > .piece { border-color: var(--blue); }
 .bc-card.pinned .bc-body > .piece { border-color: var(--line-hi); }
 .bc-card .piece header { cursor: grab; }
@@ -106,7 +107,7 @@
 .col.pieces > .wshelf { position: absolute; left: 12px; bottom: 12px; z-index: 10; max-width: min(420px, calc(100% - 24px)); max-height: 60%; overflow: auto; background: var(--ink-1); }
 
 :root[data-motion="reduced"] .bc-world, :root[data-motion="reduced"] .bc-card, :root[data-motion="reduced"] .bc-links path,
-:root[data-motion="reduced"] .bc-body { transition: none; }
+:root[data-motion="reduced"] .bc-clip { transition: none; }
 :root[data-motion="reduced"] .bc-card.landing, :root[data-motion="reduced"] .bc-links .fresh, :root[data-motion="reduced"] .bc-pin,
 :root[data-motion="reduced"] .bc-badge { animation: none; }
 :root[data-motion="reduced"] .bc-says { animation: bc-says-fade 240ms linear both; }
