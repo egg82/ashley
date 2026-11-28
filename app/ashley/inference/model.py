@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 
-from ..receipts import Shown
+from ..receipts import Citable, Shown
 from ..undo import Undo
 from .embedding import EmbedTask
 from .image import ImageTask
@@ -138,7 +138,8 @@ class ToolResult:
     narrows the tool's `ToolSpec.outside` for this result: None leaves the spec's say, a boolean replaces it. `undo` is
     how the change the call made is taken back, set by a tool whose change has an inverse; None for every other result.
     It is code's alone: the model never reads it. `shown` is what the result brings up beside her words, set by a tool
-    that read or put up something a card draws; code's alone too."""
+    that read or put up something a card draws; code's alone too. `citable` is each record the result numbered for her
+    reply to cite (`Reply.cites`), set by `find`; code's alone, though the numbers are in `content`."""
 
     call_id: str
     content: str
@@ -147,6 +148,7 @@ class ToolResult:
     outside: bool | None = None
     undo: Undo | None = None
     shown: tuple[Shown, ...] = ()
+    citable: tuple[Citable, ...] = ()
 
     def taints(self, spec_outside: bool) -> bool:
         """Whether this result can carry text written outside the household: `outside` when set, else `spec_outside`."""

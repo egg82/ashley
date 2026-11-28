@@ -74,6 +74,9 @@ class Reply(BaseModel):
     used_facts: tuple[int, ...] = Field(
         default=(), description="The ids of the remembered facts this reply relies on, from `What you remember`; "
                                 "empty when it relies on none.")
+    cites: tuple[int, ...] = Field(
+        default=(), description="The numbers n of the records your tool calls returned in this turn that this reply "
+                                "rests on; empty when it rests on none.")
     escalate: Cleaned | None = Field(
         default=None, description="Set only when this needs a stronger, slower mind than yours and you cannot answer "
                                   "it well yourself with your tools: a short line to the person in your own voice "

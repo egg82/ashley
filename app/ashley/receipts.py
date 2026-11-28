@@ -7,7 +7,7 @@ from typing import Any, Literal, get_args
 
 AgreedStatus = Literal["ran", "failed", "not_run"]
 _STATUSES: dict[str, AgreedStatus] = {s: s for s in get_args(AgreedStatus)}
-ShownKind = Literal["printer"]
+ShownKind = Literal["printer", "fact"]
 """The kinds of thing a turn of hers can bring up beside her words, each a card the client draws (its parts registry)."""
 _KINDS: dict[str, ShownKind] = {k: k for k in get_args(ShownKind)}
 
@@ -15,7 +15,8 @@ _KINDS: dict[str, ShownKind] = {k: k for k in get_args(ShownKind)}
 @dataclass(frozen=True)
 class Shown:
     """One thing brought up beside her words, set by code from a tool's result and never read from her text: its `kind`
-    and `ref`, the id the kind's own read names it by (a printer's id as the printing manager gives it)."""
+    and `ref`, the id the kind's own read names it by (a printer's id as the printing manager gives it, a remembered
+    fact's id)."""
 
     kind: ShownKind
     ref: str
@@ -27,6 +28,24 @@ class Shown:
     def from_json(raw: Mapping[str, Any]) -> "Shown":
         """The inverse of `to_json`. Raises KeyError for a missing key or an unknown kind."""
         return Shown(_KINDS[raw["kind"]], str(raw["ref"]))
+
+
+@dataclass(frozen=True)
+class Citable:
+    """A record a tool call returned under `number`, which her reply cites it by (`Reply.cites`); `shown` is what it is
+    shown as beside her words once cited, None for a record of a kind no card draws yet."""
+
+    number: int
+    shown: Shown | None
+
+    def to_json(self) -> dict[str, object]:
+        return {"number": self.number, "shown": None if self.shown is None else self.shown.to_json()}
+
+    @staticmethod
+    def from_json(raw: Mapping[str, Any]) -> "Citable":
+        """The inverse of `to_json`. Raises KeyError for a missing key or an unknown kind."""
+        shown = raw["shown"]
+        return Citable(int(raw["number"]), None if shown is None else Shown.from_json(shown))
 
 
 @dataclass(frozen=True)

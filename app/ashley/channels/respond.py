@@ -319,7 +319,7 @@ async def _end(turn: _Turn, reply: Reply, push: bool) -> None:
     act = keep.act(reply, turn.inbound, turn.offered, turn.conversation_id)
     speaker_id = turn.who.speaker.id if turn.who.speaker is not None else None
     said, queued = storing.stored(reply, turn.inbound, turn.who.speaker, turn.phone, turn.conversation_id,
-                                  turn.said_id, queued, turn.landing.receipts, turn.landing.brought_up)
+                                  turn.said_id, queued, turn.landing.receipts, turn.landing.kept(reply))
     said = turn.work.answering(said)
     said = await continued.said_on_bench(turn.landing.inbound, turn.who.speaker, turn.said_id, said,
                                          turn.conversation_id, turn.showing)

@@ -39,6 +39,7 @@ SUMMARY: Mapping[str, str] = {
     "screen": "arrange the household's screens and what they show",
     "house_change": "change the house's configuration: automations, scripts, areas, names",
     "mail": "read, search, label and send mail",
+    "find": "search what you remember, past conversations, the print library and the ledger at once",
     "code": "run code",
     "bench_run": "run a bench's code pieces",
     "browser": "drive a web browser",

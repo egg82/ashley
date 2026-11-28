@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any, get_args
 
 from ..conversations.model import Shown
+from ..receipts import Citable
 from ..inference.model import Entry, Image, Message, SystemPrompt, ToolCall, ToolCalls, ToolResult, ToolResults
 from ..initiative.moment import Moment
 from ..initiative.remark import Chance
@@ -236,6 +237,7 @@ def _entry(entry: Entry) -> dict[str, Any]:
 def _result(result: ToolResult) -> dict[str, Any]:
     return {"call_id": result.call_id, "content": result.content, "is_error": result.is_error,
             "outside": result.outside, "shown": [x.to_json() for x in result.shown],
+            "citable": [c.to_json() for c in result.citable],
             "images": [{"media_type": i.media_type, "data": base64.b64encode(i.data).decode("ascii")}
                        for i in result.images]}
 
@@ -251,4 +253,5 @@ def _from_entry(raw: dict[str, Any]) -> Entry:
 def _from_result(raw: dict[str, Any]) -> ToolResult:
     return ToolResult(raw["call_id"], raw["content"], bool(raw["is_error"]),
                       tuple(Image(i["media_type"], base64.b64decode(i["data"])) for i in raw.get("images", [])),
-                      raw.get("outside"), shown=tuple(Shown.from_json(x) for x in raw.get("shown", ())))
+                      raw.get("outside"), shown=tuple(Shown.from_json(x) for x in raw.get("shown", ())),
+                      citable=tuple(Citable.from_json(c) for c in raw.get("citable", ())))

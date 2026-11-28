@@ -2969,14 +2969,15 @@ export interface components {
         /**
          * BroughtUp
          * @description One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the
-         *     kind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`).
+         *     kind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`; for `fact`, a
+         *     `MemoryFact.id` in `GET /api/memory/facts`, a fact her reply cited from what `find` returned).
          */
         BroughtUp: {
             /**
              * Kind
-             * @constant
+             * @enum {string}
              */
-            kind: "printer";
+            kind: "printer" | "fact";
             /** Ref */
             ref: string;
         };

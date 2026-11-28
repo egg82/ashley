@@ -5,7 +5,8 @@ turn as it is now, and rebuilds that when `open_bench` and `move_page` (through 
 the page. What the turn is is `Inbound.moved_to`, saved with its checkpoint the moment the call that moved the page
 returns, so a runner that resumes it is already there (and guides the saved system prompt again on its first step).
 The turn's numbered search results (`tools.results.Results`) live here, bound while a call runs, so what one look-up
-found a bench tool of the same turn can name; a runner that resumes the turn starts with none."""
+found a bench tool of the same turn can name; a runner that resumes the turn starts with none, its numbers past those of
+the records its calls already returned, which her reply may still cite."""
 
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
@@ -19,7 +20,7 @@ from ..tools import outside_config
 from ..tools.outside import Outside
 from ..tools.results import Results, bound
 from ..tools.tools import Catalogue, Tools, ToolsUnavailable
-from . import bench_facts, cut, escalation, judge_words, on_demand, standing, turn_tools
+from . import bench_facts, cites, cut, escalation, judge_words, on_demand, standing, turn_tools
 from .limits import Limits
 from .model import Inbound
 from .tool_loop import NO_STEPS, Arrived, Steps
@@ -65,6 +66,7 @@ class Landing(Tools):
                                 tainted=tainted or inbound.taint, config=config, words=words)
         self._receipts: Receipts | None = None
         self._shown: tuple[Shown, ...] = ()
+        self._citable: dict[int, Shown | None] = {}
         self._facts: tuple[Fact, ...] | None = None
         self._arrived: Arrived | None = None
         self._base: Mapping[str, SystemPrompt] | None = None
@@ -129,6 +131,13 @@ class Landing(Tools):
         (`done`)."""
         before = [r for e in entries if isinstance(e, ToolResults) for r in e.results]
         self._shown = tuple(dict.fromkeys(x for r in (*before, *done.values()) for x in r.shown))
+        self._citable = {c.number: c.shown for r in (*before, *done.values()) for c in r.citable}
+        self.results.after(max(self._citable, default=0))
+
+    def kept(self, reply: Reply) -> tuple[Shown, ...]:
+        """What her turn keeps beside her words: what its calls brought up (`brought_up`), then the records `reply` cites
+        that its calls returned (`cites.checked`)."""
+        return tuple(dict.fromkeys((*self._shown, *cites.checked(reply.cites, self._citable, self._said[0]))))
 
     @property
     def agree(self) -> int | None:
@@ -159,6 +168,7 @@ class Landing(Tools):
         its result is returned, so no kill between the move and the next step resumes it in chat."""
         got = await self._outside.call(call)
         self._shown = tuple(dict.fromkeys((*self._shown, *got.shown)))
+        self._citable.update((c.number, c.shown) for c in got.citable)
         bench = self._arrival.bench
         if bench != self._inbound.moved_to:
             self._inbound = replace(self._inbound, moved_to=bench)

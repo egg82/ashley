@@ -2,7 +2,8 @@
 `read_page` and the bench tools read from, so a page or a bench reference is always one a search returned this turn, or
 the address a site or video piece stores (`bench_page`), and never a URL she wrote. A turn makes one `Results` (`channels.landing.Landing`) and `bound`s it while a tool call runs,
 so the look-ups inside that call (`pages.Pages`) number into it, each continuing from the last; a call outside any turn
-sees a store of its own that nothing else reads."""
+sees a store of its own that nothing else reads. The records `find` returns take numbers from the same count, so one
+number names one thing her reply can cite (`Reply.cites`)."""
 
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -28,16 +29,26 @@ class Results:
     def __init__(self) -> None:
         self._urls: dict[int, str] = {}
         self._pages: dict[int, ReadPage] = {}
+        self._last = 0
 
     def record(self, url: str) -> int:
         """The next number, from 1, now meaning `url`."""
-        number = len(self._urls) + 1
+        number = self.number()
         self._urls[number] = url
         return number
 
+    def number(self) -> int:
+        """The next number, from 1, for a result that is no URL (a record `find` returned): `url` is None for it."""
+        self._last += 1
+        return self._last
+
+    def after(self, number: int) -> None:
+        """Numbers from here on come after `number`: a resumed turn's, past those its calls already gave."""
+        self._last = max(self._last, number)
+
     def next_number(self) -> int:
         """The number the next result recorded gets."""
-        return len(self._urls) + 1
+        return self._last + 1
 
     def keep(self, number: int, page: ReadPage) -> None:
         """Result `number`'s page as she read it this turn, for a reader piece to hold."""

@@ -23,8 +23,8 @@ PKG = ROOT / "ashley"  # the package directory (its name is the import root)
 ALLOWED: dict[str, set[str]] = {
     "api": {"channels", "connections", "conversations", "db", "errands", "files", "find", "herdr", "inference", "live", "logs", "looks", "mail", "memory", "people",
             "persona", "runs", "senses", "services", "settings", "signin", "skills", "text", "trust", "workshop"},
-    "channels": {"stamp", "cameras", "codehost", "connections", "conversations", "db", "errands", "inference", "initiative", "live", "logs", "memory",
-                 "people", "persona", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "undo",
+    "channels": {"stamp", "cameras", "codehost", "connections", "conversations", "db", "errands", "find", "inference", "initiative", "live", "logs", "memory",
+                 "people", "persona", "receipts", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "undo",
                  "watches", "workshop"},
     "codehost": {"connections", "logs", "services"},
     "connections": {"db", "logs", "services"},
