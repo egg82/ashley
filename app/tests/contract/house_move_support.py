@@ -66,6 +66,9 @@ class Benches(Workshop):
     async def undo_turn(self, owner: Owner, bench_id: int, by: Any, seq: int) -> Any:
         raise NotImplementedError
 
+    async def turn_pieces(self, owner: Owner, bench_id: int, turns: frozenset[int]) -> Any:
+        raise NotImplementedError
+
     async def log(self, owner: Owner, bench_id: int) -> Any:
         raise NotImplementedError
 

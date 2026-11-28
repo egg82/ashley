@@ -9701,6 +9701,14 @@
                 "type": "null"
               }
             ]
+          },
+          "pieces": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Pieces",
+            "default": []
           }
         },
         "type": "object",
@@ -9719,7 +9727,7 @@
           "voiced"
         ],
         "title": "ChatConversationTurn",
-        "description": "A turn of a conversation a web thread carries. `runs` are the scripts she ran to answer, in the order they ran,\non her turn that is the final answer to the person's message that asked for them (not on a held line before it);\nempty on every other turn. `looks` are the pictures of a bench she was given, placed the same way. `working` is\ntrue on the person's turn still owed its answer while her work on it is in flight (a runner has it, or a resumed\none will), so a page shows her still on it rather than the message missed; false on every other turn. `agree` is\nthe id of the held proposal (`POST /api/chat/agree`) on her turn whose receipts hold it, while the person\nreading can still agree to it; null on every other turn, and on a conversation read for another thread than the\nperson's own. `voiced` is true on her turn that has a voice stored (`Turn.spoken`). `receipts` is what code\nstored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held\ncalls a person's agreeing turn carried out, shown beside that turn; null on every other turn."
+        "description": "A turn of a conversation a web thread carries. `runs` are the scripts she ran to answer, in the order they ran,\non her turn that is the final answer to the person's message that asked for them (not on a held line before it);\nempty on every other turn. `looks` are the pictures of a bench she was given, placed the same way. `working` is\ntrue on the person's turn still owed its answer while her work on it is in flight (a runner has it, or a resumed\none will), so a page shows her still on it rather than the message missed; false on every other turn. `agree` is\nthe id of the held proposal (`POST /api/chat/agree`) on her turn whose receipts hold it, while the person\nreading can still agree to it; null on every other turn, and on a conversation read for another thread than the\nperson's own. `voiced` is true on her turn that has a voice stored (`Turn.spoken`). `receipts` is what code\nstored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held\ncalls a person's agreeing turn carried out, shown beside that turn; null on every other turn. `pieces` is, on a bench's\ntalk, the sorted ids of the pieces her commands touched in answering the person's message, on her turn that is the\nfinal answer to it (as `runs` are); empty on every other turn and on every other conversation."
       },
       "ChatLook": {
         "properties": {

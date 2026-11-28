@@ -60,6 +60,9 @@ class FakeWorkshop(Workshop):
         self.turn_undos.append((by, seq))
         return self.turn_undone
 
+    async def turn_pieces(self, owner: Owner, bench_id: int, turns: frozenset[int]) -> dict[int, tuple[int, ...]]:
+        raise NotImplementedError
+
     async def log(self, owner: Owner, bench_id: int) -> list[Logged]:
         raise NotImplementedError
 
