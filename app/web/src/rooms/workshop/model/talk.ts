@@ -14,6 +14,7 @@ import { awaiting, failedLine, line, missedOf, overlaid, type Line, type Overlay
 import { stillOn } from '../../her/owed';
 import { earlierStream } from '../../her/past';
 import { rules, unreachable } from './benches';
+import type { HerLine } from './herLines';
 
 /** The longest title a paste is given, when the bench's own limit is not known yet. */
 const PASTE_TITLE = 60;
@@ -24,6 +25,8 @@ export const talkState = signal<TalkLoad>('loading');
 export const talkConversation = signal<number | null>(null);
 export const talkSending = signal(false);
 export const talkStartedAt = signal<string | null>(null);
+/** Her answers on this talk that touched pieces, oldest first, as the canvas shows them beside those pieces. */
+export const talkPieceLines = signal<readonly HerLine[]>([]);
 
 /** The bench's earlier conversations, closed ones included, above the open one. */
 export const benchEarlier = earlierStream((limit, before) => {
@@ -50,6 +53,8 @@ async function readBack(id: number): Promise<void> {
   const hers = (all: readonly { author: string }[]) => all.filter((t) => t.author === 'ashley').length;
   const more = hers(got.turns) > hers(stored.value);
   stored.value = got.turns.map((t) => ({ key: `t${t.id}`, author: t.author, text: t.text, at: t.at, turn: t.id, follows: t.follows, runs: t.runs, looks: t.looks, working: t.working }));
+  talkPieceLines.value = got.turns.flatMap((t) => (t.author === 'ashley' && t.piece_ids.length
+    ? [{ turn: t.id, at: Date.parse(t.at), text: t.text, pieces: t.piece_ids }] : []));
   talkConversation.value = got.conversation_id;
   talkStartedAt.value = got.started_at;
   herWorking(stillOn(stored.value));
@@ -130,6 +135,7 @@ export function enterTalk(id: number, benchThread: string): void {
   overlay.value = { failed: null, mine: null, hers: null };
   talkConversation.value = null;
   talkStartedAt.value = null;
+  talkPieceLines.value = [];
   talkSending.value = false;
   benchEarlier.earlierReset();
   unsubscribe = [
