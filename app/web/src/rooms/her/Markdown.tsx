@@ -21,7 +21,12 @@ function inlines(nodes: readonly Inline[]): ComponentChildren {
 }
 
 function Table({ t }: { t: Extract<Block, { kind: 'table' }> }) {
-  const style = (i: number) => (t.align[i] ? { textAlign: t.align[i] } : undefined);
+  // A column aligned right or centre holds figures, which never break across lines.
+  const style = (i: number) => {
+    const align = t.align[i];
+    if (!align) return undefined;
+    return align === 'left' ? { textAlign: align } : { textAlign: align, whiteSpace: 'nowrap' };
+  };
   return (
     <div class="md-scroll">
       <table class="md-table">
