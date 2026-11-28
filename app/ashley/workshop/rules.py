@@ -27,7 +27,8 @@ and the bench's limits (`workshop.json`). Both files sit beside this module.
 title of a bench or a piece), `recent_commands` (how many of the latest commands a bench's read carries) and
 `undo_window` (how many of the latest commands, refusals and Undos among them, an Undo reaches back over), each at
 least 1, and `link_kinds`, the kinds of link between two pieces (`links`), each name mapped to `{"label"}`, what a
-screen calls it (left out: no link is made). `screen.json` has those four limits (a screen's pieces are not linked) and `required` (the kinds a screen always holds one of, a list of names) and
+screen calls it (left out: no link is made), and `layout`, the bounds of a person's pin and box (`Layout`; left out: a
+move that sets either is refused). `screen.json` has those four limits (a screen's pieces are neither linked nor pinned) and `required` (the kinds a screen always holds one of, a list of names) and
 `one_each` (whether a screen holds at most one piece of a kind), and sets the limits of a device's screen."""
 
 import json
@@ -62,10 +63,27 @@ class Kind:
 
 
 @dataclass(frozen=True)
+class Layout:
+    """The bounds of a pin and a box on a bench's map, in bench units: a pin's x and y each within `pin_reach` of 0, a
+    box's width from `min_w` to `max_w` and height from `min_h` to `max_h`."""
+
+    pin_reach: int
+    min_w: int
+    max_w: int
+    min_h: int
+    max_h: int
+
+    def __post_init__(self) -> None:
+        if self.min_w > self.max_w or self.min_h > self.max_h:
+            raise ValueError("a layout's minimum is at most its maximum")
+
+
+@dataclass(frozen=True)
 class Rules:
     """Everything `decide` checks a command against besides the bench itself. `kinds` by name. `required` names the
     kinds a layout must keep one piece of (a Remove, Archive or Undo that would leave none is refused); `one_each` makes
-    a layout hold at most one piece of a kind. `link_kinds` maps each kind of link to its label; none, no link is made."""
+    a layout hold at most one piece of a kind. `link_kinds` maps each kind of link to its label; none, no link is made.
+    `layout` bounds a pin and a box; None, neither is set."""
 
     kinds: Mapping[str, Kind]
     max_pieces: int
@@ -75,6 +93,7 @@ class Rules:
     required: frozenset[str] = frozenset()
     one_each: bool = False
     link_kinds: Mapping[str, str] = MappingProxyType({})
+    layout: Layout | None = None
 
     def __post_init__(self) -> None:
         if min(self.max_pieces, self.title_max_chars, self.recent_commands, self.undo_window) < 1:
@@ -133,10 +152,22 @@ def rules_from(kinds: object, limits: object) -> Rules:
     """The rules from parsed `kinds.json` and `workshop.json`. Raises ValueError for a shape outside the docstring's."""
     names = {"max_pieces", "title_max_chars", "recent_commands", "undo_window"}
     top = _object(limits)
-    if not names <= set(top) <= names | {"link_kinds"} or not all(_is_count(top[n]) for n in names):
-        raise ValueError(f"workshop.json has exactly {sorted(names)}, each an integer of at least 1, and may have link_kinds")
+    if not names <= set(top) <= names | {"link_kinds", "layout"} or not all(_is_count(top[n]) for n in names):
+        raise ValueError(f"workshop.json has exactly {sorted(names)}, each an integer of at least 1, and may have link_kinds "
+                         "and layout")
+    layout = top.get("layout")
     return Rules(_of_family(kinds_from(kinds), screen=False), _int(top["max_pieces"]), _int(top["title_max_chars"]),
-                 _int(top["recent_commands"]), _int(top["undo_window"]), link_kinds=_link_kinds(top.get("link_kinds", {})))
+                 _int(top["recent_commands"]), _int(top["undo_window"]), link_kinds=_link_kinds(top.get("link_kinds", {})),
+                 layout=None if layout is None else _layout(layout))
+
+
+def _layout(raw: object) -> Layout:
+    """`workshop.json`'s `layout`. Raises ValueError for a shape other than `Layout`'s fields, each at least 1."""
+    names = ("pin_reach", "min_w", "max_w", "min_h", "max_h")
+    entry = _object(raw)
+    if set(entry) != set(names) or not all(_is_count(entry[n]) for n in names):
+        raise ValueError(f"workshop.json's layout has exactly {list(names)}, each an integer of at least 1")
+    return Layout(*(_int(entry[n]) for n in names))
 
 
 def _link_kinds(raw: object) -> Mapping[str, str]:

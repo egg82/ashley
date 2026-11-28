@@ -7,7 +7,7 @@ from . import links as link_rules
 from .commands import (Added, Archived, Cued, Edited, Effect, Installed, Linked, Moved, Pointed, Proposed, Ran, Removed,
                        Renamed, Restored, Shown, Uninstalled, Unlinked, piece_of)
 from .links import Links
-from .model import Piece, Place
+from .model import Piece
 
 
 def apply(pieces: tuple[Piece, ...], effect: Effect, seq: int) -> tuple[Piece, ...]:
@@ -113,7 +113,7 @@ def inverse(effect: Effect, pieces: tuple[Piece, ...], shelf: tuple[Piece, ...],
     if isinstance(effect, Edited):
         return Edited(current.id, current.text, effect.before)
     last = len(pieces) - 1
-    return Moved(current.id, current.place, Place(min(effect.before.order, last), effect.before.size))
+    return Moved(current.id, current.place, replace(effect.before, order=min(effect.before.order, last)))
 
 
 def _renumbered(listed: list[Piece]) -> tuple[Piece, ...]:

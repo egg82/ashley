@@ -110,14 +110,36 @@ class BenchList(BaseModel):
     benches: list[BenchSummary]
 
 
+class PiecePin(BaseModel):
+    """Where a person fixed a piece on the bench's map: its top-left corner, in bench units, the goal centred at 0, 0."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    x: int
+    y: int
+
+
+class PieceBox(BaseModel):
+    """The size a person gave a piece on the bench's map, in bench units."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    w: int
+    h: int
+
+
 class PiecePlace(BaseModel):
-    """Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1) and its
-    size class."""
+    """Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), its
+    size class, and the `pin` and `box` a person gave it on the bench's map, null until they did; a read always
+    carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has
+    it; one outside the bench's bounds is refused `bad_place`."""
 
     model_config = ConfigDict(extra="forbid")
 
     order: int = Field(ge=0)
     size: Size
+    pin: PiecePin | None = None
+    box: PieceBox | None = None
 
 
 class BenchPiece(BaseModel):

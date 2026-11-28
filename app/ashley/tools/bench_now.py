@@ -72,5 +72,5 @@ def _line(view: BenchView, p: Piece, rules: Rules, body_chars: int) -> dict[str,
     if rules.shows_outside([p.kind]) or p.outside:
         return {"id": p.id, "kind": p.kind, "version": p.version}
     shown = piece(p, rules, body_chars)
-    keep = ("id", "kind", "title", "version", "order", "size", "body", "body_chars", "body_cut")
-    return {**{k: shown[k] for k in keep}, "last_changed_by": last_changed_by(view, p), **links_from(view, p)}
+    keep = ("id", "kind", "title", "version", "order", "size", "pinned", "body", "body_chars", "body_cut")
+    return {**{k: shown[k] for k in keep if k in shown}, "last_changed_by": last_changed_by(view, p), **links_from(view, p)}

@@ -25,7 +25,7 @@ from ..workshop.commands import type_of
 from ..workshop.install_piece import carry_out
 from ..workshop.installs import InstallRecord, Installs, InstallsUnavailable
 from ..workshop.shadows import ShadowRun, Shadows, ShadowsUnavailable
-from ..workshop.model import SIZES, Bench, Change, Owner, Piece
+from ..workshop.model import SIZES, Bench, Change, Owner, Piece, Place
 from ..workshop.provisional import provisional_title
 from ..workshop.wake_links import WakeLinks, links_of
 from ..workshop.rules import Kind
@@ -45,8 +45,8 @@ from .models import ErrorResponse
 from .person import Person
 from .skill_models import WorkKind
 from .workshop_models import (BenchDetail, BenchLink, BenchList, BenchPiece, BenchRequest, BenchSummary, CommandApplied,
-                              CommandRefused, AddPieceRequest, CommandRequest, LinkKind, LoggedCommand, PieceKind, PiecePlace,
-                              WorkshopKinds)
+                              CommandRefused, AddPieceRequest, CommandRequest, LinkKind, LoggedCommand, PieceBox, PieceKind,
+                              PiecePin, PiecePlace, WorkshopKinds)
 
 router = APIRouter()
 RULES = workshop_rules.load()
@@ -83,6 +83,12 @@ def summary(bench: Bench) -> BenchSummary:
                         work=bench.work, piece_count=bench.piece_count, last_changed_at=bench.last_changed_at, thread=bench.thread)
 
 
+def _placement(place: Place) -> PiecePlace:
+    return PiecePlace(order=place.order, size=place.size,
+                      pin=None if place.pin is None else PiecePin(x=place.pin.x, y=place.pin.y),
+                      box=None if place.box is None else PieceBox(w=place.box.w, h=place.box.h))
+
+
 def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[int, InstallRecord],
            links: WakeLinks, link_key: bytes = b"", metric: bool = False,
            shadows: Mapping[int, ShadowRun] = MappingProxyType({})) -> BenchPiece:
@@ -91,7 +97,7 @@ def _piece(piece: Piece, view: BenchView, last: Run | None, installs: Mapping[in
     automation = (automation_of(view.proposals.get(piece.id), installs.get(piece.id), links, shadows.get(piece.id))
                   if kind is not None and kind.format == "automation" else None)
     return BenchPiece(id=piece.id, kind=piece.kind, title=piece.text.title, body=piece.text.body,
-                      piece_version=piece.version, placement=PiecePlace(order=piece.place.order, size=piece.place.size),
+                      piece_version=piece.version, placement=_placement(piece.place),
                       changed_by=piece.changed_by, changed_at=change.at, changed_author=change.by.author,
                       changed_person_id=change.by.person_id, last_run=None if last is None else piece_run_of(last, link_key),
                       automation=automation, video=_video(piece, kind), reader=_reader(piece, kind),

@@ -3,6 +3,7 @@
   "title_max_chars": 120,
   "recent_commands": 50,
   "undo_window": 200,
+  "layout": {"pin_reach": 20000, "min_w": 160, "max_w": 2400, "min_h": 80, "max_h": 2400},
   "link_kinds": {
     "part_of": {"label": "Part of"},
     "depends_on": {"label": "Depends on"},

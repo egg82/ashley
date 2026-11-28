@@ -7,10 +7,10 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 
-from . import (automation_config, embed, job_body, facts, reader, recipe, screen_controls, session_piece, shadow,
+from . import (automation_config, embed, job_body, facts, pins, reader, recipe, screen_controls, session_piece, shadow,
                stored_file, surfacing, wake_rule)
 from .commands import (Add, Added, Archive, Archived, Command, Cue, Cued, Edit, Edited, Effect, Install, Installed, Link, Move,
-                       Moved, Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored,
+                       Point, Pointed, Propose, Proposed, Ran, Reason, Remove, Removed, Rename, Renamed, Restore, Restored,
                        Run, Shown, Surfaced, Undo, Unlink)
 from . import links as link_rules
 from .effects import apply, inverse, shelved, titled
@@ -93,7 +93,7 @@ def decide(state: BenchState, command: Command, rules: Rules) -> Decision:
     - Add: `unknown_kind`, `bad_title`, `too_long`, `bad_controls`, a body check below, `bad_citation` (hers only),
       `already_shown`, `full`. The piece goes last, its id the command's `seq`, version 1.
     - Remove: `no_such_piece`, `required`.
-    - Move: `no_such_piece`, `bad_place` (an order past the last piece's).
+    - Move: `no_such_piece`, `bad_place` (`pins.moved`: an order past the last piece's, or a pin or box out of bounds).
     - Edit: `no_such_piece`, `unknown_kind` (the piece's kind has left the rules), `stale_base`,
       `bad_title`, `too_long`, then a body check below, then `confirmed_measurement` and `bad_citation` (hers only). The
       version rises by one.
@@ -186,9 +186,7 @@ def _effect_of(state: BenchState, command: Command, rules: Rules, seq: int) -> E
     if isinstance(command, Archive):
         return "required" if _last_required(state, piece, rules) else Archived(piece)
     if isinstance(command, Move):
-        if command.place.order >= len(state.pieces):
-            return "bad_place"
-        return Moved(piece.id, piece.place, command.place)
+        return pins.moved(piece, len(state.pieces), command, rules.layout)
     if isinstance(command, Run):
         return _run(piece, command, rules)
     if isinstance(command, Propose):
