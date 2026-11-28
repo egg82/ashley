@@ -26,7 +26,7 @@ def test_her_answer_carries_the_pieces_her_commands_in_that_turn_touched(signed_
     bench = open_with(signed_in, ask="make two notes")
     until(lambda: [t.author for t in talk(signed_in, bench.id).turns] == ["person", "ashley"])
     person_turn, answer = talk(signed_in, bench.id).turns
-    assert answer.pieces == [] and person_turn.pieces == []
+    assert answer.piece_ids == [] and person_turn.piece_ids == []
 
     async def hers() -> None:
         database = PoolDatabase(db_url)
@@ -42,4 +42,4 @@ def test_her_answer_carries_the_pieces_her_commands_in_that_turn_touched(signed_
 
     run(hers())
     turns = talk(signed_in, bench.id).turns
-    assert [t.pieces for t in turns] == [[], [1, 2]]
+    assert [t.piece_ids for t in turns] == [[], [1, 2]]
