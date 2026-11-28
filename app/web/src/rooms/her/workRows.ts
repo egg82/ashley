@@ -10,15 +10,17 @@ export const STATE_WORD: Record<WorkItem['state'], string> = {
   stopped: 'Stopped',
 };
 
-/** Where the item lives, for a link: a bench in the workshop, an open-ended or standing errand among her reminders; a one-shot
- * errand lives in the conversation that asked it and has none. */
+/** Where the item lives, for a link: a bench in the workshop, an open-ended or standing errand among her reminders, something
+ * she did on her own in the Memory room's On her own tab; a one-shot errand lives in the conversation that asked it and has
+ * none. */
 export function where(item: Pick<WorkItem, 'kind' | 'id'>): string | null {
   if (item.kind === 'bench') return `/workshop/${item.id}`;
   if (item.kind === 'open_errand' || item.kind === 'standing_errand') return '/memory?tab=reminders';
+  if (item.kind === 'action') return '/memory?tab=outside';
   return null;
 }
 
-export const KIND_WORD: Record<WorkItem['kind'], string> = { errand: 'Errand', open_errand: 'Errand, ongoing', standing_errand: 'Errand, standing', bench: 'Bench', watch: 'Watch', proposal: 'Waiting for your OK' };
+export const KIND_WORD: Record<WorkItem['kind'], string> = { errand: 'Errand', open_errand: 'Errand, ongoing', standing_errand: 'Errand, standing', bench: 'Bench', watch: 'Watch', proposal: 'Waiting for your OK', action: 'Done on her own' };
 
 /** The rows in the order the server sent them, with how many wait on the person (what the closed list says). */
 export function waiting(items: readonly WorkItem[]): number {

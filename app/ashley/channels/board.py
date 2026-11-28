@@ -1,6 +1,7 @@
 """What the board (`GET /api/work`) reads that only the turn-side systems may touch: a person's pending proposals
-(`Proposals.of`, each judged still takeable by `refusal` against the time limit of the tool that proposed it) and live
-watches (`Watches.live`), and ending one of those watches (`Watches.disarm`). They are handed to `ashley.api.work_pending` as plain
+(`Proposals.of`, each judged still takeable by `refusal` against the time limit of the tool that proposed it), live
+watches (`Watches.live`) and what she did on her own for them (`OutsideRecord.of_person`, `decisions.md`, "What she did
+on her own is one record"), and ending one of those watches (`Watches.disarm`). They are handed to `ashley.api.work_pending` as plain
 records, so the API holds no import of the tools or the watches."""
 
 from dataclasses import dataclass
@@ -9,11 +10,15 @@ from datetime import UTC, datetime
 from .. import services
 from ..senses.deposit_config import CONFIG as DEPOSITS
 from ..senses.deposit_rule import describe
+from ..senses.outside_record import Cause, OutsideRecord, OutsideRecordUnavailable
 from ..senses.proposal_payloads import HeldCalls, HouseChange, MoneyRule, Payload, WatchSchedule
 from ..senses.proposals import Proposals, ProposalsUnavailable, refusal
 from ..tools import outside_config
 from ..tools.house_look_config import load as house_look
+from ..undo import Undo
 from ..watches.watches import Watches, WatchesUnavailable
+
+DID_LISTED = 50
 
 
 class BoardUnavailable(Exception):
@@ -41,6 +46,18 @@ class Kept:
     label: str
     paused: bool
     at: datetime
+
+
+@dataclass(frozen=True)
+class Did:
+    """A change she made for the person with no one's OK in that turn: its `outside_actions` row `id`, code's `summary`
+    of it, when (`at`), what started the turn (`cause`) and how it is taken back (`undo`, None when it cannot be)."""
+
+    id: int
+    summary: str
+    at: datetime
+    cause: Cause | None
+    undo: Undo | None
 
 
 def summary(payload: Payload) -> str:
@@ -102,3 +119,13 @@ async def end_watch(household_id: int, person_id: int, watch_id: int) -> bool:
         return await watches.disarm(household_id, person_id, found.kind, found.target)
     except WatchesUnavailable as e:
         raise BoardUnavailable("watches unavailable") from e
+
+
+async def did(household_id: int, person_id: int) -> tuple[Did, ...]:
+    """The newest `DID_LISTED` changes she made on her own for the person in this household, newest first, within the
+    record's keep (`actions_keep_s`). Raises BoardUnavailable."""
+    try:
+        found = await services.get(OutsideRecord).of_person(household_id, person_id, DID_LISTED)
+    except OutsideRecordUnavailable as e:
+        raise BoardUnavailable("the outside record is unavailable") from e
+    return tuple(Did(r.id, r.action.summary, r.action.at, r.action.cause, r.action.undo) for r in found)
