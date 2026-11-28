@@ -10,8 +10,8 @@ found a bench tool of the same turn can name; a runner that resumes the turn sta
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 
-from ..conversations.model import AgreedCall, Fact, Kind, Receipts
-from ..inference.model import Entry, SystemPrompt, Tier, ToolCall, ToolResult, ToolSpec
+from ..conversations.model import AgreedCall, Fact, Kind, Receipts, Shown
+from ..inference.model import Entry, SystemPrompt, Tier, ToolCall, ToolResult, ToolResults, ToolSpec
 from ..inference.reply import Reply
 from ..tools.action_judge import Vetting
 from ..tools.arrival import Arrival
@@ -64,6 +64,7 @@ class Landing(Tools):
         self._outside = Outside(standing.trusting(inbound, _Current(self)), standing.of(inbound), said,
                                 tainted=tainted or inbound.taint, config=config, words=words)
         self._receipts: Receipts | None = None
+        self._shown: tuple[Shown, ...] = ()
         self._facts: tuple[Fact, ...] | None = None
         self._arrived: Arrived | None = None
         self._base: Mapping[str, SystemPrompt] | None = None
@@ -118,6 +119,18 @@ class Landing(Tools):
         return self._receipts
 
     @property
+    def brought_up(self) -> tuple[Shown, ...]:
+        """What the turn's calls brought up beside her words (`ToolResult.shown`), each once, in the order first brought
+        up; a resumed turn's include those of the calls made before it was resumed (`resuming`)."""
+        return self._shown
+
+    def resuming(self, entries: tuple[Entry, ...], done: Mapping[str, ToolResult]) -> None:
+        """What the calls a resumed turn already made brought up: those in its saved `entries` and the round in flight
+        (`done`)."""
+        before = [r for e in entries if isinstance(e, ToolResults) for r in e.results]
+        self._shown = tuple(dict.fromkeys(x for r in (*before, *done.values()) for x in r.shown))
+
+    @property
     def agree(self) -> int | None:
         """The held proposal `receipts` shows, None when it shows none."""
         return None if self._receipts is None else self._receipts.proposal_id
@@ -145,6 +158,7 @@ class Landing(Tools):
         """The call, run by the turn's tools as they are; if it moved the page, the turn is saved as the bench's before
         its result is returned, so no kill between the move and the next step resumes it in chat."""
         got = await self._outside.call(call)
+        self._shown = tuple(dict.fromkeys((*self._shown, *got.shown)))
         bench = self._arrival.bench
         if bench != self._inbound.moved_to:
             self._inbound = replace(self._inbound, moved_to=bench)

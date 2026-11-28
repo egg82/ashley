@@ -49,7 +49,7 @@ const calls = (g.calls = []);
 const landed = (g.landed = []);
 const turn = (id: number, author: string, voiced = false) => ({
   id, author, text: 't', at: '2026-11-08T10:00:00Z', follows: false, continued_on: null, attachment: null, runs: [],
-  looks: [], working: false, agree: null, voiced,
+  looks: [], working: false, agree: null, voiced, brought_up: [],
 });
 g.conversation = {
   thread: 'person:1:web', conversation_id: 1, started_at: '2026-11-08T10:00:00Z',

@@ -65,7 +65,8 @@ the entity's own name, and plain strings drop it from Assist.
   `kiosk.control` line names the person; each press counts against the person's rate (`people.md`). Anything beyond lights and
   scenes still goes through her. `GET /api/house/glance` is who is home (the kiosk's glance) and what needs the person (their
   waiting-on-you count from `/api/work`, printers reporting a fault, whether the house answers); a part that cannot be read today is
-  null, never zero or false.
+  null, never zero or false. `GET /api/house/printers` is the household's printers as a printer card reads them, null when they
+  cannot all be read, so a printer missing from them is unknown rather than gone or idle.
 - **She reads the house's state through `house_state`, answered in code** (`house_query` narrows like a map, `house_render` caps it): one
   `GET /api/states` plus the registries per call, nothing cached on a pod. Every list holds every child; an answer over
   `house_state.json`'s cap shows names or counts instead, with `complete` false and `narrow_by`. `name` matches the entities'

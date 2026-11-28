@@ -40,6 +40,7 @@ from ..tools.printing import PrintingTools
 from ..tools.printing_config import load as printing_config
 from ..tools.printing_queue import PrintQueueTools
 from ..tools.printing_upload import PrintUploadTools
+from ..tools.show_card import ShowCardTools
 from ..tools.stock_tools import StockTools
 from ..tools.todo_tools import TodoTools
 from ..tools.camera_tools import CameraTools
@@ -215,6 +216,7 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
         found["page"] = MovePageTools(household, person, arrival)
     if services.get(Connections).can_open():
         found["printing"] = PrintingTools(household, _PRINTING)
+        found["show"] = ShowCardTools(household, _PRINTING)
         found["stock"] = StockTools(household, _PRINTING)
         found["calendar"] = CalendarTools(household, _CALENDAR)
         found["todo"] = TodoTools(household)

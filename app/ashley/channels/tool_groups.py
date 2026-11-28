@@ -22,6 +22,7 @@ SUMMARY: Mapping[str, str] = {
     "open_bench": "open a new bench",
     "page": "move the person's page to a room or a bench",
     "printing": "printers, AMS slots and the print library",
+    "show": "put a card beside your reply: a printer",
     "stock": "the filament spools in stock",
     "calendar": "the household's calendars",
     "todo": "the household's to-do lists",
