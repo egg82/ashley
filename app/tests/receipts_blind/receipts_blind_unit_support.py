@@ -80,6 +80,9 @@ class Numbered(Proposals):
         del self.rows[self._key(made_by, conversation_id, topic)]
         return found
 
+    async def of(self, made_by: int) -> tuple[Proposal[Payload], ...]:
+        raise AssertionError("not used")
+
     async def find[P: Payload](self, proposal_id: int, topic: Topic[P]) -> Proposal[P] | None:
         raise AssertionError("not used")
 

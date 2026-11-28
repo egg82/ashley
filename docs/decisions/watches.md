@@ -147,6 +147,12 @@ a herdr bridge). Arguments and results are never logged.
 - `unwatch`: `kind` and `target`. She disarms by what she watched, never by an id she may have lost between messages.
 - `watches`: the speaker's live watches, each with kind, label, `until`, expiry and, when paused, the reason.
 
+A person sees and ends their own watches from the board: `GET /api/work` lists `Watches.live` as `watch` items (paused
+ones `stopped`), and `DELETE /api/work/watches/{id}` reads the watch with `get`, refuses (404, alike for unknown, another
+person's, another household's or ended) unless it is the signed-in person's and live, then calls `disarm` on its kind
+and target, so it ends `disarmed` exactly as `unwatch` ends it. There is no pause: a pause would be a new watch
+state.
+
 `claude_start` and `claude_prompt` arm through `ashley.tools.claude_watching.watching`: `Watches.arm` with `armed_by`
 `handoff`, the kind's `handoff_until` and `handoff_hours`, and the session's state as the baseline. Their result says
 `watched`.

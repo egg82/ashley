@@ -241,7 +241,7 @@ reminder, change to the house. A new user of the pattern adds a payload kind, no
 would otherwise be a table and a service per kind, each copying the same replace, expire and take-once code. Fits into:
 Senses (which owns the gate `proposal_gate`), Tools (`ReminderTools`, `HouseChangeTools`).
 
-- **One service, `ashley.senses.proposals.Proposals`** (`propose`, `pending`, `take`; table `proposals`), whose payload
+- **One service, `ashley.senses.proposals.Proposals`** (`propose`, `pending`, `take`, `of`; table `proposals`), whose payload
   is a tagged record that code decodes, never her words (`ashley.senses.proposal_payloads`: `MoneyRule`,
   `ReminderSchedule`, `ReminderChange`, `HouseChange`, each stored as a JSON object with its `kind`). A new kind of
   thing she asks OK for is a payload record and its stored form, not a table or a service.
@@ -254,6 +254,13 @@ Senses (which owns the gate `proposal_gate`), Tools (`ReminderTools`, `HouseChan
   ids and the age of the proposal (`proposal_gate.gate`), and for a reminder to schedule also its first time having
   come. It consumes the proposal, and of two takes at once one wins. `proposed_at` is stored as given, which the TTL
   reads. The caller carries it out; the store never does.
+- **A person's pending proposals are read across conversations and topics** by `Proposals.of`, newest first, expired
+  ones included: each topic has its own time limit (the reminder tools', the house tools' and `Outside`'s configs), so the
+  reader judges with `refusal` against the limit of the tool that proposed it (`ashley.channels.board`). The board
+  (`GET /api/work`, "The board's read model") lists them as `proposal` items. Agreeing is unchanged: a tap
+  (`POST /api/chat/agree`) for held calls only, since carrying out a reminder or house change needs the turn's
+  tools (`A tap agrees to what was held`), and a reply in the conversation for the rest. There is no decline: a
+  proposal ends by being taken, replaced or aged out.
 - **The payload's own limits are the payload's.** A reminder's brief (1 to `MAX_BRIEF`, no NUL), its tool count, and a
   money rule's having no repeat are checked by `proposal_payloads.check` before anything is replaced.
 - Rejected: one proposal per conversation across topics, which would let a reminder proposal silently replace a house

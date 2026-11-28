@@ -75,6 +75,11 @@ class Proposals(Service):
         when else), ProposalsUnavailable."""
 
     @abstractmethod
+    async def of(self, made_by: int) -> tuple[Proposal[Payload], ...]:
+        """Every proposal `made_by` made that nobody has taken or replaced, in any conversation and topic, newest first,
+        those past their time limit among them (`refusal` judges). Raises ProposalsUnavailable."""
+
+    @abstractmethod
     async def find[P: Payload](self, proposal_id: int, topic: Topic[P]) -> Proposal[P] | None:
         """The proposal `proposal_id` of `topic`, whoever made it, while nobody has taken it and it has not been replaced;
         None otherwise. Raises ProposalsUnavailable."""
@@ -98,6 +103,9 @@ class NullProposals(Proposals):
 
     async def take[P: Payload](self, made_by: int, conversation_id: int, topic: Topic[P], turn_id: int,
                                ttl_s: float) -> Proposal[P]:
+        raise ProposalsUnavailable("proposals are not wired")
+
+    async def of(self, made_by: int) -> tuple[Proposal[Payload], ...]:
         raise ProposalsUnavailable("proposals are not wired")
 
     async def find[P: Payload](self, proposal_id: int, topic: Topic[P]) -> Proposal[P] | None:
