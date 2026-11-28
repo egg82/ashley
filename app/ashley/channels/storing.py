@@ -69,7 +69,7 @@ def held(reply: Reply, inbound: Inbound, said_id: int, conversation_id: int) -> 
     if unprompted.speaks(reply, inbound):
         return ()
     return (Pushed(inbound.household_id, inbound.thread, Outbound(conversation_id, inbound.medium, reply.text),
-                   said_id, held=True),)
+                   said_id, held=True, asker=inbound.speaker_id),)
 
 
 async def pushed(reply: Reply, inbound: Inbound, conversation_id: int, receipts: Receipts | None = None,

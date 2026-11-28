@@ -201,6 +201,17 @@ same `wakes` singleton under the lease and run through the same turn loop. There
 - **It reaches the person alone.** The turn runs on their phone thread (`push:<person id>`), with them as the one it is
   with, on a channel only they read (`ashley.channels.audience.owner_alone`), never a satellite, the hallway tablet or
   Discord. A reminder is never a glance source on a shared screen.
+- **Its message is the household's turn, never the person's words.** A fired reminder, errand check or standing round
+  is stored with `author` `household` ("A household is a speaker in its own right"), its text a line code writes from
+  the reminder's fields (`reminder_turn.shown`): `Reminder: <brief>`, `Errand check: <brief>` or `Standing errand:
+  <brief>` on the phone, and only `<kind> for <name>` on a room or screen route, where others may read it. What she is
+  to do reaches her only as the turn's `note`. The `Inbound` still names the person (`speaker_id`), so thread,
+  audience, tools and delivery are theirs as before; but the turn is not the person's own message, so it never agrees
+  to a held proposal for them (`standing.of`), and a standing round's finding Initiative keeps quiet is held for the
+  person the turn names (`Pushed.asker`), since a household's turn stores no speaker. Turns stored before this as the
+  person's are converted by the `reminder_turns_household` migration, found by their `wake:<id>` source. Rejected: an
+  author of its own for a reminder, since "household" already means an event she did not hear from anyone; a column
+  for the brief, since the line is already written from its fields.
 - **It looks before it reminds, and only looks, unless it names its tools** ("Reminders she shapes", below). The fired turn is offered the tools that change nothing, those whose
   spec says `reads` (`ashley.tools.reading.Reading`, set by `Inbound.reads_only`), and only where
   `audience.owner_alone` holds, else none: a "move anything past $300 into savings" reminder says how much there is to
