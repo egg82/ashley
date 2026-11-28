@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CARD_TEXT_PX, CHIP, CHIP_TEXT_PX, cardsReadable, drawnRect, formsOf, GHOST_H, lift, keptInView, minZoom, READ_FLOOR_PX, supersededBy, type FoldInput } from './fold.ts';
+import { CARD_TEXT_PX, CHIP, CHIP_TEXT_PX, cardsReadable, drawnRect, formsOf, GHOST_H, lift, keptInView, keptWants, minZoom, READ_FLOOR_PX, supersededBy, type FoldInput } from './fold.ts';
+import { lookAt } from './camera.ts';
 import type { MapLink } from './mindmap.ts';
 
 // 1 - 2 - 3 - 4, and 5 on its own.
@@ -89,4 +90,19 @@ test('pieces named together in a turn stay in full; one alone, or off the bench,
   assert.deepEqual(forms({ kept: keptInView(LINKS, [4, 5], ids) })[5], 'card');
   assert.equal(keptInView(LINKS, [4], ids).size, 0);
   assert.equal(keptInView(LINKS, [4, 9], ids).size, 0);
+});
+
+test('the camera framing a turn\'s kept pieces contains every one of them', () => {
+  const boxes = new Map([[1, { x: 0, y: 0, w: 300, h: 200 }], [3, { x: 2000, y: 100, w: 300, h: 200 }], [5, { x: 2400, y: 0, w: 300, h: 200 }], [9, { x: -900, y: 0, w: 300, h: 200 }]]);
+  const links: MapLink[] = [{ from: 5, kind: 'version_of', to: 3 }];
+  const V = { w: 1440, h: 900 };
+  const wants = keptWants(new Set([3, 5]), links, boxes, (p) => p);
+  const cam = lookAt(wants, boxes.get(9)!, V, 1);
+  for (const p of [3, 5]) {
+    const b = boxes.get(p)!;
+    assert.ok(b.x >= cam.x - V.w / 2 && b.x + b.w <= cam.x + V.w / 2 && b.y >= cam.y - V.h / 2 && b.y + b.h <= cam.y + V.h / 2, `piece ${p} in view`);
+  }
+  assert.deepEqual(keptWants(new Set(), links, boxes, (p) => p), []);
+  const wide = new Map(boxes).set(1, { x: -9000, y: 0, w: 300, h: 200 });
+  assert.equal(keptWants(new Set([1, 3, 5]), links, wide, (p) => p)[1]!.length, 2, 'else the newest and its partner');
 });

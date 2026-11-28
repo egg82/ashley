@@ -80,11 +80,11 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   const place = usePlacement(bench, kinds, measured);
   const camera = useCamera(vp, minZoom([...place.boxes.values()]), scrolls);
   const { cam, view } = camera;
-  const { focus, setFocus, landing } = useFocus(place, camera);
   const ids = new Set(place.boxes.keys());
-  const superseded = supersededBy(place.links, ids);
   const herLast = talkPieceLines.value.reduce<HerLine | null>((a, l) => (!a || l.at > a.at || (l.at === a.at && l.turn > a.turn) ? l : a), null);
   const kept = keptInView(place.links, herLast?.pieces ?? [], ids);
+  const { focus, setFocus, landing } = useFocus(place, camera, kept);
+  const superseded = supersededBy(place.links, ids);
   const forms = formsOf({ ids: [...ids], focus, links: place.links, pinned: place.pinned, superseded, kept, z: cam.z });
   const rects = new Map([...place.boxes].map(([p, b]) => [p, drawnRect(b, forms.get(p)!, cam.z)]));
   const lines = useHerLines(id, place.cardOf, ids);

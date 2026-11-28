@@ -101,3 +101,15 @@ export function keptInView(links: readonly MapLink[], turn: readonly number[], i
   }
   return out;
 }
+
+/** What the camera should try to show for the pieces `kept` keeps in full, widest first: all of them together, else
+ *  the newest by `rank` with its version partner(s). Empty when nothing is kept. */
+export function keptWants(kept: ReadonlySet<number>, links: readonly MapLink[], boxes: ReadonlyMap<number, Box>, rank: (id: number) => number): Box[][] {
+  const on = [...kept].filter((p) => boxes.has(p));
+  if (!on.length) return [];
+  const newest = on.reduce((a, p) => (rank(p) > rank(a) ? p : a));
+  const pair = new Set([newest]);
+  for (const l of links) if (l.kind === 'version_of' && (l.from === newest || l.to === newest)) { pair.add(l.from); pair.add(l.to); }
+  const of = (ids: Iterable<number>) => [...ids].filter((p) => boxes.has(p)).map((p) => boxes.get(p)!);
+  return [of(on), of(pair)];
+}
