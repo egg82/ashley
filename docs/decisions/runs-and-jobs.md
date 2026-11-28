@@ -226,8 +226,11 @@ exists for it; the outbox logs `outbox.stale_dropped` with `held` 1 or 0.
 `waiting` (a proposal, a bench or check that needs the person), `doing` (errands in her hands, standing errands, benches
 at work, live watches), `done_untold` (`Errands.held`'s `done` ones) and `would_like`, which nothing produces yet, since
 nothing in a stored proposal says she offered it unasked rather than answered a request, and a lane is never guessed
-from her words. A lane follows the item's `state`. Proposals and watches come from `Proposals.of` and `Watches.live`
-(`ashley.channels.board`, mapped by `ashley.api.work_pending`), each system's own read; the board holds no table of its own. Where she told an errand's
+from her words, and `on_her_own`, every change she made for the person that no one asked for in that turn (kind
+`action`, carrying its cause and undo; `decisions.md`, "What she did on her own is one record"). A lane follows the
+item's `state`, except an action's, which is always `on_her_own`. Proposals, watches and actions come from
+`Proposals.of`, `Watches.live` and `OutsideRecord.of_person` (`ashley.channels.board`, mapped by
+`ashley.api.work_pending`), each system's own read; the board holds no table of its own. Where she told an errand's
 result is not recorded: `held` returns only errands not yet told, so a `told_where` would be empty on every item the
 list shows, and it waits for a list of what was told.
 

@@ -1,5 +1,5 @@
-"""The signed-in person's open work as `WorkItem`s, each read from the system that owns the record (pending proposals and
-live watches: `work_pending`, from `ashley.channels.board`): one-shot errands
+"""The signed-in person's open work as `WorkItem`s, each read from the system that owns the record (pending proposals,
+live watches and what she did on her own: `work_pending`, from `ashley.channels.board`): one-shot errands
 (`ashley.errands.errands.Errands.held`), open-ended errands and standing errands (`ashley.senses.wakes.Wakes.reminders`, those with an
 `ends_at` and those with a `method`) and open benches with their jobs (`ashley.workshop.workshop.Workshop`, `ashley.errands.bench_jobs.BenchJobs`).
 A state is derived from those records' own fields, never from text."""

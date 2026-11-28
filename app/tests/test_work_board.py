@@ -1,6 +1,7 @@
 """The board's read model on `/api/work`: a person's pending proposals (one item of kind `proposal`, titled from the
 payload by code) and live watches (kind `watch`) beside their errands, each with its lane; the proposals read behind it
-(`Proposals.of`); and `DELETE /api/work/watches/{id}`, which ends a person's own live watch and nobody else's."""
+(`Proposals.of`); what she did on her own for them (kind `action`, lane `on_her_own`, with its cause and undo); and
+`DELETE /api/work/watches/{id}`, which ends a person's own live watch and nobody else's."""
 
 import hashlib
 import secrets
@@ -19,6 +20,8 @@ from ashley.criteria.items import ItemPredicate
 from ashley.db.pool import PoolDatabase
 from ashley.main import create_app
 from ashley.people import admin
+from ashley.senses.outside_record import DoneAction
+from ashley.senses.postgres_outside_record import PostgresOutsideRecord
 from ashley.senses.proposal_payloads import HeldCall, HeldCalls, HouseChange, Payload, ReminderSchedule, encode
 from ashley.senses.postgres_proposals import PostgresProposals
 from ashley.senses.proposals import Proposals
@@ -189,3 +192,55 @@ def test_the_list_is_all_of_it_or_none_when_proposals_cannot_be_read(world: Worl
     watch(world, world.alana)
     services.unregister(Proposals)
     assert client.get("/api/work").status_code == 503
+
+
+def did(w: World, who: int, home: int | None = None, summary: str = "Turned on the porch light",
+        days_ago: float = 0.0, cause: tuple[str, int] | None = None, undo: tuple[str, str, str | None] | None = None) -> int:
+    kind, cause_id = cause or (None, None)
+    undo_kind, ref, within = undo or (None, None, None)
+    return int(scalar(w.url, "INSERT INTO outside_actions (household_id, person_id, conversation_id, turn_id, tool, summary, "
+                             "tier, decision, at, label, cause_kind, cause_id, undo_kind, undo_ref, undo_within) VALUES "
+                             "(%s, %s, 1, 1, 'light', %s, 'runs', 'run', now() - make_interval(secs => %s), 'Did it', "
+                             "%s, %s, %s, %s, %s) RETURNING id",
+                      (w.home if home is None else home, who, summary, days_ago * 86400, kind, cause_id, undo_kind, ref, within)))
+
+
+def test_what_she_did_on_her_own_is_its_own_lane_with_its_cause_and_undo_titled_by_code(world: World, client: TestClient) -> None:
+    woke = did(world, world.alana, cause=("standing_errand", 55), undo=("todo_remove", "Lemons", "todo.grocery"))
+    older = did(world, world.alana, summary="Labelled a message", days_ago=1)
+    watch(world, world.alana)
+    items = listed(client)
+    assert [(i.kind, i.lane) for i in items] == [("watch", "doing"), ("action", "on_her_own"), ("action", "on_her_own")]
+    by = {i.id: i for i in items if i.kind == "action"}
+    assert (by[woke].title, by[woke].state) == ("Turned on the porch light", "done")
+    cause, undo = by[woke].cause, by[woke].undo
+    assert cause is not None and (cause.kind, cause.id) == ("standing_errand", 55)
+    assert undo is not None and (undo.kind, undo.ref, undo.within) == ("todo_remove", "Lemons", "todo.grocery")
+    assert (by[older].cause, by[older].undo) == (None, None)
+    assert all(i.cause is None and i.undo is None for i in items if i.kind != "action")
+
+
+def test_another_persons_or_households_actions_are_not_on_the_board(world: World, client: TestClient) -> None:
+    did(world, world.sam)
+    did(world, world.stranger, home=world.other_home)
+    did(world, world.alana, home=world.other_home)
+    assert listed(client) == []
+    mine = did(world, world.alana)
+    assert [i.id for i in listed(client)] == [mine]
+
+
+def test_an_action_pruned_past_the_records_keep_leaves_the_board(world: World, client: TestClient) -> None:
+    old = did(world, world.alana, days_ago=91)
+    assert [i.id for i in listed(client)] == [old], "nothing prunes until the next write: control"
+
+    async def write() -> None:
+        db = PoolDatabase(world.url, connect_timeout_s=5.0)
+        await db.open()
+        try:
+            await PostgresOutsideRecord(db, 90 * 86400.0, 7 * 86400.0).done(DoneAction(
+                world.home, world.alana, 1, 2, "light", "Turned off the porch light", "runs", None, None,
+                datetime.now(UTC), "Did it"))
+        finally:
+            await db.close()
+    run(write())
+    assert [i.title for i in listed(client)] == ["Turned off the porch light"]

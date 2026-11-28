@@ -1,5 +1,5 @@
 """The signed-in person's open work (`GET /api/work`): the errands they asked for that have not ended, their open
-benches, the proposals waiting for their OK and the watches she keeps for them, each with where it stands and its lane
+benches, the proposals waiting for their OK, the watches she keeps for them and what she did on her own for them, each with where it stands and its lane
 (`work_items`), and `DELETE /api/work/watches/{id}`, which ends one of their live watches. A watch that is not theirs,
 is another household's, has ended or is unknown is 404 alike. Logs `work.listed` with the household and a count and
 `work.watch_cancelled` with the watch id; never what an item says."""
