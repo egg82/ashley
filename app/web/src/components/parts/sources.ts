@@ -1,7 +1,7 @@
 // What a part reads and does, handed in by the shell that draws it: a shell backs these with its own signals and routes,
 // so the same part serves the kiosk's cookie routes and a person's session alike.
 import type { ReadonlySignal } from '@preact/signals';
-import type { HouseAttention, HousePrinter, KioskControl } from '../../api/types';
+import type { HouseAttention, HousePrinter, KioskControl, MemoryFact } from '../../api/types';
 
 export type ControlState = 'running' | 'done' | 'failed' | 'busy';
 
@@ -27,5 +27,12 @@ export interface PrinterSource {
   /** The household's printers: null when they cannot be read, undefined before they are. */
   printers: ReadonlySignal<readonly HousePrinter[] | null | undefined>;
   /** Keeps the printers read while a card shows them; returns the stop. */
+  watch(): () => void;
+}
+
+export interface FactSource {
+  /** The facts the person may read: null when they cannot be read, undefined before they are. */
+  facts: ReadonlySignal<readonly MemoryFact[] | null | undefined>;
+  /** Keeps the facts read while a card shows one; returns the stop. */
   watch(): () => void;
 }

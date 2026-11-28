@@ -5,11 +5,12 @@ import type { ComponentChildren } from 'preact';
 import { Attention } from './Attention';
 import { Clock } from './Clock';
 import { Controls } from './Controls';
+import { Fact, factOf } from './Fact';
 import { Home } from './Home';
 import type { PartKind } from './kinds';
 import { Printer } from './Printer';
 import { printerView } from './printerView';
-import type { AttentionSource, ControlsSource, HomeSource, PrinterSource } from './sources';
+import type { AttentionSource, ControlsSource, FactSource, HomeSource, PrinterSource } from './sources';
 
 /** What a shell hands the parts it draws. The conversation is each shell's own surface, so it supplies it. */
 export interface PartSources {
@@ -17,6 +18,7 @@ export interface PartSources {
   home: HomeSource;
   attention: AttentionSource;
   printer: PrinterSource;
+  fact: FactSource;
   conversation: () => ComponentChildren;
 }
 
@@ -36,6 +38,13 @@ export const PARTS: Record<PartKind, PartType> = {
     chip: (s, ref) => {
       const name = printerView(s.printer.printers.value, ref).name;
       return name ? `Printer · ${name}` : 'Printer';
+    },
+  },
+  fact: {
+    draw: (s, ref) => <Fact source={s.fact} factId={ref ?? ''} />,
+    chip: (s, ref) => {
+      const text = factOf(s.fact.facts.value, ref)?.text;
+      return text ? `Remembered · ${text.length > 40 ? `${text.slice(0, 39)}…` : text}` : 'Remembered';
     },
   },
   conversation: { draw: (s) => s.conversation() },

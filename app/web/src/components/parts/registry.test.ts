@@ -10,14 +10,14 @@ import { signal } from '@preact/signals';
 import { build } from 'esbuild';
 import { KINDS } from '../../kiosk/layout.ts';
 import { PART_KINDS } from './kinds.ts';
-import type { HousePrinter } from '../../api/types';
-import type { AttentionSource, ControlsSource, HomeSource, PrinterSource } from './sources.ts';
+import type { HousePrinter, MemoryFact } from '../../api/types';
+import type { AttentionSource, ControlsSource, FactSource, HomeSource, PrinterSource } from './sources.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'parts-'));
 const outfile = join(dir, 'parts.mjs');
 await build({
   stdin: {
-    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx'; export * from './Printer.tsx';",
+    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx'; export * from './Printer.tsx'; export * from './Fact.tsx';",
     resolveDir: import.meta.dirname,
     loader: 'ts',
   },
@@ -153,4 +153,29 @@ test('a brought-up printer folds to a chip named for it, or for its kind when it
   const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), conversation: () => null };
   assert.equal(parts.chipOf('printer', { ...sources, printer: stubPrinter([RUNNING]) }, '01P'), 'Printer · Workshop P1S');
   assert.equal(parts.chipOf('printer', { ...sources, printer: stubPrinter(null) }, '01P'), 'Printer');
+});
+
+function stubFacts(facts: readonly MemoryFact[] | null | undefined): FactSource {
+  return { facts: signal(facts), watch: () => () => undefined };
+}
+
+const FACT = { id: 7, text: 'The spare key is under the blue pot', valid_from: '2026-11-02T10:00:00Z' } as MemoryFact;
+
+test('a fact card shows the words of the fact its ref names', () => {
+  assert.match(textOf(parts.FactCard({ source: stubFacts([FACT]), factId: '7' })), /Remembered.*spare key is under the blue pot/);
+});
+
+test('a fact that cannot be read, or is not among the person\'s facts, is unknown', () => {
+  for (const source of [stubFacts(null), stubFacts([FACT])]) {
+    const text = textOf(parts.FactCard({ source, factId: '8' }));
+    assert.match(text, /unknown/);
+    assert.doesNotMatch(text, /spare key/);
+  }
+  assert.match(textOf(parts.FactCard({ source: stubFacts(undefined), factId: '7' })), /Reading/);
+});
+
+test('a cited fact folds to a chip of its words, or of its kind when they are unknown', () => {
+  const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), printer: stubPrinter(null), conversation: () => null };
+  assert.equal(parts.chipOf('fact', { ...sources, fact: stubFacts([FACT]) }, '7'), 'Remembered · The spare key is under the blue pot');
+  assert.equal(parts.chipOf('fact', { ...sources, fact: stubFacts(null) }, '7'), 'Remembered');
 });

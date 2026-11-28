@@ -6,11 +6,12 @@ import { drawPart, type PartSources } from '../components/parts/registry';
 import { reduced } from '../shell/motion';
 import type { Layout } from './layout';
 import { NARROW, rowsOf, WIDE } from './rows';
-import { kioskAttention, kioskControls, kioskHome, kioskPrinter } from './sources';
+import { kioskAttention, kioskControls, kioskFact, kioskHome, kioskPrinter } from './sources';
 import { Talk } from './Talk';
 
 const SOURCES: PartSources = {
-  controls: kioskControls, home: kioskHome, attention: kioskAttention, printer: kioskPrinter, conversation: () => <Talk />,
+  controls: kioskControls, home: kioskHome, attention: kioskAttention, printer: kioskPrinter, fact: kioskFact,
+  conversation: () => <Talk />,
 };
 
 function signature(layout: Layout): string {
