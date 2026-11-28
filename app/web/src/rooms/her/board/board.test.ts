@@ -22,6 +22,19 @@ test('lanes come in reading order, what waits on the person first, and empty lan
   assert.deepEqual(lanes([]), []);
 });
 
+test('a lane filter keeps only those lanes, in reading order, and no filter keeps all', () => {
+  const items = [
+    item({ lane: 'on_her_own', kind: 'action', state: 'done' }),
+    item({ lane: 'doing' }),
+    item({ lane: 'waiting', state: 'waiting_on_you' }),
+    item({ lane: 'kept_quiet' as WorkItem['lane'] }),
+  ];
+  assert.deepEqual(lanes(items, ['doing', 'waiting']).map((l) => l.lane), ['waiting', 'doing']);
+  assert.deepEqual(lanes(items, ['kept_quiet']).map((l) => l.lane), ['kept_quiet']);
+  assert.deepEqual(lanes(items, []), []);
+  assert.equal(lanes(items).length, 4);
+});
+
 test('within a lane the server\'s order is kept', () => {
   const a = item({ title: 'a' });
   const b = item({ title: 'b' });
