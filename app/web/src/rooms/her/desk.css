@@ -1,0 +1,72 @@
+/* The Desk: her room as three columns on wide screens (board · conversation · house), a fixed grid from the merged
+   design's desk block; below 1200px the board and the house fold into toggles above the conversation. Tokens and the
+   .label/.meta/.unk/.btn/.pill vocabulary are tokens.css; the house column's parts are the kiosk's (kiosk.css) drawn
+   smaller here. A lane's bar is the token that means it: warn waits on the person, brass is hers, ok is done. */
+
+.desk { position: absolute; inset: 0; }
+.desk.wide { display: grid; grid-template-columns: 300px minmax(0, 1fr) 280px; }
+.desk.wide > .her-room { position: relative; left: auto; transform: none; width: 100%; max-width: 760px; justify-self: center; min-height: 0; padding: 0 24px; }
+.desk-col { min-height: 0; overflow: auto; padding: 14px 14px 24px; scrollbar-color: var(--line-hi) transparent; scrollbar-width: thin; background: rgba(4,7,12,.55); }
+.desk-board { border-right: 1px solid var(--line); }
+.desk-house { border-left: 1px solid var(--line); }
+.chat-her .vis { color: var(--text-3); }
+
+/* the board */
+.board { display: grid; gap: 16px; }
+.b-lane { --lc: var(--text-3); }
+.b-lane[data-lane="waiting"] { --lc: var(--warn); }
+.b-lane[data-lane="on_her_own"], .b-lane[data-lane="would_like"] { --lc: var(--brass); }
+.b-lane[data-lane="done_untold"] { --lc: var(--ok); }
+.b-lane[data-lane="kept_quiet"] { --lc: var(--line-hi); }
+.b-lh { color: var(--lc); margin: 0 0 6px; }
+.b-count { color: var(--text-3); letter-spacing: .06em; }
+.b-rows { margin: 0; padding: 0; list-style: none; }
+.b-row { position: relative; padding: 7px 0 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.b-row::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 9px; width: 3px; border-radius: 2px; background: var(--lc); }
+.b-lane[data-lane="would_like"] .b-row::before { background: repeating-linear-gradient(180deg, var(--brass) 0 3px, transparent 3px 6px); }
+.b-row.undone .b-title, .b-row.undone .b-cause { color: var(--text-3); }
+.b-top { display: flex; gap: 8px; align-items: flex-start; }
+.b-t { flex: 1; min-width: 0; }
+.b-title { display: block; color: var(--text); overflow-wrap: anywhere; text-decoration: none; }
+a.b-title:hover { color: var(--blue-hi); text-decoration: underline; }
+.b-cause { margin-top: 2px; font-size: 12px; color: var(--text-2); overflow-wrap: anywhere; }
+.b-cause > span { color: var(--brass); }
+.b-sub { margin-top: 3px; }
+.b-undone.undone { color: var(--ok); } .b-undone.waiting_on_you { color: var(--warn); }
+.b-acts { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; flex: none; max-width: 50%; }
+.b-acts .btn.sm { height: 24px; padding: 0 9px; }
+.b-agree { padding: 2px 10px; font-size: 12px; }
+.b-elsewhere { margin-top: 2px; color: var(--text-2); }
+.b-note { margin: 6px 0 0; font-size: 12px; color: var(--text-2); }
+.b-note.alert { color: var(--warn); }
+.b-quiet { margin: 0; padding: 4px 0; }
+.b-down { display: flex; align-items: center; gap: 10px; }
+.b-stale { margin: 0; }
+
+/* the house column: the kiosk's parts at desk size */
+.house { display: grid; gap: 18px; }
+.house .label { margin: 0 0 8px; }
+.house .k-home { gap: 0; }
+.house .k-home > .unk, .k-attn .unk { justify-self: start; }
+.house .k-person { height: 26px; padding: 0 10px 0 4px; border-radius: 13px; font-size: 13px; }
+.house .k-person .who.sm { width: 20px; height: 20px; font-size: 9.5px; }
+.house .k-none { font-size: 13px; }
+.k-attn { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; }
+.k-attn li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.k-attn-needs::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex: none; }
+.k-attn-unk { color: var(--text-2); }
+.k-attn-clear { color: var(--text-2); }
+.house .k-controls { gap: 0; }
+.house .k-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.house .k-control { min-height: 0; padding: 8px 10px; border-radius: var(--r-2); font-size: 13px; gap: 4px; }
+.house .k-control-state { font-size: 11px; }
+
+/* below the Desk's width: two toggles, and the open one's section above the conversation */
+.desk-folds { margin: 0 0 6px; }
+.desk-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.desk-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--panel); font: 12px/1.6 var(--f-mono); color: var(--text-2); text-align: left; }
+.desk-toggle > .meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-toggle:hover { color: var(--text); }
+.desk-toggle[aria-expanded="true"] { border-color: var(--blue); color: var(--text); }
+.desk-toggle:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }
+.desk-fold { margin-top: 6px; max-height: 45vh; overflow: auto; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--panel); }
