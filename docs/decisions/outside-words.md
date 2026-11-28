@@ -504,4 +504,20 @@ more careful than the code: the tiers (`ToolSpec.tier`, `app/ashley/tools/tiers.
   why); `PUT /api/trust` replaces their whole choice under the revision read (409 `version_conflict`), and refuses a kind
   that is not one or `act` on a locked kind (422 `TrustRefused`), storing nothing. There is no person id in either: a
   person reads and writes their own rows only. Logs `trust.changed` (kind names and a count) and `trust.refused`.
+- **The seam is one Decorator**, `ashley.tools.trusting.Trusting`, between `Outside` and the turn's own tools
+  (`ashley.channels.standing.trusting`, used by `ashley.channels.landing.Landing`). For a call of an open kind its person
+  set to `offer`, or whose choices cannot be read, its `tier` is `asks`; for any other call it answers the source's
+  tier. `Outside` then holds the call by its one hold path, in the person's `OUTSIDE` proposal, agreed with `carry_out` or
+  Agree as any held call is. In a turn no person's message started, `Outside` also asks the source's tier of an
+  untainted change, and reads back what the turn held for its receipts, so a runner that resumes it still shows them.
+- **It only ever raises a tier.** Whether a call is offered first is "any of these says so": its spec's or the source's
+  tier, `irreversible.json` (which `house_change` applies itself, behind the seam), the person's setting, or a setting
+  that cannot be read. A locked kind is left to its floor, so an irreversible change still proposes by `house_change`'s
+  own path and is not held twice; `act` returns the source's tier unchanged, so it never loosens a tainted turn.
+- **It applies to turns no person's message started** (`Inbound.unprompted`): a reminder firing, an errand's check, a
+  watch's wake, a bench's reaction. A person's own message asking for the change is their yes, so it is never offered
+  back to them. A turn that names no person (a house event's wake) has no one whose setting decides, and keeps the floor.
+- **Rejected: a second hold path for the setting.** Two places that hold would drift in what they show and how a person
+  agrees; the tier is already the seam `Outside` holds by.
+- **Rejected: applying it to a person's own turn.** "Remind me at six" offered back as "shall I?" asks twice for one yes.
 - **Rejected: storing `act` on a locked kind and ignoring it.** The page would show a choice the code never honours.

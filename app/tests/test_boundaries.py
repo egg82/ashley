@@ -72,7 +72,7 @@ ALLOWED: dict[str, set[str]] = {
     "printing": {"services"},
     "stock": {"services"},
     "tools": {"stamp", "calendars", "cameras", "todos", "codehost", "connections", "criteria", "errands", "files", "herdr", "home_assistant", "inference", "ledger", "live", "logs", "looks", "mail", "people", "printables", "printing", "receipts", "runs", "senses", "services",
-              "skills", "stock", "text", "tidy", "undo", "watches", "workshop"},
+              "skills", "stock", "text", "tidy", "trust", "undo", "watches", "workshop"},
     "wiring_providers": {"inference", "settings"},
     "wiring_bridge": {"connections", "db", "mail", "runs", "services", "settings"},
     "wiring_sandbox": {"connections", "logs", "looks", "runs", "services", "settings"},

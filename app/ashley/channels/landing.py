@@ -61,8 +61,8 @@ class Landing(Tools):
         self.inner = self._built()
         config = outside_config.load()
         words = judge_words.reader(inbound, said[0], config.words_turns, config.words_chars)
-        self._outside = Outside(_Current(self), standing.of(inbound), said, tainted=tainted or inbound.taint, config=config,
-                                words=words)
+        self._outside = Outside(standing.trusting(inbound, _Current(self)), standing.of(inbound), said,
+                                tainted=tainted or inbound.taint, config=config, words=words)
         self._receipts: Receipts | None = None
         self._facts: tuple[Fact, ...] | None = None
         self._arrived: Arrived | None = None
