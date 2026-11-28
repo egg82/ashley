@@ -29,7 +29,7 @@ ALLOWED: dict[str, set[str]] = {
     "codehost": {"connections", "logs", "services"},
     "connections": {"db", "logs", "services"},
     "conversations": {"db", "hearing", "logs", "receipts", "services"},
-    "inference": {"connections", "db", "logs", "services", "text", "undo"},
+    "inference": {"connections", "db", "logs", "receipts", "services", "text", "undo"},
     "errands": {"db", "hearing", "services"},
     "files": {"connections", "db", "logs", "services"},
     "find": {"conversations", "ledger", "logs", "memory", "printing", "services"},

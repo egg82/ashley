@@ -1,7 +1,8 @@
-// A person's house routes: the household's lights and scenes, pressed from a signed-in screen, and the house at a glance.
+// A person's house routes: the household's lights and scenes, pressed from a signed-in screen, the house at a glance, and
+// its printers.
 import { answer } from './client';
 import type { paths } from './schema';
-import type { HouseGlance, KioskControl } from './types';
+import type { HouseGlance, HousePrinter, KioskControl } from './types';
 
 type ControlDone = paths['/api/house/controls/{name}']['post']['responses'][200]['content']['application/json'];
 
@@ -19,4 +20,9 @@ export async function pressHouseControl(name: string): Promise<boolean> {
 /** Who is home and what needs the person; a part that cannot be read is null. */
 export async function getHouseGlance(): Promise<HouseGlance> {
   return answer(await fetch('/api/house/glance'), 200, 'GET /api/house/glance');
+}
+
+/** The household's printers: empty with no printing manager, null when they cannot all be read now. */
+export async function getHousePrinters(): Promise<HousePrinter[] | null> {
+  return (await answer<{ printers: HousePrinter[] | null }>(await fetch('/api/house/printers'), 200, 'GET /api/house/printers')).printers;
 }

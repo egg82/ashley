@@ -6,11 +6,13 @@ arguments and results are never logged; `tools.call` carries the tool, outcome a
 
 import time
 from collections.abc import Sized
+from dataclasses import replace
 
 from .. import services
 from ..inference.model import ToolCall, ToolResult
 from ..printing.model import NotConnected, PrintingFailed, PrintingUnavailable, Reason
 from ..printing.printing import Printing
+from ..receipts import Shown
 from . import bench_results, printing_render
 from .printing_config import PrintingConfig
 from .printing_specs import AMS, FILES, INSTRUCTIONS, NAMES, NEEDS, PRINTERS, file_id, files_query, specs
@@ -53,19 +55,21 @@ class PrintingTools(Tools):
             return bench_results.failed(call, started, outcome, hint)
         if isinstance(got, str):
             return bench_results.failed(call, started, "bad_arguments", got)
-        return bench_results.ok(call, started, got, rows=_rows(got))
+        body, shown = got
+        return replace(bench_results.ok(call, started, body, rows=_rows(body)), shown=shown)
 
-    async def _read(self, call: ToolCall) -> dict[str, object] | str:
+    async def _read(self, call: ToolCall) -> tuple[dict[str, object], tuple[Shown, ...]] | str:
+        """The result's body and what it brings up beside her words: each printer a printers read returned."""
         printing, household = services.get(Printing), self._household_id
-        if call.name == PRINTERS:
-            return printing_render.printers(await printing.printers(household, self._config.printers_max))
-        if call.name == AMS:
-            return printing_render.ams(await printing.printers(household, self._config.printers_max))
+        if call.name in (PRINTERS, AMS):
+            page = await printing.printers(household, self._config.printers_max)
+            render = printing_render.printers if call.name == PRINTERS else printing_render.ams
+            return render(page), tuple(Shown("printer", p.id) for p in page.rows)
         if call.name == FILES:
             query = files_query(dict(call.arguments), self._config)
             if isinstance(query, str):
                 return query
-            return printing_render.files(await printing.files(household, query.search, query.limit))
+            return printing_render.files(await printing.files(household, query.search, query.limit)), ()
         assert call.name == NEEDS
         wanted = file_id(dict(call.arguments))
         if wanted is None:
@@ -73,7 +77,7 @@ class PrintingTools(Tools):
         found = await printing.needs(household, wanted)
         if found is None:
             return "file_id is not a file in the print library; printing_files lists them"
-        return printing_render.needs(found)
+        return printing_render.needs(found), ()
 
     async def _is_connected(self) -> bool:
         if self._connected is None:

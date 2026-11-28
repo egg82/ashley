@@ -40,6 +40,8 @@ def checked(turn: NewTurn) -> None:
         raise RefusedTurn("only her turns have a voice, and not a blank one")
     if turn.receipts is not None and turn.author != "ashley":
         raise RefusedTurn("only her turns have receipts")
+    if turn.shown and turn.author != "ashley":
+        raise RefusedTurn("only her turns bring things up")
 
 
 async def insert_turn(conn: Connection, policy: Policy, conversation_id: int, turn: NewTurn) -> Turn:
@@ -64,14 +66,14 @@ async def insert_turn(conn: Connection, policy: Policy, conversation_id: int, tu
     await all_handed(conn, conversation_id, turn)
     cur = await conn.execute(
         f"INSERT INTO turns (conversation_id, household_id, author, speaker_id, text, at, visibility, "
-        f"owner_id, follows, answers, source, carried_from, continued_on, attachment_title, attachment, spoken, receipts) "
-        f"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING "
+        f"owner_id, follows, answers, source, carried_from, continued_on, attachment_title, attachment, spoken, receipts, shown) "
+        f"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING "
         f"RETURNING {TURN_COLUMNS}",
         (conversation_id, household_id, turn.author, turn.speaker_id, turn.text, now, turn.heard,
          turn.owner_id, turn.follows, turn.answers, turn.source, turn.carried_from, turn.continued_on,
          None if turn.attachment is None else turn.attachment.title,
          None if turn.attachment is None else turn.attachment.text, turn.spoken,
-         None if turn.receipts is None else Jsonb(turn.receipts.to_json())),
+         None if turn.receipts is None else Jsonb(turn.receipts.to_json()), Jsonb([x.to_json() for x in turn.shown])),
     )
     stored = await cur.fetchone()
     if stored is None:

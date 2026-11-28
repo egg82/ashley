@@ -15,7 +15,7 @@ from ashley.channels.model import Inbound
 from ashley.channels.outbox import Outbox
 from ashley.conversations.conversations import Conversations, ConversationsUnavailable
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import AgreedCall, AgreedOutcome, Conversation, NewTurn, Receipt, Receipts
+from ashley.conversations.model import AgreedCall, AgreedOutcome, Conversation, NewTurn, Receipt, Receipts, Shown
 from ashley.inference.inference import Inference, InferenceRefused, InferenceUnavailable
 from ashley.inference.reply import Reply
 from ashley.main import create_app
@@ -124,7 +124,7 @@ def test_a_turn_on_the_wire_carries_nothing_of_memory() -> None:
     assert set(ChatTurn.model_fields) == {"id", "author", "text", "at", "follows", "continued_on", "attachment"}
     assert set(ChatConversationTurn.model_fields) == {"id", "author", "text", "at", "follows", "continued_on",
                                                       "attachment", "runs", "looks", "working", "agree", "voiced", "receipts",
-                                                      "agreed", "piece_ids"}
+                                                      "agreed", "piece_ids", "brought_up"}
 
 
 def test_a_held_line_reads_back_as_hers_marked_follows_before_the_answer(client: TestClient, wired: Fakes) -> None:
@@ -213,6 +213,20 @@ def test_a_turn_reads_back_with_the_receipts_stored_with_it_and_her_words_alone_
     assert [r.headline for r in first.receipts.held] == ["Cancelled a reminder"]
     assert first.agree is None, "no proposal is waiting for this person any more, but the snapshot stays"
     assert last.receipts is None
+
+
+def test_her_turn_reads_back_with_what_it_brought_up_in_order_and_others_with_none(client: TestClient, wired: Fakes) -> None:
+    async def seed() -> None:
+        talk = await wired.conversations.for_thread(ALANA.household_id, THREAD, "chat", [ALANA.id], remembered=True,
+                                                    channel="web", place=None)
+        said = await wired.conversations.add_turn(talk.id, NewTurn("person", "show me the printers", ALANA.id))
+        await wired.conversations.add_turn(talk.id, NewTurn("ashley", "Here.", answers=said.id, shown=(
+            Shown("printer", "02X"), Shown("printer", "01P"))))
+
+    asyncio.run(seed())
+    asked, hers = conversation(client).turns
+    assert [(b.kind, b.ref) for b in hers.brought_up] == [("printer", "02X"), ("printer", "01P")]
+    assert asked.brought_up == []
 
 
 def test_an_agreeing_turn_reads_back_with_what_became_of_each_call_beside_it_and_no_turn_of_hers(

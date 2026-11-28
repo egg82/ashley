@@ -5689,6 +5689,35 @@
         }
       }
     },
+    "/api/house/printers": {
+      "get": {
+        "summary": "House Printers",
+        "description": "200 `HousePrinters`; 401 `unauthorized`. Printers that cannot be read are null, never an empty list.",
+        "operationId": "house_printers",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HousePrinters"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/kiosk/session": {
       "post": {
         "summary": "Kiosk Pair",
@@ -10051,6 +10080,26 @@
         "title": "BenchSummary",
         "description": "One of the signed-in person's benches. `closed_at` is null while it is open. `piece_count` is the pieces on its\nlayout now, its shelf not counted; `last_changed_at` is when its last accepted command was decided (a cue of a video's player or a highlight is not one),\nnull for a bench nothing was done on.\n`thread` is the thread its talk is carried on, which a `LiveTurn` names when the talk got a turn."
       },
+      "BroughtUp": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "printer",
+            "title": "Kind"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "title": "BroughtUp",
+        "description": "One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the\nkind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`)."
+      },
       "CatalogueActionInfo": {
         "properties": {
           "name": {
@@ -10298,6 +10347,14 @@
             "type": "array",
             "title": "Piece Ids",
             "default": []
+          },
+          "brought_up": {
+            "items": {
+              "$ref": "#/components/schemas/BroughtUp"
+            },
+            "type": "array",
+            "title": "Brought Up",
+            "default": []
           }
         },
         "type": "object",
@@ -10316,7 +10373,7 @@
           "voiced"
         ],
         "title": "ChatConversationTurn",
-        "description": "A turn of a conversation a web thread carries. `runs` are the scripts she ran to answer, in the order they ran,\non her turn that is the final answer to the person's message that asked for them (not on a held line before it);\nempty on every other turn. `looks` are the pictures of a bench she was given, placed the same way. `working` is\ntrue on the person's turn still owed its answer while her work on it is in flight (a runner has it, or a resumed\none will), so a page shows her still on it rather than the message missed; false on every other turn. `agree` is\nthe id of the held proposal (`POST /api/chat/agree`) on her turn whose receipts hold it, while the person\nreading can still agree to it; null on every other turn, and on a conversation read for another thread than the\nperson's own. `voiced` is true on her turn that has a voice stored (`Turn.spoken`). `receipts` is what code\nstored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held\ncalls a person's agreeing turn carried out, shown beside that turn; null on every other turn. `piece_ids` is, on a bench's\ntalk, the sorted ids of the pieces her commands touched in answering the person's message, on her turn that is the\nfinal answer to it (as `runs` are); empty on every other turn and on every other conversation."
+        "description": "A turn of a conversation a web thread carries. `runs` are the scripts she ran to answer, in the order they ran,\non her turn that is the final answer to the person's message that asked for them (not on a held line before it);\nempty on every other turn. `looks` are the pictures of a bench she was given, placed the same way. `working` is\ntrue on the person's turn still owed its answer while her work on it is in flight (a runner has it, or a resumed\none will), so a page shows her still on it rather than the message missed; false on every other turn. `agree` is\nthe id of the held proposal (`POST /api/chat/agree`) on her turn whose receipts hold it, while the person\nreading can still agree to it; null on every other turn, and on a conversation read for another thread than the\nperson's own. `voiced` is true on her turn that has a voice stored (`Turn.spoken`). `receipts` is what code\nstored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held\ncalls a person's agreeing turn carried out, shown beside that turn; null on every other turn. `piece_ids` is, on a bench's\ntalk, the sorted ids of the pieces her commands touched in answering the person's message, on her turn that is the\nfinal answer to it (as `runs` are); empty on every other turn and on every other conversation. `brought_up` is\nwhat her tools brought up on her turn, each once, in the order brought up (code sets it from what a tool read or\nput up, never from her words); empty on every other turn."
       },
       "ChatLook": {
         "properties": {
@@ -12132,6 +12189,146 @@
         ],
         "title": "HouseGlance",
         "description": "The house at a glance for a signed-in person. `home` is the first names of the household's people who are home:\nempty when everyone known is away, null when it cannot be known."
+      },
+      "HousePrinter": {
+        "properties": {
+          "printer_id": {
+            "type": "string",
+            "title": "Printer Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "printer_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printer Model"
+          },
+          "online": {
+            "type": "boolean",
+            "title": "Online"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "print_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Print Name"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "minutes_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutes Left"
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layer"
+          },
+          "layers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layers"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "type": "object",
+        "required": [
+          "printer_id",
+          "name",
+          "printer_model",
+          "online",
+          "state",
+          "print_name",
+          "percent",
+          "minutes_left",
+          "layer",
+          "layers",
+          "problems"
+        ],
+        "title": "HousePrinter",
+        "description": "One of the household's printers as its card shows it. `printer_id` is the printing manager's id for it (what\n`BroughtUp.ref` names), `name` what the household calls it, `printer_model` its model when known, `online` whether\nthe manager can reach it. `state` is the printer's own word for what it is doing (`RUNNING`, `IDLE`, `PAUSE`,\n`FINISH`, `FAILED`), null when it says nothing, which is never idle. `print_name` is the print it is on, `percent` how\nfar along (0 to 100), `minutes_left`, `layer` and `layers` where it is in it, each null with no print or when the\nprinter does not say. `problems` are the faults it reports now, each its text or else its code."
+      },
+      "HousePrinters": {
+        "properties": {
+          "printers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/HousePrinter"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "printers"
+        ],
+        "title": "HousePrinters",
+        "description": "The household's printers for a signed-in person: empty when it has no printing manager, null when they cannot be\nread now (or there are more than one read holds), so a printer missing from them is unknown, never gone."
       },
       "Household": {
         "properties": {

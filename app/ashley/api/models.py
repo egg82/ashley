@@ -16,7 +16,7 @@ from .chat_models import ChatAttachment
 from .chat_models import ChatRequest as ChatRequest
 from .look_models import ChatLook
 from .people_models import MeResponse as MeResponse, Person as Person, wire_person as wire_person
-from .receipt_models import WireAgreed, WireReceipts
+from .receipt_models import BroughtUp, WireAgreed, WireReceipts
 from .run_models import ChatRun
 
 
@@ -303,7 +303,9 @@ class ChatConversationTurn(ChatTurn):
     stored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held
     calls a person's agreeing turn carried out, shown beside that turn; null on every other turn. `piece_ids` is, on a bench's
     talk, the sorted ids of the pieces her commands touched in answering the person's message, on her turn that is the
-    final answer to it (as `runs` are); empty on every other turn and on every other conversation."""
+    final answer to it (as `runs` are); empty on every other turn and on every other conversation. `brought_up` is
+    what her tools brought up on her turn, each once, in the order brought up (code sets it from what a tool read or
+    put up, never from her words); empty on every other turn."""
 
     runs: list[ChatRun]
     looks: list[ChatLook]
@@ -313,6 +315,7 @@ class ChatConversationTurn(ChatTurn):
     receipts: WireReceipts | None = None
     agreed: WireAgreed | None = None
     piece_ids: list[int] = []
+    brought_up: list[BroughtUp] = []
 
 
 class ChatConversation(BaseModel):

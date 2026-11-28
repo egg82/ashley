@@ -1,6 +1,7 @@
 /* Her room. The thread, lines and composer are the approved mockup's her (chat) block (rooms.css) copied verbatim, less
    what is not built (the learned-fact chip, the bench chip); the Desk's columns around it are desk.css. New here: the
-   quiet, loading and unreachable states, a line she gave no reply to, her thinking line, and phone width. */
+   quiet, loading and unreachable states, a line she gave no reply to, her thinking line, phone width, and what she brought
+   up. */
 
 .thread { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 6px 2px 16px; }
 .m { display: grid; grid-template-columns: 28px 1fr; gap: 10px; max-width: 600px; }
@@ -181,3 +182,17 @@ p.receipt-done { font: 12px/1.6 var(--f-mono); }
 .fact-option[aria-pressed="true"] { border-color: var(--brass); background: var(--brass); color: var(--brass-ink); cursor: default; }
 .fact-option:disabled { opacity: 0.6; cursor: progress; }
 
+
+/* what she brought up: each part as a card under her words, folded to a chip once a later line exists */
+.brought { display: grid; gap: 8px; margin-top: 10px; }
+.brought.folded { display: flex; flex-wrap: wrap; gap: 6px; }
+.brought-item { display: contents; }
+.brought.folded .brought-card { flex-basis: 100%; }
+.brought-card { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--ink-1); }
+.brought-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--line-hi);
+  border-radius: 13px; background: var(--panel); font: 12px/1 var(--f-mono); color: var(--text-2); cursor: pointer; }
+.brought-chip::after { content: "\25B8"; color: var(--text-3); }
+.brought-chip[aria-expanded="true"] { border-color: var(--brass-dim); color: var(--text); }
+.brought-chip[aria-expanded="true"]::after { content: "\25BE"; }
+.brought-chip:hover { color: var(--text); }
+.brought-chip:focus-visible { outline: 2px solid var(--blue-hi); outline-offset: 2px; }

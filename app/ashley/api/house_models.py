@@ -20,3 +20,31 @@ class HouseGlance(BaseModel):
 
     home: list[str] | None
     needs_attention: HouseAttention
+
+
+class HousePrinter(BaseModel):
+    """One of the household's printers as its card shows it. `printer_id` is the printing manager's id for it (what
+    `BroughtUp.ref` names), `name` what the household calls it, `printer_model` its model when known, `online` whether
+    the manager can reach it. `state` is the printer's own word for what it is doing (`RUNNING`, `IDLE`, `PAUSE`,
+    `FINISH`, `FAILED`), null when it says nothing, which is never idle. `print_name` is the print it is on, `percent` how
+    far along (0 to 100), `minutes_left`, `layer` and `layers` where it is in it, each null with no print or when the
+    printer does not say. `problems` are the faults it reports now, each its text or else its code."""
+
+    printer_id: str
+    name: str
+    printer_model: str | None
+    online: bool
+    state: str | None
+    print_name: str | None
+    percent: float | None
+    minutes_left: int | None
+    layer: int | None
+    layers: int | None
+    problems: list[str]
+
+
+class HousePrinters(BaseModel):
+    """The household's printers for a signed-in person: empty when it has no printing manager, null when they cannot be
+    read now (or there are more than one read holds), so a printer missing from them is unknown, never gone."""
+
+    printers: list[HousePrinter] | None

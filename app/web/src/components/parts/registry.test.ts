@@ -10,13 +10,14 @@ import { signal } from '@preact/signals';
 import { build } from 'esbuild';
 import { KINDS } from '../../kiosk/layout.ts';
 import { PART_KINDS } from './kinds.ts';
-import type { AttentionSource, ControlsSource, HomeSource } from './sources.ts';
+import type { HousePrinter } from '../../api/types';
+import type { AttentionSource, ControlsSource, HomeSource, PrinterSource } from './sources.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'parts-'));
 const outfile = join(dir, 'parts.mjs');
 await build({
   stdin: {
-    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx';",
+    contents: "export * from './registry.tsx'; export * from './Controls.tsx'; export * from './Home.tsx'; export * from './Attention.tsx'; export * from './Printer.tsx';",
     resolveDir: import.meta.dirname,
     loader: 'ts',
   },
@@ -120,4 +121,36 @@ test('home hands the source\'s names to the list, which says unknown or nobody o
   assert.match(textOf(parts.HomeNames({ names: ['Sam', 'Ada'] })), /Sam.*Ada/);
   assert.match(textOf(parts.HomeNames({ names: null })), /unknown/);
   assert.match(textOf(parts.HomeNames({ names: [] })), /Nobody home/);
+});
+
+function stubPrinter(printers: readonly HousePrinter[] | null | undefined): PrinterSource {
+  return { printers: signal(printers), watch: () => () => undefined };
+}
+
+const RUNNING: HousePrinter = {
+  printer_id: '01P', name: 'Workshop P1S', printer_model: 'P1S', online: true, state: 'RUNNING', print_name: 'benchy.3mf',
+  percent: 42.5, minutes_left: 75, layer: 120, layers: 300, problems: ['Nozzle clog'],
+};
+
+test('a printer card shows the printer its ref names: the print, how far, time left and faults', () => {
+  const text = textOf(parts.PrinterCard({ source: stubPrinter([RUNNING]), printerId: '01P' }));
+  assert.match(text, /Workshop P1S.*Printing.*benchy\.3mf.*43%.*1 h 15 m left.*layer 120 \/ 300.*Nozzle clog/);
+});
+
+test('a printer that cannot be read, or is not in the read, is unknown and never idle', () => {
+  for (const source of [stubPrinter(null), stubPrinter([RUNNING])]) {
+    const text = textOf(parts.PrinterCard({ source, printerId: '02X' }));
+    assert.match(text, /unknown/);
+    assert.doesNotMatch(text, /Idle/);
+  }
+  const silent = textOf(parts.PrinterCard({ source: stubPrinter([{ ...RUNNING, state: null, print_name: null, percent: null }]), printerId: '01P' }));
+  assert.match(silent, /unknown/);
+  assert.doesNotMatch(silent, /Idle/);
+  assert.match(textOf(parts.PrinterCard({ source: stubPrinter(undefined), printerId: '01P' })), /Reading/);
+});
+
+test('a brought-up printer folds to a chip named for it, or for its kind when its name is unknown', () => {
+  const sources = { controls: stubControls(), home: stubHome([]), attention: stubAttention(null), conversation: () => null };
+  assert.equal(parts.chipOf('printer', { ...sources, printer: stubPrinter([RUNNING]) }, '01P'), 'Printer · Workshop P1S');
+  assert.equal(parts.chipOf('printer', { ...sources, printer: stubPrinter(null) }, '01P'), 'Printer');
 });

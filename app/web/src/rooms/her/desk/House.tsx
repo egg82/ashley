@@ -1,10 +1,9 @@
 // The Desk's house column: who is home, what needs the person, and the household's lights and scenes, drawn from the
 // shared parts over the person's own routes (`session/house.ts`).
 import { attentionView } from '../../../components/parts/attentionView';
-import { drawPart, type PartSources } from '../../../components/parts/registry';
-import { houseAttention, houseControls, houseHome } from '../../../session/house';
-
-const SOURCES: PartSources = { controls: houseControls, home: houseHome, attention: houseAttention, conversation: () => null };
+import { drawPart } from '../../../components/parts/registry';
+import { houseAttention } from '../../../session/house';
+import { PERSON_SOURCES as SOURCES } from '../../../session/parts';
 
 export function House() {
   return (
