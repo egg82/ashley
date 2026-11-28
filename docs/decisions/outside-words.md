@@ -445,11 +445,32 @@ turns did; the board's "On her own" lane reads it.
   `remind` carries `reminder_cancel`; `todo_change` add, done and reopen carry `todo_remove`, `todo_reopen` and
   `todo_done`. Every other change has none, and the board offers no Undo for it: a send, a delete, a mail move, a
   replaced config, an updated record or a changed reminder, whose inverse needs the state before, which is not kept.
-  The record keeps what taking it back needs; carrying it out is a person's route of its own.
+  The record keeps what taking it back needs; carrying it out is a person's route of its own (below).
+- **Undo goes through her own tool for that change, under its own checks** (`POST /api/work/actions/{id}/undo`,
+  `ashley.channels.undo_action`, `ashley.tools.undo_carry`), never a direct call to the house, the reminders or a list:
+  `house_delete` is a `house_change` delete, `reminder_cancel` a `cancel_reminder`, and the to-do kinds a
+  `todo_change`, each for the person the action was for. Only that person, in its household, can take it; any other
+  action id is 404.
+- **A delete's undo waits on a yes.** `irreversible.json` covers every delete, so `house_change` proposes it as it
+  proposes any delete she is asked for: a code-written turn of the person's (`undo.json`'s `turn` and the action's
+  summary) is stored on their web thread, the proposal is made in that turn, and the route answers `waiting_on_you`
+  with that conversation. Nothing is deleted until they answer yes there and `house_confirm` carries it out; the
+  proposal waits in the board's `waiting` lane meanwhile.
+- **A target already gone is `gone`, not an error.** Before calling the tool, a read through the same service checks
+  that the thing she made is still there, that the reminder is still to fire, or that the list item is still as her
+  change left it; otherwise no call is made.
+- **An undo is taken once.** Columns `undone_at`, `undone_by` and `undone_how` keep it on the row. The route claims the
+  row (`undoing`) before carrying anything out, so two requests cannot both act; it settles as `undone`,
+  `waiting_on_you` or `gone`, and a refusal or an outage gives the claim up, so the Undo is offered again with nothing
+  changed. A claim left by a pod that stopped partway lapses after `undo.json`'s `claim_s`. A second Undo of a taken
+  one is 409 `already_undone`. `/api/work` items carry `can_undo` (an undo, not taken) and `undone` (when, and how it
+  stands). Each request logs one `undo.done` line with the action, the undo's kind and the outcome.
 - A row kept before causes and undos, or naming a kind this release does not know, reads back with neither. Rows are
   kept and pruned with the rest of the table (`actions_keep_s`). `GET /api/outside-actions` serves both as
   `OutsideAction.cause` and `OutsideAction.undo`.
 - **Rejected: a store of its own for unasked actions.** It would copy the keep-and-prune and the per-person read.
+- **Rejected: an undo that calls the house, the reminders or a list itself.** It would skip the checks a request to
+  her goes through, and a delete would run with nobody's yes.
 - **Rejected: an undo worked out from the result's text, or a cause written as words.** Behaviour keys on fields; the
   tool sets the inverse where it has the ids, and the turn's builder sets the cause where it has the record.
 - **Not done: keeping a replaced config or a record's fields before an update** so they could be undone. Every such

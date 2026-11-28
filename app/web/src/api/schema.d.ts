@@ -2536,6 +2536,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/work/actions/{action_id}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo Action
+         * @description 200 `UndoDone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `no_undo`, `already_undone` or
+         *     `refused`; 503 `unavailable`, with nothing changed.
+         */
+        post: operations["undo_action"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2606,6 +2627,24 @@ export interface components {
             ref: string;
             /** Within */
             within: string | null;
+        };
+        /**
+         * ActionUndone
+         * @description That an action's Undo was taken: when it was last moved (`at`) and how it stands: `undoing`, being carried out
+         *     now; `undone`, carried out; `waiting_on_you`, a delete proposed and waiting for the person's yes in the conversation
+         *     the undo's answer named; `gone`, what it would take back was no longer there, so nothing was done.
+         */
+        ActionUndone: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * How
+             * @enum {string}
+             */
+            how: "undoing" | "undone" | "waiting_on_you" | "gone";
         };
         /**
          * AddPieceRequest
@@ -3472,7 +3511,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin" | "admins_from_provider" | "bad_label";
+            code: "database_unavailable" | "unauthorized" | "refused" | "unavailable" | "not_found" | "rate_limited" | "forbidden" | "too_large" | "unsupported" | "closed" | "label_taken" | "too_many" | "held_by_household" | "version_conflict" | "gone" | "expired" | "not_yours" | "stale" | "admin_only" | "last_admin" | "admins_from_provider" | "bad_label" | "no_undo" | "already_undone";
             /** Detail */
             detail: string;
         };
@@ -6560,6 +6599,24 @@ export interface components {
             text: string;
         };
         /**
+         * UndoDone
+         * @description What the Undo of action `id` did, in the words of `ActionUndone.how`: `undone`, the change was taken back; `waiting_on_you`, taking it back is a
+         *     delete, proposed for the person's yes like any delete she proposes, which they give by answering her in
+         *     `conversation_id` (it waits in the board's `waiting` lane); `gone`, what it would take back was no longer there,
+         *     so nothing was done. `conversation_id` is null unless `waiting_on_you`.
+         */
+        UndoDone: {
+            /** Id */
+            id: number;
+            /**
+             * How
+             * @enum {string}
+             */
+            how: "undone" | "waiting_on_you" | "gone";
+            /** Conversation Id */
+            conversation_id: number | null;
+        };
+        /**
          * UndoRequest
          * @description Undo command `seq`, while what it changed has not changed since. Refused `nothing_to_undo` when `seq` is an undo
          *     (there is no redo) or older than the bench's last `undo_window` commands, and `changed_since` when it was already
@@ -6787,7 +6844,9 @@ export interface components {
          *     proposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a
          *     proposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started
          *     the turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is
-         *     offered), both null for any other kind.
+         *     offered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):
+         *     an `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other
+         *     kind and for an action never undone.
          */
         WorkItem: {
             /**
@@ -6825,6 +6884,12 @@ export interface components {
             can_tap: boolean;
             cause?: components["schemas"]["ActionCause"] | null;
             undo?: components["schemas"]["ActionUndo"] | null;
+            /**
+             * Can Undo
+             * @default false
+             */
+            can_undo: boolean;
+            undone?: components["schemas"]["ActionUndone"] | null;
         };
         /**
          * WorkKind
@@ -14456,6 +14521,80 @@ export interface operations {
             };
             /** @description `not_found`: no live watch of yours has that id */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: an id below 1 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: a store holding part of it could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    undo_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UndoDone"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no action she took for you has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `no_undo`: it has no undo; `already_undone`: its undo was taken; `refused`: her tool for that change refused it or could not make it. Nothing was changed */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

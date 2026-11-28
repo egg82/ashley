@@ -3,7 +3,7 @@
 
 from ..channels import board
 from .outside_models import ActionCause, ActionUndo
-from .work_models import WorkItem
+from .work_models import ActionUndone, WorkItem
 
 
 def proposal_item(p: board.Pending) -> WorkItem:
@@ -18,8 +18,9 @@ def watch_item(w: board.Kept) -> WorkItem:
 def action_item(d: board.Did) -> WorkItem:
     cause = None if d.cause is None else ActionCause(kind=d.cause.kind, id=d.cause.id)
     undo = None if d.undo is None else ActionUndo(kind=d.undo.kind, ref=d.undo.ref, within=d.undo.within)
+    undone = None if d.undone is None else ActionUndone(at=d.undone.at, how=d.undone.how)
     return WorkItem(kind="action", id=d.id, title=d.summary, state="done", lane="on_her_own", at=d.at, cause=cause,
-                    undo=undo)
+                    undo=undo, can_undo=undo is not None and undone is None, undone=undone)
 
 
 async def pending_and_kept(household_id: int, person_id: int) -> list[WorkItem]:

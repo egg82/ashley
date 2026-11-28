@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { WorkItem } from '../../api/types';
 import { KIND_WORD, STATE_WORD, waiting, where } from './workRows.ts';
 
-const item = (kind: WorkItem['kind'], state: WorkItem['state'], id = 7): WorkItem => ({ kind, id, title: 't', state, lane: 'doing', can_tap: false, at: '2026-11-13T10:00:00Z' });
+const item = (kind: WorkItem['kind'], state: WorkItem['state'], id = 7): WorkItem => ({ kind, id, title: 't', state, lane: 'doing', can_tap: false, can_undo: false, at: '2026-11-13T10:00:00Z' });
 
 test('a bench links into the workshop room, an open-ended errand to her reminders and an action to On her own; a one-shot errand has no link', () => {
   assert.equal(where(item('bench', 'open', 12)), '/workshop/12');

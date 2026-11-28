@@ -8973,6 +8973,90 @@
           }
         }
       }
+    },
+    "/api/work/actions/{action_id}/undo": {
+      "post": {
+        "summary": "Undo Action",
+        "description": "200 `UndoDone`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 409 `no_undo`, `already_undone` or\n`refused`; 503 `unavailable`, with nothing changed.",
+        "operationId": "undo_action",
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Action Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoDone"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: a store holding part of it could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the request came from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no action she took for you has that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`no_undo`: it has no undo; `already_undone`: its undo was taken; `refused`: her tool for that change refused it or could not make it. Nothing was changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FastAPI's validation error: an id below 1"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9109,6 +9193,32 @@
         ],
         "title": "ActionUndo",
         "description": "What takes a change back: `kind` is the inverse (`house_delete` the house's `within` kind of thing `ref` she\ncreated; `reminder_cancel` the reminder whose id is `ref`; `todo_remove`, `todo_done` or `todo_reopen` the item `ref`,\nits id or exact text, on the to-do list `within`), `within` None where the kind needs no place."
+      },
+      "ActionUndone": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "how": {
+            "type": "string",
+            "enum": [
+              "undoing",
+              "undone",
+              "waiting_on_you",
+              "gone"
+            ],
+            "title": "How"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "how"
+        ],
+        "title": "ActionUndone",
+        "description": "That an action's Undo was taken: when it was last moved (`at`) and how it stands: `undoing`, being carried out\nnow; `undone`, carried out; `waiting_on_you`, a delete proposed and waiting for the person's yes in the conversation\nthe undo's answer named; `gone`, what it would take back was no longer there, so nothing was done."
       },
       "AddPieceRequest": {
         "properties": {
@@ -11147,7 +11257,9 @@
               "admin_only",
               "last_admin",
               "admins_from_provider",
-              "bad_label"
+              "bad_label",
+              "no_undo",
+              "already_undone"
             ],
             "title": "Code"
           },
@@ -18413,6 +18525,42 @@
         "title": "Transcript",
         "description": "What was heard in one spoken utterance, in real spellings; empty when nothing was said. The page sends it as a\ntyped message, so a spoken turn is a typed one on the same thread."
       },
+      "UndoDone": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "how": {
+            "type": "string",
+            "enum": [
+              "undone",
+              "waiting_on_you",
+              "gone"
+            ],
+            "title": "How"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "how",
+          "conversation_id"
+        ],
+        "title": "UndoDone",
+        "description": "What the Undo of action `id` did, in the words of `ActionUndone.how`: `undone`, the change was taken back; `waiting_on_you`, taking it back is a\ndelete, proposed for the person's yes like any delete she proposes, which they give by answering her in\n`conversation_id` (it waits in the board's `waiting` lane); `gone`, what it would take back was no longer there,\nso nothing was done. `conversation_id` is null unless `waiting_on_you`."
+      },
       "UndoRequest": {
         "properties": {
           "type": {
@@ -18940,6 +19088,21 @@
                 "type": "null"
               }
             ]
+          },
+          "can_undo": {
+            "type": "boolean",
+            "title": "Can Undo",
+            "default": false
+          },
+          "undone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionUndone"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -18952,7 +19115,7 @@
           "at"
         ],
         "title": "WorkItem",
-        "description": "One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of\n`errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`\n(done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps),\n`proposal` (something she proposed that nobody has agreed to) or `action` (a change she made for them with no one's\nOK in that turn, kept 90 days). `id` is that record's own id (a bench's id is the workshop's `/workshop/{id}`, a\nwatch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one `POST /api/chat/agree` takes, an\naction's its `GET /api/outside-actions` id), `title` what it is (the person's own words, shown only to them; a\nproposal's is written by code from what it would do, an action's by code from what it did).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with\nnothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be\nsent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or\n`would_like` (something she offered unasked) or `on_her_own` (every `action`, and only those). It follows `state` for\nevery other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it\nlast moved, or when an action was made: a bench's last change (else when it opened),\nan errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was\narmed), a proposal's making. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a\nproposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a\nproposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started\nthe turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is\noffered), both null for any other kind."
+        "description": "One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of\n`errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`\n(done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps),\n`proposal` (something she proposed that nobody has agreed to) or `action` (a change she made for them with no one's\nOK in that turn, kept 90 days). `id` is that record's own id (a bench's id is the workshop's `/workshop/{id}`, a\nwatch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one `POST /api/chat/agree` takes, an\naction's its `GET /api/outside-actions` id), `title` what it is (the person's own words, shown only to them; a\nproposal's is written by code from what it would do, an action's by code from what it did).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with\nnothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be\nsent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or\n`would_like` (something she offered unasked) or `on_her_own` (every `action`, and only those). It follows `state` for\nevery other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it\nlast moved, or when an action was made: a bench's last change (else when it opened),\nan errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was\narmed), a proposal's making. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a\nproposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a\nproposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started\nthe turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is\noffered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):\nan `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other\nkind and for an action never undone."
       },
       "WorkKind": {
         "properties": {

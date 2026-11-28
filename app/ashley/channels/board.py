@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from .. import services
 from ..senses.deposit_config import CONFIG as DEPOSITS
 from ..senses.deposit_rule import describe
-from ..senses.outside_record import Cause, OutsideRecord, OutsideRecordUnavailable
+from ..senses.outside_record import Cause, OutsideRecord, OutsideRecordUnavailable, Undone
 from ..senses.proposal_payloads import HeldCalls, HouseChange, MoneyRule, Payload, WatchSchedule
 from ..senses.proposals import Proposals, ProposalsUnavailable, refusal
 from ..tools import outside_config
@@ -51,13 +51,15 @@ class Kept:
 @dataclass(frozen=True)
 class Did:
     """A change she made for the person with no one's OK in that turn: its `outside_actions` row `id`, code's `summary`
-    of it, when (`at`), what started the turn (`cause`) and how it is taken back (`undo`, None when it cannot be)."""
+    of it, when (`at`), what started the turn (`cause`), how it is taken back (`undo`, None when it cannot be) and
+    whether that was taken (`undone`)."""
 
     id: int
     summary: str
     at: datetime
     cause: Cause | None
     undo: Undo | None
+    undone: Undone | None = None
 
 
 def summary(payload: Payload) -> str:
@@ -128,4 +130,4 @@ async def did(household_id: int, person_id: int) -> tuple[Did, ...]:
         found = await services.get(OutsideRecord).of_person(household_id, person_id, DID_LISTED)
     except OutsideRecordUnavailable as e:
         raise BoardUnavailable("the outside record is unavailable") from e
-    return tuple(Did(r.id, r.action.summary, r.action.at, r.action.cause, r.action.undo) for r in found)
+    return tuple(Did(r.id, r.action.summary, r.action.at, r.action.cause, r.action.undo, r.undone) for r in found)
