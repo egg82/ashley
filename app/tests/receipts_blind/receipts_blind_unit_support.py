@@ -12,7 +12,7 @@ from ashley.channels.landing import Landing
 from ashley.channels.limits import load as load_limits
 from ashley.channels.model import Inbound
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
-from ashley.senses.outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded
+from ashley.senses.outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded, Settled
 from ashley.senses.proposal_payloads import OUTSIDE, HeldCall, HeldCalls, Payload, Topic, encode
 from ashley.senses.proposals import Proposal, ProposalRefused, Proposals, refusal
 from ashley.tools.action_judge import ActionJudge
@@ -101,6 +101,15 @@ class Down(OutsideRecord):
         raise OutsideRecordUnavailable("down")
 
     async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
+        raise OutsideRecordUnavailable("down")
+
+    async def one(self, household_id: int, person_id: int, action_id: int) -> Recorded | None:
+        raise OutsideRecordUnavailable("down")
+
+    async def claim_undo(self, household_id: int, person_id: int, action_id: int, claim_s: float) -> bool:
+        raise OutsideRecordUnavailable("down")
+
+    async def settle_undo(self, action_id: int, how: Settled | None) -> None:
         raise OutsideRecordUnavailable("down")
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:

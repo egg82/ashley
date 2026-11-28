@@ -70,12 +70,39 @@ class DoneAction:
     undo: Undo | None = None
 
 
+UndoneHow = Literal["undoing", "undone", "waiting_on_you", "gone"]
+"""Where an Undo taken stands: `undoing` while a route carries it out (a claim, which lapses after the claim's seconds so
+a pod that stopped partway leaves it takeable again); `undone`, carried out; `waiting_on_you`, carried out as a proposal
+the person agrees to (a delete); `gone`, its target was no longer there, so nothing was done."""
+
+Settled = Literal["undone", "waiting_on_you", "gone"]
+"""How an Undo that was carried out ended: an `UndoneHow` other than `undoing`."""
+
+
+@dataclass(frozen=True)
+class Undone:
+    """That a row's undo was taken: when (`at`), by which person (`by`) and `how` it stands."""
+
+    at: datetime
+    by: int
+    how: UndoneHow
+
+
+def undone_of(at: datetime | None, by: int | None, how: str | None) -> Undone | None:
+    """The stored fields as `Undone`; None when none is stored, or a state this release does not know."""
+    for known in get_args(UndoneHow):
+        if known == how and at is not None and by is not None:
+            return Undone(at, by, known)
+    return None
+
+
 @dataclass(frozen=True)
 class Recorded:
-    """A stored `action` and its row `id`, which only grows."""
+    """A stored `action` and its row `id`, which only grows; `undone` when its undo was taken."""
 
     id: int
     action: DoneAction
+    undone: Undone | None = None
 
 
 class OutsideRecord(Service):
@@ -95,6 +122,22 @@ class OutsideRecord(Service):
     async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
         """At most `limit` of the actions made for `person_id` of `household_id`, newest first. Never another person's
         or household's. Raises OutsideRecordUnavailable."""
+
+    @abstractmethod
+    async def one(self, household_id: int, person_id: int, action_id: int) -> Recorded | None:
+        """The action `action_id` when it was made for `person_id` of `household_id` and is still kept; None otherwise.
+        Raises OutsideRecordUnavailable."""
+
+    @abstractmethod
+    async def claim_undo(self, household_id: int, person_id: int, action_id: int, claim_s: float) -> bool:
+        """Mark the undo of `person_id`'s action `action_id` as `undoing` by them, now; whether it was marked. Only an
+        action with an undo, never undone or left `undoing` more than `claim_s` ago, is: two routes taking one Undo at
+        once cannot both carry it out. Raises OutsideRecordUnavailable."""
+
+    @abstractmethod
+    async def settle_undo(self, action_id: int, how: Settled | None) -> None:
+        """End the claim on `action_id`'s undo as `how`, now, or give it up with None (nothing was done, so its Undo is
+        offered again). A row not `undoing` is left as it is. Raises OutsideRecordUnavailable."""
 
     @abstractmethod
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:
@@ -117,6 +160,15 @@ class NullOutsideRecord(OutsideRecord):
         raise OutsideRecordUnavailable("the outside record is not wired")
 
     async def of_person(self, household_id: int, person_id: int, limit: int) -> tuple[Recorded, ...]:
+        raise OutsideRecordUnavailable("the outside record is not wired")
+
+    async def one(self, household_id: int, person_id: int, action_id: int) -> Recorded | None:
+        raise OutsideRecordUnavailable("the outside record is not wired")
+
+    async def claim_undo(self, household_id: int, person_id: int, action_id: int, claim_s: float) -> bool:
+        raise OutsideRecordUnavailable("the outside record is not wired")
+
+    async def settle_undo(self, action_id: int, how: Settled | None) -> None:
         raise OutsideRecordUnavailable("the outside record is not wired")
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:

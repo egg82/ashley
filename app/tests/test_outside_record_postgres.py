@@ -172,3 +172,48 @@ def test_half_a_cause_or_half_an_undo_is_refused_by_the_table(db_url: str, colum
               "decision, at, {}) VALUES (%s, %s, 1, 1, 't', 's', 'runs', 'run', now(), %s)")
     with pytest.raises(psycopg.errors.CheckViolation):
         execute(db_url, insert.format(column), (home, alana, value))
+
+
+def test_an_undo_is_claimed_once_settled_or_given_up_and_a_lapsed_claim_can_be_taken_again(db_url: str) -> None:
+    home, other = household(db_url), household(db_url)
+    alana, sam = person(db_url, home, "Alana"), person(db_url, home, "Sam")
+
+    async def go() -> None:
+        async with record(db_url) as rec:
+            await rec.done(replace(action(home, alana, 1, "remind"), undo=Undo("reminder_cancel", "4")))
+            await rec.done(action(home, alana, 2, "mail_send"))
+            bare, first = (r.id for r in await rec.of_person(home, alana, 10))
+            assert await rec.one(home, sam, first) is None and await rec.one(other, alana, first) is None
+            assert not await rec.claim_undo(home, sam, first, 60) and not await rec.claim_undo(other, alana, first, 60)
+            assert not await rec.claim_undo(home, alana, bare, 60), "an action with no undo has none to take"
+            assert await rec.claim_undo(home, alana, first, 60)
+            assert not await rec.claim_undo(home, alana, first, 60), "a live claim is not taken twice"
+            claimed = await rec.one(home, alana, first)
+            assert claimed is not None and claimed.undone is not None and (claimed.undone.how, claimed.undone.by) == ("undoing", alana)
+            await rec.settle_undo(first, None)
+            given_up = await rec.one(home, alana, first)
+            assert given_up is not None and given_up.undone is None
+            assert await rec.claim_undo(home, alana, first, 60)
+            execute(db_url, "UPDATE outside_actions SET undone_at = now() - interval '1 hour' WHERE id = %s", (first,))
+            assert await rec.claim_undo(home, alana, first, 60), "a claim left by a stopped pod lapses"
+            await rec.settle_undo(first, "gone")
+            assert not await rec.claim_undo(home, alana, first, 0.001), "a settled undo is never taken again"
+            await rec.settle_undo(first, None)
+            settled = (await rec.of_person(home, alana, 10))[1]
+            assert settled.undone is not None and settled.undone.how == "gone", "giving up leaves a settled undo as it is"
+
+    run(go())
+
+
+@pytest.mark.parametrize("columns, values", [
+    ("undo_kind, undo_ref, undone_at, undone_by", "'reminder_cancel', '4', now(), 1"),
+    ("undo_kind, undo_ref, undone_at, undone_how", "'reminder_cancel', '4', now(), 'undone'"),
+    ("undone_at, undone_by, undone_how", "now(), 1, 'undone'"),
+    ("undo_kind, undo_ref, undone_at, undone_by, undone_how", "'reminder_cancel', '4', now(), 1, 'redone'")])
+def test_an_undone_mark_must_be_whole_known_and_on_a_row_with_an_undo(db_url: str, columns: str, values: str) -> None:
+    home = household(db_url)
+    alana = person(db_url, home, "Alana")
+    insert = ("INSERT INTO outside_actions (household_id, person_id, conversation_id, turn_id, tool, summary, tier, "
+              f"decision, at, {columns}) VALUES (%s, %s, 1, 1, 't', 's', 'runs', 'run', now(), {values})")
+    with pytest.raises(psycopg.errors.CheckViolation):
+        execute(db_url, insert, (home, alana))
