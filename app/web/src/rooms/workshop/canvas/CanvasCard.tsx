@@ -1,6 +1,7 @@
 // One piece on the canvas, drawn in the rect its form gives (`model/fold.ts`): the piece's own card (`PieceCard`, with
 // everything it does) as a full card, its header faded as a ghost, or a title chip, which glides between them. Its body
-// is always drawn, hidden while it is a chip, so it is measured whatever its form (`useMeasure.ts`). Dragging the header
+// is always drawn at its natural height inside a clip the size of the drawn rect (hidden while it is a chip), so it is
+// measured whatever its form (`useMeasure.ts`). Dragging the header
 // or the chip pins it, the corner resizes it (`pinDrag.ts`), the pin hands it back to the layout, and a click focuses
 // it. Her line about it sits beside it, then its badge (`HerLines.tsx`).
 import { memo } from 'preact/compat';
@@ -92,10 +93,12 @@ export function CanvasCard(p: CardProps) {
     <div class={cls.filter(Boolean).join(' ')} data-card={id} data-family={p.kind?.family ?? 'unknown'}
       style={r ? { transform: `translate(${r.x}px, ${r.y}px)`, width: `${r.w}px`, height: `${r.h}px` } : { width: `${p.width}px` }}
       onPointerDown={down} onClick={click}>
-      <div class={`bc-body${p.boxed ? ' boxed' : ''}`} data-measure={p.boxed ? undefined : id} inert={form === 'chip'}
-        style={{ width: `${bodyW}px`, height: bodyH === undefined ? undefined : `${bodyH}px` }}>
-        <CardBody bench={p.bench} piece={piece} kind={p.kind} index={p.index} count={p.count} titleMax={p.rules?.title_max_chars ?? 120}
-          closed={p.closed} rules={p.rules} derived={p.derived} act={p.act} />
+      <div class="bc-clip" inert={form === 'chip'}>
+        <div class={`bc-body${p.boxed ? ' boxed' : ''}`} data-measure={p.boxed ? undefined : id}
+          style={{ width: `${bodyW}px`, height: bodyH === undefined ? undefined : `${bodyH}px` }}>
+          <CardBody bench={p.bench} piece={piece} kind={p.kind} index={p.index} count={p.count} titleMax={p.rules?.title_max_chars ?? 120}
+            closed={p.closed} rules={p.rules} derived={p.derived} act={p.act} />
+        </div>
       </div>
       {form === 'chip' && <Chip piece={piece} kind={p.kind} k={k} />}
       {p.pinned && form === 'card' && !p.closed && <Pin piece={piece} />}
