@@ -16,6 +16,7 @@ from ashley.conversations.conversations import Conversations
 from ashley.conversations.model import Turn
 from ashley.inference.model import Message
 from ashley.people.model import Household, Person
+from ashley.senses.outside_record import Cause
 from ashley.senses.repeat import Repeat
 from ashley.senses.wakes import Reminder
 from contract.conversations_support import db_url as db_url, migrated_template as migrated_template
@@ -34,7 +35,7 @@ def before(reminder: Reminder, person: Person, made_by: Person) -> Inbound:
     return Inbound(household_id=1, thread=f"push:{person.id}", text=said(reminder, person, made_by), kind="chat",
                    medium="text", audience="owner", speaker_id=person.id, shared=False, place=None, channel="device",
                    remembers=False, later=True, later_by="turn", source="wake:7", unprompted=True, promised=True,
-                   tools_only=None, reads_only=True)
+                   tools_only=None, reads_only=True, cause=Cause("reminder", 7))
 
 
 def test_the_fired_turn_is_the_household_s_line_and_her_instructions_are_only_its_note() -> None:
