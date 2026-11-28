@@ -46,12 +46,14 @@ def piece(p: Piece, rules: Rules, body_chars: int, offset: int = 0, changed_at: 
     whole body is and `body_cut` whether more of it follows the window. A reader piece's body is the page's text, with
     its `url` and the page's `page_title` beside it. A recipe piece's body is its recipe as text, scaled for its
     headcount in code (`workshop.recipe.text_of`, its amounts metric first when `metric`). An image or file piece's body is its name, size and media type; `text`,
-    when given, is the text of a text file piece, which replaces it. `changed_at`, when given, is when it last changed."""
+    when given, is the text of a text file piece, which replaces it. `changed_at`, when given, is when it last changed.
+    `pinned` is there, true, when a person pinned the piece on the bench's map."""
     body, page = _shown(p, rules, metric)
     body = body if text is None else text
     return {"id": p.id, "kind": p.kind, "title": p.text.title, "version": p.version, "order": p.place.order,
             "size": p.place.size, "body": body[offset:offset + body_chars], "offset": offset,
             "body_chars": len(body), "body_cut": len(body) > offset + body_chars,
+            **({} if p.place.pin is None else {"pinned": True}),
             **({} if page is None else {"url": page.url, "page_title": page.title}),
             **({} if changed_at is None else {"changed_at": changed_at})}
 

@@ -14889,6 +14889,26 @@
         "title": "PieceAutomation",
         "description": "An automation piece's installing: `install_proposal` waiting on the person's approval (null when none is, or the\npiece changed since it was made), and `last_install`, what the latest install or undo of one did (null for a piece\nnever installed). `unanswered_events` are the wake events the installed automation sends that no wake rule on an\nopen bench of the household answers: Home Assistant sends them and nothing happens (empty when it is not installed,\nsends none, or every one has a rule)."
       },
+      "PieceBox": {
+        "properties": {
+          "w": {
+            "type": "integer",
+            "title": "W"
+          },
+          "h": {
+            "type": "integer",
+            "title": "H"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "w",
+          "h"
+        ],
+        "title": "PieceBox",
+        "description": "The size a person gave a piece on the bench's map, in bench units."
+      },
       "PieceFile": {
         "properties": {
           "name": {
@@ -15015,6 +15035,26 @@
         "title": "PieceKind",
         "description": "One kind of piece, from `kinds.json`. `family` `stored`: the body is the content; `live`: the body is a\nreference to a source the client renders. `max_chars` is the longest body a piece of it may have. `format` is how a\nstored body is written: `markdown`, `plain` (shown as typed), `code`, whose `language` names it (null otherwise),\n`automation`, Home Assistant's automation config as a JSON object (`alias`, `description`, `triggers`,\n`conditions`, `actions`, `mode`; an empty body is a draft), `site`, one https URL, or `video`, a JSON object of\na `url` (a YouTube or Vimeo page, or a direct media file) and an optional `start` in seconds. A `live` kind's\nbody is a reference, shown in a frame."
       },
+      "PiecePin": {
+        "properties": {
+          "x": {
+            "type": "integer",
+            "title": "X"
+          },
+          "y": {
+            "type": "integer",
+            "title": "Y"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PiecePin",
+        "description": "Where a person fixed a piece on the bench's map: its top-left corner, in bench units, the goal centred at 0, 0."
+      },
       "PiecePlace": {
         "properties": {
           "order": {
@@ -15031,6 +15071,26 @@
               "full"
             ],
             "title": "Size"
+          },
+          "pin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PiecePin"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "box": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PieceBox"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -15040,7 +15100,7 @@
           "size"
         ],
         "title": "PiecePlace",
-        "description": "Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1) and its\nsize class."
+        "description": "Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), its\nsize class, and the `pin` and `box` a person gave it on the bench's map, null until they did; a read always\ncarries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has\nit; one outside the bench's bounds is refused `bad_place`."
       },
       "PiecePointer": {
         "properties": {

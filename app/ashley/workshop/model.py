@@ -16,12 +16,31 @@ Author = Literal["person", "ashley"]
 
 
 @dataclass(frozen=True)
+class Pin:
+    """Where a person fixed a piece on the bench's map: its top-left corner, in bench units, the goal centred at 0, 0."""
+
+    x: int
+    y: int
+
+
+@dataclass(frozen=True)
+class Box:
+    """The size a person gave a piece on the bench's map, in bench units, within the rules' `rules.Layout`."""
+
+    w: int
+    h: int
+
+
+@dataclass(frozen=True)
 class Place:
     """Where a piece sits on its bench: `order`, its position among the bench's pieces (0 first; a bench's pieces hold
-    exactly the orders 0 to n-1), and `size`. A value of its own so layout can move to Surfaces whole."""
+    exactly the orders 0 to n-1), and `size`; `pin` and `box`, None until a person drags or resizes the piece on the
+    map. A value of its own so layout can move to Surfaces whole."""
 
     order: int
     size: Size
+    pin: Pin | None = None
+    box: Box | None = None
 
     def __post_init__(self) -> None:
         if self.order < 0:

@@ -9,7 +9,7 @@ from psycopg.types.json import Jsonb
 from .codec import decode_command, decode_effect, encode_command, encode_effect
 from .commands import Command, Effect, Linked, Pointed, Renamed, Shown, ShownRow, Unlinked, piece_of
 from .decide import Accepted, Decision
-from .model import Bench, By, Change, Owner, Piece, Place, Text
+from .model import Bench, Box, By, Change, Owner, Piece, Pin, Place, Text
 from .undo_walk import Step
 from .workshop import Logged, Placed, Pointer
 
@@ -18,7 +18,7 @@ _BENCH = ("id, household_id, owner_id, title, opened_at, closed_at, next_seq, "
           "(SELECT count(*) FROM bench_pieces p WHERE p.bench_id = benches.id AND NOT p.shelved), "
           "(SELECT max(c.at) FROM bench_commands c WHERE c.bench_id = benches.id AND c.outcome = 'accepted' "
           "AND c.command->>'type' NOT IN ('cue', 'point', 'surfaced')), work")
-_PIECE = "piece_id, kind, title, body, version, place_order, place_size, changed_by, outside"
+_PIECE = "piece_id, kind, title, body, version, place_order, place_size, changed_by, outside, pin_x, pin_y, box_w, box_h"
 _LOGGED = "seq, at, person_id, command, outcome, effect"
 
 
@@ -87,7 +87,9 @@ async def reopen_bench(conn: Conn, bench_id: int) -> Bench | None:
 
 
 def _piece(row: tuple[Any, ...]) -> Piece:
-    return Piece(row[0], row[1], Text(row[2], row[3]), row[4], Place(row[5], row[6]), row[7], bool(row[8]))
+    pin = None if row[9] is None else Pin(row[9], row[10])
+    box = None if row[11] is None else Box(row[11], row[12])
+    return Piece(row[0], row[1], Text(row[2], row[3]), row[4], Place(row[5], row[6], pin, box), row[7], bool(row[8]))
 
 
 async def pieces(conn: Conn, bench_id: int) -> tuple[Piece, ...]:
@@ -238,12 +240,20 @@ async def write_pieces(conn: Conn, bench_id: int, household_id: int, before: Sto
             continue
         await conn.execute(
             f"INSERT INTO bench_pieces (bench_id, household_id, {_PIECE}, shelved) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "ON CONFLICT (bench_id, piece_id) DO UPDATE SET title = excluded.title, body = excluded.body, "
             "version = excluded.version, place_order = excluded.place_order, place_size = excluded.place_size, "
-            "changed_by = excluded.changed_by, outside = excluded.outside, shelved = excluded.shelved",
+            "changed_by = excluded.changed_by, outside = excluded.outside, shelved = excluded.shelved, "
+            "pin_x = excluded.pin_x, pin_y = excluded.pin_y, box_w = excluded.box_w, box_h = excluded.box_h",
             (bench_id, household_id, p.id, p.kind, p.text.title, p.text.body, p.version, p.place.order,
-             p.place.size, p.changed_by, p.outside, shelved))
+             p.place.size, p.changed_by, p.outside, *_pinned(p.place), shelved))
+
+
+def _pinned(place: Place) -> tuple[int | None, int | None, int | None, int | None]:
+    """A place's `pin_x`, `pin_y`, `box_w` and `box_h` columns."""
+    pin, box = place.pin, place.box
+    return (None if pin is None else pin.x, None if pin is None else pin.y, None if box is None else box.w,
+            None if box is None else box.h)
 
 
 def _logged(row: tuple[Any, ...]) -> Logged:

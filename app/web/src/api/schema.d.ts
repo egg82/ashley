@@ -5046,6 +5046,16 @@ export interface components {
             shadow_run: components["schemas"]["ShadowState"] | null;
         };
         /**
+         * PieceBox
+         * @description The size a person gave a piece on the bench's map, in bench units.
+         */
+        PieceBox: {
+            /** W */
+            w: number;
+            /** H */
+            h: number;
+        };
+        /**
          * PieceFile
          * @description An `image` or `file` piece's bytes, understood: the file's `name`, `size_bytes` and `media_type`. `url` is a
          *     link to the bytes (same site, no session needed) that stops working at `expires_at` (Unix seconds), so a page that
@@ -5097,9 +5107,21 @@ export interface components {
             language: string | null;
         };
         /**
+         * PiecePin
+         * @description Where a person fixed a piece on the bench's map: its top-left corner, in bench units, the goal centred at 0, 0.
+         */
+        PiecePin: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
          * PiecePlace
-         * @description Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1) and its
-         *     size class.
+         * @description Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), its
+         *     size class, and the `pin` and `box` a person gave it on the bench's map, null until they did; a read always
+         *     carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has
+         *     it; one outside the bench's bounds is refused `bad_place`.
          */
         PiecePlace: {
             /** Order */
@@ -5109,6 +5131,8 @@ export interface components {
              * @enum {string}
              */
             size: "small" | "medium" | "large" | "full";
+            pin?: components["schemas"]["PiecePin"] | null;
+            box?: components["schemas"]["PieceBox"] | null;
         };
         /**
          * PiecePointer

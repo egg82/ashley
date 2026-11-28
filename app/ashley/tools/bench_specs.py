@@ -91,9 +91,9 @@ INSTRUCTIONS = (
     "bench reads as laid out, not as a heap in the order you made it. Set the size in bench_add and use bench_move "
     "only when the order is not the end. When a piece you add is part of another, depends on another, or is a new "
     "version of one, link it in the same turn: links in bench_add, or bench_link for pieces already there. "
-    "Pieces whose last_changed_by is person are laid out as they left them: do not move or resize those, and fit "
-    "yours around them. Leave a tidy bench alone; when it has grown untidy (several pieces out of order, or one "
-    "crowding the others), put it right once in that turn. Never rearrange for a small edit.")
+    "Pieces whose last_changed_by is person, or that are pinned, are laid out as a person left them: do not move or "
+    "resize those, and fit yours around them. Leave a tidy bench alone; when it has grown untidy (several pieces out "
+    "of order, or one crowding the others), put it right once in that turn. Never rearrange for a small edit.")
 
 
 def _object(properties: Mapping[str, object], required: tuple[str, ...]) -> Mapping[str, object]:

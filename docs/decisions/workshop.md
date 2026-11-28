@@ -115,12 +115,24 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   both carry her `By.turn`, so "undo that" takes a turn's links back with its pieces. A screen takes no link. Rejected:
   links as a field of the piece's text set by Edit, which would bump its version and make a stale link refuse an edit;
   deleting a removed piece's links, which would leave its undo bringing it back unlinked.
-- **Layout is an order plus a size class** (`ashley.workshop.model.Place`): the pieces hold orders 0 to n-1, and each
-  has `small`, `medium`, `large` or `full`, a share of the row the client maps to its grid. A move names the new order
-  and size and the others shift, so every screen computes the same arrangement and animates from the old one by piece
-  id. Rejected: grid cells, which make every move a collision problem across screen widths that order-plus-size
-  leaves to the client. The place is its own small value so that Surfaces ([#154](https://github.com/egg82/ashley/issues/154)) can own layout later. A
-  device's screen is laid out with the same Place.
+- **Layout is an order and a size class, plus a person's pin and box** (`ashley.workshop.model.Place`): the pieces
+  hold orders 0 to n-1, the reading order her `bench_read` and the lists use, and each has `small`, `medium`, `large`
+  or `full`, a share of the row the client maps to its grid, until the mindmap view replaces the grid and the size
+  class goes. A move names the new order and size and the others shift, so every screen computes the same arrangement
+  and animates from the old one by piece id. `pin` (a top-left corner in bench units, the goal centred at the origin)
+  and `box` (a width and height) stay None until a person drags or resizes the piece on the map; `workshop.json`'s
+  `layout` bounds both, and a move outside them is refused `bad_place`.
+  They ride on `Move` (`ashley.workshop.pins`): a Move already replaces the piece's Place and its undo puts the whole
+  previous Place back, so an undo restores the exact pin and box with no effect or undo rule of its own. A Move's
+  `pin` and `box` are each set, cleared (None) or left as the piece has them (`KEEP`, the default, written as the
+  field's absence in the log and on the wire). Her tools offer neither, so her moves, a client that leaves them out
+  and log rows from before pins all keep a person's pin and box; `bench_read` marks a pinned piece `pinned` so she
+  fits around it, since `last_changed_by` turns to her on her next edit of it. A device's screen is laid out with the
+  same Place but takes no pin or box: its rules have no `layout`, so a move that sets one is refused `bad_place`.
+  Rejected: grid cells, which make every move a collision problem across screen widths that order-plus-size leaves to
+  the client; a separate Pin command, which would need its own effect, codec and undo rule for what a Move's
+  whole-Place undo already gives. The place is its own small value so that Surfaces
+  ([#154](https://github.com/egg82/ashley/issues/154)) can own layout later.
 - **One transaction per command.** It locks the bench's row, decides against the stored pieces (and, for an undo, the
   stored effect it names), writes the log row and the changed pieces, so commands racing on one bench from any pod of
   either site are decided one after the other. Tables `benches`, `bench_pieces` (the bench as it stands) and

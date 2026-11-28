@@ -5,10 +5,11 @@ whichever it was. `seq` numbers a bench's commands 1, 2, 3... in the order they 
 What an accepted command did is its Effect, which is what Undo inverts."""
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Literal
 
 from .links import Link as Link, Linked as Linked, Unlink as Unlink, Unlinked as Unlinked
-from .model import By, Piece, Place, Size, Text
+from .model import Box, By, Piece, Pin, Place, Size, Text
 from .reader import Passage
 from .reasons import REASONS as REASONS, Reason as Reason
 
@@ -31,14 +32,30 @@ class Remove:
     piece_id: int
 
 
+class Keep(Enum):
+    """A Move's `pin` or `box` left as the piece has it."""
+
+    KEEP = "keep"
+
+
+KEEP = Keep.KEEP
+
+
 @dataclass(frozen=True)
 class Move:
     """Put piece `piece_id` at `place`: its order among the bench's pieces as they stand (the others shift to make
-    room) and its size. A move to where it already is is accepted and changes nothing but `changed_by`."""
+    room) and its size. `pin` and `box` are set to a value, cleared by None, or left as the piece has them by `KEEP`;
+    `place` carries neither. A move to where it already is is accepted and changes nothing but `changed_by`."""
 
     by: By
     piece_id: int
     place: Place
+    pin: Pin | None | Keep = KEEP
+    box: Box | None | Keep = KEEP
+
+    def __post_init__(self) -> None:
+        if self.place.pin is not None or self.place.box is not None:
+            raise ValueError("a move's pin and box are its own fields, not its place's")
 
 
 @dataclass(frozen=True)

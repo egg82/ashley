@@ -1,14 +1,17 @@
 """Commands and Effects as JSON objects, for the command log's `command` and `effect` columns. Who made a command is
-its row's `person_id`, not part of the object. `decode_*` reads only what `encode_*` wrote."""
+its row's `person_id`, not part of the object. `decode_*` reads only what `encode_*` wrote. A place's `pin` and `box`
+are written only when set, and a move's only when it sets or clears them (null), so a row from before pins decodes as
+a place without them and a move that keeps them."""
 
+from collections.abc import Callable
 from dataclasses import replace
 from typing import Any, get_args
 
 from .commands import (Add, Added, Archive, Archived, Command, Cue, CueAction, Cued, Edit, Edited, Effect, Install,
-                       Installed, Link, Linked, Move, Moved, Point, Pointed, Propose, Proposed, Ran, Remove, Removed, Rename,
+                       Installed, KEEP, Keep, Link, Linked, Move, Moved, Point, Pointed, Propose, Proposed, Ran, Remove, Removed, Rename,
                        Renamed, Restore, Restored, Run, Shown, ShownRow, Surfaced, Undo, Uninstalled, Unlink, Unlinked, type_of)
 from .links import PieceLink
-from .model import SIZES, By, Piece, Place, Size, Text
+from .model import SIZES, Box, By, Piece, Pin, Place, Size, Text
 from .reader import Passage
 
 Json = dict[str, Any]
@@ -39,7 +42,8 @@ def _encode(command: Command) -> Json:
     if isinstance(command, Surfaced):
         return {**out, "rows": _rows(command.rows)}
     if isinstance(command, Move):
-        return {**out, "place": _place(command.place)}
+        return {**out, "place": _place(command.place), **_kept("pin", command.pin, _pin),
+                **_kept("box", command.box, _box)}
     if isinstance(command, Edit):
         return {**out, "base_version": command.base_version, **_text(command.text)}
     if isinstance(command, Run):
@@ -65,7 +69,9 @@ def _decode(raw: Json, by: By) -> Command:
     if kind == "remove":
         return Remove(by, int(raw["piece_id"]))
     if kind == "move":
-        return Move(by, int(raw["piece_id"]), _place_of(raw["place"]))
+        pin = _pin_of(raw["pin"]) if "pin" in raw else KEEP
+        box = _box_of(raw["box"]) if "box" in raw else KEEP
+        return Move(by, int(raw["piece_id"]), _place_of(raw["place"]), pin, box)
     if kind == "edit":
         return Edit(by, int(raw["piece_id"]), int(raw["base_version"]), _text_of(raw))
     if kind == "run":
@@ -224,11 +230,35 @@ def _text_of(raw: Json) -> Text:
 
 
 def _place(place: Place) -> Json:
-    return {"order": place.order, "size": place.size}
+    return {"order": place.order, "size": place.size, **({} if place.pin is None else {"pin": _pin(place.pin)}),
+            **({} if place.box is None else {"box": _box(place.box)})}
 
 
 def _place_of(raw: Json) -> Place:
-    return Place(int(raw["order"]), _size(raw["size"]))
+    return Place(int(raw["order"]), _size(raw["size"]), _pin_of(raw.get("pin")), _box_of(raw.get("box")))
+
+
+def _kept[T](name: str, value: T | None | Keep, encode: Callable[[T], Json]) -> Json:
+    """A move's `name` field: nothing when it keeps the piece's, null when it clears it."""
+    if isinstance(value, Keep):
+        return {}
+    return {name: None if value is None else encode(value)}
+
+
+def _pin(pin: Pin) -> Json:
+    return {"x": pin.x, "y": pin.y}
+
+
+def _pin_of(raw: Json | None) -> Pin | None:
+    return None if raw is None else Pin(int(raw["x"]), int(raw["y"]))
+
+
+def _box(box: Box) -> Json:
+    return {"w": box.w, "h": box.h}
+
+
+def _box_of(raw: Json | None) -> Box | None:
+    return None if raw is None else Box(int(raw["w"]), int(raw["h"]))
 
 
 def _size(raw: object) -> Size:

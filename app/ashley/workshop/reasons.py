@@ -15,7 +15,7 @@ Reason = Literal["unknown_kind", "bad_title", "too_long", "full", "no_such_piece
 - `full`: an Add, a Restore, or an Undo that would bring a piece back, on a bench already holding `max_pieces`.
 - `no_such_piece`: a Remove, Move, Edit, Run or Archive of a piece not on the bench's layout (a shelved piece is not),
   or a Restore of one not on its shelf, or a Link or Unlink with an end not on the layout.
-- `bad_place`: a Move to an order past the last piece's.
+- `bad_place`: a Move to an order past the last piece's, or setting a pin or box outside the rules' `layout`.
 - `stale_base`: an Edit, Run, Propose or Point whose `base_version` is not the piece's current version, or an Install whose
   proposal was of an earlier version.
 - `nothing_to_undo`: an Undo naming a command that was refused, is an Undo, a Run or a Propose, is not earlier than
