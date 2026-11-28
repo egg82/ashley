@@ -29,6 +29,12 @@ function act(path: string, method: string): Response | null {
     work = work.filter((i) => !(i.kind === 'watch' && i.id === Number(watch[1])));
     return json({ id: Number(watch[1]) });
   }
+  const hold = /^\/api\/work\/watches\/(\d+)\/(pause|resume)$/.exec(path);
+  if (hold && method === 'POST') {
+    const state = hold[2] === 'pause' ? 'paused' : 'running';
+    work = work.map((i) => (i.kind === 'watch' && i.id === Number(hold[1]) ? { ...i, state } : i));
+    return json({ id: Number(hold[1]), held: state === 'paused' });
+  }
   const undo = /^\/api\/work\/actions\/(\d+)\/undo$/.exec(path);
   if (undo && method === 'POST') {
     const how = (q.get('undo') ?? 'undone') as 'undone' | 'waiting_on_you' | 'gone';

@@ -2583,6 +2583,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/work/watches/{watch_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause Watch
+         * @description 200 `WatchPaused` with `paused` true: the watch is not checked and its expiry waits until it is resumed; pausing a
+         *     paused watch is the same 200. 401 `unauthorized`; 403 `forbidden`; 404 `not_found`; 503 `unavailable`.
+         */
+        post: operations["pause_watch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/work/watches/{watch_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Watch
+         * @description 200 `WatchPaused` with `paused` false: the watch is checked again at once, its expiry moved on by the time it was
+         *     paused, so what changed meanwhile wakes her; resuming a running watch is the same 200. 401 `unauthorized`; 403
+         *     `forbidden`; 404 `not_found`; 503 `unavailable`.
+         */
+        post: operations["resume_watch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/work/actions/{action_id}/undo": {
         parameters: {
             query?: never;
@@ -6926,6 +6969,17 @@ export interface components {
             id: number;
         };
         /**
+         * WatchPaused
+         * @description The watch `id` is now `paused` (by the person) or running again
+         *     (`POST /api/work/watches/{id}/pause` and `/resume`).
+         */
+        WatchPaused: {
+            /** Id */
+            id: number;
+            /** Paused */
+            paused: boolean;
+        };
+        /**
          * WireAgreed
          * @description What became of a held proposal the person agreed to, shown beside their agreeing turn and never as her words:
          *     `carried`, each held call in the order it was held, or `interrupted` true with none when the run stopped partway, so any of
@@ -7016,7 +7070,7 @@ export interface components {
          *     `state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job
          *     blocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with
          *     nothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be
-         *     sent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
+         *     sent or a watch paused after failing; `paused`, a watch the person paused. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or
          *     `would_like` (something she offered unasked), `on_her_own` (every `action`, and only those) or `kept_quiet` (every
          *     `kept_quiet`, and only that). It follows `state` for
          *     every other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it
@@ -7046,7 +7100,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "running" | "waiting_on_you" | "open" | "done" | "stopped";
+            state: "running" | "waiting_on_you" | "open" | "done" | "stopped" | "paused";
             /**
              * Lane
              * @enum {string}
@@ -7101,7 +7155,7 @@ export interface components {
         };
         /**
          * WorkResponse
-         * @description The signed-in person's open work, those waiting on them first, then running, open, stopped and done, the most
+         * @description The signed-in person's open work, those waiting on them first, then running, open, stopped, paused and done, the most
          *     recently moved first within each.
          */
         WorkResponse: {
@@ -14841,6 +14895,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchCancelled"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no live watch of yours has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: an id below 1 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: a store holding part of it could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    pause_watch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watch_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchPaused"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `forbidden`: the request came from another site */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `not_found`: no live watch of yours has that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description FastAPI's validation error: an id below 1 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `unavailable`: a store holding part of it could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resume_watch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watch_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchPaused"];
                 };
             };
             /** @description `unauthorized`: no live session */

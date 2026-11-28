@@ -15,7 +15,7 @@ test('a bench links into the workshop room, an open-ended errand to her reminder
 
 test('every state and kind the server can send has a word, and the words differ', () => {
   const states = Object.keys(STATE_WORD);
-  assert.deepEqual(states.sort(), ['done', 'open', 'running', 'stopped', 'waiting_on_you']);
+  assert.deepEqual(states.sort(), ['done', 'open', 'paused', 'running', 'stopped', 'waiting_on_you']);
   assert.equal(new Set(Object.values(STATE_WORD)).size, states.length);
   assert.equal(STATE_WORD.waiting_on_you, 'Waiting on you');
   assert.deepEqual(Object.keys(KIND_WORD).sort(), ['action', 'bench', 'errand', 'kept_quiet', 'open_errand', 'proposal', 'standing_errand', 'watch']);

@@ -8,6 +8,7 @@ export const STATE_WORD: Record<WorkItem['state'], string> = {
   open: 'Open',
   done: 'Done',
   stopped: 'Stopped',
+  paused: 'Paused',
 };
 
 /** Where the item lives, for a link: a bench in the workshop, an open-ended or standing errand among her reminders, something
