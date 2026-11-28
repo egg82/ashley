@@ -16,6 +16,7 @@ import {
 import { kioskVoiceUrl, transcribeKiosk } from '../api/speech';
 import type { KioskControl, KioskDevice, KioskGlance } from '../api/types';
 import type { MarkState } from '../components/AshleyMark';
+import type { ControlState } from '../components/parts/sources';
 import { writing } from '../household/format';
 import type { Line, Missed } from '../rooms/her/chat';
 import { missedFor } from '../rooms/her/overlay';
@@ -30,7 +31,6 @@ import { polled, POLL_MS, type Part } from './polling';
 export type { Part };
 
 export type Pairing = 'checking' | 'unpaired' | 'paired' | 'unreachable';
-export type ControlState = 'running' | 'done' | 'failed' | 'busy';
 
 export const pairing = signal<Pairing>('checking');
 export const device = signal<KioskDevice | null>(null);

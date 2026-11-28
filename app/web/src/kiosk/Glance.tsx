@@ -2,8 +2,8 @@
 // and the sources with nothing behind them yet. "Not connected" where no source exists; a source that cannot be read now is "unknown".
 import { Fragment } from 'preact';
 import { Agenda } from './Agenda';
-import { Clock } from './Clock';
-import { HomeNames } from './Home';
+import { Clock } from '../components/parts/Clock';
+import { HomeNames } from '../components/parts/Home';
 import { glance } from './state';
 
 const SOURCE = { calendar: 'Calendar', reminders: 'Reminders' };

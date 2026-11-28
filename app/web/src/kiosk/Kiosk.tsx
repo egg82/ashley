@@ -8,8 +8,9 @@ import { CameraFeed } from '../camera/CameraFeed';
 import { kioskCard } from '../camera/card';
 import { Announcement } from '../speech/Announcement';
 import { Board } from './Board';
-import { Controls } from './Controls';
+import { Controls } from '../components/parts/Controls';
 import { Glance } from './Glance';
+import { kioskControls } from './sources';
 import { layout, mark, pairing, start, startFeed, startPolling } from './state';
 import { Pairing } from './Pairing';
 import { Talk } from './Talk';
@@ -67,7 +68,7 @@ export function Kiosk() {
           <Her />
           <Glance />
         </div>
-        <Controls />
+        <Controls source={kioskControls} />
       </section>
       <Talk />
       <Announcement />

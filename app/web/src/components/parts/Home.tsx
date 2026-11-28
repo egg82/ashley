@@ -1,5 +1,5 @@
 // Who is home, from the glance. Unknown renders as unknown: no names when presence cannot tell.
-import { glance } from './state';
+import type { HomeSource } from './sources';
 
 /** The names, or "unknown" when presence cannot say, or "Nobody home". */
 export function HomeNames({ names }: { names: readonly string[] | null | undefined }) {
@@ -15,11 +15,11 @@ export function HomeNames({ names }: { names: readonly string[] | null | undefin
 }
 
 /** The home piece of a laid-out screen. */
-export function Home() {
+export function Home({ source }: { source: HomeSource }) {
   return (
     <section class="k-home" aria-label="Who is home">
       <h2 class="label">Home</h2>
-      <HomeNames names={glance.value?.home} />
+      <HomeNames names={source.home.value} />
     </section>
   );
 }
