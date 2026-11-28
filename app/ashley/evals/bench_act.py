@@ -5,7 +5,8 @@
 and a fake clock moves per model step so the deadline, holds and resumes are exercised. A case expects, in `expect`:
 `bench_run_min`, `model_changes_min` (changes on the model piece), `changes_min`/`changes_max` (changes on the bench,
 `move_page` apart), `closed`, `answers`, `no_deadline_close`, `windows_taken`, `rounds_after_resume_min` (model steps under tool choice auto after the resume), `held_max`,
-`moved_to`, `no_taint_before_outside_read`. Live it measures and never gates; `--scripted` swaps the model for a scripted
+`moved_to`, `no_taint_before_outside_read`; `expect_scripted` adds to `expect` in a scripted run only, for what the script
+makes happen and a live model may rightly not (finishing before the deadline needs no window). Live it measures and never gates; `--scripted` swaps the model for a scripted
 policy that checks the harness and the loop's mechanics only.
 
 `--clock age`, `--windows 0`, `--hold 6`, `--no-now` reproduce the behaviour before the bench-gap fixes where the
@@ -96,7 +97,8 @@ async def run(runs: int, only: str | None, options: Options = Options()) -> list
 
 async def _graded(case: dict[str, Any], options: Options, live: Inference | None) -> Result:
     metrics = await _one(case, options, live)
-    return Result(case["id"], passes(case["expect"], metrics), metrics)
+    expect = {**case["expect"], **(case.get("expect_scripted", {}) if options.scripted else {})}
+    return Result(case["id"], passes(expect, metrics), metrics)
 
 
 async def _one(case: dict[str, Any], options: Options, live: Inference | None) -> dict[str, object]:

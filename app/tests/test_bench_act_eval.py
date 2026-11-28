@@ -42,3 +42,9 @@ def test_a_case_fails_when_the_fix_it_measures_is_taken_away(case: str, options:
 def test_an_unknown_case_is_refused() -> None:
     with pytest.raises(ValueError):
         run("E99")
+
+
+def test_a_live_run_is_not_asked_for_a_window_it_may_rightly_not_need() -> None:
+    e5 = next(c for c in bench_act.load() if c["id"] == "E5")
+    assert "windows_taken" not in e5["expect"] and e5["expect_scripted"] == {"windows_taken": 1}
+    assert run("E5", Options(scripted=True, windows=0))[0].passed is False
