@@ -33,6 +33,23 @@ class PastHistory(BaseModel):
     next: str | None
 
 
+class PastMatch(BaseModel):
+    """A turn a search found: follow `conversation_id` to `GET /api/chat/conversations/{id}` and `turn_id` to the line.
+    `snippet` is its text around the match; `author` is who said it."""
+
+    conversation_id: int
+    turn_id: int
+    at: datetime
+    author: Literal["person", "ashley", "household"]
+    snippet: str
+
+
+class PastMatches(BaseModel):
+    """What a search found, best match first."""
+
+    matches: list[PastMatch]
+
+
 class PastTurn(ChatTurn):
     """A turn of an earlier conversation. `speaker` is the first name the household knows the person by who said it,
     the household's name on its own turn, null for her turns and a speaker no one identified."""

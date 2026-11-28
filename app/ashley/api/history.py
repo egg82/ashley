@@ -18,7 +18,7 @@ from ..people.model import Household
 from ..people.model import Person as PersonRecord
 from ..people.people import People, PeopleUnavailable
 from .chat import wire_attachment
-from .history_models import PastConversation, PastHistory, PastSummary, PastTurn
+from .history_models import PastConversation, PastHistory, PastMatch, PastMatches, PastSummary, PastTurn
 from .models import ErrorResponse
 from .person import Person
 
@@ -36,6 +36,9 @@ _ONE: dict[int | str, dict[str, Any]] = {
     **_SIGNED_IN, 404: {"model": ErrorResponse, "description": "`not_found`: no conversation of yours has that id"},
     422: {"model": ErrorResponse, "description": "an id below 1 gets FastAPI's own validation error, which is not "
           "this schema"}}
+_SEARCH: dict[int | str, dict[str, Any]] = {
+    **_SIGNED_IN, 422: {"model": ErrorResponse, "description": "a missing or empty `q`, or a `limit` outside 1 to 50, gets "
+                        "FastAPI's own validation error, which is not this schema"}}
 
 
 def cursor_text(cursor: Cursor) -> str:
@@ -88,6 +91,22 @@ async def history_page(who: PersonRecord, limit: int, before: str | None, thread
     logs.info(log, "chat.history", person=who.id, count=len(page.items), more=page.next is not None)
     return PastHistory(conversations=[_summary(s) for s in page.items],
                        next=None if page.next is None else cursor_text(page.next))
+
+
+@router.get("/api/chat/search", response_model=PastMatches, responses=_SEARCH)
+async def search(signed_in: Person, q: Annotated[str, Query(min_length=1, max_length=200)],
+                 limit: Annotated[int, Query(ge=1, le=50)] = 20) -> PastMatches | JSONResponse:
+    """200 `PastMatches`: turns matching `q` in the conversations the person took part in, on any channel, best match
+    first, at most `limit`; never a turn said privately to someone else, nor an evaluation's. 401 `unauthorized`; 422 for a bad `q` or
+    `limit`; 503 `unavailable`. Logs ids and counts, never the query."""
+    who = signed_in.person
+    try:
+        found = await services.get(Conversations).search(who.household_id, who.id, q, limit)
+    except ConversationsUnavailable:
+        return _unavailable()
+    logs.info(log, "chat.search", person=who.id, count=len(found))
+    return PastMatches(matches=[PastMatch(conversation_id=m.conversation_id, turn_id=m.turn_id, at=m.at,
+                                          author=m.author, snippet=m.snippet) for m in found])
 
 
 @router.get("/api/chat/conversations/{conversation_id}", response_model=PastConversation, responses=_ONE)

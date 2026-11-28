@@ -371,8 +371,12 @@ A conversation that has closed is not gone: `Conversations.of_person` lists the 
   inline, newest first, each under a quiet divider giving when and where it happened. With no open conversation the
   earlier ones still show, so a page opened after thirty quiet minutes is not blank. Rejected: a separate list of
   past conversations, a second place to look for what she said.
-- **Logs** carry the person, conversation ids and counts (`chat.history`, `chat.past`, `conversation.listed`), never
-  turn text.
+- **Search reads the same set.** `GET /api/chat/search` (`Conversations.search`) ranks the person's own turns by full
+  text across every conversation they took part in, leaving out in SQL what the page withholds (a turn said privately to
+  someone else), an evaluation's conversation and her quiet turns. A hit carries the conversation and turn ids, when,
+  who, and a snippet of the text, so a client follows it to the conversation route.
+- **Logs** carry the person, conversation ids and counts (`chat.history`, `chat.past`, `chat.search`,
+  `conversation.listed`, `conversation.searched`), never turn text or the query.
 
 ## A composer never cuts what was typed
 

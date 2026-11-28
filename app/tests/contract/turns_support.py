@@ -16,7 +16,7 @@ from ashley.channels import respond as respond_module
 from ashley.channels.model import Audience, Inbound, Medium
 from ashley.conversations.conversations import ConversationClosed, Conversations
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import Carried, Channel, Conversation, Cursor, Hearer, Kind, NewTurn, Page, Turn
+from ashley.conversations.model import Carried, Channel, Conversation, Cursor, Hearer, Kind, Match, NewTurn, Page, Turn
 from ashley.inference.inference import Inference
 from ashley.inference.model import Prompt, SystemPrompt, Task, ToolCall, ToolCalls, ToolResult, ToolSpec
 from ashley.inference.reply import Reply
@@ -123,6 +123,9 @@ class FakeConversations(Conversations):
         self.stored[cid] = replace(c, turns=(*c.turns, stored), participants=c.participants | speakers,
                                    last_activity_at=stored.at)
         return stored
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,

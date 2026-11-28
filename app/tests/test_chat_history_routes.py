@@ -13,7 +13,7 @@ from ashley.api.history_models import PastConversation, PastHistory
 from ashley.api.models import ErrorResponse
 from ashley.api.person import person_signed_in
 from ashley.conversations.conversations import Conversations, ConversationsUnavailable
-from ashley.conversations.model import Carried, Conversation, Cursor, NewTurn, Page, Summary, Turn
+from ashley.conversations.model import Carried, Conversation, Cursor, Match, NewTurn, Page, Summary, Turn
 from ashley.main import create_app
 from ashley.people.people import People
 from ashley.settings import Settings
@@ -48,6 +48,9 @@ class FakeHistory(Conversations):
     stored: dict[int, Conversation] = field(default_factory=dict[int, Conversation])
     asked: list[tuple[int, int, int, Cursor | None]] = field(default_factory=list[tuple[int, int, int, Cursor | None]])
     down: bool = False
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def of_person(self, household_id: int, person_id: int, limit: int, after: Cursor | None = None,
                         thread: str | None = None) -> Page:

@@ -8,7 +8,7 @@ from abc import abstractmethod
 from collections.abc import Iterable
 
 from ..services import Service
-from .model import Carried, Channel, Conversation, Cursor, Hearer, Kind, NewTurn, Page, Turn
+from .model import Carried, Channel, Conversation, Cursor, Hearer, Kind, Match, NewTurn, Page, Turn
 
 
 class ConversationError(Exception):
@@ -115,6 +115,15 @@ class Conversations(Service):
         `conversation.listed` with the person, the count and whether more follow."""
 
     @abstractmethod
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        """Up to `limit` turns matching the words of `query` (all of them, as stemmed full text), best match first, in
+        the conversations `person_id` took part in (`of_person`'s rule, on every channel and thread), in
+        `household_id`. Left out in SQL: a turn said privately to someone else, an evaluation's conversation, and a
+        turn she kept quiet on and the one it answers. A blank query, or one of only stop words, matches nothing.
+        Raises ValueError (before touching the database) for a `limit` below 1. Reads only; logs `conversation.searched`
+        with the person and the count, never the query."""
+
+    @abstractmethod
     async def answer_to(self, household_id: int, source: str) -> Turn | None:
         """Her answer to the person turn `household_id` stored with `source` (`NewTurn.source`): her latest turn
         answering it that is not a held line (`follows`); None when there is no such turn or no answer yet. Reads
@@ -165,6 +174,9 @@ class NullConversations(Conversations):
         raise ConversationsUnavailable("Conversations is not wired")
 
     async def on_thread(self, household_id: int, thread: str) -> Conversation | None:
+        raise ConversationsUnavailable("Conversations is not wired")
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
         raise ConversationsUnavailable("Conversations is not wired")
 
     async def answer_to(self, household_id: int, source: str) -> Turn | None:

@@ -11,7 +11,7 @@ from ashley.api.models import ChatConversation, ChatTurn
 from ashley.api.person import person_signed_in
 from ashley.conversations.conversations import Conversations
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import Carried, Conversation, Cursor, NewTurn, Page, Turn
+from ashley.conversations.model import Carried, Conversation, Cursor, Match, NewTurn, Page, Turn
 from ashley.main import create_app
 from ashley.runs.runs import NullRuns, Runs
 from ashley.people.people import People
@@ -38,6 +38,9 @@ EXPECTED = [("person", "is it raining", False), ("ashley", "Let me check.", True
 @dataclass
 class Fake(Conversations):
     stored: dict[int, Conversation] = field(default_factory=lambda: {5: OPEN})
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def get(self, conversation_id: int) -> Conversation | None:
         return self.stored.get(conversation_id)

@@ -8,13 +8,14 @@ from collections.abc import Iterable
 from .. import logs
 from ..db.database import Database
 from .conversations import Conversations, ConversationsUnavailable
-from .model import Carried, Channel, Conversation, Cursor, Hearer, Kind, NewTurn, Page, Turn
+from .model import Carried, Channel, Conversation, Cursor, Hearer, Kind, Match, NewTurn, Page, Turn
 from .policy import Policy
 from . import postgres_carried
 from .postgres_errors import translated
 from .postgres_listing import listed
 from .postgres_queries import checked, insert_conversation, insert_turn, read_conversation, spoken_of
 from .postgres_rows import KINDS, TURN_COLUMNS, turn_from
+from .postgres_search import found
 from .postgres_threads import Raced, carried
 
 log = logging.getLogger("ashley.conversations")
@@ -106,6 +107,15 @@ class PostgresConversations(Conversations):
                 page = await listed(conn, self._policy, household_id, person_id, limit, after, thread)
         logs.info(log, "conversation.listed", person=person_id, count=len(page.items), more=page.next is not None)
         return page
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        if limit < 1:
+            raise ValueError("a search returns at least one turn")
+        with translated():
+            async with self._database.connection() as conn:
+                matches = await found(conn, household_id, person_id, query, limit)
+        logs.info(log, "conversation.searched", person=person_id, count=len(matches))
+        return matches
 
     async def carried(self, hearer: Hearer, conversation_id: int, before: int, query: str, recent: int,
                       relevant: int) -> Carried:
