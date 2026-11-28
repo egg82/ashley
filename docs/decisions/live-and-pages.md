@@ -256,8 +256,8 @@ there, so the person is not left on an empty bench while her answer sits in chat
 - **A bench she just opened is led, not asked about.** When the bench was opened in the same turn (`Arrival.fresh`) its
   instructions carry `ashley.tools.bench_lead.lead`: bring what exists onto the bench, draft, decide what can be
   decided and state it in a line, ask at most one or two questions that are genuinely the person's. Every bench talk's
-  instructions say the work lives in pieces and that a change to something on the bench is an edit, not a near-copy
-  added beside it.
+  instructions say the work lives in pieces and that a draft is revised in place, not copied, and a proven piece's change is a new linked version
+  (asking her opinion changes nothing on the bench).
 - **A bench opens quiet**: a bench that opens full of pieces is too much at once. The turn that opens a bench adds at most
   `lead_adds` pieces (`bench_tools.json`, 2): `BenchTools` counts the accepted adds of a lead instance and refuses the
   next `ask_first`, a tool error telling her to say what else she would add and ask. Edits, moves and every other
