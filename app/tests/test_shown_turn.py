@@ -3,6 +3,7 @@ first brought up, never read from her words; a turn whose calls brought nothing 
 its calls made before the resume brought up, which a checkpoint carries."""
 
 import asyncio
+import json
 from dataclasses import dataclass, replace
 
 import pytest
@@ -11,8 +12,9 @@ from ashley.channels import checkpoint
 from ashley.channels.landing import Landing
 from ashley.channels.model import Inbound
 from ashley.channels.respond import LIMITS, respond
+from ashley.channels.tool_loop import Progress
 from ashley.conversations.model import Shown
-from ashley.inference.model import Message, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
+from ashley.inference.model import Message, SystemPrompt, ToolCall, ToolCalls, ToolResult, ToolResults, ToolSpec
 from ashley.inference.reply import Reply
 from ashley.tools.tools import Tools
 from respond_support import ALANA, Fakes, FakeTools, calls, inbound, wired as wired
@@ -71,7 +73,12 @@ def test_a_resumed_turn_keeps_what_its_earlier_calls_brought_up() -> None:
 
 def test_a_checkpoint_carries_what_a_result_brought_up() -> None:
     result = ToolResult("c0", "{}", shown=(A,))
-    entry = checkpoint._from_entry(checkpoint._entry(ToolResults((result,))))  # pyright: ignore[reportPrivateUsage]
-    assert entry == ToolResults((result,))
-    old = checkpoint._from_result({"call_id": "c0", "content": "{}", "is_error": False})  # pyright: ignore[reportPrivateUsage]
-    assert old.shown == ()
+    progress = Progress((Message("person", "hello"), ToolResults((result,))), 1, 1)
+    text = checkpoint.dumps(checkpoint.Checkpoint(inbound("hello"), 1, 2, 1, {"default": SystemPrompt("s")}, progress))
+    assert checkpoint.loads(text).progress.entries[1] == ToolResults((result,))
+    raw = json.loads(text)
+    for entry in raw["entries"]:
+        for r in entry.get("results", ()):
+            del r["shown"]
+    old = checkpoint.loads(json.dumps(raw)).progress.entries[1]
+    assert isinstance(old, ToolResults) and old.results[0].shown == ()
