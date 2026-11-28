@@ -1,7 +1,7 @@
 """The settings of a turn that has read outside words, data in `outside.json` beside this module: how long held calls can
 still be agreed (`proposal_ttl_s`), the most calls one turn holds (`max_calls`), the most characters of JSON one held
 call's arguments may take (`max_argument_chars`), how long the record of what ran without asking is kept
-(`actions_keep_s`) and how long a list a tainted turn wrote counts as outside (`writes_keep_s`), how many of the person's
+(`actions_keep_s`) and how long a list a tainted turn wrote counts as outside (`writes_keep_s`), how long a decision to say nothing on her own is kept (`quiet_keep_s`), how many of the person's
 latest messages (`words_turns`) and how many characters of each (`words_chars`) the action judge reads, the arguments of each tool
 the record of what ran without asking may name (`summary_arguments`: ones that hold an action or a folder, never text),
 and the text she and the person read: the headline of a change whose tool has no label (`unlabelled`), the words that head a change that ran and one that waits where receipts are small text
@@ -19,9 +19,9 @@ from pathlib import Path
 from ..home_assistant.ha_json import names, obj
 
 FILE = Path(__file__).with_name("outside.json")
-_NUMBERS = ("proposal_ttl_s", "max_calls", "max_argument_chars", "actions_keep_s", "writes_keep_s", "words_turns",
-            "words_chars")
-_SECONDS = ("proposal_ttl_s", "actions_keep_s", "writes_keep_s")
+_NUMBERS = ("proposal_ttl_s", "max_calls", "max_argument_chars", "actions_keep_s", "writes_keep_s", "quiet_keep_s",
+            "words_turns", "words_chars")
+_SECONDS = ("proposal_ttl_s", "actions_keep_s", "writes_keep_s", "quiet_keep_s")
 _TEXTS = ("held", "needs_private", "too_long", "too_many", "agreeing_tainted", "nothing_to_carry_out", "not_run",
           "unavailable",
           "carry_out_description", "unlabelled", "done_label", "held_label", "history_line", "history_done", "history_held", "unknown_recipient",
@@ -36,6 +36,7 @@ class OutsideConfig:
     max_argument_chars: int
     actions_keep_s: float
     writes_keep_s: float
+    quiet_keep_s: float
     words_turns: int
     words_chars: int
     summary_arguments: Mapping[str, tuple[str, ...]]
@@ -89,8 +90,8 @@ def parse(raw: object) -> OutsideConfig:
             raise ValueError(f"{key}: expected text")
     return OutsideConfig(float(_number(top["proposal_ttl_s"])), int(_number(top["max_calls"])),
                          int(_number(top["max_argument_chars"])), float(_number(top["actions_keep_s"])),
-                         float(_number(top["writes_keep_s"])), int(_number(top["words_turns"])),
-                         int(_number(top["words_chars"])), _summary_arguments(top["summary_arguments"]),
+                         float(_number(top["writes_keep_s"])), float(_number(top["quiet_keep_s"])),
+                         int(_number(top["words_turns"])), int(_number(top["words_chars"])), _summary_arguments(top["summary_arguments"]),
                          *(str(top[k]) for k in _TEXTS))
 
 
@@ -104,7 +105,8 @@ def _number(value: object) -> int | float:
     return value
 
 
-def keeps() -> tuple[float, float]:
-    """The seconds the record keeps what ran without asking and a list a tainted turn wrote, as shipped."""
+def keeps() -> tuple[float, float, float]:
+    """The seconds the record keeps what ran without asking, a list a tainted turn wrote and a decision to say nothing,
+    as shipped."""
     shipped = load()
-    return shipped.actions_keep_s, shipped.writes_keep_s
+    return shipped.actions_keep_s, shipped.writes_keep_s, shipped.quiet_keep_s

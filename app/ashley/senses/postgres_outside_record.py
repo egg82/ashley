@@ -1,6 +1,7 @@
 """The outside record in Postgres: `outside_actions`, one row per change she made that nobody asked for in that turn,
 with its cause and undo in plain columns (null on rows kept before them) and whether that undo was taken (`undone_*`),
-and `outside_writes`, one row per list entity a tainted turn wrote."""
+`outside_writes`, one row per list entity a tainted turn wrote, and `kept_quiet`, one row per unprompted turn she kept
+quiet."""
 
 from collections.abc import Sequence
 from datetime import datetime
@@ -10,7 +11,8 @@ import psycopg
 
 from ..db.database import Database, DatabaseUnavailable
 from ..undo import undo_of
-from .outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded, Settled, cause_of, undone_of
+from .outside_record import (DoneAction, OutsideRecord, OutsideRecordUnavailable, QuietEntry, QuietLately, Recorded, Settled,
+                             Why, cause_of, undone_of)
 
 _COLUMNS: LiteralString = ("household_id, person_id, conversation_id, turn_id, tool, summary, tier, reason, explanation, at, label, "
             "cause_kind, cause_id, undo_kind, undo_ref, undo_within")
@@ -18,10 +20,11 @@ _KEPT: LiteralString = "id, " + _COLUMNS + ", undone_at, undone_by, undone_how"
 
 
 class PostgresOutsideRecord(OutsideRecord):
-    def __init__(self, database: Database, actions_keep_s: float, writes_keep_s: float) -> None:
+    def __init__(self, database: Database, actions_keep_s: float, writes_keep_s: float, quiet_keep_s: float) -> None:
         self._database = database
         self._actions_keep_s = actions_keep_s
         self._writes_keep_s = writes_keep_s
+        self._quiet_keep_s = quiet_keep_s
 
     async def done(self, action: DoneAction) -> None:
         cause, undo = action.cause, action.undo
@@ -83,6 +86,25 @@ class PostgresOutsideRecord(OutsideRecord):
             "AND at > now() - make_interval(secs => %s) LIMIT 1", (household_id, list(entities), self._writes_keep_s))
         return bool(rows)
 
+    async def quieted(self, entry: QuietEntry) -> None:
+        cause = entry.cause
+        await self._run(
+            "WITH made AS (INSERT INTO kept_quiet (household_id, person_id, conversation_id, at, why, score, cause_kind, "
+            "cause_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)) "
+            "DELETE FROM kept_quiet WHERE at < now() - make_interval(secs => %s)",
+            (entry.household_id, entry.person_id, entry.conversation_id, entry.at, entry.why, entry.score,
+             None if cause is None else cause.kind, None if cause is None else cause.id, self._quiet_keep_s))
+
+    async def quiet_of_person(self, household_id: int, person_id: int, latest: int) -> QuietLately | None:
+        rows = await self._rows(
+            "SELECT id, household_id, person_id, conversation_id, at, why, score, cause_kind, cause_id, "
+            "count(*) OVER () FROM kept_quiet WHERE household_id = %s AND person_id = %s "
+            "AND at > now() - make_interval(secs => %s) ORDER BY at DESC, id DESC LIMIT %s",
+            (household_id, person_id, self._quiet_keep_s, latest))
+        if not rows:
+            return None
+        return QuietLately(int(rows[0][9]), int(rows[0][0]), tuple(_quiet(r[1:9]) for r in rows))
+
     async def _run(self, query: LiteralString, params: tuple[Any, ...]) -> None:
         try:
             async with self._database.connection() as conn:
@@ -113,3 +135,11 @@ def _action(r: tuple[Any, ...]) -> DoneAction:
     return DoneAction(int(r[0]), int(r[1]), int(r[2]), int(r[3]), str(r[4]), str(r[5]), str(r[6]), _text(r[7]),
                       _text(r[8]), r[9], str(r[10]), cause_of(_text(r[11]), None if r[12] is None else int(r[12])),
                       undo_of(_text(r[13]), _text(r[14]), _text(r[15])))
+
+
+def _quiet(r: tuple[Any, ...]) -> QuietEntry:
+    """A row of `kept_quiet` (without its id and count) as a `QuietEntry`."""
+    why: Why = r[4]
+    return QuietEntry(int(r[0]), None if r[1] is None else int(r[1]), int(r[2]), r[3], why,
+                      None if r[5] is None else float(r[5]),
+                      cause_of(_text(r[6]), None if r[7] is None else int(r[7])))

@@ -2,6 +2,7 @@
 edges and across a daylight-saving change; and that nothing she does unprompted reaches the person inside it (a
 remark, a greeting, a house notice) while a reply to them, and a reminder they asked for, still do."""
 
+import asyncio
 import logging
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
@@ -137,8 +138,8 @@ def test_the_decision_logs_the_reason_for_a_quiet_turn(scored: Scored, caplog: p
     caplog.set_level(logging.INFO, "ashley.channels")
     services.register(Initiative, scored)
     try:
-        assert unprompted.decided(SAYS, turn(quiet=True), 9) is False
-        assert unprompted.decided(SAYS, turn(quiet=False), 9) is True
+        assert asyncio.run(unprompted.decided(SAYS, turn(quiet=True), 9)) is False
+        assert asyncio.run(unprompted.decided(SAYS, turn(quiet=False), 9)) is True
     finally:
         services.unregister(Initiative)
     quiet, loud = events(caplog, "initiative.decided")

@@ -6,7 +6,8 @@ reaction), each with its `cause` and, where the change has an inverse, its `undo
 for the receipts beside her reply; `house_ask` reads `written`.
 
 `DoneAction`s are kept `actions_keep_s` and pruned by the write that adds the next; a list entity written by a tainted
-turn counts as outside for `writes_keep_s` and is pruned the same way. Neither holds arguments or results."""
+turn counts as outside for `writes_keep_s` and is pruned the same way. Neither holds arguments or results. What she kept
+quiet on her own (`QuietEntry`) is a third table of the same record, kept `quiet_keep_s`."""
 
 from abc import abstractmethod
 from collections.abc import Sequence
@@ -105,6 +106,38 @@ class Recorded:
     undone: Undone | None = None
 
 
+Why = Literal["quiet_hours", "not_greeting", "below_threshold", "rolled_silent", "said_none"]
+"""Why Initiative kept an unprompted turn quiet: `quiet_hours`, the person's own; `not_greeting`, a turn with no moment to
+score, on which she set `says` to none; `below_threshold`, the moment's score under the threshold (no roll made);
+`rolled_silent`, the score cleared it and the seeded roll came out silent; `said_none`, the plan let her speak and she set
+`says` to none. Never her words."""
+
+
+@dataclass(frozen=True)
+class QuietEntry:
+    """A turn of `conversation_id` in `household_id`, for `person_id` (None when it was the household's), kept quiet at
+    `at` for `why`; `score` is the moment's initiative score when it had one; `cause` is the record that started the
+    turn, None when its builder names none."""
+
+    household_id: int
+    person_id: int | None
+    conversation_id: int
+    at: datetime
+    why: Why
+    score: float | None = None
+    cause: Cause | None = None
+
+
+@dataclass(frozen=True)
+class QuietLately:
+    """What was kept quiet for a person within the keep: how many (`count`), the newest `latest` first, and `id`, the
+    newest row's."""
+
+    count: int
+    id: int
+    latest: tuple[QuietEntry, ...]
+
+
 class OutsideRecord(Service):
     @classmethod
     def null(cls) -> "OutsideRecord":
@@ -149,6 +182,15 @@ class OutsideRecord(Service):
         """Whether any of `entities` was written by a tainted turn within `writes_keep_s`. Raises
         OutsideRecordUnavailable."""
 
+    @abstractmethod
+    async def quieted(self, entry: QuietEntry) -> None:
+        """Store `entry`, and drop the entries older than `quiet_keep_s`. Raises OutsideRecordUnavailable."""
+
+    @abstractmethod
+    async def quiet_of_person(self, household_id: int, person_id: int, latest: int) -> QuietLately | None:
+        """How many entries are kept for `person_id` of `household_id` and the newest `latest` of them; None when there
+        are none. Never another person's or household's. Raises OutsideRecordUnavailable."""
+
 
 class NullOutsideRecord(OutsideRecord):
     """What an unwired process sees: every call raises, so nothing is recorded as safe."""
@@ -175,4 +217,10 @@ class NullOutsideRecord(OutsideRecord):
         raise OutsideRecordUnavailable("the outside record is not wired")
 
     async def written(self, household_id: int, entities: Sequence[str]) -> bool:
+        raise OutsideRecordUnavailable("the outside record is not wired")
+
+    async def quieted(self, entry: QuietEntry) -> None:
+        raise OutsideRecordUnavailable("the outside record is not wired")
+
+    async def quiet_of_person(self, household_id: int, person_id: int, latest: int) -> QuietLately | None:
         raise OutsideRecordUnavailable("the outside record is not wired")

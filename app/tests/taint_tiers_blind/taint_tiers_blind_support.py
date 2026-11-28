@@ -202,7 +202,7 @@ async def opened(url: str) -> AsyncGenerator[World]:
     store = PostgresProposals(db)
     services.register(Proposals, store)
     shipped = outside_config.load()
-    services.register(OutsideRecord, PostgresOutsideRecord(db, shipped.actions_keep_s, shipped.writes_keep_s))
+    services.register(OutsideRecord, PostgresOutsideRecord(db, shipped.actions_keep_s, shipped.writes_keep_s, shipped.quiet_keep_s))
     try:
         hid = household(url, "tt")
         assert hid == HOUSE_ID, "a fresh test database numbers its first household 1"

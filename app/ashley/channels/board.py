@@ -1,7 +1,7 @@
 """What the board (`GET /api/work`) reads that only the turn-side systems may touch: a person's pending proposals
 (`Proposals.of`, each judged still takeable by `refusal` against the time limit of the tool that proposed it), live
 watches (`Watches.live`) and what she did on her own for them (`OutsideRecord.of_person`, `decisions.md`, "What she did
-on her own is one record"), and ending one of those watches (`Watches.disarm`). They are handed to `ashley.api.work_pending` as plain
+on her own is one record"), what she kept quiet for them (`OutsideRecord.quiet_of_person`), and ending one of those watches (`Watches.disarm`). They are handed to `ashley.api.work_pending` as plain
 records, so the API holds no import of the tools or the watches."""
 
 from dataclasses import dataclass
@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from .. import services
 from ..senses.deposit_config import CONFIG as DEPOSITS
 from ..senses.deposit_rule import describe
-from ..senses.outside_record import Cause, OutsideRecord, OutsideRecordUnavailable, Undone
+from ..senses.outside_record import Cause, OutsideRecord, OutsideRecordUnavailable, QuietEntry, Undone
 from ..senses.proposal_payloads import HeldCalls, HouseChange, MoneyRule, Payload, WatchSchedule
 from ..senses.proposals import Proposals, ProposalsUnavailable, refusal
 from ..tools import outside_config
@@ -19,6 +19,7 @@ from ..undo import Undo
 from ..watches.watches import Watches, WatchesUnavailable
 
 DID_LISTED = 50
+QUIET_LISTED = 3
 
 
 class BoardUnavailable(Exception):
@@ -60,6 +61,16 @@ class Did:
     cause: Cause | None
     undo: Undo | None
     undone: Undone | None = None
+
+
+@dataclass(frozen=True)
+class Quiet:
+    """What she decided not to say on her own for the person within the record's keep: `count` of them, `id` the newest
+    row's, and `latest` the newest `QUIET_LISTED` (their `why`, `at` and `cause`)."""
+
+    id: int
+    count: int
+    latest: tuple[QuietEntry, ...]
 
 
 def summary(payload: Payload) -> str:
@@ -131,3 +142,13 @@ async def did(household_id: int, person_id: int) -> tuple[Did, ...]:
     except OutsideRecordUnavailable as e:
         raise BoardUnavailable("the outside record is unavailable") from e
     return tuple(Did(r.id, r.action.summary, r.action.at, r.action.cause, r.action.undo, r.undone) for r in found)
+
+
+async def quiet(household_id: int, person_id: int) -> Quiet | None:
+    """What she kept quiet for the person in this household within the record's keep (`quiet_keep_s`); None when
+    nothing. Raises BoardUnavailable."""
+    try:
+        found = await services.get(OutsideRecord).quiet_of_person(household_id, person_id, QUIET_LISTED)
+    except OutsideRecordUnavailable as e:
+        raise BoardUnavailable("the outside record is unavailable") from e
+    return None if found is None else Quiet(found.id, found.count, found.latest)

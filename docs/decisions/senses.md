@@ -70,6 +70,20 @@ weight's sign is part of that data's contract, so the loader refuses a recent gr
   allowed slot is her own turn, the household's, on the channel's thread, offered only the tools that change that
   channel; its source is the slot's, so a slot handed in again after a failover is one turn, and her reply goes out
   through the outbox on `says` alone.
+- **What she decided not to say on her own is kept for a week.** A turn nobody asked for that Initiative keeps quiet is
+  one `QuietEntry` in `OutsideRecord` (`kept_quiet`), written by `channels.unprompted.decided` beside its
+  `initiative.decided` log line, which stays as it is: the conversation, the person it was for (null for a turn
+  addressed to the household), when, `why`, the score when the decision had one, and the `Cause` of the turn (the wake,
+  watch or other record that started it, as an outside action carries). `why` is a code, never her text: `quiet_hours`,
+  `not_greeting`, `below_threshold`, `rolled_silent` or `said_none` (the plan let her speak and her `says` was none). A
+  turn that goes out, a remark kept quiet (nothing was owed) and a reply to a person leave
+  nothing. Kept `quiet_keep_s` (`outside.json`, a week), enforced by the write that adds the next entry as
+  `outside_actions` is, and by the read, which ignores what has lapsed but not yet been pruned. A record that cannot be
+  written is logged `initiative.quiet_unrecorded` and the turn goes on. Fits into the outside record: same service,
+  keep-and-prune and per-person read. A second table rather than a `kind` column on `outside_actions`, whose rows are
+  changes with a tool, tier, summary, label and undo that a decision to stay silent has none of, and which would have
+  made all of them nullable. The board shows it as one summary item per person (`runs-and-jobs.md`, the board's read
+  model). Rejected: one board item per entry, which would be as many rows as she held her tongue.
 - **Rejected: leaving the judgement to the prompt.** No history, so no rate.
 
 ## Home Assistant wakes her; she decides

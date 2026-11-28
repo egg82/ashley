@@ -1,10 +1,10 @@
-"""The outside record in lists, for tests that wire `OutsideRecord` without a database: what `done` was given, and the
-list entities `wrote` named."""
+"""The outside record in lists, for tests that wire `OutsideRecord` without a database: what `done` was given, the
+list entities `wrote` named and the entries `quieted` was given."""
 
 from collections.abc import Sequence
 from datetime import datetime
 
-from ashley.senses.outside_record import DoneAction, OutsideRecord, Recorded, Settled
+from ashley.senses.outside_record import DoneAction, OutsideRecord, QuietEntry, QuietLately, Recorded, Settled
 
 
 class MemoryRecord(OutsideRecord):
@@ -13,6 +13,7 @@ class MemoryRecord(OutsideRecord):
     def __init__(self) -> None:
         self.actions: list[DoneAction] = []
         self.writes: set[tuple[int, str]] = set()
+        self.quiet: list[QuietEntry] = []
 
     async def done(self, action: DoneAction) -> None:
         self.actions.append(action)
@@ -38,3 +39,10 @@ class MemoryRecord(OutsideRecord):
 
     async def written(self, household_id: int, entities: Sequence[str]) -> bool:
         return any((household_id, e) in self.writes for e in entities)
+
+    async def quieted(self, entry: QuietEntry) -> None:
+        self.quiet.append(entry)
+
+    async def quiet_of_person(self, household_id: int, person_id: int, latest: int) -> QuietLately | None:
+        mine = [e for e in reversed(self.quiet) if (e.household_id, e.person_id) == (household_id, person_id)]
+        return QuietLately(len(mine), len(self.quiet), tuple(mine[:latest])) if mine else None
