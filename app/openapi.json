@@ -9432,16 +9432,6 @@
             "type": "string",
             "maxLength": 200000,
             "title": "Body"
-          },
-          "size": {
-            "type": "string",
-            "enum": [
-              "small",
-              "medium",
-              "large",
-              "full"
-            ],
-            "title": "Size"
           }
         },
         "additionalProperties": false,
@@ -9450,8 +9440,7 @@
           "type",
           "kind",
           "title",
-          "body",
-          "size"
+          "body"
         ],
         "title": "AddPieceRequest",
         "description": "Add a piece of `kind` last on the bench. Its id is the command's `seq`."
@@ -15800,16 +15789,6 @@
             "minimum": 0.0,
             "title": "Order"
           },
-          "size": {
-            "type": "string",
-            "enum": [
-              "small",
-              "medium",
-              "large",
-              "full"
-            ],
-            "title": "Size"
-          },
           "pin": {
             "anyOf": [
               {
@@ -15834,11 +15813,10 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "order",
-          "size"
+          "order"
         ],
         "title": "PiecePlace",
-        "description": "Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), its\nsize class, and the `pin` and `box` a person gave it on the bench's map, null until they did; a read always\ncarries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has\nit; one outside the bench's bounds is refused `bad_place`."
+        "description": "Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), and the\n`pin` and `box` a person gave it on the bench's map, null until they did; a read always carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has\nit; one outside the bench's bounds is refused `bad_place`."
       },
       "PiecePointer": {
         "properties": {
@@ -19677,19 +19655,6 @@
             "type": "array",
             "title": "Link Kinds"
           },
-          "sizes": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "small",
-                "medium",
-                "large",
-                "full"
-              ]
-            },
-            "type": "array",
-            "title": "Sizes"
-          },
           "max_pieces": {
             "type": "integer",
             "title": "Max Pieces"
@@ -19721,7 +19686,6 @@
         "required": [
           "kinds",
           "link_kinds",
-          "sizes",
           "max_pieces",
           "title_max_chars",
           "run_languages",
@@ -19729,7 +19693,7 @@
           "work_kinds"
         ],
         "title": "WorkshopKinds",
-        "description": "What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take\n(`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench\nholds and the longest title of a bench or a piece; the languages a code piece can be run in\n(`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the\nkinds of link between pieces (`link_kinds`)."
+        "description": "What a bench allows, so the client hard-codes none of it: the piece kinds, the most pieces a bench holds and\nthe longest title of a bench or a piece; the languages a code piece can be run in\n(`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the\nkinds of link between pieces (`link_kinds`)."
       },
       "Written": {
         "properties": {

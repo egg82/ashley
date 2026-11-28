@@ -25,7 +25,7 @@ from respond_support import ALANA, wired as wired
 from test_workshop_routes import As, command, opened
 from test_workshop_routes import signed_in as signed_in
 
-AUTOMATION = {"type": "add", "kind": "automation", "title": "porch", "body": body(), "size": "medium"}
+AUTOMATION = {"type": "add", "kind": "automation", "title": "porch", "body": body()}
 OWNER = Owner(ALANA.household_id, ALANA.id)
 AT = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
 

@@ -68,5 +68,5 @@ def test_an_edit_that_keeps_the_line_count_keeps_the_recording(db_url: str) -> N
 def test_a_piece_of_another_kind_has_no_reader(db_url: str) -> None:
     with rig(db_url) as r:
         bench = r.bench()
-        done = r.command(bench, type="add", kind="note", title="n", body="x", size="small")
+        done = r.command(bench, type="add", kind="note", title="n", body="x")
         assert wire_piece(r.pieces(bench), int(done["piece_id"])).get("reader") is None

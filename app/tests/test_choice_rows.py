@@ -234,7 +234,7 @@ def test_with_no_talk_no_turn_is_hers_to_cite_and_an_unreadable_talk_is_unavaila
 
 def test_a_replace_and_an_add_are_checked_too_and_a_kept_row_is_not(shop: Deciding) -> None:
     stated = json.dumps(form(source="stated", turn=926))
-    added_piece = {"kind": "facts", "title": "m", "body": body(json.loads(stated)), "size": "medium"}
+    added_piece = {"kind": "facts", "title": "m", "body": body(json.loads(stated))}
     assert her_call("bench_add", added_piece) == "bad_citation"
     old = json.dumps(FORM)[1:-1]
     assert her_call("bench_replace", {"piece_id": 5, "base_version": 1, "old": old, "new": stated[1:-1]}) == "bad_citation"

@@ -31,7 +31,7 @@ def send(rig: Rig, bench_id: int, body: dict[str, object]) -> tuple[int, dict[st
 
 
 def add(rig: Rig, bench_id: int, kind: str, text: str) -> tuple[int, dict[str, Any]]:
-    return send(rig, bench_id, {"type": "add", "kind": kind, "title": "t", "body": text, "size": "small"})
+    return send(rig, bench_id, {"type": "add", "kind": kind, "title": "t", "body": text})
 
 
 def detail(rig: Rig, bench_id: int) -> BenchDetail:

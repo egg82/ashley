@@ -16,26 +16,26 @@ from test_workshop_routes import opened
 BIG = MP4 + bytes(range(256)) * 8
 
 
-def served(client: TestClient, bench: int, data: bytes, name: str, said: str = "") -> tuple[str, str, str]:
-    """The kind, size and link of the piece an upload of `data` made."""
+def served(client: TestClient, bench: int, data: bytes, name: str, said: str = "") -> tuple[str, str]:
+    """The kind and link of the piece an upload of `data` made."""
     status, body = upload(client, bench, data, name, said)
     assert status == 200
     piece = CommandApplied.model_validate(body).piece_id or 0
     found = next(p for p in detail(client, bench).pieces if p.id == piece)
     assert found.file is not None and found.file.url is not None
-    return found.kind, found.placement.size, found.file.url
+    return found.kind, found.file.url
 
 
-@pytest.mark.parametrize("data,name,said,kind,size", [(BIG, "a.mp4", "video/mp4", "clip", "medium"),
-                                                      (WEBM, "a.webm", "", "clip", "medium"),
-                                                      (MP3, "a.mp3", "audio/mpeg", "audio", "medium")],
+@pytest.mark.parametrize("data,name,said,kind", [(BIG, "a.mp4", "video/mp4", "clip"),
+                                                (WEBM, "a.webm", "", "clip"),
+                                                (MP3, "a.mp3", "audio/mpeg", "audio")],
                          ids=["mp4", "webm", "mp3"])
 def test_a_video_or_audio_upload_is_the_piece_that_plays_it_and_is_served_in_place(
-        box: Box, data: bytes, name: str, said: str, kind: str, size: str) -> None:
+        box: Box, data: bytes, name: str, said: str, kind: str) -> None:
     client = box(ALANA)
     bench = opened(client)
-    got_kind, got_size, url = served(client, bench.id, data, name, said)
-    assert (got_kind, got_size) == (kind, size)
+    got_kind, url = served(client, bench.id, data, name, said)
+    assert got_kind == kind
     response = client.get(url, headers={"cookie": ""})
     assert response.status_code == 200 and response.content == data
     assert response.headers["content-disposition"] == "inline" and response.headers["accept-ranges"] == "bytes"
@@ -44,7 +44,7 @@ def test_a_video_or_audio_upload_is_the_piece_that_plays_it_and_is_served_in_pla
 
 def test_a_range_is_served_as_the_bytes_asked_and_one_outside_the_file_is_refused(box: Box) -> None:
     client = box(ALANA)
-    url = served(client, opened(client).id, BIG, "a.mp4")[2]
+    url = served(client, opened(client).id, BIG, "a.mp4")[1]
     part = client.get(url, headers={"range": "bytes=10-19"})
     assert part.status_code == 206 and part.content == BIG[10:20]
     assert part.headers["content-range"] == f"bytes 10-19/{len(BIG)}" and part.headers["content-type"] == "video/mp4"

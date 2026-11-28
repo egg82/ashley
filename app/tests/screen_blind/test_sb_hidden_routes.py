@@ -61,7 +61,7 @@ def test_k15_every_bench_read_of_the_screens_id_is_404_for_everyone(app: Rig) ->
 def test_k15_the_bench_writes_of_the_screens_id_are_404_and_change_nothing(app: Rig) -> None:
     _, screen, device = with_screen(app)
     before = app.controls(device)
-    add: dict[str, Any] = {"type": "add", "kind": "note", "title": "a", "body": "", "size": "small"}
+    add: dict[str, Any] = {"type": "add", "kind": "note", "title": "a", "body": ""}
     for path, body in ((f"/api/benches/{screen}/commands", add), (f"/api/benches/{screen}/close", None),
                        (f"/api/benches/{screen}/reopen", None), (f"/api/benches/{screen}/messages", {"text": "hi"})):
         got = app.client.post(path, json=body, headers=ORIGIN)

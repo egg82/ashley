@@ -51,7 +51,7 @@ class Site:
         return int(response.json()["id"])
 
     def put_piece(self, who: Person, bench_id: int, title: str = "Paste", body: str = "body") -> int:
-        add = {"type": "add", "kind": "document", "title": title, "body": body, "size": "large"}
+        add = {"type": "add", "kind": "document", "title": title, "body": body}
         response = self.as_(who).post(f"/api/benches/{bench_id}/commands", json=add)
         assert response.status_code == 200, response.text
         return int(response.json()["piece_id"])

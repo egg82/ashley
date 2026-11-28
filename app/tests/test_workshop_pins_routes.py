@@ -22,12 +22,12 @@ def test_a_persons_move_sets_keeps_and_clears_a_pin_and_box(signed_in: As, wired
 
     assert placement() == (None, None)
     pinned = {"type": "move", "piece_id": 1,
-              "placement": {"order": 0, "size": "small", "pin": {"x": -80, "y": 120}, "box": {"w": 400, "h": 300}}}
+              "placement": {"order": 0, "pin": {"x": -80, "y": 120}, "box": {"w": 400, "h": 300}}}
     assert command(alana, bench.id, pinned) == (200, {"seq": 3, "piece_id": 1})
     assert placement() == (PiecePin(x=-80, y=120), PieceBox(w=400, h=300))
-    command(alana, bench.id, {"type": "move", "piece_id": 1, "placement": {"order": 1, "size": "full"}})
+    command(alana, bench.id, {"type": "move", "piece_id": 1, "placement": {"order": 1}})
     assert placement() == (PiecePin(x=-80, y=120), PieceBox(w=400, h=300))
-    command(alana, bench.id, {"type": "move", "piece_id": 1, "placement": {"order": 1, "size": "full", "box": None}})
+    command(alana, bench.id, {"type": "move", "piece_id": 1, "placement": {"order": 1, "box": None}})
     assert placement() == (PiecePin(x=-80, y=120), None)
     command(alana, bench.id, {"type": "undo", "seq": 5})
     assert placement() == (PiecePin(x=-80, y=120), PieceBox(w=400, h=300))
@@ -37,7 +37,7 @@ def test_a_pin_or_box_out_of_bounds_is_409_and_a_malformed_one_422(signed_in: As
     alana = signed_in(ALANA)
     bench = opened(alana)
     command(alana, bench.id, ADD)
-    at = {"order": 0, "size": "small"}
+    at = {"order": 0}
     for extra in ({"pin": {"x": 10**9, "y": 0}}, {"box": {"w": 1, "h": 300}}, {"box": {"w": 400, "h": 10**6}}):
         status, raw = command(alana, bench.id, {"type": "move", "piece_id": 1, "placement": {**at, **extra}})
         assert (status, raw["reason"]) == (409, "bad_place")

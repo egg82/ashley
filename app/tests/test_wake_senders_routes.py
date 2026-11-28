@@ -38,7 +38,7 @@ def read(client: TestClient, bench: int) -> BenchDetail:
 
 
 def add(client: TestClient, bench: int, kind: str, title: str, text: str) -> None:
-    command(client, bench, {"type": "add", "kind": kind, "title": title, "body": text, "size": "medium"})
+    command(client, bench, {"type": "add", "kind": kind, "title": title, "body": text})
 
 
 def install(client: TestClient, bench: int, piece: int, seq: int) -> None:

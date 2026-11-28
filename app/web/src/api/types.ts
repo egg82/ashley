@@ -116,9 +116,10 @@ export type HouseGlance = components['schemas']['HouseGlance'];
 export type HouseAttention = components['schemas']['HouseAttention'];
 export type KioskLayout = components['schemas']['KioskLayout'];
 export type KioskPiece = components['schemas']['KioskPiece'];
+/** A device screen's size class: the share of the row a piece takes. */
+export type PieceSize = KioskPiece['size'];
 export type WorkshopKinds = components['schemas']['WorkshopKinds'];
 export type PieceKind = components['schemas']['PieceKind'];
-export type PieceSize = components['schemas']['PiecePlace']['size'];
 export type PiecePlace = components['schemas']['PiecePlace'];
 export type BenchSummary = components['schemas']['BenchSummary'];
 export type WorkKind = components['schemas']['WorkKind'];

@@ -96,7 +96,7 @@ def test_what_she_wrote_whole_she_may_edit_again_even_over_the_read_limit(db_url
         async with env(db_url) as e:
             bench = await opened(e, e.world.alana)
             t = tools(e, bench)
-            await t.call(call("bench_add", kind="document", title="d", body="w" * (WHOLE + 500), size="full"))
+            await t.call(call("bench_add", kind="document", title="d", body="w" * (WHOLE + 500)))
             first = await t.call(edit(1, 1, "d2", "v2"))
             assert not first.is_error, first.content
             second = await t.call(edit(1, 2, "d3", "v3"))
@@ -129,7 +129,7 @@ def test_a_move_by_someone_does_not_make_an_unread_body_read(db_url: str) -> Non
             bench = await opened(e, e.world.alana)
             await put(e, e.world.alana, bench, person_add(e.world.alana, "t", "v1"))
             t = tools(e, bench)
-            await t.call(call("bench_move", piece_id=1, order=0, size="full"))
+            await t.call(call("bench_move", piece_id=1, order=0))
             await refused_unread(e, t, bench, edit())
             await put(e, e.world.alana, bench, Move(By(e.world.alana.person_id), 1, Place(0, "small")))
             await refused_unread(e, t, bench, edit())
@@ -158,7 +158,7 @@ def test_reading_a_piece_that_is_not_there_or_is_another_benchs_reads_nothing_an
             t = tools(e, a)
             miss = await t.call(call("bench_read_piece", piece_id=2))
             assert miss.is_error and "SECRET-ONLY-B" not in miss.content
-            for c in (edit(2, 1), call("bench_remove", piece_id=2), call("bench_move", piece_id=2, order=0, size="full")):
+            for c in (edit(2, 1), call("bench_remove", piece_id=2), call("bench_move", piece_id=2, order=0)):
                 result = await t.call(c)
                 assert result.is_error
             assert len(await pieces(e, e.world.alana, b)) == 2 and await pieces(e, e.world.alana, b) == [
@@ -191,7 +191,7 @@ def test_her_own_move_or_a_refused_edit_does_not_cost_her_what_she_read(db_url: 
             await put(e, e.world.alana, bench, person_add(e.world.alana, "u", "v1"))
             t = tools(e, bench)
             await t.call(call("bench_read"))
-            await t.call(call("bench_move", piece_id=1, order=1, size="full"))
+            await t.call(call("bench_move", piece_id=1, order=1))
             await t.call(call("bench_remove", piece_id=2))
             assert (await t.call(edit(1, 9))).is_error
             assert not (await t.call(edit(1, 1))).is_error

@@ -56,7 +56,7 @@ def rig(url: str) -> Generator[Rig]:
         pieces: list[int] = []
         for title in ("one", "two"):
             added = client.post(f"/api/benches/{bench}/commands", json={
-                "type": "add", "kind": "note", "title": title, "body": "body", "size": "small"})
+                "type": "add", "kind": "note", "title": title, "body": "body"})
             pieces.append(int(added.json()["piece_id"]))
         yield Rig(client, home, owner, other, bench, pieces)
 

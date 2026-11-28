@@ -140,7 +140,7 @@ def test_a_bench_that_is_not_the_speakers_offers_tools_that_only_refuse(db_url: 
                 turn = for_turn(inbound(who, bench_id=bench))
                 for c in (call("bench_read"), call("bench_read_piece", piece_id=1),
                           call("bench_add", kind="note", title="x", body="y"), call("bench_remove", piece_id=1),
-                          call("bench_move", piece_id=1, order=0, size="full"), call("bench_undo", seq=1),
+                          call("bench_move", piece_id=1, order=0), call("bench_undo", seq=1),
                           call("bench_edit", piece_id=1, base_version=1, title="x", body="y")):
                     result = await turn.call(c)
                     assert result.is_error and "PRIVATE-BODY" not in result.content, c.name

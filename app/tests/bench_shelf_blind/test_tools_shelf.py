@@ -169,7 +169,7 @@ def test_a_shelved_piece_takes_no_remove_move_or_read_of_it_as_a_layout_piece(db
             await t.call(call("bench_archive", piece_id=ids[1]))
             removed = await t.call(call("bench_remove", piece_id=ids[1]))
             assert removed.is_error and "no_such_piece" in removed.content
-            moved = await t.call(call("bench_move", piece_id=ids[1], order=0, size="small"))
+            moved = await t.call(call("bench_move", piece_id=ids[1], order=0))
             assert moved.is_error and "no_such_piece" in moved.content
             assert [p.id for p in (await e.workshop.read(e.world.alana, bench)).shelf] == [ids[1]]
 

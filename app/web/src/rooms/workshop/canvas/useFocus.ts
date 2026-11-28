@@ -3,7 +3,7 @@
 // first layout are marked as landing for a moment, so they fade in at the end of their link.
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { BenchPiece } from '../../../api/types';
-import { lookAt, openingZoom } from '../model/camera';
+import { lookAt, openingZoom, type Cam, type Inset, type View } from '../model/camera';
 import { foldDistance } from '../model/mindmap';
 import type { Camera } from './useCamera';
 import { CANVAS_INSET } from './Chrome';
@@ -13,20 +13,25 @@ import { focusAsk } from './state';
 /** How long a piece just added is marked as landing (its fade, then her brass edge). */
 const LANDING_MS = 2000;
 
-function latest(cards: readonly BenchPiece[]): number | null {
+export function latest(cards: readonly BenchPiece[]): number | null {
   return cards.reduce<BenchPiece | null>((a, p) => (!a || p.changed_by > a.changed_by ? p : a), null)?.id ?? null;
 }
 
-/** The camera that shows piece `id` with its neighbours and the goal when they fit, clear of the toolbar, at the zoom it
- *  already has when cards are readable there; else the neighbours alone. When the bench `opening`, it prefers the goal
- *  to the neighbours: the piece and the goal, else the whole piece leaning toward the goal. */
-function shot(id: number, place: Placement, camera: Camera, opening: boolean): Parameters<Camera['fly']>[0] | null {
+/** The camera at zoom `z` that shows piece `id` with its neighbours and the goal when they fit inside `inset`, else the
+ *  neighbours alone. When the bench `opening`, it prefers the goal to the neighbours: the piece and the goal, else the
+ *  whole piece leaning toward the goal. */
+export function shotOf(id: number, place: Placement, view: View, z: number, opening: boolean, inset: Inset): Cam | null {
   const box = place.boxes.get(id);
   if (!box) return null;
-  const z = camera.cam.z >= 1 && !opening ? camera.cam.z : openingZoom(camera.view);
   const hops = foldDistance(id, place.links);
   const near = [...place.boxes].filter(([p]) => (hops.get(p) ?? Infinity) <= 1).map(([, b]) => b);
-  return lookAt([[GOAL_BOX, ...near], opening ? [GOAL_BOX, box] : near], box, camera.view, z, CANVAS_INSET);
+  return lookAt([[GOAL_BOX, ...near], opening ? [GOAL_BOX, box] : near], box, view, z, inset);
+}
+
+/** The camera that shows piece `id` for the bench screen: at the zoom it already has when cards are readable there. */
+function shot(id: number, place: Placement, camera: Camera, opening: boolean): Cam | null {
+  const z = camera.cam.z >= 1 && !opening ? camera.cam.z : openingZoom(camera.view);
+  return shotOf(id, place, camera.view, z, opening, CANVAS_INSET);
 }
 
 export interface Focus {

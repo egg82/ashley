@@ -51,8 +51,7 @@ function useActions(bench: { current: BenchDetail }): PieceActions {
       const b = bench.current;
       const all = inOrder(b.pieces, null).map((p) => p.id);
       const shown = inOrder(groupDerived(b.pieces).cards, null).map((p) => p.id);
-      const piece = b.pieces.find((p) => p.id === id);
-      if (piece) void apply({ type: 'move', piece_id: id, placement: { order: fullIndex(all, shown, id, to), size: piece.placement.size } });
+      void apply({ type: 'move', piece_id: id, placement: { order: fullIndex(all, shown, id, to) } });
     },
     remove: (piece) => void apply({ type: 'remove', piece_id: piece.id }),
     archive: (piece) => void apply({ type: 'archive', piece_id: piece.id }),

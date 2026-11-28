@@ -156,7 +156,7 @@ def tc(name: str, **arguments: object) -> ToolCall:
 
 
 def add_piece(title: str = "t", body: str = "b") -> ToolCall:
-    return tc("bench_add", kind="note", title=title, body=body, size="small")
+    return tc("bench_add", kind="note", title=title, body=body)
 
 
 async def piece_count(r: Real, person_id: int, bench_id: int) -> int:

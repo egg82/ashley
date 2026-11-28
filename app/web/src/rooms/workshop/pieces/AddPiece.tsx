@@ -3,16 +3,14 @@
 // stored piece is on the bench it opens in the editor for its text. A draft whose piece was taken off the
 // bench while it was being written stays here too, until it is added back or let go.
 import { useState } from 'preact/hooks';
-import type { PieceSize, WorkshopKinds } from '../../../api/types';
+import type { WorkshopKinds } from '../../../api/types';
 import { apply, detail, type Outcome } from '../model/bench';
 import { beginDraft, dropDraft, type Draft } from '../model/drafts';
 import { framedBody, isFramed, parseStart } from '../model/frames';
 import { whyNot } from './why';
 
-const DEFAULT_SIZE: PieceSize = 'medium';
-
-async function addPiece(bench: number, kind: string, title: string, body: string, size: PieceSize): Promise<Outcome> {
-  const got = await apply({ type: 'add', kind, title, body, size });
+async function addPiece(bench: number, kind: string, title: string, body: string): Promise<Outcome> {
+  const got = await apply({ type: 'add', kind, title, body });
   const piece = got.ok ? detail.value?.pieces.find((p) => p.id === got.piece) : undefined;
   if (piece && !body) beginDraft(bench, piece);
   return got;
@@ -30,19 +28,18 @@ export function AddPiece({ bench, rules, done }: { bench: number; rules: Worksho
   const ready = !!title.trim() && !!kind && (!framed || (!!url.trim() && (format !== 'video' || start !== null)));
   const [failed, setFailed] = useState<Outcome | null>(null);
   const [busy, setBusy] = useState(false);
-  const size = rules.sizes.includes(DEFAULT_SIZE) ? DEFAULT_SIZE : rules.sizes[0]!;
   const submit = async (e: Event) => {
     e.preventDefault();
     if (busy || !ready || !format) return;
     setBusy(true);
     const body = framed ? framedBody(format, url, start ?? 0) : '';
-    const got = await addPiece(bench, kind, title.trim(), body, size);
+    const got = await addPiece(bench, kind, title.trim(), body);
     setBusy(false);
     if (got.ok) done();
     else setFailed(got);
   };
   return (
-    <form class="piece adding" data-size="medium" onSubmit={(e) => void submit(e)}>
+    <form class="piece adding" onSubmit={(e) => void submit(e)}>
       <header><span class="ptitle">Add a piece</span></header>
       <div class="padd">
         <div class="seg" role="group" aria-label="Kind">
@@ -74,12 +71,12 @@ export function AddPiece({ bench, rules, done }: { bench: number; rules: Worksho
 export function Orphan({ bench, piece, draft }: { bench: number; piece: number; draft: Draft }) {
   const [failed, setFailed] = useState<Outcome | null>(null);
   const back = async () => {
-    const got = await addPiece(bench, draft.kind, draft.title.trim() || 'Untitled', draft.body, draft.size);
+    const got = await addPiece(bench, draft.kind, draft.title.trim() || 'Untitled', draft.body);
     if (got.ok) dropDraft(bench, piece);
     else setFailed(got);
   };
   return (
-    <div class="piece orphan" data-size="medium">
+    <div class="piece orphan">
       <header><span class="ptitle">{draft.title}</span><span class="pill">taken off the bench</span></header>
       <div class="padd">
         <p class="pedit-says">This piece was taken off the bench while you were writing. What you wrote is here.</p>

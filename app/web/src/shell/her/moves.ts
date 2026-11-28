@@ -2,7 +2,7 @@
 // while the person is in the middle of something (`follow.ts`), her mark waits at the destination's bearing and the
 // page offers to follow. The one owner of `waiting`; each open tab decides by its own state.
 import { signal } from '@preact/signals';
-import { carried } from '../../rooms/workshop/pieces/drag';
+import { dragging } from '../../rooms/workshop/canvas/state';
 import { draftsOn } from '../../rooms/workshop/model/drafts';
 import { carryTo } from '../carry';
 import { benchOf, pathTo, type NavRoomId } from '../rooms';
@@ -37,7 +37,7 @@ function pageNow(): PageState {
   const bench = benchOf(here());
   return {
     focusedText: textOf(document.activeElement),
-    dragging: carried.value !== null || carryTo.value !== null,
+    dragging: dragging.value !== null || carryTo.value !== null,
     editing: bench !== null && draftsOn(bench).length > 0,
   };
 }

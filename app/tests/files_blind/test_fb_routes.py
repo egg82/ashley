@@ -55,7 +55,7 @@ def test_the_piece_carries_its_file_on_the_wire(db_url: str) -> None:
 def test_a_piece_that_is_not_a_file_has_no_file(db_url: str) -> None:
     with rig(db_url) as r:
         b = r.new_bench()
-        r.client.post(f"/api/benches/{b}/commands", json={"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"})
+        r.client.post(f"/api/benches/{b}/commands", json={"type": "add", "kind": "note", "title": "n", "body": "x"})
         assert pieces(r, b)[0]["file"] is None
 
 
@@ -172,7 +172,7 @@ def test_an_upload_to_a_full_bench_is_409_a_refused_command(db_url: str) -> None
     with rig(db_url) as r:
         b = r.new_bench()
         for i in range(MAX_PIECES):
-            r.client.post(f"/api/benches/{b}/commands", json={"type": "add", "kind": "note", "title": str(i), "body": "", "size": "small"})
+            r.client.post(f"/api/benches/{b}/commands", json={"type": "add", "kind": "note", "title": str(i), "body": ""})
         got = r.upload(b, PNG, "a.png")
         assert got.status_code == 409 and got.json()["reason"] == "full"
         assert len(pieces(r, b)) == MAX_PIECES
@@ -246,7 +246,7 @@ def test_a_large_piece_cannot_be_added_by_the_commands_route_with_a_body_the_cal
         r.upload(b, PDF, "d.pdf")
         body = pieces(r, b)[0]["body"]
         for kind in ("file", "image"):
-            got = r.client.post(f"/api/benches/{b}/commands", json={"type": "add", "kind": kind, "title": "x", "body": body, "size": "small"})
+            got = r.client.post(f"/api/benches/{b}/commands", json={"type": "add", "kind": kind, "title": "x", "body": body})
             assert got.status_code != 200
         assert len(pieces(r, b)) == 1
 

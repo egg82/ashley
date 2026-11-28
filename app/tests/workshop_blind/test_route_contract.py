@@ -12,7 +12,6 @@ from ashley.api.models import ChatConversation, ChatReply, ErrorResponse
 from ashley.api.workshop_models import BenchDetail, BenchList, BenchSummary, CommandRefused, WorkshopKinds
 from ashley.live.events import BenchChanged, Shown
 from ashley.workshop.commands import REASONS
-from ashley.workshop.model import SIZES
 from ashley.workshop.workshop import Workshop
 from respond_support import Fakes, wired as wired
 from route_support import Rig, build
@@ -40,8 +39,8 @@ def command(rig: Rig, bench_id: int, body: Mapping[str, object]) -> tuple[int, d
     return got.status, got.json
 
 
-def add_body(title: str = "a", text: str = "", kind: str = "note", size: str = "small") -> dict[str, object]:
-    return {"type": "add", "kind": kind, "title": title, "body": text, "size": size}
+def add_body(title: str = "a", text: str = "", kind: str = "note") -> dict[str, object]:
+    return {"type": "add", "kind": kind, "title": title, "body": text}
 
 
 def detail(rig: Rig, bench_id: int) -> BenchDetail:
@@ -64,7 +63,7 @@ def test_the_kinds_route_serves_what_the_data_files_hold(rig: Rig) -> None:
     limits = json.loads((SHIPPED / "workshop.json").read_text())
     assert {k.name: (k.family, k.label, k.max_chars) for k in got.kinds} == {
         n: (k["family"], k["label"], k["max_chars"]) for n, k in kinds.items() if k["family"] != "screen"}
-    assert (got.max_pieces, got.title_max_chars, got.sizes) == (limits["max_pieces"], limits["title_max_chars"], list(SIZES))
+    assert (got.max_pieces, got.title_max_chars) == (limits["max_pieces"], limits["title_max_chars"])
 
 
 # --- signed out, cross-site, unavailable ---------------------------------------------------------------------------
@@ -173,16 +172,16 @@ def test_a_bench_id_that_is_not_a_number_is_422(rig: Rig, path: str) -> None:
 def test_each_command_type_is_accepted_and_the_bench_shows_it(rig: Rig) -> None:
     b = new_bench(rig)
     assert command(rig, b, add_body("a", "x")) == (200, {"seq": 1, "piece_id": 1})
-    assert command(rig, b, add_body("b", "y", "document", "large"))[0] == 200
+    assert command(rig, b, add_body("b", "y", "document"))[0] == 200
     assert command(rig, b, {"type": "edit", "piece_id": 1, "base_version": 1, "title": "c", "body": "z"}) == (
         200, {"seq": 3, "piece_id": 1})
-    assert command(rig, b, {"type": "move", "piece_id": 2, "placement": {"order": 0, "size": "full"}}) == (
+    assert command(rig, b, {"type": "move", "piece_id": 2, "placement": {"order": 0}}) == (
         200, {"seq": 4, "piece_id": 2})
     assert command(rig, b, {"type": "undo", "seq": 3}) == (200, {"seq": 5, "piece_id": 1})
     assert command(rig, b, {"type": "remove", "piece_id": 1}) == (200, {"seq": 6, "piece_id": 1})
     got = detail(rig, b)
-    assert [(p.id, p.kind, p.title, p.body, p.piece_version, p.placement.order, p.placement.size, p.changed_by) for p in got.pieces] == [
-        (2, "document", "b", "y", 1, 0, "full", 4)]
+    assert [(p.id, p.kind, p.title, p.body, p.piece_version, p.placement.order, p.changed_by) for p in got.pieces] == [
+        (2, "document", "b", "y", 1, 0, 4)]
     assert [(r.seq, r.type, r.outcome, r.author, r.piece_id) for r in got.recent] == [
         (i + 1, t, "accepted", "person", p) for i, (t, p) in enumerate(
             [("add", 1), ("add", 2), ("edit", 1), ("move", 2), ("undo", 1), ("remove", 1)])]
@@ -192,9 +191,9 @@ def test_each_command_type_is_accepted_and_the_bench_shows_it(rig: Rig) -> None:
 REFUSALS = [("unknown_kind", add_body(kind="hologram")), ("bad_title", add_body(title="")),
             ("bad_title", add_body(title="   ")), ("too_long", add_body(text="x" * 4001)),
             ("no_such_piece", {"type": "remove", "piece_id": 9}),
-            ("no_such_piece", {"type": "move", "piece_id": 9, "placement": {"order": 0, "size": "small"}}),
+            ("no_such_piece", {"type": "move", "piece_id": 9, "placement": {"order": 0}}),
             ("no_such_piece", {"type": "edit", "piece_id": 9, "base_version": 1, "title": "a", "body": ""}),
-            ("bad_place", {"type": "move", "piece_id": 1, "placement": {"order": 1, "size": "small"}}),
+            ("bad_place", {"type": "move", "piece_id": 1, "placement": {"order": 1}}),
             ("stale_base", {"type": "edit", "piece_id": 1, "base_version": 1, "title": "a", "body": ""}),
             ("nothing_to_undo", {"type": "undo", "seq": 99}), ("nothing_to_undo", {"type": "undo", "seq": 0}),
             ("changed_since", {"type": "undo", "seq": 1}), ("bad_wake", add_body(kind="wake", text="not a rule")),
@@ -244,10 +243,10 @@ def test_a_full_bench_is_409_full_at_the_shipped_limit(rig: Rig) -> None:
 
 
 BAD = [{}, {"type": "paint"}, {"type": "remove"}, {"type": "remove", "piece_id": "x"}, {"type": "remove", "piece_id": 1, "x": 1},
-       {"type": "undo", "seq": None}, add_body(size="huge"), add_body(title="t" * 121), add_body(text="x" * 200001),
+       {"type": "undo", "seq": None}, add_body(title="t" * 121), add_body(text="x" * 200001),
        add_body(kind=""), add_body(kind="k" * 65), {**add_body(), "by": 5},
-       {"type": "move", "piece_id": 1, "placement": {"order": -1, "size": "small"}},
-       {"type": "move", "piece_id": 1, "placement": {"order": 0}}, {"type": "edit", "piece_id": 1, "base_version": [1],
+       {"type": "move", "piece_id": 1, "placement": {"order": -1}},
+       {"type": "edit", "piece_id": 1, "base_version": [1],
                                                               "title": "a", "body": ""}]
 
 
@@ -332,7 +331,7 @@ def test_numbers_no_database_integer_holds_in_a_command_are_refused_by_reason(ri
     command(rig, b, add_body("a"))
     bodies = [{"type": "remove", "piece_id": HUGE}, {"type": "undo", "seq": -HUGE}, {"type": "undo", "seq": HUGE},
               {"type": "edit", "piece_id": 1, "base_version": HUGE, "title": "a", "body": ""},
-              {"type": "move", "piece_id": 1, "placement": {"order": HUGE, "size": "small"}}]
+              {"type": "move", "piece_id": 1, "placement": {"order": HUGE}}]
     got = [command(rig, b, body) for body in bodies]
     assert [s for s, _ in got] == [409] * 5
     assert [CommandRefused.model_validate(raw).reason for _, raw in got] == [

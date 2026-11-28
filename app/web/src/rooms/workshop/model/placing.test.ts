@@ -6,7 +6,7 @@ import { cardLinks, cardWidth, heldBox, mapPiece, placeOf, wholePt } from './pla
 const kind = (format: PieceKind['format'], extra: Partial<PieceKind> = {}): PieceKind =>
   ({ name: format, family: 'stored', label: format, max_chars: 100, format, language: null, ...extra });
 const piece = (id: number, placement: Partial<BenchPiece['placement']> = {}): BenchPiece =>
-  ({ id, placement: { order: id, size: 'medium', pin: null, box: null, ...placement } }) as BenchPiece;
+  ({ id, placement: { order: id, pin: null, box: null, ...placement } }) as BenchPiece;
 
 test('a card is as wide as its kind wants', () => {
   assert.equal(cardWidth(kind('plain')), 300);

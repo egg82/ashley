@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from ashley.workshop.commands import Add, Archive, Command, Edit, Move, Remove, Restore, Run, Undo
 from ashley.workshop.decide import EMPTY, Accepted, BenchState, Decision, Refused, decide, replay
-from ashley.workshop.model import SIZES, By, Place, Text
+from ashley.workshop.model import SIZES, By, Place, Size, Text
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from shelf_support import RULES, core, ids
@@ -57,7 +57,7 @@ def check_invariants(state: BenchState) -> None:
 class Model:
     """The layout (id to size, in order) and the shelf (ids, newest first) as the contract says a step moves them."""
 
-    layout: list[tuple[int, str]] = field(default_factory=list[tuple[int, str]])
+    layout: list[tuple[int, Size | None]] = field(default_factory=list[tuple[int, Size | None]])
     shelf: list[int] = field(default_factory=list[int])
 
     def of(self, state: BenchState) -> None:
@@ -87,7 +87,7 @@ def step_model(model: Model, command: Command, seq: int) -> None:
     elif isinstance(command, Remove):
         model.layout = [(i, s) for i, s in model.layout if i != command.piece_id]
     elif isinstance(command, Move):
-        rest = [(i, s) for i, s in model.layout if i != command.piece_id]
+        rest: list[tuple[int, Size | None]] = [(i, s) for i, s in model.layout if i != command.piece_id]
         rest.insert(command.place.order, (command.piece_id, command.place.size))
         model.layout = rest
     elif isinstance(command, Archive):

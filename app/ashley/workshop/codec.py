@@ -27,7 +27,7 @@ def encode_command(command: Command) -> Json:
 def _encode(command: Command) -> Json:
     out: Json = {"type": type_of(command)}
     if isinstance(command, Add):
-        return {**out, "kind": command.kind, **_text(command.text), "size": command.size}
+        return {**out, "kind": command.kind, **_text(command.text), **_sized(command.size)}
     if isinstance(command, Undo):
         return {**out, "seq": command.seq}
     if isinstance(command, Rename):
@@ -65,7 +65,7 @@ def decode_command(raw: Json, by: By) -> Command:
 def _decode(raw: Json, by: By) -> Command:
     kind = raw["type"]
     if kind == "add":
-        return Add(by, str(raw["kind"]), _text_of(raw), _size(raw["size"]))
+        return Add(by, str(raw["kind"]), _text_of(raw), _size(raw.get("size")))
     if kind == "remove":
         return Remove(by, int(raw["piece_id"]))
     if kind == "move":
@@ -230,12 +230,12 @@ def _text_of(raw: Json) -> Text:
 
 
 def _place(place: Place) -> Json:
-    return {"order": place.order, "size": place.size, **({} if place.pin is None else {"pin": _pin(place.pin)}),
+    return {"order": place.order, **_sized(place.size), **({} if place.pin is None else {"pin": _pin(place.pin)}),
             **({} if place.box is None else {"box": _box(place.box)})}
 
 
 def _place_of(raw: Json) -> Place:
-    return Place(int(raw["order"]), _size(raw["size"]), _pin_of(raw.get("pin")), _box_of(raw.get("box")))
+    return Place(int(raw["order"]), _size(raw.get("size")), _pin_of(raw.get("pin")), _box_of(raw.get("box")))
 
 
 def _kept[T](name: str, value: T | None | Keep, encode: Callable[[T], Json]) -> Json:
@@ -261,7 +261,13 @@ def _box_of(raw: Json | None) -> Box | None:
     return None if raw is None else Box(int(raw["w"]), int(raw["h"]))
 
 
-def _size(raw: object) -> Size:
+def _sized(size: Size | None) -> Json:
+    return {} if size is None else {"size": size}
+
+
+def _size(raw: object) -> Size | None:
+    if raw is None:
+        return None
     for size in SIZES:
         if size == raw:
             return size

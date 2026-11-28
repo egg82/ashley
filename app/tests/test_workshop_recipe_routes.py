@@ -18,8 +18,8 @@ URL = "https://recipes.example/recipes/mash"
 FOUND = recipe_ld.recipe_in(page_of(MASH), URL)
 assert FOUND is not None
 BODY = recipe.body_of(dataclasses.replace(FOUND, serves=6))
-RECIPE = {"type": "add", "kind": "recipe", "title": "Mash", "body": BODY, "size": "medium"}
-NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"}
+RECIPE = {"type": "add", "kind": "recipe", "title": "Mash", "body": BODY}
+NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x"}
 
 
 def read(client: TestClient, bench: int) -> BenchDetail:

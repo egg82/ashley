@@ -97,7 +97,7 @@ def test_a_document_piece_gets_the_address_as_its_first_paragraph() -> None:
     got = call(BenchTools(OWNER.household_id, OWNER.person_id, 4, results=store, said=by_people(5)), "bench_add",
                kind="document", title="Notes", result=1)
     assert not got.is_error, got.content
-    assert shop.seen == [Add(HER, "document", Text("Notes", f"Source: {PASTE}\n\nalpha\nbeta"), "medium")]
+    assert shop.seen == [Add(HER, "document", Text("Notes", f"Source: {PASTE}\n\nalpha\nbeta"))]
 
 
 def test_a_page_longer_than_the_kind_holds_is_refused_and_nothing_is_added() -> None:

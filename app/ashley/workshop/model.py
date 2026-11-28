@@ -34,11 +34,12 @@ class Box:
 @dataclass(frozen=True)
 class Place:
     """Where a piece sits on its bench: `order`, its position among the bench's pieces (0 first; a bench's pieces hold
-    exactly the orders 0 to n-1), and `size`; `pin` and `box`, None until a person drags or resizes the piece on the
-    map. A value of its own so layout can move to Surfaces whole."""
+    exactly the orders 0 to n-1); `pin` and `box`, None until a person drags or resizes the piece on the map; and
+    `size`, the size class of a piece on a device's screen, None on a bench. A value of its own so layout can move to
+    Surfaces whole."""
 
     order: int
-    size: Size
+    size: Size | None = None
     pin: Pin | None = None
     box: Box | None = None
 

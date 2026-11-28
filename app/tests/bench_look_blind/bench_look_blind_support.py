@@ -291,7 +291,7 @@ class Rig:
 
     def add_note(self, bench_id: int, title: str = "n", body: str = "text") -> int:
         got = self.client.post(f"/api/benches/{bench_id}/commands",
-                               json={"type": "add", "kind": "note", "title": title, "body": body, "size": "small"})
+                               json={"type": "add", "kind": "note", "title": title, "body": body})
         assert got.status_code == 200, got.text
         return int(self.pieces(bench_id)[-1]["id"])
 

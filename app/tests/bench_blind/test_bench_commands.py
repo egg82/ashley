@@ -23,15 +23,14 @@ def test_add_builds_her_add_applies_it_logs_it_as_hers_and_announces_it_to_the_o
     async def scenario() -> None:
         async with env(db_url) as e:
             bench = await opened(e, e.world.alana)
-            result = await tools(e, bench).call(call("bench_add", kind="document", title="Plan", body="Dig.",
-                                                     size="large"))
+            result = await tools(e, bench).call(call("bench_add", kind="document", title="Plan", body="Dig."))
             assert not result.is_error
             rows = await log(e, e.world.alana, bench)
-            assert [r.command for r in rows] == [Add(HER, "document", Text("Plan", "Dig."), "large")]
+            assert [r.command for r in rows] == [Add(HER, "document", Text("Plan", "Dig."))]
             assert (rows[0].outcome, rows[0].by.author) == ("accepted", "ashley")
             view = await e.workshop.read(e.world.alana, bench)
             assert [(p.kind, p.text, p.place) for p in view.pieces] == [("document", Text("Plan", "Dig."),
-                                                                         Place(0, "large"))]
+                                                                         Place(0))]
             changed = [x for x in e.live.published if isinstance(x, BenchChanged)]
             assert [(x.bench_id, x.seq, x.shown) for x in changed] == [
                 (bench, 1, Shown(e.world.alana.household_id, e.world.alana.person_id))]
@@ -49,7 +48,7 @@ def test_a_refused_add_is_a_tool_error_naming_the_reason_logged_refused_and_anno
                      "too_long": dict(kind="note", title="t", body="x" * 4001),
                      "bad_title": dict(kind="note", title=" \t ", body="b")}
             for reason, args in cases.items():
-                result = await t.call(call("bench_add", size="small", **args))
+                result = await t.call(call("bench_add", **args))
                 assert result.is_error and reason in result.content, (reason, result.content)
             rows = await log(e, e.world.alana, bench)
             assert [r.outcome for r in rows] == list(cases)
@@ -66,7 +65,7 @@ def test_a_nul_in_her_title_or_body_is_a_bad_text_tool_error_and_applies_nothing
             bench = await opened(e, e.world.alana)
             t = tools(e, bench)
             for args in (dict(title="a\x00b", body="b"), dict(title="t", body="a\x00b")):
-                result = await t.call(call("bench_add", kind="note", size="small", **args))
+                result = await t.call(call("bench_add", kind="note", **args))
                 assert result.is_error and "bad_text" in result.content, result.content
             assert await log(e, e.world.alana, bench) == []
             assert await pieces(e, e.world.alana, bench) == []
@@ -81,7 +80,7 @@ def test_a_full_bench_refuses_her_add_as_full(db_url: str) -> None:
             bench = await opened(e, e.world.alana)
             for _ in range(50):
                 await put(e, e.world.alana, bench, person_add(e.world.alana))
-            result = await tools(e, bench).call(call("bench_add", kind="note", title="t", body="b", size="small"))
+            result = await tools(e, bench).call(call("bench_add", kind="note", title="t", body="b"))
             assert result.is_error and "full" in result.content
             assert len(await pieces(e, e.world.alana, bench)) == 50
 
@@ -92,8 +91,7 @@ def test_a_huge_body_is_refused_not_stored_and_does_not_raise(db_url: str) -> No
     async def scenario() -> None:
         async with env(db_url) as e:
             bench = await opened(e, e.world.alana)
-            result = await tools(e, bench).call(call("bench_add", kind="document", title="t", body="x" * 3_000_000,
-                                                     size="full"))
+            result = await tools(e, bench).call(call("bench_add", kind="document", title="t", body="x" * 3_000_000))
             assert result.is_error and "too_long" in result.content
             assert "xxxxxxxxxxxxxxxxxxxx" not in result.content
 
@@ -107,9 +105,9 @@ def test_move_and_remove_build_her_commands_and_a_bad_place_or_missing_piece_is_
             for title in ("a", "b", "c"):
                 await put(e, e.world.alana, bench, person_add(e.world.alana, title))
             t = tools(e, bench)
-            assert not (await t.call(call("bench_move", piece_id=3, order=0, size="full"))).is_error
+            assert not (await t.call(call("bench_move", piece_id=3, order=0))).is_error
             assert [(p[1], p[4]) for p in await pieces(e, e.world.alana, bench)] == [("c", 0), ("a", 1), ("b", 2)]
-            bad = await t.call(call("bench_move", piece_id=1, order=9, size="small"))
+            bad = await t.call(call("bench_move", piece_id=1, order=9))
             assert bad.is_error and "bad_place" in bad.content
             gone = await t.call(call("bench_remove", piece_id=77))
             assert gone.is_error and "no_such_piece" in gone.content
@@ -117,7 +115,7 @@ def test_move_and_remove_build_her_commands_and_a_bad_place_or_missing_piece_is_
             rows = await log(e, e.world.alana, bench)
             assert [(type(r.command), r.outcome) for r in rows[3:]] == [
                 (Move, "accepted"), (Move, "bad_place"), (Remove, "no_such_piece"), (Remove, "accepted")]
-            assert [r.command for r in rows[3:]][0] == Move(HER, 3, Place(0, "full"))
+            assert [r.command for r in rows[3:]][0] == Move(HER, 3, Place(0))
             assert all(r.by == HER for r in rows[3:])
 
     run(scenario())
@@ -168,12 +166,11 @@ def test_the_tools_and_a_person_leave_the_same_log_apart_from_who(db_url: str) -
             a, b = await opened(e, e.world.alana, "tools"), await opened(e, e.world.alana, "person")
             me = By(e.world.alana.person_id)
             t = tools(e, a)
-            script = [(call("bench_add", kind="note", title="x", body="1", size="medium"), Add(me, "note",
-                                                                                              Text("x", "1"), "medium")),
-                      (call("bench_add", kind="document", title="y", body="2", size="full"),
-                       Add(me, "document", Text("y", "2"), "full")),
-                      (call("bench_move", piece_id=1, order=1, size="small"), Move(me, 1, Place(1, "small"))),
-                      (call("bench_move", piece_id=1, order=5, size="small"), Move(me, 1, Place(5, "small"))),
+            script = [(call("bench_add", kind="note", title="x", body="1"), Add(me, "note", Text("x", "1"))),
+                      (call("bench_add", kind="document", title="y", body="2"),
+                       Add(me, "document", Text("y", "2"))),
+                      (call("bench_move", piece_id=1, order=1), Move(me, 1, Place(1))),
+                      (call("bench_move", piece_id=1, order=5), Move(me, 1, Place(5))),
                       (call("bench_edit", piece_id=2, base_version=1, title="Y", body="22"),
                        Edit(me, 2, 1, Text("Y", "22"))),
                       (call("bench_edit", piece_id=2, base_version=1, title="Z", body="3"),
@@ -201,7 +198,7 @@ def test_a_closed_bench_takes_no_change_from_her_and_the_error_is_a_result(db_ur
             await put(e, e.world.alana, bench, person_add(e.world.alana))
             await e.workshop.close(e.world.alana, bench)
             t = tools(e, bench)
-            result = await t.call(call("bench_add", kind="note", title="t", body="b", size="small"))
+            result = await t.call(call("bench_add", kind="note", title="t", body="b"))
             assert result.is_error
             assert (await t.call(call("bench_remove", piece_id=1))).is_error
             assert len(await log(e, e.world.alana, bench)) == 1

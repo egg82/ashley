@@ -26,6 +26,7 @@ from ..channels.kiosk.glance import glance
 from ..channels.model import Device, Inbound
 from ..live.events import DeviceViewer
 from ..live.screens import Screens, ScreensUnavailable
+from ..workshop.model import Piece
 from ..workshop.workshop import ScreenNotFound, Workshop, WorkshopUnavailable
 from . import chat
 from .chat_models import KioskMessage
@@ -152,8 +153,14 @@ async def kiosk_layout(device: Kiosk) -> KioskLayout | JSONResponse:
         return _unpaired()
     except WorkshopUnavailable:
         return _unavailable()
-    return KioskLayout(laid_out=view.laid_out, seq=view.seq, placed=[
-        KioskPiece(id=p.id, kind=p.kind, order=p.place.order, size=p.place.size) for p in view.pieces])
+    return KioskLayout(laid_out=view.laid_out, seq=view.seq, placed=[_placed(p) for p in view.pieces])
+
+
+def _placed(piece: Piece) -> KioskPiece:
+    """A piece of a screen, which always has its size (only a bench's pieces have none)."""
+    if piece.place.size is None:
+        raise ValueError(f"screen piece {piece.id} has no size")
+    return KioskPiece(id=piece.id, kind=piece.kind, order=piece.place.order, size=piece.place.size)
 
 
 async def _controls_of(device: Device) -> tuple[Control, ...] | JSONResponse:

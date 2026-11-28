@@ -89,12 +89,12 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
 - **What is not on the layout now but may be wanted again goes on the bench's shelf** (a bench lasts as long as its
   project, so what it holds outgrows `max_pieces`). `Archive` takes a piece off the layout onto the shelf, the pieces
   after it moving up; it no longer counts toward `max_pieces`, keeps its text, version and runs, and takes no edit,
-  move, run or remove (`no_such_piece`). `Restore` brings it back last on the layout at the size it had, refused `full`
+  move, run or remove (`no_such_piece`). `Restore` brings it back last on the layout, refused `full`
   when there is no room. Each is undone by the other through the ordinary undo rules: undoing an archive puts the piece
   back at its old order (or last), refused `full` with no room; undoing a restore archives it again; a change before
   either is `changed_since` until the archive or restore is itself undone. The shelf is served most recently archived
   first (`BenchDetail.shelf`, the bench-tools' `bench_shelf`), and a shelved piece is a `bench_pieces` row marked
-  `shelved`. Remove stays for what is not wanted at all. Rejected: a Restore naming its order and size, which a Move
+  `shelved`. Remove stays for what is not wanted at all. Rejected: a Restore naming its order, which a Move
   after it already does, as its own undoable step; removing straight off the shelf, which would need a Remove whose
   undo returns to the shelf; nothing asks for it yet, so a shelved piece is restored, then removed.
 - **Pieces are linked by Commands** (`ashley.workshop.links`): `Link` and `Unlink` name a from piece, a kind and a to
@@ -115,11 +115,12 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   both carry her `By.turn`, so "undo that" takes a turn's links back with its pieces. A screen takes no link. Rejected:
   links as a field of the piece's text set by Edit, which would bump its version and make a stale link refuse an edit;
   deleting a removed piece's links, which would leave its undo bringing it back unlinked.
-- **Layout is an order and a size class, plus a person's pin and box** (`ashley.workshop.model.Place`): the pieces
-  hold orders 0 to n-1, the reading order her `bench_read` and the lists use, and each has `small`, `medium`, `large`
-  or `full`, a share of the row the client maps to its grid, until the mindmap view replaces the grid and the size
-  class goes. A move names the new order and size and the others shift, so every screen computes the same arrangement
-  and animates from the old one by piece id. `pin` (a top-left corner in bench units, the goal centred at the origin)
+- **Layout is an order, plus a person's pin and box** (`ashley.workshop.model.Place`): the pieces hold orders 0 to
+  n-1, the reading order her `bench_read` and the lists use, and the mindmap places each by its links and its own
+  size. A move names the new order and the others shift, so every screen computes the same arrangement and animates
+  from the old one by piece id. A piece on a device's screen also has a size class (`small`, `medium`, `large` or
+  `full`, a share of the row), the one place `Place.size` is set; a bench's pieces have none, and pieces stored before
+  keep the one they had unread. `pin` (a top-left corner in bench units, the goal centred at the origin)
   and `box` (a width and height) stay None until a person drags or resizes the piece on the map; `workshop.json`'s
   `layout` bounds both, and a move outside them is refused `bad_place`.
   They ride on `Move` (`ashley.workshop.pins`): a Move already replaces the piece's Place and its undo puts the whole
@@ -187,7 +188,7 @@ the app path are [#156](https://github.com/egg82/ashley/issues/156).
   window of at most `piece_chars` from an `offset`), `bench_add`, `bench_edit` (with the version she read),
   `bench_replace`, `bench_move`, `bench_remove`, `bench_archive`, `bench_shelf` (the shelf's ids, kinds, titles and
   versions; `bench_read` says how many it holds as `shelved`), `bench_restore`, `bench_undo` and `bench_link`.
-  She arranges what she adds in the turn she adds it (order by how a reader takes the pieces, size by what each is),
+  She arranges what she adds in the turn she adds it (order by how a reader takes the pieces),
   tidies a bench that has grown untidy once, and leaves a tidy one alone. `bench_read` gives each piece
   `last_changed_by` (`you` or `person`, from the command it last changed by), and her guidance has her fit her pieces
   around a person's and never move or resize one. The guidance is instruction data (`bench_specs.INSTRUCTIONS`). Rejected:

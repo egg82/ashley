@@ -9,7 +9,7 @@ from typing import Any, get_args
 from ..inference.model import ToolSpec
 from ..workshop.commands import Add, Archive, Command, Cue, CueAction, Edit, Link, Move, Remove, Rename, Restore, Undo, Unlink
 from ..workshop.json_shape import list_of, object_of
-from ..workshop.model import HER, SIZES, Place, Size, Text
+from ..workshop.model import HER, Place, Text
 from .tainted import her
 
 
@@ -120,7 +120,7 @@ def new_links_of(args: Mapping[str, object]) -> tuple[NewLink, ...]:
 
 
 def _add(args: Mapping[str, object]) -> Command:
-    return Add(her(), _str(args, "kind"), Text(_str(args, "title"), _str(args, "body")), _size(args, "medium"))
+    return Add(her(), _str(args, "kind"), Text(_str(args, "title"), _str(args, "body")))
 
 
 def _edit(args: Mapping[str, object]) -> Command:
@@ -131,7 +131,7 @@ def _move(args: Mapping[str, object]) -> Command:
     order = _int(args, "order")
     if order < 0:
         raise BadArguments("order is 0 or more")
-    return Move(HER, _int(args, "piece_id"), Place(order, _size(args, None)))
+    return Move(HER, _int(args, "piece_id"), Place(order))
 
 
 def _remove(args: Mapping[str, object]) -> Command:
@@ -192,14 +192,6 @@ def _int(args: Mapping[str, object], key: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise BadArguments(f"{key} is a whole number")
     return value
-
-
-def _size(args: Mapping[str, object], default: Size | None) -> Size:
-    value = args.get("size", default)
-    for size in SIZES:
-        if value == size:
-            return size
-    raise BadArguments("size is one of " + ", ".join(SIZES))
 
 
 _BUILDERS = {"bench_add": _add, "bench_edit": _edit, "bench_move": _move, "bench_remove": _remove,

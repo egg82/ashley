@@ -27,10 +27,10 @@ def now_of(shop: FakeWorkshop) -> str:
     return got
 
 
-def test_c9_the_view_names_each_household_piece_by_id_kind_title_version_order_size_and_body_start() -> None:
+def test_c9_the_view_names_each_household_piece_by_id_kind_title_version_order_and_body_start() -> None:
     now = now_of(workshop(NOTE, MODEL))
     for p in (NOTE, MODEL):
-        for field in (str(p.id), p.kind, p.text.title, str(p.version), str(p.place.order), p.place.size):
+        for field in (str(p.id), p.kind, p.text.title, str(p.version), str(p.place.order)):
             assert field in now
     assert BODY_OPENING in now
 

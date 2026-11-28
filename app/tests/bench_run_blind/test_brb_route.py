@@ -19,8 +19,8 @@ from contract.conversations_support import scalar
 from respond_support import Fakes, wired as wired
 
 SHIPPED = Path(__file__).resolve().parents[2] / "ashley" / "runs" / "runs.json"
-CODE = {"type": "add", "kind": "code", "title": "sum", "body": "print(1+2)", "size": "medium"}
-NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x", "size": "small"}
+CODE = {"type": "add", "kind": "code", "title": "sum", "body": "print(1+2)"}
+NOTE = {"type": "add", "kind": "note", "title": "n", "body": "x"}
 
 
 @pytest.fixture

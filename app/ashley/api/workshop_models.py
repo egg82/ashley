@@ -9,7 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 
 from ..workshop import rules as workshop_rules
 from ..workshop.commands import CommandType, Reason
-from ..workshop.model import Size
 from ..workshop.rules import BodyFormat, Family
 from ..text import NoNul
 from .bench_embed_models import PieceVideo
@@ -53,15 +52,13 @@ class LinkKind(BaseModel):
 
 
 class WorkshopKinds(BaseModel):
-    """What a bench allows, so the client hard-codes none of it: the piece kinds, the size classes a piece may take
-    (`small` a quarter of the width, `medium` a half, `large` three quarters, `full` the row), the most pieces a bench
-    holds and the longest title of a bench or a piece; the languages a code piece can be run in
+    """What a bench allows, so the client hard-codes none of it: the piece kinds, the most pieces a bench holds and
+    the longest title of a bench or a piece; the languages a code piece can be run in
     (`run_languages`, empty while nothing can be run) and the longest body that can be run (`run_max_chars`); and the
     kinds of link between pieces (`link_kinds`)."""
 
     kinds: list[PieceKind]
     link_kinds: list[LinkKind]
-    sizes: list[Size]
     max_pieces: int
     title_max_chars: int
     run_languages: list[str]
@@ -129,15 +126,13 @@ class PieceBox(BaseModel):
 
 
 class PiecePlace(BaseModel):
-    """Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), its
-    size class, and the `pin` and `box` a person gave it on the bench's map, null until they did; a read always
-    carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has
+    """Where a piece sits: `order` among the bench's pieces (0 first; a bench's pieces hold exactly 0 to n-1), and the
+    `pin` and `box` a person gave it on the bench's map, null until they did; a read always carries both. In a move, a `pin` or `box` given is set, null clears it, and one left out stays as the piece has
     it; one outside the bench's bounds is refused `bad_place`."""
 
     model_config = ConfigDict(extra="forbid")
 
     order: int = Field(ge=0)
-    size: Size
     pin: PiecePin | None = None
     box: PieceBox | None = None
 
@@ -224,7 +219,6 @@ class AddPieceRequest(BaseModel):
     kind: NoNul = Field(min_length=1, max_length=64)
     title: NoNul = Field(max_length=_TITLE)
     body: NoNul = Field(max_length=_BODY)
-    size: Size
 
 
 class RemovePieceRequest(BaseModel):

@@ -1,5 +1,4 @@
-// A bench's order on this screen. Pure. Each size class's share of the row (`WorkshopKinds.sizes`: small a quarter,
-// medium a half, large three quarters, full the row) is the grid's, in `workshop.css`.
+// A bench's reading order. Pure.
 import type { BenchPiece } from '../../../api/types';
 
 /** The pieces in their order. */

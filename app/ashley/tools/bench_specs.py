@@ -1,10 +1,9 @@
-"""The bench tools as the model is offered them. The kinds and sizes come from the Workshop's rules, so a new kind in
+"""The bench tools as the model is offered them. The kinds come from the Workshop's rules, so a new kind in
 `kinds.json` is offered without a change here."""
 
 from collections.abc import Mapping
 
 from ..inference.model import ToolSpec
-from ..workshop.model import SIZES
 from ..workshop.rules import Rules
 
 INSTRUCTIONS = (
@@ -87,8 +86,7 @@ INSTRUCTIONS = (
     "rewrites the section it changes and drops or moves what it supersedes, never adding the new text after the old; add a piece only for a different thing, such "
     "as each automation as its own piece. Arrange what you add in the same turn: a piece you add goes where it belongs "
     "among the others, in the order a reader takes it (the thing itself before what supports it, what a piece depends "
-    "on before it), and at a size that fits what it is (a long document or code wide, a note or a link small), so the "
-    "bench reads as laid out, not as a heap in the order you made it. Set the size in bench_add and use bench_move "
+    "on before it), so the bench reads as laid out, not as a heap in the order you made it. Use bench_move "
     "only when the order is not the end. When a piece you add is part of another, depends on another, or is a new "
     "version of one, link it in the same turn: links in bench_add, or bench_link for pieces already there. "
     "Pieces whose last_changed_by is person, or that are pinned, are laid out as a person left them: do not move or "
@@ -105,9 +103,6 @@ _STR: Mapping[str, object] = {"type": "string"}
 _RESULT: Mapping[str, object] = {"type": "integer", "description": "For a site or video piece, or a code, document, reader or recipe piece of a page read this turn (by look_up, or bench_read_piece on a site or video piece): the number of the result, as look_up's references or that read give it, in place of a body"}
 _SERVES: Mapping[str, object] = {"type": "integer", "description": "For a recipe piece: how many people the work is for; the server scales the recipe's amounts to it. On an edit, alone, it changes only that"}
 _START: Mapping[str, object] = {"type": "integer", "description": "With result, for a video: the second to start at"}
-_SIZE: Mapping[str, object] = {"type": "string", "enum": list(SIZES),
-                               "description": "share of the row: small a quarter, medium a half, large three "
-                                              "quarters, full the whole row"}
 
 
 def specs(rules: Rules) -> tuple[ToolSpec, ...]:
@@ -124,7 +119,7 @@ def specs(rules: Rules) -> tuple[ToolSpec, ...]:
                  "`offset` plus the length of `body`.", _object({"piece_id": _INT, "offset": _INT}, ("piece_id",)),
                  reads=True, outside=True),
         ToolSpec("bench_add", "Add a piece at the end of this bench. Returns its id.",
-                 _object({"kind": kind, "title": _STR, "body": _STR, "size": _SIZE, "result": _RESULT, "start": _START,
+                 _object({"kind": kind, "title": _STR, "body": _STR, "result": _RESULT, "start": _START,
                           "serves": _SERVES, "links": links},
                          ("kind", "title")), outside=False, tier="runs"),
         ToolSpec("bench_edit", "Replace a piece's title and body, based on the version you read whole.",
@@ -136,15 +131,15 @@ def specs(rules: Rules) -> tuple[ToolSpec, ...]:
                  "edit a piece too long to read whole.",
                  _object({"piece_id": _INT, "base_version": _INT, "old": _STR, "new": _STR},
                          ("piece_id", "base_version", "old", "new")), outside=False, tier="runs"),
-        ToolSpec("bench_move", "Put a piece at another order (0 first; the others shift) and size.",
-                 _object({"piece_id": _INT, "order": _INT, "size": _SIZE}, ("piece_id", "order", "size")), outside=False, tier="runs"),
+        ToolSpec("bench_move", "Put a piece at another order (0 first; the others shift).",
+                 _object({"piece_id": _INT, "order": _INT}, ("piece_id", "order")), outside=False, tier="runs"),
         ToolSpec("bench_remove", "Take a piece off this bench for good: for what is not wanted at all.",
                  _object({"piece_id": _INT}, ("piece_id",)), outside=False, tier="runs"),
         ToolSpec("bench_archive", "Put a piece on this bench's shelf: it leaves the layout and makes room, and is kept "
                  "whole, with its last run, to restore later.", _object({"piece_id": _INT}, ("piece_id",)), outside=False, tier="runs"),
         ToolSpec("bench_shelf", "List this bench's shelf: the archived pieces, the most recently archived first, each "
                  "with its id, kind, title and version.", _object({}, ()), reads=True, outside=True),
-        ToolSpec("bench_restore", "Bring a piece back from the shelf, last on the bench at the size it had.",
+        ToolSpec("bench_restore", "Bring a piece back from the shelf, last on the bench.",
                  _object({"piece_id": _INT}, ("piece_id",)), outside=False, tier="runs"),
         ToolSpec("bench_undo", "Undo the change with this seq (yours or theirs); `undo_next` in bench_read is the next-older change not yet undone. An undo cannot be undone. "
                  "With `whole_turn` true, undo every change you made in the turn that made that seq, together: if any of them "

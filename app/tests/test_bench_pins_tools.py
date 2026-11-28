@@ -51,13 +51,13 @@ def test_her_move_keeps_a_persons_pin_and_box_and_her_read_says_pinned(db_url: s
             assert (await shop.apply(alana, bench, pinned)).outcome == "accepted"
             await hers.call(ToolCall("c", "bench_edit", {"piece_id": 1, "base_version": 1, "title": "Plan",
                                                          "body": "measure twice"}))
-            sneaky = await hers.call(ToolCall("d", "bench_move", {"piece_id": 1, "order": 1, "size": "full",
+            sneaky = await hers.call(ToolCall("d", "bench_move", {"piece_id": 1, "order": 1,
                                                                   "pin": None}))
             assert sneaky.is_error and sneaky.content.startswith("bad_arguments:")
-            moved = await hers.call(ToolCall("e", "bench_move", {"piece_id": 1, "order": 1, "size": "full"}))
+            moved = await hers.call(ToolCall("e", "bench_move", {"piece_id": 1, "order": 1}))
             assert not moved.is_error, moved.content
             view = await shop.read(alana, bench)
-            assert view.pieces[1].place == Place(1, "full", Pin(-200, 60), Box(480, 320))
+            assert view.pieces[1].place == Place(1, None, Pin(-200, 60), Box(480, 320))
             read = json.loads((await hers.call(ToolCall("f", "bench_read", {}))).content)
             assert [(p["id"], p.get("pinned"), p["last_changed_by"]) for p in read["pieces"]] == [
                 (2, None, "you"), (1, True, "you")]

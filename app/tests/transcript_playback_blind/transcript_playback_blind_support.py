@@ -181,7 +181,7 @@ class Rig:
         return out
 
     def add_reader(self, bench: int, body: str, title: str = "t") -> int:
-        done = self.command(bench, type="add", kind="reader", title=title, body=body, size="medium")
+        done = self.command(bench, type="add", kind="reader", title=title, body=body)
         assert done.get("piece_id") is not None, done
         return int(done["piece_id"])
 

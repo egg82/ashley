@@ -60,9 +60,8 @@ def test_the_catalogue_offers_her_bench_tools_with_the_rules_kinds() -> None:
 
 
 @pytest.mark.parametrize(("name", "args", "command"), [
-    ("bench_add", {"kind": "note", "title": "t", "body": "b", "size": "full"}, Add(HER, "note", Text("t", "b"), "full")),
-    ("bench_add", {"kind": "note", "title": "t", "body": "b"}, Add(HER, "note", Text("t", "b"), "medium")),
-    ("bench_move", {"piece_id": 3, "order": 0, "size": "small"}, Move(HER, 3, Place(0, "small"))),
+    ("bench_add", {"kind": "note", "title": "t", "body": "b"}, Add(HER, "note", Text("t", "b"))),
+    ("bench_move", {"piece_id": 3, "order": 0}, Move(HER, 3, Place(0))),
     ("bench_remove", {"piece_id": 3}, Remove(HER, 3)),
     ("bench_archive", {"piece_id": 3}, Archive(HER, 3)),
     ("bench_restore", {"piece_id": 3}, Restore(HER, 3)),
@@ -173,9 +172,7 @@ def test_a_bench_gone_closed_or_unreachable_is_an_error_naming_it(shop: FakeWork
 
 @pytest.mark.parametrize(("name", "args"), [
     ("bench_add", {"kind": "note", "title": 3, "body": "b"}),
-    ("bench_add", {"kind": "note", "title": "t", "body": "b", "size": "huge"}),
-    ("bench_move", {"piece_id": 1, "order": -1, "size": "small"}),
-    ("bench_move", {"piece_id": 1, "order": 0}),
+    ("bench_move", {"piece_id": 1, "order": -1}),
     ("bench_remove", {"piece_id": True}),
     ("bench_archive", {"piece_id": "1"}),
     ("bench_restore", {}),
@@ -216,7 +213,7 @@ def test_an_argument_the_tool_does_not_define_is_an_error_naming_it_and_nothing_
            "bench_add": {"kind": "note", "title": "t", "body": "b"},
            "bench_edit": {"piece_id": 3, "base_version": 1, "title": "t", "body": "b"},
            "bench_replace": {"piece_id": 3, "base_version": 1, "old": "a", "new": "b"},
-           "bench_move": {"piece_id": 3, "order": 0, "size": "small"}, "bench_remove": {"piece_id": 3},
+           "bench_move": {"piece_id": 3, "order": 0}, "bench_remove": {"piece_id": 3},
            "bench_archive": {"piece_id": 3}, "bench_shelf": {}, "bench_restore": {"piece_id": 3},
            "bench_undo": {"seq": 1}}[name]
     got = call(tools(), name, **own, by=99)
@@ -375,7 +372,7 @@ def test_the_cap_binds_adds_only_and_only_on_a_fresh_arrival(shop: FakeWorkshop)
     shop.pieces = (piece(3, "short"),)
     capped = lead_tools(1)
     assert not call(capped, "bench_add", **add_args(0)).is_error
-    assert not call(capped, "bench_move", piece_id=3, order=0, size="small").is_error
+    assert not call(capped, "bench_move", piece_id=3, order=0).is_error
     ordinary = tools()
     got = asyncio.run(calls(ordinary, *[("bench_add", add_args(n)) for n in range(5)]))
     assert not any(r.is_error for r in got)

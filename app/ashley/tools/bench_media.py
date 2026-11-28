@@ -152,7 +152,7 @@ class BenchMediaTools(Tools):
             return bench_results.failed(call, started, added.outcome, bench_results.HINTS[added.outcome],
                                         bench=self._bench, command="add", seq=added.seq)
         assert added.piece_id is not None
-        beside = Place(piece.place.order + 1, "medium")
+        beside = Place(piece.place.order + 1)
         await services.get(Workshop).apply(self._owner, self._bench, Move(HER, added.piece_id, beside))
         result: dict[str, object] = {"piece_id": added.piece_id, "source": how, "segments": len(found), "seconds": seconds}
         return bench_results.ok(call, started, result, bench=self._bench, command="add", seq=added.seq, piece=piece.id,
