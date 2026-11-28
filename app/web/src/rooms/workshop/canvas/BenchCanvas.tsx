@@ -10,7 +10,9 @@ import { apply, stamps } from '../model/bench';
 import { framing, onScreen, openingZoom, worldTransform } from '../model/camera';
 import { groupDerived } from '../model/derived';
 import { draftsOn } from '../model/drafts';
-import { drawnRect, formsOf, minZoom, supersededBy } from '../model/fold';
+import { placeAsides } from '../model/aside';
+import { drawnRect, formsOf, lift, minZoom, supersededBy } from '../model/fold';
+import { badgeText } from '../model/herLines';
 import { fullIndex, inOrder } from '../model/layout';
 import { rootsOf } from '../model/mindmap';
 import { cardWidth, placeOf } from '../model/placing';
@@ -77,6 +79,9 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   const forms = formsOf({ ids: [...ids], focus, links: place.links, pinned: place.pinned, superseded, z: cam.z });
   const rects = new Map([...place.boxes].map(([p, b]) => [p, drawnRect(b, forms.get(p)!, cam.z)]));
   const lines = useHerLines(id, place.cardOf, ids);
+  const asides = placeAsides([...lines.byPiece].filter(([p]) => rects.has(p)).map(([p, ls]) => ({
+    id: p, anchor: rects.get(p)!, says: lines.fresh(p) ? ls[0]!.text : null, badge: badgeText(ls.length),
+  })), place.boxes, [GOAL_BOX], lift(cam.z));
   const act = useActions(latest);
   const order = inOrder(place.cards, null);
   const seen = (p: number) => !!rects.get(p) && onScreen(cam, view, rects.get(p)!);
@@ -98,7 +103,7 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
             <CanvasCard key={p.id} bench={id} piece={p} kind={kinds.get(p.kind)} derived={place.derived.get(p.id) ?? NONE} rules={rules}
               closed={closed} act={act} index={i} count={order.length} box={place.boxes.get(p.id)} width={cardWidth(kinds.get(p.kind))}
               boxed={!!placeOf(p, pending.value.get(p.id)).box} form={forms.get(p.id) ?? 'card'} z={cam.z} focused={p.id === focus} pinned={place.pinned.has(p.id)}
-              landing={landing.has(p.id)} lines={lines.byPiece.get(p.id)} fresh={lines.fresh(p.id)} focus={setFocus} />
+              landing={landing.has(p.id)} lines={lines.byPiece.get(p.id)} aside={asides.get(p.id)} focus={setFocus} />
           ))}
         </div>
       </div>
