@@ -20,7 +20,7 @@ import { AddPiece, Orphan } from '../pieces/AddPiece';
 import { away, herAt, markStamps } from '../pieces/marks';
 import type { PieceActions } from '../pieces/PieceCard';
 import { CanvasCard } from './CanvasCard';
-import { CANVAS_INSET, Goal, Toolbar, TOOLBAR_H } from './Chrome';
+import { CANVAS_INSET, Goal, TALK_H, Toolbar, TOOLBAR_H } from './Chrome';
 import { useHerLines } from './HerLines';
 import { Links } from './Links';
 import { dragging, pending } from './state';
@@ -39,10 +39,11 @@ function scrolls(t: Element): boolean {
   return false;
 }
 
-/** The toolbar's strip along the top of the viewport, in bench units. */
-function toolbarBox(cam: Cam, view: View): Box {
+/** The toolbar's strip along the top of the viewport and the talk's band along its foot, in bench units. */
+function chromeBoxes(cam: Cam, view: View): Box[] {
   const tl = toBench(cam, view, { x: 0, y: 0 });
-  return { x: tl.x, y: tl.y, w: view.w / cam.z, h: TOOLBAR_H / cam.z };
+  const foot = toBench(cam, view, { x: 0, y: view.h - TALK_H });
+  return [{ x: tl.x, y: tl.y, w: view.w / cam.z, h: TOOLBAR_H / cam.z }, { x: foot.x, y: foot.y, w: view.w / cam.z, h: TALK_H / cam.z }];
 }
 
 function useActions(bench: { current: BenchDetail }): PieceActions {
@@ -87,7 +88,7 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
   const lines = useHerLines(id, place.cardOf, ids);
   const asides = placeAsides([...lines.byPiece].filter(([p]) => rects.has(p)).map(([p, ls]) => ({
     id: p, anchor: rects.get(p)!, says: lines.fresh(p) ? ls[0]!.text : null, badge: badgeText(ls.length),
-  })), place.boxes, [GOAL_BOX, toolbarBox(cam, view)], lift(cam.z), visibleBox(cam, view, CANVAS_INSET));
+  })), place.boxes, [GOAL_BOX, ...chromeBoxes(cam, view)], lift(cam.z), visibleBox(cam, view, CANVAS_INSET));
   const act = useActions(latest);
   const order = inOrder(place.cards, null);
   const seen = (p: number) => !!rects.get(p) && onScreen(cam, view, rects.get(p)!);
@@ -119,7 +120,7 @@ export function BenchCanvas({ bench, rules, adding, doneAdding }: Props) {
       </div>
       <Toolbar step={camera.step} whole={whole} />
       {!place.cards.length && !adding && !orphans.length && (
-        <p class="bc-empty meta">{closed ? 'Nothing was left on this bench.' : bench.shelf.length ? 'Nothing out on this bench.' : 'Nothing on this bench yet. Add a piece to start.'}</p>
+        <p class="bc-empty meta">{closed ? 'Nothing was left on this bench.' : bench.shelf.length ? 'Nothing out on this bench.' : 'Nothing on this bench yet. Add a piece or drop a file to start.'}</p>
       )}
     </div>
   );
