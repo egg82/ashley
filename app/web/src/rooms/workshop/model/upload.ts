@@ -23,12 +23,16 @@ async function one(bench: number, file: File): Promise<Outcome> {
   }
 }
 
-export async function uploadAll(bench: number, files: readonly File[]): Promise<void> {
+/** Uploads `files` in turn; answers how each one ended, in order. */
+export async function uploadAll(bench: number, files: readonly File[]): Promise<readonly Outcome[]> {
   uploading.value += files.length;
+  const outcomes: Outcome[] = [];
   for (const file of files) {
     const outcome = await one(bench, file);
+    outcomes.push(outcome);
     uploading.value -= 1;
     notice.value = outcome.ok ? null : outcome;
     await refresh();
   }
+  return outcomes;
 }

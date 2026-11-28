@@ -15,6 +15,7 @@ import '../../src/rooms/rooms.css';
 import '../../src/rooms/her/chat.css';
 import '../../src/rooms/her/desk.css';
 import '../../src/kiosk/kiosk.css';
+import '../../src/rooms/workshop/workshop.css';
 import { CONTROLS, CONVERSATION, CONVERSATION_ID, glanceOf, WORK } from './fixtures';
 
 const q = new URLSearchParams(location.search);
@@ -44,6 +45,9 @@ async function answer(path: string, init?: RequestInit): Promise<Response> {
   const method = init?.method ?? 'GET';
   const done = act(path, method);
   if (done) return done;
+  if (path === '/api/benches' && method === 'POST') return json({ id: 7, title: 'cat.jpg' });
+  if (path === '/api/benches/7/files') return q.get('drop') === 'refuse' ? json({}, 415) : json({ applied: { piece_id: 3 } });
+  if (path === '/api/benches/7/messages') { await later(q.get('drop') === 'slow' ? 4000 : 0); return json({ body: 'Got it.', follows: false }); }
   if (path === '/api/chat/conversation') return json(CONVERSATION);
   if (path.startsWith('/api/chat/conversations')) return json({ conversations: [], next: null });
   if (path === '/api/work') return q.get('work') === 'fail' ? json({ code: 'unavailable' }, 503) : json({ entries: work });
