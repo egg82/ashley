@@ -1,6 +1,6 @@
 // Made-up data for the Desk harness: a board with every lane and action, a short conversation, the house. The names are
 // a fixture household's, nobody's real ones; the longest titles are long on purpose.
-import type { HouseAttention, HouseGlance, KioskControl, WorkItem } from '../../src/api/types';
+import type { BroughtUp, HouseAttention, HouseGlance, HousePrinter, KioskControl, WorkItem } from '../../src/api/types';
 
 const at = (h: number, m = 0) => new Date(Date.UTC(2026, 10, 27, h, m)).toISOString();
 const OPEN = 31;
@@ -41,8 +41,15 @@ export const CONTROLS: KioskControl[] = [
   { name: 'all-off', label: 'Everything off', on: null },
 ];
 
-function turn(id: number, author: 'person' | 'ashley', text: string, minute: number) {
-  return { id, author, text, at: at(9, minute), follows: false, continued_on: null, attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, receipts: null, agreed: null, piece_ids: [] };
+export const PRINTERS: HousePrinter[] = [
+  { printer_id: '1', name: 'Shed P1S', printer_model: 'P1S', online: true, state: 'RUNNING', print_name: 'Planter base v3, 0.2 mm, PETG',
+    percent: 63.4, minutes_left: 97, layer: 212, layers: 340, problems: [] },
+  { printer_id: '2', name: 'Attic X1C', printer_model: 'X1C', online: true, state: 'PAUSE', print_name: 'Cable clips ×24',
+    percent: 18, minutes_left: 41, layer: 9, layers: 52, problems: ['AMS slot 3 is out of filament'] },
+];
+
+function turn(id: number, author: 'person' | 'ashley', text: string, minute: number, brought: BroughtUp[] = []) {
+  return { id, author, text, at: at(9, minute), follows: false, continued_on: null, attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, receipts: null, agreed: null, piece_ids: [], brought_up: brought };
 }
 
 export const CONVERSATION = {
@@ -54,5 +61,9 @@ export const CONVERSATION = {
     turn(2, 'ashley', 'Yes. It read 1023 when dry because the sensor pin had no pull-down. I added one to the wiring and reran: dry now reads 412.', 51),
     turn(3, 'person', 'Is it going to rain Saturday?', 55),
     turn(4, 'ashley', "Dry until about 4. Everyone's out 9 to 5 tomorrow, so I'd like to turn the heating down 2° while the house is empty.", 58),
+    turn(5, 'person', 'How long on the planter?', 59),
+    turn(6, 'ashley', 'About an hour and a half: the shed printer is at layer 212 of 340.', 59, [{ kind: 'printer', ref: '1' }]),
+    turn(7, 'person', 'And the clips upstairs?', 60),
+    turn(8, 'ashley', 'Paused. Slot 3 ran out of filament, so it needs a new spool before it can go on.', 60, [{ kind: 'printer', ref: '2' }, { kind: 'printer', ref: '9' }]),
   ],
 };

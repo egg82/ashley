@@ -229,6 +229,13 @@ at closing; it keeps the headline a change was shown under (`label`). `outbox.re
 A turn stored before receipts keeps the blocks in its `text` and is read unchanged: stripping them would key behaviour
 on words in `text`, and the recent-history window moves on.
 
+**What she brings up is a card, chosen by code.** `Turn.shown` (`turns.shown`, a list of `receipts.Shown` `{kind, ref}`,
+only hers) is what her calls brought up: a read tool that returned a thing a card can draw sets it on its result
+(`ToolResult.shown`; a printers read, each printer), and `show_card` puts one up on request after checking the ref
+against that kind's read. `Landing` gathers them, each once, and a resumed turn reads them back from its checkpoint's
+results. Nothing reads her words to decide what to show. The page draws each as a part (`components/parts`) under her
+line, `brought_up` on `ChatConversationTurn`, and folds it to a chip once a later turn exists, which only the page knows.
+
 **On a paged channel code writes no words as her turn.** Where the person reads a page that learns of turns from Live
 (`Inbound.paged`: web chat, a bench's talk, the kiosk, in text; a reply meant to be heard keeps its line), a turn that fails or is kept for retry stores no `unsaid.json` line
 as hers; the page shows a quiet status beside the person's message, worded in the web code, from `TurnFailed.why`
