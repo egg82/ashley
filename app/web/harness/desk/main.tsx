@@ -6,7 +6,7 @@
 import { render } from 'preact';
 import { LocationProvider } from 'preact-iso';
 import { HerRoom } from '../../src/rooms/her/HerRoom';
-import { person } from '../../src/session/session';
+import { person, status } from '../../src/session/session';
 import '../../src/shell/motion';
 import '../../src/styles/fonts';
 import '../../src/styles/tokens.css';
@@ -58,6 +58,7 @@ window.fetch = (input: RequestInfo | URL, init?: RequestInit) =>
   answer(typeof input === 'string' ? input : input instanceof URL ? input.pathname : new URL(input.url).pathname, init);
 
 person.value = { id: 1, name: 'Maya' } as typeof person.value;
+status.value = 'signed-in';
 
 const click = q.get('click');
 if (click) setTimeout(() => document.querySelector<HTMLElement>(click)?.click(), 900);
