@@ -3,9 +3,16 @@
 //
 // Placement is a single greedy pass over a growing set of obstacles: the goal, then pinned pieces (exactly where
 // pinned), then pieces that have a previous position (kept there if clear, else moved to the nearest clear slot),
-// then new pieces, parents first, each at the cheapest clear slot searched outward from its link target (or from the
-// goal, by golden angle of its order, when it has none). A valid previous layout therefore never moves: adding or
-// removing a piece, or a link, displaces nothing. A piece whose box grew or whose spot a pin took is the only mover.
+// then the rest in ID order (ids only grow, so a newer piece has a higher id). Each goes to the cheapest clear slot
+// searched outward from the piece it links to, counting only links to LOWER ids (or from the goal, by golden angle of
+// its order, when it has none). A pin placed up front is ignored while choosing a lower id's slot, unless the slot
+// would touch it, so a pin does not change where earlier pieces went.
+//
+// Consequences. A valid previous layout never moves: adding or removing a piece, or a link, displaces nothing. And a
+// layout with `previous = null` reproduces the one grown piece by piece, so a reload, another screen or another
+// device draws the bench as the open screen did. The two can still differ after: a removal (the gap stays in the grown
+// one, is filled in the fresh one), a resize, a pin dropped on a piece (that piece moves), a reorder (the order
+// ranks pieces that link to nothing), and a link added after the piece it leaves (the grown layout never saw it).
 export type LinkKind = 'part_of' | 'depends_on' | 'version_of';
 
 export interface MapPiece {
@@ -104,35 +111,15 @@ function slotFor(size: { w: number; h: number }, want: Want, placed: readonly Bo
   return best ?? { x: want.at.x + STEP * MAX_RINGS, y: want.at.y };
 }
 
-interface Graph {
-  out: Map<number, MapLink[]>;
-  inn: Map<number, MapLink[]>;
-}
-
-function graphOf(ids: ReadonlySet<number>, links: readonly MapLink[]): Graph {
-  const g: Graph = { out: new Map(), inn: new Map() };
+/** Each piece's links to pieces with a lower id that are on the bench, best kind first. */
+function parentsOf(ids: ReadonlySet<number>, links: readonly MapLink[]): Map<number, MapLink[]> {
+  const out = new Map<number, MapLink[]>();
   for (const l of links) {
-    if (!ids.has(l.from) || !ids.has(l.to) || l.from === l.to) continue;
-    g.out.set(l.from, [...(g.out.get(l.from) ?? []), l]);
-    g.inn.set(l.to, [...(g.inn.get(l.to) ?? []), l]);
+    if (!ids.has(l.from) || !ids.has(l.to) || l.to >= l.from) continue;
+    out.set(l.from, [...(out.get(l.from) ?? []), l]);
   }
-  return g;
-}
-
-/** Hops from the pieces that link to nothing; pieces on a cycle with no way out come last. */
-function depthsOf(pieces: readonly MapPiece[], g: Graph): Map<number, number> {
-  const depth = new Map<number, number>();
-  const queue = pieces.filter((p) => !g.out.has(p.id)).map((p) => p.id);
-  for (const id of queue) depth.set(id, 0);
-  for (let i = 0; i < queue.length; i++) {
-    const id = queue[i]!;
-    for (const l of g.inn.get(id) ?? []) {
-      if (depth.has(l.from)) continue;
-      depth.set(l.from, depth.get(id)! + 1);
-      queue.push(l.from);
-    }
-  }
-  return depth;
+  for (const ls of out.values()) ls.sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind] || a.to - b.to);
+  return out;
 }
 
 /** Hops along links, either way, from `focusId` to each piece the links reach. The view draws 0 and 1 in full and folds
@@ -157,27 +144,32 @@ export function foldDistance(focusId: number, links: readonly MapLink[]): Map<nu
 }
 
 interface Ctx {
-  g: Graph;
+  parents: Map<number, MapLink[]>;
   boxes: Map<number, Box>;
   rank: Map<number, number>;
 }
 
-/** Where a new piece wants to go: beside the link target it ranks first, pulled toward every placed neighbour. */
+/** Where a new piece wants to go: beside the lower-id piece it links to first, pulled toward all of them. */
 function wantFor(p: MapPiece, ctx: Ctx): Want {
-  const outs = (ctx.g.out.get(p.id) ?? [])
-    .filter((l) => ctx.boxes.has(l.to))
-    .sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind]);
-  const ins = (ctx.g.inn.get(p.id) ?? []).filter((l) => ctx.boxes.has(l.from));
-  const pull = [...outs.map((l) => l.to), ...ins.map((l) => l.from)].map((id) => centre(ctx.boxes.get(id)!));
+  const outs = ctx.parents.get(p.id) ?? [];
+  const pull = outs.map((l) => centre(ctx.boxes.get(l.to)!));
   const first = outs[0];
   if (first) {
-    const at = centre(ctx.boxes.get(first.to)!);
+    const at = pull[0]!;
     const outward = Math.hypot(at.x, at.y) < 1 ? null : Math.atan2(at.y, at.x);
     return { at, pull, facing: first.kind === 'version_of' ? 0 : outward, turn: TURN_CHILD };
   }
-  if (ins.length) return { at: pull[0]!, pull, facing: null, turn: 0 };
   const origin = { x: 0, y: 0 };
   return { at: origin, pull: [origin], facing: -Math.PI / 2 + GOLDEN * ctx.rank.get(p.id)!, turn: TURN_ROOT };
+}
+
+/** The slot ignoring pins of higher ids, unless that slot touches one; then the slot among everything placed. */
+function slotAmong(p: MapPiece, want: Want, placed: readonly Box[], pins: ReadonlyMap<number, Box>): Pt {
+  const ahead = new Set([...pins].filter(([id]) => id > p.id).map(([, b]) => b));
+  const early = placed.filter((b) => !ahead.has(b));
+  const at = slotFor(p.size, want, early);
+  const box = { x: at.x, y: at.y, w: p.size.w, h: p.size.h };
+  return clear(box, placed) ? at : slotFor(p.size, want, placed);
 }
 
 const byOrder = (a: MapPiece, b: MapPiece): number => a.order - b.order || a.id - b.id;
@@ -206,11 +198,12 @@ export function layoutMindmap(inp: MindmapInput): Map<number, Box> {
       put(p, slotFor(p.size, { at: c, pull: [c], facing: null, turn: 0 }, placed));
     }
   }
-  const g = graphOf(new Set(sorted.map((p) => p.id)), inp.links);
-  const depth = depthsOf(sorted, g);
-  const ctx: Ctx = { g, boxes, rank: new Map(sorted.map((p, i) => [p.id, i])) };
-  const fresh = sorted.filter((p) => !boxes.has(p.id));
-  fresh.sort((a, b) => (depth.get(a.id) ?? 1e9) - (depth.get(b.id) ?? 1e9) || byOrder(a, b));
-  for (const p of fresh) put(p, slotFor(p.size, wantFor(p, ctx), placed));
+  const parents = parentsOf(new Set(sorted.map((p) => p.id)), inp.links);
+  const ctx: Ctx = { parents, boxes, rank: new Map(sorted.map((p, i) => [p.id, i])) };
+  const later = new Map(sorted.filter((p) => p.pin).map((p) => [p.id, boxes.get(p.id)!]));
+  for (const p of [...sorted].sort((a, b) => a.id - b.id)) {
+    if (boxes.has(p.id)) continue;
+    put(p, slotAmong(p, wantFor(p, ctx), placed, later));
+  }
   return boxes;
 }
