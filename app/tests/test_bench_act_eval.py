@@ -8,6 +8,8 @@ import pytest
 from ashley import services
 from ashley.evals import bench_act
 from ashley.evals.bench_act import Options
+from ashley.evals.bench_act_fakes import Recorded
+from ashley.inference.model import ToolCall
 from ashley.inference.inference import Inference
 from ashley.tools import bench_capture
 
@@ -42,3 +44,11 @@ def test_a_case_fails_when_the_fix_it_measures_is_taken_away(case: str, options:
 def test_an_unknown_case_is_refused() -> None:
     with pytest.raises(ValueError):
         run("E99")
+
+
+def test_a_bench_show_is_a_view_and_no_change() -> None:
+    capture = bench_capture.load(bench_act.CAPTURE)
+    bench_capture.install(capture)
+    source = Recorded(bench_act.bench_source(capture), capture)
+    got = asyncio.run(source.call(ToolCall("s", "bench_show", {"all": True})))
+    assert not got.is_error and source.changes == [] and source.calls_named("bench_show") == 1

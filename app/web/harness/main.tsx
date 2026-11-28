@@ -1,11 +1,13 @@
 // The bench screen with no server behind it, for looking at the canvas: `fetch` answers the bench routes from a fixture
 // (`fixtures.ts`) and applies a person's moves to it, so drags, pins and boxes go through the real client. Query:
 // `n` the bench's size (5, 11, 32), `refuse=1` refuses every move, `add=<ms>` has her add a piece after that long.
+// `window.feed(event)` hands the live feed one event, as the server would: `{type: 'show', bench_id: 1, piece_ids: [3, 5], fold: false}`.
 // Built by `node harness/build.mjs <outdir>`, never into the app's bundle.
 import { render } from 'preact';
 import { LocationProvider } from 'preact-iso';
 import type { BenchDetail, BenchPiece, CommandRequest } from '../src/api/types';
 import { refresh } from '../src/rooms/workshop/model/bench';
+import { openLive } from '../src/session/live';
 import { BenchView } from '../src/rooms/workshop/bench/BenchView';
 import '../src/shell/motion';
 import '../src/styles/fonts';
@@ -52,6 +54,17 @@ async function answer(url: string, init?: RequestInit): Promise<Response> {
 
 (window as unknown as { moves: unknown[] }).moves = [];
 window.fetch = (input: RequestInfo | URL, init?: RequestInit) => answer(typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url, init);
+
+class StubFeed extends EventTarget {
+  onmessage: ((m: { data: string }) => void) | null = null;
+  onerror = null;
+  onopen = null;
+  close() {}
+}
+let feed: StubFeed | undefined;
+(window as unknown as { EventSource: unknown }).EventSource = class extends StubFeed { constructor() { super(); feed = this; } };
+(window as unknown as { feed: unknown }).feed = (event: unknown) => feed?.onmessage?.({ data: JSON.stringify(event) });
+openLive();
 
 const addAfter = Number(q.get('add') ?? 0);
 if (addAfter) {

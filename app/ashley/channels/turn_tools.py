@@ -21,6 +21,7 @@ from ..tools.claude_code import ClaudeCodeTools
 from ..tools.claude_code_config import load as claude_code_config
 from ..tools.code_host import CodeHostTools
 from ..tools.bench_run import BenchRunTools
+from ..tools.bench_show import BenchShowTools
 from ..tools.bench_skills import BenchSkillTools
 from ..tools.bench_tidy import BenchTidyTools
 from ..tools.browser_session import BrowserSessionTools, drives
@@ -200,6 +201,7 @@ def sources(inbound: Inbound, arrival: Arrival | None = None, conversation_id: i
                                     turns=None if conversation_id is None else said_links.turns_by_people(conversation_id),
                                     turn_id=None if turn is None else turn[1])
         found["tidy"] = BenchTidyTools(bench)
+        found["show"] = BenchShowTools(household, person, bench)
         found["automations"] = BenchAutomationTools(household, person, bench)
         found["skills"] = BenchSkillTools(household, person, bench)
         found["files"] = BenchFileTools(household, person, bench)

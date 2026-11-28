@@ -30,6 +30,7 @@ from ..inference.model import Entry, Message, SystemPrompt, ToolCall, ToolResult
 from ..people.model import Household, Person
 from ..persona import persona
 from ..tools import bench_run
+from ..tools.bench_show import BenchShowTools
 from ..tools.bench_tools import BenchTools
 from ..tools.composite import CompositeTools
 from ..tools.move_page import NAME as MOVE_PAGE_NAME, MovePageTools
@@ -76,8 +77,9 @@ class _RunSpec(Tools):
         raise NotImplementedError
 
 
-def _bench_source(capture: Capture) -> Tools:
-    return CompositeTools({"bench": BenchTools(1, 1, capture.bench.id), "run": _RunSpec()})
+def bench_source(capture: Capture) -> Tools:
+    return CompositeTools({"bench": BenchTools(1, 1, capture.bench.id), "show": BenchShowTools(1, 1, capture.bench.id),
+                           "run": _RunSpec()})
 
 
 async def run(runs: int, only: str | None, options: Options = Options()) -> list[Result]:
@@ -107,7 +109,7 @@ async def _one(case: dict[str, Any], options: Options, live: Inference | None) -
     inner = RecordingInference(Scripted(case["policy"]) if live is None else live)
     services.register(Inference, Clocked(inner, clock, case.get("step_s", 20), case.get("fail_at_step")))
     chat = case["scene"] == "chat"
-    source = Recorded(CompositeTools({"page": MovePageTools(1, 1)}) if chat else _bench_source(capture), capture)
+    source = Recorded(CompositeTools({"page": MovePageTools(1, 1)}) if chat else bench_source(capture), capture)
     return await _play(case, options, source, clock, inner)
 
 
@@ -172,7 +174,7 @@ def _arrival(source: Recorded, options: Options) -> tool_loop.Arrive:
         if source.moved_to is None or state["done"]:
             return None
         state["done"] = True
-        bench = _bench_source(source.capture)
+        bench = bench_source(source.capture)
         source.inner = bench
         got = await bench.catalogue()
         return Arrived(got.specs, _moved(system, got, options), _limits("brainstorm", options), "brainstorm")

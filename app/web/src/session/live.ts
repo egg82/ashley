@@ -1,7 +1,7 @@
 // The one owner of the person's live feed, `GET /api/live`: open while a person is signed in, reopened with backoff when
 // it drops (`feed.ts`). Her state goes to `shell/her/state.ts` and her moving the page to `shell/her/moves.ts`; a turn
 // on one of the person's threads, a change to one of their benches, a change to a screen of the household, and "read back what you show" (the feed opened, or
-// may have missed something), and her cue of a video piece's player, go to whoever listens; what she announces to
+// may have missed something), her cue of a video piece's player and her move of a bench's view, go to whoever listens; what she announces to
 // this screen plays through `speech/announce.ts`. While it is down, `liveUp`
 // is false and a room that shows something live looks for itself.
 import { liveFeed } from '../api/client';
@@ -19,6 +19,7 @@ const threadFailures = new Set<(thread: string, why: TurnFailedWhy) => void>();
 const benchChanges = new Set<(bench: number, seq: number) => void>();
 const screenChanges = new Set<(device: number, seq: number) => void>();
 const benchCues = new Set<(bench: number, piece: number, cue: Cue, by: CueBy) => void>();
+const benchShows = new Set<(bench: number, pieces: readonly number[], fold: boolean) => void>();
 const resyncs = new Set<() => void>();
 
 const feed = createFeed(() => liveFeed(screenToken), {
@@ -32,6 +33,7 @@ const feed = createFeed(() => liveFeed(screenToken), {
     }
     else if (event.type === 'screen') screenChanges.forEach((h) => h(event.device_id, event.seq));
     else if (event.type === 'cue') benchCues.forEach((h) => h(event.bench_id, event.piece_id, event, 'her'));
+    else if (event.type === 'show') benchShows.forEach((h) => h(event.bench_id, event.piece_ids, event.fold));
     else if (event.type === 'page') herMoved(event.room, event.bench_id ?? null);
     else if (event.type === 'announce') void announced(event.clip);
     else if (event.type === 'feed') void screenCard.read();
@@ -99,6 +101,13 @@ export type CueBy = 'her' | 'person';
 export function onBenchCue(heard: (bench: number, piece: number, cue: Cue, by: CueBy) => void): () => void {
   benchCues.add(heard);
   return () => benchCues.delete(heard);
+}
+
+/** Calls `heard` with the bench, the pieces (every piece when none) and whether to put them away each time she moves the
+ * view of one of the person's benches; returns the unsubscribe. A screen that was not listening never hears it. */
+export function onBenchShown(heard: (bench: number, pieces: readonly number[], fold: boolean) => void): () => void {
+  benchShows.add(heard);
+  return () => benchShows.delete(heard);
 }
 
 /** The person drives a player on this page the way she does: every screen listening for cues hears it, none is told
