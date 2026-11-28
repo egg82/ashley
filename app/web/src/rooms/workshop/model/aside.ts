@@ -27,13 +27,15 @@ function at(anchor: Box, size: { w: number; h: number }, side: Side, gap: number
   return { x: anchor.x, y: anchor.y + anchor.h + gap, ...size };
 }
 
-/** The first side of `anchor` where a box of `size` (px at zoom 1, drawn `k` times larger) touches none of `obstacles`;
- *  null when none is clear. */
-export function aside(anchor: Box, size: { w: number; h: number }, k: number, obstacles: readonly Box[]): Box | null {
+const inside = (a: Box, b: Box): boolean => a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
+
+/** The first side of `anchor` where a box of `size` (px at zoom 1, drawn `k` times larger) touches none of `obstacles`
+ *  (and lies inside `within`, when given); null when none is clear. */
+export function aside(anchor: Box, size: { w: number; h: number }, k: number, obstacles: readonly Box[], within: Box | null = null): Box | null {
   const s = { w: size.w * k, h: size.h * k };
   for (const side of SIDES) {
     const b = at(anchor, s, side, GAP * k);
-    if (!obstacles.some((o) => touches(b, o))) return b;
+    if (!obstacles.some((o) => touches(b, o)) && (!within || inside(b, within))) return b;
   }
   return null;
 }
@@ -53,16 +55,19 @@ export interface Placed {
   box: Box;
 }
 
-/** Where each piece's line or badge goes, in id order, each placed one an obstacle for the next. A line with no clear
- *  side folds to its badge at once; a badge with no clear side sits inside its own piece's top right corner, over the
- *  piece itself and nothing else. `boxes` are the pieces' layout boxes by id; `fixed` the rest of the map (the goal). */
-export function placeAsides(wants: readonly AsideWant[], boxes: ReadonlyMap<number, Box>, fixed: readonly Box[], k: number): Map<number, Placed> {
+/** Where each piece's line or badge goes, in id order, each placed one an obstacle for the next. A line goes only where
+ *  it shows whole on `screen` (the part of the bench in view, clear of the toolbar), else it folds to its badge at once;
+ *  a badge prefers a side on screen, then any clear side, and with none sits inside its own piece's top right corner,
+ *  over the piece itself and nothing else. `boxes` are the pieces' layout boxes by id; `fixed` the rest (the goal, the
+ *  toolbar's place on the bench). */
+export function placeAsides(wants: readonly AsideWant[], boxes: ReadonlyMap<number, Box>, fixed: readonly Box[], k: number,
+                            screen: Box | null = null): Map<number, Placed> {
   const taken: Box[] = [...fixed];
   const out = new Map<number, Placed>();
   for (const w of [...wants].sort((a, b) => a.id - b.id)) {
     const others = [...taken, ...[...boxes].filter(([id]) => id !== w.id).map(([, b]) => b)];
-    const says = w.says === null ? null : aside(w.anchor, SAYS, k, others);
-    const badge = says ? null : aside(w.anchor, badgeSize(w.badge), k, others);
+    const says = w.says === null ? null : aside(w.anchor, SAYS, k, others, screen);
+    const badge = says ? null : aside(w.anchor, badgeSize(w.badge), k, others, screen) ?? aside(w.anchor, badgeSize(w.badge), k, others);
     const placed: Placed = says ? { kind: 'says', box: says } : badge ? { kind: 'badge', box: badge }
       : { kind: 'inside', box: insideCorner(w.anchor, badgeSize(w.badge), k) };
     out.set(w.id, placed);

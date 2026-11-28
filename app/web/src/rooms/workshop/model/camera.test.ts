@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { framing, lookAt, onScreen, openingZoom, panBy, toBench, worldTransform, Z_MAX, zoomAt, type Cam } from './camera.ts';
+import { framing, lookAt, onScreen, openingZoom, panBy, toBench, visibleBox, worldTransform, Z_MAX, zoomAt, type Cam } from './camera.ts';
 
 const V = { w: 1200, h: 700 };
 const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-6, `${a} vs ${b}`);
@@ -66,4 +66,19 @@ test('a box is on screen when its header shows', () => {
   assert.ok(onScreen(cam, V, { x: 0, y: 0, w: 100, h: 100 }));
   assert.ok(!onScreen(cam, V, { x: 2000, y: 0, w: 100, h: 100 }));
   assert.ok(!onScreen(cam, V, { x: 0, y: 340, w: 100, h: 100 }), 'its header is below the bottom edge');
+});
+
+test('an inset keeps what is framed out from under the toolbar: it is centred in what the inset leaves', () => {
+  const inset = { top: 60, right: 20, bottom: 20, left: 20 };
+  const focus = { x: 0, y: 0, w: 300, h: 200 };
+  const cam = lookAt([[focus]], focus, V, 1, inset);
+  const seen = visibleBox(cam, V, inset);
+  assert.ok(seen.x <= focus.x && seen.y <= focus.y && seen.x + seen.w >= focus.x + focus.w && seen.y + seen.h >= focus.y + focus.h);
+  near(seen.x + seen.w / 2, 150);
+  near(seen.y + seen.h / 2, 100);
+  const tall = { x: 0, y: 0, w: 100, h: 615 };
+  const f = framing([tall], V, 0.1, 5, inset);
+  const shown = visibleBox(f, V, inset);
+  assert.ok(shown.y <= 1e-9 && shown.y + shown.h >= 615 - 1e-9, 'all of it shows below the toolbar');
+  near(f.z, (700 - 80) / 615);
 });

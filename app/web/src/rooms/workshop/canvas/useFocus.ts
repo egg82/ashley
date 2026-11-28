@@ -4,8 +4,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { BenchPiece } from '../../../api/types';
 import { lookAt, openingZoom } from '../model/camera';
-import { foldDistance, type Box } from '../model/mindmap';
+import { foldDistance } from '../model/mindmap';
 import type { Camera } from './useCamera';
+import { CANVAS_INSET } from './Chrome';
 import { GOAL_BOX, type Placement } from './usePlacement';
 import { focusAsk } from './state';
 
@@ -16,15 +17,16 @@ function latest(cards: readonly BenchPiece[]): number | null {
   return cards.reduce<BenchPiece | null>((a, p) => (!a || p.changed_by > a.changed_by ? p : a), null)?.id ?? null;
 }
 
-/** The camera that shows piece `id` with its neighbours (and the goal too, when `goal` is given and it fits), at the
- *  zoom it already has when cards are readable there. */
-function shot(id: number, place: Placement, camera: Camera, goal: Box | null): Parameters<Camera['fly']>[0] | null {
+/** The camera that shows piece `id` with its neighbours and the goal when they fit, clear of the toolbar, at the zoom it
+ *  already has when cards are readable there; else the neighbours alone. When the bench `opening`, it prefers the goal
+ *  to the neighbours: the piece and the goal, else the whole piece leaning toward the goal. */
+function shot(id: number, place: Placement, camera: Camera, opening: boolean): Parameters<Camera['fly']>[0] | null {
   const box = place.boxes.get(id);
   if (!box) return null;
-  const z = camera.cam.z >= 1 && !goal ? camera.cam.z : openingZoom(camera.view);
+  const z = camera.cam.z >= 1 && !opening ? camera.cam.z : openingZoom(camera.view);
   const hops = foldDistance(id, place.links);
   const near = [...place.boxes].filter(([p]) => (hops.get(p) ?? Infinity) <= 1).map(([, b]) => b);
-  return lookAt(goal ? [[goal, ...near], near] : [near], box, camera.view, z);
+  return lookAt([[GOAL_BOX, ...near], opening ? [GOAL_BOX, box] : near], box, camera.view, z, CANVAS_INSET);
 }
 
 export interface Focus {
@@ -43,7 +45,7 @@ export function useFocus(place: Placement, camera: Camera): Focus {
     if (!laid || known.current) return;
     known.current = new Set(place.boxes.keys());
     setFocusState(shown);
-    const s = shown === null ? null : shot(shown, place, camera, GOAL_BOX);
+    const s = shown === null ? null : shot(shown, place, camera, true);
     if (s) camera.jump(s);
   }, [laid]);
   useEffect(() => {
@@ -57,7 +59,7 @@ export function useFocus(place: Placement, camera: Camera): Focus {
   const setFocus = (id: number) => {
     if (id === shown && camera.cam.z >= 1) return;
     setFocusState(id);
-    const s = shot(id, place, camera, null);
+    const s = shot(id, place, camera, false);
     if (s) camera.fly(s);
   };
   const asked = focusAsk.value;
