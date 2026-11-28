@@ -5105,6 +5105,70 @@
         }
       }
     },
+    "/api/find": {
+      "get": {
+        "summary": "Find",
+        "description": "200 `FindResults`: up to `limit` records matching `q` from each source. A source that fails or times out is in\n`unreachable` and the others still answer; never 503. 401 `unauthorized`; 422 for a bad `q` or `limit`.",
+        "operationId": "find",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindResults"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a missing or empty `q`, or a `limit` outside 1 to 50, gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/live": {
       "get": {
         "summary": "Live",
@@ -11818,6 +11882,51 @@
           }
         }
       },
+      "FindResults": {
+        "properties": {
+          "found": {
+            "items": {
+              "$ref": "#/components/schemas/FoundRecord"
+            },
+            "type": "array",
+            "title": "Found"
+          },
+          "answered": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "memory",
+                "conversation",
+                "print",
+                "transaction"
+              ]
+            },
+            "type": "array",
+            "title": "Answered"
+          },
+          "unreachable": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "memory",
+                "conversation",
+                "print",
+                "transaction"
+              ]
+            },
+            "type": "array",
+            "title": "Unreachable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "found",
+          "answered",
+          "unreachable"
+        ],
+        "title": "FindResults",
+        "description": "What one search found: `found`, each source's records best first, sources in the order memory, conversation,\nprint, transaction; `answered`, the sources that answered, with nothing too; `unreachable`, those that could not\nanswer, whose records are missing, not absent. A source that is not connected is in neither list."
+      },
       "ForgetResponse": {
         "properties": {
           "deleted": {
@@ -11831,6 +11940,79 @@
         ],
         "title": "ForgetResponse",
         "description": "How many facts were deleted: the one forgotten and every earlier version it replaced. None of them is kept."
+      },
+      "FoundRecord": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "memory",
+              "conversation",
+              "print",
+              "transaction"
+            ],
+            "title": "Kind"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          },
+          "dated": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dated"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed"
+          },
+          "within": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "ref",
+          "title",
+          "when",
+          "dated",
+          "confirmed",
+          "within"
+        ],
+        "title": "FoundRecord",
+        "description": "One record a source found. `ref` is its id within its `kind`: a fact id (`memory`), a turn id (`conversation`,\nfollowed by `GET /api/chat/conversations/{within}`), a print library file id (`print`), a ledger transaction id\n(`transaction`). `within` is the ref of the record it sits in, null for none. `when` is when it was said or\nlearned and `dated` the day a transaction is dated, each null when the source keeps no such time. `confirmed` is\nfalse for a guess."
       },
       "HealthResponse": {
         "properties": {

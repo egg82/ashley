@@ -1396,6 +1396,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find
+         * @description 200 `FindResults`: up to `limit` records matching `q` from each source. A source that fails or times out is in
+         *     `unreachable` and the others still answer; never 503. 401 `unauthorized`; 422 for a bad `q` or `limit`.
+         */
+        get: operations["find"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/live": {
         parameters: {
             query?: never;
@@ -3713,12 +3734,53 @@ export interface components {
          */
         FeedSignal: components["schemas"]["FeedSession"] | components["schemas"]["FeedAnswer"] | components["schemas"]["FeedRemoteCandidate"] | components["schemas"]["FeedError"];
         /**
+         * FindResults
+         * @description What one search found: `found`, each source's records best first, sources in the order memory, conversation,
+         *     print, transaction; `answered`, the sources that answered, with nothing too; `unreachable`, those that could not
+         *     answer, whose records are missing, not absent. A source that is not connected is in neither list.
+         */
+        FindResults: {
+            /** Found */
+            found: components["schemas"]["FoundRecord"][];
+            /** Answered */
+            answered: ("memory" | "conversation" | "print" | "transaction")[];
+            /** Unreachable */
+            unreachable: ("memory" | "conversation" | "print" | "transaction")[];
+        };
+        /**
          * ForgetResponse
          * @description How many facts were deleted: the one forgotten and every earlier version it replaced. None of them is kept.
          */
         ForgetResponse: {
             /** Deleted */
             deleted: number;
+        };
+        /**
+         * FoundRecord
+         * @description One record a source found. `ref` is its id within its `kind`: a fact id (`memory`), a turn id (`conversation`,
+         *     followed by `GET /api/chat/conversations/{within}`), a print library file id (`print`), a ledger transaction id
+         *     (`transaction`). `within` is the ref of the record it sits in, null for none. `when` is when it was said or
+         *     learned and `dated` the day a transaction is dated, each null when the source keeps no such time. `confirmed` is
+         *     false for a guess.
+         */
+        FoundRecord: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "memory" | "conversation" | "print" | "transaction";
+            /** Ref */
+            ref: string;
+            /** Title */
+            title: string;
+            /** When */
+            when: string | null;
+            /** Dated */
+            dated: string | null;
+            /** Confirmed */
+            confirmed: boolean;
+            /** Within */
+            within: string | null;
         };
         /**
          * HealthResponse
@@ -11438,6 +11500,47 @@ export interface operations {
             };
             /** @description `unavailable`: the database could not be reached */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    find: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindResults"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a missing or empty `q`, or a `limit` outside 1 to 50, gets FastAPI's own validation error, which is not this schema */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

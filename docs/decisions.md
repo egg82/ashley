@@ -59,6 +59,7 @@ mention of `decisions.md`: the title is an entry below, or a `###` heading or bo
 - [What she knows lives where the thing that would make it wrong lives](decisions/memory.md): what would make a thing stale decides its home, where she meets it on the way to using it.
 - [Memory is atomic facts in Postgres that are superseded, never edited](decisions/memory.md): one row per fact, current while `valid_to` is null; a correction closes the old row and points it at the new one.
 - [People see, correct and forget what she knows of them](decisions/memory.md): a signed-in person reaches the facts that concern them through `/api/memory/facts`, and lists and forgets their own voiceprints through `/api/memory/voice`.
+- [Find asks each system and filters nothing itself](decisions/memory.md): `GET /api/find` asks every source at once under its own access rule; one that cannot answer is named unreachable, never empty.
 
 ## Connections and the ledger
 
