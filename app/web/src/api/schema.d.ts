@@ -1543,6 +1543,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/house/printers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * House Printers
+         * @description 200 `HousePrinters`; 401 `unauthorized`. Printers that cannot be read are null, never an empty list.
+         */
+        get: operations["house_printers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kiosk/session": {
         parameters: {
             query?: never;
@@ -2904,6 +2924,20 @@ export interface components {
             thread: string;
         };
         /**
+         * BroughtUp
+         * @description One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the
+         *     kind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`).
+         */
+        BroughtUp: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "printer";
+            /** Ref */
+            ref: string;
+        };
+        /**
          * CatalogueActionInfo
          * @description An action the service offers (`domain.name`). `looks_up_only`: the service itself says it only returns data and
          *     changes nothing.
@@ -2971,7 +3005,9 @@ export interface components {
          *     stored beside her words on that turn, whether or not `agree` is still offered. `agreed` is what became of the held
          *     calls a person's agreeing turn carried out, shown beside that turn; null on every other turn. `piece_ids` is, on a bench's
          *     talk, the sorted ids of the pieces her commands touched in answering the person's message, on her turn that is the
-         *     final answer to it (as `runs` are); empty on every other turn and on every other conversation.
+         *     final answer to it (as `runs` are); empty on every other turn and on every other conversation. `brought_up` is
+         *     what her tools brought up on her turn, each once, in the order brought up (code sets it from what a tool read or
+         *     put up, never from her words); empty on every other turn.
          */
         ChatConversationTurn: {
             /** Id */
@@ -3010,6 +3046,11 @@ export interface components {
              * @default []
              */
             piece_ids: number[];
+            /**
+             * Brought Up
+             * @default []
+             */
+            brought_up: components["schemas"]["BroughtUp"][];
         };
         /**
          * ChatLook
@@ -3745,6 +3786,48 @@ export interface components {
             /** Home */
             home: string[] | null;
             needs_attention: components["schemas"]["HouseAttention"];
+        };
+        /**
+         * HousePrinter
+         * @description One of the household's printers as its card shows it. `printer_id` is the printing manager's id for it (what
+         *     `BroughtUp.ref` names), `name` what the household calls it, `printer_model` its model when known, `online` whether
+         *     the manager can reach it. `state` is the printer's own word for what it is doing (`RUNNING`, `IDLE`, `PAUSE`,
+         *     `FINISH`, `FAILED`), null when it says nothing, which is never idle. `print_name` is the print it is on, `percent` how
+         *     far along (0 to 100), `minutes_left`, `layer` and `layers` where it is in it, each null with no print or when the
+         *     printer does not say. `problems` are the faults it reports now, each its text or else its code.
+         */
+        HousePrinter: {
+            /** Printer Id */
+            printer_id: string;
+            /** Name */
+            name: string;
+            /** Printer Model */
+            printer_model: string | null;
+            /** Online */
+            online: boolean;
+            /** State */
+            state: string | null;
+            /** Print Name */
+            print_name: string | null;
+            /** Percent */
+            percent: number | null;
+            /** Minutes Left */
+            minutes_left: number | null;
+            /** Layer */
+            layer: number | null;
+            /** Layers */
+            layers: number | null;
+            /** Problems */
+            problems: string[];
+        };
+        /**
+         * HousePrinters
+         * @description The household's printers for a signed-in person: empty when it has no printing manager, null when they cannot be
+         *     read now (or there are more than one read holds), so a printer missing from them is unknown, never gone.
+         */
+        HousePrinters: {
+            /** Printers */
+            printers: components["schemas"]["HousePrinter"][] | null;
         };
         /**
          * Household
@@ -11795,6 +11878,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseGlance"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    house_printers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HousePrinters"];
                 };
             };
             /** @description `unauthorized`: no live session */

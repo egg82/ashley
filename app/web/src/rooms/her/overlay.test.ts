@@ -7,7 +7,7 @@ import { stillOn } from './owed.ts';
 test("a fired reminder is the household's line, which the thread draws as a HouseholdLine, never a bubble of the person", () => {
   const fired: ChatConversationTurn = {
     id: 3, author: 'household', text: 'Reminder: pay the card', at: '2026-11-24T19:34:00Z', follows: false,
-    continued_on: null, attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, piece_ids: [],
+    continued_on: null, attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, piece_ids: [], brought_up: [],
   };
   const line = storedLine(fired);
   assert.equal(line.author, 'household');

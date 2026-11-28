@@ -7,6 +7,26 @@ from typing import Any, Literal, get_args
 
 AgreedStatus = Literal["ran", "failed", "not_run"]
 _STATUSES: dict[str, AgreedStatus] = {s: s for s in get_args(AgreedStatus)}
+ShownKind = Literal["printer"]
+"""The kinds of thing a turn of hers can bring up beside her words, each a card the client draws (its parts registry)."""
+_KINDS: dict[str, ShownKind] = {k: k for k in get_args(ShownKind)}
+
+
+@dataclass(frozen=True)
+class Shown:
+    """One thing brought up beside her words, set by code from a tool's result and never read from her text: its `kind`
+    and `ref`, the id the kind's own read names it by (a printer's id as the printing manager gives it)."""
+
+    kind: ShownKind
+    ref: str
+
+    def to_json(self) -> dict[str, str]:
+        return {"kind": self.kind, "ref": self.ref}
+
+    @staticmethod
+    def from_json(raw: Mapping[str, Any]) -> "Shown":
+        """The inverse of `to_json`. Raises KeyError for a missing key or an unknown kind."""
+        return Shown(_KINDS[raw["kind"]], str(raw["ref"]))
 
 
 @dataclass(frozen=True)

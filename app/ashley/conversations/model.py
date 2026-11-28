@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-from ..receipts import AgreedCall, AgreedOutcome, Fact, Receipt, Receipts
+from ..receipts import AgreedCall, AgreedOutcome, Fact, Receipt, Receipts, Shown
 
-__all__ = ["AgreedCall", "AgreedOutcome", "Fact", "Receipt", "Receipts"]
+__all__ = ["AgreedCall", "AgreedOutcome", "Fact", "Receipt", "Receipts", "Shown"]
 
 Kind = Literal["command", "chat", "brainstorm"]
 """Set in code by whoever opens the conversation; it decides length, model and channels downstream."""
@@ -61,7 +61,8 @@ class NewTurn:
     turn's `text` is what they typed, never the paste). `spoken` is what she chose to say aloud with her turn, in real
     spellings (`Reply.aloud`), only on a turn of hers and never empty; the page that spoke to her plays it
     (`Conversations.spoken`). `receipts` is what code shows beside her answer (`Receipts`), only on a turn of hers;
-    refused on another author."""
+    refused on another author. `shown` is what her calls brought up beside her words (`Shown`), each once, likewise only
+    hers."""
 
     author: Author
     text: str
@@ -77,11 +78,12 @@ class NewTurn:
     attachment: Attachment | None = None
     spoken: str | None = None
     receipts: Receipts | None = None
+    shown: tuple[Shown, ...] = ()
 
 
 @dataclass(frozen=True)
 class Turn:
-    """A stored turn. `at` is when the database recorded it. `follows`, `answers`, `carried_from`, `continued_on`, `attachment`, `spoken` and `receipts` as on `NewTurn`. `conversation_id`
+    """A stored turn. `at` is when the database recorded it. `follows`, `answers`, `carried_from`, `continued_on`, `attachment`, `spoken`, `receipts` and `shown` as on `NewTurn`. `conversation_id`
     is the conversation it was said in, None on a turn built by hand; it is not part of a turn's equality. `agreed` is
     what became of the held calls a person's agreeing turn carried out (`InFlight.agreed`), set once they are done; None
     on every other turn. `heard` and `owner_id` as on `NewTurn`; a hand-built turn is `shared`."""
@@ -102,6 +104,7 @@ class Turn:
     agreed: AgreedOutcome | None = None
     heard: Heard = "shared"
     owner_id: int | None = None
+    shown: tuple[Shown, ...] = ()
 
 
 @dataclass(frozen=True)

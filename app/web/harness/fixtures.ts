@@ -89,7 +89,7 @@ export function benchOf(n: number): BenchDetail {
 
 function turn(id: number, author: 'person' | 'ashley', text: string, agoMs: number, pieceIds: number[] = []) {
   return { id, author, text, at: new Date(Date.now() - agoMs).toISOString(), follows: false, continued_on: null, attachment: null, runs: [], looks: [],
-    working: false, agree: null, voiced: false, receipts: null, agreed: null, piece_ids: pieceIds };
+    working: false, agree: null, voiced: false, receipts: null, agreed: null, piece_ids: pieceIds, brought_up: [] };
 }
 
 export function talkOf(n: number): ChatConversation {

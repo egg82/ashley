@@ -30,7 +30,7 @@ from . import chat_looks, chat_pieces
 from .chat_pieces import Touched
 from .chat_runs import under_answers
 from .chat_models import ChatAttachment, ChatMessage, ChatRequest
-from .receipt_models import wire_agreed, wire_receipts
+from .receipt_models import wire_agreed, wire_brought_up, wire_receipts
 from .models import AgreeReply, AgreeRequest, ChatConversation, ChatConversationTurn, ChatReply, ErrorResponse
 from .person import Person
 
@@ -174,7 +174,8 @@ async def conversation_on(household_id: int, thread: str, request: Request, held
                                   runs=shown.get(t.id, []), looks=seen.get(t.id, []), working=t.id in working,
                                   agree=agree_on(t, held), voiced=t.spoken is not None,
                                   receipts=wire_receipts(t.receipts), 
-                                  agreed=None if t.agreed is None else wire_agreed(t.agreed), piece_ids=under.get(t.id, []))
+                                  agreed=None if t.agreed is None else wire_agreed(t.agreed), piece_ids=under.get(t.id, []),
+                                  brought_up=wire_brought_up(t.shown))
              for t in unprompted.shown(found.turns)]
     return ChatConversation(thread=thread, conversation_id=found.id, started_at=found.started_at,
                             turns=turns)
