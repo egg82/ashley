@@ -18,8 +18,8 @@ test('every state and kind the server can send has a word, and the words differ'
   assert.deepEqual(states.sort(), ['done', 'open', 'running', 'stopped', 'waiting_on_you']);
   assert.equal(new Set(Object.values(STATE_WORD)).size, states.length);
   assert.equal(STATE_WORD.waiting_on_you, 'Waiting on you');
-  assert.deepEqual(Object.keys(KIND_WORD).sort(), ['action', 'bench', 'errand', 'open_errand', 'proposal', 'standing_errand', 'watch']);
-  assert.equal(new Set(Object.values(KIND_WORD)).size, 7);
+  assert.deepEqual(Object.keys(KIND_WORD).sort(), ['action', 'bench', 'errand', 'kept_quiet', 'open_errand', 'proposal', 'standing_errand', 'watch']);
+  assert.equal(new Set(Object.values(KIND_WORD)).size, 8);
 });
 
 test('only items waiting on the person count as waiting', () => {

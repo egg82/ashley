@@ -27,11 +27,12 @@ DAY = 86400.0
 
 
 @asynccontextmanager
-async def record(url: str, actions_keep_s: float = 90 * DAY, writes_keep_s: float = 7 * DAY) -> AsyncGenerator[PostgresOutsideRecord]:
+async def record(url: str, actions_keep_s: float = 90 * DAY, writes_keep_s: float = 7 * DAY,
+                 quiet_keep_s: float = 7 * DAY) -> AsyncGenerator[PostgresOutsideRecord]:
     database = PoolDatabase(url, connect_timeout_s=5.0)
     await database.open()
     try:
-        yield PostgresOutsideRecord(database, actions_keep_s, writes_keep_s)
+        yield PostgresOutsideRecord(database, actions_keep_s, writes_keep_s, quiet_keep_s)
     finally:
         await database.close()
 

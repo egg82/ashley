@@ -4,6 +4,7 @@
   "max_argument_chars": 4000,
   "actions_keep_s": 7776000,
   "writes_keep_s": 604800,
+  "quiet_keep_s": 604800,
   "words_turns": 12,
   "words_chars": 2000,
   "summary_arguments": {"house_do": ["action"], "mail_label": ["folder"]},

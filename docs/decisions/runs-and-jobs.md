@@ -230,7 +230,10 @@ from her words, and `on_her_own`, every change she made for the person that no o
 `action`, carrying its cause and undo; `decisions.md`, "What she did on her own is one record"). A lane follows the
 item's `state`, except an action's, which is always `on_her_own`. Proposals, watches and actions come from
 `Proposals.of`, `Watches.live` and `OutsideRecord.of_person` (`ashley.channels.board`, mapped by
-`ashley.api.work_pending`), each system's own read; the board holds no table of its own. Where she told an errand's
+`ashley.api.work_pending`), each system's own read; the board holds no table of its own. `kept_quiet` is one summary item
+per person (kind and lane `kept_quiet`), from `OutsideRecord.quiet_of_person`: a title written by code from the count, `at`
+the newest entry's, and `kept_quiet` with the `count` within the 7-day keep and the newest three entries (`why` code, `at`,
+`cause`), never one item per entry (`decisions/senses.md`, Initiative). Where she told an errand's
 result is not recorded: `held` returns only errands not yet told, so a `told_where` would be empty on every item the
 list shows, and it waits for a list of what was told.
 

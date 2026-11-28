@@ -76,7 +76,7 @@ async def pushed(reply: Reply, inbound: Inbound, conversation_id: int, receipts:
                  said_id: int | None = None) -> tuple[Pushed, ...]:
     """Her answer as queued for the thread, when it goes out after the response through the `Outbox`: never on an
     unprompted turn that `Initiative` keeps quiet. `said_id` is the person turn it answers."""
-    if inbound.later_by != "outbox" or not unprompted.decided(reply, inbound, conversation_id):
+    if inbound.later_by != "outbox" or not await unprompted.decided(reply, inbound, conversation_id):
         return ()
     body = await render(reply, inbound.medium, inbound.household_id)
     return (Pushed(inbound.household_id, inbound.thread, Outbound(

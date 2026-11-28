@@ -259,12 +259,12 @@ async def database(world: World) -> AsyncGenerator[PoolDatabase]:
     """The real stores on the test's database, registered for the turn loop."""
     db = PoolDatabase(world.url, connect_timeout_s=5.0)
     await db.open()
-    keep_actions, keep_writes = outside_config.keeps()
+    keep_actions, keep_writes, keep_quiet = outside_config.keeps()
     services.register(Conversations, PostgresConversations(db, POLICY))
     services.register(InFlight, PostgresInFlight(db, POLICY, claim_s=CLAIM_S))
     services.register(Outbox, PostgresOutbox(db, 600.0, POLICY))
     services.register(Proposals, PostgresProposals(db))
-    services.register(OutsideRecord, PostgresOutsideRecord(db, keep_actions, keep_writes))
+    services.register(OutsideRecord, PostgresOutsideRecord(db, keep_actions, keep_writes, keep_quiet))
     try:
         yield db
     finally:

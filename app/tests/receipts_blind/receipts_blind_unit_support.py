@@ -12,7 +12,8 @@ from ashley.channels.landing import Landing
 from ashley.channels.limits import load as load_limits
 from ashley.channels.model import Inbound
 from ashley.inference.model import ToolCall, ToolResult, ToolSpec
-from ashley.senses.outside_record import DoneAction, OutsideRecord, OutsideRecordUnavailable, Recorded, Settled
+from ashley.senses.outside_record import (DoneAction, OutsideRecord, OutsideRecordUnavailable, QuietEntry, QuietLately, Recorded,
+                                    Settled)
 from ashley.senses.proposal_payloads import OUTSIDE, HeldCall, HeldCalls, Payload, Topic, encode
 from ashley.senses.proposals import Proposal, ProposalRefused, Proposals, refusal
 from ashley.tools.action_judge import ActionJudge
@@ -110,6 +111,12 @@ class Down(OutsideRecord):
         raise OutsideRecordUnavailable("down")
 
     async def settle_undo(self, action_id: int, how: Settled | None) -> None:
+        raise OutsideRecordUnavailable("down")
+
+    async def quieted(self, entry: QuietEntry) -> None:
+        raise OutsideRecordUnavailable("down")
+
+    async def quiet_of_person(self, household_id: int, person_id: int, latest: int) -> QuietLately | None:
         raise OutsideRecordUnavailable("down")
 
     async def wrote(self, household_id: int, entity: str, at: datetime) -> None:

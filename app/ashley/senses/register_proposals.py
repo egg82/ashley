@@ -8,8 +8,8 @@ from .postgres_proposals import PostgresProposals
 from .proposals import Proposals
 
 
-def register(database: Database, actions_keep_s: float, writes_keep_s: float) -> None:
-    """Register the Postgres stores of proposals and of what a tainted turn did on its own, which keeps its actions and its
-    list writes for the seconds given."""
+def register(database: Database, actions_keep_s: float, writes_keep_s: float, quiet_keep_s: float) -> None:
+    """Register the Postgres stores of proposals and of what a tainted turn did on its own, which keeps its actions, its
+    list writes and what she kept quiet for the seconds given."""
     services.register(Proposals, PostgresProposals(database))
-    services.register(OutsideRecord, PostgresOutsideRecord(database, actions_keep_s, writes_keep_s))
+    services.register(OutsideRecord, PostgresOutsideRecord(database, actions_keep_s, writes_keep_s, quiet_keep_s))

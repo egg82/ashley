@@ -12489,6 +12489,65 @@
         "title": "KeeperVault",
         "description": "What the keeper starts Bridge from: the `generation` it must hold in its next write-back, and the vault and\nkeychain as base64, both null before the first write-back."
       },
+      "KeptQuiet": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "latest": {
+            "items": {
+              "$ref": "#/components/schemas/KeptQuietEntry"
+            },
+            "type": "array",
+            "title": "Latest"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "latest"
+        ],
+        "title": "KeptQuiet",
+        "description": "What she kept quiet for the person within the last `quiet_keep_s` (7 days): how many (`count`) and the newest\n`latest`, newest first."
+      },
+      "KeptQuietEntry": {
+        "properties": {
+          "why": {
+            "type": "string",
+            "enum": [
+              "quiet_hours",
+              "not_greeting",
+              "below_threshold",
+              "rolled_silent",
+              "said_none"
+            ],
+            "title": "Why"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionCause"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "why",
+          "at"
+        ],
+        "title": "KeptQuietEntry",
+        "description": "One time she decided not to say something on her own: `why` is a code (`quiet_hours`, the person's own; `not_greeting`,\na turn with no moment to score; `below_threshold`, the moment scored too low; `rolled_silent`, the seeded roll came out\nsilent; `said_none`, the plan allowed it and she had nothing to say), `at` when, `cause` the record that started the\nturn. Never her words."
+      },
       "KioskControl": {
         "properties": {
           "name": {
@@ -19274,7 +19333,8 @@
               "bench",
               "watch",
               "proposal",
-              "action"
+              "action",
+              "kept_quiet"
             ],
             "title": "Kind"
           },
@@ -19304,7 +19364,8 @@
               "doing",
               "done_untold",
               "would_like",
-              "on_her_own"
+              "on_her_own",
+              "kept_quiet"
             ],
             "title": "Lane"
           },
@@ -19374,6 +19435,16 @@
                 "type": "null"
               }
             ]
+          },
+          "kept_quiet": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KeptQuiet"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -19386,7 +19457,7 @@
           "at"
         ],
         "title": "WorkItem",
-        "description": "One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of\n`errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`\n(done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps),\n`proposal` (something she proposed that nobody has agreed to) or `action` (a change she made for them with no one's\nOK in that turn, kept 90 days). `id` is that record's own id (a bench's id is the workshop's `/workshop/{id}`, a\nwatch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one `POST /api/chat/agree` takes, an\naction's its `GET /api/outside-actions` id), `title` what it is (the person's own words, shown only to them; a\nproposal's is written by code from what it would do, an action's by code from what it did).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with\nnothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be\nsent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or\n`would_like` (something she offered unasked) or `on_her_own` (every `action`, and only those). It follows `state` for\nevery other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it\nlast moved, or when an action was made: a bench's last change (else when it opened),\nan errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was\narmed), a proposal's making. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a\nproposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a\nproposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started\nthe turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is\noffered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):\nan `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other\nkind and for an action never undone."
+        "description": "One thing the signed-in person asked her to do or make that has not ended, or that waits on them: a `kind` of\n`errand` (asked once, held until its source answers), `open_errand` (carried out over checks), `standing_errand`\n(done each time its rule comes round, never finished), `bench` (an open bench), `watch` (a live watch she keeps),\n`proposal` (something she proposed that nobody has agreed to), `action` (a change she made for them with no one's\nOK in that turn, kept 90 days) or `kept_quiet` (one item for all she decided not to say on her own for them in the\nlast 7 days, in `kept_quiet`). `id` is that record's own id (a bench's id is the workshop's `/workshop/{id}`, a\nwatch's the one `DELETE /api/work/watches/{id}` cancels, a proposal's the one `POST /api/chat/agree` takes, an\naction's its `GET /api/outside-actions` id, a `kept_quiet`'s its newest entry's), `title` what it is (the person's own words, shown only to them; a\nproposal's is written by code from what it would do, an action's by code from what it did, a `kept_quiet`'s by code from its count).\n`state`: `running`, in her hands; `waiting_on_you`, only the person can move it (an install to approve, a job\nblocked on them or on their machine, a check whose words have not reached them, a proposal); `open`, a bench with\nnothing in flight; `done`, finished with its result not yet told, or an action carried out; `stopped`, an errand's check that could not be\nsent or a watch paused after failing. `lane` is where the board puts it: `waiting`, `doing`, `done_untold` or\n`would_like` (something she offered unasked), `on_her_own` (every `action`, and only those) or `kept_quiet` (every\n`kept_quiet`, and only that). It follows `state` for\nevery other kind, and nothing yet marks a proposal as offered unasked, so no item is `would_like`. `at` is when it\nlast moved, or when an action was made: a bench's last change (else when it opened),\nan errand's next check due or a one-shot's asking, or finishing when `done`, a watch's last wake (else when it was\narmed), a proposal's making, a `kept_quiet`'s newest entry. `until_local` is when an `open_errand` ends, as the household's wall clock\n(`YYYY-MM-DDTHH:MM`), null for any other kind, a `standing_errand` included. `conversation_id` is the conversation a\nproposal was made in, null for any other kind. `can_tap` is whether Agree is a tap (`POST /api/chat/agree`, a\nproposal of held calls); a proposal without it is agreed by answering her in that conversation. `cause` is what started\nthe turn an `action` was made in and `undo` how it is taken back (None when it cannot be, and then no Undo is\noffered), both null for any other kind. `can_undo` is whether Undo is offered (`POST /api/work/actions/{id}/undo`):\nan `action` with an `undo` that was not taken. `undone` is that it was taken and how it stands, null for any other\nkind and for an action never undone. `kept_quiet` is the `kept_quiet` item's count and latest entries, null for any\nother kind."
       },
       "WorkKind": {
         "properties": {

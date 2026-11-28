@@ -237,7 +237,7 @@ def test_an_action_pruned_past_the_records_keep_leaves_the_board(world: World, c
         db = PoolDatabase(world.url, connect_timeout_s=5.0)
         await db.open()
         try:
-            await PostgresOutsideRecord(db, 90 * 86400.0, 7 * 86400.0).done(DoneAction(
+            await PostgresOutsideRecord(db, 90 * 86400.0, 7 * 86400.0, 7 * 86400.0).done(DoneAction(
                 world.home, world.alana, 1, 2, "light", "Turned off the porch light", "runs", None, None,
                 datetime.now(UTC), "Did it"))
         finally:
