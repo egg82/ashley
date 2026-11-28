@@ -174,7 +174,7 @@ async def conversation_on(household_id: int, thread: str, request: Request, held
                                   runs=shown.get(t.id, []), looks=seen.get(t.id, []), working=t.id in working,
                                   agree=agree_on(t, held), voiced=t.spoken is not None,
                                   receipts=wire_receipts(t.receipts), 
-                                  agreed=None if t.agreed is None else wire_agreed(t.agreed), pieces=under.get(t.id, []))
+                                  agreed=None if t.agreed is None else wire_agreed(t.agreed), piece_ids=under.get(t.id, []))
              for t in unprompted.shown(found.turns)]
     return ChatConversation(thread=thread, conversation_id=found.id, started_at=found.started_at,
                             turns=turns)

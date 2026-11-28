@@ -124,7 +124,7 @@ def test_a_turn_on_the_wire_carries_nothing_of_memory() -> None:
     assert set(ChatTurn.model_fields) == {"id", "author", "text", "at", "follows", "continued_on", "attachment"}
     assert set(ChatConversationTurn.model_fields) == {"id", "author", "text", "at", "follows", "continued_on",
                                                       "attachment", "runs", "looks", "working", "agree", "voiced", "receipts",
-                                                      "agreed", "pieces"}
+                                                      "agreed", "piece_ids"}
 
 
 def test_a_held_line_reads_back_as_hers_marked_follows_before_the_answer(client: TestClient, wired: Fakes) -> None:
