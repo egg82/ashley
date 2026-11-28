@@ -1353,6 +1353,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search
+         * @description 200 `PastMatches`: turns matching `q` in the conversations the person took part in, on any channel, best match
+         *     first, at most `limit`; never a turn said privately to someone else, nor an evaluation's. 401 `unauthorized`; 422 for a bad `q` or
+         *     `limit`; 503 `unavailable`. Logs ids and counts, never the query.
+         */
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/conversations/{conversation_id}": {
         parameters: {
             query?: never;
@@ -5043,6 +5065,37 @@ export interface components {
             conversations: components["schemas"]["PastSummary"][];
             /** Next */
             next: string | null;
+        };
+        /**
+         * PastMatch
+         * @description A turn a search found: follow `conversation_id` to `GET /api/chat/conversations/{id}` and `turn_id` to the line.
+         *     `snippet` is its text around the match; `author` is who said it.
+         */
+        PastMatch: {
+            /** Conversation Id */
+            conversation_id: number;
+            /** Turn Id */
+            turn_id: number;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Author
+             * @enum {string}
+             */
+            author: "person" | "ashley" | "household";
+            /** Snippet */
+            snippet: string;
+        };
+        /**
+         * PastMatches
+         * @description What a search found, best match first.
+         */
+        PastMatches: {
+            /** Matches */
+            matches: components["schemas"]["PastMatch"][];
         };
         /**
          * PastSummary
@@ -11267,6 +11320,56 @@ export interface operations {
                 };
             };
             /** @description `refused`: `before` is not one a page returned; a `limit` outside 1 to 50 gets FastAPI's own validation error, which is not this schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `unavailable`: the database could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PastMatches"];
+                };
+            };
+            /** @description `unauthorized`: no live session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description a missing or empty `q`, or a `limit` outside 1 to 50, gets FastAPI's own validation error, which is not this schema */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -156,6 +156,19 @@ class Page:
 
 
 @dataclass(frozen=True)
+class Match:
+    """A turn a search found: where it is (`conversation_id`, `turn_id`), when it was said, who by, a `snippet` of its
+    text around the match, and its `rank` (higher is better)."""
+
+    conversation_id: int
+    turn_id: int
+    at: datetime
+    author: Author
+    snippet: str
+    rank: float
+
+
+@dataclass(frozen=True)
 class Hearer:
     """Who will hear a reply: the household, the speaker (None when unknown) and whether only the speaker will hear or
     read it (`owner_only`: a DM, their web login)."""

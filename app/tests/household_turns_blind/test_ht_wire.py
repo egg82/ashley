@@ -6,7 +6,7 @@ import pytest
 from ashley import services
 from ashley.api.person import person_signed_in
 from ashley.conversations.conversations import Conversations
-from ashley.conversations.model import Carried, Conversation, Cursor, NewTurn, Page, Turn
+from ashley.conversations.model import Carried, Conversation, Cursor, Match, NewTurn, Page, Turn
 from ashley.main import create_app
 from ashley.people.model import Household, Person
 from ashley.people.people import People
@@ -22,6 +22,9 @@ PUBLIC = "https://ashley.test"
 class Stored(Conversations):
     def __init__(self, found: Conversation | None) -> None:
         self.found = found
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def get(self, conversation_id: int) -> Conversation | None:
         return self.found

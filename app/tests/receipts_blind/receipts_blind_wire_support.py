@@ -13,7 +13,7 @@ from ashley.api.person import person_signed_in
 from ashley.channels.model import Device
 from ashley.conversations.conversations import Conversations
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import Carried, Conversation, Cursor, NewTurn, Page, Receipt, Receipts, Turn
+from ashley.conversations.model import Carried, Conversation, Cursor, Match, NewTurn, Page, Receipt, Receipts, Turn
 from ashley.main import create_app
 from ashley.people.people import People
 from ashley.runs.runs import NullRuns, Runs
@@ -46,6 +46,9 @@ def conversation(*turns: Turn) -> Conversation:
 @dataclass
 class Fixed(Conversations):
     found: Conversation
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def get(self, conversation_id: int) -> Conversation | None:
         return self.found if conversation_id == self.found.id else None

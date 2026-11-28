@@ -12,7 +12,7 @@ from ashley import services
 from ashley.channels.model import Inbound
 from ashley.conversations.conversations import ConversationClosed, Conversations, ConversationsUnavailable
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import Carried, Channel, Conversation, Cursor, Hearer, Kind, NewTurn, Page, Turn
+from ashley.conversations.model import Carried, Channel, Conversation, Cursor, Hearer, Kind, Match, NewTurn, Page, Turn
 from ashley.inference.inference import Inference
 from ashley.inference.model import Message, Prompt, SystemPrompt, Task, ToolCall, ToolCalls, ToolResult, ToolSpec
 from ashley.inference.speech import Heard, Speech, SpeechTask, Transcript
@@ -67,6 +67,9 @@ class FakeConversations(Conversations):
     filtered: int = 0
     added: list[NewTurn] = field(default_factory=list[NewTurn])
     _ids: Iterator[int] = field(default_factory=lambda: itertools.count(1))
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def start(self, household_id: int, kind: Kind, participants: Iterable[int],
                     remembered: bool = True, channel: Channel | None = None,

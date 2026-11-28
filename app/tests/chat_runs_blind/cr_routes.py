@@ -14,7 +14,7 @@ from ashley.channels.devices import Devices
 from ashley.channels.model import Device, DiscordServer, Listed, Satellite
 from ashley.conversations.conversations import Conversations
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import Carried, Conversation, Cursor, NewTurn, Page, Turn
+from ashley.conversations.model import Carried, Conversation, Cursor, Match, NewTurn, Page, Turn
 from ashley.live.live import Live
 from ashley.main import create_app
 from ashley.people.people import People
@@ -36,6 +36,9 @@ CONVERSATION_ID = 5
 @dataclass
 class StoredConversation(Conversations):
     turns: tuple[Turn, ...] = ()
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def _read(self) -> Conversation:
         return Conversation(CONVERSATION_ID, HOME.id, "chat", frozenset({ALANA.id}), AT, AT, "open", self.turns)

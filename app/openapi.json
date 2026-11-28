@@ -4960,6 +4960,80 @@
         }
       }
     },
+    "/api/chat/search": {
+      "get": {
+        "summary": "Search",
+        "description": "200 `PastMatches`: turns matching `q` in the conversations the person took part in, on any channel, best match\nfirst, at most `limit`; never a turn said privately to someone else, nor an evaluation's. 401 `unauthorized`; 422 for a bad `q` or\n`limit`; 503 `unavailable`. Logs ids and counts, never the query.",
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PastMatches"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthorized`: no live session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`: the database could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a missing or empty `q`, or a `limit` outside 1 to 50, gets FastAPI's own validation error, which is not this schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat/conversations/{conversation_id}": {
       "get": {
         "summary": "Past",
@@ -14997,6 +15071,63 @@
         ],
         "title": "PastHistory",
         "description": "A page of `PastSummary`, newest activity first. `next` is the `before` that reads the following page, null on\nthe last."
+      },
+      "PastMatch": {
+        "properties": {
+          "conversation_id": {
+            "type": "integer",
+            "title": "Conversation Id"
+          },
+          "turn_id": {
+            "type": "integer",
+            "title": "Turn Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "author": {
+            "type": "string",
+            "enum": [
+              "person",
+              "ashley",
+              "household"
+            ],
+            "title": "Author"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "turn_id",
+          "at",
+          "author",
+          "snippet"
+        ],
+        "title": "PastMatch",
+        "description": "A turn a search found: follow `conversation_id` to `GET /api/chat/conversations/{id}` and `turn_id` to the line.\n`snippet` is its text around the match; `author` is who said it."
+      },
+      "PastMatches": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/PastMatch"
+            },
+            "type": "array",
+            "title": "Matches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matches"
+        ],
+        "title": "PastMatches",
+        "description": "What a search found, best match first."
       },
       "PastSummary": {
         "properties": {

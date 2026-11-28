@@ -16,7 +16,7 @@ from ashley.channels.outbox import Later, Outbox
 from ashley.conversations.conversations import Conversations
 from ashley.runs.runs import NullRuns, Runs
 from ashley.conversations.inflight import InFlight
-from ashley.conversations.model import Carried, Conversation, Cursor, Page, State, Turn
+from ashley.conversations.model import Carried, Conversation, Cursor, Match, Page, State, Turn
 from ashley.main import create_app
 from ashley.people.model import Person
 from ashley.settings import Settings
@@ -84,6 +84,9 @@ class FakeConversations(Conversations):
     by_thread: dict[tuple[int, str], Conversation] = field(default_factory=dict[tuple[int, str], Conversation])
     asked: list[tuple[int, str]] = field(default_factory=list[tuple[int, str]])
     error: Exception | None = None
+
+    async def search(self, household_id: int, person_id: int, query: str, limit: int) -> tuple[Match, ...]:
+        raise AssertionError("not used")
 
     async def answer_to(self, household_id: int, source: str) -> Turn | None:
         raise AssertionError("not used")
