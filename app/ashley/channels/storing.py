@@ -4,7 +4,7 @@ through the `Outbox` in the same transaction."""
 import logging
 
 from .. import logs
-from ..conversations.model import NewTurn, Receipts
+from ..conversations.model import NewTurn, Receipts, Shown
 from ..inference.reply import Reply
 from ..people.model import Person
 from . import aloud, history, to_phone, unprompted
@@ -18,13 +18,14 @@ log = logging.getLogger("ashley.channels")
 
 def stored(reply: Reply, inbound: Inbound, speaker: Person | None, phone: int | None, conversation_id: int,
            said_id: int, queued: tuple[Pushed, ...] = (),
-           receipts: Receipts | None = None) -> tuple[NewTurn, tuple[Pushed, ...]]:
+           receipts: Receipts | None = None, shown: tuple[Shown, ...] = ()) -> tuple[NewTurn, tuple[Pushed, ...]]:
     """Her turn answering the person turn `said_id` and what is queued with it: `queued` and the copy to the phone, in
     which case the turn holds `text`, private to the speaker, and `held` (a standing errand's finding Initiative kept quiet); else the field the medium delivers, heard as the
     channel's turns are; on an unprompted turn that does not go out, `unprompted.QUIET`. The turn carries `receipts`
     (what code shows beside her words), and on a spoken channel nothing of them is said: they go to the speaker's phone,
     in the copy when she chose to send one, else on their own (`receipt_push`). The turn carries `spoken` when the
-    message offered her to answer aloud and she did (`aloud.spoken`)."""
+    message offered her to answer aloud and she did (`aloud.spoken`), and `shown`, what her calls brought up beside her
+    words, which only a page draws."""
     heard = reply
     reply = unprompted.as_said(reply, inbound)
     copy = to_phone.copy(reply, phone, inbound.household_id, conversation_id, receipts)
@@ -37,10 +38,10 @@ def stored(reply: Reply, inbound: Inbound, speaker: Person | None, phone: int | 
                   outcome="phone" if copy is not None else "thread" if reply is heard else "silent")
     if copy is not None:
         said = NewTurn("ashley", reply.text, None, *history.heard(inbound, speaker, to_phone=True), answers=said_id,
-                       spoken=voice, receipts=receipts)
+                       spoken=voice, receipts=receipts, shown=shown)
         return said, (*queued, copy)
     return NewTurn("ashley", delivered(reply, inbound.medium), None, *history.heard(inbound, speaker),
-                   answers=said_id, spoken=voice, receipts=receipts), queued
+                   answers=said_id, spoken=voice, receipts=receipts, shown=shown), queued
 
 
 def receipt_push(receipts: Receipts | None, inbound: Inbound, phone: int | None,

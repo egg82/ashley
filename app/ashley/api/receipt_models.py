@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from ..conversations.model import AgreedCall, AgreedOutcome, Fact, Receipt, Receipts
+from ..conversations.model import AgreedCall, AgreedOutcome, Fact, Receipt, Receipts, Shown
 
 
 class WireReceipt(BaseModel):
@@ -81,3 +81,15 @@ def wire_agreed(outcome: AgreedOutcome) -> WireAgreed:
 
 def _wire_call(call: AgreedCall) -> WireAgreedCall:
     return WireAgreedCall(summary=call.summary, status=call.status)
+
+
+class BroughtUp(BaseModel):
+    """One thing her turn brought up beside her words, which a page draws as a card of that `kind`: `ref` is the id the
+    kind's own read names it by (for `printer`, `HousePrinter.printer_id` in `GET /api/house/printers`)."""
+
+    kind: Literal["printer"]
+    ref: str
+
+
+def wire_brought_up(shown: tuple[Shown, ...]) -> list[BroughtUp]:
+    return [BroughtUp(kind=s.kind, ref=s.ref) for s in shown]

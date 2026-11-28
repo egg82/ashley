@@ -98,7 +98,7 @@ class FakeConversations(Conversations):
         stored = Turn(len(conv.turns) + 100, turn.author, turn.speaker_id, turn.text, EPOCH, turn.follows,
                       conversation_id, answers=turn.answers, carried_from=turn.carried_from,
                       continued_on=turn.continued_on, attachment=turn.attachment, spoken=turn.spoken,
-                      receipts=turn.receipts)
+                      receipts=turn.receipts, shown=turn.shown)
         self.convs[conversation_id] = replace(conv, turns=(*conv.turns, stored))
         return stored
 

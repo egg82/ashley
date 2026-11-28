@@ -15,7 +15,7 @@ import '../../src/camera/camera.css';
 const q = new URLSearchParams(location.search);
 const at = (h: number, m = 0) => new Date(Date.UTC(2026, 10, 27, h, m)).toISOString();
 const turn = (id: number, author: 'person' | 'ashley', text: string, m: number) =>
-  ({ id, author, text, at: at(9, m), follows: false, continued_on: null, attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, receipts: null, agreed: null, piece_ids: [] });
+  ({ id, author, text, at: at(9, m), follows: false, continued_on: null, attachment: null, runs: [], looks: [], working: false, agree: null, voiced: false, receipts: null, agreed: null, piece_ids: [], brought_up: [] });
 
 const DEVICE = { id: 3, name: 'Hall tablet', place: 'hallway' };
 const GLANCE = {

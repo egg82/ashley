@@ -4,7 +4,8 @@ allow); `POST /api/house/controls/{name}` presses one by that name alone, carrie
 (`channels.kiosk.controls.run`, through `house_do`), so `irreversible.json` and the tool's other checks apply unchanged.
 A press is the person's own act, not hers: it is not an outside action, and the log line names the person. Each press
 counts against the person's rate (`Sessions.allow`). `GET /api/house/glance` is who is home (`channels.kiosk.glance`) and
-what needs the person (`house_attention`).
+what needs the person (`house_attention`). `GET /api/house/printers` is the household's printers as their cards show them
+(`house_printers`).
 
 The wire shapes are the kiosk's controls' (`KioskControls`, `KioskControlDone`), so one client part reads either.
 
@@ -25,7 +26,8 @@ from ..connections.kinds import CatalogueUnavailable
 from ..signin.sessions import Sessions, SessionsUnavailable
 from .benches import owner_of
 from .house_attention import attention
-from .house_models import HouseGlance
+from .house_models import HouseGlance, HousePrinters
+from .house_printers import printers
 from .models import ErrorResponse, KioskControl, KioskControlDone, KioskControls
 from .person import Person
 
@@ -93,3 +95,9 @@ async def house_glance(signed_in: Person) -> HouseGlance:
     seen = await glance(me.household_id)
     return HouseGlance(home=None if seen.home is None else list(seen.home),
                        needs_attention=await attention(owner_of(signed_in)))
+
+
+@router.get("/api/house/printers", response_model=HousePrinters, responses={401: _READ[401]})
+async def house_printers(signed_in: Person) -> HousePrinters:
+    """200 `HousePrinters`; 401 `unauthorized`. Printers that cannot be read are null, never an empty list."""
+    return await printers(signed_in.person.household_id)

@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ..receipts import Shown
 from ..undo import Undo
 from .embedding import EmbedTask
 from .image import ImageTask
@@ -136,7 +137,8 @@ class ToolResult:
     a provider whose tool results are text alone sends them in a user message right after the results. `outside`
     narrows the tool's `ToolSpec.outside` for this result: None leaves the spec's say, a boolean replaces it. `undo` is
     how the change the call made is taken back, set by a tool whose change has an inverse; None for every other result.
-    It is code's alone: the model never reads it."""
+    It is code's alone: the model never reads it. `shown` is what the result brings up beside her words, set by a tool
+    that read or put up something a card draws; code's alone too."""
 
     call_id: str
     content: str
@@ -144,6 +146,7 @@ class ToolResult:
     images: tuple[Image, ...] = ()
     outside: bool | None = None
     undo: Undo | None = None
+    shown: tuple[Shown, ...] = ()
 
     def taints(self, spec_outside: bool) -> bool:
         """Whether this result can carry text written outside the household: `outside` when set, else `spec_outside`."""
