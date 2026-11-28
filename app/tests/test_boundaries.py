@@ -22,7 +22,7 @@ PKG = ROOT / "ashley"  # the package directory (its name is the import root)
 # cut edges deliberately.
 ALLOWED: dict[str, set[str]] = {
     "api": {"channels", "connections", "conversations", "db", "errands", "files", "herdr", "inference", "live", "logs", "looks", "mail", "memory", "people",
-            "persona", "runs", "senses", "services", "settings", "signin", "skills", "text", "workshop"},
+            "persona", "runs", "senses", "services", "settings", "signin", "skills", "text", "trust", "workshop"},
     "channels": {"stamp", "cameras", "codehost", "connections", "conversations", "db", "errands", "inference", "initiative", "live", "logs", "memory",
                  "people", "persona", "runs", "senses", "services", "settings", "skills", "text", "tidy", "tools", "undo",
                  "watches", "workshop"},
@@ -86,9 +86,10 @@ ALLOWED: dict[str, set[str]] = {
                           "referee", "senses", "services", "settings", "watches", "workshop"},
     "wiring": {"channels", "codehost", "connections", "conversations", "db", "errands", "files", "google", "herdr", "home_assistant", "inference", "initiative", "live",
                "looks", "mail", "memory", "people", "printables", "runs", "senses", "services", "settings", "signin", "sure", "bambuddy",
-               "tidy", "tools", "watches", "wiring_bridge", "wiring_cameras", "wiring_devices", "wiring_discord", "wiring_inference", "wiring_sandbox", "wiring_secrets", "wiring_seeds", "wiring_singletons", "wiring_skills",
+               "tidy", "tools", "trust", "watches", "wiring_bridge", "wiring_cameras", "wiring_devices", "wiring_discord", "wiring_inference", "wiring_sandbox", "wiring_secrets", "wiring_seeds", "wiring_singletons", "wiring_skills",
                "workshop"},
     "tidy": {"db", "inference", "logs", "services", "workshop"},
+    "trust": {"db", "logs", "services"},
     "workshop": {"db", "files", "home_assistant", "live", "logs", "runs", "services", "text"},
 }
 

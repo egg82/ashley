@@ -476,3 +476,32 @@ turns did; the board's "On her own" lane reads it.
   tool sets the inverse where it has the ids, and the turn's builder sets the cause where it has the record.
 - **Not done: keeping a replaced config or a record's fields before an update** so they could be undone. Every such
   change would cost a read of the house; revisit if the board shows people wanting Undo on them.
+
+## What she may just do is a person's setting over the floor
+
+Per person and per kind of action, a person says whether she just does it or offers it first. It can only make her
+more careful than the code: the tiers (`ToolSpec.tier`, `app/ashley/tools/tiers.json`) and
+`app/ashley/home_assistant/irreversible.json` stay the floor, and a kind the floor always holds shows as locked.
+
+- Fits into: Proposals and `Outside`, with no new tier system. The setting is an in-app setting ("Env var, file,
+  connection or setting"): a person's own choice, written only by that person through the web route.
+- **The kinds are data**, `app/ashley/trust/kinds.json` (`ashley.trust.kinds`): each a label and the calls it covers (a
+  tool, narrowed by an argument's values where one tool spans two kinds, as `house_change` with `op` `delete`). A call
+  belongs to the first kind that covers it. The kinds are the changes her unasked turns take today: house setup changes,
+  reminders, list edits and sending mail, plus the two kinds the floor locks. Purchasing is not a kind.
+- **A kind's `floor`** says the code always offers it first whatever is set: `asks` (its tools are `asks` tier, as
+  `money_categorise` and `money_note`) or `irreversible` (every change it names is one `irreversible.json` covers).
+  `app/tests/test_trust_kinds.py` holds each `floor` to the specs and the patterns, both ways, so a row never shows open
+  while the code holds it, or locked while it does not.
+- **Unset is `act`** for an open kind, what she does today without asking, so nothing changes until a person sets
+  `offer`; a locked kind is `offer`. A stored choice is only what differs from unset (`Kinds.checked`), so setting a kind
+  back deletes its row ("An override stores only what a person changed").
+- **The store** is `trust_revisions` (a version per person), `trust_settings` (household, person, kind, value) and
+  `trust_settings_log` (a row per changed kind, pruned past 400 days by the writer), read through `ashley.trust.trust.Trust`
+  and written only by `ashley.trust.trust_write.TrustWriter`, which `app/tests/test_settings_boundary.py` lets only
+  `ashley.api.trust` and the wiring import. `Trust`'s Null Object reads nothing, which every reader takes as offer first.
+- **The route**: `GET /api/trust` answers the signed-in person's rows (kind, label, the value in force, `locked` and
+  why); `PUT /api/trust` replaces their whole choice under the revision read (409 `version_conflict`), and refuses a kind
+  that is not one or `act` on a locked kind (422 `TrustRefused`), storing nothing. There is no person id in either: a
+  person reads and writes their own rows only. Logs `trust.changed` (kind names and a count) and `trust.refused`.
+- **Rejected: storing `act` on a locked kind and ignoring it.** The page would show a choice the code never honours.

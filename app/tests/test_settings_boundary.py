@@ -8,7 +8,9 @@ its person sets", "A household may override her taste, never her contract", "A h
 chat"). Who is an admin (`ashley.people.admins` and its Postgres writer) is written only by the people and sign-in routes
 and the wiring ("An admin changes what the deployment shares"), and a model catalogue override
 (`ashley.inference.catalogue_override_write` and its Postgres writer) only by the catalogue's admin route and the wiring
-("An override stores only what a person changed"). An import of any by another module fails here, whatever
+("An override stores only what a person changed"), and what she may just do for a person (`ashley.trust.trust_write` and
+its Postgres writer) only by that person's route and the wiring ("What she may just do is a person's setting over the
+floor"). An import of any by another module fails here, whatever
 package it is in."""
 
 import ast
@@ -32,6 +34,8 @@ GUARDED: dict[str, tuple[set[str], set[str]]] = {
                    "ashley.inference.postgres_catalogue_override_write"}),
     "admins": ({"ashley.people.admins", "ashley.people.postgres_admins"},
                {"ashley.api.people", "ashley.api.signin", "ashley.wiring", "ashley.people.postgres_admins"}),
+    "trust": ({"ashley.trust.trust_write", "ashley.trust.postgres_trust_write"},
+              {"ashley.api.trust", "ashley.wiring", "ashley.trust.postgres_trust_write"}),
 }
 
 
@@ -79,11 +83,14 @@ def test_the_gate_catches_a_tool_a_channel_or_a_model_call_importing_a_writer() 
         "ashley.tools.routes": "from ..inference.route_choice_write import RouteChoiceWriter\n",
         "ashley.channels.routes": "from ..inference import postgres_route_choice_write\n",
         "ashley.inference.router_planted": "from .route_choice_write import RouteChoiceWriter\n",
-        "ashley.tools.route_reads": "from ..inference.route_choices import RouteChoiceReads\n"}
+        "ashley.tools.route_reads": "from ..inference.route_choices import RouteChoiceReads\n",
+        "ashley.tools.trusting": "from ..trust.trust_write import TrustWriter\n",
+        "ashley.channels.trusting": "from ..trust import postgres_trust_write\n",
+        "ashley.tools.trust_reads": "from ..trust.trust import Trust\n"}
     writers = {name for names, _ in GUARDED.values() for name in names}
     found = writers_imported_by({m: ast.parse(src) for m, src in planted.items()}, writers)
     assert set(found) == set(planted) - {"ashley.tools.clean", "ashley.tools.reads", "ashley.tools.persona_reads",
-                                         "ashley.tools.route_reads"}, found
+                                         "ashley.tools.route_reads", "ashley.tools.trust_reads"}, found
 
 
 def test_the_writer_modules_exist_where_the_gate_names_them() -> None:
