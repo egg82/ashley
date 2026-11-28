@@ -89,8 +89,11 @@ def test_it_is_offered_on_a_bench_turn_only(shop: FakeWorkshop, live: FakeLive) 
                        speaker_id=1, shared=False, place=None, channel="web", bench_id=4)
     elsewhere = Inbound(household_id=10, thread="person:1:web", text="hi", kind="chat", medium="text", audience="owner",
                         speaker_id=1, shared=False, place=None, channel="web")
-    names = lambda i: [s.name for s in asyncio.run(for_turn(i).catalogue()).specs]  # noqa: E731
-    assert "bench_show" in names(on_bench) and "bench_show" not in names(elsewhere)
+    assert "bench_show" in _offered(on_bench) and "bench_show" not in _offered(elsewhere)
+
+
+def _offered(inbound: Inbound) -> list[str]:
+    return [s.name for s in asyncio.run(for_turn(inbound).catalogue()).specs]
 
 
 def test_the_event_is_shown_to_its_owner_alone_and_survives_the_wire() -> None:

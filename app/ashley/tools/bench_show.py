@@ -9,6 +9,7 @@ from .. import services
 from ..inference.model import ToolCall, ToolResult, ToolSpec
 from ..live.events import BenchShown, Shown
 from ..live.live import Live
+from ..workshop.json_shape import list_of
 from ..workshop.model import Owner
 from ..workshop.workshop import BenchNotFound, Workshop, WorkshopUnavailable
 from . import bench_results
@@ -73,6 +74,7 @@ def _asked(args: Mapping[str, object]) -> tuple[list[int] | None, bool]:
         raise BadArguments("name the pieces in piece_ids, or all, and not both")
     if everyone:
         return None, fold
-    if not isinstance(ids, list) or not all(isinstance(i, int) and not isinstance(i, bool) for i in ids):
+    items = list_of(ids)
+    if items is None or not all(isinstance(i, int) and not isinstance(i, bool) for i in items):
         raise BadArguments("piece_ids is a list of whole numbers")
-    return [int(i) for i in ids], fold
+    return [int(str(i)) for i in items], fold

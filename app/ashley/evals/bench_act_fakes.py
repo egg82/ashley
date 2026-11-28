@@ -20,12 +20,12 @@ from ..tools.tools import Catalogue, Tools
 from .house_guard import RecordingInference
 
 T = TypeVar("T", bound=BaseModel)
-READS = ("bench_read", "bench_read_piece", "bench_shelf")
+READS = ("bench_read", "bench_read_piece", "bench_shelf", "bench_show")
 
 
 @dataclass
 class Recorded(Tools):
-    """`inner` for reads. A change is noted in `changes` and answered done; `bench_run` answers with the captured run;
+    """`inner` for reads, `bench_show` (a view, no change) among them. A change is noted in `changes` and answered done; `bench_run` answers with the captured run;
     `move_page` notes where the page went. An outside-kind piece read whole is answered from the capture, outside."""
 
     inner: Tools
